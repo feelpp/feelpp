@@ -72,8 +72,7 @@ SET(FEELPP_SCM "git")
 #   MESSAGE("Last changed log is ${Project_LAST_CHANGED_LOG}")
 # ELSE()
 FIND_PACKAGE(Git)
-#  if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
-if(GIT_FOUND)
+if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
   message(STATUS "Git found" )
   if ( NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/ginac/ginac )
     message(STATUS "initializing submodules...")
@@ -81,7 +80,7 @@ if(GIT_FOUND)
     message(STATUS "updating submodules...")
     execute_process(COMMAND git submodule update WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} )
   endif()
-
+  
   execute_process(
     COMMAND git rev-parse --verify -q --short HEAD
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -94,15 +93,19 @@ if(GIT_FOUND)
     STRING(STRIP "${Project_WC_REVISION}" Project_WC_REVISION )
     MESSAGE(STATUS "Git commit: ${Project_WC_REVISION}")
   endif()
+else()
+  if(EXISTS ${PROJECT_SOURCE_DIR}/GITREVISION)
+    file(READ ${PROJECT_SOURCE_DIR}/GITREVISION Project_WC_REVISION)
+  endif()
 endif()
-#ENDIF()
+
 
 set(FEELPP_VERSION_MAJOR "0")
 set(FEELPP_VERSION_MINOR "92")
 set(FEELPP_VERSION_MICRO "0")
 set(FEELPP_REVISION "0" )
 set(FEELPP_BUILDID "0" )
-if (GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
+if (FEELPP_ENABLE_GIT AND GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
   set(FEELPP_VERSION_EXTRA "~${FEELPP_SCM}${Project_WC_REVISION}")
   set(FEELPP_REVISION "${Project_WC_REVISION}")
   set(FEELPP_BUILDID "${Project_WC_REVISION}")
@@ -405,6 +408,7 @@ foreach(OPT ${CONFIG_OPTIONS})
   set(FEELPP_CONFIG_OPTIONS "${FEELPP_CONFIG_OPTIONS} ${OPT}")
 endforeach(OPT)
 
+
 set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEELPP_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
@@ -424,6 +428,25 @@ foreach(includedir feelcore feelalg feelmesh feelpoly feelfilters feeldiscr feel
 endforeach()
 FILE(GLOB files "feel/*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
+
+# install cln headers
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/include/cln/*.h")
+INSTALL(FILES ${files} DESTINATION include/feel/cln COMPONENT Devel)
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/lib/lib*")
+INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
+
+# install gflags headers
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/include/gflags/*.h")
+INSTALL(FILES ${files} DESTINATION include/feel/gflags COMPONENT Devel)
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/lib/lib*")
+INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
+
+# install glog headers
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/include/glog/*.h")
+INSTALL(FILES ${files} DESTINATION include/feel/glog COMPONENT Devel)
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib/lib*")
+INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
+
 # gmm
 IF ( NOT GMM_FOUND )
   FILE(GLOB files "contrib/gmm/include/*.h")
@@ -482,9 +505,9 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 # from source tarball.
 set(CPACK_SOURCE_IGNORE_FILES
   "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
-  "/admin/;/tools/;/Templates/;"
-  "/auto/;/auto.*/;"
-  "/TAGS;/#.*;/.*~;/.cvsignore;/.bzrignore;/work/"
+  "/admin/;/Templates/;"
+  "/auto/;"
+  "/TAGS;/#.*;/.*~$;/.cvsignore;/.bzrignore;/work/"
   "${PROJECT_SOURCE_DIR}/benchmarks/turek/"
   "${PROJECT_SOURCE_DIR}/benchmarks/stokes/"
   "${PROJECT_SOURCE_DIR}/benchmarks/ethiersteinman/"
@@ -498,7 +521,6 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/examples/pbeq/"
   "${PROJECT_SOURCE_DIR}/research/"
   "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;/opt/"
-  "/TAGS;/#.*;/.*~;/.cvsignore;/.bzrignore"
   "*.aux;*.log;*.bbl;*.idx;*.ist;*.out;*.blg;OpusManualBenchmarkEADSUJF.pdf"
   "${PROJECT_SOURCE_DIR}/applications/opus.old"
   "${PROJECT_SOURCE_DIR}/applications/opus/"

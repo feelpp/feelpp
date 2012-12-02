@@ -25,7 +25,7 @@ add_custom_target(check-ginac COMMAND ${CMAKE_CTEST_COMMAND})
 #add_custom_target(html)
 #add_custom_target(pdf)
 
-find_package(CLN 1.2.2)
+find_package(CLN 1.3.2)
 if ( CLN_FOUND )
   include_directories(${CLN_INCLUDE_DIR})
 endif()

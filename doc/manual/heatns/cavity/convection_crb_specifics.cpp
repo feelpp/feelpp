@@ -81,7 +81,7 @@ void Convection_crb::init()
     element_3_type xi = U. element<3>(); // fonction multipliers
     element_3_type eta = V. element<3>(); // fonction test multipliers
 #endif
-    
+
     using namespace Feel::vf;
     Feel::ParameterSpace<2>::Element mu_min( M_Dmu );
     double Grmin( this->vm()["Grmin"]. as<double>() );
@@ -122,16 +122,16 @@ void Convection_crb::init()
     double nu=this->vm()["nu"]. as<double>();
     double rho=this->vm()["rho"]. as<double>();
     int weakdir=this->vm()["weakdir"]. as<int>();
-    
-    int adim=this->vm()["adim"]. as<int>();    
-    
+
+    int adim=this->vm()["adim"]. as<int>();
+
     // Fluid
     // diffusion
-    
+
     // M_Aqm[0] = C = grad(u)*grav(v)
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0], _init=true ) = integrate( _range=elements( mesh ),
                                                                           _expr=trace( gradt( u )*trans( grad( v ) ) )  );
-    
+
     // heat diffusion: M_Aqm[1] = G = grad(t)*grad(s)
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0], _init=true ) = integrate( _range=elements( mesh ),
                                                                           _expr=gradt( t )*trans( grad( s ) ) );
@@ -330,9 +330,9 @@ Convection_crb::computeBetaQm( parameter_type const& mu, double )
 
 void
 Convection_crb::update( parameter_type const& mu )
-{    
+{
     D->zero();
-    
+
     for ( size_type q = 0; q < (M_betaAqm.size()-1); ++q )
     {
         for ( size_type m = 0; m < mMaxA(q); ++m )
@@ -361,9 +361,9 @@ Convection_crb::update( parameter_type const& mu )
 void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
     LOG(INFO) << "[updateJacobian] start\n";
-    
+
     auto mesh = Xh->mesh();
-    
+
     auto U = Xh->element( "u" );
     U = *X;
     auto V = Xh->element( "v" );
@@ -379,41 +379,41 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
     auto eta = V. element<3>(); // fonction test multipliers
 #endif
 
-    
+
     double gamma( this->vm()["penalbc"]. as<double>() );
-    
+
     int adim=this->vm()["adim"]. as<int>();
-    
+
     //conditions fortes de dir
     auto Rtemp =  M_backend->newVector( Xh );
     int weakdir( this->vm()["weakdir"]. as<int>() );
     double T0 = this->vm()["T0"]. as<double>();
-        
+
     double pC = 1.0;
     M_Aqm[3][0]->zero();
 
     // Fluid-NS
     // fluid convection derivatives: attention 2 terms
-    
+
     form2( _test=Xh,_trial=Xh, _matrix=M_Aqm[3][0] )  += integrate ( _range=elements( mesh ), _expr=cst( 1. )*trans( id( v ) )*( gradv( u ) )*idt( u ) );
     form2( _test=Xh,_trial=Xh, _matrix=M_Aqm[3][0] )  += integrate ( _range=elements( mesh ), _expr=cst( 1. )*trans( id( v ) )*( gradt( u ) )*idv( u ) );
 
-        
+
     //    // temperature derivatives
     //
     // heat convection by the fluid: attention 2 terms
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) +=
     integrate ( elements( mesh ),
                pC*grad( s )*( idv( t )*idt( u ) ) );
-    
+
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) +=
     integrate ( elements( mesh ),
                pC*grad( s )*( idt( t )*idv( u ) ) );
-    
+
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) +=
     integrate ( boundaryfaces( mesh ),
                pC*( trans( idv( u ) )*N() )*id( s )*idt( t ) );
-    
+
     form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) +=
     integrate ( boundaryfaces( mesh ),
                pC*( trans( idt( u ) )*N() )*id( s )*idv( t ) );
@@ -422,11 +422,11 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
     {
         //vitesse
         form2( Xh, Xh, M_Aqm[3][0] )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
-        
+
         if ( adim==1 )
             //temperature
             form2( Xh, Xh, M_Aqm[3][0] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
-        
+
         else
             form2( Xh, Xh, M_Aqm[3][0] )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
@@ -436,7 +436,7 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
     J->zero();
     J->addMatrix(1.,D);
     J->addMatrix(1.,M_Aqm[3][0]);
-    
+
 }
 
 typename Convection_crb ::sparse_matrix_ptrtype
@@ -457,49 +457,49 @@ Convection_crb::computeTrilinearForm( const element_type& X )
     auto xi = U. element<3>(); // fonction multipliers
     auto eta = V. element<3>(); // fonction test multipliers
 #endif
- 
+
     sparse_matrix_ptrtype A_tril;
     A_tril = M_backend->newMatrix( _test=Xh, _trial=Xh );
-       
+
     double gamma( this->vm()["penalbc"]. as<double>() );
-    
+
     int adim=this->vm()["adim"]. as<int>();
-    
+
     //conditions fortes de dir
     auto Rtemp =  M_backend->newVector( Xh );
     int weakdir( this->vm()["weakdir"]. as<int>() );
     double T0 = this->vm()["T0"]. as<double>();
-    
+
     // Fluid-NS
     // fluid convection derivatives: attention 2 terms
-    form2( _test=Xh,_trial=Xh, _matrix=A_tril , _init=true ) = integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradv( v ) )*idt( u ) );
-    form2( _test=Xh,_trial=Xh, _matrix=A_tril )  += integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradt( u ) )*idv( v ) );
-    
+    form2( _test=Xh,_trial=Xh, _matrix=A_tril , _init=true ) = integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradv( u ) )*idt( u ) );
+    form2( _test=Xh,_trial=Xh, _matrix=A_tril )  += integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradt( u ) )*idv( u ) );
+
     //    // temperature derivatives
     //
     // heat convection by the fluid: attention 2 terms
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idv( s )*idt( u ) ) );
-    
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idt( t )*idv( v ) ) );
-    
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idv( v ) )*N() *id( s )*idt( t ) );
-    
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idt( u ) )*N() *id( s )*idv( s ) );
-    
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idv( t )*idt( u ) ) );
+
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), grad( s )*( idt( t )*idv( u ) ) );
+
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idv( u ) )*N() *id( s )*idt( t ) );
+
+    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( idt( u ) )*N() *id( s )*idv( t ) );
+
     if ( weakdir == 0 )
     {
         //vitesse
         form2( Xh, Xh, A_tril )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
-        
+
         if ( adim==1 )
             //temperature
             form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
-        
+
         else
             form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
     }
     return A_tril;
-    
+
 }
 
 // instantiation
