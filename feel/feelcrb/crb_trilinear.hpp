@@ -652,7 +652,7 @@ CRBTrilinear<TruthModelType>::offline()
         LOG(INFO) << "[CRB::offline] solving primal" << "\n";
         *u = M_model->solve( mu );
 
-        if(proc_number==0) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
+        if( proc_number == this->worldComm().masterRank() ) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
         timer2.restart();
 
         M_WNmu->push_back( mu, index );
@@ -878,11 +878,9 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
         M_model->computeBetaQm( current_mu );
         this->updateLinearTerms( current_mu , N );
 
+        //M_nlsolver->setRelativeResidualTol( 1e-12 );
         M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
         M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
-
-        updateResidual( map_uN, map_R , current_mu , N );
-        updateJacobian( map_uN, map_J , current_mu , N );
 
         M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
     }

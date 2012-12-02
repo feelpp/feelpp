@@ -116,6 +116,8 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
 
 SET(FEELPP_LIBRARIES ${Boost_LIBRARIES} ${FEELPP_LIBRARIES})
 
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
+
 INCLUDE_DIRECTORIES(BEFORE contrib/)
 
 #FIND_PACKAGE(GINAC)
@@ -128,7 +130,7 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 
 add_definitions(-DIN_GINAC -DHAVE_LIBDL)
 include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
-SET(FEELPP_LIBRARIES ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
+SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
 set(DL_LIBS ${CMAKE_DL_LIBS})
 add_subdirectory(contrib/ginac)
 
@@ -137,7 +139,7 @@ add_subdirectory(contrib/ginac)
 #
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-  set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+  set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
   add_subdirectory(contrib/eigen)
   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
 endif()
@@ -201,7 +203,11 @@ if ( GLPK_FOUND )
 endif()
 
 # google perf tools
-option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
+if (APPLE)
+  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" OFF)
+else()
+  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
+endif()
 if ( FEELPP_ENABLE_GOOGLEPERFTOOLS )
   find_package(GooglePerfTools)
   if ( GOOGLE_PERFTOOLS_FOUND )
