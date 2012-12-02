@@ -30,8 +30,11 @@
 
 #include <ginac/ginac.h>
 
+
 namespace GiNaC
 {
+ex parse( std::string const& str, std::vector<symbol> const& syms );
+
 matrix
 grad( ex const& f, std::vector<symbol> const& l )
 {
@@ -39,6 +42,12 @@ grad( ex const& f, std::vector<symbol> const& l )
 	std::for_each( l.begin(), l.end(), [&] ( symbol const& x ) { g.append( f.diff( x ) ); } );
 	return matrix( 1, l.size(), g );
 }
+matrix
+grad( std::string const& s, std::vector<symbol> const& l )
+{
+    return grad( parse( s, l),  l );
+}
+
 matrix
 grad( matrix const& f, std::vector<symbol> const& l )
 {
@@ -86,7 +95,11 @@ laplacian( ex const& f, std::vector<symbol> const& l )
 		       } );
 	return g;
 }
-
+ex
+laplacian( std::string const& s, std::vector<symbol> const& l )
+{
+    return laplacian( parse( s, l ), l );
+}
 matrix
 laplacian( matrix const& f, std::vector<symbol> const& l )
 {
@@ -104,12 +117,6 @@ laplacian( matrix const& f, std::vector<symbol> const& l )
 	return g;
 }
 
-} // GiNaC
-
-namespace Feel
-{
-using  GiNaC::ex;
-using  GiNaC::symbol;
 ex parse( std::string const& str, std::vector<symbol>  const& syms )
 {
     LOG(INFO) << "parsing " << str << "\n";
