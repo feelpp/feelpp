@@ -300,11 +300,7 @@ Laplacian<Dim,Order>::run()
     element_type e( Xh, "e" );
     e = project( _space=Xh, _range=elements( mesh ), _expr=g );
 
-    export_ptrtype exporter( export_type::New( this->vm(),
-                                               ( boost::format( "%1%-%2%-%3%" )
-                                                 % this->about().appName()
-                                                 % shape
-                                                 % Dim ).str() ) );
+    export_ptrtype exporter( export_type::New() );
 
     if ( exporter->doExport() )
     {

@@ -94,8 +94,7 @@ public:
         dim( this->vm()["dim"].template as<int>() ),
         order( this->vm()["order"].template as<int>() ),
         meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>()  ),
-        exporter()
+        shape( this->vm()["shape"].template as<std::string>()  )
     {
     }
 
@@ -107,7 +106,7 @@ private:
     int order;
     double meshSize;
     std::string shape;
-    export_ptrtype exporter;
+
 }; // MyFunctionSpace
 
 
@@ -115,9 +114,9 @@ template<int Dim, int Order>
 void
 MyFunctionSpace<Dim,Order>::run()
 {
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%/h_%3%/" )
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%/" )
                                    % this->about().appName()
-                                   % shape
+                                   % shape % Dim
                                    % meshSize );
 
     //# marker31 #
@@ -174,13 +173,13 @@ MyFunctionSpace<Dim,Order>::run()
 
     //# marker7 #
     // exporting to paraview or gmsh
-    LOG(INFO) << "exporting\n" << std::endl;
-    exporter = export_ptrtype( export_type::New( this->vm(), ( boost::format( "%1%-%2%-%3%-%4%" ) % this->about().appName() % shape % Dim % Order ).str() ) );
-    LOG(INFO) << "exporting mesh \n" << std::endl;
+    export_ptrtype exporter( export_type::New() );
+
     exporter->step( 0 )->setMesh( mesh );
     auto P0h = p0_space_type::New( mesh );
+
     LOG(INFO) << "saving pid\n" << std::endl;
-    exporter->step( 0 )->add( "pid", regionProcess( P0h ) );
+    exporter->step( 0 )->addRegions();
 
     exporter->step( 0 )->add( "g", u );
     exporter->step( 0 )->add( "u-g", w );
