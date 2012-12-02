@@ -40,6 +40,15 @@
 namespace Feel
 {
 template<typename MeshType, int N>
+ExporterEnsight<MeshType,N>::ExporterEnsight( WorldComm const& worldComm )
+:
+super( worldComm ),
+_M_element_type()
+
+{
+    init();
+}
+template<typename MeshType, int N>
 ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq, WorldComm const& worldComm )
     :
     super( "ensight", __p, freq, worldComm ),
