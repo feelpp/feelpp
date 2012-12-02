@@ -26,26 +26,6 @@
    \date 2012-05-07
  */
 #include <feel/feel.hpp>
-
-/** include predefined feel command line options */
-#include <feel/options.hpp>
-
-/** include linear algebra backend */
-#include <feel/feelalg/backend.hpp>
-
-/** include function space class */
-#include <feel/feeldiscr/functionspace.hpp>
-
-/** include gmsh mesh importer */
-#include <feel/feelfilters/gmsh.hpp>
-
-/** include exporter factory class */
-#include <feel/feelfilters/exporter.hpp>
-
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <feel/feelvf/vf.hpp>
-
-/** include the header for mesh adaptation **/
 #include <feel/feelmesh/meshadaptation.hpp>
 
 /** use Feel namespace */
