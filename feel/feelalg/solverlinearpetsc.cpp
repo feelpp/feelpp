@@ -528,7 +528,8 @@ SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
                               const unsigned int maxit,
                               bool transpose )
 {
-
+    LOG(ERROR) << "invalid call to solve() using matshell\n";
+    return boost::make_tuple( false, 0, 0 );
 }
 
 template <typename T>

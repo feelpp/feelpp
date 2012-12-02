@@ -214,6 +214,7 @@ public:
     value_type dot( const eigen_vector_type& f,
                     const eigen_vector_type& x ) const
     {
+        return f.vec().dot( x.vec() );
     }
 
 
