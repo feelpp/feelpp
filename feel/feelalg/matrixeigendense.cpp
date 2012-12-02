@@ -192,6 +192,16 @@ MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
     }
 }
 
+template<typename T>
+void
+MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m,
+                                     size_type start_i,
+                                     size_type start_j )
+{
+#warning Not yet implemented
+    LOG(ERROR) << "invalid call to updateBlockMat(), not yet implemented\n";
+
+}
 
 template<typename T>
 void
