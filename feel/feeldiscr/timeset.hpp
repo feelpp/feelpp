@@ -482,7 +482,7 @@ public:
         }
 
         template<typename FunctionType>
-        void add( std::initializer_list<std::string>&  __n, FunctionType const& func )
+        void add( std::initializer_list<std::string>  __n, FunctionType const& func )
         {
             std::vector<std::string> str( __n );
             add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
