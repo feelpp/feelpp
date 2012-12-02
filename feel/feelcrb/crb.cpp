@@ -72,6 +72,7 @@ crbOptions( std::string const& prefix )
     ( "crb.use-continuity",Feel::po::value<bool>()->default_value(true), "when apply Newton method, will use continuity method (like for natural convection problem for example)" )
 
 
+    ( "crb.compute-stat",Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
     ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
     ( "crb.run-on-WNmu",Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
     ;
