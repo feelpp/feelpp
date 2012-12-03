@@ -29,6 +29,7 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
@@ -74,6 +75,9 @@ po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
+        .add( mesh_options( 1, prefix ) )
+        .add( mesh_options( 2, prefix ) )
+        .add( mesh_options( 3, prefix ) )
         /* alg options */
         .add( backend_options() )
 #if defined(FEELPP_HAS_PETSC_H)
