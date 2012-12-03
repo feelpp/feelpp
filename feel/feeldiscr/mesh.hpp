@@ -78,6 +78,17 @@
 
 namespace Feel
 {
+
+struct MeshMarkerName
+{
+	std::string name;
+	std::vector<int> ids;
+
+};
+
+std::vector<MeshMarkerName> markerMap( int Dim );
+po::options_description mesh_options( int Dim, std::string const& prefix = "" );
+
 const size_type EXTRACTION_KEEP_POINTS_IDS                = ( 1<<0 );
 const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
 const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
@@ -1716,7 +1727,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
     return new_mesh;
 }
-
 
 
 } // Feel

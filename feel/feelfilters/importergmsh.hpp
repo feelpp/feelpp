@@ -341,6 +341,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         __is >> __buf;
         Debug( 8011 ) << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
 
+        std::vector<MeshMarkerName> meshMarkerNameMap = markerMap(MeshType::nDim);
         if ( std::string( __buf ) == "$PhysicalNames" )
         {
             int nnames;
@@ -363,17 +364,27 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 boost::trim( name );
                 boost::trim_if( name,boost::is_any_of( "\"" ) );
 
-                std::vector<int> data = {id, topodim};
-                mesh->addMarkerName( name, id, topodim );
+                if ( meshMarkerNameMap.empty() )
+                {
+                    std::vector<int> data = {id, topodim};
+                    mesh->addMarkerName( name, id, topodim );
+                }
                 if ( _M_ignorePhysicalName.find( name )!=_M_ignorePhysicalName.end() ) this->setIgnorePhysicalGroup( id );
             }
-
-            FEELPP_ASSERT( mesh->markerNames().size() == ( size_type )nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
+            if ( meshMarkerNameMap.empty() )
+            {
+                FEELPP_ASSERT( mesh->markerNames().size() == ( size_type )nnames )( mesh->markerNames().size() )( nnames ).error( "invalid number of physical names" );
+            }
             __is >> __buf;
             FEELPP_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
             ( __buf )
             ( "$EndPhysicalNames" ).error ( "invalid file format entry" );
             __is >> __buf;
+        }
+
+        for(auto it = meshMarkerNameMap.begin(), en = meshMarkerNameMap.end(); it != en; ++ it )
+        {
+            mesh->addMarkerName( it->name, it->ids[0], it->ids[1] );
         }
     }
 
