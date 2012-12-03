@@ -376,6 +376,9 @@ public:
                     if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                     printEntry( ostr, mu, o );
 
+                    std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                    res << "output="<< o[0] << "\n";
+
                 }
                 break;
 
