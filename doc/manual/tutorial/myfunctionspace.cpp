@@ -63,15 +63,6 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-    //# marker1 #
-    typedef FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous> > >
-    p0_space_type;
-    //# endmarker1 #
-
-    //! an element type of the \f$P_0\f$ discontinuous function space
-    typedef typename p0_space_type::element_type p0_element_type;
-
     //# marker2 #
     //! the basis type of our approximation space
     typedef bases<Lagrange<Order> > basis_type;
@@ -176,7 +167,6 @@ MyFunctionSpace<Dim,Order>::run()
     export_ptrtype exporter( export_type::New() );
 
     exporter->step( 0 )->setMesh( mesh );
-    auto P0h = p0_space_type::New( mesh );
 
     LOG(INFO) << "saving pid\n" << std::endl;
     exporter->step( 0 )->addRegions();
@@ -203,7 +193,9 @@ main( int argc, char** argv )
 
     Application app;
 
-    app.add( new MyFunctionSpace<2,3>() );
-    app.add( new MyFunctionSpace<3,3>() );
+    if ( Environment::numberOfProcessors() == 1 )
+        app.add( new MyFunctionSpace<1,1>() );
+    app.add( new MyFunctionSpace<2,1>() );
+    app.add( new MyFunctionSpace<3,1>() );
     app.run();
 }
