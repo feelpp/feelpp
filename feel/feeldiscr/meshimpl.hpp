@@ -52,7 +52,7 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     //M_part(),
     M_tool_localization( new Localization() )
 {
-    Debug( 4015 ) << "[Mesh] constructor called\n";
+    VLOG(2) << "[Mesh] constructor called\n";
 }
 template<typename Shape, typename T, int Tag>
 void
@@ -95,34 +95,34 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateForUse()
 {
-    Debug( 4015 ) << "component     MESH_RENUMBER: " <<  this->components().test( MESH_RENUMBER ) << "\n";
-    Debug( 4015 ) << "component MESH_UPDATE_EDGES: " <<  this->components().test( MESH_UPDATE_EDGES ) << "\n";
-    Debug( 4015 ) << "component MESH_UPDATE_FACES: " <<  this->components().test( MESH_UPDATE_FACES ) << "\n";
-    Debug( 4015 ) << "component    MESH_PARTITION: " <<  this->components().test( MESH_PARTITION ) << "\n";
+    VLOG(2) << "component     MESH_RENUMBER: " <<  this->components().test( MESH_RENUMBER ) << "\n";
+    VLOG(2) << "component MESH_UPDATE_EDGES: " <<  this->components().test( MESH_UPDATE_EDGES ) << "\n";
+    VLOG(2) << "component MESH_UPDATE_FACES: " <<  this->components().test( MESH_UPDATE_FACES ) << "\n";
+    VLOG(2) << "component    MESH_PARTITION: " <<  this->components().test( MESH_PARTITION ) << "\n";
 
     if ( this->numElements() == 0 )
     {
-        Debug( 4015 ) << "No elements in Mesh?\n";
+        VLOG(2) << "No elements in Mesh?\n";
         return;
     }
 
     boost::timer ti;
 
-    Debug( 4015 ) << "is already updated? : " << this->isUpdatedForUse() << "\n";
+    VLOG(2) << "is already updated? : " << this->isUpdatedForUse() << "\n";
     if ( !this->isUpdatedForUse() )
     {
         if ( this->components().test( MESH_RENUMBER ) )
         {
 
             this->renumber();
-            Debug( 4015 ) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
+            VLOG(2) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
         }
 
         //
         // compute the Adjacency graph
         //
         ti.restart();
-        Debug( 4015 ) << "Compute adjacency graph\n";
+        VLOG(2) << "Compute adjacency graph\n";
         element_iterator iv,  en;
         std::map<size_type,boost::tuple<size_type, uint16_type, size_type> > f2e;
 
@@ -155,8 +155,8 @@ Mesh<Shape, T, Tag>::updateForUse()
                     ++next_face;
 
 #if !defined ( NDEBUG )
-                Debug( 4015 ) << "------------------------------------------------------------\n";
-                Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << " process id:" << iv->processId() << "\n";
+                VLOG(2) << "------------------------------------------------------------\n";
+                VLOG(2) << "Element id: " << iv->id() << " local face id: " << j << " process id:" << iv->processId() << "\n";
 #endif
                 //e = _be.addIfNotThere( baremaker( j ) );
 
@@ -164,7 +164,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                 if ( faceinserted )
                 {
 #if !defined ( NDEBUG )
-                    Debug( 4015 ) << " new face " << _faceit->second << " is now in store with elt " << f2e[_faceit->second].template get<0>()  << " and local face id " <<  f2e[_faceit->second].template get<1>()  << "\n";
+                    VLOG(2) << " new face " << _faceit->second << " is now in store with elt " << f2e[_faceit->second].template get<0>()  << " and local face id " <<  f2e[_faceit->second].template get<1>()  << "\n";
 #endif
 
                     f2e[_faceit->second].template get<0>() = iv->id();
@@ -175,7 +175,7 @@ Mesh<Shape, T, Tag>::updateForUse()
                 else // already stored
                 {
 #if !defined ( NDEBUG )
-                    Debug( 4015 ) << "old face " << _faceit->second << " was already in store with elt " << f2e[_faceit->second].template get<0>() << " and local face id " <<  f2e[_faceit->second].template get<1>() << "\n";
+                    VLOG(2) << "old face " << _faceit->second << " was already in store with elt " << f2e[_faceit->second].template get<0>() << " and local face id " <<  f2e[_faceit->second].template get<1>() << "\n";
 #endif
 
                     f2e[_faceit->second].template get<2>() = iv->id();
@@ -188,7 +188,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             } // local face
         } // element loop
 
-        Debug( 4015 ) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
+        VLOG(2) << "Compute adjacency graph done in " << ti.elapsed() << "\n";
 #if 0
 
         // partition mesh
@@ -196,7 +196,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         {
             boost::timer ti1;
             this->partition();
-            Debug( 4015 ) << "[Mesh::updateForUse] partition time : " << ti1.elapsed() << "\n";
+            VLOG(2) << "[Mesh::updateForUse] partition time : " << ti1.elapsed() << "\n";
         }
 
 #endif
@@ -212,7 +212,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             //if (this->worldComm().localSize()>1)
             //    this->updateEntitiesCoDimensionOneGhostCell();
 
-            Debug( 4015 ) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
+            VLOG(2) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
 
         }
 
@@ -222,7 +222,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             // update connectivities of entities of co dimension 2
             // (edges in 3D)
             this->updateEntitiesCoDimensionTwo();
-            Debug( 4015 ) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
+            VLOG(2) << "[Mesh::updateForUse] update edges : " << ti.elapsed() << "\n";
         }
 
         if ( this->components().test( MESH_UPDATE_FACES ) ||
@@ -326,7 +326,7 @@ Mesh<Shape, T, Tag>::updateForUse()
 
 
 
-    Debug( 4015 ) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
+    VLOG(2) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
 
 template<typename Shape, typename T, int Tag>
@@ -413,11 +413,11 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
     {
         element_type const& __element = *elt;
 #if !defined( NDEBUG )
-        Debug( 4015 ) << "mesh::renumber] element id " << __element.id() <<  " proc " << __element.processId() << "\n";
+        VLOG(2) << "mesh::renumber] element id " << __element.id() <<  " proc " << __element.processId() << "\n";
 
         for ( int i = 0; i < __element.nPoints(); ++i )
         {
-            Debug( 4015 ) << "point id = " << __element.point( i ).id() << "\n";
+            VLOG(2) << "point id = " << __element.point( i ).id() << "\n";
         }
 
 #endif
@@ -437,7 +437,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 #if !defined( NDEBUG )
 
                 if ( __id >= next_free_node )
-                    Debug( 4015 ) << "next_free_node = " << next_free_node
+                    VLOG(2) << "next_free_node = " << next_free_node
                                   << " point id = " << __id << "\n";
 
 #endif
@@ -474,7 +474,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
                 pt_map[next_free_node].setId( next_free_node );
 
 #if !defined( NDEBUG )
-                Debug( 4015 ) << "next_free_node = " << next_free_node
+                VLOG(2) << "next_free_node = " << next_free_node
                               << " swapping point " << __true_id
                               << " and point " << next_free_node << "\n";
 #endif
@@ -487,7 +487,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
         //__element.setId(
     }
 
-    Debug( 4015 ) << "[mesh::renumber] done collecting ids\n";
+    VLOG(2) << "[mesh::renumber] done collecting ids\n";
 #if !defined(NDEBUG)
     std::vector<size_type> check_id( node_map );
     std::unique( check_id.begin(), check_id.end() );
@@ -513,7 +513,7 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
     {
         point_iterator ptit = this->points().find( ptmapit->first );
 #if !defined( NDEBUG )
-        Debug( 4015 ) << "[mesh::replace] replacing point " << ptit->id()
+        VLOG(2) << "[mesh::replace] replacing point " << ptit->id()
                       <<  " with " << ptmapit->second.id() << "\n";
 #endif
         bool __rep1 = this->points().replace( ptit, ptmapit->second );
@@ -521,14 +521,14 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
 
     }
 
-    Debug( 4015 ) << "[mesh::renumber] done replace point ids\n";
+    VLOG(2) << "[mesh::renumber] done replace point ids\n";
 
     for ( element_iterator elt = this->beginElement();
             elt != this->endElement(); ++elt )
     {
         element_type __element = *elt;
 #if !defined( NDEBUG )
-        Debug( 4015 ) << "mesh::renumber] element id " << __element.id() <<  " proc " << __element.processId() << "\n";
+        VLOG(2) << "mesh::renumber] element id " << __element.id() <<  " proc " << __element.processId() << "\n";
 #endif
 
         // renumber the nodes of the element
@@ -539,20 +539,20 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
             this->elements().modify( elt,
                                      typename super_elements::ElementUpdatePoint( i, this->point( node_map[__true_id] ) ) );
 #if !defined( NDEBUG )
-            Debug( 4015 ) << "point id = " << __true_id << " node map " <<  node_map[__true_id] << " "
+            VLOG(2) << "point id = " << __true_id << " node map " <<  node_map[__true_id] << " "
                           << "new point id = " << elt->point( i ).id() << "\n";
 #endif
         }
     }
 
-    Debug( 4015 ) << "[mesh::renumber] done replace point ids in elements\n";
+    VLOG(2) << "[mesh::renumber] done replace point ids in elements\n";
 
     for ( face_iterator elt = this->beginFace();
             elt != this->endFace(); ++elt )
     {
         face_type __face = *elt;
 #if !defined( NDEBUG )
-        Debug( 4015 ) << "face id: " << __face.id()
+        VLOG(2) << "face id: " << __face.id()
                       << " marker: " << __face.marker() << "\n";
 #endif
 
@@ -567,8 +567,8 @@ Mesh<Shape, T, Tag>::renumber( mpl::bool_<true> )
                                                 boost::cref( this->point( node_map[__true_id] ) ) ) );
             face_type __face2 = *elt;
 #if !defined( NDEBUG )
-            Debug( 4015 ) << "id1= " << __face2.point( 0 ).id() << " id2= " << __face2.point( 1 ).id()<< "\n";
-            Debug( 4015 ) << "point lid = " << i << " id = " << __true_id
+            VLOG(2) << "id1= " << __face2.point( 0 ).id() << " id2= " << __face2.point( 1 ).id()<< "\n";
+            VLOG(2) << "point lid = " << i << " id = " << __true_id
                           << " nid = " << this->point( node_map[__true_id] ).id()
                           << " new point id = " << elt->point( i ).id() << "\n";
 #endif
@@ -612,7 +612,7 @@ Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_
     {
         edge_type __edge = *elt;
 #if !defined( NDEBUG )
-        Debug( 4015 ) << "edge id: " << __edge.id()
+        VLOG(2) << "edge id: " << __edge.id()
                       << " marker: " << __edge.marker() << "\n";
 #endif
 
@@ -627,8 +627,8 @@ Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_
                                                 boost::cref( this->point( node_map[__true_id] ) ) ) );
             edge_type __edge2 = *elt;
 #if !defined( NDEBUG )
-            Debug( 4015 ) << "renumber edge: id1= " << __edge2.point( 0 ).id() << " id2= " << __edge2.point( 1 ).id()<< "\n";
-            Debug( 4015 ) << "renumber edge: point lid = " << i << " id = " << __true_id
+            VLOG(2) << "renumber edge: id1= " << __edge2.point( 0 ).id() << " id2= " << __edge2.point( 1 ).id()<< "\n";
+            VLOG(2) << "renumber edge: point lid = " << i << " id = " << __true_id
                           << " nid = " << this->point( node_map[__true_id] ).id()
                           << " new point id = " << elt->point( i ).id() << "\n";
 #endif
@@ -737,15 +737,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 #if !defined( NDEBUG )
 
             if ( faceinserted  )
-                Debug( 4015 ) << "added face with id " << __it->id () << "\n";
+                VLOG(2) << "added face with id " << __it->id () << "\n";
 
             else
-                Debug( 4015 ) << "not added face with id " << __it->id ()
-                              << " was already face with id = " << _faceit->second << "\n";
+                VLOG(2) << "not added face with id " << __it->id ()
+                        << " was already face with id = " << _faceit->second << "\n";
 
-            FEELPP_ASSERT( faceinserted )
-            ( _faceit->second )
-            ( __it->id() ).warn( "duplicated face" );
 #endif
 
             if ( faceinserted == false )
@@ -781,7 +778,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 __f.setIdInPartition( this->worldComm().localRank(),__f.id() );
 
 #if !defined( NDEBUG )
-                Debug( 4015 ) << "set face id " << __f.id()
+                VLOG(2) << "set face id " << __f.id()
                               << " iterator id = " << __it->id()
                               << " check id = " << _faceit->second << "\n";
 #endif
@@ -791,11 +788,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
         }
     }
 
-    Debug( 4015 ) << "[Mesh::updateFaces] adding faces : " << ti.elapsed() << "\n";
+    VLOG(2) << "[Mesh::updateFaces] adding faces : " << ti.elapsed() << "\n";
     ti.restart();
 
-    Debug( 4015 ) << "[Mesh::updateFaces] numLocalFaces : " << this->numLocalFaces() << "\n";
-    Debug( 4015 ) << "[Mesh::updateFaces] face_type::numVertices : " << face_type::numVertices << "\n";
+    VLOG(2) << "[Mesh::updateFaces] numLocalFaces : " << this->numLocalFaces() << "\n";
+    VLOG(2) << "[Mesh::updateFaces] face_type::numVertices : " << face_type::numVertices << "\n";
     element_iterator iv,  en;
     boost::tie( iv, en ) = this->elementsRange();
 
@@ -813,7 +810,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             {
                 uint16_type pt_localid = ( nDim==1 )?j:iv->fToP( j, f );
                 s.insert( iv->point( pt_localid ).id() );
-                Debug( 4015 ) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
+                VLOG(2) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
                               << " global id " << iv->point( pt_localid ).id() << "\n";
             }
 
@@ -824,14 +821,14 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 ++next_face;
 
 #if !defined( NDEBUG )
-            Debug( 4015 ) << "------------------------------------------------------------\n";
-            Debug( 4015 ) << "Element id: " << iv->id() << " local face id: " << j << "\n";
+            VLOG(2) << "------------------------------------------------------------\n";
+            VLOG(2) << "Element id: " << iv->id() << " local face id: " << j << "\n";
 #endif
 
             if ( faceinserted )
             {
 #if !defined( NDEBUG )
-                Debug( 4015 ) << "creating the face:" << _faceit->second << "\n";
+                VLOG(2) << "creating the face:" << _faceit->second << "\n";
 #endif
                 // set face id
                 face.setId( _faceit->second );
@@ -865,25 +862,25 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
 #if !defined( NDEBUG )
-                Debug( 4015 ) << "Adding [new] face info : \n";
-                Debug( 4015 ) << "element id: " << __element_id << "\n";
-                Debug( 4015 ) << "process id: " << __fit->processId() << "\n";
-                Debug( 4015 ) << "id: " << __fit->id() << "\n";
-                Debug( 4015 ) << "bdy: " << __fit->isOnBoundary() << "\n";
-                Debug( 4015 ) << "marker: " << __fit->marker() << "\n";
-                Debug( 4015 ) << "ad_first: " << __fit->ad_first() << "\n";
-                Debug( 4015 ) << "pos_first: " << __fit->pos_first() << "\n";
-                Debug( 4015 ) << "proc_first: " << __fit->proc_first() << "\n";
-                Debug( 4015 ) << "ad_second: " << __fit->ad_second() << "\n";
-                Debug( 4015 ) << "pos_second: " << __fit->pos_second() << "\n";
-                Debug( 4015 ) << "proc_second: " << __fit->proc_second() << "\n";
+                VLOG(2) << "Adding [new] face info : \n";
+                VLOG(2) << "element id: " << __element_id << "\n";
+                VLOG(2) << "process id: " << __fit->processId() << "\n";
+                VLOG(2) << "id: " << __fit->id() << "\n";
+                VLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
+                VLOG(2) << "marker: " << __fit->marker() << "\n";
+                VLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
+                VLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
+                VLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
+                VLOG(2) << "ad_second: " << __fit->ad_second() << "\n";
+                VLOG(2) << "pos_second: " << __fit->pos_second() << "\n";
+                VLOG(2) << "proc_second: " << __fit->proc_second() << "\n";
 #endif
             }
 
             else
             {
 #if !defined( NDEBUG )
-                Debug( 4015 ) << "found the face:" << _faceit->second << " in element " << __element_id << " and local face: " << j << "\n";
+                VLOG(2) << "found the face:" << _faceit->second << " in element " << __element_id << " and local face: " << j << "\n";
 #endif
 
                 // look in the face table for the face
@@ -898,7 +895,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 // the three conditions below typically arise after reading a serialized mesh
                 if ( __fit->isConnectedTo0() && __fit->connection0().template get<0>() == 0 && ( __element.id() == __fit->ad_first() ) )
                 {
-                    Debug( 4015 ) << "fixing connection 0 in face\n";
+                    VLOG(2) << "fixing connection 0 in face\n";
                     // reconnect the elements to the face
                     auto connect0 = __fit->connection0();
                     connect0.template get<0>() = boost::addressof( __element );
@@ -910,7 +907,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 }
                 if ( __fit->isConnectedTo1() && __fit->connection1().template get<0>() == 0 && ( __element.id() == __fit->ad_second() ) )
                 {
-                    Debug( 4015 ) << "fixing connection 1 in face\n";
+                    VLOG(2) << "fixing connection 1 in face\n";
 
                     // reconnect the elements to the face
                     auto connect1 = __fit->connection1();
@@ -941,7 +938,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 if ( !__fit->isConnectedTo0() )
                 {
 #if !defined( NDEBUG )
-                    Debug( 4015 ) << "[updateFaces][boundary] element: " << __element_id
+                    VLOG(2) << "[updateFaces][boundary] element: " << __element_id
                                   << " face: " << j << " id: " << _faceit->second << "\n";
 #endif
 
@@ -957,18 +954,18 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
                     this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 #if !defined( NDEBUG )
-                    Debug( 4015 ) << "adding [!isConnectedTo0] face info : \n";
-                    Debug( 4015 ) << "id: " << __fit->id() << "\n";
-                    Debug( 4015 ) << "process id: " << __fit->processId() << "\n";
-                    Debug( 4015 ) << "bdy: " << __fit->isOnBoundary() << "\n";
-                    Debug( 4015 ) << "marker: " << __fit->marker() << "\n";
-                    Debug( 4015 ) << "ad_first: " << __fit->ad_first() << "\n";
-                    Debug( 4015 ) << "pos_first: " << __fit->pos_first() << "\n";
-                    Debug( 4015 ) << "proc_first: " << __fit->proc_first() << "\n";
-                    Debug( 4015 ) << "ad_second: " << __fit->ad_second() << "\n";
-                    Debug( 4015 ) << "pos_second: " << __fit->pos_second() << "\n";
-                    Debug( 4015 ) << "proc_second: " << __fit->proc_second() << "\n";
-                    Debug( 4015 ) << "element process id: " << iv->processId() << "\n";
+                    VLOG(2) << "adding [!isConnectedTo0] face info : \n";
+                    VLOG(2) << "id: " << __fit->id() << "\n";
+                    VLOG(2) << "process id: " << __fit->processId() << "\n";
+                    VLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
+                    VLOG(2) << "marker: " << __fit->marker() << "\n";
+                    VLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
+                    VLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
+                    VLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
+                    VLOG(2) << "ad_second: " << __fit->ad_second() << "\n";
+                    VLOG(2) << "pos_second: " << __fit->pos_second() << "\n";
+                    VLOG(2) << "proc_second: " << __fit->proc_second() << "\n";
+                    VLOG(2) << "element process id: " << iv->processId() << "\n";
 #endif
                 }
 
@@ -1012,19 +1009,19 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
 
 #if !defined( NDEBUG )
-                    Debug( 4015 ) << "adding face info : \n";
-                    Debug( 4015 ) << "id: " << __fit->id() << "\n";
-                    Debug( 4015 ) << "process id: " << __fit->processId() << "\n";
-                    Debug( 4015 ) << "bdy: " << __fit->isOnBoundary() << "\n";
-                    Debug( 4015 ) << "marker: " << __fit->marker() << "\n";
-                    Debug( 4015 ) << "ad_first: " << __fit->ad_first() << "\n";
-                    Debug( 4015 ) << "pos_first: " << __fit->pos_first() << "\n";
-                    Debug( 4015 ) << "proc_first: " << __fit->proc_first() << "\n";
-                    Debug( 4015 ) << "ad_second: " << __fit->ad_second() << "\n";
-                    Debug( 4015 ) << "pos_second: " << __fit->pos_second() << "\n";
-                    Debug( 4015 ) << "proc_second: " << __fit->proc_second() << "\n";
-                    Debug( 4015 ) << "element1 process id: " << elt1->processId() << "\n";
-                    Debug( 4015 ) << "element2 process id: " << iv->processId() << "\n";
+                    VLOG(2) << "adding face info : \n";
+                    VLOG(2) << "id: " << __fit->id() << "\n";
+                    VLOG(2) << "process id: " << __fit->processId() << "\n";
+                    VLOG(2) << "bdy: " << __fit->isOnBoundary() << "\n";
+                    VLOG(2) << "marker: " << __fit->marker() << "\n";
+                    VLOG(2) << "ad_first: " << __fit->ad_first() << "\n";
+                    VLOG(2) << "pos_first: " << __fit->pos_first() << "\n";
+                    VLOG(2) << "proc_first: " << __fit->proc_first() << "\n";
+                    VLOG(2) << "ad_second: " << __fit->ad_second() << "\n";
+                    VLOG(2) << "pos_second: " << __fit->pos_second() << "\n";
+                    VLOG(2) << "proc_second: " << __fit->proc_second() << "\n";
+                    VLOG(2) << "element1 process id: " << elt1->processId() << "\n";
+                    VLOG(2) << "element2 process id: " << iv->processId() << "\n";
 #endif
 
                 }
@@ -1057,7 +1054,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 #endif
 
 
-    Debug( 4015 ) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
+    VLOG(2) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
     ti.restart();
 }
 
@@ -1358,7 +1355,7 @@ Mesh<Shape, T, Tag>::check() const
     if ( nDim != nRealDim )
         return;
 #if !defined( NDEBUG )
-    Debug( 4015 ) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
+    VLOG(2) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
     element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
     element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
 
@@ -1370,8 +1367,8 @@ Mesh<Shape, T, Tag>::check() const
         for ( size_type j = 0; j < this->numLocalFaces(); j++ )
         {
             FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).error( "invalid element face check" );
-            Debug( 4015 ) << "------------------------------------------------------------\n";
-            Debug( 4015 ) << "Element : " << iv->id() << " face lid: " << j << " face gid:  " << iv->face( j ).id() << "\n";
+            VLOG(2) << "------------------------------------------------------------\n";
+            VLOG(2) << "Element : " << iv->id() << " face lid: " << j << " face gid:  " << iv->face( j ).id() << "\n";
 
         }
 
@@ -1384,15 +1381,15 @@ Mesh<Shape, T, Tag>::check() const
 
         }
 
-        Debug( 4015 ) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
+        VLOG(2) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
         FEELPP_ASSERT( counter >= 1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
 #if 0
 
         for ( size_type j = 0; j < ( size_type )element_type::numEdges; ++j )
         {
             FEELPP_ASSERT( iv->edgePtr( j ) )( j )( iv->id() ).error( "invalid element edge check" );
-            Debug( 4015 ) << "------------------------------------------------------------\n";
-            Debug( 4015 ) << "Element : " << iv->id() << " edge lid: " << j << " edge gid:  " << iv->edge( j ).id() << "\n";
+            VLOG(2) << "------------------------------------------------------------\n";
+            VLOG(2) << "Element : " << iv->id() << " edge lid: " << j << " edge gid:  " << iv->edge( j ).id() << "\n";
 
         }
 
@@ -1408,17 +1405,11 @@ Mesh<Shape, T, Tag>::check() const
     for ( ; itf != ite; ++ itf )
     {
         face_type const& __face = *itf;
-        FEELPP_ASSERT( __face.isConnectedTo0() )
-        ( __face.id() )( __face.G() )( __face.ad_first() )( __face.pos_first() )( __face.proc_first() ).warn( "invalid face" );
+        DLOG_IF( WARNING, !__face.isConnectedTo0() && !__face.isConnectedTo1() ) << "face not connected to an element face:" << __face << "\n";
+        DLOG_IF( WARNING, !__face.isConnectedTo0() && __face.isConnectedTo1() ) << "face  connected to element 1 but not element 0. face:" << __face << "\n";
+        DLOG_IF( WARNING, __face.isConnectedTo0() && __face.isConnectedTo1() )<< "invalid boundary face (connected to 2 elements):" << __face << "\n";
 
-        if ( __face.isConnectedTo0() )
-        {
-            FEELPP_ASSERT( __face.element( 0 ).facePtr( __face.pos_first() ) )
-            ( __face.ad_first() )( __face.pos_first() )( __face.proc_first() )( __face.element( 0 ).id() ).warn( "invalid face in element" );
-        }
-
-        FEELPP_ASSERT( !__face.isConnectedTo1() )
-        ( __face.ad_first() )( __face.pos_first() )( __face.proc_first() ).warn( "invalid boundary face" );
+        DLOG_IF( WARNING, __face.isConnectedTo0() &&  !__face.element( 0 ).facePtr( __face.pos_first() ) ) << "invalid face in element, face: " << __face << " in element " << __face.element(0) << "\n";
 
     }
 
@@ -1475,10 +1466,10 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
         }
 
         // Print out the _neighboring_processors list
-        Debug( 4015 ) << "Processor " << this->worldComm().localRank() << " intersects:\n";
+        VLOG(2) << "Processor " << this->worldComm().localRank() << " intersects:\n";
 
         for ( unsigned int p=0; p< _M_neighboring_processors.size(); p++ )
-            Debug( 4015 ) << " - proc " << _M_neighboring_processors[p] << "\n";
+            VLOG(2) << " - proc " << _M_neighboring_processors[p] << "\n";
     }
 
 #endif
@@ -1504,14 +1495,17 @@ Mesh<Shape, T, Tag>::checkLocalPermutation( mpl::bool_<true> ) const
     }
 
     if ( mesh_well_oriented )
-        Debug( 4015 ) << "Local numbering in the elements is OK . \n";
+        VLOG(2) << "Local numbering in the elements is OK . \n";
 
     else
     {
-        Debug( 4015 ) << "Local numbering in the elements is not anticlockwise oriented. \n";
         std::for_each( list_of_bad_elts.begin(),
                        list_of_bad_elts.end(),
-                       std::cout << lambda::constant( "bad element " ) << lambda::_1 << lambda::constant( "\n" ) );
+                       []( size_type const& e )
+                       {
+                           LOG_FIRST_N(WARNING,10) << "element is not anticlockwise oriented(wrong local numbering): " << e << "\n";
+                       });
+
 
     }
 }
@@ -1820,7 +1814,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     gmc_ptrtype __c( new gmc_type( M_mesh->gm(),
                                    *el_it,
                                    __geopc ) );
-    Debug( 4015 ) << "[Mesh::Inverse] distribute mesh points ion kdtree\n";
+    VLOG(2) << "[Mesh::Inverse] distribute mesh points ion kdtree\n";
 
     for ( ; el_it != el_en; ++el_it )
     {
@@ -1839,14 +1833,14 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
         }
 
 #if !defined( NDEBUG )
-        Debug( 4015 ) << "G = " << el_it->G() << " min = " << bb.min << ", max = " << bb.max << "\n";
+        VLOG(2) << "G = " << el_it->G() << " min = " << bb.min << ", max = " << bb.max << "\n";
 #endif /* NDEBUG */
 
 
         // check if the points
         this->pointsInBox( boxpts, bb.min, bb.max );
 #if !defined( NDEBUG )
-        Debug( 4015 ) << "boxpts size = " << boxpts.size() << "\n";
+        VLOG(2) << "boxpts size = " << boxpts.size() << "\n";
 #endif /*  */
 
         for ( size_type i = 0; i < boxpts.size(); ++i )
@@ -1863,7 +1857,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
                 bool tobeadded = extrapolation || isin;
 
 #if !defined( NDEBUG )
-                Debug( 4015 ) << "i = " << i << " index = " << index << " isin = " << ( isin >= -1e-10 )  << " xref = " << gic.xRef() << " xreal = " << boost::get<0>( boxpts[i] ) << " tobeadded= " << tobeadded << " dist=" << dmin<< "\n";
+                VLOG(2) << "i = " << i << " index = " << index << " isin = " << ( isin >= -1e-10 )  << " xref = " << gic.xRef() << " xreal = " << boost::get<0>( boxpts[i] ) << " tobeadded= " << tobeadded << " dist=" << dmin<< "\n";
 #endif
 
                 if ( tobeadded && npt[index] )
@@ -1888,7 +1882,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 
     }
 
-    Debug( 4015 ) << "[Mesh::Inverse] distribute mesh points in kdtree done\n";
+    VLOG(2) << "[Mesh::Inverse] distribute mesh points in kdtree done\n";
 }
 
 template<typename Shape, typename T, int Tag>

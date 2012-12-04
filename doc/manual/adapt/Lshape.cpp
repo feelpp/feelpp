@@ -26,26 +26,6 @@
    \date 2012-05-07
  */
 #include <feel/feel.hpp>
-
-/** include predefined feel command line options */
-#include <feel/options.hpp>
-
-/** include linear algebra backend */
-#include <feel/feelalg/backend.hpp>
-
-/** include function space class */
-#include <feel/feeldiscr/functionspace.hpp>
-
-/** include gmsh mesh importer */
-#include <feel/feelfilters/gmsh.hpp>
-
-/** include exporter factory class */
-#include <feel/feelfilters/exporter.hpp>
-
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <feel/feelvf/vf.hpp>
-
-/** include the header for mesh adaptation **/
 #include <feel/feelmesh/meshadaptation.hpp>
 
 /** use Feel namespace */
@@ -65,13 +45,13 @@ makeOptions()
     po::options_description lShapeoptions( "LShape options" );
     lShapeoptions.add_options()
         ( "nDim", po::value<int>()->default_value( 2 ), "dimension" )
-        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+        ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
         ( "Lx", po::value<double>()->default_value( 2.0 ), "length (x) of Lshape" )
         ( "Ly", po::value<double>()->default_value( 2.0 ), "length (y) of Lshape" )
         ( "Lz", po::value<double>()->default_value( 1.0 ), "length (z) of Lshape" )
         ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
         ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+        ( "penaldir", Feel::po::value<double>()->default_value( 60 ),
           "penalisation parameter for the weak boundary Dirichlet formulation" )
         ("meshadapt_type", Feel::po::value<std::string>()->default_value( "isotropic" ), "type of mesh adaptation (isotropic, anisotropic)" )
         ("tolerance", Feel::po::value<double>()->default_value( 0.5 ), "tolerance parameter mesh adaptation criterion")
@@ -291,13 +271,12 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
     if ( X[1] == 0 ) shape = "simplex";
     if ( X[1] == 1 ) shape = "hypercube";
 
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "doc/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % Order
-                                       % meshSize );
+    Environment::changeRepository( boost::format( "doc/manual/adapt/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % Order
+                                   % meshSize );
 
     //! Set dimensions of Lshape geometry
     double Lx = this->vm()["Lx"].template as<double>();

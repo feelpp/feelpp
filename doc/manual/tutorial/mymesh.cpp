@@ -92,7 +92,6 @@ public:
 private:
     double meshSize;
     std::string shape;
-    export_ptrtype exporter;
 };
 
 template<int Dim>
@@ -100,8 +99,7 @@ MyMesh<Dim>::MyMesh()
     :
     Simget(),
     meshSize( this->vm()["hsize"].template as<double>() ),
-    shape( this->vm()["shape"].template as<std::string>() ),
-    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
+    shape( this->vm()["shape"].template as<std::string>() )
 {}
 
 
@@ -128,15 +126,15 @@ MyMesh<Dim>::run()
     LOG(INFO) << "Number of global elements: " << mesh->numGlobalElements() << "\n";
 
     //# marker62 #
-    if ( exporter->doExport() )
-    {
-        LOG(INFO) << "Exporting mesh\n";
-        exporter->step( 0 )->setMesh( mesh );
-        LOG(INFO) << "Exporting regions\n";
-        exporter->step( 0 )->addRegions();
-        LOG(INFO) << "Saving...\n";
-        exporter->save();
-    }
+
+    export_ptrtype exporter( export_type::New() );
+    LOG(INFO) << "Exporting mesh\n";
+    exporter->step( 0 )->setMesh( mesh );
+    LOG(INFO) << "Exporting regions\n";
+    exporter->step( 0 )->addRegions();
+    LOG(INFO) << "Saving...\n";
+    exporter->save();
+
     //# endmarker62 #
 }
 

@@ -122,9 +122,9 @@ public:
      \endhtmlonly
 
     */
+    ExporterEnsight( WorldComm const& worldComm = Environment::worldComm() );
     ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-
-    ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
     ExporterEnsight( ExporterEnsight const & __ex );
 
@@ -159,9 +159,16 @@ public:
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" )
+    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
     {
-        super::setOptions( vm, exp_prefix );
+        super::setOptions( exp_prefix );
+
+        return this;
+    }
+
+    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
+    {
+        super::setOptions( exp_prefix );
 
         return this;
     }
