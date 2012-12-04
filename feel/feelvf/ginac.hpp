@@ -34,10 +34,15 @@
 namespace GiNaC
 {
 matrix grad( ex const& f, std::vector<symbol> const& l );
+ex laplacian( ex const& f, std::vector<symbol> const& l );
+matrix grad( std::string const& s, std::vector<symbol> const& l );
+ex laplacian( std::string const& s, std::vector<symbol> const& l );
+
 matrix grad( matrix const& f, std::vector<symbol> const& l );
 matrix div( matrix const& f, std::vector<symbol> const& l );
-ex laplacian( ex const& f, std::vector<symbol> const& l );
 matrix laplacian( matrix const& f, std::vector<symbol> const& l );
+
+ex parse( std::string const& str, std::vector<symbol> const& syms );
 
 } // GiNaC
 
@@ -54,7 +59,7 @@ template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
 template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
 template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
 
-ex parse( std::string const& str, std::vector<symbol> const& syms );
+
 
 namespace vf
 {
@@ -316,6 +321,13 @@ expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
     return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym ) );
 }
 
+inline
+Expr< GinacEx<2> >
+expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym )
+{
+    return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym ) );
+}
+
 /**
  * \brief functor enabling ginac
  *
@@ -326,6 +338,14 @@ Expr< GinacEx<Order> >
 expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
 {
     return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym ) );
+}
+
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( std::string const& f, std::vector<GiNaC::symbol> const& lsym )
+{
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(f,lsym), lsym ) );
 }
 
 template<int M=1, int N=1, int Order = 2>

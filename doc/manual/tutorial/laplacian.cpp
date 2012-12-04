@@ -70,16 +70,13 @@ makeOptions()
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
-template<int Dim>
+template<int Dim, int Order = 2>
 class Laplacian
     :
 public Simget
 {
     typedef Simget super;
 public:
-
-    //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 2;
 
     //! numerical type is double
     typedef double value_type;
@@ -113,8 +110,8 @@ public:
         super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
-    {
-    }
+        {
+        }
 
     void run();
 
@@ -125,13 +122,13 @@ private:
 
     //! shape of the domain
     std::string shape;
+
+    mesh_ptrtype mesh;
 }; // Laplacian
 
-template<int Dim> const uint16_type Laplacian<Dim>::Order;
-
-template<int Dim>
+template<int Dim, int Order>
 void
-Laplacian<Dim>::run()
+Laplacian<Dim,Order>::run()
 {
     LOG(INFO) << "------------------------------------------------------------\n";
     LOG(INFO) << "Execute Laplacian<" << Dim << ">\n";
@@ -172,29 +169,32 @@ Laplacian<Dim>::run()
      */
     /** \code */
     //# marker1 #
-    value_type pi = 2*M_PI;
     bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
     std::string exact  = this->vm()[(boost::format("exact%1%D")%Dim).str()].template as<std::string>();
     std::string rhs  = this->vm()[(boost::format("rhs%1%D")%Dim).str()].template as<std::string>();
     LOG(INFO) << "exact = "  << exact << "\n";
+
     auto vars=symbols<Dim>();
-    ex gg = parse(exact,vars);
-    LOG(INFO) << "="<< gg << "\n";
     ex ff;
+
+    /*
+     * if the right hand side is an empty string then use the string exact and
+     * compute its laplacian to set the right hand side
+     */
     if ( rhs.empty() )
-        ff=-nu*laplacian(gg,vars);
+        ff=-nu*laplacian(exact,vars);
     else
         ff = parse(rhs,vars);
     LOG(INFO) << "rhs="<< ff << "\n";
-    LOG(INFO) << "grad(g)="<< grad(gg,vars) << "\n";
-    auto g = expr(gg,vars);
+    auto g = expr(exact,vars);
     auto f = expr(ff,vars);
-    auto gradg = expr<1,Dim,2>(grad(gg,vars), vars );
+    auto gradg = expr<1,Dim,2>(grad(exact,vars), vars );
+    LOG(INFO) << "grad(g)="<< grad(exact,vars) << "\n";
 
     // build Xh-interpolant of g
-    gproj = vf::project( Xh, elements( mesh ), g );
+    gproj = project( _space=Xh, _range=elements( mesh ), _expr=g );
 
 
     //# endmarker1 #
@@ -298,13 +298,9 @@ Laplacian<Dim>::run()
     /** \code */
     //! project the exact solution
     element_type e( Xh, "e" );
-    e = vf::project( Xh, elements( mesh ), g );
+    e = project( _space=Xh, _range=elements( mesh ), _expr=g );
 
-    export_ptrtype exporter( export_type::New( this->vm(),
-                                               ( boost::format( "%1%-%2%-%3%" )
-                                                 % this->about().appName()
-                                                 % shape
-                                                 % Dim ).str() ) );
+    export_ptrtype exporter( export_type::New() );
 
     if ( exporter->doExport() )
     {

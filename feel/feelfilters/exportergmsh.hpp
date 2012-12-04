@@ -112,9 +112,15 @@ public:
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" )
+    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
     {
-        super::setOptions( vm, exp_prefix );
+        super::setOptions( exp_prefix );
+
+        return this;
+    }
+    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    {
+        super::setOptions( exp_prefix );
 
         return this;
     }
