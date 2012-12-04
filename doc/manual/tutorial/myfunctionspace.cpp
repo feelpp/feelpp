@@ -49,7 +49,7 @@ makeOptions()
  * \see the \ref ComputingIntegrals section in the tutorial
  * @author Christophe Prud'homme
  */
-template<int Dim, int Order = 2>
+template<int Dim, int Order = 1>
 class MyFunctionSpace
     :
 public Simget
@@ -74,7 +74,7 @@ public:
 
     //# marker2 #
     //! the basis type of our approximation space
-    typedef bases<Lagrange<Order,Scalar,Continuous> > basis_type;
+    typedef bases<Lagrange<Order> > basis_type;
 
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
