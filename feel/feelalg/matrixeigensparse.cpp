@@ -195,7 +195,15 @@ MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
         _M_mat += v * m->_M_mat;
     }
 }
-
+template<typename T>
+void
+MatrixEigenSparse<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m,
+                                      size_type start_i,
+                                      size_type start_j )
+{
+#warning TODO
+    LOG(ERROR) << "Invalid call to updateBlockMat, not yet implemented\n";
+}
 
 template<typename T>
 void

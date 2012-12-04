@@ -108,6 +108,10 @@ namespace po = boost::program_options;
 namespace mpi=boost::mpi;
 namespace constants=boost::math::constants;
 namespace algorithm=boost::algorithm;
+using google::WARNING;
+using google::ERROR;
+using google::INFO;
+using google::FATAL;
 
 namespace detail
 {

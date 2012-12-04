@@ -145,26 +145,26 @@ namespace Feel
             // build default value for _var parameter of interface
             element_type initVar;
             std::pair<element_type, std::string> initPairVar = std::make_pair( initVar, "defaultVar");
-            defaultVar.push_back(initPairVar);
+            M_defaultVar.push_back(initPairVar);
 
             // build default value for _metric parameter of interface
             p1_element_type initMetric1;
             std::vector<p1_element_type> initMetric;
             initMetric.push_back(initMetric1);
             std::pair<std::vector<p1_element_type>, std::string> initPairMetric = std::make_pair(initMetric, "defaultMetric");
-            defaultMetric.push_back(initPairMetric);
+            M_defaultMetric.push_back(initPairMetric);
         }
 
         //! Set of measures on a dof
         std::vector<vectorN_type> const measures()
         {
-            return measures_;
+            return M_measures;
         }
 
         //! Set of directions on a dof
         std::vector<matrixN_type> const directions()
         {
-            return directions_;
+            return M_directions;
         }
 
         //! Interface
@@ -220,8 +220,8 @@ namespace Feel
                                          (geofile, (std::string)) // geometry
                                          (adaptType, (std::string))) //type of adaptation : isotropic | anisotropic
                                         (optional
-                                         (var, (std::list< std::pair<element_type, std::string> >), defaultVar)
-                                         (metric, (std::list< std::pair< std::vector<p1_element_type>, std::string> >), defaultMetric)
+                                         (var, (std::list< std::pair<element_type, std::string> >), M_defaultVar)
+                                         (metric, (std::list< std::pair< std::vector<p1_element_type>, std::string> >), M_defaultMetric)
                                          (hMin, (double), 1.0e-3)
                                          (hMax, (double), 100.0)
                                          (tol, (double), 1.0))
@@ -232,11 +232,11 @@ namespace Feel
         }
 
     private :
-        std::list< std::pair<element_type, std::string> > defaultVar;
-        std::list< std::pair<std::vector<p1_element_type>, std::string> > defaultMetric;
+        std::list< std::pair<element_type, std::string> > M_defaultVar;
+        std::list< std::pair<std::vector<p1_element_type>, std::string> > M_defaultMetric;
 
-        std::vector<vectorN_type> measures_;
-        std::vector<matrixN_type> directions_;
+        std::vector<vectorN_type> M_measures;
+        std::vector<matrixN_type> M_directions;
 
     };
 
@@ -824,9 +824,9 @@ namespace Feel
         maxEigenvalue = eigenvalues.maxCoeff();
 
         for(int i=0; i<Dim; i++)
-            measures_[dofId](i) = 1.0/math::sqrt(eigenvalues(i));
+            M_measures[dofId](i) = 1.0/math::sqrt(eigenvalues(i));
 
-        directions_[dofId] = R;
+        M_directions[dofId] = R;
     }
 
     template<int Dim,
@@ -843,9 +843,9 @@ namespace Feel
         p0_space_ptrtype P0h = p0_space_type::New( mesh ); //P0 space
         p1_space_ptrtype P1h = p1_space_type::New( mesh ); //P1 space
 
-        // Initialize measures_ and directions_ size
-        measures_.resize(P1h->nLocalDof());
-        directions_.resize(P1h->nLocalDof());
+        // Initialize M_measures and M_directions size
+        M_measures.resize(P1h->nLocalDof());
+        M_directions.resize(P1h->nLocalDof());
 
         // Store measure on each point
         int bbItemSize;
@@ -988,9 +988,9 @@ namespace Feel
         p1_space_ptrtype P1h = p1_space_type::New( mesh ); //P1 space
         p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh ); //P1 (vectorial) space
 
-        // Initialize measures_ and directions_ size
-        measures_.resize(P1h->nLocalDof());
-        directions_.resize(P1h->nLocalDof());
+        // Initialize M_measures and M_directions size
+        M_measures.resize(P1h->nLocalDof());
+        M_directions.resize(P1h->nLocalDof());
 
 
         // Define P(k-2) space from Order parameter

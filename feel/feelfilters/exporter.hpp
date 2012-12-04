@@ -104,6 +104,11 @@ public:
     //@{
 
     /**
+     * default constructor
+     */
+    Exporter( WorldComm const& worldComm = Environment::worldComm() );
+
+    /**
      * Constructor
      * \param type string containing the type of exporter (gmsh, ensight,...)
      * \param prefix the prefix for the file names of the exported data
@@ -148,8 +153,8 @@ public:
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */
-    static Exporter<MeshType,N>* New( po::variables_map const& vm,
-                                      std::string prefix = "export",
+    static Exporter<MeshType,N>* New( po::variables_map const& vm = Environment::vm(),
+                                      std::string prefix = Environment::about().appName(),
                                       WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
@@ -240,7 +245,14 @@ public:
      * set the options from the \p variables_map \p vm as well as the prefix \p
      * exp_prefix
      */
-    virtual Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" );
+    virtual Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" );
+
+    /**
+     * set the options from the \p variables_map \p vm as well as the prefix \p
+     * exp_prefix
+     */
+    virtual Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED { return setOptions( exp_prefix ); }
+
 
     /**
      * set to \p __type the type of exporter (gmsh, ensight...)
@@ -426,5 +438,6 @@ po::options_description exporter_options( std::string const& prefix = "" );
 //#if !defined( FEELPP_INSTANTIATION_MODE )
 # include <feel/feelfilters/exporterimpl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
+
 
 #endif /* __Exporter_H */

@@ -42,13 +42,10 @@ makeOptions()
 {
     Feel::po::options_description stokesoptions( "Stokes options" );
     stokesoptions.add_options()
-    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
-    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
     ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
     ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
     ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
     ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
-    ( "export-matlab", "export matrix and vectors in matlab" )
     ;
     return stokesoptions.add( Feel::feel_options() ) ;
 }
@@ -142,8 +139,6 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-
-    boost::shared_ptr<export_type> exporter;
 }; // Stokes
 
 
@@ -153,8 +148,8 @@ Stokes::Stokes()
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     mu( this->vm()["mu"].as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].as<value_type>() ),
-    exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
+    penalbc( this->vm()["bccoeff"].as<value_type>() )
+
 {
 
 }
@@ -212,23 +207,12 @@ Stokes::run()
     LOG(INFO) << " bccoeff = " << penalbc << "\n";
 
     symbol x("x"),y("y");
-#if 0
-    matrix u_exact_g = matrix(2,1);
-    u_exact_g = cos(x)*cos(y), sin(x)*sin(y);
-    //  exact solution for velocity
-
-    // this is the exact solution which has zero mean : the mean of
-    // cos(x)*sin(y) is sin(1)*(1-cos(1))) on [0,1]^2
-    ex p_exact_g = cos( x )*sin( y )-( std::sin( 1. )*( 1-std::cos( 1. ) ) );
-
-    //matrix f_g = matrix(2,1);
-#else
     auto u1 = -256*y*(y-1)*(2*y-1)*x*x*(x-1)*(x-1);
     auto u2 = 256*x*(x-1)*(2*x-1)*y*y*(y-1)*(y-1);
     matrix u_exact_g = matrix(2,1);
     u_exact_g = u1,u2;
     auto p_exact_g = (x-0.5)*(y-0.5 );
-#endif
+
     auto u_exact = expr<2,1,2>( u_exact_g, {x,y} );
     auto p_exact = expr( p_exact_g, {x,y} );
 	auto f_g = -mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose();
@@ -248,12 +232,7 @@ Stokes::run()
     //# endmarker6 #
 
     // f is such that f = \Delta u_exact + \nabla p_exact
-#if 0
-    auto f = vec( ( 2*cos( Px() )*cos( Py() )-sin( Px() )*sin( Py() ) ),
-                  2*sin( Px() )*sin( Py() )+cos( Px() )*cos( Py() ) );
-#else
     auto f = expr<2,1,2>( f_g, {x,y} );
-#endif
 
     auto F = M_backend->newVector( Xh );
     auto D =  M_backend->newMatrix( Xh, Xh );
@@ -324,16 +303,14 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     double u_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( u )-u_exact ) );
     LOG(INFO) << "||u_error||_2 = " << u_errorL2 << "\n";;
 
-    double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
-    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
-    double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
+    double mean_p = mean( _range=elements( u.mesh() ), _expr=idv( p ) )(0,0);
     LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
 
     double p_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( p )-mean_p - p_exact ) );
     LOG(INFO) << "||p_error||_2 = " << p_errorL2 << "\n";;
 
-    double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
+    double mean_div_u = mean( _range=elements( u.mesh() ), _expr=divv( u ) )(0,0);
     LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = normL2( _range=elements( u.mesh() ), _expr=divv( u ) );
@@ -342,6 +319,7 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
+    boost::shared_ptr<export_type> exporter( export_type::New() );
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );

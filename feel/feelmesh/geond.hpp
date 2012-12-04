@@ -1106,5 +1106,13 @@ operator<<( NdebugStream& __os, GeoND<Dim,GEOSHAPE, T, POINTTYPE> const& __n )
 }
 
 
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+inline
+std::ostream&
+operator<<( std::ostream& __os, GeoND<Dim,GEOSHAPE, T, POINTTYPE> const& __n )
+{
+    return __n.showMe( true, __os );
+}
+
 } // Feel
 #endif

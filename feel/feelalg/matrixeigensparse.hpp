@@ -410,10 +410,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j )
-    {
-#warning todo!
-    }
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j );
 
     //@}
 
