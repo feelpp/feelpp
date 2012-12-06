@@ -553,7 +553,10 @@ BOOST_AUTO_TEST_CASE( test_lagrange_p1_op232 )
 int
 main( int argc, char** argv )
 {
-    Feel::Application mpiapp( argc, argv, makeAbout(), makeOptions() );
+    Feel::Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+    Feel::Application mpiapp;
     Feel::Assert::setLog( "test_interpolation.assert" );
 
 #if 1
