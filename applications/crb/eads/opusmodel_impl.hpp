@@ -32,11 +32,7 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/importergmsh.hpp>
-
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 #include <opusmodel.hpp>
 #include <opusmodelthermal.hpp>
