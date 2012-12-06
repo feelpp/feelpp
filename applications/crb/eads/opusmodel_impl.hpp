@@ -130,8 +130,10 @@ OpusModel<OrderU,OrderP,OrderT>::init()
     period[0]=this->data()->component( "PCB" ).e()+this->data()->component( "AIR" ).e();
     period[1]=0;
     LOG(INFO) << "[init] period=" << period[0] << "," << period[1] << "\n";
+    //M_Th = temp_functionspace_type::New( _mesh=M_mesh,
+    //                                     _periodicity=Periodic<1,2,value_type>( period ) );
     M_Th = temp_functionspace_type::New( _mesh=M_mesh,
-                                         _periodicity=Periodic<1,2,value_type>( period ) );
+                                         _periodicity=periodicity( Periodic<>( 1,2, period ) ) );
     LOG(INFO) << "[init] M_Th init done\n";
     M_grad_Th = grad_temp_functionspace_type::New( _mesh=M_mesh );
     LOG(INFO) << "[init] M_grad_Th init done\n";
@@ -301,8 +303,8 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     auto ft = constant( 1.0-( !this->data()->isSteady() )*math::exp( -time/3.0 ) );
     auto vy = ft*constant( 3. )/( 2.*( e_AIR-e_IC ) )*flow_rate*( 1.-vf::pow( ( Px()-( ( e_AIR+e_IC )/2+e_PCB ) )/( ( e_AIR-e_IC )/2 ),2 ) );
 
-    u = vf::project( M_Xh->template functionSpace<0>(), markedelements( M_Xh->mesh(), "AIR4" ), vec( constant( 0. ),vy ) );
-    p = vf::project( M_Xh->template functionSpace<1>(), markedelements( M_Xh->mesh(), "AIR4" ), constant( 0. ) );
+    u = vf::project( _space=M_Xh->template functionSpace<0>(), _range=markedelements( M_Xh->mesh(), "AIR4" ), _expr=vec( constant( 0. ),vy ) );
+    p = vf::project( _space=M_Xh->template functionSpace<1>(), _range=markedelements( M_Xh->mesh(), "AIR4" ), _expr=constant( 0. ) );
 
 
     LOG(INFO) << "fluid and temperature fields set\n";

@@ -133,15 +133,16 @@ public:
     typedef fusion::vector<Lagrange<OrderT, Scalar, discontinuity_type> > temp_basis_type;
     //typedef fusion::vector<Lagrange<OrderT, Scalar> > temp_basis_type;
     typedef fusion::vector<Lagrange<OrderT, Vectorial> > grad_temp_basis_type;
-    typedef Periodic<1,2,value_type> periodic_type;
+    //typedef Periodic<1,2,value_type> periodic_type;
+    typedef Periodic<> periodic_type;
 
 
     typedef temp_basis_type basis_type;
 
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
-    typedef FunctionSpace<mesh_type, temp_basis_type, discontinuity_type, periodic_type> temp_functionspace_type;
+    typedef FunctionSpace<mesh_type, temp_basis_type, discontinuity_type,  Periodicity<Periodic<> > > temp_functionspace_type;
 #else
-    typedef FunctionSpace<mesh_type, temp_basis_type, periodic_type> temp_functionspace_type;
+    typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
 
 #endif
     typedef boost::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
@@ -217,10 +218,14 @@ public:
     typedef boost::shared_ptr<temp_bdf_type> temp_bdf_ptrtype;
 
 
-    typedef Eigen::VectorXd theta_vector_type;
-    typedef boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> > theta_vectors_type;
+    typedef std::vector< std::vector< double > > beta_vector_type;
+    typedef boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type> beta_vectors_type;
 
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>,std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype> > > affine_decomposition_type;
+    typedef boost::tuple<
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
+        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -270,6 +275,23 @@ public:
     int Ql( int l ) const;
 
     /**
+     * \param q the qth term of the decomposition
+     * \return the number of terms needed by the EIM
+     * as this model don't use the EIMit always return 1
+     */
+    int mMaxA( int q );
+    int mMaxM( int q );
+    int mMaxF( int output_index, int q );
+    int mMaxInitialGuess( int q );
+
+    /**
+     * return the number of terms of the initial guess used
+     * to deal with non linearities
+     * note : in this model we don't use this initial guess
+     */
+    int QInitialGuess() const;
+
+    /**
      * \brief Returns the function space
      */
     functionspace_ptrtype functionSpace()
@@ -287,59 +309,68 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    theta_vectors_type
-    computeThetaq( parameter_type const& mu , double time=0 );
+    beta_vectors_type
+    computeBetaQm( parameter_type const& mu , double time=0 );
+
+    beta_vectors_type
+    computeBetaQm( element_type const &T,parameter_type const& mu , double time=0 );
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaAq() const
+    beta_vector_type const& betaAqm() const
     {
-        return M_thetaAq;
+        return M_betaAqm;
     }
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaMq() const
+    beta_vector_type const& betaMqm() const
     {
-        return M_thetaMq;
+        return M_betaMqm;
     }
 
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaL() const
+    std::vector<beta_vector_type> const& betaL() const
     {
-        return M_thetaL;
+        return M_betaL;
     }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
-    value_type thetaAq( int q ) const
+    value_type betaAqm( int q, int m ) const
     {
-        return M_thetaAq( q );
+        return M_betaAqm[q][m];
     }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
-    value_type thetaMq( int q ) const
+    value_type betaMqm( int q, int m ) const
     {
-        return M_thetaMq( q );
+        return M_betaMqm[q][m];
     }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
-    value_type thetaL( int l, int q ) const
+    value_type betaL( int l, int q, int m ) const
     {
-        return M_thetaL[l]( q );
+        return M_betaL[l][q][m];
     }
+
+    value_type betaInitialGuessQm( int q, int m ) const
+    {
+        return M_betaInitialGuessQm[q][m];
+    }
+
 
     /**
      * return true if initialized (init() was called), false otherwise
@@ -376,11 +407,17 @@ public:
     sparse_matrix_ptrtype newMatrix() const;
 
     /**
+     * create a new vector
+     * \return the newly created vector
+     */
+    vector_ptrtype newVector() const;
+
+    /**
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition()
     {
-        return boost::make_tuple( M_Mq, M_Aq, M_L );
+        return boost::make_tuple( M_Mqm, M_Aqm, M_L, M_InitialGuessQm );
     }
 
 
@@ -400,13 +437,17 @@ public:
     /**
      * solve for a given parameter \p mu
      */
-    void solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu );
 
     /**
      * solve \f$ M u = f \f$
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
 
+    /**
+     * H1 scalar product
+     */
+    sparse_matrix_ptrtype innerProduct();
 
     /**
      * update the PDE system with respect to \param mu
@@ -554,12 +595,17 @@ private:
 
     sparse_matrix_ptrtype D,M,Mass,Mpod;
     std::vector<vector_ptrtype> L;
-    std::vector<sparse_matrix_ptrtype> M_Aq;
-    std::vector<sparse_matrix_ptrtype> M_Mq;
-    std::vector<std::vector<vector_ptrtype> > M_L;
-    theta_vector_type M_thetaAq;
-    theta_vector_type M_thetaMq;
-    std::vector<theta_vector_type> M_thetaL;
+
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_L;
+    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
+
+    beta_vector_type M_betaAqm;
+    beta_vector_type M_betaMqm;
+    beta_vector_type M_betaInitialGuessQm;
+    std::vector<beta_vector_type> M_betaL;
+
 
     temp_bdf_ptrtype M_temp_bdf;
     double M_bdf_coeff;
