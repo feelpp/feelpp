@@ -108,12 +108,11 @@ public:
     typedef fusion::vector<Lagrange<OrderT, Scalar> > temp_basis_type;
 #endif
     typedef fusion::vector<Lagrange<OrderT, Vectorial> > grad_temp_basis_type;
-    typedef Periodic<1,2,value_type> periodic_type;
+    //typedef Periodic<1,2,value_type> periodic_type;
+    typedef Periodic<> periodic_type;
 
 
-
-
-    typedef FunctionSpace<mesh_type, temp_basis_type, periodic_type> temp_functionspace_type;
+    typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
     typedef boost::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
     typedef typename temp_functionspace_type::element_type temp_element_type;
     typedef boost::shared_ptr<temp_element_type> temp_element_ptrtype;

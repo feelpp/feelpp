@@ -30,7 +30,7 @@
 #define __Eads_H 1
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/about.hpp>
+#include <feel/feelcore/environment.hpp>
 
 
 namespace Feel
