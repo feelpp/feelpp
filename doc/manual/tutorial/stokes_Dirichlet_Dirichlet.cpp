@@ -304,11 +304,11 @@ Stokes_Dirichlet_Dirichlet::run()
     //#endif
     //# endmarker4 #
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
+    Log(INFO) << "Data Summary:\n";
+    Log(INFO) << "   hsize = " << meshSize << "\n";
+    Log(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    Log(INFO) << "      mu = " << mu << "\n";
+    Log(INFO) << " bccoeff = " << penalbc << "\n";
 
 
 
@@ -370,7 +370,7 @@ Stokes_Dirichlet_Dirichlet::run()
     stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
     stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
-    Log() << "[stokes] vector local assembly done\n";
+    Log(INFO) << "[stokes] vector local assembly done\n";
 
     /*
      * Construction of the left hand side
@@ -414,12 +414,12 @@ Stokes_Dirichlet_Dirichlet::run()
 
    
 
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
+    Log(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    Log(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    Log(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
+    Log(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
+    Log(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
+    Log(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
@@ -437,7 +437,7 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
     //#if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
-    Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    Log(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
     //#endif
@@ -448,11 +448,11 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
     double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    Log(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    Log(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -464,7 +464,7 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
     double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
-    Log() << "[stokes] solve for D done\n";
+    Log(INFO) << "[stokes] solve for D done\n";
 
 
     double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
@@ -473,11 +473,11 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
 
 
     double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    Log(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    Log(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
@@ -493,6 +493,9 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
     std::cout << "Fapp1 = "<< Fapp(0,0) << "\n" ;
     std::cout << "Fapp2 = "<< Fapp(1,0) << "\n" ;
     std::cout << "Fapp3 = "<< Fapp(2,0) << "\n" ;
+    Log(INFO) << "Fapp1 = "<< Fapp(0,0) << "\n" ;
+    Log(INFO) << "Fapp2 = "<< Fapp(1,0) << "\n" ;
+    Log(INFO) << "Fapp3 = "<< Fapp(2,0) << "\n" ;
 #endif
 
 
