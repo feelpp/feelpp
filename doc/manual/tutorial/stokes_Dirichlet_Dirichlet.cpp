@@ -150,11 +150,11 @@ public:
     typedef Lagrange<0, Scalar> basis_l_type;
 
     // use lagrange multipliers to ensure zero mean pressure
-#if defined( FEELPP_USE_LM )
+    //#if defined( FEELPP_USE_LM )
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
-#else
-    typedef bases<basis_u_type,basis_p_type> basis_type;
-#endif
+    //#else
+    //typedef bases<basis_u_type,basis_p_type> basis_type;
+    //#endif
     //# endmarker1 #
 
     typedef bases<basis_u_type> basis_type_U;
@@ -176,7 +176,7 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     FEELPP_DONT_INLINE
-    Stokes_Dirichlet_Dirichlet( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    Stokes_Dirichlet_Dirichlet( );
 
     // init mesh and space
     FEELPP_DONT_INLINE
@@ -217,9 +217,9 @@ private:
 }; // Stokes
 
 
-Stokes_Dirichlet_Dirichlet::Stokes_Dirichlet_Dirichlet( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+Stokes_Dirichlet_Dirichlet::Stokes_Dirichlet_Dirichlet( )
     :
-    super( argc, argv, ad, od ),
+    super( ),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     mu( this->vm()["mu"].as<value_type>() ),
@@ -298,10 +298,10 @@ Stokes_Dirichlet_Dirichlet::run()
     auto v = V.element<0>( "u" );
     auto p = U.element<1>( "p" );
     auto q = V.element<1>( "p" );
-#if defined( FEELPP_USE_LM )
+    //#if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
-#endif
+    //#endif
     //# endmarker4 #
 
     Log() << "Data Summary:\n";
@@ -326,19 +326,42 @@ Stokes_Dirichlet_Dirichlet::run()
     auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
-    //*********************  solution exacte (profile de poiseuille)2D **********************
+//     //*********************  solution exacte (profile de poiseuille)2D **********************
+// #if (STOKESPRESSMESHTYPE == 1)
+//     auto u_exact=vec(Py()*(1-Py()),cst(0.) );
+//     auto p_exact=(-2*Px()+1);
+//     auto f=vec(cst(0.) , cst(0.) );
+
+//     //*********************  solution exacte (profile de poiseuille)3D **********************
+// #elif (STOKESPRESSMESHTYPE == 2)
+//     auto u_exact=vec(  (1-Py()*Py()-Pz()*Pz() ) , cst(0.) , cst(0.) );
+//     auto p_exact=(-4*Px()+20);
+//     auto f=vec(cst(0.) , cst(0.), cst(0.) );
+// #endif
+
+    auto r=1;
+    auto L=5;
+    auto P_inlet=1;
+    auto P_outlet=0.;
 #if (STOKESPRESSMESHTYPE == 1)
-    auto u_exact=vec(Py()*(1-Py()),cst(0.) );
-    auto p_exact=(-2*Px()+1);
+    // //*********************  solution exacte (profile de poiseuille)2D *****************
+    // exact solution known for hypercube (2D toy model)
+    auto u_exact=vec((1-(Py()*Py())/(r*r))*(P_inlet-P_outlet)/(2*mu*L),cst(0.) );
+
+    auto p_exact=(P_outlet-P_inlet)*Px()/L + P_inlet;
+
     auto f=vec(cst(0.) , cst(0.) );
-
+    //*************************************************************************************
+#elif  (STOKESPRESSMESHTYPE == 2)
     //*********************  solution exacte (profile de poiseuille)3D **********************
-#elif (STOKESPRESSMESHTYPE == 2)
-    auto u_exact=vec(  (1-Py()*Py()-Pz()*Pz() ) , cst(0.) , cst(0.) );
-    auto p_exact=(-4*Px()+20);
-    auto f=vec(cst(0.) , cst(0.), cst(0.) );
-#endif
+    // exact solution known for cylinder (3D toy model)
+    auto u_exact=vec(  (P_inlet-P_outlet)*r*r*(1-(Py()*Py()+Pz()*Pz())/(r*r))/(4*L) , cst(0.) , cst(0.) );
 
+    auto p_exact=(-Px()*(P_inlet-P_outlet)/L + P_inlet);
+
+    auto f=vec(cst(0.) , cst(0.), cst(0.) );
+    //*************************************************************************************
+#endif
 
 
     // right hand side
@@ -361,11 +384,11 @@ Stokes_Dirichlet_Dirichlet::run()
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
     std::cout << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
-#if defined( FEELPP_USE_LM )
+    //#if defined( FEELPP_USE_LM )
     stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
     std::cout << "(lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
-#endif
+    //#endif
 
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
@@ -411,13 +434,13 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
 
     auto v = V.element<0>();
     auto q = V.element<1>();
-#if defined( FEELPP_USE_LM )
+    //#if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
     Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
-#endif
+    //#endif
 
     auto u_exact_proj=vf::project(P7,elements(mesh),u_exact);
 
@@ -460,6 +483,19 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
+#if (STOKESPRESSMESHTYPE ==2)
+    auto deff = gradv(u);
+    auto SigmaNN =(-idv(p)*vf::N()+mu*deff*vf::N());
+    auto Fapp = integrate( boundaryfaces( mesh ) , SigmaNN).evaluate();
+    auto Fapp1 = Fapp(0,0); //pour la prémière composante
+    auto Fapp2 = Fapp(1,0); //pour la seconde
+    auto Fapp3 = Fapp(2,0);
+    std::cout << "Fapp1 = "<< Fapp(0,0) << "\n" ;
+    std::cout << "Fapp2 = "<< Fapp(1,0) << "\n" ;
+    std::cout << "Fapp3 = "<< Fapp(2,0) << "\n" ;
+#endif
+
+
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
@@ -485,8 +521,11 @@ main( int argc, char** argv )
 
     using namespace Feel;
 
-    Environment env( argc, argv );
-
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="stokes",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert" );
 
@@ -503,7 +542,7 @@ main( int argc, char** argv )
 
 
     /* define and run application */
-    Feel::Stokes_Dirichlet_Dirichlet Stokes_Dirichlet_Dirichlet( argc, argv, makeAbout(), makeOptions() );
+    Feel::Stokes_Dirichlet_Dirichlet Stokes_Dirichlet_Dirichlet;
     Stokes_Dirichlet_Dirichlet.run();
 }
 
