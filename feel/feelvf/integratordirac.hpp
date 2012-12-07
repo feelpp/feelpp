@@ -2,10 +2,10 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-10
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 */
 /**
    \file integratordirac.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-10
  */
 #ifndef __INTEGRATORDIRAC_HPP
@@ -105,7 +105,7 @@ public:
         // Precompute some data in the reference element for
         // geometric mapping and reference finite element
         //
-        typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
         typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
         typedef typename eval_expr_type::shape shape;
         //typedef typename shape_type::storage<value_type> storage_type;
@@ -288,7 +288,7 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
     */
 
     timer["init intvrho"].second = timer["init intvrho"].first.elapsed();
-    Log() << "[timer] init intvrho(): " << timer["init intvrho"].second << "\n";
+    LOG(INFO) << "[timer] init intvrho(): " << timer["init intvrho"].second << "\n";
 
     timer["intvrho"].first.restart();
 
@@ -343,7 +343,7 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
     } // element
 
     timer["intvrho"].second = timer["intvrho"].first.elapsed();
-    Log() << "[timer] intvrho(): " << timer["intvrho"].second << "\n";
+    LOG(INFO) << "[timer] intvrho(): " << timer["intvrho"].second << "\n";
 #endif
 }
 template<typename Elements, typename Pts, typename DiracExpr>
@@ -392,8 +392,8 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
         return typename eval::ret_type( eval::shape::M, eval::shape::N );;
 
     gmc_ptrtype __c( new gmc_type( gm, *it, __geopc ) );
-    typedef fusion::map<fusion::pair<detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
-    map_gmc_type mapgmc( fusion::make_pair<detail::gmc<0> >( __c ) );
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
     typedef typename expression_type::template tensor<map_gmc_type> eval_expr_type;
     eval_expr_type expr( expression(), mapgmc );

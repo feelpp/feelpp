@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-07-07
 
   Copyright (C) 2009-2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file test_mixed.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-07-07
  */
 #define USE_BOOST_TEST 1
@@ -32,14 +32,8 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE function space testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
+#include <testsuite/testsuite.hpp>
 
-//#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-//#endif
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
 
 
 #include <feel/options.hpp>
@@ -61,7 +55,6 @@ using boost::unit_test::test_suite;
 
 namespace Feel
 {
-using namespace Feel::vf;
 /**
  * This routine returns the list of options using the
  * boost::program_options library. The data returned is typically used
@@ -103,7 +96,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2008-2010 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -171,9 +164,9 @@ public:
     /**
      * Constructor
      */
-    TestMixed( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    TestMixed()
         :
-        super( argc, argv, ad, od ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -377,16 +370,15 @@ TestMixed<Dim,Order>::run()
 } // TestMixed::run
 }
 #if USE_BOOST_TEST
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() );
+
 BOOST_AUTO_TEST_SUITE( mixed )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_mixed1_21 )
 {
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,)" );
-    Feel::TestMixed<2,2> t( boost::unit_test::framework::master_test_suite().argc,
-                            boost::unit_test::framework::master_test_suite().argv,
-                            Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<2,2> t;
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 1,) done" );
 }
@@ -394,9 +386,7 @@ BOOST_AUTO_TEST_CASE( test_mixed1_21 )
 BOOST_AUTO_TEST_CASE( test_mixed1_23 )
 {
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 3,)" );
-    Feel::TestMixed<2,3> t( boost::unit_test::framework::master_test_suite().argc,
-                            boost::unit_test::framework::master_test_suite().argv,
-                            Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<2,3> t;
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed1 (2D,Order 3,) done" );
 }
@@ -404,9 +394,7 @@ BOOST_AUTO_TEST_CASE( test_mixed1_23 )
 BOOST_AUTO_TEST_CASE( test_mixed2_31 )
 {
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 1,)" );
-    Feel::TestMixed<3,1> t( boost::unit_test::framework::master_test_suite().argc,
-                            boost::unit_test::framework::master_test_suite().argv,
-                            Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<3,1> t;
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 1,) done" );
 }
@@ -414,9 +402,7 @@ BOOST_AUTO_TEST_CASE( test_mixed2_31 )
 BOOST_AUTO_TEST_CASE( test_mixed2_33 )
 {
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,)" );
-    Feel::TestMixed<3,3> t( boost::unit_test::framework::master_test_suite().argc,
-                            boost::unit_test::framework::master_test_suite().argv,
-                            Feel::makeAbout(), Feel::makeOptions() );
+    Feel::TestMixed<3,3> t;
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,) done" );
 }

@@ -104,9 +104,9 @@ public:
     /**
      * Constructor
      */
-    ddmethod( po::variables_map const& vm, AboutData const& about )
+    ddmethod()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -203,10 +203,10 @@ ddmethod<Dim>::localProblem( element_type& u,
     backend_type::build()->solve( _matrix=A, _solution=u, _rhs=B );//, _reuse_prec=true );
     timers["solver"].second = timers["solver"].first.elapsed();
 
-    Log() << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
-    Log() << "[timer] run():    o A : " << timers["assembly_A"].second << "\n";
-    Log() << "[timer] run():    o B : " << timers["assembly_B"].second << "\n";
-    Log() << "[timer] run():  solver: " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] run():  assembly: " << timers["assembly"].second << "\n";
+    LOG(INFO) << "[timer] run():    o A : " << timers["assembly_A"].second << "\n";
+    LOG(INFO) << "[timer] run():    o B : " << timers["assembly_B"].second << "\n";
+    LOG(INFO) << "[timer] run():  solver: " << timers["solver"].second << "\n";
 }
 
 template<int Dim>
@@ -433,16 +433,14 @@ int
 main( int argc, char** argv )
 {
     using namespace Feel;
-    Environment env( argc, argv );
-    Application app( argc, argv, makeAbout(), makeOptions() );
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
 
-    ddmethod<2>  Relax( app.vm(), app.about() );
+    Application app;
+
+    ddmethod<2>  Relax;
     Relax.run();
 
 }

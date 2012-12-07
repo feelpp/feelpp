@@ -2,10 +2,10 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-04-11
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 */
 /**
    \file ones.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-04-11
  */
 #ifndef __Ones_H
@@ -87,20 +87,17 @@ public:
      */
     //@{
 
-    Ones()
+    template<typename EigenMatrix>
+    Ones( EigenMatrix const& m )
         :
-        _M_ones( boost::extents[M][N] )
+        M_values( m )
     {
 
-        //_M_ones = 1;
-        for ( int i = 0; i < M; ++i )
-            for ( int j = 0; j < N; ++j )
-                _M_ones[i][j] = 1;
     }
 
     Ones( Ones const & eig )
         :
-        _M_ones( eig._M_ones )
+        M_values( eig.M_values )
     {}
     ~Ones()
     {}
@@ -132,10 +129,10 @@ public:
      */
     //@{
 
-    //blitz::Array<value_type,2> ones() const { return _M_ones; }
-    boost::multi_array<value_type,2> const& ones() const
+    //blitz::Array<value_type,2> ones() const { return M_values; }
+    Eigen::Matrix<double,M,N> const& ones() const
     {
-        return _M_ones;
+        return M_values;
     }
 
     //@}
@@ -145,9 +142,9 @@ public:
         typedef this_type expression_type;
         typedef typename expression_type::value_type value_type;
         typedef value_type return_value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -179,20 +176,27 @@ public:
 
         tensor( this_type const& expr,Geo_t const&, Basis_i_t const&, Basis_j_t const& )
             :
-            _M_expr( expr )
+            M_expr( expr ),
+            M_values( expr.ones() )
         {
-            //std::cout << "tensor::ones = " << _M_expr.ones() << "\n";
+            //std::cout << "tensor::ones = " << M_expr.ones() << "\n";
         }
 
         tensor( this_type const& expr,Geo_t const&, Basis_i_t const& )
             :
-            _M_expr( expr )
+            M_expr( expr ),
+            M_values( expr.ones() )
         {
         }
 
         tensor( this_type const& expr, Geo_t const&  )
             :
-            _M_expr( expr )
+            M_expr( expr ),
+            M_values( expr.ones() )
+        {
+        }
+        template<typename IM>
+        void init( IM const& /*im*/ )
         {
         }
 
@@ -246,26 +250,26 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return _M_expr.ones()[0][0];
+            return M_values(0,0);
         }
         value_type
         eval( int c1, int c2, mpl::int_<1> ) const
         {
             if ( shape::is_transposed )
-                return _M_expr.ones()[0][c2];
+                return M_values(0,c2);
 
-            return _M_expr.ones()[c1][0];
+            return M_values(c1,0);
         }
         value_type
         eval( int c1, int c2, mpl::int_<2> ) const
         {
-            return _M_expr.ones()[c1][c2];
+            return M_values(c1,c2);
         }
-        this_type _M_expr;
+        this_type M_expr;
+        Eigen::Matrix<double,M,N> M_values;
     };
 private:
-    //blitz::Array<value_type,2> _M_ones;
-    boost::multi_array<value_type,2> _M_ones;
+    Eigen::Matrix<double,M,N> M_values;
 
 };
 } // detail
@@ -284,13 +288,46 @@ private:
  *
  * @author Christophe
  */
-template<int M, int N>
+template<int M, int N=M>
 inline
-Expr<detail::Ones<M,N> >
+Expr<vf::detail::Ones<M,N> >
 ones()
 {
-    return Expr< detail::Ones<M,N> >(  detail::Ones<M, N>() );
+    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Ones()) );
 }
+
+template<int M, int N=M>
+inline
+Expr<vf::detail::Ones<M,N> >
+zero()
+{
+    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Zero()) );
+}
+
+template<int M, int N=M>
+inline
+Expr<vf::detail::Ones<M,N> >
+eye()
+{
+    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Identity()) );
+}
+
+template<int M, int N=M>
+inline
+Expr<vf::detail::Ones<M,N> >
+Id()
+{
+    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Identity()) );
+}
+
+template<int M, int N=M>
+inline
+Expr<vf::detail::Ones<M,N> >
+constant( double value )
+{
+    return Expr<vf::detail::Ones<M,N> >( vf::detail::Ones<M, N>(Eigen::Matrix<double,M,N>::Constant( value )) );
+}
+
 } // vf
 } // Feel
 #endif /* __Ones_H */

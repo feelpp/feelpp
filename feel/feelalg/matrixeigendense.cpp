@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-15
 
   Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file matrixgmm.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-15
  */
 #include <feel/feelalg/matrixeigendense.hpp>
@@ -192,6 +192,16 @@ MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
     }
 }
 
+template<typename T>
+void
+MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m,
+                                     size_type start_i,
+                                     size_type start_j )
+{
+#warning Not yet implemented
+    LOG(ERROR) << "invalid call to updateBlockMat(), not yet implemented\n";
+
+}
 
 template<typename T>
 void

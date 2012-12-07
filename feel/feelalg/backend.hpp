@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-12-23
 
   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file backend.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-12-23
  */
 #ifndef __Backend_H
@@ -32,6 +32,7 @@
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/fusion/include/fold.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -48,6 +49,8 @@
 #include <feel/feelalg/preconditioner.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
 
+#include <feel/feelalg/matrixshell.hpp>
+#include <feel/feelalg/matrixshellsparse.hpp>
 //#include <feel/feelvf/vf.hpp>
 //#include <boost/fusion/support/pair.hpp>
 //#include <boost/fusion/container.hpp>
@@ -122,7 +125,8 @@ template<int NR, typename T> class VectorBlock;
  * @see
  */
 template<typename T>
-class Backend
+class Backend:
+    public boost::enable_shared_from_this<Backend<T> >
 {
 public:
 
@@ -137,6 +141,9 @@ public:
     typedef boost::shared_ptr<vector_type> vector_ptrtype;
     typedef MatrixSparse<value_type> sparse_matrix_type;
     typedef boost::shared_ptr<sparse_matrix_type> sparse_matrix_ptrtype;
+
+    typedef MatrixShell<value_type> shell_matrix_type;
+    typedef boost::shared_ptr<shell_matrix_type> shell_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
     typedef typename sparse_matrix_type::graph_ptrtype graph_ptrtype;
@@ -443,6 +450,14 @@ public:
     //@{
 
     /**
+     * \return prefix of backend
+     */
+    std::string prefix() const
+    {
+        return M_prefix;
+    }
+
+    /**
      * \return the type of linear solver
      */
     std::string kspType() const
@@ -542,6 +557,14 @@ public:
         return M_maxit;
     }
 
+    /**
+     * \return the maximum number of SNES iterations
+     */
+    size_type maxIterationsSNES() const
+    {
+        return M_maxitSNES;
+    }
+
     bool converged() const
     {
         return M_converged;
@@ -564,6 +587,16 @@ public:
     {
         return M_worldComm;
     }
+
+    bool showKSPMonitor() const { return M_showKSPMonitor; }
+    bool showSNESMonitor() const { return M_showSNESMonitor; }
+    bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
+    bool showSNESConvergedReason() const { return M_showSNESConvergedReason; }
+
+    bool reusePrecRebuildAtFirstNewtonStep() const { return M_reusePrecRebuildAtFirstNewtonStep; }
+    bool reuseJacRebuildAtFirstNewtonStep() const { return M_reuseJacRebuildAtFirstNewtonStep; }
+
+    BackendType type() const { return M_backend; }
 
     //@}
 
@@ -635,6 +668,15 @@ public:
         M_transpose = transpose;
     }
 
+    void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
+    void setShowSNESMonitor( bool b ) { M_showSNESMonitor=b; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
+    void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
+
+    void setReusePrecRebuildAtFirstNewtonStep(bool b) { M_reusePrecRebuildAtFirstNewtonStep=b; }
+    void setReuseJacRebuildAtFirstNewtonStep(bool b) { M_reuseJacRebuildAtFirstNewtonStep=b; }
+
+
     //@}
 
     /** @name  Methods
@@ -692,13 +734,15 @@ public:
                                      solve,
                                      tag,
                                      ( required
-                                       ( matrix,( sparse_matrix_ptrtype ) )
+                                       //( matrix,*(mpl::or_<sparse_matrix_ptrtype,shell_matrix_ptrtype>) )
+                                       ( matrix,(sparse_matrix_ptrtype) )
                                        //( in_out( solution ),*( mpl::or_<mpl::or_<boost::is_convertible<mpl::_,vector_type&>,boost::is_convertible<mpl::_,vector_type> >,boost::is_convertible<mpl::_,vector_ptrtype> > ) )
                                        ( in_out( solution ),* )
                                        ( rhs,( vector_ptrtype ) ) )
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner( _matrix=matrix,_pc=LU_PRECOND,_backend=BACKEND_PETSC ) )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
+                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this() ) )
                                        ( maxit,( size_type ), M_maxit/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
@@ -740,7 +784,6 @@ public:
 
         if ( reuse_prec == false )
         {
-            this->setPrecMatrixStructure( SAME_NONZERO_PATTERN );
             ret = solve( matrix, matrix, _sol, rhs );
         }
 
@@ -795,6 +838,7 @@ public:
                              bool reuse_prec
                            );
 
+
     /**
      * solve for \f$P F(x)=0 b\f$
      */
@@ -808,7 +852,8 @@ public:
                                        ( jacobian,( sparse_matrix_ptrtype ), sparse_matrix_ptrtype() )
                                        ( residual,( vector_ptrtype ), vector_ptrtype() )
                                        //(prec,(sparse_matrix_ptrtype), jacobian )
-                                       ( prec,( preconditioner_ptrtype ), preconditioner( _pc=LU_PRECOND,_backend=BACKEND_PETSC ) )
+                                       ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=this->shared_from_this(),
+                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
                                        ( maxit,( size_type ), M_maxit/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
@@ -841,6 +886,7 @@ public:
             //this->nlSolver()->residual( _sol, residual );
         }
 
+        this->nlSolver()->setPrefix( this->prefix() );
         if ( !jacobian )
             this->nlSolver()->jacobian( _sol, jacobian );
 
@@ -856,6 +902,7 @@ public:
         //new
         _sol->close();
         detail::ref( solution ) = *_sol;
+        detail::ref( solution ).close();
         return ret;
     }
 
@@ -885,6 +932,33 @@ public:
         M_preconditioner = preconditioner;
     }
 
+    /**
+     * register a backend observer for the delete signal of backend
+     */
+    template<typename Observer>
+    void
+    addDeleteObserver( Observer const& obs )
+        {
+            M_deleteObservers.connect( obs );
+        }
+    /**
+     * register a backend observer for the delete signal of backend that is a
+     * shared_ptr<>
+     */
+    template<typename Observer>
+    void
+    addDeleteObserver( boost::shared_ptr<Observer> const& obs )
+        {
+            M_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
+        }
+    /**
+     * send the delete signal to all observers
+     */
+    void
+    sendDeleteSignal()
+        {
+            M_deleteObservers();
+        }
     //@}
 
 
@@ -922,6 +996,8 @@ private:
 
     bool M_reuse_prec;
     bool M_reuse_jac;
+    bool M_reusePrecIsBuild,M_reusePrecRebuildAtFirstNewtonStep;
+    bool M_reuseJacIsBuild,M_reuseJacRebuildAtFirstNewtonStep;
     size_t M_nUsePC;
     bool   M_converged;
     bool   M_reusePC;
@@ -929,7 +1005,7 @@ private:
     bool   M_reuseFailed;
     boost::timer M_timer;
     bool   M_transpose;
-    size_type    M_maxit;
+    size_type    M_maxit, M_maxitSNES;
     size_type    M_iteration;
     std::string M_export;
     std::string M_ksp;
@@ -937,10 +1013,14 @@ private:
     std::string M_fieldSplit;
     std::string M_pcFactorMatSolverPackage;
     bool M_constant_null_space;
-
+    bool M_showKSPMonitor, M_showSNESMonitor;
+    bool M_showKSPConvergedReason, M_showSNESConvergedReason;
     //std::map<std::string,boost::tuple<std::string,std::string> > M_sub;
 
+    boost::signals2::signal<void()> M_deleteObservers;
 };
+
+
 typedef Backend<double> backend_type;
 typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
@@ -968,9 +1048,9 @@ struct BackendManagerDeleterImpl
 {
     void operator()() const
         {
-            Debug(7006) << "[BackendManagerDeleter] clear BackendManager Singleton: " << detail::BackendManager::instance().size() << "\n";
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << detail::BackendManager::instance().size() << "\n";
             detail::BackendManager::instance().clear();
-            Debug(7006) << "[BackendManagerDeleter] clear BackendManager done\n";
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager done\n";
         }
 };
 typedef Feel::Singleton<BackendManagerDeleterImpl> BackendManagerDeleter;
@@ -982,7 +1062,7 @@ BOOST_PARAMETER_FUNCTION(
     backend,           // 2. function name
     tag,               // 3. namespace of tag types
     ( optional
-      ( vm,           ( po::variables_map ), po::variables_map() )
+      ( vm,           ( po::variables_map ), Environment::vm() )
       ( name,           ( std::string ), "" )
       ( kind,           ( BackendType ), BACKEND_PETSC )
       ( rebuild,        ( bool ), false )
@@ -1004,13 +1084,16 @@ BOOST_PARAMETER_FUNCTION(
 
     if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
-        Debug(7006) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
         return git->second;
     }
 
     else
     {
-        Debug(7006) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
+            git->second->sendDeleteSignal();
+
+        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
 
         backend_ptrtype b;
         if ( vm.empty() )
@@ -1019,7 +1102,7 @@ BOOST_PARAMETER_FUNCTION(
         }
         else
             b = Feel::backend_type::build( vm, name );
-        Debug( 7006 ) << "storing backend in singleton" << "\n";
+        VLOG(2) << "storing backend in singleton" << "\n";
         detail::BackendManager::instance().operator[]( std::make_pair( kind, name ) ) = b;
         return b;
     }

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-08-25
 
   Copyright (C) 2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file test_integration.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-08-25
  */
 #define USE_BOOST_TEST 1
@@ -37,10 +37,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 
@@ -75,9 +72,9 @@ struct test_integration_internal_faces_v: public Application
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
-    test_integration_internal_faces_v( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_internal_faces_v()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -204,9 +201,9 @@ struct test_integration_internal_faces_lf : public Application
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
 
-    test_integration_internal_faces_lf( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_integration_internal_faces_lf()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -312,15 +309,14 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( integration )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
@@ -330,19 +326,17 @@ typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_v, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D)" );
-    Feel::test_integration_internal_faces_v<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    Feel::test_integration_internal_faces_v<double,T::value> t;
     t();
     BOOST_TEST_MESSAGE( "Test integration on internal faces v (" << T::value << "D) done." );
 }
 #endif // 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_integration_ifaces_lf, T, dim_types )
 {
+
+
     BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D)" );
-    Feel::test_integration_internal_faces_lf<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-            boost::unit_test::framework::master_test_suite().argv,
-            makeAbout(), makeOptions() );
+    Feel::test_integration_internal_faces_lf<double,T::value> t;
     t();
     BOOST_TEST_MESSAGE( "Test integration on internal faces in linear forms (" << T::value << "D) done" );
 }

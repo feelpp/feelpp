@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-06-24
 
   Copyright (C) 2005,2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file test_ublas.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-06-24
  */
 #include <iostream>
@@ -62,21 +62,21 @@ int main( int argc, char** argv )
     dcm_t mc2( 1, S );
     mc2 = ublas::scalar_matrix<double>( mc2.size1(), mc2.size2(), 2 );
 
-    Log() << "mc1 = " << mc1 << "\n";
-    Log() << "mc2 = " << mc2 << "\n";
+    LOG(INFO) << "mc1 = " << mc1 << "\n";
+    LOG(INFO) << "mc2 = " << mc2 << "\n";
 
     dcm_t mc3( S, S );
 
     drm_t r1 = ublas::prod( ublas::trans( mc1 ), mc2 );
     drm_t r2 = ublas::prod( mc1, ublas::trans( mc2 ) );
-    Log() << "mc3 = trans(mc1)*mc2 = " << r1 << "\n";
-    Log() << "scalar = mc1*trans(mc2) = " << r2 << "\n";
+    LOG(INFO) << "mc3 = trans(mc1)*mc2 = " << r1 << "\n";
+    LOG(INFO) << "scalar = mc1*trans(mc2) = " << r2 << "\n";
 
 #if 0
     blas::gemm( traits::TRANSPOSE, traits::NO_TRANSPOSE,
                 1.0, mc1, mc2,
                 0.0, mc3 );
-    Log() << "mc3 = trans(mc1)*mc2 using gemm = " << mc3 << "\n";
+    LOG(INFO) << "mc3 = trans(mc1)*mc2 using gemm = " << mc3 << "\n";
 #endif
     boost::timer timer;
 
@@ -86,7 +86,7 @@ int main( int argc, char** argv )
         mc3.assign( ublas::prod( ublas::trans( mc1 ), mc2 ) );
     }
 
-    Log() << "ublas::prod : " << timer.elapsed() << "\n";
+    LOG(INFO) << "ublas::prod : " << timer.elapsed() << "\n";
 
     timer.restart();
     dcm_t mc6( S, S );
@@ -97,7 +97,7 @@ int main( int argc, char** argv )
         ublas::opb_prod( ublas::trans( mc1 ), mc2, mc6 );
     }
 
-    Log() << "ublas::obp_prod : " << timer.elapsed() << "\n";
+    LOG(INFO) << "ublas::obp_prod : " << timer.elapsed() << "\n";
 
     timer.restart();
     dcm_t mc4( S, S );
@@ -111,10 +111,10 @@ int main( int argc, char** argv )
                     0.0, mc4 );
     }
 
-    Log() << "blas::gemm : " << timer.elapsed() << "\n";
+    LOG(INFO) << "blas::gemm : " << timer.elapsed() << "\n";
 #endif
-    Log() << "||mc3-mc4|| : " << ublas::norm_frobenius( mc3-mc4 ) << "\n";
-    Log() << "||mc3-mc6|| : " << ublas::norm_frobenius( mc3-mc6 ) << "\n";
+    LOG(INFO) << "||mc3-mc4|| : " << ublas::norm_frobenius( mc3-mc4 ) << "\n";
+    LOG(INFO) << "||mc3-mc6|| : " << ublas::norm_frobenius( mc3-mc6 ) << "\n";
 
     timer.restart();
 
@@ -130,7 +130,7 @@ int main( int argc, char** argv )
     }
 
 #endif
-    Log() << "blas::gemm mc3*mc4 : " << timer.elapsed() << "\n";
+    LOG(INFO) << "blas::gemm mc3*mc4 : " << timer.elapsed() << "\n";
 
     timer.restart();
 
@@ -140,7 +140,7 @@ int main( int argc, char** argv )
         mc5.assign( prod( mc3, mc4 ) );
     }
 
-    Log() << "ublas::prod mc3*mc4 : " << timer.elapsed() << "\n";
+    LOG(INFO) << "ublas::prod mc3*mc4 : " << timer.elapsed() << "\n";
 
     timer.restart();
 
@@ -150,6 +150,6 @@ int main( int argc, char** argv )
         ublas::axpy_prod( mc3, mc4,mc5 );
     }
 
-    Log() << "ublas::axpy_prod mc3*mc4 : " << timer.elapsed() << "\n";
+    LOG(INFO) << "ublas::axpy_prod mc3*mc4 : " << timer.elapsed() << "\n";
 
 }

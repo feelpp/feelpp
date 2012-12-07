@@ -1,0 +1,59 @@
+General Information
+===================
+
+GiNaC (which stands for "GiNaC is Not a CAS" (computer algebra system)) is a
+C++ library for symbolic mathematical calculations.  It is designed to allow
+the creation of integrated systems that embed symbolic manipulations together
+with more established areas of computer science (like computation-intense
+numeric applications, graphical interfaces, etc.) under one roof.
+
+The official ftp site is:
+  ftp://ftpthep.physik.uni-mainz.de/pub/GiNaC/
+
+The official web site is:
+  http://www.ginac.de/
+
+A mailing list is located at:
+  ginac-list@ginac.de
+
+You need to be subscribed to be able to post to the list. To subscribe,
+please follow the instructions on
+  https://www.cebix.net/mailman/listinfo/ginac-list
+
+See http://www.ginac.de/Lists.html for the list policy.
+
+
+Installation
+============
+
+See the file "INSTALL".
+
+
+How to report bugs
+==================
+
+If you have identified a bug in GiNaC you are welcome to send a detailed
+bug report to <ginac-list@ginac.de>.  Please think about your bug!  This
+means that you should include
+
+* Information about your system
+
+   - Which operating system and version (uname -a)
+   - Which C compiler and version (gcc --version)
+   - For Linux, which version of the C library
+
+  And anything else you think is relevant.
+
+* Information about your version of GiNaC
+
+   - Version and release number
+   - Which options GiNaC was configured with
+
+* How to reproduce the bug
+
+   - If it is a systematical bug in the library, a short test program
+     together with the output you get and the output you expect will
+     help us to reproduce it quickly.
+
+Patches are most welcome.  If possible please make them with diff -c and
+include ChangeLog entries.

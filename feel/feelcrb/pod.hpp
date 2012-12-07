@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Stephane Veys <stephane.veys@imag.fr>
        Date: 2009-09-30
 
@@ -24,7 +24,7 @@
 */
 /**
    \file pod.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
            Stephane Veys <stephane.veys@imag.fr>
    \date 2009-09-30
  */
@@ -227,6 +227,11 @@ public :
         return M_model;
     }
 
+    const double timeInitial()
+    {
+        return M_time_initial;
+    }
+
     void setBdf( bdf_ptrtype& bdf )
     {
         M_bdf = bdf;
@@ -250,6 +255,11 @@ public :
     void setModel ( truth_model_ptrtype Model )
     {
         M_model=Model;
+    }
+
+    void setTimeInitial( double Ti )
+    {
+        M_time_initial = Ti;
     }
 
     //! fill the matrix which will be used to perform the POD
@@ -286,6 +296,8 @@ private :
     export_ptrtype exporter;
 
     bdf_ptrtype M_bdf;
+
+    double M_time_initial;
 };//class POD
 
 
@@ -293,7 +305,7 @@ template<typename TruthModelType>
 void POD<TruthModelType>::exportMode( double time, element_ptrtype& mode )
 {
 
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     functionspace_ptrtype function_space = M_model->functionSpace();
     mesh_ptrtype mesh = function_space->mesh();
@@ -352,13 +364,16 @@ void POD<TruthModelType>::fillPodMatrix()
 
     bdfi->setRestart( true );
     bdfj->setRestart( true );
-
-    for ( bdfi->start(); !bdfi->isFinished(); bdfi->next() )
+    bdfi->setTimeInitial( M_time_initial );
+    bdfj->setTimeInitial( M_time_initial );
+    bdfi->setRestartAtLastSave(false);
+    bdfj->setRestartAtLastSave(false);
+    for ( bdfi->restart(); !bdfi->isFinished(); bdfi->next() )
     {
         int i = bdfi->iteration()-1;
         bdfi->loadCurrent();
 
-        for ( bdfj->start(); !bdfj->isFinished() && ( bdfj->iteration() < bdfi->iteration() ); bdfj->next() )
+        for ( bdfj->restart(); !bdfj->isFinished() && ( bdfj->iteration() < bdfi->iteration() ); bdfj->next() )
         {
             int j = bdfj->iteration()-1;
             bdfj->loadCurrent();
@@ -383,12 +398,11 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
     Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
 
     fillPodMatrix();
-
     //store the matrix
     if ( M_store_pod_matrix )
     {
         std::ofstream matrix_file;
-        Log()<<"saving Pod matrix in a file \n";
+        LOG(INFO)<<"saving Pod matrix in a file \n";
         matrix_file.open( "PodMatrix",std::ios::out );
         matrix_file<<M_pod_matrix.rows();
         matrix_file<<"\n";
@@ -405,13 +419,13 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
             matrix_file<<"\n";
         }
 
-        Log()<<" matrix wrote in file named PodMatrix \n";
+        LOG(INFO)<<" matrix wrote in file named PodMatrix \n";
     }
 
     else if ( M_store_pod_matrix_format_octave )
     {
         std::ofstream matrix_file;
-        Log()<<"saving Pod matrix in a file \n";
+        LOG(INFO)<<"saving Pod matrix in a file \n";
         matrix_file.open( "PodMatrixOctave.mat",std::ios::out );
         matrix_file<<"# name: A\n";
         matrix_file<<"# type: matrix\n";
@@ -428,7 +442,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
             matrix_file<<"\n";
         }
 
-        Log()<<" matrix wrote in file named PodMatrix \n";
+        LOG(INFO)<<" matrix wrote in file named PodMatrix \n";
         matrix_file.close();
     }
 
@@ -436,7 +450,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
     eigen_solver.compute( M_pod_matrix ); // solve M_pod_matrix psi = lambda psi
 
     int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
-    Log()<<"Number of eigenvalues  : "<<number_of_eigenvalues<<"\n";
+    LOG(INFO)<<"Number of eigenvalues  : "<<number_of_eigenvalues<<"\n";
     //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
     std::vector<double> eigen_values( number_of_eigenvalues );
 
@@ -455,7 +469,6 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
     }
 
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;
-
     int number_of_good_eigenvectors = number_of_eigenvalues - too_small_index;
 
     if ( M_Nm > number_of_good_eigenvectors && number_of_good_eigenvectors>0 && is_primal )
@@ -469,7 +482,7 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal )
         M_bdf->setRestart( true );
         int index=0;
 
-        for ( M_bdf->start(); !M_bdf->isFinished(); M_bdf->next() )
+        for ( M_bdf->restart(); !M_bdf->isFinished(); M_bdf->next() )
         {
             M_bdf->loadCurrent();
             double psi_k = real( eigen_solver.eigenvectors().col( position_of_largest_eigenvalue )[index] );

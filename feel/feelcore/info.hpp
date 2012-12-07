@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-02-19
 
   Copyright (C) 2005,2006 EPFL
@@ -29,7 +29,7 @@
    The file was created from KDE/kdelibs/kdecore/kdeversion.hpp and
    accomodated to Feel needs.
 
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-02-19
  */
 #ifndef _FEELPP_VERSION_H_
@@ -59,12 +59,12 @@ public:
      * It permits Feel to check if a more recent version of itself exist.
      * Format: year/month/day hour:minutes:seconds
      */
-    static unsigned long long buildId();
+    static char const* buildId();
 
     /**
      * Revision number (Subversion revision).
      */
-    static unsigned long long revision();
+    static char const*  revision();
 
     /**
      * Returns the encoded number of FEEL's version, see the FEELPP_VERSION macro.

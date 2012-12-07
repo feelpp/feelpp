@@ -2,11 +2,11 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2004-11-22
 
    Copyright (C) 2004 EPFL
-   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2006-2012 Université Joseph Fourier (Grenoble I)
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,7 @@
 */
 /**
    \file FunctionSpace.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-22
 */
 #ifndef __FunctionSpace_H
@@ -35,12 +35,12 @@
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/transform.hpp>
-#include <boost/mpl/vector.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/fusion/support/is_sequence.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/fusion/container/vector.hpp>
 #include <boost/fusion/algorithm.hpp>
+#include <boost/fusion/adapted/mpl.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
@@ -58,6 +58,10 @@
 #include <boost/preprocessor/control/if.hpp>
 
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
+
+
+//#include<boost/filesystem.hpp>
+
 
 #include <stdexcept>
 #include <sstream>
@@ -150,7 +154,7 @@ struct ID
     {
         if ( this != &id )
         {
-            //Debug() "[ID] extent = " <<
+            //VLOG(1) "[ID] extent = " <<
 
             M_id = id.M_id;
         }
@@ -451,17 +455,19 @@ struct H
     array_type _M_hess;
 };
 
-template<typename MeshPtrType>
+template<typename MeshPtrType, typename PeriodicityType = Periodicity<NoPeriodicity> >
 struct InitializeSpace
 {
     InitializeSpace( MeshPtrType const& mesh,
+                     PeriodicityType const& periodicity,
                      std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
                      std::vector<WorldComm> const & worldsComm )
         :
         _M_cursor( 0 ),
         _M_worldsComm( worldsComm ),
         _M_mesh( mesh ),
-        _M_dofindices( dofindices )
+        _M_dofindices( dofindices ),
+        _M_periodicity( periodicity )
 
     {}
     template <typename T>
@@ -472,7 +478,9 @@ struct InitializeSpace
     template <typename T>
     void operator()( boost::shared_ptr<T> & x, mpl::bool_<true> ) const
     {
-        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        auto p = *fusion::find<typename T::periodicity_0_type>(_M_periodicity);
+        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, p,
+                                         std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++_M_cursor;// warning _M_cursor < nb color
@@ -480,9 +488,12 @@ struct InitializeSpace
     template <typename T>
     void operator()( boost::shared_ptr<T> & x, mpl::bool_<false> ) const
     {
+        auto p = *fusion::find<typename T::periodicity_0_type>(_M_periodicity);
+
         // look for T::mesh_ptrtype in MeshPtrType
         auto m = *fusion::find<typename T::mesh_ptrtype>(_M_mesh);
-        x = boost::shared_ptr<T>( new T( m, _M_dofindices, std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        x = boost::shared_ptr<T>( new T( m, _M_dofindices, p,
+                                         std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++_M_cursor;// warning _M_cursor < nb color
@@ -491,6 +502,7 @@ struct InitializeSpace
     std::vector<WorldComm> _M_worldsComm;
     MeshPtrType _M_mesh;
     std::vector<boost::tuple<size_type, uint16_type, size_type> > const& _M_dofindices;
+    PeriodicityType _M_periodicity;
 };
 template<typename DofType>
 struct updateDataMapProcess
@@ -1123,27 +1135,72 @@ struct searchIndicesBySpace
     }
 };
 
+// get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
+struct computeStartOfFieldSplit
+{
+    typedef boost::tuple< uint , size_type > result_type;
+
+    template<typename T>
+    result_type operator()( result_type const &  previousRes, T const& t )
+    {
+        auto cptSpaces = previousRes.get<0>();
+        auto start = previousRes.get<1>();
+
+        for (int proc=0;proc<t->dof()->worldComm().globalSize();++proc)
+            {
+                if (proc < t->dof()->worldComm().globalRank())
+                    start+=t->dof()->nLocalDofWithoutGhost(proc);
+            }
+        return boost::make_tuple( ++cptSpaces, start );
+    }
+
+};
+
+// compute split
 struct computeNDofForEachSpace
 {
+
+    computeNDofForEachSpace(size_type startSplit)
+    :
+        M_startSplit(startSplit)
+    {}
+
     typedef boost::tuple< uint, uint, std::vector<std::vector<int> > > result_type;
 
     template<typename T>
     result_type operator()( result_type const & previousRes, T const& t )
     {
-        auto nDof = t->nDof();
-
+        auto const nDofWithoutGhost = t->nLocalDofWithoutGhost();
+        auto const nDofWithGhost = t->nLocalDofWithGhost();
+        auto const firstDof = t->dof()->firstDofGlobalCluster();
         auto cptSpaces = previousRes.get<0>();
         auto start = previousRes.get<1>();
         auto is = previousRes.get<2>();
+        //std::cout << "compo " << cptSpaces << " start " << start <<" split nDofWithout " << nDof << " with ghost "<< nDofWithGhost<< " M_startSplit " << M_startSplit <<std::endl;
 
-        is.push_back( std::vector<int>( nDof ) );
+        is.push_back( std::vector<int>( nDofWithoutGhost ) );
 
-        for ( uint i=0; i<nDof; ++i )
+        for ( uint i=0; i<nDofWithGhost; ++i )
         {
-            is[cptSpaces][i] = start+i;
+            if (t->dof()->dofGlobalProcessIsGhost(i)) continue;
+            auto const globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
+            is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + globalDof - firstDof;
         }
 
-        return boost::make_tuple( ++cptSpaces, ( start+nDof ), is );
+        return boost::make_tuple( ++cptSpaces, ( start+nDofWithoutGhost ), is );
+    }
+
+
+    size_type M_startSplit;
+};
+
+struct rebuildDofPointsTool
+{
+
+    template <typename T>
+    void operator()( boost::shared_ptr<T> & x ) const
+    {
+        x->dof()->rebuildDofPoints( *x->mesh() );
     }
 };
 
@@ -1179,6 +1236,61 @@ struct BasisOrder
     }
 };
 
+template<typename ElementType>
+struct CreateElementVector
+{
+public:
+    template<typename Sig>
+    struct result;
+
+    template<typename Lhs, typename Rhs>
+    struct result<CreateElementVector( Lhs,Rhs )>
+    {
+	    typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
+	    typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type::element_type rhs_noref_type;
+        typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
+	    typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
+        typedef typename ElementType_noref_type::template sub_element<index::value>::type elt_type;
+        BOOST_MPL_ASSERT( ( boost::is_same<typename elt_type::functionspace_type,rhs_noref_type> ) );
+        typedef typename boost::fusion::result_of::make_vector<elt_type>::type v_elt_type;
+
+	    typedef typename boost::fusion::result_of::push_back<lhs_noref_type, elt_type>::type ptype;
+        typedef typename boost::fusion::result_of::as_vector<ptype>::type type;
+    };
+    CreateElementVector( ElementType const& e ) : M_e( e ), M_names() {}
+    CreateElementVector( ElementType const& e, std::vector<std::string> const& names ) : M_e( e ), M_names( names ) {}
+    ElementType const& M_e;
+    std::vector<std::string> M_names;
+
+    template<typename Lhs, typename Rhs>
+    typename result<CreateElementVector( Lhs,Rhs )>::type
+    operator()( Lhs const&  lhs, Rhs const& rhs ) const
+    {
+        typedef typename boost::remove_const<typename boost::remove_reference<Lhs>::type>::type lhs_noref_type;
+        typedef typename boost::remove_const<typename boost::remove_reference<Rhs>::type>::type rhs_noref_type;
+        typedef typename boost::remove_const<typename boost::remove_reference<ElementType>::type>::type ElementType_noref_type;
+	    typedef typename boost::fusion::result_of::size<lhs_noref_type>::type index;
+        typename ElementType_noref_type::template sub_element<index::value>::type elt = M_e.template element<index::value>();
+        static const int s = mpl::size<typename ElementType::functionspace_type::bases_list>::type::value;
+        BOOST_STATIC_ASSERT( (boost::is_same<decltype(elt), typename ElementType::template sub_element<index::value>::type>::value ) );
+        if ( !M_names.empty() && M_names.size() > index::value )
+        {
+
+            FEELPP_ASSERT( M_names.size() == s  )
+                ( M_names.size() )( s ).error( "incompatible number of function names and functions");
+            elt.setName( M_names[index::value] );
+        }
+        else if  ( ( M_names.size() == 1 )  && s > 1 )
+        {
+            elt.setName( (boost::format( "%1%-%2%" ) % M_names[0] % index::value ).str() );
+        }
+        else
+        {
+            elt.setName( (boost::format( "%1%-%2%" ) % M_e.name() % index::value ).str() );
+        }
+        return boost::fusion::as_vector( boost::fusion::push_back( lhs, elt ) );
+    }
+};
 
 } // detail
 
@@ -1216,12 +1328,13 @@ struct Order
 typedef parameter::parameters<
 //    parameter::required<tag::mesh_type, mpl::or_<boost::is_base_and_derived<MeshBase,_> >, mpl::or_<fusion::traits::is_sequence<_>, mpl::is_sequence<_> > >
 parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
-#if 1
+#if 0
 , parameter::optional<parameter::deduced<tag::bases_list>, mpl::or_<boost::is_base_and_derived<detail::bases_base,_>,
 mpl::or_<fusion::traits::is_sequence<_>,
 mpl::is_sequence<_> > > >
 #else
-, parameter::optional<parameter::deduced<tag::bases_list>, fusion::traits::is_sequence<_> >
+, parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<detail::bases_base,_> >
+//, parameter::optional<parameter::deduced<tag::bases_list>, fusion::traits::is_sequence<_> >
 #endif
 , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
 , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
@@ -1236,7 +1349,7 @@ mpl::is_sequence<_> > > >
  * \c FunctionSpace is a representation of a functional space parametrized by
  * the type of the mesh (\c MeshType)
  *
- * @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 //template<typename MeshType, typename Basis_t, typename T_type = double, typename PeriodicityType = NoPeriodicity>
 template<
@@ -1255,13 +1368,28 @@ public:
 
     typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
-    typedef typename parameter::binding<args, tag::periodicity_type, NoPeriodicity>::type periodicity_type;
+    typedef typename parameter::binding<args, tag::periodicity_type, Periodicity<NoPeriodicity> >::type periodicity_type;
     typedef typename parameter::binding<args, tag::bases_list, detail::bases<Lagrange<1,Scalar> > >::type bases_list;
 
     BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
 
-private:
+public:
 
+    template<typename ThePeriodicityType, int pos>
+    struct GetPeriodicity
+    {
+#if 0
+        typedef typename boost::remove_reference<periodicity_type>::type periodicity_list_noref;
+        typedef typename fusion::result_of::at_c<periodicity_list_noref, pos>::type _type;
+        typedef typename boost::remove_reference<_type>::type type;
+#else
+        typedef typename mpl::if_<mpl::equal_to<fusion::result_of::size<ThePeriodicityType>,mpl::int_<1> >,
+                                  mpl::identity<fusion::result_of::at_c<ThePeriodicityType,0> >,
+                                  mpl::identity<fusion::result_of::at_c<ThePeriodicityType,pos> > >::type::type::type _type;
+        typedef typename boost::remove_reference<_type>::type type;
+
+#endif
+    };
     template<typename BasisType>
     struct ChangeMesh
     {
@@ -1270,13 +1398,24 @@ private:
         typedef typename fusion::result_of::distance<typename fusion::result_of::begin<meshes_list_noref>::type,
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
         typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
-        typedef boost::shared_ptr<FunctionSpace<typename boost::remove_reference<_mesh_type>::type,detail::bases<BasisType>,value_type, periodicity_type> > type;
+
+        typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
+                              detail::bases<BasisType>,value_type,
+                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type > > _type;
+        typedef boost::shared_ptr<_type> type;
+
+
     };
     template<typename BasisType>
     struct ChangeBasis
     {
+        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
+        typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
+        typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
+                                                     typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
+
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, periodicity_type> > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type> > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
 //mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
@@ -1287,6 +1426,7 @@ private:
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
+        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
                                   mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type> > > >,
                                   mpl::identity<ChangeMesh<component_basis_type> > >::type::type::type type;
@@ -1341,7 +1481,7 @@ public:
                               mpl::identity<typename mpl::transform<meshes_list, ChangeToMeshPtr<mpl::_1>, mpl::back_inserter<meshes<> > >::type  > >::type::type mesh_ptrtype;
     typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
             mpl::identity<typename mesh_type::element_type>,
-            mpl::identity<mpl::void_> >::type::type convex_type;
+            mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;
 
     template<typename BasisType>
     struct GetNComponents
@@ -1385,7 +1525,8 @@ public:
     static const uint16_type N_COMPONENTS = nComponents;
     static const uint16_type nSpaces = mpl::size<bases_list>::type::value;
 
-    static const bool is_periodic = periodicity_type::is_periodic;
+    typedef typename GetPeriodicity<periodicity_type,0>::type periodicity_0_type;
+    static const bool is_periodic = periodicity_0_type::is_periodic;
 
     //@}
 
@@ -1474,7 +1615,7 @@ public:
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<DofComposite>,
-            mpl::identity<DofTable<mesh_type, basis_type, periodicity_type> > >::type::type dof_type;
+            mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
 
@@ -1499,6 +1640,7 @@ public:
     */
     //@{
 
+
     /**
      * \class Element
      */
@@ -1507,15 +1649,21 @@ public:
         :
     public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
     {
+    public:
+        typedef T value_type;
+
         template<typename BasisType>
         struct ChangeElement
         {
+            typedef T value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
             typedef typename ChangeBasis<BasisType>::type::value_type fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
             typedef element_type type;
         };
         typedef typename mpl::transform<bases_list, ChangeElement<mpl::_1>, mpl::back_inserter<mpl::vector<> > >::type element_vector_type;
+
+        //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
         typedef typename VectorUblas<T>::range::type ct_type;
 
         /**
@@ -1530,7 +1678,7 @@ public:
         };
         typedef typename mpl::transform<bases_list, AddOffContainer<mpl::_1>, mpl::back_inserter<fusion::vector<> > >::type container_vector_type;
 
-    public:
+
 
         typedef FunctionSpace<A0,A1,A2,A3,A4> functionspace_type;
         typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -1550,7 +1698,7 @@ public:
         /** @name Typedefs
          */
         //@{
-        typedef T value_type;
+
 
         typedef typename ublas::type_traits<value_type>::real_type real_type;
         typedef T element_type;
@@ -1576,6 +1724,7 @@ public:
                 mpl::identity<boost::none_t>,
                 mpl::identity<typename basis_0_type::polynomial_type> >::type::type polynomial_view_type;
 
+        typedef Element<T,Cont> this_type;
         template<int i>
         struct sub_element
         {
@@ -2086,6 +2235,14 @@ public:
         {
             return pc_ptrtype( new pc_type( functionSpace()->fe(), elt.G() ) );
         }
+
+        id_type operator()( Eigen::Matrix<value_type,nDim,1> const& __x, bool extrapolate = false ) const
+            {
+                node_type n( nDim );
+                for(int i = 0; i < nDim; ++i ) n[i]=__x[i];
+                return operator()( n, extrapolate );
+            }
+
         /**
          * interpolate the function at node (real coordinate) x
          *
@@ -2569,7 +2726,7 @@ public:
 
             if ( this->functionSpace()->worldsComm()[i].isActive() )
             {
-                ct_type ct( const_cast<VectorUblas<value_type>&>( *this ),
+                ct_type ct( const_cast<VectorUblas<value_type>&>( dynamic_cast<VectorUblas<value_type> const&>( *this ) ),
                             ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
                             _M_functionspace->template functionSpace<i>()->map() );
 
@@ -2616,7 +2773,6 @@ public:
             }
 
         }
-
         /**
          *
          * @return the finite element space associated with the n-th component
@@ -2632,7 +2788,7 @@ public:
         std::vector<WorldComm> const& worldsComm() const
         {
             return _M_functionspace->worldsComm();
-        };
+        }
 
         /**
          * world communicator
@@ -2640,7 +2796,7 @@ public:
         WorldComm const& worldComm() const
         {
             return _M_functionspace->worldComm();
-        };
+        }
 
         /**
          * \return the number of dof
@@ -2766,6 +2922,7 @@ public:
             std::ostringstream os1;
             os1 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
+            LOG(INFO) << "saving "  << p << "\n";
             fs::ofstream ofs( p );
 
             if ( type == "binary" )
@@ -2787,7 +2944,7 @@ public:
             }
         }
         BOOST_PARAMETER_MEMBER_FUNCTION(
-            ( void ),
+            ( bool ),
             load,
             tag,
             ( required
@@ -2801,21 +2958,33 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( args );
             std::ostringstream os1;
-            os1 << _M_name << sep << suffix << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            os1 << _M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
+            fs::path partial_path = fs::path(path);
 
+            fs::path full_path_dir_sol(fs::current_path());
+            full_path_dir_sol = full_path_dir_sol/partial_path;
+            //std::cout << " In load the first full path is " << p << std::endl;
             if ( !fs::exists( p ) )
             {
                 std::ostringstream os2;
-                os2 << _M_name << sep << suffix<< this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                os2 << _M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
 
                 if ( !fs::exists( p ) )
-                    return;
+                {
+                    LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
+                    //std::cerr << "ATTENTION :  p does not exist
+                    return 0;
+                }
             }
-
+            LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
             if ( !fs::is_regular_file( p ) )
-                return;
+            {
+
+                LOG(WARNING) << "[load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
+                return 0;
+            }
 
             fs::ifstream ifs( p );
 
@@ -2835,7 +3004,9 @@ public:
             {
                 //boost::archive::xml_iarchive ia(ifs);
                 //ia >> *this;
+                return false;
             }
+            return true;
         }
         //@}
     private:
@@ -2852,7 +3023,7 @@ public:
             if ( Archive::is_saving::value )
             {
                 //std::cout << "saving in version " << version << "\n";
-                size_type s = this->size();
+                size_type s = this->functionSpace()->nLocalDofWithGhost();
                 ar & boost::serialization::make_nvp( "size", s );
 
                 std::vector<int> no = _M_functionspace->basisOrder();
@@ -2890,8 +3061,9 @@ public:
                 // verify number of degree of freedom
                 Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
 
-                if ( s != this-> size() )
-                    throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->size() ).str() );
+                if ( s != this->functionSpace()->nLocalDofWithGhost() )
+                    throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->functionSpace()->nLocalDofWithGhost() ).str() );
+
 
                 std::vector<int> order;
                 std::string family;
@@ -2981,12 +3153,13 @@ public:
 
     FunctionSpace( mesh_ptrtype const& mesh,
                    std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                   periodicity_type periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
         :
         _M_worldsComm( _worldsComm ),
         _M_worldComm( new WorldComm( _worldsComm[0] ) )
     {
-        this->init( mesh, 0, dofindices );
+        this->init( mesh, 0, dofindices, periodicity );
     }
 
     /**
@@ -3071,7 +3244,8 @@ public:
 
     void init( mesh_ptrtype const& mesh,
                size_type mesh_components,
-               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices )
+               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+               periodicity_type periodicity = periodicity_type() )
     {
 
         Context ctx( mesh_components );
@@ -3080,7 +3254,7 @@ public:
         Debug( 5010 ) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
-        this->init( mesh, mesh_components, periodicity_type(), dofindices, mpl::bool_<is_composite>() );
+        this->init( mesh, mesh_components, periodicity, dofindices, mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
     }
 
@@ -3464,24 +3638,36 @@ public:
             std::vector<std::vector<int> > is;
             auto initial = boost::make_tuple( cptSpaces,start,is );
 
-            auto result = boost::fusion::fold( functionSpaces(), initial,  detail::computeNDofForEachSpace() );
+            // get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
+            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), detail::computeStartOfFieldSplit() ).template get<1>();
+            // compute split
+            auto result = boost::fusion::fold( functionSpaces(), initial,  detail::computeNDofForEachSpace(startSplit) );
             is = result.template get<2>();
 #if 0
-            std::cout << "split size=" << result.template get<2>().size() << " nspace=" << nSpaces << "\n";
-            std::cout << "split:\n";
-
-            std::cout << "\n\n";
-
-            for ( int s= 0; s < nSpaces; ++s )
+            for ( int proc = 0; proc<this->worldComm().globalSize(); ++proc )
             {
-                std::cout << "space: " << is[s].size() << "\n";
-
-                for ( int i = 0; i < is[s].size(); ++i )
+                this->worldComm().globalComm().barrier();
+                if ( proc==this->worldComm().globalRank() )
                 {
-                    std::cout << is[s][i] << " ";
-                }
+                    std::cout << "proc " << proc << "\n";
+                    std::cout << "split size=" << result.template get<2>().size() << " nspace=" << nSpaces << "\n";
+                    std::cout << "split:\n";
 
-                std::cout << "\n\n";
+                    //std::cout << "\n\n";
+
+
+                    for ( int s= 0; s < nSpaces; ++s )
+                    {
+                        std::cout << "space: " << is[s].size() << "\n";
+
+                        for ( int i = 0; i < is[s].size(); ++i )
+                        {
+                            std::cout << is[s][i] << " ";
+                        }
+
+                        std::cout << "\n\n";
+                    }
+                }
             }
 
 #endif
@@ -3587,6 +3773,11 @@ public:
     */
     bool findPoint( node_type const& pt, size_type &cv, node_type& ptr ) const;
 
+    /**
+     * rebuild dof points after a mesh mover for example
+     */
+    void rebuildDofPoints() { rebuildDofPoints(mpl::bool_<is_composite>()); }
+
     //@}
 
     /** @name  Mutators
@@ -3602,9 +3793,9 @@ public:
 
     void printInfo() const
     {
-        Log() << " number of components : " << qDim() << "\n";
-        Log() << "         n Global Dof : " << nDof() << "\n";
-        Log() << "         n Local  Dof : " << nLocalDof() << "\n";
+        LOG(INFO) << " number of components : " << qDim() << "\n";
+        LOG(INFO) << "         n Global Dof : " << nDof() << "\n";
+        LOG(INFO) << "         n Local  Dof : " << nLocalDof() << "\n";
     }
 
     //@}
@@ -3654,6 +3845,9 @@ private:
     size_type nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const;
     size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const;
     size_type nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const;
+
+    void rebuildDofPoints( mpl::bool_<false> );
+    void rebuildDofPoints( mpl::bool_<true> );
 
     friend class ComponentSpace;
     class ComponentSpace
@@ -3772,6 +3966,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     Debug( 5010 ) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
     _M_mesh = __m;
 
+
     if ( basis_type::nDofPerEdge || nDim >= 3 )
         mesh_components |= MESH_UPDATE_EDGES;
 
@@ -3787,9 +3982,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     _M_mesh->updateForUse();
 
+    if ( is_periodic )
+    {
+        _M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
+    }
+
     _M_ref_fe = basis_ptrtype( new basis_type );
 
-    _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, periodicity, this->worldsComm()[0] ) );
+    _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] ) );
 
     Debug( 5010 ) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
     _M_dof->setDofIndices( dofindices );
@@ -3805,9 +4005,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         // it will use in mixed spaces only numberofSudomains/numberofspace processors
         //
         _M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( _M_mesh,
-                        MESH_COMPONENTS_DEFAULTS,
-                        periodicity,
-                        std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
+                                                                                           MESH_COMPONENTS_DEFAULTS,
+                                                                                           periodicity,
+                                                                                           std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
     }
 
     Debug( 5010 ) << "nb dim : " << qDim() << "\n";
@@ -3830,16 +4030,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
-        size_type mesh_components,
-        periodicity_type const& periodicity,
-        std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
-        mpl::bool_<true> )
+                                         size_type mesh_components,
+                                         periodicity_type const& periodicity,
+                                         std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                                         mpl::bool_<true> )
 {
     Debug( 5010 ) << "calling init(<composite>) begin\n";
     _M_mesh = __m;
 
     // todo : check worldsComm size and _M_functionspaces are the same!
-    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype>( __m, dofindices, this->worldsComm() ) );
+    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
+                                                                                                 dofindices, this->worldsComm() ) );
 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     _M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
@@ -4033,6 +4234,20 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const
 {
     return _M_dof->nLocalDofWithoutGhost(proc);
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<false> )
+{
+    _M_dof->rebuildDofPoints( *_M_mesh );
+}
+
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+void
+FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<true> )
+{
+    fusion::for_each( _M_functionspaces, detail::rebuildDofPointsTool() );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4252,7 +4467,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initFromSpace( functionspace
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>&
-FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element const& __e )
+FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> const& __e )
 {
     if (  this != &__e )
     {
@@ -5985,6 +6200,31 @@ measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Me
     }
 
     return _fn;
+}
+
+template<typename EltType>
+typename fusion::result_of::accumulate<typename EltType::functionspace_type::functionspace_vector_type,
+                                       fusion::vector<>,
+                                       detail::CreateElementVector<EltType> >::type
+subelements( EltType const& e, std::vector<std::string> const& n )
+{
+    return fusion::accumulate( e.functionSpaces(), fusion::vector<>(), detail::CreateElementVector<EltType>( e, n ) );
+}
+
+template<typename ElementType, typename CoeffType>
+ElementType
+expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
+{
+    auto res = b[0].functionSpace()->element();
+    res.zero();
+    if ( M == -1 ) M = c.size() ;
+    //LOG_ASSERT( b.size() == c.size() ) << " b.size=" << b.size() << " c.size=" << c.size() << "\n";
+    for( int i = 0; i < M; ++i )
+    {
+        res.add( c[i], b[i] );
+    }
+
+    return res;
 }
 
 } // Feel

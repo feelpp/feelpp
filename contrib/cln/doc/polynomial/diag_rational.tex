@@ -1,0 +1,269 @@
+%% This LaTeX-file was created by <bruno> Sun Feb 16 14:19:08 1997
+%% LyX 0.10 (C) 1995 1996 by Matthias Ettrich and the LyX Team
+
+%% Don't edit this file unless you are sure what you are doing.
+\documentclass[12pt,a4paper,oneside,onecolumn]{article}
+\usepackage[]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage[dvips]{epsfig}
+
+%%
+%% BEGIN The lyx specific LaTeX commands.
+%%
+
+\makeatletter
+\def\LyX{L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\spacefactor1000}%
+\newcommand{\lyxtitle}[1] {\thispagestyle{empty}
+\global\@topnum\z@
+\section*{\LARGE \centering \sffamily \bfseries \protect#1 }
+}
+\newcommand{\lyxline}[1]{
+{#1 \vspace{1ex} \hrule width \columnwidth \vspace{1ex}}
+}
+\newenvironment{lyxsectionbibliography}
+{
+\section*{\refname}
+\@mkboth{\uppercase{\refname}}{\uppercase{\refname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\newenvironment{lyxchapterbibliography}
+{
+\chapter*{\bibname}
+\@mkboth{\uppercase{\bibname}}{\uppercase{\bibname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\def\lxq{"}
+\newenvironment{lyxcode}
+{\list{}{
+\rightmargin\leftmargin
+\raggedright
+\itemsep 0pt
+\parsep 0pt
+\ttfamily
+}%
+\item[]
+}
+{\endlist}
+\newcommand{\lyxlabel}[1]{#1 \hfill}
+\newenvironment{lyxlist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{#1}
+\setlength{\leftmargin}{\labelwidth}
+\addtolength{\leftmargin}{\labelsep}
+\renewcommand{\makelabel}{\lyxlabel}}}
+{\end{list}}
+\newcommand{\lyxletterstyle}{
+\setlength\parskip{0.7em}
+\setlength\parindent{0pt}
+}
+\newcommand{\lyxaddress}[1]{
+\par {\raggedright #1 
+\vspace{1.4em}
+\noindent\par}
+}
+\newcommand{\lyxrightaddress}[1]{
+\par {\raggedleft \begin{tabular}{l}\ignorespaces
+#1
+\end{tabular}
+\vspace{1.4em}
+\par}
+}
+\newcommand{\lyxformula}[1]{
+\begin{eqnarray*}
+#1
+\end{eqnarray*}
+}
+\newcommand{\lyxnumberedformula}[1]{
+\begin{eqnarray}
+#1
+\end{eqnarray}
+}
+\makeatother
+
+%%
+%% END The lyx specific LaTeX commands.
+%%
+
+\pagestyle{plain}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+%% Begin LyX user specified preamble:
+\catcode`@=11 % @ ist ab jetzt ein gewoehnlicher Buchstabe
+\def\Res{\mathop{\operator@font Res}}
+\def\ll{\langle\!\langle}
+\def\gg{\rangle\!\rangle}
+\catcode`@=12 % @ ist ab jetzt wieder ein Sonderzeichen
+
+
+%% End LyX user specified preamble.
+\begin{document}
+
+
+\title{The diagonal of a rational function}
+
+\begin{description}
+
+\item [Theorem:]~
+
+\end{description}
+
+Let  \( M \) be a torsion-free  \( R \)-module, and  \( d>0 \). Let 
+\[
+f=\sum _{n_{1},...,n_{d}}a_{n_{1},...,n_{d}}\, x_{1}^{n_{1}}\cdots x_{d}^{n_{d}}\in M[[x_{1},\ldots x_{d}]]\]
+be a rational function,
+i.e. there are  \( P\in M[x_{1},\ldots ,x_{d}] \) and  \( Q\in R[x_{1},\ldots ,x_{d}] \) with  \( Q(0,\ldots ,0)=1 \) and  \( Q\cdot f=P \). Then the full diagonal of  \( f \)
+\[
+g=\sum ^{\infty }_{n=0}a_{n,\ldots ,n}\, x_{1}^{n}\]
+is
+a D-finite element of  \( M[[x_{1}]] \), w.r.t.  \( R[x_{1}] \) and  \( \{\partial _{x_{1}}\} \).
+
+\begin{description}
+
+\item [Proof:]~
+
+\end{description}
+
+From the hypotheses,  \( M[[x_{1},\ldots ,x_{d}]] \) is a torsion-free differential module over
+ \( R[x_{1},\ldots ,x_{d}] \) w.r.t. the derivatives  \( \{\partial _{x_{1}},\ldots ,\partial _{x_{d}}\} \), and  \( f \) is a D-finite element of  \( M[[x_{1},\ldots ,x_{d}]] \) over
+ \( R[x_{1},\ldots ,x_{d}] \) w.r.t.  \( \{\partial _{x_{1}},\ldots ,\partial _{x_{d}}\} \). Now apply the general diagonal theorem ([1], section 2.18)
+ \( d-1 \) times.
+
+\begin{description}
+
+\item [Theorem:]~
+
+\end{description}
+
+Let  \( R \) be an integral domain of characteristic 0 and  \( M \) simultaneously
+a torsion-free  \( R \)-module and a commutative  \( R \)-algebra without zero divisors.
+Let 
+\[
+f=\sum _{m,n\geq 0}a_{m,n}x^{m}y^{n}\in M[[x,y]]\]
+ be a rational function. Then the diagonal of  \( f \)
+\[
+g=\sum ^{\infty }_{n=0}a_{n,n}\, x^{n}\]
+ is algebraic
+over  \( R[x] \).
+
+\begin{description}
+
+\item [Motivation~of~proof:]~
+
+\end{description}
+
+The usual proof ([2]) uses complex analysis and works only for  \( R=M=C \).
+The idea is to compute
+\[
+g(x^{2})=\frac{1}{2\pi i}\oint _{|z|=1}f(xz,\frac{x}{z})\frac{dz}{z}\]
+This integral, whose integrand is a rational
+function in  \( x \) and  \( z \), is calculated using the residue theorem. Since
+ \( f(x,y) \) is continuous at  \( (0,0) \), there is a  \( \delta >0 \) such that  \( f(x,y)\neq \infty  \) for  \( |x|<\delta  \),  \( |y|<\delta  \). It follows
+that for all  \( \varepsilon >0 \) and  \( |x|<\delta \varepsilon  \) all the poles of  \( f(xz,\frac{x}{z}) \) are contained in  \( \{z:|z|<\varepsilon \}\cup \{z:|z|>\frac{1}{\varepsilon }\} \). Thus the
+poles of  \( f(xz,\frac{x}{z}) \), all algebraic functions of  \( x \) -- let's call them  \( \zeta _{1}(x),\ldots \zeta _{s}(x) \) --,
+can be divided up into those for which  \( |\zeta _{i}(x)|=O(|x|) \) as  \( x\rightarrow 0 \) and those for which
+ \( \frac{1}{|\zeta _{i}(x)|}=O(|x|) \) as  \( x\rightarrow 0 \). It follows from the residue theorem that for  \( |x|<\delta  \)
+\[
+g(x^{2})=\sum _{\zeta =0\vee \zeta =O(|x|)}\Res _{z=\zeta }\, f(xz,\frac{x}{z})\]
+ This is algebraic
+over  \( C(x) \). Hence  \( g(x) \) is algebraic over  \( C(x^{1/2}) \), hence also algebraic over  \( C(x) \).
+
+\begin{description}
+
+\item [Proof:]~
+
+\end{description}
+
+Let 
+\[
+h(x,z):=f(xz,\frac{x}{z})=\sum ^{\infty }_{m,n=0}a_{m,n}x^{m+n}z^{m-n}\in M[[xz,xz^{-1}]]\]
+Then  \( g(x^{2}) \) is the coefficient of  \( z^{0} \) in  \( h(x,z) \). Let  \( N(x,z):=z^{d}Q(xz,\frac{x}{z}) \) (with  \( d:=\max (\deg _{y}P,\deg _{y}Q) \)) be ``the denominator''
+of  \( h(x,z) \). We have  \( N(x,z)\in R[x,z] \) and  \( N\neq 0 \) (because  \( N(0,z)=z^{d} \)). Let  \( K \) be the quotient field of
+ \( R \). Thus  \( N(x,z)\in K[x][z]\setminus \{0\} \).
+
+It is well-known (see [3], p.64, or [4], chap. IV, §2, prop. 8, or
+[5], chap. III, §1) that the splitting field of  \( N(x,z) \) over  \( K(x) \) can be embedded
+into a field  \( L((x^{1/r})) \), where  \( r \) is a positive integer and  \( L \) is a finite-algebraic
+extension field of  \( K \), i.e. a simple algebraic extension  \( L=K(\alpha )=K\alpha ^{0}+\cdots +K\alpha ^{u-1} \). 
+
+ \( \widetilde{M}:=(R\setminus \{0\})^{-1}\cdot M \) is a  \( K \)-vector space and a commutative  \( K \)-algebra without zero divisors.
+ \( \widehat{M}:=\widetilde{M}\alpha ^{0}+\cdots +\widetilde{M}\alpha ^{u-1} \) is an  \( L \)-vector space and a commutative  \( L \)-algebra without zero divisors.
+
+
+
+\begin{eqnarray*}
+\widehat{M}\ll x,z\gg  & := & \widehat{M}[[x^{1/r}\cdot z,x^{1/r}\cdot z^{-1},x^{1/r}]][x^{-1/r}]\\
+ & = & \left\{ \sum _{m,n}c_{m,n}x^{m/r}z^{n}:c_{m,n}\neq 0\Rightarrow |n|\leq m+O(1)\right\} 
+\end{eqnarray*}
+is an  \( L \)-algebra which contains  \( \widehat{M}((x^{1/r})) \).
+
+Since  \( N(x,z) \) splits into linear factors in  \( L((x^{1/r}))[z] \),  \( N(x,z)=l\prod ^{s}_{i=1}(z-\zeta _{i}(x))^{k_{i}} \), there exists a partial
+fraction decomposition of  \( h(x,z)=\frac{P(xz,\frac{x}{z})}{Q(xz,\frac{x}{z})}=\frac{z^{d}P(xz,\frac{x}{z})}{N(x,z)} \) in  \( \widehat{M}\ll x,z\gg  \):
+
+
+\[
+h(x,z)=\sum ^{l}_{j=0}P_{j}(x)z^{j}+\sum ^{s}_{i=1}\sum ^{k_{i}}_{k=1}\frac{P_{i,k}(x)}{(z-\zeta _{i}(x))^{k}}\]
+with  \( P_{j}(x),P_{i,k}(x)\in \widehat{M}((x^{1/r})) \).
+
+Recall that we are looking for the coefficient of  \( z^{0} \) in  \( h(x,z) \). We compute
+it separately for each summand.
+
+If  \( \zeta _{i}(x)=ax^{m/r}+... \) with  \( a\in L\setminus \{0\} \),  \( m>0 \), or  \( \zeta _{i}(x)=0 \), we have
+
+
+\begin{eqnarray*}
+\frac{1}{(z-\zeta _{i}(x))^{k}} & = & \frac{1}{z^{k}}\cdot \frac{1}{\left( 1-\frac{\zeta _{i}(x)}{z}\right) ^{k}}\\
+ & = & \frac{1}{z^{k}}\cdot \sum ^{\infty }_{j=0}{k-1+j\choose k-1}\left( \frac{\zeta _{i}(x)}{z}\right) ^{j}\\
+ & = & \sum ^{\infty }_{j=0}{k-1+j\choose k-1}\frac{\zeta _{i}(x)^{j}}{z^{k+j}}
+\end{eqnarray*}
+hence the coefficient of  \( z^{0} \) in  \( \frac{P_{i,k}(x)}{(z-\zeta _{i}(x))^{k}} \) is  \( 0 \).
+
+If  \( \zeta _{i}(x)=ax^{m/r}+... \) with  \( a\in L\setminus \{0\} \),  \( m<0 \), we have
+\[
+\frac{1}{(z-\zeta _{i}(x))^{k}}=\frac{1}{(-\zeta _{i}(x))^{k}}\cdot \frac{1}{\left( 1-\frac{z}{\zeta _{i}(x)}\right) ^{k}}=\frac{1}{(-\zeta _{i}(x))^{k}}\cdot \sum _{j=0}^{\infty }{k-1+j\choose k-1}\left( \frac{z}{\zeta _{i}(x)}\right) ^{j}\]
+hence the coefficient of  \( z^{0} \) in  \( \frac{P_{i,k}(x)}{(z-\zeta _{i}(x))^{k}} \) is  \( \frac{P_{i,k}(x)}{(-\zeta _{i}(x))^{k}} \).
+
+The case  \( \zeta _{i}(x)=ax^{m/r}+... \) with  \( a\in L\setminus \{0\} \),  \( m=0 \), cannot occur, because it would imply  \( 0=N(0,\zeta _{i}(0))=N(0,a)=a^{d}. \)
+
+Altogether we have
+\[
+g(x^{2})=[z^{0}]h(x,z)=P_{0}(x)+\sum _{\frac{1}{\zeta _{i}(x)}=o(x)}\sum ^{k_{i}}_{k=1}\frac{P_{i,k}(x)}{(-\zeta _{i}(x))^{k}}\in \widehat{M}((x^{1/r}))\]
+
+
+Since all  \( \zeta _{i}(x) \)(in  \( L((x^{1/r})) \)) and all  \( P_{j}(x),P_{i,k}(x) \) (in  \( \widehat{M}((x^{1/r})) \)) are algebraic over  \( K(x) \), the same
+holds also for  \( g(x^{2}) \). Hence  \( g(x) \) is algebraic over  \( K(x^{1/2}) \), hence also over  \( K(x) \).
+After clearing denominators, we finally conclude that  \( g(x) \) is algebraic
+over  \( R[x] \).
+
+\begin{lyxsectionbibliography}
+
+\item [1] Bruno Haible: D-finite power series in several variables. \em Diploma
+thesis, University of Karlsruhe, June 1989. \em Sections 2.18 and
+2.20.
+
+\item [2] M. L. J. Hautus, D. A. Klarner: The diagonal of a double power
+series. \em Duke Math. J. \em \bfseries 38 \mdseries (1971),
+229-235.
+
+\item [3] C. Chevalley: Introduction to the theory of algebraic functions
+of one variable. \em Mathematical Surveys VI. American Mathematical
+Society.\em 
+
+\item [4] Jean-Pierre Serre: Corps locaux. \em Hermann. Paris \em 1968.
+
+\item [5] Martin Eichler: Introduction to the theory of algebraic numbers
+and functions. \em Academic Press. New York, London \em 1966.
+
+\end{lyxsectionbibliography}
+
+\end{document}

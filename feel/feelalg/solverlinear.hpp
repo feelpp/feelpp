@@ -148,6 +148,16 @@ public:
     }
 
     /**
+     * \return the prefix
+     */
+    std::string const& prefix() const{ return M_prefix; }
+
+    /**
+     * set the prefix of the solver (typically for command line options)
+     */
+    void setPrefix( std::string const& p ) { M_prefix = p; }
+
+    /**
      * set tolerances: relative tolerance \p rtol, divergence tolerance \p dtol
      * and absolute tolerance \p atol
      */
@@ -254,8 +264,24 @@ public:
      */
     virtual void setPrecMatrixStructure( MatrixStructure mstruct  )
     {
+        // warning : in boths cases!
+        if ( M_preconditioner )
+            M_preconditioner->setPrecMatrixStructure(mstruct);
+
         M_prec_matrix_structure = mstruct;
     }
+
+    /**
+     * show KSP monitor
+     */
+    bool showKSPMonitor() const { return M_showKSPMonitor; }
+    void setShowKSPMonitor( bool b ) { M_showKSPMonitor=b; }
+
+    /**
+     * show KSP converged reason
+     */
+    bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
+    void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
 
     /**
      * This function calls the solver "_M_solver_type" preconditioned
@@ -329,6 +355,8 @@ protected:
     ///
     po::variables_map M_vm;
 
+    std::string M_prefix;
+
     /// relative tolerance
     double M_rtolerance;
 
@@ -372,7 +400,8 @@ protected:
 
     MatrixStructure M_prec_matrix_structure;
 
-
+    bool M_showKSPMonitor;
+    bool M_showKSPConvergedReason;
 };
 
 
@@ -387,7 +416,9 @@ SolverLinear<T>::SolverLinear ( WorldComm const& worldComm ) :
     _M_preconditioner_type ( LU_PRECOND ),
     M_preconditioner(),
     _M_is_initialized      ( false ),
-    M_prec_matrix_structure( SAME_NONZERO_PATTERN )
+    M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
+    M_showKSPMonitor( false ),
+    M_showKSPConvergedReason( false )
 {
 }
 
@@ -399,7 +430,9 @@ SolverLinear<T>::SolverLinear ( po::variables_map const& vm, WorldComm const& wo
     _M_solver_type         ( GMRES ),
     _M_preconditioner_type ( LU_PRECOND ),
     _M_is_initialized      ( false ),
-    M_prec_matrix_structure( SAME_NONZERO_PATTERN )
+    M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
+    M_showKSPMonitor( false ),
+    M_showKSPConvergedReason( false )
 {
 }
 

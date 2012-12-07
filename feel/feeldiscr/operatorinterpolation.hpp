@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-01
 
   Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file operatorinterpolation.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Chabannes Vincent <vincent.chabannes@imag.fr>
    \date 2008-02-01
  */
@@ -554,7 +554,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------
     //init the localization tool
     auto locTool = this->domainSpace()->mesh()->tool_localization();
-    locTool->updateForUse();
+    if ( this->interpolationType().onlyLocalizeOnBoundary() ) locTool->updateForUseBoundaryFaces();
+    else locTool->updateForUse();
+    // kdtree parameter
+    locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+
     //locTool->kdtree()->nbNearNeighbor(3);
     //locTool->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
     //locTool->setExtrapolation(false);
@@ -816,8 +820,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( doExtrapolationAtStart ) locTool->setExtrapolation(false);
 
 
-   uint16_type nMPIsearch=5;
-   if (this->domainSpace()->mesh()->worldComm().localSize()<5) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
+    uint16_type nMPIsearch=15;//5;
+    if( InterpType::value==1) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
+    else if (this->domainSpace()->mesh()->worldComm().localSize()<nMPIsearch) nMPIsearch=this->domainSpace()->mesh()->worldComm().localSize();
    // only one int this case
    if (!this->interpolationType().searchWithCommunication()) nMPIsearch=1;
    uint16_type counterMPIsearch=1;

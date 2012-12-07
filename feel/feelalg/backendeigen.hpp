@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-06-20
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -214,6 +214,7 @@ public:
     value_type dot( const eigen_vector_type& f,
                     const eigen_vector_type& x ) const
     {
+        return f.vec().dot( x.vec() );
     }
 
 

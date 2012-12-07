@@ -59,6 +59,7 @@
 #include <OpenFile.h>
 #include <StringUtils.h>
 #include <Field.h>
+#include <PView.h>
 #include <PViewData.h>
 #endif
 
@@ -139,21 +140,31 @@ namespace Feel
         typedef typename mesh_type::point_type point_type;
 
         //! Constructor
-        MeshAdaptation(backend_ptrtype& backend)
-            :
-            M_backend(backend)
+        MeshAdaptation()
         {
             // build default value for _var parameter of interface
             element_type initVar;
             std::pair<element_type, std::string> initPairVar = std::make_pair( initVar, "defaultVar");
-            defaultVar.push_back(initPairVar);
+            M_defaultVar.push_back(initPairVar);
 
             // build default value for _metric parameter of interface
             p1_element_type initMetric1;
             std::vector<p1_element_type> initMetric;
             initMetric.push_back(initMetric1);
             std::pair<std::vector<p1_element_type>, std::string> initPairMetric = std::make_pair(initMetric, "defaultMetric");
-            defaultMetric.push_back(initPairMetric);
+            M_defaultMetric.push_back(initPairMetric);
+        }
+
+        //! Set of measures on a dof
+        std::vector<vectorN_type> const measures()
+        {
+            return M_measures;
+        }
+
+        //! Set of directions on a dof
+        std::vector<matrixN_type> const directions()
+        {
+            return M_directions;
         }
 
         //! Interface
@@ -174,7 +185,7 @@ namespace Feel
 
         //! Compute the metric for mesh adaptation using hessian matrix
         void computeMetric(const double tol, const double h_min, const double h_max, const matrixN_type & hessian_matrix,
-                           matrixN_type & M, double & max_eigenvalue);
+                           matrixN_type & M, double & max_eigenvalue, int dofId);
 
         //! Mesh adaptation from Hessian matrix
         //1 : proj u Pk -> P1 and Hessian P1
@@ -209,8 +220,8 @@ namespace Feel
                                          (geofile, (std::string)) // geometry
                                          (adaptType, (std::string))) //type of adaptation : isotropic | anisotropic
                                         (optional
-                                         (var, (std::list< std::pair<element_type, std::string> >), defaultVar)
-                                         (metric, (std::list< std::pair< std::vector<p1_element_type>, std::string> >), defaultMetric)
+                                         (var, (std::list< std::pair<element_type, std::string> >), M_defaultVar)
+                                         (metric, (std::list< std::pair< std::vector<p1_element_type>, std::string> >), M_defaultMetric)
                                          (hMin, (double), 1.0e-3)
                                          (hMax, (double), 100.0)
                                          (tol, (double), 1.0))
@@ -221,10 +232,11 @@ namespace Feel
         }
 
     private :
-        backend_ptrtype M_backend;
+        std::list< std::pair<element_type, std::string> > M_defaultVar;
+        std::list< std::pair<std::vector<p1_element_type>, std::string> > M_defaultMetric;
 
-        std::list< std::pair<element_type, std::string> > defaultVar;
-        std::list< std::pair<std::vector<p1_element_type>, std::string> > defaultMetric;
+        std::vector<vectorN_type> M_measures;
+        std::vector<matrixN_type> M_directions;
 
     };
 
@@ -283,9 +295,12 @@ namespace Feel
         std::string newMeshName = this->buildAdaptedMesh( geofile, finalName, posfiles, adaptType=="anisotropic");
 
         // Update the mesh
-        mesh_ptrtype newMesh = loadGMSHMesh( _mesh = new mesh_type,
-                                             _filename = newMeshName,
-                                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES);
+        LOG(INFO) << "load the new mesh...\n";
+        mesh_ptrtype newMesh = mesh_type::New();
+        newMesh = loadGMSHMesh( _mesh = new mesh_type,
+                                _filename = newMeshName,
+                                _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES);
+        LOG(INFO) << "new mesh loaded \n";
 
         return newMesh;
     }
@@ -677,7 +692,7 @@ namespace Feel
 
         // /* Create Fields from PView list */
         ::FieldManager* myFieldManager = m->getFields();
-        std::vector<int> idList;
+        std::list<int> idList;
 
         for (unsigned int i = 0; i < ::PView::list.size(); i++)
             {
@@ -709,10 +724,11 @@ namespace Feel
             myFieldManager->newField(id, "Min");
         ::Field *f = myFieldManager->get(id);
 
-        /// Erase (eventual) old list of field for MinAniso
-        f->options["FieldsList"]->list().erase( f->options["FieldsList"]->list().begin(), f->options["FieldsList"]->list().end() );
+        /// Check if list of field for MinAniso is empty
+        assert( f->options["FieldsList"]->list().size() == 0);
         /// Copy idlist vector into algorithm fieldlist
-        std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
+        //std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
+        f->options["FieldsList"]->list(idList);
 
         // /* Now create the adapted mesh */
 
@@ -773,7 +789,7 @@ namespace Feel
     MeshAdaptation<Dim,
                    Order,
                    OrderGeo>::computeMetric(const double tol, const double hMin, const double hMax,
-                                            const matrixN_type & hessianMatrix, matrixN_type & metric, double & maxEigenvalue)
+                                            const matrixN_type & hessianMatrix, matrixN_type & metric, double & maxEigenvalue, int dofId)
     {
         using namespace Feel::vf;
 
@@ -804,8 +820,13 @@ namespace Feel
             for (int i=0; i<Dim; i++)
                 R(i,j)=real((eigenSolver.eigenvectors())(i,j)); // because eigenvectors are complex
 
-        metric = (R * S) * R.transpose(); // to be checked
+        metric = (R * S) * R.transpose();
         maxEigenvalue = eigenvalues.maxCoeff();
+
+        for(int i=0; i<Dim; i++)
+            M_measures[dofId](i) = 1.0/math::sqrt(eigenvalues(i));
+
+        M_directions[dofId] = R;
     }
 
     template<int Dim,
@@ -821,6 +842,10 @@ namespace Feel
 
         p0_space_ptrtype P0h = p0_space_type::New( mesh ); //P0 space
         p1_space_ptrtype P1h = p1_space_type::New( mesh ); //P1 space
+
+        // Initialize M_measures and M_directions size
+        M_measures.resize(P1h->nLocalDof());
+        M_directions.resize(P1h->nLocalDof());
 
         // Store measure on each point
         int bbItemSize;
@@ -893,7 +918,7 @@ namespace Feel
 
                 double maxEigenvalue;
                 matrixN_type metrics;
-                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue);
+                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue, dofptIdP1);
 
                 if (aniso)
                     {
@@ -961,7 +986,12 @@ namespace Feel
         using namespace Feel::vf;
 
         p1_space_ptrtype P1h = p1_space_type::New( mesh ); //P1 space
-        p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh ); //P1 space
+        p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh ); //P1 (vectorial) space
+
+        // Initialize M_measures and M_directions size
+        M_measures.resize(P1h->nLocalDof());
+        M_directions.resize(P1h->nLocalDof());
+
 
         // Define P(k-2) space from Order parameter
         typedef bases<Lagrange<Order-2,Scalar, Discontinuous> > p_km2_basis_type;
@@ -1002,13 +1032,14 @@ namespace Feel
         /// Proj -> P1 for each hessian matrix components :
         /// Find \int proj_P1(U)V = \int UV \forall V
         std::vector<p1_element_type> dvard2P1(Dim*Dim, P1h->element());
-        auto l2proj = opProjection( _domainSpace=P1h, _imageSpace=P1h );
+        //auto l2proj = opProjection( _domainSpace=P1h, _imageSpace=P1h );
 
         for(int i=0; i<Dim; i++)
             {
                 for (int j=0; j<Dim; j++)
                     {
-                        dvard2P1[i+j*Dim] = l2proj->project( _expr=idv( dvard2Pkm2[i+j*Dim]) );
+                        //dvard2P1[i+j*Dim] = l2proj->project( _expr=idv( dvard2Pkm2[i+j*Dim]) );
+                        dvard2P1[i+j*Dim] = vf::project( P1h, elements(mesh), idv( dvard2Pkm2[i+j*Dim]) );
                     }
             }
         // ******************************************************************************************* //
@@ -1041,7 +1072,7 @@ namespace Feel
 
                 double maxEigenvalue;
                 matrixN_type metrics;
-                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue);
+                computeMetric(tol, hMin, hMax, hessianMatrix, metrics, maxEigenvalue, dofptIdP1);
 
                 if (aniso)
                     {

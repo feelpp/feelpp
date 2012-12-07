@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2011-06-18
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -23,16 +23,24 @@
 */
 /**
    \file opusapp.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-06-18
  */
 #ifndef __OpusApp_H
 #define __OpusApp_H 1
 
+#include <feel/feel.hpp>
+
 #include <boost/assign/std/vector.hpp>
 #include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/Dense>
+
 
 namespace Feel
 {
@@ -67,358 +75,683 @@ enum class SamplingMode
  *
  * @author Christophe Prud'homme
  */
-template<typename ModelType>
+    template<typename ModelType,
+             template < typename ReducedMethod > class RM=CRB,
+             template < typename ModelInterface > class Model=CRBModel>
 class OpusApp   : public Application
 {
     typedef Application super;
 public:
 
+    typedef double value_type;
+
+    //! model type
+    typedef ModelType model_type;
+    typedef boost::shared_ptr<ModelType> model_ptrtype;
+
+    //! function space type
+    typedef typename model_type::functionspace_type functionspace_type;
+    typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
+
+    typedef typename model_type::element_type element_type;
+
+    typedef Eigen::VectorXd vectorN_type;
+
+#if 0
+    //old
     typedef CRBModel<ModelType> crbmodel_type;
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRB<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
+#endif
+
+    typedef Model<ModelType> crbmodel_type;
+    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef RM<crbmodel_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
+    typedef CRBModel<ModelType> crbmodelbilinear_type;
+
+    OpusApp()
+        :
+        super(),
+        M_mode( ( CRBModelMode )this->vm()[_o( this->about().appName(),"run.mode" )].template as<int>() )
+        {
+            this->init();
+        }
 
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
         super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
         M_mode( ( CRBModelMode )this->vm()[_o( this->about().appName(),"run.mode" )].template as<int>() )
-    {
-        this->init();
-    }
+        {
+            this->init();
+        }
 
     OpusApp( AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
         super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
         M_mode( mode )
-    {
-        this->init();
-    }
+        {
+            this->init();
+        }
 
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
         super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
         M_mode( ( CRBModelMode )this->vm()[_o( this->about().appName(),"run.mode" )].template as<int>() )
-    {
-        this->init();
-    }
+        {
+            this->init();
+        }
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
         super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
         M_mode( mode )
-    {
-        this->init();
-    }
+        {
+            this->init();
+        }
     void init()
-    {
-        try
         {
-            M_current_path = fs::current_path();
+            try
+            {
+                M_current_path = fs::current_path();
 
-            std::srand( static_cast<unsigned>( std::time( 0 ) ) );
-            Debug() << "[OpusApp] constructor " << this->about().appName()  << "\n";
-            this->changeRepository( boost::format( "%1%/h_%2%/" )
-                                    % this->about().appName()
-                                    % this->vm()["hsize"].template as<double>()
-                                  );
-            Debug() << "[OpusApp] ch repo" << "\n";
-            this->setLogs();
-            Debug() << "[OpusApp] set Logs" << "\n";
-            Debug() << "[OpusApp] mode:" << ( int )M_mode << "\n";
-            model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
-            Debug() << "[OpusApp] get model done" << "\n";
+                std::srand( static_cast<unsigned>( std::time( 0 ) ) );
+                std::cout << this->about().appName() << std::endl;
+                LOG(INFO) << "[OpusApp] constructor " << this->about().appName()  << "\n";
 
+                if( this->vm().count("hsize") && !this->vm().count("geofile") )
+                    {
+                        this->changeRepository( boost::format( "%1%/h_%2%/" )
+                                                % this->about().appName()
+                                                % this->vm()["hsize"].template as<double>()
+                                                );
+                    }
+                if( this->vm().count("geofile") )
+                    {
+                        this->changeRepository( boost::format( "%1%/%2%/" )
+                                                % this->about().appName()
+                                                % this->vm()["geofile"].template as<std::string>()
+                                                );
+                    }
 
-            crb = crb_ptrtype( new crb_type( this->about().appName(),
-                                             this->vm() ,
-                                             model ) );
-            Debug() << "[OpusApp] get crb done" << "\n";
-            //crb->setTruthModel( model );
-            Debug() << "[OpusApp] constructor done" << "\n";
+                LOG(INFO) << "[OpusApp] ch repo" << "\n";
+                this->setLogs();
+                LOG(INFO) << "[OpusApp] set Logs" << "\n";
+                LOG(INFO) << "[OpusApp] mode:" << ( int )M_mode << "\n";
+                model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
+                LOG(INFO) << "[OpusApp] get model done" << "\n";
+
+                crb = crb_ptrtype( new crb_type( this->about().appName(),
+                                                 this->vm() ,
+                                                 model ) );
+
+                LOG(INFO) << "[OpusApp] get crb done" << "\n";
+
+                //VLOG(1) << "[OpusApp] get crb done" << "\n";
+                //crb->setTruthModel( model );
+                //VLOG(1) << "[OpusApp] constructor done" << "\n";
+            }
+
+            catch ( boost::bad_any_cast const& e )
+            {
+                std::cout << "[OpusApp] a bad any cast occured, probably a nonexistant or invalid  command line/ config options\n";
+                std::cout << "[OpusApp] exception reason: " << e.what() << "\n";
+            }
+
         }
-
-        catch ( boost::bad_any_cast const& e )
-        {
-            std::cout << "[OpusApp] a bad any cast occured, probably a nonexistant or invalid  command line/ config options\n";
-            std::cout << "[OpusApp] exception reason: " << e.what() << "\n";
-        }
-
-    }
 
     void setMode( std::string const& mode )
-    {
-        if ( mode == "pfem" ) M_mode = CRBModelMode::PFEM;
+        {
+            if ( mode == "pfem" ) M_mode = CRBModelMode::PFEM;
 
-        if ( mode == "crb" ) M_mode = CRBModelMode::CRB;
+            if ( mode == "crb" ) M_mode = CRBModelMode::CRB;
 
-        if ( mode == "scm" ) M_mode = CRBModelMode::SCM;
+            if ( mode == "scm" ) M_mode = CRBModelMode::SCM;
 
-        if ( mode == "scm_online" ) M_mode = CRBModelMode::SCM_ONLINE;
+            if ( mode == "scm_online" ) M_mode = CRBModelMode::SCM_ONLINE;
 
-        if ( mode == "crb_online" ) M_mode = CRBModelMode::CRB_ONLINE;
-    }
+            if ( mode == "crb_online" ) M_mode = CRBModelMode::CRB_ONLINE;
+        }
     void setMode( CRBModelMode mode )
-    {
-        M_mode = mode;
-    }
+        {
+            M_mode = mode;
+        }
 
     void loadDB()
-    {
-        if ( M_mode == CRBModelMode::PFEM )
-            return;
-
-        if ( !crb->scm()->isDBLoaded() || crb->scm()->rebuildDB() )
         {
-            if ( M_mode == CRBModelMode::SCM )
+            if ( M_mode == CRBModelMode::PFEM )
+                return;
+
+            if ( !crb->scm()->isDBLoaded() || crb->scm()->rebuildDB() )
             {
-                std::cout << "No SCM DB available, do scm offline computations first...\n";
-                if( crb->scm()->doScmForMassMatrix() )
-                    crb->scm()->setScmForMassMatrix( true );
+                if ( M_mode == CRBModelMode::SCM )
+                {
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "No SCM DB available, do scm offline computations first...\n";
+                    if( crb->scm()->doScmForMassMatrix() )
+                        crb->scm()->setScmForMassMatrix( true );
 
-                crb->scm()->offline();
-            }
-        }
-        else
-        {
-            crb->scm()->computeAffineDecomposition();
-        }
-
-        if ( !crb->isDBLoaded() || crb->rebuildDB() )
-        {
-            if ( M_mode == CRBModelMode::CRB )
-                //|| M_mode == CRBModelMode::SCM )
-            {
-                std::cout << "No CRB DB available, do crb offline computations...\n";
-                crb->offline();
+                    crb->scm()->offline();
+                }
             }
 
-            else if ( M_mode != CRBModelMode::SCM )
-                throw std::logic_error( "CRB/SCM Database could not be loaded" );
+            if ( !crb->isDBLoaded() || crb->rebuildDB() )
+            {
+                if ( M_mode == CRBModelMode::CRB )
+                    //|| M_mode == CRBModelMode::SCM )
+                {
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "No CRB DB available, do crb offline computations...\n";
+                    crb->offline();
+                }
+
+                else if ( M_mode != CRBModelMode::SCM )
+                    throw std::logic_error( "CRB/SCM Database could not be loaded" );
+            }
+
+            if( crb->isDBLoaded() )
+            {
+                int current_dimension = crb->dimension();
+                int dimension_max = this->vm()["crb.dimension-max"].template as<int>();
+                if( current_dimension < dimension_max )
+                    crb->offline();
+            }
         }
 
-        if( crb->isDBLoaded() )
-        {
-            int current_dimension = crb->dimension();
-            int dimension_max = this->vm()["crb.dimension-max"].template as<int>();
-            if( current_dimension < dimension_max )
-                crb->offline();
-        }
-    }
     FEELPP_DONT_INLINE
     void run()
-    {
-        if ( this->vm().count( "help" ) )
         {
-            std::cout << this->optionsDescription() << "\n";
-            return;
+            int proc_number =  Environment::worldComm().globalRank();
+
+            if ( this->vm().count( "help" ) )
+            {
+                std::cout << this->optionsDescription() << "\n";
+                return;
+            }
+
+            this->loadDB();
+            int run_sampling_size = this->vm()[_o( this->about().appName(),"run.sampling.size" )].template as<int>();
+            SamplingMode run_sampling_type = ( SamplingMode )this->vm()[_o( this->about().appName(),"run.sampling.mode" )].template as<int>();
+            int output_index = this->vm()["crb.output-index"].template as<int>();
+            //int output_index = this->vm()[_o(this->about().appName(),"output.index")].template as<int>();
+
+            typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
+
+            switch ( run_sampling_type )
+            {
+            default:
+            case SamplingMode::RANDOM:
+                Sampling->randomize( run_sampling_size  );
+                break;
+
+            case SamplingMode::EQUIDISTRIBUTED:
+                Sampling->equidistribute( run_sampling_size  );
+                break;
+            }
+
+
+            std::map<CRBModelMode,std::vector<std::string> > hdrs;
+            using namespace boost::assign;
+            std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
+            std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Rel. error" )( "Conditionning" )( "l2_error" )( "h1_error" );
+            std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "Rel.(FEM-Lb)" );
+            std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
+            std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
+            hdrs[CRBModelMode::PFEM] = pfemhdrs;
+            hdrs[CRBModelMode::CRB] = crbhdrs;
+            hdrs[CRBModelMode::SCM] = scmhdrs;
+            hdrs[CRBModelMode::CRB_ONLINE] = crbonlinehdrs;
+            hdrs[CRBModelMode::SCM_ONLINE] = scmonlinehdrs;
+            std::ostringstream ostr;
+
+            //if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+            {
+                if( crb->printErrorDuringOfflineStep() )
+                    crb->printErrorsDuringRbConstruction();
+                if ( crb->showMuSelection() )
+                    crb->printMuSelection();
+            }
+
+            auto exporter = Exporter<typename crbmodel_type::mesh_type>::New( "ensight" );
+            exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
+
+            printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
+
+            std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %crb->dimension() ).str().c_str() ,std::ios::out | std::ios::app );
+
+            int curpar = 0;
+            if( crb->useWNmu() )
+                Sampling = crb->wnmu();
+
+            //Statistics
+            vectorN_type l2_error_vector( Sampling->size() );
+            vectorN_type h1_error_vector( Sampling->size() );
+            vectorN_type relative_error_vector( Sampling->size() );
+            vectorN_type time_fem_vector ( Sampling->size() );
+            vectorN_type time_crb_vector ( Sampling->size() );
+            vectorN_type relative_estimated_error_vector;
+            if( crb->errorType()!=2 )
+                relative_estimated_error_vector.resize( Sampling->size() );
+
+            BOOST_FOREACH( auto mu, *Sampling )
+            {
+
+                int size = mu.size();
+                if( proc_number == Environment::worldComm().masterRank() )
+                {
+                    std::cout << "(" << curpar++ << "/" << Sampling->size() << ") mu = [ ";
+                    for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
+                    std::cout<< mu[size-1]<<" ]\n ";
+                }
+
+                std::ostringstream mu_str;
+                for ( int i=0; i<size-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
+                mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
+
+
+                LOG(INFO) << "mu=" << mu << "\n";
+                mu.check();
+
+                switch ( M_mode )
+                {
+                case  CRBModelMode::PFEM:
+                {
+                    LOG(INFO) << "PFEM mode" << std::endl;
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "PFEM mode" << std::endl;
+                    boost::mpi::timer ti;
+
+                    auto u_fem = model->solve( mu );
+                    std::ostringstream u_fem_str;
+                    u_fem_str << "u_fem(" << mu_str.str() << ")";
+                    u_fem.setName( u_fem_str.str()  );
+
+                    LOG(INFO) << "compute output\n";
+                    google::FlushLogFiles(google::GLOG_INFO);
+
+                    exporter->step(0)->add( u_fem.name(), u_fem );
+                    //model->solve( mu );
+                    std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
+                    if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
+                    printEntry( ostr, mu, o );
+
+                }
+                break;
+
+                case  CRBModelMode::CRB:
+                {
+                    LOG(INFO) << "CRB mode\n";
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "CRB mode\n";
+                    LOG(INFO) << "solve u_fem\n";
+                    google::FlushLogFiles(google::GLOG_INFO);
+                    boost::mpi::timer ti;
+
+                    //in the case we don't do the offline step, we need the affine decomposition
+                    model->computeAffineDecomposition();
+
+                    //auto u_fem = model->solveRB( mu );
+                    //auto u_fem = model->solveFemUsingOfflineEim( mu );
+                    element_type u_fem;
+                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                        u_fem = model->solveFemUsingOnlineEimPicard( mu );
+                    else
+                        u_fem = model->solve( mu );
+
+                    std::ostringstream u_fem_str;
+                    u_fem_str << "u_fem(" << mu_str.str() << ")";
+                    u_fem.setName( u_fem_str.str()  );
+
+                    LOG(INFO) << "compute output\n";
+                    google::FlushLogFiles(google::GLOG_INFO);
+
+                    LOG(INFO) << "export u_fem \n";
+                    exporter->step(0)->add( u_fem.name(), u_fem );
+
+                    std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
+                    ti.restart();
+                    LOG(INFO) << "solve crb\n";
+                    google::FlushLogFiles(google::GLOG_INFO);
+
+                    //dimension of the RB (not necessarily the max)
+                    int N =  this->vm()["crb.dimension"].template as<int>();
+
+                    auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                    double time_crb = ti.elapsed();
+
+                    auto u_crb = crb->expansion( mu , N );
+                    std::ostringstream u_crb_str;
+                    u_crb_str << "u_crb(" << mu_str.str() << ")";
+                    u_crb.setName( u_crb_str.str()  );
+                    LOG(INFO) << "export u_crb \n";
+                    exporter->step(0)->add( u_crb.name(), u_crb );
+
+                    double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                    double relative_estimated_error = o.template get<1>() / ofem[0];
+                    double condition_number = o.template get<3>();
+
+
+                    //compute || u_fem - u_crb||_L2
+                    LOG(INFO) << "compute error \n";
+                    auto u_error = model->functionSpace()->element();
+                    std::ostringstream u_error_str;
+                    u_error = u_fem - u_crb;
+                    u_error_str << "u_error(" << mu_str.str() << ")";
+                    u_error.setName( u_error_str.str()  );
+                    exporter->step(0)->add( u_error.name(), u_error );
+                    LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
+                    LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
+                    double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                    double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+
+                    if ( crb->errorType()==2 )
+                    {
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
+                        if( proc_number == Environment::worldComm().masterRank() )
+                        {
+                            std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
+                            printEntry( file_summary_of_simulations, mu, v );
+                            printEntry( ostr, mu, v );
+                            //file_summary_of_simulations.close();
+
+                            if ( this->vm()["crb.compute-stat"].template as<bool>() )
+                            {
+                                relative_error_vector[curpar-1] = relative_error;
+                                l2_error_vector[curpar-1] = l2_error;
+                                h1_error_vector[curpar-1] = h1_error;
+                                time_fem_vector[curpar-1] = ofem[1];
+                                time_crb_vector[curpar-1] = time_crb;
+                            }
+
+                            std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                            res << "output="<< o.template get<0>() << "\n";
+
+                        }
+
+                    }
+
+                    else
+                    {
+                        //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                        //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
+
+                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
+                        if( proc_number == Environment::worldComm().masterRank() )
+                        {
+                            std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
+                            //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                            printEntry( file_summary_of_simulations, mu, v );
+                            printEntry( ostr, mu, v );
+                            //file_summary_of_simulations.close();
+
+                            if ( this->vm()["crb.compute-stat"].template as<bool>() )
+                            {
+                                relative_error_vector[curpar-1] = relative_error;
+                                l2_error_vector[curpar-1] = l2_error;
+                                h1_error_vector[curpar-1] = h1_error;
+                                time_fem_vector[curpar-1] = ofem[1];
+                                time_crb_vector[curpar-1] = time_crb;
+                                relative_estimated_error_vector[curpar-1] = relative_estimated_error;
+                            }
+                            std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                            res << "output="<< o.template get<0>() << "\n";
+                        }
+                    }
+
+                    if (this->vm()["crb.cvg-study"].template as<bool>())
+                    {
+                        LOG(INFO) << "start convergence study...\n";
+                        std::map<int, boost::tuple<double,double,double,double> > conver;
+                        for( int N = 1; N < crb->dimension(); N++ )
+                        {
+                            LOG(INFO) << "N=" << N << "...\n";
+                            auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                            auto u_crb = crb->expansion( mu , N );
+                            auto u_error = model->functionSpace()->element();
+                            u_error = u_fem - u_crb;
+                            double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                            double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                            double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                            double condition_number = o.template get<3>();
+                            conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , condition_number );
+                            LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
+                            if ( proc_number == Environment::worldComm().masterRank() )
+                                std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<std::endl;
+                            LOG(INFO) << "N=" << N << " done.\n";
+                        }
+                        if( proc_number == Environment::worldComm().masterRank() )
+                        {
+                            LOG(INFO) << "save in logfile\n";
+
+                            std::string mu_str;
+                            for ( int i=0; i<mu.size(); i++ )
+                                mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                            std::string file_name = "convergence"+mu_str+".dat";
+                            std::ofstream conv( file_name );
+                            BOOST_FOREACH( auto en, conver )
+                            {
+                                conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() << "\t"<< en.second.get<3>() << "\n";
+                            }
+                        }
+                    }
+
+                }
+                break;
+
+                case  CRBModelMode::CRB_ONLINE:
+                {
+                    std::cout << "CRB Online mode\n";
+                    boost::mpi::timer ti;
+                    ti.restart();
+                    auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
+
+                    if ( crb->errorType()==2 )
+                    {
+                        std::vector<double> v = boost::assign::list_of( o.template get<0>() )( ti.elapsed() );
+                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
+                        printEntry( ostr, mu, v );
+                    }
+
+                    else
+                    {
+                        std::vector<double> v = boost::assign::list_of( o.template get<0>() )( o.template get<1>() )( ti.elapsed() );
+                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (error estimation on this output : " << o.template get<1>()<<") \n";
+                        printEntry( ostr, mu, v );
+                    }
+
+                }
+                break;
+
+                case  CRBModelMode::SCM:
+                {
+                    std::cout << "SCM mode\n";
+                    auto o = crb->scm()->run( mu, crb->scm()->KMax() );
+                    printEntry( ostr, mu, o );
+                }
+                break;
+
+                case  CRBModelMode::SCM_ONLINE:
+                {
+                    std::cout << "SCM online mode\n";
+                    auto o = crb->scm()->run( mu, crb->scm()->KMax() );
+                    printEntry( ostr, mu, o );
+                }
+                break;
+
+                }
+
+                std::cout << "------------------------------------------------------------\n";
+            }
+            exporter->save();
+            if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
+
+            if ( this->vm()["crb.compute-stat"].template as<bool>() )
+            {
+
+                LOG( INFO ) << "compute statistics \n";
+                Eigen::MatrixXf::Index index_max_l2;
+                Eigen::MatrixXf::Index index_min_l2;
+                Eigen::MatrixXf::Index index_max_h1;
+                Eigen::MatrixXf::Index index_min_h1;
+                Eigen::MatrixXf::Index index_max_time_fem;
+                Eigen::MatrixXf::Index index_min_time_fem;
+                Eigen::MatrixXf::Index index_max_time_crb;
+                Eigen::MatrixXf::Index index_min_time_crb;
+                Eigen::MatrixXf::Index index_max_estimated_error;
+                Eigen::MatrixXf::Index index_min_estimated_error;
+                Eigen::MatrixXf::Index index_max_output_error;
+                Eigen::MatrixXf::Index index_min_output_error;
+
+                double max_l2 = l2_error_vector.maxCoeff(&index_max_l2);
+                double min_l2 = l2_error_vector.minCoeff(&index_min_l2);
+                double mean_l2 = l2_error_vector.mean();
+                double max_h1 = h1_error_vector.maxCoeff(&index_max_h1);
+                double min_h1 = h1_error_vector.minCoeff(&index_min_h1);
+                double mean_h1 = h1_error_vector.mean();
+                double max_time_fem = time_fem_vector.maxCoeff(&index_max_time_fem);
+                double min_time_fem = time_fem_vector.minCoeff(&index_min_time_fem);
+                double mean_time_fem = time_fem_vector.mean();
+                double max_time_crb = time_crb_vector.maxCoeff(&index_max_time_crb);
+                double min_time_crb = time_crb_vector.minCoeff(&index_min_time_crb);
+                double mean_time_crb = time_crb_vector.mean();
+                double max_output_error = relative_error_vector.maxCoeff(&index_max_output_error);
+                double min_output_error = relative_error_vector.minCoeff(&index_min_output_error);
+                double mean_output_error = relative_error_vector.mean();
+                double max_estimated_error = 0;
+                double min_estimated_error = 0;
+                double mean_estimated_error = 0;
+
+                if( crb->errorType()!=2 )
+                {
+                    max_estimated_error = relative_estimated_error_vector.maxCoeff(&index_max_estimated_error);
+                    min_estimated_error = relative_estimated_error_vector.minCoeff(&index_min_estimated_error);
+                    mean_estimated_error = relative_estimated_error_vector.mean();
+                }
+                if( proc_number == Environment::worldComm().masterRank() )
+                {
+                    file_summary_of_simulations <<"\n\nStatistics\n";
+                    file_summary_of_simulations <<"max of output error : "<<max_output_error<<" at the "<<index_max_output_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of output error : "<<min_output_error<<" at the "<<index_min_output_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of output error : "<<mean_output_error<<"\n\n";
+                    file_summary_of_simulations <<"max of estimated output error : "<<max_estimated_error<<" at the "<<index_max_estimated_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of estimated output error : "<<min_estimated_error<<" at the "<<index_min_estimated_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of estimated output error : "<<mean_estimated_error<<"\n\n";
+                    file_summary_of_simulations <<"max of L2 error : "<<max_l2<<" at the "<<index_max_l2+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of L2 error : "<<min_l2<<" at the "<<index_min_l2+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of L2 error : "<<mean_l2<<"\n\n";
+                    file_summary_of_simulations <<"max of H1 error : "<<max_h1<<" at the "<<index_max_h1+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of H1 error : "<<min_h1<<" at the "<<index_min_h1+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of H1 error : "<<mean_h1<<"\n\n";
+                    file_summary_of_simulations <<"max of time FEM : "<<max_time_fem<<" at the "<<index_max_time_fem+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of time FEM : "<<min_time_fem<<" at the "<<index_min_time_fem+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of time FEM : "<<mean_time_fem<<"\n\n";
+                    file_summary_of_simulations <<"max of time CRB : "<<max_time_crb<<" at the "<<index_max_time_crb+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of time CRB : "<<min_time_crb<<" at the "<<index_min_time_crb+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb<<"\n\n";
+                }
+            }//end of compute-stat
         }
-
-        this->loadDB();
-        int run_sampling_size = this->vm()[_o( this->about().appName(),"run.sampling.size" )].template as<int>();
-        SamplingMode run_sampling_type = ( SamplingMode )this->vm()[_o( this->about().appName(),"run.sampling.mode" )].template as<int>();
-        int output_index = this->vm()["crb.output-index"].template as<int>();
-        //int output_index = this->vm()[_o(this->about().appName(),"output.index")].template as<int>();
-
-        typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
-
-        switch ( run_sampling_type )
+    void run( const double * X, unsigned long N,
+              double * Y, unsigned long P )
         {
-        default:
-        case SamplingMode::RANDOM:
-            Sampling->randomize( run_sampling_size  );
-            break;
-
-        case SamplingMode::EQUIDISTRIBUTED:
-            Sampling->equidistribute( run_sampling_size  );
-            break;
-        }
-
-        std::map<CRBModelMode,std::vector<std::string> > hdrs;
-        using namespace boost::assign;
-        std::vector<std::string> pfemhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" );
-        std::vector<std::string> crbhdrs = boost::assign::list_of( "FEM Output" )( "FEM Time" )( "RB Output" )( "Error Bounds" )( "CRB Time" )( "Relative error PFEM/CRB" )( "Conditionning" );
-        std::vector<std::string> scmhdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "FEM" )( "FEM Time" )( "Rel.(FEM-Lb)" );
-        std::vector<std::string> crbonlinehdrs = boost::assign::list_of( "RB Output" )( "Error Bounds" )( "CRB Time" );
-        std::vector<std::string> scmonlinehdrs = boost::assign::list_of( "Lb" )( "Lb Time" )( "Ub" )( "Ub Time" )( "Rel.(FEM-Lb)" );
-        hdrs[CRBModelMode::PFEM] = pfemhdrs;
-        hdrs[CRBModelMode::CRB] = crbhdrs;
-        hdrs[CRBModelMode::SCM] = scmhdrs;
-        hdrs[CRBModelMode::CRB_ONLINE] = crbonlinehdrs;
-        hdrs[CRBModelMode::SCM_ONLINE] = scmonlinehdrs;
-        std::ostringstream ostr;
-
-	if( crb->printErrorDuringOfflineStep() )
-            crb->printErrorsDuringRbConstruction();
-	if ( crb->showMuSelection() )
-	    crb->printMuSelection();
-
-        printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
-        BOOST_FOREACH( auto mu, *Sampling )
-        {
-
-            int size = mu.size();
-            std::cout << "mu = [ ";
-
-            for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
-
-            std::cout<< mu[size-1]<<" ] ";
 
             switch ( M_mode )
             {
             case  CRBModelMode::PFEM:
             {
-                boost::timer ti;
-                model->solve( mu );
-                std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
-                std::cout << "output=" << o[0] << "\n";
-                printEntry( ostr, mu, o );
-
-            }
-            break;
-
-            case  CRBModelMode::CRB:
-            {
-                std::cout << "CRB mode\n";
-                boost::timer ti;
-                model->solve( mu );
-                std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
-                ti.restart();
-                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
-
-                double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
-                double relative_estimated_error = o.template get<1>() / ofem[0];
-                double condition_number = o.template get<3>();
-
-                if ( crb->errorType()==2 )
-                {
-
-                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() )( relative_error )( condition_number );
-                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
-                    std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
-                    printEntry( file_summary_of_simulations, mu, v );
-                    printEntry( ostr, mu, v );
-                    file_summary_of_simulations.close();
-                }
-
-                else
-                {
-                    std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number ) ;
-                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
-                    std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
-                    printEntry( file_summary_of_simulations, mu, v );
-                    printEntry( ostr, mu, v );
-                    file_summary_of_simulations.close();
-                }
-
-            }
-            break;
-
-            case  CRBModelMode::CRB_ONLINE:
-            {
-                std::cout << "CRB Online mode\n";
-                boost::timer ti;
-                ti.restart();
-                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
-
-                if ( crb->errorType()==2 )
-                {
-                    std::vector<double> v = boost::assign::list_of( o.template get<0>() )( ti.elapsed() );
-                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
-                    printEntry( ostr, mu, v );
-                }
-
-                else
-                {
-                    std::vector<double> v = boost::assign::list_of( o.template get<0>() )( o.template get<1>() )( ti.elapsed() );
-                    std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (error estimation on this output : " << o.template get<1>()<<") \n";
-                    printEntry( ostr, mu, v );
-                }
-
+                model->run( X, N, Y, P );
             }
             break;
 
             case  CRBModelMode::SCM:
-            {
-                std::cout << "SCM mode\n";
-                auto o = crb->scm()->run( mu, crb->scm()->KMax() );
-                printEntry( ostr, mu, o );
-            }
-            break;
-
             case  CRBModelMode::SCM_ONLINE:
             {
-                std::cout << "SCM online mode\n";
-                auto o = crb->scm()->run( mu, crb->scm()->KMax() );
-                printEntry( ostr, mu, o );
+                crb->scm()->run( X, N, Y, P );
             }
             break;
 
+            case  CRBModelMode::CRB:
+            case  CRBModelMode::CRB_ONLINE:
+            {
+                crb->run( X, N, Y, P );
+            }
+            break;
             }
 
-            std::cout << "------------------------------------------------------------\n";
+            fs::current_path( M_current_path );
         }
-        std::cout << ostr.str() << "\n";
-
-    }
-    void run( const double * X, unsigned long N,
-              double * Y, unsigned long P )
-    {
-
-        switch ( M_mode )
-        {
-        case  CRBModelMode::PFEM:
-        {
-            model->run( X, N, Y, P );
-        }
-        break;
-
-        case  CRBModelMode::SCM:
-        case  CRBModelMode::SCM_ONLINE:
-        {
-            crb->scm()->run( X, N, Y, P );
-        }
-        break;
-
-        case  CRBModelMode::CRB:
-        case  CRBModelMode::CRB_ONLINE:
-        {
-            crb->run( X, N, Y, P );
-        }
-        break;
-        }
-
-        fs::current_path( M_current_path );
-    }
 
 private:
     int printParameterHdr( std::ostream& os, int N, std::vector<std::string> outputhdrs )
-    {
-        for ( int i = 0; i < N; ++i )
         {
-            std::ostringstream s;
-            s << "mu" << i;
-            os  << hdrmanip( prec+7 ) << s.str();
-        }
+            for ( int i = 0; i < N; ++i )
+            {
+                std::ostringstream s;
+                s << "mu" << i;
+                os  << hdrmanip( prec+7 ) << s.str();
+            }
 
-        BOOST_FOREACH( auto output, outputhdrs )
-        {
-            os << hdrmanip( 15 ) << output;
-        }
-        os << "\n";
+            BOOST_FOREACH( auto output, outputhdrs )
+            {
+                os << hdrmanip( 15 ) << output;
+            }
+            os << "\n";
 
-        return N*( prec+7 )+outputhdrs.size()*15;
-    }
+            return N*( prec+7 )+outputhdrs.size()*15;
+        }
     void printEntry( std::ostream& os,
                      typename ModelType::parameter_type const& mu,
                      std::vector<double> const& outputs )
-    {
-        for ( int i = 0; i < mu.size(); ++i )
-            os  << std::right <<std::setw( prec+7 ) << dmanip << mu[i];
-
-        BOOST_FOREACH( auto o, outputs )
         {
-            os << tabmanip( 15 ) << o;
+            for ( int i = 0; i < mu.size(); ++i )
+                os  << std::right <<std::setw( prec+7 ) << dmanip << mu[i];
+
+            BOOST_FOREACH( auto o, outputs )
+            {
+                os << tabmanip( 15 ) << o;
+            }
+            os << "\n";
         }
-        os << "\n";
+
+
+    //double l2Norm( typename ModelType::parameter_type const& mu, int N )
+    double l2Norm( element_type const& u )
+    {
+        static const bool is_composite = functionspace_type::is_composite;
+        return l2Norm( u, mpl::bool_< is_composite >() );
+    }
+    double l2Norm( element_type const& u, mpl::bool_<false> )
+    {
+        auto mesh = model->functionSpace()->mesh();
+        return math::sqrt( integrate( elements(mesh), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0) );
+    }
+    double l2Norm( element_type const& u, mpl::bool_<true>)
+    {
+        auto mesh = model->functionSpace()->mesh();
+        auto uT = u.template element<1>();
+        return math::sqrt( integrate( elements(mesh), (vf::idv(uT))*(vf::idv(uT)) ).evaluate()(0,0) );
+    }
+    //double h1Norm( typename ModelType::parameter_type const& mu, int N )
+    double h1Norm( element_type const& u )
+    {
+        static const bool is_composite = functionspace_type::is_composite;
+        return h1Norm( u, mpl::bool_< is_composite >() );
+    }
+    double h1Norm( element_type const& u, mpl::bool_<false> )
+    {
+        auto mesh = model->functionSpace()->mesh();
+        double l22 = integrate( elements(mesh), (vf::idv(u))*(vf::idv(u)) ).evaluate()(0,0);
+        double semih12 = integrate( elements(mesh), (vf::gradv(u))*trans(vf::gradv(u)) ).evaluate()(0,0);
+        return math::sqrt( l22+semih12 );
+    }
+    double h1Norm( element_type const& u, mpl::bool_<true>)
+    {
+        auto mesh = model->functionSpace()->mesh();
+        auto u_femT = u.template element<1>();
+        double l22 = integrate( elements(mesh), (vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
+        double semih12 = integrate( elements(mesh), (vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
+        return math::sqrt( l22+semih12 );
     }
 
 private:
@@ -428,6 +761,7 @@ private:
 
     fs::path M_current_path;
 }; // OpusApp
+
 } // Feel
 
 #endif /* __OpusApp_H */

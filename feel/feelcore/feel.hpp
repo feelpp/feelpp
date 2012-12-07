@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-12-30
 
   Copyright (C) 2006,2007,2008,2009,2010 Université de Grenoble 1
@@ -23,7 +23,7 @@
 */
 /**
    \file feel.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-12-30
  */
 # ifndef __cplusplus
@@ -77,6 +77,8 @@
 #include <limits>
 #include <iosfwd>
 
+#include <glog/logging.h>
+
 #include <feel/feelconfig.h>
 #include <feel/feelcore/info.hpp>
 #include <feel/feelcore/feelmacros.hpp>
@@ -106,6 +108,10 @@ namespace po = boost::program_options;
 namespace mpi=boost::mpi;
 namespace constants=boost::math::constants;
 namespace algorithm=boost::algorithm;
+using google::WARNING;
+using google::ERROR;
+using google::INFO;
+using google::FATAL;
 
 namespace detail
 {

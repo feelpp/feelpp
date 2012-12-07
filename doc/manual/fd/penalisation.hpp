@@ -41,7 +41,8 @@ inline po::options_description makeOptions()
     ( "epsilon", po::value<double>()->default_value( 0.8 ), "penalisation term for particle" )
     ( "Tfinal", po::value<double>()->default_value( 3 ), "Final time" )
     ( "Ylimit", po::value<double>()->default_value( 0 ), "Stop the simulation if y reaches Ylimit (never stop if 0)" )
-    ( "DT", po::value<double>()->default_value( 0.01 ), "time step" );
+    ( "DT", po::value<double>()->default_value( 0.01 ), "time step" )
+    ( "test", po::value<int>()->default_value( 1 ), "test application" );
     return mesOptions
            .add( Feel::feel_options() )
            .add( backend_options( "stokes_backend" ) )
@@ -84,11 +85,14 @@ class Penalisation : public Application
 
     // elements
     typedef typename space_type::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
     typedef typename element_type::template sub_element<0>::type element_veloc_type;
     typedef typename element_type::template sub_element<1>::type element_pressure_type;
     typedef typename element_type::template sub_element<2>::type element_lag_type;
     typedef typename space_carac_type::element_type element_carac_type;
+    typedef boost::shared_ptr<element_carac_type> element_carac_ptrtype;
     typedef typename space_p0_type::element_type element_p0_type;
+    typedef boost::shared_ptr<element_p0_type> element_p0_ptrtype;
 
     // backend
     typedef Backend<double> backend_type;
@@ -105,7 +109,7 @@ class Penalisation : public Application
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
 public :
-    Penalisation( int argc, char** argv, AboutData const&, po::options_description const& );
+    Penalisation();
     void run();
 
 private :
@@ -140,7 +144,7 @@ private :
     sparse_matrix_ptrtype D;
     vector_ptrtype F;
 
-    element_type U;
+    element_ptrtype U;
     element_carac_type carac;
     element_p0_type p0;
 
@@ -158,4 +162,4 @@ private :
 
 }//namespace Feel
 
-#endif PENALISATION_HPP
+#endif //PENALISATION_HPP

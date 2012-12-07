@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-03-14
 
   Copyright (C) 2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file geometricdata.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-03-14
  */
 #ifndef __GeometricData_H
@@ -71,13 +71,14 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
 #if 1
 # define VF_GD                                                          \
    BOOST_PP_TUPLE_TO_LIST(                                              \
-      20,                                                               \
+       21,                                                              \
       (                                                                 \
        ( N       , GDN       , 0, jkbn, Vectorial, _M_gmc->unitNormal( q )[ c1 ] , 0), \
        ( Nx      , GDNx      , 0, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 0 ]  , 0), \
        ( Ny      , GDNy      , 1, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 1 ]  , 0), \
        ( Nz      , GDNz      , 2, jkbn, Scalar   , _M_gmc->unitNormal( q )[ 2 ]  , 0), \
        ( Nref    , GDNref    , 0, 0, Vectorial, _M_gmc->refNormal( q )[ c1 ] , 0), \
+       ( normalNorm, GDnormalNorm, 0, 0, Scalar, _M_gmc->normalNorm( q ) , 0), \
        ( T       , GDT       , 0, jt, Vectorial, _M_gmc->tangent( q )[ c1 ], 0), \
        ( Tx      , GDTx      , 0, jt, Scalar   , _M_gmc->tangent( q )[ 0 ] , 0), \
        ( Ty      , GDTy      , 1, jt, Scalar   , _M_gmc->tangent( q )[ 1 ] , 0), \
@@ -185,9 +186,9 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
             struct tensor                                               \
         {                                                               \
             typedef this_type expression_type;                          \
-            typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >, \
-                mpl::identity<detail::gmc<0> >,                         \
-                mpl::identity<detail::gmc<1> > >::type::type key_type;  \
+            typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >, \
+                mpl::identity<vf::detail::gmc<0> >,                         \
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;  \
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype; \
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
             typedef typename gmc_type::value_type value_type;           \

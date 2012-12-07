@@ -94,7 +94,7 @@ FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_t
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" )
+set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51")
 set( BOOST_PARAMETER_MAX_ARITY 20 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
@@ -116,14 +116,30 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
 
 SET(FEELPP_LIBRARIES ${Boost_LIBRARIES} ${FEELPP_LIBRARIES})
 
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
+
 INCLUDE_DIRECTORIES(BEFORE contrib/)
+
+#FIND_PACKAGE(GINAC)
+#IF( GINAC_FOUND )
+#  set( FEELPP_HAS_GINAC 1 )
+#  INCLUDE_DIRECTORIES( GINAC_INCLUDE_DIRS )
+#  SET(FEELPP_LIBRARIES ${GINAC_LIBRARIES} ${FEELPP_LIBRARIES})
+#  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GINAC" )
+#ENDIF()
+
+add_definitions(-DIN_GINAC -DHAVE_LIBDL)
+include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
+SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
+set(DL_LIBS ${CMAKE_DL_LIBS})
+add_subdirectory(contrib/ginac)
 
 #
 # Eigen
 #
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-  set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX})
+  set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
   add_subdirectory(contrib/eigen)
   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
 endif()
@@ -187,7 +203,11 @@ if ( GLPK_FOUND )
 endif()
 
 # google perf tools
-option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
+if (APPLE)
+  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" OFF)
+else()
+  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
+endif()
 if ( FEELPP_ENABLE_GOOGLEPERFTOOLS )
   find_package(GooglePerfTools)
   if ( GOOGLE_PERFTOOLS_FOUND )
@@ -197,6 +217,41 @@ if ( FEELPP_ENABLE_GOOGLEPERFTOOLS )
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GooglePerfTools" )
   endif()
 endif( FEELPP_ENABLE_GOOGLEPERFTOOLS )
+
+# google gflags
+find_package(GFLAGS REQUIRED)
+
+INCLUDE_DIRECTORIES( ${GFLAGS_INCLUDE_DIR} )
+
+SET(FEELPP_LIBRARIES ${GFLAGS_LIBRARIES} ${FEELPP_LIBRARIES})
+SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS" )
+
+# google glog
+find_package(GLOG REQUIRED)
+
+INCLUDE_DIRECTORIES( ${GLOG_INCLUDE_DIR} )
+SET(FEELPP_LIBRARIES ${GLOG_LIBRARIES} ${FEELPP_LIBRARIES})
+SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG" )
+
+
+#
+# MATHEVAL
+#
+option(FEELPP_ENABLE_MATHEVAL "Enable Matheval support" ON)
+FIND_PACKAGE(MATHEVAL)
+if( MATHEVAL_FOUND )
+  MESSAGE(STATUS "Using built-in libmatheval")
+else()
+  MESSAGE(STATUS "Using contrib/libmatheval")
+endif()
+
+IF(FEELPP_ENABLE_MATHEVAL)
+  SET(FEELPP_HAS_MATHEVAL_H 1)
+  INCLUDE_DIRECTORIES( ${MATHEVAL_INCLUDE_DIR} )
+  SET(FEELPP_LIBRARIES ${MATHEVAL_LIBRARIES} ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} MATHEVAL" )
+ENDIF()
+
 
 # xml
 find_package(LibXml2 2.6.27)
@@ -215,6 +270,7 @@ FIND_LIBRARY(METIS_LIBRARY
     metis
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
 #    "/opt/local/lib"
 )
 message(STATUS "Metis: ${METIS_LIBRARY}" )
@@ -227,6 +283,7 @@ FIND_LIBRARY(PARMETIS_LIBRARY
     parmetis
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
 )
 
 
@@ -240,6 +297,7 @@ FIND_LIBRARY(PTSCOTCHERREXIT_LIBRARY
     ptscotcherrexit
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     /opt/local/lib/petsc/lib
     $ENV{PTSCOTCH_DIR}/lib
 )
@@ -254,6 +312,7 @@ FIND_LIBRARY(PTSCOTCHERR_LIBRARY
     ptscotcherr
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     /opt/local/lib/petsc/lib
     $ENV{PTSCOTCH_DIR}/lib
 )
@@ -268,6 +327,7 @@ FIND_LIBRARY(PTSCOTCH_LIBRARY
     ptscotch
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     /opt/local/lib/petsc/lib
     $ENV{PTSCOTCH_DIR}/lib
 )
@@ -282,6 +342,7 @@ FIND_LIBRARY(PTESMUMPS_LIBRARY
     ptesmumps
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     /opt/local/lib/petsc/lib
 )
 message(STATUS "PTESMUMPS: ${PTESMUMPS_LIBRARY}" )
@@ -307,36 +368,22 @@ FIND_LIBRARY(GFORTRAN_LIBRARY
     "/opt/local/lib"
     "/usr/lib/gcc/x86_64-linux-gnu/"
     PATH_SUFFIXES
-    gcc46 gcc45 gcc44 4.6 4.5 4.4
+    gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
 )
-
-FIND_LIBRARY(MUMPS_COMMON_LIBRARY
-    NAMES
-    mumps_common
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{MUMPS_DIR}/lib
-)
-
-
-FIND_LIBRARY(DMUMPS_LIBRARY
-    NAMES
-    dmumps
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{MUMPS_DIR}/lib
-)
-
-message(STATUS "Mumps: ${DMUMPS_LIBRARY} ${MUMPS_COMMON_LIBRARY}" )
-if ( GFORTRAN_LIBRARY AND MUMPS_COMMON_LIBRARY AND DMUMPS_LIBRARY )
-SET(FEELPP_LIBRARIES ${DMUMPS_LIBRARY} ${MUMPS_COMMON_LIBRARY} ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
+if ( GFORTRAN_LIBRARY )
+  set( FEELPP_LIBRARIES ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
-
+FIND_PACKAGE(MUMPS)
+if ( GFORTRAN_LIBRARY AND MUMPS_FOUND )
+  set( FEELPP_HAS_MUMPS 1 )
+  set( FEELPP_LIBRARIES ${MUMPS_LIBRARIES} ${FEELPP_LIBRARIES} )
+endif()
 FIND_LIBRARY(SUITESPARSECONFIG_LIBRARY
     NAMES
     suitesparseconfig
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     $ENV{SUITESPARSE_DIR}/lib
 )
 IF ( SUITESPARSECONFIG_LIBRARY )
@@ -347,6 +394,7 @@ FIND_LIBRARY(AMD_LIBRARY
     amd
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     $ENV{SUITESPARSE_DIR}/lib
 )
 IF ( AMD_LIBRARY )
@@ -358,6 +406,7 @@ FIND_LIBRARY(COLAMD_LIBRARY
     colamd
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     $ENV{SUITESPARSE_DIR}/lib
 )
 IF ( COLAMD_LIBRARY )
@@ -369,6 +418,7 @@ FIND_LIBRARY(CHOLMOD_LIBRARY
     cholmod
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     $ENV{SUITESPARSE_DIR}/lib
 )
 
@@ -377,6 +427,7 @@ FIND_LIBRARY(UMFPACK_LIBRARY
     umfpack
     PATHS
     $ENV{PETSC_DIR}/lib
+    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
     $ENV{SUITESPARSE_DIR}/lib
 )
 message(STATUS "SuiteSparseConfig: ${SUITESPARSECONFIG_LIBRARY}" )
@@ -469,7 +520,7 @@ endif()
 FIND_PACKAGE(VTK)
 if ( VTK_FOUND )
   set(FEELPP_HAS_VTK 1)
-  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon" )
+  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
   MARK_AS_ADVANCED( VTK_DIR )
   SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -578,4 +629,3 @@ LINK_DIRECTORIES(
 
 
 MARK_AS_ADVANCED(FEELPP_LIBRARIES)
-

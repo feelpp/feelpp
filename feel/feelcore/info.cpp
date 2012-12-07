@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-02-19
 
   Copyright (C) 2005,2006 EPFL
@@ -25,7 +25,7 @@
 */
 /**
    \file info.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-02-19
  */
 #include <sstream>
@@ -39,16 +39,16 @@
 
 namespace Feel
 {
-unsigned long long
+char const*
 Info::buildId()
 {
-    return FEELPP_BUILDID;
+    return stringize(FEELPP_BUILDID);
 }
 
-unsigned long long
+char const*
 Info::revision()
 {
-    return FEELPP_REVISION;
+    return stringize(FEELPP_REVISION);
 }
 
 unsigned long long
@@ -86,8 +86,8 @@ Info::versionString()
         ostr << FEELPP_VERSION_MAJOR << "."
              << FEELPP_VERSION_MINOR << "."
              << FEELPP_VERSION_MICRO << "-r"
-             << FEELPP_REVISION << "-"
-             << FEELPP_BUILDID;
+             << stringize(FEELPP_REVISION) << "-"
+             << stringize(FEELPP_BUILDID);
         _created = true;
     }
 
@@ -107,4 +107,3 @@ Info::datadir()
 }
 
 }
-

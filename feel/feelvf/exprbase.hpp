@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-21
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
   \file exprbase.hpp
-  \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
   \date 2010-04-21
 */
 #ifndef __ExprBase_H

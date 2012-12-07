@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-21
 
   Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file exporterensight.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-21
  */
 #ifndef __EXPORTERENSIGHT_CPP
@@ -39,6 +39,15 @@
 
 namespace Feel
 {
+template<typename MeshType, int N>
+ExporterEnsight<MeshType,N>::ExporterEnsight( WorldComm const& worldComm )
+:
+super( worldComm ),
+_M_element_type()
+
+{
+    init();
+}
 template<typename MeshType, int N>
 ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq, WorldComm const& worldComm )
     :

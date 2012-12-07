@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-13
 
   Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file heatSink.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-11-13
  */
 #ifndef __HeatSink2D_H
@@ -96,7 +96,7 @@ makeHeatSink2DAbout( std::string const& str = "heatSink" )
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
     return about;
 }
@@ -183,9 +183,14 @@ public:
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
 
 
-    typedef Eigen::VectorXd theta_vector_type;
+    typedef std::vector< std::vector< double > > beta_vector_type;
 
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
+    typedef boost::tuple<
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
+        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+
     //typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
     //@}
 
@@ -255,6 +260,40 @@ public:
         return 1*( l==0 ) + 1*( l>0 );
     }
 
+    int mMaxA( int q )
+    {
+        if( q < this->Qa() )
+            return 1;
+        else
+            throw std::logic_error( "[Model heatsink] ERROR : try to acces to mMaxA(q) with a bad value of q");
+    }
+
+    int mMaxM( int q )
+    {
+        if ( q < this->Qm() )
+            return 1;
+        else
+            throw std::logic_error( "[Model heatsink] ERROR : try to acces to mMaxM(q) with a bad value of q");
+    }
+
+    int mMaxF( int output_index, int q)
+    {
+        if ( q < this->Ql(output_index) )
+            return 1;
+        else
+            throw std::logic_error( "[Model heatsink] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
+    }
+
+    int QInitialGuess() const
+    {
+        return 1;
+    }
+
+    int mMaxInitialGuess( int q )
+    {
+        return 1;
+    }
+
     /**
      * \brief Returns the function space
      */
@@ -270,12 +309,17 @@ public:
     }
 
     /**
-     * \brief compute the theta coefficient for both bilinear and linear form
+     * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<theta_vector_type, theta_vector_type, std::vector<theta_vector_type> >
-    //boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=1e30 )
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
+    {
+        return computeBetaQm( mu , time );
+    }
+
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> , beta_vector_type >
+    computeBetaQm( parameter_type const& mu , double time=1e30 )
     {
         double biot      = mu( 0 );
         double L         = mu( 1 );
@@ -285,79 +329,93 @@ public:
         double JJ4 = ( Lref*Lref )/( L*L );
         double t = M_bdf->time();
 
-        M_thetaMq.resize( Qm() );
-        M_thetaMq( 0 )=rho*C/k_fin;
-        M_thetaMq( 1 )=rho*C/k_fin * detJ;
+        M_betaMqm.resize( Qm() );
+        M_betaMqm[0].resize(1);
+        M_betaMqm[1].resize(1);
+        M_betaMqm[0][0]=rho*C/k_fin;
+        M_betaMqm[1][0]=rho*C/k_fin * detJ;
 
-        M_thetaAq.resize( Qa() );
-        M_thetaAq( 0 ) = k ;
-        M_thetaAq( 1 ) = 1 ;
-        M_thetaAq( 2 ) = JJ4*detJ;
-        M_thetaAq( 3 ) = biot * detJ;
+        M_betaAqm.resize( Qa() );
+        for(int i=0; i<Qa(); i++)
+            M_betaAqm[i].resize(1);
+        M_betaAqm[0][0] = k ;
+        M_betaAqm[1][0] = 1 ;
+        M_betaAqm[2][0] = JJ4*detJ;
+        M_betaAqm[3][0] = biot * detJ;
 
-        M_thetaFq.resize( Nl() );
+        M_betaFqm.resize( Nl() );
+        for(int i=0; i<Nl(); i++)
+        {
+            M_betaFqm[i].resize( Ql(i) );
+            for(int j=0;j<Ql(i);j++)
+                M_betaFqm[i][j].resize(1);
+        }
 
-        M_thetaFq[0].resize( Ql( 0 ) );
-        M_thetaFq[0]( 0 ) = 1-exp( -t );
+        M_betaFqm[0][0][0] = 1-math::exp( -t );
+        M_betaFqm[1][0][0] = 2;
 
-        M_thetaFq[1].resize( Ql( 1 ) );
-        M_thetaFq[1]( 0 ) = 2;
+        M_betaInitialGuessQm.resize( QInitialGuess() );
+        M_betaInitialGuessQm[0].resize( 1 );
+        M_betaInitialGuessQm[0][0] = 0;
 
-
-        return boost::make_tuple( M_thetaMq, M_thetaAq, M_thetaFq );
-        //return boost::make_tuple( M_thetaAq, M_thetaFq );
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm, M_betaInitialGuessQm );
     }
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaAq() const
+    beta_vector_type const& betaAqm() const
     {
-        return M_thetaAq;
+        return M_betaAqm;
     }
 
     /**
      * \brief return the coefficient vector
      */
-    theta_vector_type const& thetaMq() const
+    beta_vector_type const& betaMqm() const
     {
-        return M_thetaMq;
+        return M_betaMqm;
     }
 
 
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const
+    std::vector<beta_vector_type> const& betaFqm() const
     {
-        return M_thetaFq;
+        return M_betaFqm;
     }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
-    value_type thetaAq( int q ) const
+    value_type betaAqm( int q , int m) const
     {
-        return M_thetaAq( q );
+        return M_betaAqm[q][m];
     }
 
     /**
      * \brief return the coefficient vector \p q component
      *
      */
-    value_type thetaMq( int q ) const
+    value_type betaMqm( int q, int m ) const
     {
-        return M_thetaMq( q );
+        return M_betaMqm[q][m];
     }
 
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
-    value_type thetaL( int l, int q ) const
+    value_type betaL( int l, int q, int m ) const
     {
-        return M_thetaFq[l]( q );
+        return M_betaFqm[l][q][m];
+    }
+
+    value_type betaInitialGuessQm( int q, int m ) const
+    {
+        return M_betaInitialGuessQm[q][m];
     }
 
     //@}
@@ -391,6 +449,8 @@ public:
      */
     sparse_matrix_ptrtype newMatrix() const;
 
+    vector_ptrtype newVector() const;
+
     /**
      * \brief Returns the affine decomposition
      */
@@ -403,8 +463,10 @@ public:
      */
     void solve( parameter_type const& mu, element_ptrtype& T, int output_index=0 );
 
-    void assemble();
+
     int computeNumberOfSnapshots();
+
+    void assemble();
     double timeFinal()
     {
         return M_bdf->timeFinal();
@@ -431,12 +493,20 @@ public:
     /**
      * solve for a given parameter \p mu
      */
-    void solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu );
 
     /**
      * solve \f$ M u = f \f$
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
+
+    /**
+     * H1 scalar product
+     */
+    sparse_matrix_ptrtype innerProduct ( void )
+    {
+        return M;
+    }
 
 
     /**
@@ -529,13 +599,15 @@ private:
 
     element_ptrtype pT;
 
-    std::vector<sparse_matrix_ptrtype> M_Aq;
-    std::vector<sparse_matrix_ptrtype> M_Mq;
-    std::vector<std::vector<vector_ptrtype> > M_Fq;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
-    theta_vector_type M_thetaAq;
-    theta_vector_type M_thetaMq;
-    std::vector<theta_vector_type> M_thetaFq;
+    beta_vector_type M_betaAqm;
+    beta_vector_type M_betaMqm;
+    beta_vector_type M_betaInitialGuessQm;
+    std::vector<beta_vector_type> M_betaFqm;
 
     bdf_ptrtype M_bdf;
     int M_Nsnap;
@@ -647,6 +719,7 @@ void HeatSink2D::initializationField( element_ptrtype& initial_field , parameter
 void HeatSink2D::init()
 {
 
+    std::cout<<"init !!!!! "<<std::endl;
 
     using namespace Feel::vf;
 
@@ -657,7 +730,7 @@ void HeatSink2D::init()
     mesh = createGMSHMesh ( _mesh = new mesh_type,
                             _desc = createGeo( meshSize, Lref ),
                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-
+    std::cout<<"mesh ok"<<std::endl;
     /*
      * The function space and some associate elements are then defined
      */
@@ -674,17 +747,19 @@ void HeatSink2D::init()
 
     M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatSink2d" , _prefix="heatSink2d" );
 
-    M_Aq.resize( this->Qa() );
-    M_Mq.resize( this->Qm() );
+    M_Aqm.resize( this->Qa() );
+    M_Mqm.resize( this->Qm() );
 
     //three outputs : one "compliant" and two others
-    M_Fq.resize( this->Nl() );
+    M_Fqm.resize( this->Nl() );
     //first : the compliant case.
-    M_Fq[0].resize( 1 );
-    M_Fq[0][0] = backend->newVector( Xh );
+    M_Fqm[0].resize( 1 );
+    M_Fqm[0][0].resize(1);
+    M_Fqm[0][0][0] = backend->newVector( Xh );
     //second output : non compliant case.
-    M_Fq[1].resize( 1 );
-    M_Fq[1][0] = backend->newVector( Xh );
+    M_Fqm[1].resize( 1 );
+    M_Fqm[1][0].resize(1);
+    M_Fqm[1][0][0] = backend->newVector( Xh );
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
@@ -698,7 +773,7 @@ void HeatSink2D::init()
     //mu_max <<  /* Bi */ 0.1 , /*L*/2, /*k*/1;
     M_Dmu->setMax( mu_max );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
 
@@ -717,37 +792,37 @@ void HeatSink2D::assemble()
     element_type v( Xh, "v" );
 
 
-    M_Aq[0] = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[0] ) = integrate( _range= markedfaces( mesh, "spreader_mesh" ), _expr= gradt( u )*trans( grad( v ) ) );
+    M_Aqm[0][0] = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) = integrate( _range= markedfaces( mesh, "spreader_mesh" ), _expr= gradt( u )*trans( grad( v ) ) );
 
-    M_Aq[1] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0] );
-    M_Aq[2] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0] );
-    M_Aq[3] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0] );
+    M_Aqm[1][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
+    M_Aqm[2][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
+    M_Aqm[3][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
 
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[2] ) = integrate( _range= markedelements( mesh,"fin_mesh" ),_expr=  dy( v )*dyt( u )  );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[1] ) = integrate( _range= markedelements( mesh,"fin_mesh" ),_expr=  dx( v )*dxt( u )  );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] )  = integrate( _range= markedfaces( mesh, "gamma5" ), _expr= idt( u )*id( v ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aq[3] ) += integrate( _range= markedfaces( mesh, "gamma6" ), _expr= idt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] )  = integrate( _range= markedelements( mesh,"fin_mesh" ),_expr=  dy( v )*dyt( u )  );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] )  = integrate( _range= markedelements( mesh,"fin_mesh" ),_expr=  dx( v )*dxt( u )  );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] )  = integrate( _range= markedfaces( mesh, "gamma5" ), _expr= idt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[3][0] ) += integrate( _range= markedfaces( mesh, "gamma6" ), _expr= idt( u )*id( v ) );
 
 
-    form1( _test=Xh, _vector=M_Fq[0][0] ) = integrate( _range=markedfaces( mesh,"gamma1" ), _expr= id( v ) ) ;
-    form1( _test=Xh, _vector=M_Fq[1][0] ) = integrate( _range=markedfaces( mesh,"gamma1" ), _expr= id( v ) ) ;
+    form1( _test=Xh, _vector=M_Fqm[0][0][0] ) = integrate( _range=markedfaces( mesh,"gamma1" ), _expr= id( v ) ) ;
+    form1( _test=Xh, _vector=M_Fqm[1][0][0] ) = integrate( _range=markedfaces( mesh,"gamma1" ), _expr= id( v ) ) ;
 
-    M_Aq[0]->close();
-    M_Aq[1]->close();
-    M_Aq[2]->close();
-    M_Aq[3]->close();
+    M_Aqm[0][0]->close();
+    M_Aqm[1][0]->close();
+    M_Aqm[2][0]->close();
+    M_Aqm[3][0]->close();
 
-    M_Fq[0][0]->close();
-    M_Fq[1][0]->close();
+    M_Fqm[0][0][0]->close();
+    M_Fqm[1][0][0]->close();
 
     //mass matrix
-    M_Mq[0] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0] );
-    M_Mq[1] = backend->newMatrix( _test=Xh, _trial=Xh , _matrix=M_Aq[0] );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mq[0] ) = integrate ( _range=markedelements( mesh,"spreader_mesh" ), _expr=idt( u )*id( v ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mq[1] ) = integrate ( _range=markedelements( mesh,"fin_mesh" ),      _expr=idt( u )*id( v ) );
-    M_Mq[0]->close();
-    M_Mq[1]->close();
+    M_Mqm[0][0] = backend->newMatrix( _test=Xh, _trial=Xh );
+    M_Mqm[1][0] = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) = integrate ( _range=markedelements( mesh,"spreader_mesh" ), _expr=idt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[1][0] ) = integrate ( _range=markedelements( mesh,"fin_mesh" ),      _expr=idt( u )*id( v ) );
+    M_Mqm[0][0]->close();
+    M_Mqm[1][0]->close();
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
@@ -760,6 +835,11 @@ void HeatSink2D::assemble()
         integrate( elements( mesh ), id( u )*idt( v ) );
     Mpod->close();
 
+    auto ini_cond = Xh->elementPtr();
+    ini_cond->setZero();
+    M_InitialGuessQm.resize( 1 );
+    M_InitialGuessQm[0].resize( 1 );
+    M_InitialGuessQm[0][0] = ini_cond;
 
 }
 
@@ -767,15 +847,20 @@ void HeatSink2D::assemble()
 typename HeatSink2D::sparse_matrix_ptrtype
 HeatSink2D::newMatrix() const
 {
-    return backend->newMatrix( Xh, Xh , M_Aq[0] );
+    return backend->newMatrix( Xh, Xh );
+}
+
+typename HeatSink2D::vector_ptrtype
+HeatSink2D::newVector() const
+{
+    return backend->newVector( Xh );
 }
 
 
 typename HeatSink2D::affine_decomposition_type
 HeatSink2D::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Mq, M_Aq, M_Fq );
-    //return boost::make_tuple( M_Aq, M_Fq );
+    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm , M_InitialGuessQm );
 }
 
 
@@ -792,8 +877,8 @@ void HeatSink2D::solve( sparse_matrix_ptrtype& D,
 
 void HeatSink2D::exportResults( double time, element_type& T, parameter_type const& mu )
 {
-    std::cout<<"STRT"<<std::endl;
-    Log() << "exportResults starts\n";
+
+    LOG(INFO) << "exportResults starts\n";
     std::string exp_name = "Model_T" + ( boost::format( "_%1%" ) %time ).str();
     //export_ptrtype exp = export_ptrtype( Exporter<mesh_type>::New( exp_name ) );
     export_ptrtype exporter;
@@ -811,7 +896,7 @@ void HeatSink2D::exportResults( double time, element_type& T, parameter_type con
     std::string name = "T_with_parameters_"+mu_str;
     exporter->step( time )->add( name, T );
     exporter->save();
-    std::cout<<" ====================== export ok"<<std::endl;
+
 }
 
 void HeatSink2D::exportOutputs( double time, double output1, double output2 )
@@ -829,44 +914,54 @@ void HeatSink2D::update( parameter_type const& mu,double bdf_coeff, element_type
     D->close();
     D->zero();
 
-    *D = *M_Aq[0];
-    D->scale( M_thetaAq[0] );
+    // *D = *M_Aqm[0][0];
+    //D->scale( M_betaAq[0] );
 
-    for ( size_type q = 1; q < M_Aq.size(); ++q )
+    for ( size_type q = 0; q < M_Aqm.size(); ++q )
     {
-        D->addMatrix( M_thetaAq[q] , M_Aq[q] );
+        for ( size_type m = 0; m < mMaxA(q); ++m )
+        {
+            D->addMatrix( M_betaAqm[q][m] , M_Aqm[q][m] );
+        }
     }
 
     F->close();
     F->zero();
 
-    for ( size_type q = 0; q < M_Fq[output_index].size(); ++q )
+    for ( size_type q = 0; q < M_Fqm[output_index].size(); ++q )
     {
-        F->add( M_thetaFq[output_index][q], M_Fq[output_index][q] );
+        for ( size_type m = 0; m < mMaxF(output_index,q); ++m )
+        {
+            F->add( M_betaFqm[output_index][q][m], M_Fqm[output_index][q][m] );
+        }
     }
 
     auto vec_bdf_poly = backend->newVector( Xh );
 
     //add contribution from mass matrix
-    for ( size_type q = 0; q < M_Mq.size(); ++q )
+    for ( size_type q = 0; q < M_Mqm.size(); ++q )
     {
-        //left hand side
-        D->addMatrix( M_thetaMq[q]*bdf_coeff, M_Mq[q] );
-        //right hand side
-        *vec_bdf_poly = bdf_poly;
-        vec_bdf_poly->scale( M_thetaMq[q] );
-        F->addVector( *vec_bdf_poly, *M_Mq[q] );
+        for ( size_type m = 0; m < mMaxM(q); ++m )
+        {
+            //left hand side
+            D->addMatrix( M_betaMqm[q][m]*bdf_coeff, M_Mqm[q][m] );
+            //right hand side
+            *vec_bdf_poly = bdf_poly;
+            vec_bdf_poly->scale( M_betaMqm[q][m] );
+            F->addVector( *vec_bdf_poly, *M_Mqm[q][m] );
+        }
     }
 
 }
 
 
 
-
-void HeatSink2D::solve( parameter_type const& mu )
+typename HeatSink2D::element_type
+HeatSink2D::solve( parameter_type const& mu )
 {
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
+    return *T;
 }
 
 
@@ -903,7 +998,7 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
     for ( M_bdf->start(); !M_bdf->isFinished() ; M_bdf->next() )
     {
 
-        this->computeThetaq( mu, M_bdf->time() );
+        this->computeBetaQm( mu, M_bdf->time() );
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
 
@@ -958,14 +1053,11 @@ void HeatSink2D::solve( parameter_type const& mu, element_ptrtype& T, int output
 
 }
 
-
 int
 HeatSink2D::computeNumberOfSnapshots()
 {
-    M_Nsnap = M_bdf->timeFinal()/M_bdf->timeStep();
-    return  M_Nsnap;
+    return M_bdf->timeFinal()/M_bdf->timeStep();
 }
-
 
 void HeatSink2D::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
@@ -1037,14 +1129,27 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, bool expo
 
     double s=0;
 
+    if( output_index < this->Nl() )
+    {
+        for ( int q=0; q<Ql( output_index ); q++ )
+        {
+            for ( int m=0; m<mMaxF(output_index,q); m++ )
+            {
+                s += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+            }
+        }
+    }
+    else
+        throw std::logic_error( "[HeatSink2d::output] error with output_index : only 0 or 1 " );
+
+#if 0
     if ( output_index==0 )
     {
-        for ( int i=0; i<Ql( output_index ); i++ )  s += M_thetaFq[output_index]( i )*dot( M_Fq[output_index][i], U );
+        for ( int i=0; i<Ql( output_index ); i++ )  s += M_betaFq[output_index]( i )*dot( M_Fqm[output_index][i], U );
     }
-
     else if ( output_index==1 )
     {
-        s = M_thetaFq[output_index]( 0 )*dot( M_Fq[output_index][0], U );
+        s = M_betaFq[output_index]( 0 )*dot( M_Fqm[output_index][0], U );
         std::cout<<" s model = "<<s<<std::endl;
     }
 
@@ -1052,6 +1157,7 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, bool expo
     {
         throw std::logic_error( "[HeatSink2D::output] error with output_index : only 0 or 1 " );
     }
+#endif
 
     return s ;
 }

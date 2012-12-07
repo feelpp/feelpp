@@ -68,13 +68,13 @@ EthierSteinman::EthierSteinman( int argc, char** argv, AboutData const& ad )
         cmdline << argv[i] << " ";
     }
 
-    Debug() << cmdline.str() << "\n";
+    VLOG(1) << cmdline.str() << "\n";
 
-    Debug() << "[EthierSteinman] hsize   = " << M_meshSize << "\n";
-    Debug() << "[EthierSteinman] bcCdiff = " << M_bcCoeffDiff << "\n";
-    Debug() << "[EthierSteinman] bcCconv = " << M_bcCoeffConv << "\n";
-    Debug() << "[EthierSteinman] mu      = " << M_mu << "\n";
-    Debug() << "[EthierSteinman] export  = "
+    VLOG(1) << "[EthierSteinman] hsize   = " << M_meshSize << "\n";
+    VLOG(1) << "[EthierSteinman] bcCdiff = " << M_bcCoeffDiff << "\n";
+    VLOG(1) << "[EthierSteinman] bcCconv = " << M_bcCoeffConv << "\n";
+    VLOG(1) << "[EthierSteinman] mu      = " << M_mu << "\n";
+    VLOG(1) << "[EthierSteinman] export  = "
             << this->vm()["export"].as<int>() << "\n";
 
     M_timeSet->setTimeIncrement( this->vm()["dt"].as<double>() );
@@ -107,13 +107,13 @@ EthierSteinman::EthierSteinman( int argc,
         cmdline << argv[i] << " ";
     }
 
-    Debug() << cmdline.str() << "\n";
+    VLOG(1) << cmdline.str() << "\n";
 
-    Debug() << "[EthierSteinman] hsize   = " << M_meshSize << "\n";
-    Debug() << "[EthierSteinman] bcCdiff = " << M_bcCoeffDiff << "\n";
-    Debug() << "[EthierSteinman] bcCconv = " << M_bcCoeffConv << "\n";
-    Debug() << "[EthierSteinman] mu      = " << M_mu << "\n";
-    Debug() << "[EthierSteinman] export  = "
+    VLOG(1) << "[EthierSteinman] hsize   = " << M_meshSize << "\n";
+    VLOG(1) << "[EthierSteinman] bcCdiff = " << M_bcCoeffDiff << "\n";
+    VLOG(1) << "[EthierSteinman] bcCconv = " << M_bcCoeffConv << "\n";
+    VLOG(1) << "[EthierSteinman] mu      = " << M_mu << "\n";
+    VLOG(1) << "[EthierSteinman] export  = "
             << this->vm()["export"].as<int>() << "\n";
 
     M_timeSet->setTimeIncrement( this->vm()["dt"].as<double>() );
@@ -136,11 +136,11 @@ EthierSteinman::EthierSteinman( EthierSteinman const& tc )
     M_pErrorL2( tc.M_pErrorL2 ),
     M_divError( tc.M_divError )
 {
-    Debug() << "[EthierSteinman] hsize   = " << M_meshSize << "\n";
-    Debug() << "[EthierSteinman] bcCdiff = " << M_bcCoeffDiff << "\n";
-    Debug() << "[EthierSteinman] bcCconv = " << M_bcCoeffConv << "\n";
-    Debug() << "[EthierSteinman] mu      = " << M_mu << "\n";
-    Debug() << "[EthierSteinman] export  = "
+    VLOG(1) << "[EthierSteinman] hsize   = " << M_meshSize << "\n";
+    VLOG(1) << "[EthierSteinman] bcCdiff = " << M_bcCoeffDiff << "\n";
+    VLOG(1) << "[EthierSteinman] bcCconv = " << M_bcCoeffConv << "\n";
+    VLOG(1) << "[EthierSteinman] mu      = " << M_mu << "\n";
+    VLOG(1) << "[EthierSteinman] export  = "
             << this->vm()["export"].as<int>() << "\n";
 
     M_timeSet->setTimeIncrement( this->vm()["dt"].as<double>() );
@@ -200,7 +200,7 @@ EthierSteinman::createMesh( double meshSize, double R )
     }
 
     M_timers["mesh"].second = M_timers["mesh"].first.elapsed();
-    Debug() << "[timer] createMesh(): " << M_timers["mesh"].second << "\n";
+    VLOG(1) << "[timer] createMesh(): " << M_timers["mesh"].second << "\n";
     return mesh;
 } // EthierSteinman::createMesh
 
@@ -249,13 +249,13 @@ EthierSteinman::run()
     //space_u->dof()->showMe();
     psLogger.log( "t=0, spaces" );
 
-    Debug() << "[EthierSteinman] velocity dofs per component "
+    VLOG(1) << "[EthierSteinman] velocity dofs per component "
             << space_u->nbDof() << "\n";
-    Debug() << "[EthierSteinman] velocity dofs total         "
+    VLOG(1) << "[EthierSteinman] velocity dofs total         "
             << space_U->nbDof() << "\n";
-    Debug() << "[EthierSteinman] pressure dofs               "
+    VLOG(1) << "[EthierSteinman] pressure dofs               "
             << space_p->nbDof() << "\n";
-    Debug() << "[EthierSteinman] total    dofs               "
+    VLOG(1) << "[EthierSteinman] total    dofs               "
             << space_U->nbDof() + space_p->nbDof() << "\n";
 
     std::cout << "[EthierSteinman] elements\n" << std::flush;
@@ -468,7 +468,7 @@ EthierSteinman::run()
             time-dt/2 < this->vm()["ft"].as<double>();
             ++iter, time += dt )
     {
-        Debug() << "[EthierSteinman] t = " << time << "\n";
+        VLOG(1) << "[EthierSteinman] t = " << time << "\n";
         std::cout << "[EthierSteinman] t = " << time << "\n";
 
         ux0 *= timeFactor;
@@ -517,7 +517,7 @@ EthierSteinman::run()
             }
 
             M_timers["updateNS"].second += M_timers["updateNS"].first.elapsed();
-            Debug() << "[EthierSteinman] NS assembly time: "
+            VLOG(1) << "[EthierSteinman] NS assembly time: "
                     << M_timers["updateNS"].first.elapsed() << "\n";
             msg.str( "" );
             msg << "t=" << time << ", subiter " << subiter << " oseen update";
@@ -529,24 +529,24 @@ EthierSteinman::run()
                       << "\n" << std::flush;
 
             if ( !backendNS->reusePC() )
-                Debug() << "[EthierSteinman] NS solving: rebuild pc\n";
+                VLOG(1) << "[EthierSteinman] NS solving: rebuild pc\n";
 
             M_timers["solverNS"].first.restart();
             oseen.solve();
             M_timers["solverNS"].second += M_timers["solverNS"].first.elapsed();
-            Debug() << "[EthierSteinman] NS solving  time: "
+            VLOG(1) << "[EthierSteinman] NS solving  time: "
                     << M_timers["solverNS"].first.elapsed() << "\n";
-            Debug() << "[EthierSteinman] NS solving  iterations: "
+            VLOG(1) << "[EthierSteinman] NS solving  iterations: "
                     << backendNS->get_iteration() <<"\n";
 
             if ( backendNS->reuseFailed() )
             {
-                Debug() << "[EthierSteinman] NS solving: pc reuse failed\n";
+                VLOG(1) << "[EthierSteinman] NS solving: pc reuse failed\n";
                 std::cout << "[EthierSteinman]    pc reuse failed\n";
             }
 
             if ( !backendNS->converged() )
-                Debug() << "[EthierSteinman] NS solving: didn't converge\n";
+                VLOG(1) << "[EthierSteinman] NS solving: didn't converge\n";
 
             msg.str( "" );
             msg << "t=" << time << ", subiter " << subiter << " oseen solve";
@@ -582,13 +582,13 @@ EthierSteinman::run()
                                      fixpointIncP*fixpointIncP /
                                      std::pow( M_meshSize, 2*( 1+pOrder ) ) );
 
-            Debug() << "[EthierSteinman] fixpoint iteration   "
+            VLOG(1) << "[EthierSteinman] fixpoint iteration   "
                     << subiter  << "\n";
-            Debug() << "[EthierSteinman] fixpoint increm. u = "
+            VLOG(1) << "[EthierSteinman] fixpoint increm. u = "
                     << fixpointIncU << "\n";
-            Debug() << "[EthierSteinman] fixpoint increm. p = "
+            VLOG(1) << "[EthierSteinman] fixpoint increm. p = "
                     << fixpointIncP << "\n";
-            Debug() << "[EthierSteinman] fixpoint error     = "
+            VLOG(1) << "[EthierSteinman] fixpoint error     = "
                     << fixpointErr  << "\n";
 
             uxn = uxnn;
@@ -600,7 +600,7 @@ EthierSteinman::run()
 
         // --- post processing
         std::cout << "[EthierSteinman] post processing\n";
-        Debug() << "[EthierSteinman] #subiter = " << subiter << "\n";
+        VLOG(1) << "[EthierSteinman] #subiter = " << subiter << "\n";
 
         double divError =
             std::sqrt( integrate( elements( *mesh ), M_im,
@@ -610,11 +610,11 @@ EthierSteinman::run()
                                            ,
                                            2.0 )
                                 ).evaluate()( 0,0 ) );
-        Debug() << "[EthierSteinman] ||div u||_2 = " << divError << "\n";
+        VLOG(1) << "[EthierSteinman] ||div u||_2 = " << divError << "\n";
 
-        Debug() << "[EthierSteinman] p stabil. energy  = "
+        VLOG(1) << "[EthierSteinman] p stabil. energy  = "
                 << oseen.stabilizationEnergyP() << "\n";
-        Debug() << "[EthierSteinman] u stabil. energy  = "
+        VLOG(1) << "[EthierSteinman] u stabil. energy  = "
                 << oseen.stabilizationEnergyU() << "\n";
 
         // --- time shift
@@ -647,12 +647,12 @@ EthierSteinman::run()
 
     } // time loop
 
-    Debug() << "[EthierSteinman] total timings:\n";
+    VLOG(1) << "[EthierSteinman] total timings:\n";
     std::map<std::string,std::pair<boost::timer,double> >::iterator it;
 
     for ( it=M_timers.begin(); it!=M_timers.end(); ++it )
     {
-        Debug() << "[EthierSteinman]   " << it->first << ": "
+        VLOG(1) << "[EthierSteinman]   " << it->first << ": "
                 << it->second.second << "\n";
     }
 
@@ -741,22 +741,22 @@ EthierSteinman::exportResults( int iter,
         M_divError = divError;
 
     M_timers["errors"].second += M_timers["errors"].first.elapsed();
-    Debug() << "[EthierSteinman] error comp. t.: "
+    VLOG(1) << "[EthierSteinman] error comp. t.: "
             << M_timers["export"].first.elapsed()
             << "\n";
 
-    Debug() << "[EthierSteinman] ||u-u_ex||_L2 = " << uErrorL2 << "\n";
-    Debug() << "[EthierSteinman] ||u-u_ex||_H1 = " << uErrorH1 << "\n";
-    Debug() << "[EthierSteinman] ||p-p_ex||_L2 = " << pErrorL2 << "\n";
-    Debug() << "[EthierSteinman] ||div u ||_L2 = " << divError << "\n";
+    VLOG(1) << "[EthierSteinman] ||u-u_ex||_L2 = " << uErrorL2 << "\n";
+    VLOG(1) << "[EthierSteinman] ||u-u_ex||_H1 = " << uErrorH1 << "\n";
+    VLOG(1) << "[EthierSteinman] ||p-p_ex||_L2 = " << pErrorL2 << "\n";
+    VLOG(1) << "[EthierSteinman] ||div u ||_L2 = " << divError << "\n";
 
-    Debug() << "[EthierSteinman] ||u-u_ex||_L2 / ||u_0-u_ex||_L2 = "
+    VLOG(1) << "[EthierSteinman] ||u-u_ex||_L2 / ||u_0-u_ex||_L2 = "
             << uErrorL2/M_uErrorL2 << "\n";
-    Debug() << "[EthierSteinman] ||u-u_ex||_H1 / ||u_0-u_ex||_H1 = "
+    VLOG(1) << "[EthierSteinman] ||u-u_ex||_H1 / ||u_0-u_ex||_H1 = "
             << uErrorH1/M_uErrorH1 << "\n";
-    Debug() << "[EthierSteinman] ||p-p_ex||_L2 / ||p_0-p_ex||_L2 = "
+    VLOG(1) << "[EthierSteinman] ||p-p_ex||_L2 / ||p_0-p_ex||_L2 = "
             << pErrorL2/M_pErrorL2 << "\n";
-    Debug() << "[EthierSteinman] ||div u ||_L2 / ||div u_0 ||_L2 = "
+    VLOG(1) << "[EthierSteinman] ||div u ||_L2 / ||div u_0 ||_L2 = "
             << divError/M_divError << "\n";
 
     M_timers["export"].first.restart();
@@ -781,7 +781,7 @@ EthierSteinman::exportResults( int iter,
     } // export
 
     M_timers["export"].second += M_timers["export"].first.elapsed();
-    Debug() << "[EthierSteinman] exporting time: "
+    VLOG(1) << "[EthierSteinman] exporting time: "
             << M_timers["export"].first.elapsed()
             << "\n";
 } // EthierSteinman::exportResults

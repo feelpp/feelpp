@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-06-20
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file vectoreigen.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-06-20
  */
 /**
@@ -101,7 +101,9 @@ VectorEigen<T>::~VectorEigen()
 template <typename T>
 typename VectorEigen<T>::clone_ptrtype
 VectorEigen<T>::clone () const
-{}
+{
+    return clone_ptrtype( new VectorEigen<T>( *this ) );
+}
 
 template <typename T>
 void

@@ -896,7 +896,7 @@ void
 GeoND<Dim,GEOSHAPE, T, POINTTYPE>::setPoint( uint16_type const i, point_type const & p )
 {
     M_points[ i ] = const_cast<point_type *>( &p );
-    //Debug() << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
+    //VLOG(1) << "[setPoint] üpdate point index " << i << " with "<< M_points[i]->id() << "\n";
     FEELPP_ASSERT( const_cast<point_type *>( &p ) != 0 ).error( "invalid Geo0D<>" );
     ublas::column( M_G, i ) = M_points[i]->node();
     M_has_points = true;
@@ -1105,6 +1105,14 @@ operator<<( NdebugStream& __os, GeoND<Dim,GEOSHAPE, T, POINTTYPE> const& __n )
     return __os;
 }
 
+
+template <uint16_type Dim, typename GEOSHAPE, typename T, typename POINTTYPE>
+inline
+std::ostream&
+operator<<( std::ostream& __os, GeoND<Dim,GEOSHAPE, T, POINTTYPE> const& __n )
+{
+    return __n.showMe( true, __os );
+}
 
 } // Feel
 #endif

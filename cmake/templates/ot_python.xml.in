@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ @configure_input@
+
+ @file  @FEELPP_APP_OT_WRAPPER_NAME@.xml.in
+ @brief The description file of the wrapper
+
+ (C) Copyright 2012 Université de Strasbourg
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License.
+
+ This library is distributed in the hope that it will be useful
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+
+ @author:
+ @date:
+ Id:
+-->
+
+<wrapper>
+  <library>
+
+    <!-- The path of the shared object -->
+    <path>@FEELPP_APP_OT_WRAPPER_NAME@.so</path>
+
+
+
+    <!-- This section describes all exchanges data between the wrapper and the platform -->
+    <description>
+
+      <!-- Those variables are substituted in the files above -->
+      <!-- The order of variables is the order of the arguments of the function -->
+      <variable-list>
+
+        <!-- The definition of a variable -->
+        <variable id="I1" type="in">
+          <comment>Input 1</comment>
+          <unit>none</unit>
+          <regexp>^(\S*)I1(\S*)=(\S*)(\R)\S*$</regexp>
+          <format>\1I1\2=\3%10.5g</format>
+        </variable>
+
+        <!-- The definition of a variable -->
+        <variable id="I2" type="in">
+          <comment>Input 2</comment>
+          <unit>none</unit>
+          <regexp>^\S*I2\S*=\S*(\R)\S*$</regexp>
+          <format>I2 = %10.5g</format>
+        </variable>
+
+        <!-- The definition of a variable -->
+        <variable id="I3" type="in">
+          <comment>Input 3</comment>
+          <unit>none</unit>
+          <regexp>^\S*I3\S*=\S*(\R)\S*$</regexp>
+          <format>I3 = %10.5g</format>
+        </variable>
+
+        <!-- The definition of a variable -->
+        <variable id="O1" type="out">
+          <comment>Output 1</comment>
+          <unit>none</unit>
+          <regexp>O1\S*=\S*(\R)\S+</regexp>
+        </variable>
+
+        <!-- The definition of a variable -->
+        <variable id="O2" type="out">
+          <comment>Output 2</comment>
+          <unit>none</unit>
+          <regexp>\S+O2\S*=\S*(\R)</regexp>
+        </variable>
+
+      </variable-list>
+
+
+
+      <!-- The function that we try to execute through the wrapper -->
+      <function provided="yes">@FEELPP_APP_OT_WRAPPER_NAME@</function>
+
+      <!-- the gradient is  defined  -->
+      <gradient provided="no"></gradient>
+
+      <!--  the hessian is  defined  -->
+      <hessian provided="no"></hessian>
+
+    </description>
+
+
+  </library>
+
+  <external-code>
+    <!-- Those data are external to the platform (input files, etc.)-->
+    <data>
+      <!-- An input file -->
+      <file id="data" type="in">
+        <name>The input data file</name>
+        <path>@FEELPP_APP_CFG@</path>
+  	<subst>I1,I2,I3</subst>
+     </file>
+
+      <!-- An output file -->
+      <file id="result" type="out">
+        <name>The output result file</name>
+        <path>@FEELPP_APP_OUTPUT@</path>
+	<subst>O1,O2</subst>
+      </file>
+
+    </data>
+
+    <wrap-mode type="fork" state="shared">
+      <in-data-transfer mode="files" />
+      <out-data-transfer mode="files" />
+    </wrap-mode>
+
+    <command>mpirun -np 10 @CMAKE_CURRENT_BINARY_DIR@/@execname@  --config-file=@FEELPP_APP_CFG@ --output-file=@FEELPP_APP_OUTPUT@ --nochdir</command>
+
+  </external-code>
+
+</wrapper>

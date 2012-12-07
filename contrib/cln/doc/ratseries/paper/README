@@ -1,0 +1,41 @@
+TITLE  : "Fast multiprecision evaluation of series of rational numbers"
+AUTHORS: Bruno Haible, Thomas Papanikolaou
+
+Contents
+--------
+
+This directory contains the following files:
+
+Makefile ......................... to use with `make'. See below.
+
+README ........................... this file
+
+acm.bst.orig ..................... Original ISSAC '97 BibTeX style
+
+acm.bst .......................... ISSAC '97 BibTeX style (modified to keep
+                                   long author names)
+
+acmconf.sty ...................... ISSAC '97 ACM Conference style
+
+binsplit.bib ..................... BibTeX bibliography
+
+binsplit.tex ..................... LaTeX source
+
+binsplit.ps ...................... PostScript source
+
+
+How to use the Makefile
+-----------------------
+
+LATEX, BIBTEX, DVIPS, RM, GZIP and UUENCODE are configuration
+variables which you can change to point to the appropriate
+location on your system. You do not need to change anything else.
+
+    `make binsplit.dvi' creates binsplit.dvi
+
+    `make binsplit.ps' creates binsplit.ps
+
+    `make clean' removes all files produced by LaTeX and BibTeX 
+
+Do not type the quotes!
+

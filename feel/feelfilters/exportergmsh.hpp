@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-03-30
 
   Copyright (C) 2005-2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file ExporterGmsh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-30
  */
 #ifndef __ExporterGmsh_H
@@ -112,9 +112,15 @@ public:
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" )
+    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
     {
-        super::setOptions( vm, exp_prefix );
+        super::setOptions( exp_prefix );
+
+        return this;
+    }
+    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
+    {
+        super::setOptions( exp_prefix );
 
         return this;
     }

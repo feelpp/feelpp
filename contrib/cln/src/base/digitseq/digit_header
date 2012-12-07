@@ -1,0 +1,57 @@
+#!/bin/sh
+# Usage: digit_header < pi.h.in > pi.h
+#        converts a file containing the digits of pi (in hex) to
+#        a header file suitable for inclusion.
+
+bytes=''
+while true; do
+  IFS='@' read line || break
+  bytes="$bytes "`echo "$line" | sed -e 's,//.*$,,' -e 's,[{};], ,g' -e 's,D(, ,g' -e 's/[,)]/ /g' -e 's,0x, ,g'`
+done
+bytes=`echo "$bytes" | sed -e 's,  *, ,g'`
+
+blocks1=`echo " $bytes" | sed -e 's/ \([0-9A-Za-z]\+\)/ D1(0x\1),/g'`
+blocks2=`echo " $bytes" | sed -e 's/ \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\)/ D2(0x\1,0x\2),/g'`
+blocks4=`echo " $bytes" | sed -e 's/ \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\)/ D4(0x\1,0x\2,0x\3,0x\4),/g'`
+blocks8=`echo " $bytes" | sed -e 's/ \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\) \([0-9A-Za-z]\+\)/ D8(0x\1,0x\2,0x\3,0x\4,0x\5,0x\6,0x\7,0x\8),/g'`
+
+reverse () {
+  eval "l=\$$1"
+  r=''; for word in $l; do r="$word $r"; done
+  eval "$2=\$r"
+}
+
+reverse blocks1 revblocks1
+reverse blocks2 revblocks2
+reverse blocks4 revblocks4
+reverse blocks8 revblocks8
+
+echo "{"
+echo "#if CL_DS_BIG_ENDIAN_P"
+echo "  #if (intDsize==8)"
+echo "    "`echo "$blocks1" | sed -e 's/, *$//'`
+echo "  #endif"
+echo "  #if (intDsize==16)"
+echo "    "`echo "$blocks2" | sed -e 's/, *$//'`
+echo "  #endif"
+echo "  #if (intDsize==32)"
+echo "    "`echo "$blocks4" | sed -e 's/, *$//'`
+echo "  #endif"
+echo "  #if (intDsize==64)"
+echo "    "`echo "$blocks8" | sed -e 's/, *$//'`
+echo "  #endif"
+echo "#else"
+echo "  #if (intDsize==8)"
+echo "    "`echo "$revblocks1" | sed -e 's/, *$//'`
+echo "  #endif"
+echo "  #if (intDsize==16)"
+echo "    "`echo "$revblocks2" | sed -e 's/, *$//'`
+echo "  #endif"
+echo "  #if (intDsize==32)"
+echo "    "`echo "$revblocks4" | sed -e 's/, *$//'`
+echo "  #endif"
+echo "  #if (intDsize==64)"
+echo "    "`echo "$revblocks8" | sed -e 's/, *$//'`
+echo "  #endif"
+echo "#endif"
+echo "} ;"

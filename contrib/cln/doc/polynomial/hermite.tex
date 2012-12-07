@@ -1,0 +1,176 @@
+%% This LaTeX-file was created by <bruno> Sun Feb 16 14:05:55 1997
+%% LyX 0.10 (C) 1995 1996 by Matthias Ettrich and the LyX Team
+
+%% Don't edit this file unless you are sure what you are doing.
+\documentclass[12pt,a4paper,oneside,onecolumn]{article}
+\usepackage[]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage[dvips]{epsfig}
+
+%%
+%% BEGIN The lyx specific LaTeX commands.
+%%
+
+\makeatletter
+\def\LyX{L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\spacefactor1000}%
+\newcommand{\lyxtitle}[1] {\thispagestyle{empty}
+\global\@topnum\z@
+\section*{\LARGE \centering \sffamily \bfseries \protect#1 }
+}
+\newcommand{\lyxline}[1]{
+{#1 \vspace{1ex} \hrule width \columnwidth \vspace{1ex}}
+}
+\newenvironment{lyxsectionbibliography}
+{
+\section*{\refname}
+\@mkboth{\uppercase{\refname}}{\uppercase{\refname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\newenvironment{lyxchapterbibliography}
+{
+\chapter*{\bibname}
+\@mkboth{\uppercase{\bibname}}{\uppercase{\bibname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\def\lxq{"}
+\newenvironment{lyxcode}
+{\list{}{
+\rightmargin\leftmargin
+\raggedright
+\itemsep 0pt
+\parsep 0pt
+\ttfamily
+}%
+\item[]
+}
+{\endlist}
+\newcommand{\lyxlabel}[1]{#1 \hfill}
+\newenvironment{lyxlist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{#1}
+\setlength{\leftmargin}{\labelwidth}
+\addtolength{\leftmargin}{\labelsep}
+\renewcommand{\makelabel}{\lyxlabel}}}
+{\end{list}}
+\newcommand{\lyxletterstyle}{
+\setlength\parskip{0.7em}
+\setlength\parindent{0pt}
+}
+\newcommand{\lyxaddress}[1]{
+\par {\raggedright #1 
+\vspace{1.4em}
+\noindent\par}
+}
+\newcommand{\lyxrightaddress}[1]{
+\par {\raggedleft \begin{tabular}{l}\ignorespaces
+#1
+\end{tabular}
+\vspace{1.4em}
+\par}
+}
+\newcommand{\lyxformula}[1]{
+\begin{eqnarray*}
+#1
+\end{eqnarray*}
+}
+\newcommand{\lyxnumberedformula}[1]{
+\begin{eqnarray}
+#1
+\end{eqnarray}
+}
+\makeatother
+
+%%
+%% END The lyx specific LaTeX commands.
+%%
+
+\pagestyle{plain}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\begin{document}
+
+The Hermite polynomials  \( H_{n}(x) \) are defined through 
+\[
+H_{n}(x)=(-1)^{n}e^{x^{2}}\cdot \left( \frac{d}{dx}\right) ^{n}\left( e^{-x^{2}}\right) \]
+
+
+\begin{description}
+
+\item [Theorem:]~
+
+\end{description}
+
+ \( H_{n}(x) \) satisfies the recurrence relation
+
+
+\[
+H_{0}(x)=1\]
+
+
+
+\[
+H_{n+1}(x)=2x\cdot H_{n}(x)-2n\cdot H_{n-1}(x)\]
+ for  \( n\geq 0 \) and the differential equation  \( H_{n}^{''}(x)-2x\cdot H_{n}^{'}(x)+2n\cdot H_{n}(x)=0 \) for all  \( n\geq 0 \).
+
+\begin{description}
+
+\item [Proof:]~
+
+\end{description}
+
+Let  \( F:=\sum ^{\infty }_{n=0}\frac{H_{n}(x)}{n!}z^{n} \) be the exponential generating function of the sequence of polynomials.
+Then, because the Taylor series development theorem holds in formal
+power series rings (see [1], section 2.16), we can simplify
+\begin{eqnarray*}
+F & = & e^{x^{2}}\cdot \sum ^{\infty }_{n=0}\frac{1}{n!}\left( \frac{d}{dx}\right) ^{n}\left( e^{-x^{2}}\right) \cdot (-z)^{n}\\
+ & = & e^{x^{2}}\cdot e^{-(x-z)^{2}}\\
+ & = & e^{2xz-z^{2}}
+\end{eqnarray*}
+It follows
+that  \( \frac{d}{dz}F=(2x-2z)\cdot F \). This is equivalent to the claimed recurrence.
+
+Starting from this equation, we compute a linear relation for the
+partial derivatives of  \( F \). Write  \( \partial _{x}=\frac{d}{dx} \) and  \( \Delta _{z}=z\frac{d}{dz} \). One computes
+\[
+F=1\cdot F\]
+
+\[
+\partial _{x}F=2z\cdot F\]
+
+\[
+\partial _{x}^{2}F=4z^{2}\cdot F\]
+
+\[
+\Delta _{z}F=(2xz-2z^{2})\cdot F\]
+
+\[
+\partial _{x}\Delta _{z}F=(2z+4xz^{2}-4z^{3})\cdot F\]
+
+\[
+\Delta _{z}^{2}F=\left( 2x\cdot z+(4x^{2}-4)\cdot z^{2}-8x\cdot z^{3}+4\cdot z^{4}\right) \cdot F\]
+ Solve
+a homogeneous  \( 5\times 6 \) system of linear equations over  \( Q(x) \) to get 
+\[
+(-2x)\cdot \partial _{x}F+\partial _{x}^{2}F+2\cdot \Delta _{z}F=0\]
+ This is
+equivalent to the claimed equation  \( H_{n}^{''}(x)-2x\cdot H_{n}^{'}(x)+2n\cdot H_{n}(x)=0 \).
+
+\begin{lyxsectionbibliography}
+
+\item [1] Bruno Haible: D-finite power series in several variables. \em Diploma
+thesis, University of Karlsruhe, June 1989\em . Sections 2.15 and
+2.22.
+
+\end{lyxsectionbibliography}
+
+\end{document}

@@ -1,0 +1,56 @@
+Files in this package:
+
+    Documentation:
+
+        README          this text
+        COPYING         free software license
+        doc/            documentation in texinfo, html, info, dvi, ps formats
+
+    Source files:
+        src/
+
+        base            base routines of all of CLN
+                        (mandatory)
+        integer         integer numbers
+                        (mandatory)
+        rational        rational numbers
+                        (needs integer)
+        float           floating-point numbers
+                        (needs integer, rational)
+        real            real numbers
+                        (needs integer, rational, float)
+        complex         complex numbers
+                        (needs integer, rational, float, real)
+        modinteger      integers modulo n
+                        (needs integer)
+        vector          vectors
+                        (needs integer, rational, float, real, complex)
+        polynomial      polynomials
+                        (needs integer, modinteger, vector)
+        modpolynomial   polynomials modulo a given polynomial
+                        (not yet implemented)
+        numtheory       number theory functions
+                        (needs integer, real)
+        timing          timing routines
+                        (standalone)
+
+    Include files
+        include/cln/
+
+    Sample programs
+        examples/
+
+    Sample programs used for tuning
+        benchmarks/
+
+    Verification tests:
+        tests/exam*     tests for specific input (like a pupils' exam)
+        tests/test*     coherence tests, for random input
+
+    Installation:
+
+        configure       configuration script
+        configure.in    autoconf source for the configuration script
+        autoconf/*      auxiliary configuration scripts
+        m4/*            autoconf's driver macros
+        Makefile.in     Makefile master

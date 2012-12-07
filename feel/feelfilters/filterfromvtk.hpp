@@ -3,10 +3,12 @@
   This file is part of the Feel library
 
   Author(s): Gilles Steiner <gilles.steiner@epfl.ch>
-             Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2004-11-18
 
   Copyright (C) 2004 EPFL
+  Copyright (C) 2012 Universite de Strasbbourg
+  Copyright (C) 2006-2012 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -25,7 +27,7 @@
 /**
    \file filterfromvtk.hpp
    \author Gilles Steiner <gilles.steiner@epfl.ch>
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-18
  */
 #ifndef __filter_H
@@ -58,7 +60,7 @@ namespace Feel
  * Converts Mesh data structure from Vtk library to Feel Mesh type.
  *
  * \author Gilles Steiner <gilles.steiner@epfl.ch>
- * \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<typename MeshType>
 class FilterFromVtk
@@ -152,7 +154,7 @@ private:
  * Converts Mesh data structure from Vtk library to Feel Mesh type.
  *
  * \author Gilles Steiner <gilles.steiner@epfl.ch>
- * \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 template<typename MeshType>
 class FilterFromVtk3D
@@ -250,11 +252,11 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 
     uint __n = _vtkMesh->GetNumberOfPoints(); // Number of nodes
 
-    Debug( 8099 ) <<"Number of points : "<< __n << "\n";
+    DVLOG( 2 ) <<"Number of points : "<< __n << "\n";
 
     uint __nele = _vtkMesh->GetNumberOfPolys(); // Number of elements
 
-    Debug( 8099 ) <<"Number of elements : "<< __nele << "\n";
+    DVLOG( 2 ) <<"Number of elements : "<< __nele << "\n";
 
     // add the points to the mesh
 
@@ -281,7 +283,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         mesh->addPoint( __pt );
     }
 
-
+#if 0
     size_type n_faces = 0;
 
     // Add Boundary faces
@@ -321,12 +323,14 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
     mesh->addFace( *pf2 );
 
     delete pf2;
+    FEELPP_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
 
+#endif
     // add the elements to the mesh
 
     for ( uint __i = 0; __i < __nele; ++__i )
     {
-        Debug( 8099 ) << "[FilterFromVtk] element " << __i << "\n";
+        DVLOG( 2 ) << "[FilterFromVtk] element " << __i << "\n";
         // Here we only have triangular elements of order 1
 
         element_type * pf = new element_type;
@@ -339,24 +343,23 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
         pf->setPoint( 0, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 0 ) ) );
         pf->setPoint( 1, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 1 ) ) );
         pf->setPoint( 2, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 2 ) ) );
-        Debug( 8099 ) << "[FilterFromVtk] point 0 " << pf->point( 0 ).node() << " global id: " << pf->point( 0 ).id() << "\n"
-                      << "[FilterFromVtk] point 1 " << pf->point( 1 ).node() << " global id: " << pf->point( 1 ).id() << "\n"
-                      << "[FilterFromVtk] point 2 " << pf->point( 2 ).node() << " global id: " << pf->point( 2 ).id() << "\n";
+        DVLOG( 2 ) << "[FilterFromVtk] point 0 " << pf->point( 0 ).node() << " global id: " << pf->point( 0 ).id() << "\n"
+                   << "[FilterFromVtk] point 1 " << pf->point( 1 ).node() << " global id: " << pf->point( 1 ).id() << "\n"
+                   << "[FilterFromVtk] point 2 " << pf->point( 2 ).node() << " global id: " << pf->point( 2 ).id() << "\n";
         mesh->addElement( *pf );
         delete pf;
     }
 
 
-    FEELPP_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
 
-    Debug( 8099 ) <<"[FilterFromVtk] done with element accumulation !\n";
+    DVLOG( 2 ) <<"[FilterFromVtk] done with element accumulation !\n";
 
     mesh->setNumVertices( __n );
 
-    Debug( 8099 ) <<"[FilterFromVtk] Face Update !\n";
+    DVLOG( 2 ) <<"[FilterFromVtk] Face Update !\n";
 
 
-    Debug( 8099 ) <<"[FilterFromVtk] Face Update Successful !\n";
+    DVLOG( 2 ) <<"[FilterFromVtk] Face Update Successful !\n";
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
@@ -376,11 +379,11 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 
     uint __n = _vtkMesh->GetNumberOfPoints(); // Nbre of nodes
 
-    Debug( 8099 ) <<"Number of points : "<< __n << "\n";
+    DVLOG( 2 ) <<"Number of points : "<< __n << "\n";
 
     uint __nele = _vtkMesh->GetNumberOfCells(); // Nbre of elements
 
-    Debug( 8099 ) <<"Number of elements : "<< __nele << "\n";
+    DVLOG( 2 ) <<"Number of elements : "<< __nele << "\n";
 
     // add the points to the mesh
 
@@ -408,12 +411,14 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
         mesh->addPoint( __pt );
     }
 
-    Debug( 8099 ) << "[FilterFromVtk3D] mesh np = " << mesh->numPoints() << "\n";
+    DVLOG( 2 ) << "[FilterFromVtk3D] mesh np = " << mesh->numPoints() << "\n";
     FEELPP_ASSERT( mesh->numPoints() == __n )( __n )( mesh->numPoints() ).error( "invalid number of points" );
+
+#if 0
     size_type n_faces = 0;
 
-    // Add Boundary faces
 
+    // Add Boundary faces
     face_type* pf0 = new face_type;
 
     pf0->setMarker( 1 );
@@ -467,7 +472,8 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
     mesh->addFace( *pf3 );
 
     delete pf3;
-
+    FEELPP_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
+#endif
     // add the elements to the mesh
 
     for ( uint __i = 0; __i < __nele; ++__i )
@@ -482,8 +488,8 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
         // Warning : Vtk orientation is not the same as Feel orientation !
 
         pf->setPoint( 0, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 0 ) ) );
-        pf->setPoint( 1, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 2 ) ) );
-        pf->setPoint( 2, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 1 ) ) );
+        pf->setPoint( 1, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 1 ) ) );
+        pf->setPoint( 2, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 2 ) ) );
         pf->setPoint( 3, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 3 ) ) );
 
         mesh->addElement( *pf );
@@ -491,18 +497,18 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
     }
 
 
-    FEELPP_ASSERT( n_faces == mesh->numFaces() )( n_faces )( mesh->numFaces() ).error( "invalid face container size" );
 
-    Debug( 8099 ) <<"[FilterFromVtk] done with element accumulation !\n";
+
+    DVLOG( 2 ) <<"[FilterFromVtk] done with element accumulation !\n";
 
     mesh->setNumVertices( __n );
 
-    Debug( 8099 ) <<"[FilterFromVtk] Face Update !\n";
+    DVLOG( 2 ) <<"[FilterFromVtk] Face Update !\n";
 
     // do not renumber the mesh entities
     //mesh->updateForUse( MESH_ALL_COMPONENTS & (~MESH_RENUMBER) );
 
-    Debug( 8099 ) <<"[FilterFromVtk] Face Update Successful !\n";
+    DVLOG( 2 ) <<"[FilterFromVtk] Face Update Successful !\n";
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";

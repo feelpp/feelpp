@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-03-17
 
   Copyright (C) 2005,2006,2009 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file application.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-17
  */
 #ifndef __application_H
@@ -88,6 +88,8 @@ public:
     /** @name Constructors, destructor
      */
     //@{
+
+    Application();
 
     /**
      * Construct an MPI Application
@@ -418,6 +420,10 @@ public:
      */
     void printStats( std::ostream& out, std::vector<std::string> const& keys, size_type stats = ALL ) const;
 
+    /**
+     * result file name
+     */
+    std::string resultFileName() const;
 
     //@}
 

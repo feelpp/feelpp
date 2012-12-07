@@ -1,11 +1,12 @@
 
 #define BOOST_TEST_MODULE kdtree tests
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 
 #include <feel/feelmesh/kdtree.hpp>
 using namespace Feel;
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 bool
 check_point( const KDTree::node_type & p1,const KDTree::node_type & p2 )

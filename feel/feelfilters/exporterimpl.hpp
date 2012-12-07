@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-21
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file exporterimpl.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-21
  */
 #include <boost/tokenizer.hpp>
@@ -42,6 +42,23 @@ namespace Feel
 {
 template<typename MeshType, int N> class ExporterEnsight;
 template<typename MeshType, int N> class ExporterGmsh;
+
+template<typename MeshType, int N>
+Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
+    :
+    super1(),
+    super2(),
+    M_worldComm( worldComm ),
+    M_do_export( true ),
+    M_type(),
+    M_prefix( Environment::about().appName() ),
+    M_freq( 1 ),
+    M_cptOfSave( 0 ),
+    M_ft( ASCII ),
+    M_path( "." )
+{
+    VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
+}
 
 template<typename MeshType, int N>
 Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& __prefix, int __freq, WorldComm const& worldComm  )
@@ -74,7 +91,7 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     M_ft( ASCII ),
     M_path( "." )
 {
-    Debug() << "[exporter::exporter] do export = " << doExport() << "\n";
+    VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
 }
 
 template<typename MeshType, int N>
@@ -105,11 +122,11 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
 
     if ( N == 1 && ( exportername == "ensight" || Environment::numberOfProcessors() > 1 ) )
-        exporter = new ExporterEnsight<MeshType, N>;
+        exporter = new ExporterEnsight<MeshType, N>( worldComm );
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>;
     else // fallback
-        exporter = new ExporterEnsight<MeshType, N>;
+        exporter = new ExporterEnsight<MeshType, N>( worldComm );
 
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
@@ -124,13 +141,14 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
 
     if ( N == 1 && ( estr == "ensight"  || Environment::numberOfProcessors() > 1 ) )
-        exporter = new ExporterEnsight<MeshType, N>( vm,prefix,worldComm );
+        exporter = new ExporterEnsight<MeshType, N>( worldComm );
     else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>;
     else // fallback
-        exporter = new ExporterEnsight<MeshType, N>( vm,prefix,worldComm );
+        exporter = new ExporterEnsight<MeshType, N>( worldComm );
 
-    exporter->setOptions( vm );
+
+    exporter->setOptions();
     //std::cout << "[exporter::New] do export = " << exporter->doExport() << std::endl;
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
@@ -139,27 +157,25 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 
 template<typename MeshType, int N>
 Exporter<MeshType, N>*
-Exporter<MeshType, N>::setOptions( po::variables_map const& vm, std::string const& exp_prefix )
+Exporter<MeshType, N>::setOptions( std::string const& exp_prefix )
 {
-    std::string _prefix = exp_prefix;
+    //M_do_export = Environment::vm(_prefix+"export"].template as<bool>();
+    M_do_export = Environment::vm(_name="exporter.export",_prefix=exp_prefix).template as<bool>();
+    M_type =  Environment::vm(_name="exporter.format",_prefix=exp_prefix).template as<std::string>();
 
-    if ( !_prefix.empty() )
-        _prefix += "-";
+    std::string p = exp_prefix;
+    if ( !p.empty() )
+        p += ".";
+    if ( Environment::vm().count( p+"exporter.prefix" ) )
+        M_prefix = Environment::vm(_name="exporter.prefix",_prefix=exp_prefix).template as<std::string>();
 
-    //M_do_export = vm[_prefix+"export"].template as<bool>();
-    M_do_export = vm[_prefix+"exporter.export"].template as<bool>();
-    M_type =  vm[_prefix+"exporter.format"].template as<std::string>();
+    M_freq = Environment::vm(_name="exporter.freq",_prefix=exp_prefix).template as<int>();
+    M_ft = file_type( Environment::vm(_name="exporter.file-type",_prefix=exp_prefix).template as<int>() );
 
-    if ( vm.count ( _prefix+"exporter.prefix" ) )
-        M_prefix = vm[_prefix+"exporter.prefix"].template as<std::string>();
-
-    M_freq = vm[_prefix+"exporter.freq"].template as<int>();
-    M_ft = file_type( vm[_prefix+"exporter.file-type"].template as<int>() );
-
-    Debug() << "[Exporter] type:  " << M_type << "\n";
-    Debug() << "[Exporter] prefix:  " << M_prefix << "\n";
-    Debug() << "[Exporter] freq:  " << M_freq << "\n";
-    Debug() << "[Exporter] ft:  " << M_ft << "\n";
+    VLOG(1) << "[Exporter] type:  " << M_type << "\n";
+    VLOG(1) << "[Exporter] prefix:  " << M_prefix << "\n";
+    VLOG(1) << "[Exporter] freq:  " << M_freq << "\n";
+    VLOG(1) << "[Exporter] ft:  " << M_ft << "\n";
     return this;
 }
 

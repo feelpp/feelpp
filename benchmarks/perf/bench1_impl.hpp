@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-06-14
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file bench1_impl.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-06-14
  */
 #include <bench1.hpp>
@@ -426,11 +426,11 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     std::ostringstream geostr;
     geostr << "GT_PK(" << nDim << "," << 1 << ")";
 
-    Log() << "------------------------------------------------------------" << "\n";
-    Log() << "dimension : " << nDim << "\n";
-    Log() << "      fem : " << femstr.str() << "\n";
-    Log() << "      geo : " << geostr.str() << "\n";
-    Log() << "++++++++++++++++++++++++++++++" << "\n";
+    LOG(INFO) << "------------------------------------------------------------" << "\n";
+    LOG(INFO) << "dimension : " << nDim << "\n";
+    LOG(INFO) << "      fem : " << femstr.str() << "\n";
+    LOG(INFO) << "      geo : " << geostr.str() << "\n";
+    LOG(INFO) << "++++++++++++++++++++++++++++++" << "\n";
 
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
     typedef FunctionSpace<MeshType, basis_type> space_type;
@@ -446,7 +446,7 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     //v.space()->gm()->setCacheInformation( QDR, mesh->numElements(), QDR_NPTS);
     //v.space()->fe()->setCacheInformation( QDR, mesh->numElements(), QDR_NPTS);
 
-    Log() << "dof : " << Xh->nDof() << "\n"
+    LOG(INFO) << "dof : " << Xh->nDof() << "\n"
           << "elt : " << Xh->mesh()->numElements() << "\n";
 
 
@@ -457,7 +457,7 @@ Bench1::bench1( boost::shared_ptr<MeshType> & mesh )
     A( Xh, mpl::int_<nDim>() );
     //DR( Xh );
     //ADR( Xh, mpl::int_<nDim>() );
-    Log() << "------------------------------------------------------------" << "\n";
+    LOG(INFO) << "------------------------------------------------------------" << "\n";
 
 }
 

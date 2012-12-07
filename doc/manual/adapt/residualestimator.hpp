@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
              Stéphane Veys <stephane.veys@gmail.com>
        Date: 2010-08-05
 
@@ -24,36 +24,11 @@
 */
 /**
    \file residualestimator.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Stéphane Veys <stephane.veys@gmail.com>
    \date 2010-08-05
  */
-/** include predefined feel command line options */
-#include <feel/options.hpp>
-
-/** include linear algebra backend */
-#include <feel/feelalg/backend.hpp>
-
-/** include function space class */
-#include <feel/feeldiscr/functionspace.hpp>
-
-/** include helper function to define \f$P_0\f$ functions associated with regions  */
-#include <feel/feeldiscr/region.hpp>
-
-/** include integration methods */
-#include <feel/feelpoly/im.hpp>
-
-/** include gmsh mesh importer */
-#include <feel/feelfilters/gmsh.hpp>
-
-/** include exporter factory class */
-#include <feel/feelfilters/exporter.hpp>
-
-/** include  polynomialset header */
-#include <feel/feelpoly/polynomialset.hpp>
-
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 #if defined (FEELPP_HAS_MADLIB_H)
 #include <MAdLib.h>
@@ -63,7 +38,6 @@
 
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
 using namespace boost::numeric::ublas;
 
 /**
@@ -84,7 +58,7 @@ makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2010 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Stéphane Veys", "developer", "stephane.veys@gmail.com", "" );
     return about;
 
@@ -182,9 +156,9 @@ public:
 
     {
     }
-    ResidualEstimator( po::variables_map const& vm, AboutData const& about )
+    ResidualEstimator()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         M_backendP1( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
@@ -668,7 +642,7 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
 
     if ( exporter->doExport() )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( mesh );
         exporter->step( 0 )->add( "unknown", u );
@@ -681,15 +655,15 @@ ResidualEstimator<Dim,Order>::run( const double* X, unsigned long P, double* Y, 
         exporter->step( 0 )->add( "new hsize" , h_new );
 
         exporter->save();
-        Log() << "exportResults done\n";
+        LOG(INFO) << "exportResults done\n";
     }
 
     /** \endcode */
 
-    Log()<< " real L2 error : "<<Y[0]<<"\n";
-    Log()<< " estimated L2 error "<<Y[2]<<"\n";
-    Log()<< " real H1 error : "<<Y[1]<<"\n";
-    Log()<< " estimated H1 error "<<Y[3]<<"\n";
+    LOG(INFO)<< " real L2 error : "<<Y[0]<<"\n";
+    LOG(INFO)<< " estimated L2 error "<<Y[2]<<"\n";
+    LOG(INFO)<< " real H1 error : "<<Y[1]<<"\n";
+    LOG(INFO)<< " estimated H1 error "<<Y[3]<<"\n";
 
 
     std::ostringstream geostr;

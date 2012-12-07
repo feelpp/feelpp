@@ -108,6 +108,16 @@ public:
         return M_dualImageSpace;
     }
 
+    const domain_space_ptrtype domainSpace() const
+    {
+        return M_domainSpace;
+    }
+
+    const dual_image_space_ptrtype dualImageSpace() const
+    {
+        return M_dualImageSpace;
+    }
+
 private:
 
     domain_space_ptrtype     M_domainSpace;
