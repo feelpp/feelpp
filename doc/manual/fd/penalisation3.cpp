@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-01-17
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,14 +23,20 @@
 */
 /**
    \file penalisation3.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-17
  */
 #include "penalisation.cpp"
 
 int main( int argc, char **argv )
 {
-    Penalisation<3> penalisation( argc, argv, makeAbout(), makeOptions() );
+    using namespace Feel;
+
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
+    Penalisation<3> penalisation;
     penalisation.run();
     return 0;
 }

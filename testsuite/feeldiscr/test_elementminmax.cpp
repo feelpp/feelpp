@@ -37,12 +37,7 @@
 //#define BOOST_TEST_NO_MAIN
 
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
-
+#include <testsuite/testsuite.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
@@ -51,17 +46,15 @@ using boost::unit_test::test_suite;
 
 using namespace Feel;
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( elementminmaxsuite )
 
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
 {
-    using namespace Feel::vf;
-
     BOOST_TEST_MESSAGE( "check function min and max for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -94,8 +87,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
 {
-    using namespace Feel::vf;
-
     BOOST_TEST_MESSAGE( "check broken function min and max for dim = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;

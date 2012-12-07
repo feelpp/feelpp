@@ -533,7 +533,7 @@ template<typename MeshType>
 void initCache( MeshType const* mesh  )
 {
     size_type nelts = mesh->numElements();
-    //Log() << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
+    //LOG(INFO) << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
     M_cached.resize( nelts );
     std::fill( M_cached.begin(), M_cached.end(), false );
 
@@ -549,7 +549,7 @@ bool isCacheValid() const
             M_K.size() > 0 &&
             M_B.size() > 0 ) )
     {
-        Log() << "invalid cache\n";
+        LOG(INFO) << "invalid cache\n";
         return false;
     }
 
@@ -1650,20 +1650,20 @@ void updateJKBN( mpl::bool_<true>  )
             }
             _M_gm->setCached( _M_id, true );
 
-            //Log() << "(add to cache) J[" << _M_id << "]=" <<  _M_J << "\n";
-            //Log() << "(add to cache) B[" << _M_id << "]=" <<  _M_B << "\n";
+            //LOG(INFO) << "(add to cache) J[" << _M_id << "]=" <<  _M_J << "\n";
+            //LOG(INFO) << "(add to cache) B[" << _M_id << "]=" <<  _M_B << "\n";
         }
     }
 
     else
     {
         _M_J = _M_gm->J( _M_id );
-        //Log() << "(use cache) J[" << _M_id << "]=" <<  _M_J << "\n";
+        //LOG(INFO) << "(use cache) J[" << _M_id << "]=" <<  _M_J << "\n";
         //if ( vm::has_kb<context>::value )
         {
             _M_K = _M_gm->K( _M_id );
             _M_B = _M_gm->B( _M_id );
-            //Log() << "(use cache) B[" << _M_id << "]=" <<  _M_B << "\n";
+            //LOG(INFO) << "(use cache) B[" << _M_id << "]=" <<  _M_B << "\n";
         }
 
 
@@ -1729,13 +1729,13 @@ void updateJKBN( mpl::bool_<true>  )
 void updateJKBN( mpl::bool_<false>  )
 {
     //std::cout << "nPoints() =" << nPoints() << "\n";
-    //Debug() << "[geomap] G = "<< _M_G << "\n";
+    //VLOG(1) << "[geomap] G = "<< _M_G << "\n";
     //double res = 0;
     for ( int q = 0; q < nPoints(); ++q )
     {
         //std::cout << "q =" << q << "\n";
         _M_gm->gradient( q, _M_g, _M_pc.get() );
-        //Debug() << "[geomap] g[" << q << "] = "<< _M_g << "\n";
+        //VLOG(1) << "[geomap] g[" << q << "] = "<< _M_g << "\n";
 
 #if 0
         blas::gemm( _M_G, _M_g, _M_K );
@@ -1783,7 +1783,7 @@ void updateJKBN( mpl::bool_<false>  )
 
         }
 
-        //Debug() << "[geomap] J[" << q << "]= "<< _M_J << "\n";
+        //VLOG(1) << "[geomap] J[" << q << "]= "<< _M_J << "\n";
         //res += _M_J;
         // store q-th jacobian entry
 
@@ -1791,7 +1791,7 @@ void updateJKBN( mpl::bool_<false>  )
 
         if ( vm::has_kb<context>::value )
         {
-            //Debug() << "[geomap] B[" << q << "]= "<< _M_B << "\n";
+            //VLOG(1) << "[geomap] B[" << q << "]= "<< _M_B << "\n";
             _M_Bt[q].resize( _M_B.size1(), _M_B.size2() );
             _M_Bt[q] = _M_B;
         }
@@ -1799,7 +1799,7 @@ void updateJKBN( mpl::bool_<false>  )
 
     }
 
-    //Debug() << "[geomap] res(sum J) = " << res << "\n";
+    //VLOG(1) << "[geomap] res(sum J) = " << res << "\n";
     if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( _M_face_id != invalid_uint16_type_value ) )
     {
         //std::cout << "has normal\n";
@@ -2264,14 +2264,14 @@ void updateResidual( dense_vector_type const& x, dense_vector_type& r )
     }
 
 #if 0
-    Log() << "[geomap::residual] begin ------------------------------\n";
-    Log() << "[geomap::residual] x =" << x << "\n";
-    Log() << "[geomap::residual] _M_G =" << _M_G << "\n";
+    LOG(INFO) << "[geomap::residual] begin ------------------------------\n";
+    LOG(INFO) << "[geomap::residual] x =" << x << "\n";
+    LOG(INFO) << "[geomap::residual] _M_G =" << _M_G << "\n";
 
-    Log() << "[geomap::residual] y =" << y << "\n";
-    Log() << "[geomap::residual] xreal =" << _M_xreal << "\n";
-    Log() << "[geomap::residual] r(xreal-y) =" << r << "\n";
-    Log() << "[geomap::residual] end   ------------------------------\n";
+    LOG(INFO) << "[geomap::residual] y =" << y << "\n";
+    LOG(INFO) << "[geomap::residual] xreal =" << _M_xreal << "\n";
+    LOG(INFO) << "[geomap::residual] r(xreal-y) =" << r << "\n";
+    LOG(INFO) << "[geomap::residual] end   ------------------------------\n";
 #endif // 0
 
 }
@@ -2290,10 +2290,10 @@ void updateJacobian( dense_vector_type const& x, dense_matrix_type& j )
     }
 
 #if 0
-    Log() << "[geomap::jacobian] begin ------------------------------\n";
-    Log() << "[geomap::jacobian] x =" << x << "\n";
-    Log() << "[geomap::jacobian] j =" << j << "\n";
-    Log() << "[geomap::jacobian] end   ------------------------------\n";
+    LOG(INFO) << "[geomap::jacobian] begin ------------------------------\n";
+    LOG(INFO) << "[geomap::jacobian] x =" << x << "\n";
+    LOG(INFO) << "[geomap::jacobian] j =" << j << "\n";
+    LOG(INFO) << "[geomap::jacobian] end   ------------------------------\n";
 #endif
 }
 
@@ -2412,7 +2412,7 @@ matrix_node_t_type linearInversePoints( matrix_node_t_type const& real_pts, bool
  */
 bool nonLinearInversePetsc()
 {
-    //Log() << "starting new nonlinear inverse\n";
+    //LOG(INFO) << "starting new nonlinear inverse\n";
     //const double EPS = 1e-10;
     const double IN_EPS = 1e-10;
     size_type N = _M_xreal.size();
@@ -2466,16 +2466,16 @@ bool nonLinearInversePetsc()
     if ( __isin  &&
             ( P == N || ublas::norm_2( R ) < IN_EPS ) )
     {
-        //Log() << "point " << _M_xref << "in IN (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
+        //LOG(INFO) << "point " << _M_xref << "in IN (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
         return true;
     }
 
     else
     {
-        //Log() << "point " << _M_xref << "in OUT (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
+        //LOG(INFO) << "point " << _M_xref << "in OUT (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
     }
 
-    //Log() << "done in new nonlinear inverse\n";
+    //LOG(INFO) << "done in new nonlinear inverse\n";
     return false;
 
 }
@@ -2602,7 +2602,7 @@ bool nonLinearInverse()
 
     else
     {
-        //Log() << "point " << _M_xref << "in OUT (" << vmin << ")\n";
+        //LOG(INFO) << "point " << _M_xref << "in OUT (" << vmin << ")\n";
     }
 
     return false;

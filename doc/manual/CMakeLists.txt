@@ -64,8 +64,9 @@ add_latex_document(feel-manual.tex
   IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/laplacian
   USE_INDEX
   DEFAULT_PDF
+  MANGLE_TARGET_NAMES
   )
-SET_TARGET_PROPERTIES(pdf PROPERTIES EXCLUDE_FROM_ALL true)
+SET_TARGET_PROPERTIES(feel-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
 endif()
 
 # this target allows to create all the required figures for the tutorial
@@ -176,10 +177,12 @@ add_subdirectory(tutorial)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
   add_subdirectory(dd)
-  #add_subdirectory(heat)
+  add_subdirectory(heat)
+  add_subdirectory(solid)
   add_subdirectory(heatns)
   add_subdirectory(nonlinear)
   add_subdirectory(adapt)
   add_subdirectory(nirb)
   add_subdirectory(fd)
+  add_subdirectory(maxwell)
 endif()

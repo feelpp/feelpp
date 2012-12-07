@@ -1,0 +1,39 @@
+Class Library for Numbers
+
+Copyright (c)      Bruno Haible 1988-2008
+Copyright (c)   Richard Kreckel 2000-2012
+Copyright (c) Alexei Sheplyakov 2008-2010
+
+GPL
+
+Features:
+- Rich set of number classes:
+  Integer (unlimited precision), rational, short float, 
+  single float, double float, long float (unlimited 
+  precision), complex, modular integer, univariate polynomial.
+- Elementary, logical, transcendental functions.
+- C++ as implementation language brings
+    - efficiency,
+    - type safety,
+    - algebraic syntax.
+- Memory efficiency:
+    - Small integers and short floats are immediate,
+      not heap allocated.
+    - Automatic, non-interruptive garbage collection.
+- Speed efficiency:
+    - Assembly language kernel for some CPUs,
+    - Karatsuba and Schönhage-Strassen multiplication.
+- Interoperability:
+    - Garbage collection with no burden on
+      the main application,
+    - hooks for memory allocation.
+
+Requires: C++ compiler g++.
+The following C++ features are used:
+classes, member functions, overloading of functions and operators,
+constructors and destructors, inline, const, multiple inheritance,
+templates, namespaces, and exceptions.
+The following C++ features are not used:
+new, delete, virtual inheritance.
+
+Homepage: <http://www.ginac.de/CLN>

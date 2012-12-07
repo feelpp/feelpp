@@ -51,8 +51,13 @@ extern "C" {
 namespace Feel
 {
 
+MatSolverPackageType matSolverPackageEnumType(std::string const& type );
 void PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt );
 
+std::string PetscConvertKSPReasonToString( KSPConvergedReason reason );
+std::string PetscConvertSNESReasonToString( SNESConvergedReason reason );
+
+MatStructure PetscGetMatStructureEnum( Feel::MatrixStructure matStruc );
 
 } // namespace Feel
 

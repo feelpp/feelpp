@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-04
 
   Copyright (C) 2009 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file stokes.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-04
  */
 #if !defined( __FEELPP_BENCH_STOKES_HPP)
@@ -224,18 +224,18 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto p = U.template element<1>();
     auto q = V.template element<1>();
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << M_meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
-    Log() << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << M_meshSize << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << "[mesh]   number of elements: " << Xh->mesh()->numElements() << "\n";
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
     M_stats.put( "h",M_meshSize );
     M_stats.put( "n.space.nelts",Xh->mesh()->numElements() );
@@ -243,7 +243,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     M_stats.put( "n.space.ndof.u",Xh->template functionSpace<0>()->nDof() );
     M_stats.put( "n.space.ndof.p",Xh->template functionSpace<1>()->nDof() );
     M_stats.put( "t.init.space",t.elapsed() );
-    Log() << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
 
@@ -434,7 +434,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto F = M_backend->newVector( Xh );
     form1( Xh, F, _init=true );
     M_stats.put( "t.init.vector",t.elapsed() );
-    Log() << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time for vector init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
     form1( Xh, F ) = integrate( elements( mesh ), trans( f )*id( v ) );
     M_stats.put( "t.assembly.vector.source",subt.elapsed() );
@@ -456,12 +456,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=penalbc*inner( u_exact,id( v ) )/hFace() );
         //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
         M_stats.put( "t.assembly.vector.dirichletp",subt.elapsed() );
-        Log() << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
     M_stats.put( "t.assembly.vector.total",t.elapsed() );
-    Log() << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time vector global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     /*
@@ -493,7 +493,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto D = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
     M_stats.put( "t.init.matrix",t.elapsed() );
-    Log() << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << "  -- time for matrix init done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     subt.restart();
@@ -540,21 +540,21 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     form2( Xh, Xh, D, _pattern=patternsym ) =integrate( _range=elements( mesh ),_expr=mu*( inner( gradt( u ),grad( v ) ) ) );
     M_stats.put( "t.assembly.matrix.diffusion",subt.elapsed() );
-    Log() << "   o time for diffusion terms: " << subt.elapsed() << "\n";
+    LOG(INFO) << "   o time for diffusion terms: " << subt.elapsed() << "\n";
     subt.restart();
 
     if ( add_convection )
     {
         form2( Xh, Xh, D, _pattern=pattern ) +=integrate( _range=elements( mesh ),_expr=trans( gradt( u )*beta )*id( v ) );
         M_stats.put( "t.assembly.matrix.convection",subt.elapsed() );
-        Log() << "   o time for convection terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for convection terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
     form2( Xh, Xh, D )+=integrate( _range=elements( mesh ),_expr=-div( v )*idt( p ) );
     form2( Xh, Xh, D )+=integrate( _range=elements( mesh ),_expr=divt( u )*id( q ) );
     M_stats.put( "t.assembly.matrix.up",subt.elapsed() );
-    Log() << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";
+    LOG(INFO) << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";
     subt.restart();
 
     if ( this->vm()[ prefixvm( name(),"bctype" ) ].template as<int>() == 1  )
@@ -596,7 +596,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         //form2( Xh, Xh, D )+=integrate( boundaryfaces(mesh), +penalbc*(trans(idt(u))*N())*(trans(id(v))*N())*max(betacoeff,mu/hFace()) );
         M_stats.put( "t.assembly.matrix.dirichlet_u*u",subt.elapsed() );
         subt.restart();
-        Log() << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
@@ -604,14 +604,14 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     D->close();
     F->close();
     M_stats.put( "t.assembly.matrix.total",t.elapsed() );
-    Log() << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " -- time matrix global assembly done in "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
     if ( this->vm()[ prefixvm( name(),"bctype" ) ].template as<int>() == 0  )
     {
         form2( Xh, Xh, D ) += on( _range=boundaryfaces( mesh ), _element=u, _rhs=F, _expr=u_exact );
         M_stats.put( "t.assembly.matrix.dirichlet",subt.elapsed() );
-        Log() << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
+        LOG(INFO) << "   o time for strong dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
     }
 
@@ -628,21 +628,21 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     }
 
     M_stats.put( "t.solver.total",t.elapsed() );
-    Log() << " -- time for solver : "<<t.elapsed()<<" seconds \n";
+    LOG(INFO) << " -- time for solver : "<<t.elapsed()<<" seconds \n";
 
 
     double meas = integrate( _range=elements( mesh ), _expr=constant( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
+    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 4)\n";
 
     double mean_p = integrate( elements( mesh ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p)=" << mean_p << "\n";
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
     // get the zero mean pressure
     p.add( - mean_p );
     mean_p = integrate( elements( mesh ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log() << "[stokes] mean(p-mean(p))=" << mean_p << "\n";
+    LOG(INFO) << "[stokes] mean(p-mean(p))=" << mean_p << "\n";
     std::cout << "[stokes] mean(p-mean(p))=" << mean_p << "\n";
     double mean_pexact = integrate( elements( mesh ), p_exact ).evaluate()( 0, 0 )/meas;
     std::cout << "[stokes] mean(pexact)=" << mean_pexact << "\n";
@@ -652,12 +652,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
         nnz += ( *iter ) ;
 
-    Log() << "[stokes] matrix NNZ "<< nnz << "\n";
+    LOG(INFO) << "[stokes] matrix NNZ "<< nnz << "\n";
     M_stats.put( "n.matrix.nnz",nnz );
     double u_errorL2 = integrate( _range=elements( mesh ), _expr=trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     double u_exactL2 = integrate( _range=elements( mesh ), _expr=trans( u_exact )*( u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
-    Log() << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
+    LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
     M_stats.put( "e.l2.u",math::sqrt( u_errorL2/u_exactL2 ) );
 
     double u_errorsemiH1 = integrate( _range=elements( mesh ),
@@ -671,21 +671,21 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     double p_errorL2 = integrate( _range=elements( mesh ), _expr=( idv( p )-( p_exact-mean_pexact ) )*( idv( p )-( p_exact-mean_pexact ) ) ).evaluate()( 0, 0 );
     double p_exactL2 = integrate( _range=elements( mesh ), _expr=( p_exact-mean_pexact )*( p_exact-mean_pexact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2/p_exactL2 ) << "\n";;
-    Log() << "||p_error||_2 = " << math::sqrt( p_errorL2/p_exactL2 ) << "\n";;
+    LOG(INFO) << "||p_error||_2 = " << math::sqrt( p_errorL2/p_exactL2 ) << "\n";;
     M_stats.put( "e.l2.p",math::sqrt( p_errorL2/p_exactL2 ) );
-    Log() << "[stokes] solve for D done\n";
+    LOG(INFO) << "[stokes] solve for D done\n";
 
     double mean_div_u = integrate( elements( mesh ), divv( u ) ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double mean_div_uexact = integrate( elements( mesh ), div_exact ).evaluate()( 0, 0 );
-    Log() << "[stokes] mean_div(uexact)=" << mean_div_uexact << "\n";
+    LOG(INFO) << "[stokes] mean_div(uexact)=" << mean_div_uexact << "\n";
     std::cout << "[stokes] mean_div(uexact)=" << mean_div_uexact << "\n";
 
     double div_u_error_L2 = integrate( elements( mesh ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
     M_stats.put( "e.l2.div_u",math::sqrt( div_u_error_L2 ) );
-    Log() << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );

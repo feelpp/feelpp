@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file solverlinearpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-27
  */
 // $Id: petsc_linear_solver.C,v 1.5 2005/05/11 23:12:00 benkirk Exp $
@@ -54,6 +54,7 @@
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 
+
 namespace Feel
 {
 
@@ -65,13 +66,13 @@ extern "C"
 #endif
 
 
-#if PETSC_VERSION_LESS_THAN(3,0,1) && PETSC_VERSION_RELEASE
+#if PETSC_VERSION_LESS_THAN(3,0,1)
     PetscErrorCode __feel_petsc_preconditioner_setup ( void * ctx )
     {
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
 
-        std::cout << "init prec\n";
+        LOG(INFO) << "__feel_petsc_preconditioner_setup:: init prec\n";
 
         return 0;
     }
@@ -83,7 +84,7 @@ extern "C"
 
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
-        std::cout << "apply prec\n";
+
         preconditioner->apply( x_vec,y_vec );
 
         return 0;
@@ -96,7 +97,7 @@ extern "C"
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
-        std::cout << "init prec\n";
+        LOG(INFO) << "__feel_petsc_preconditioner_setup: init prec\n";
         return 0;
     }
 
@@ -106,7 +107,6 @@ extern "C"
         PetscErrorCode ierr = PCShellGetContext( pc,&ctx );
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
-        std::cout << "apply prec\n";
         VectorPetsc<double> x_vec( x );
         VectorPetsc<double> y_vec( y );
 
@@ -227,8 +227,8 @@ void SolverLinearPetsc<T>::init ()
         //  These options will override those specified above as long as
         //  KSPSetFromOptions() is called _after_ any other customization
         //  routines.
-        ierr = PCSetFromOptions ( _M_pc );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        //ierr = PCSetFromOptions ( _M_pc );
+        //CHKERRABORT( this->worldComm().globalComm(),ierr );
         ierr = KSPSetFromOptions ( _M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
@@ -267,10 +267,25 @@ void SolverLinearPetsc<T>::init ()
         //If there is a preconditioner object we need to set the internal setup and apply routines
         if ( this->M_preconditioner )
         {
+            VLOG(2) << "preconditioner: "  << this->M_preconditioner << "\n";
+
+            PCSetType(_M_pc, PCSHELL);
+            PCShellSetName( _M_pc, this->M_preconditioner->name().c_str() );
             PCShellSetContext( _M_pc,( void* )this->M_preconditioner.get() );
             PCShellSetSetUp( _M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( _M_pc,__feel_petsc_preconditioner_apply );
+            const PCType pc_type;
+            ierr = PCGetType ( _M_pc, &pc_type );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+            VLOG(2) << "preconditioner set as "  << pc_type << "\n";
         }
+
+        if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
+        {
+            KSPMonitorSet( _M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+        }
+
 
     }
 }
@@ -319,7 +334,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     rhs->close ();
 
 
-    if ( this->preconditionerType() == FIELDSPLIT_PRECOND )
+    if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
         matrix->updatePCFieldSplit( _M_pc );
 
     //   // If matrix != precond, then this means we have specified a
@@ -369,7 +384,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     // Set operators. The input matrix works as the preconditioning matrix
     ierr = KSPSetOperators( _M_ksp, matrix->mat(), precond->mat(),
-                            SAME_NONZERO_PATTERN );
+                            MatStructure::SAME_NONZERO_PATTERN );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
@@ -424,7 +439,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     //std::cout << "sles: " << this->precMatrixStructure() << "\n";
     // Set operators. The input matrix works as the preconditioning matrix
     ierr = KSPSetOperators( _M_ksp, matrix->mat(), precond->mat(),
-                            ( MatStructure ) this->precMatrixStructure() );
+                            PetscGetMatStructureEnum(this->precMatrixStructure()) );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the tolerances for the iterative solver.  Use the user-supplied
@@ -437,7 +452,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               this->maxIterations() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-    PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),_M_pc, this->worldComm() );
+    //PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),_M_pc, this->worldComm() );
 
 
     // makes the default convergence test use || B*(b - A*(initial guess))||
@@ -470,20 +485,31 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
-        Log() << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
-        Log() << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
+        LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";
+        LOG(INFO) << "[solverlinearpetsc] Run the executable again but with '-pc_factor_shift_type POSITIVE_DEFINITE' option.\n";
     }
 
     else if ( reason<0 )
     {
-        Log() <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
+        LOG(INFO) <<"[solverlinearpetsc] Other kind of divergence: this should not happen.\n";
     }
 
     bool hasConverged;
 
-    if ( reason> 0 ) hasConverged=true;
-
-    else hasConverged=false;
+    if ( reason> 0 )
+        {
+            hasConverged=true;
+            if (this->showKSPConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
+                std::cout<< "Linear solve converged due to " << PetscConvertKSPReasonToString(reason)
+                         << " iterations " << its << std::endl;
+        }
+    else
+        {
+            hasConverged=false;
+            if (this->showKSPConvergedReason() && this->worldComm().globalRank() == this->worldComm().masterRank() )
+                std::cout<< "Linear solve did not converge due to " << PetscConvertKSPReasonToString(reason)
+                         << " iterations " << its << std::endl;
+        }
 
 #endif
     // return the # of its. and the final residual norm.
@@ -493,7 +519,18 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
 }
 
-
+template <typename T>
+boost::tuple<bool,unsigned int, typename SolverLinearPetsc<T>::real_type>
+SolverLinearPetsc<T>::solve ( MatrixShell<T>  const &mat,
+                              Vector<T> & x,
+                              Vector<T> const& b,
+                              const double tolerance,
+                              const unsigned int maxit,
+                              bool transpose )
+{
+    LOG(ERROR) << "invalid call to solve() using matshell\n";
+    return boost::make_tuple( false, 0, 0 );
+}
 
 template <typename T>
 void
@@ -653,12 +690,6 @@ SolverLinearPetsc<T>::setPetscSolverType()
                   << "Continuing with PETSC defaults" << std::endl;
     }
 
-    if ( this->vm().count( "ksp-monitor" ) )
-    {
-        KSPMonitorSet( _M_ksp,KSPMonitorDefault,PETSC_NULL,0 );
-    }
-
-
 }
 
 
@@ -752,6 +783,13 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+    case GASM_PRECOND:
+        ierr = PCSetType ( _M_pc, ( char* ) PCGASM );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+#endif
+
     case JACOBI_PRECOND:
         ierr = PCSetType ( _M_pc, ( char* ) PCJACOBI );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -789,6 +827,11 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
         ierr = PCSetType( _M_pc,( char* ) PCFIELDSPLIT );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         ierr = PCFieldSplitSetType( _M_pc,PC_COMPOSITE_SCHUR );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
+    case ML_PRECOND:
+        ierr = PCSetType( _M_pc,( char* ) PCML );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 

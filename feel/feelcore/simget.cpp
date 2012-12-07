@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2011-05-24
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file simget.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-05-24
  */
 
@@ -33,10 +33,10 @@
 
 namespace Feel
 {
-Simget::Simget(  po::variables_map const& vm )
+Simget::Simget()
     :
-    M_vm( vm ),
-    M_about( "", "", "" )
+    M_vm( Environment::vm() ),
+    M_about( Environment::about() )
 {}
 
 Simget&

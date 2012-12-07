@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2007-08-14
 
    Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file vectorepetra.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-08-14
 */
 #include <feel/feelalg/vectorepetra.hpp>
@@ -200,7 +200,7 @@ VectorEpetra<T>::add ( const size_type i, const value_type& value )
 
     if ( ierr != 0 )
     {
-        Debug() << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V(" << i_val << ") for value "<< epetra_value << "." << "\n";
+        VLOG(1) << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V(" << i_val << ") for value "<< epetra_value << "." << "\n";
     }
 }
 template<typename T>
@@ -215,7 +215,7 @@ VectorEpetra<T>::addVector ( int* i, int n, value_type* v )
 
     if ( ierr != 0 )
     {
-        Debug() << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V \n";
+        VLOG(1) << "ERRORCODE SumIntoGlobalValues VECTOR: " << ierr <<  " in V \n";
     }
 }
 template<typename T>
@@ -265,7 +265,7 @@ VectorEpetra<T>::printMatlab ( const std::string name ) const
 
 #endif
 
-    Debug() << "[printMatlab] print vector in matlab file " << name << "\n";
+    VLOG(1) << "[printMatlab] print vector in matlab file " << name << "\n";
     EpetraExt::MultiVectorToMatlabFile( name.c_str(), _M_vec );
 }
 template<typename T>

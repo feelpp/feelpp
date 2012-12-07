@@ -2,7 +2,7 @@
     kate: space-indent on; indent-width 4; mixedindent off; indent-mode cstyle; encoding utf-8;
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2005-03-17
 
    Copyright (C) 2009 Université de Grenoble 1
@@ -24,13 +24,16 @@
 */
 /**
    \file about.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-17
  */
 #include <cstring>
 #include <iostream>
 
+#include <boost/parameter.hpp>
+
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/about.hpp>
 
 namespace Feel
@@ -91,8 +94,8 @@ AboutData::AboutData( const char*  appName,
     _M_OtherText( text ),
     _M_HomepageAddress( homePageAddress ),
     _M_BugEmailAddress( bugsEmailAddress ),
-    _M_LicenseText (),
-    d( new AboutDataPrivate )
+    _M_LicenseText ()//,
+    //d( new AboutDataPrivate )
 {
     if ( appName )
     {
@@ -121,13 +124,19 @@ AboutData::AboutData( AboutData const& ad )
     _M_BugEmailAddress( ad._M_BugEmailAddress ),
     _M_AuthorList( ad._M_AuthorList ),
     _M_CreditList( ad._M_CreditList ),
-    _M_LicenseText ( ad._M_LicenseText ),
-    d( new AboutDataPrivate( *ad.d ) )
+    _M_LicenseText ( ad._M_LicenseText )//,
+    //d( new AboutDataPrivate( *ad.d ) )
 {
 }
 AboutData::~AboutData()
 {
-    delete d;
+#if 0
+    if ( d )
+    {
+        delete d;
+        d = 0;
+    }
+#endif
 }
 
 void

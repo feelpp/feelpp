@@ -24,7 +24,7 @@
 */
 /**
    \file singleton.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-09-10
  */
 #ifndef __Singleton_H
@@ -51,7 +51,7 @@ namespace Feel
    http://www.moderncppdesign.com/
 
 
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 */
 template <typename T>
 class Singleton

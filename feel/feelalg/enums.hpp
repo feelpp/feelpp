@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
@@ -24,13 +24,14 @@
 */
 /**
    \file enums.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-27
  */
 #ifndef __FeelAlgEnums_H
 #define __FeelAlgEnums_H 1
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/feelpetsc.hpp>
 
 
 namespace Feel
@@ -116,6 +117,7 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          SSOR_PRECOND,
                          EISENSTAT_PRECOND,
                          ASM_PRECOND,
+                         GASM_PRECOND,
                          CHOLESKY_PRECOND,
                          ICC_PRECOND,
                          ILU_PRECOND,
@@ -124,6 +126,7 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          USER_PRECOND,
                          SHELL_PRECOND,
                          FIELDSPLIT_PRECOND,
+                         ML_PRECOND,
                          INVALID_PRECONDITIONER
                         };
 
@@ -252,6 +255,7 @@ enum DirichletType
 
 enum ProjectorType
 {
+    NODAL=-1,
     L2=0,
     H1=1,
     DIFF=2,
@@ -276,6 +280,11 @@ enum MatSolverPackageType
     MATSOLVER_PLAPACK,
     MATSOLVER_BAS
 };
+#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+const auto MATSOLVER_DEFAULT = MATSOLVER_MUMPS;
+#else
+const auto MATSOLVER_DEFAULT = MATSOLVER_PETSC;
+#endif
 
 } // Feel
 #endif /* __FeelAlgEnums_H */

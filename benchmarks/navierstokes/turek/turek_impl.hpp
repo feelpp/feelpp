@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-05-29
 
   Copyright (C) 2008,2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file turek_impl.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-05-29
  */
 #ifndef __TurekImpl_H
@@ -62,7 +62,7 @@ Turek<Dim, Order, GeoOrder>::Turek( po::variables_map const& vm )
     M_Xh = fluid_functionspace_ptrtype( fluid_functionspace_type::New( mesh ) );
     Un1 = fluid_element_ptrtype( new fluid_element_type( M_Xh, "un1" ) );
     Un = fluid_element_ptrtype( new fluid_element_type( M_Xh, "un" ) );
-    Log() << "[Turek] Constructor done\n";
+    LOG(INFO) << "[Turek] Constructor done\n";
 
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
@@ -91,7 +91,7 @@ template<int Dim, int Order, int GeoOrder>
 typename Turek<Dim, Order, GeoOrder>::mesh_ptrtype
 Turek<Dim, Order, GeoOrder>::createMesh()
 {
-    Log() << "[Turek] CreateMesh starts\n";
+    LOG(INFO) << "[Turek] CreateMesh starts\n";
     mesh_ptrtype mesh( new mesh_type );
     //mesh->setRenumber( false );
 
@@ -105,7 +105,7 @@ Turek<Dim, Order, GeoOrder>::createMesh()
     import.setVersion( "2.0" );
     mesh->accept( import );
 
-    Log() << "[Turek] CreateMesh done\n";
+    LOG(INFO) << "[Turek] CreateMesh done\n";
     return mesh;
 } // Turek::createMesh
 
@@ -128,7 +128,7 @@ Turek<Dim, Order, GeoOrder>::nlsolve( sparse_matrix_ptrtype& D,
     M_backend->nlSolve( D, U, F, 1e-10, 10 );
     //M_backend->solve( D, D, U, F );
     u = *U;
-    Log() << "time spent in nonlinear solve :  " << ti.elapsed() << "s\n";
+    LOG(INFO) << "time spent in nonlinear solve :  " << ti.elapsed() << "s\n";
 
 } // Turek::solve
 
@@ -147,10 +147,10 @@ Turek<Dim, Order, GeoOrder>::solve( sparse_matrix_ptrtype& D,
     double res;
     boost::tie( conv, its, res ) = M_backend->solve( D, D, U, F );
     u = *U;
-    Log() << "[linear solve]           converged : " <<  conv << "\n";
-    Log() << "[linear solve] number of iterations: " <<  its << "\n";
-    Log() << "[linear solve]             residual: " <<  res << "\n";
-    Log() << "time spent in linear solve :  " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[linear solve]           converged : " <<  conv << "\n";
+    LOG(INFO) << "[linear solve] number of iterations: " <<  its << "\n";
+    LOG(INFO) << "[linear solve]             residual: " <<  res << "\n";
+    LOG(INFO) << "time spent in linear solve :  " << ti.elapsed() << "s\n";
 
 } // Turek::solve
 
@@ -169,10 +169,10 @@ Turek<Dim, Order, GeoOrder>::solve( sparse_matrix_ptrtype& D,
     double res;
     boost::tie( conv, its, res ) = M_backend_symm_v->solve( D, D, U, F );
     u = *U;
-    Log() << "[linear solve]           converged : " <<  conv << "\n";
-    Log() << "[linear solve] number of iterations: " <<  its << "\n";
-    Log() << "[linear solve]             residual: " <<  res << "\n";
-    Log() << "time spent in linear solve :  " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[linear solve]           converged : " <<  conv << "\n";
+    LOG(INFO) << "[linear solve] number of iterations: " <<  its << "\n";
+    LOG(INFO) << "[linear solve]             residual: " <<  res << "\n";
+    LOG(INFO) << "time spent in linear solve :  " << ti.elapsed() << "s\n";
 
 } // Turek::solve
 
@@ -191,10 +191,10 @@ Turek<Dim, Order, GeoOrder>::solve( sparse_matrix_ptrtype& D,
     double res;
     boost::tie( conv, its, res ) = M_backend_symm_s->solve( D, D, U, F );
     u = *U;
-    Log() << "[linear solve]           converged : " <<  conv << "\n";
-    Log() << "[linear solve] number of iterations: " <<  its << "\n";
-    Log() << "[linear solve]             residual: " <<  res << "\n";
-    Log() << "time spent in linear solve :  " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[linear solve]           converged : " <<  conv << "\n";
+    LOG(INFO) << "[linear solve] number of iterations: " <<  its << "\n";
+    LOG(INFO) << "[linear solve]             residual: " <<  res << "\n";
+    LOG(INFO) << "time spent in linear solve :  " << ti.elapsed() << "s\n";
 
 } // Turek::solve
 
@@ -207,7 +207,7 @@ void
 Turek<Dim, Order, GeoOrder>::initLinearOperators()
 {
     boost::timer ti, total_time;
-    Log() << "[Turek::initLinearOperators] start\n";
+    LOG(INFO) << "[Turek::initLinearOperators] start\n";
     using namespace Feel::vf;
     mesh_ptrtype mesh = M_Xh->mesh();
 
@@ -221,7 +221,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
     fluid_element_0_type v = V.template element<0>();
     fluid_element_1_type q = V.template element<1>();
 
-    Log() << "[Turek::initLinearOperators] space+elements init done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[Turek::initLinearOperators] space+elements init done in " << ti.elapsed() << "s\n";
     ti.restart();
 
     M_mass_v = op_vector_ptrtype( new op_vector_type( M_Xh->template functionSpace<0>(), M_Xh->template functionSpace<0>(), M_backend ) );
@@ -241,19 +241,19 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
     M_mass_s->close();
 
     // oplin
-    Log() << "[add element stokes terms] (nu * (nabla u+ nabla^T u)  : nabla v)\n";
+    LOG(INFO) << "[add element stokes terms] (nu * (nabla u+ nabla^T u)  : nabla v)\n";
     *M_oplin =
         integrate( elements( mesh ), _Q<2*( uOrder-1 )+4*( GeoOrder-1 )>(),
                    2*this->nu()*trace( deft*def ) );
-    Log() << "[add element stokes terms] (nu * (nabla u+ nabla^T u)  : nabla v) done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[add element stokes terms] (nu * (nabla u+ nabla^T u)  : nabla v) done in " << ti.elapsed() << "s\n";
     ti.restart();
 
-    Log() << "[add element stokes terms] ( p, div(v) ) + ( div(u), q )\n";
+    LOG(INFO) << "[add element stokes terms] ( p, div(v) ) + ( div(u), q )\n";
     *M_oplin +=
         integrate( elements( mesh ), _Q<2*( uOrder-1 )+3*( GeoOrder-1 )>(),
                    - div( v )*idt( p ) + divt( u )*id( q )
                  );
-    Log() << "[add element stokes terms] ( p, div(v) ) + ( div(u), q ) done in " << ti.elapsed()<< "s\n";
+    LOG(INFO) << "[add element stokes terms] ( p, div(v) ) + ( div(u), q ) done in " << ti.elapsed()<< "s\n";
     ti.restart();
 
 
@@ -262,7 +262,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
         integrate( elements( mesh ), _Q<2*( uOrder-1 )+2*( GeoOrder-1 )>(),
                    this->epsPseudoCompressibility()*idt( p )*id( q )
                  );
-    Log() << "[add element stokes terms] ( epsilon p, q) ) done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[add element stokes terms] ( epsilon p, q) ) done in " << ti.elapsed() << "s\n";
     ti.restart();
 
 #endif
@@ -276,7 +276,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
 
     if ( this->deltaDivDiv() != 0.0 )
     {
-        Log() << "[add element divdiv term] (h delta div u,div v)\n";
+        LOG(INFO) << "[add element divdiv term] (h delta div u,div v)\n";
         *M_oplin +=
             integrate( elements( mesh ), _Q<2*uOrder-2+3*( GeoOrder-1 )>(),
                        h()*this->deltaDivDiv()*div( v )*divt( u )
@@ -286,7 +286,7 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
 #endif
     BOOST_FOREACH( std::string marker, this->dirichletVelocityMarkers() )
     {
-        Log() << "[add weakbc boundary terms velocity] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
+        LOG(INFO) << "[add weakbc boundary terms velocity] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         *M_oplin +=
             integrate( markedfaces( mesh,mesh->markerName( marker ) ), _Q<( 2*uOrder-1 )+3*( GeoOrder-1 )>(),
                        -trans( SigmaNt )*id( v )
@@ -298,14 +298,14 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
 
 
                      );
-        Log() << "[Turek::initLinearOperators] oplin marked faces with marker " << marker << " integration done in " << ti.elapsed() << "s\n";
+        LOG(INFO) << "[Turek::initLinearOperators] oplin marked faces with marker " << marker << " integration done in " << ti.elapsed() << "s\n";
         ti.restart();
     }
 
 #if 0
     BOOST_FOREACH( std::string marker, this->dirichletPressureMarkers() )
     {
-        Log() << "[add weakbc boundary terms pressure] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
+        LOG(INFO) << "[add weakbc boundary terms pressure] boundary " << marker << " id : " << mesh->markerName( marker ) << "\n";
         *M_oplin +=
             integrate( markedfaces( mesh,mesh->markerName( marker ) ), _Q<( 2*uOrder-1 )+3*( GeoOrder-1 )>(),
                        -trans( -idt( p )*N() )*id( v )
@@ -317,29 +317,29 @@ Turek<Dim, Order, GeoOrder>::initLinearOperators()
 
 
                      );
-        Log() << "[Turek::initLinearOperators] oplin marked faces with marker " << marker << " integration done in " << ti.elapsed() << "s\n";
+        LOG(INFO) << "[Turek::initLinearOperators] oplin marked faces with marker " << marker << " integration done in " << ti.elapsed() << "s\n";
         ti.restart();
     }
 #endif
 
     M_oplin->close();
-    Log() << "[Turek::initLinearOperators] oplin close in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[Turek::initLinearOperators] oplin close in " << ti.elapsed() << "s\n";
     ti.restart();
 
     // stokes linear form
     *M_stokes_rhs =
         integrate( markedfaces( mesh,mesh->markerName( "inflow" ) ), _Q<3*uOrder+2*Dim+2*( GeoOrder-1 )>(),
                    trans( idf( this->inflow( time ) ) )*( -SigmaN+this->gammaBc()*id( v )/hFace() ) );
-    Log() << "[Turek::initLinearOperators] stokes  in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[Turek::initLinearOperators] stokes  in " << ti.elapsed() << "s\n";
     ti.restart();
     M_stokes_rhs->close();
-    Log() << "[Turek::initLinearOperators] stokes close  in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[Turek::initLinearOperators] stokes close  in " << ti.elapsed() << "s\n";
     ti.restart();
 
     if ( this->vm().count( "export-matlab" ) )
         M_stokes_rhs->containerPtr()->printMatlab( "stokes_rhs.m" );
 
-    Log() << "[Turek::initLinearOperators] done in " << total_time.elapsed() << "\n";
+    LOG(INFO) << "[Turek::initLinearOperators] done in " << total_time.elapsed() << "\n";
 
 
 }
@@ -350,7 +350,7 @@ Turek<Dim, Order, GeoOrder>::updateResidual( const vector_ptrtype& X, vector_ptr
 {
 
     boost::timer ti;
-    Log() << "[updateResidual] start\n";
+    LOG(INFO) << "[updateResidual] start\n";
 
     mesh_ptrtype mesh = M_Xh->mesh();
 
@@ -392,14 +392,14 @@ Turek<Dim, Order, GeoOrder>::updateResidual( const vector_ptrtype& X, vector_ptr
     M_residual->close();
     *R = M_residual->container();
 
-    Log() << "[updateResidual] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateResidual] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, int GeoOrder>
 void
 Turek<Dim, Order, GeoOrder>::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J )
 {
     boost::timer ti;
-    Log() << "[updateJacobian] start\n";
+    LOG(INFO) << "[updateJacobian] start\n";
 
     static bool is_init = false;
 
@@ -456,7 +456,7 @@ Turek<Dim, Order, GeoOrder>::updateJacobian( const vector_ptrtype& X, sparse_mat
     if ( this->vm().count( "export-matlab" ) )
         J->printMatlab( "jac.m" );
 
-    Log() << "[updateJacobian] done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "[updateJacobian] done in " << ti.elapsed() << "s\n";
 }
 template<int Dim, int Order, int GeoOrder>
 void
@@ -475,7 +475,7 @@ Turek<Dim, Order, GeoOrder>::run()
     M_Xh->printInfo();
 
 
-    Log() << "[Turek] run() starts\n";
+    LOG(INFO) << "[Turek] run() starts\n";
     using namespace Feel::vf;
     mesh_ptrtype mesh = M_Xh->mesh();
 
@@ -484,7 +484,7 @@ Turek<Dim, Order, GeoOrder>::run()
     fluid_element_0_type u = U.template element<0>();
     fluid_element_1_type p = U.template element<1>();
 
-    Log() << "space+elements init done in " << ti.elapsed() << "s\n";
+    LOG(INFO) << "space+elements init done in " << ti.elapsed() << "s\n";
     ti.restart();
 
     //u = project( M_Xh, elements(mesh), constant(0.)*one() );
@@ -514,13 +514,13 @@ Turek<Dim, Order, GeoOrder>::run()
 
 
     boost::timer ttotal;
-    Log() << "[run] start iterating in time\n";
+    LOG(INFO) << "[run] start iterating in time\n";
 
 
     for ( M_bdf->start(); M_bdf->isFinished() == false; M_bdf->next() )
     {
-        Log() << "============================================================\n";
-        Log() << "time: " << M_bdf->time() << "s, iteration: " << M_bdf->iteration() << "\n";
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "time: " << M_bdf->time() << "s, iteration: " << M_bdf->iteration() << "\n";
 
         *S = U;
 
@@ -534,10 +534,10 @@ Turek<Dim, Order, GeoOrder>::run()
         M_bdf->shiftRight( U );
 
         this->normL2Div( U );
-        Log() << "time spent in iteration = " << M_bdf->realTimePerIteration() << "s\n";
+        LOG(INFO) << "time spent in iteration = " << M_bdf->realTimePerIteration() << "s\n";
     }
 
-    Log() << "total time spent :  " << ttotal.elapsed() << "s\n";
+    LOG(INFO) << "total time spent :  " << ttotal.elapsed() << "s\n";
 } // Turek::run
 
 
@@ -551,41 +551,41 @@ Turek<Dim, Order, GeoOrder>::normL2Div( fluid_element_type& U ) const
     mesh_ptrtype mesh = M_Xh->mesh();
 
     double int_one_times_N = integrate( markedfaces( u.functionSpace()->mesh(),mesh->markerName( "cylinder" ) ), _Q<2*( GeoOrder-1 )>(), trans( one() )*N() ).evaluate()( 0, 0 );
-    Log() << "             int 1.N = " << int_one_times_N << "\n";
+    LOG(INFO) << "             int 1.N = " << int_one_times_N << "\n";
     //
     // average pressure
     //
     double measure = integrate( elements( u.functionSpace()->mesh() ), _Q<2*( GeoOrder-1 )>(), constant( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "                    area = " << measure << "\n";
+    LOG(INFO) << "                    area = " << measure << "\n";
     double meanp = integrate( elements( u.functionSpace()->mesh() ), _Q<( uOrder-1 )+2*( GeoOrder-1 )>(), idv( p ) ).evaluate()( 0, 0 )/measure;
-    Log() << "                mean( p )= " << meanp << "\n";
+    LOG(INFO) << "                mean( p )= " << meanp << "\n";
 
     //
     // average pressure at outflow
     //
     double measure_outflow = integrate( markedfaces( u.functionSpace()->mesh(),mesh->markerName( "outflow" ) ), _Q<2*( GeoOrder-1 )>(),
                                         constant( 1.0 ) ).evaluate()( 0, 0 );
-    Log() << "         measure outflow = " << measure_outflow << "\n";
+    LOG(INFO) << "         measure outflow = " << measure_outflow << "\n";
     double meanp_outflow = integrate( markedfaces( u.functionSpace()->mesh(),mesh->markerName( "outflow" ) ), _Q<( uOrder-1 )+2*( GeoOrder-1 )>(),
                                       idv( p ) ).evaluate()( 0, 0 )/measure_outflow;
-    Log() << "        mean_outflow( p )= " << meanp_outflow << "\n";
+    LOG(INFO) << "        mean_outflow( p )= " << meanp_outflow << "\n";
 
 
     //
     // Divergence
     //
     double intdiv2 = math::sqrt( integrate( elements( u.functionSpace()->mesh() ), _Q<2*( uOrder-1 )+4*( GeoOrder-1 )>(), divv( u )*divv( u ) ).evaluate()( 0, 0 ) );
-    Log() << "             |div(un)|_2 = " << intdiv2 << "\n";
+    LOG(INFO) << "             |div(un)|_2 = " << intdiv2 << "\n";
     double intdiv = integrate( elements( u.functionSpace()->mesh() ), _Q<( uOrder-1 )+3*( GeoOrder-1 )>(), divv( u ) ).evaluate()( 0, 0 );
-    Log() << "            int( div(un))= " << intdiv << "\n";
+    LOG(INFO) << "            int( div(un))= " << intdiv << "\n";
     double intun_wall = integrate( markedfaces( u.functionSpace()->mesh(),mesh->markerName( "wall" ) ), _Q<uOrder+2*( GeoOrder-1 )>(), idv( u )*N() ).evaluate()( 0, 0 );
-    Log() << "          int(u.n)|_wall = " << intun_wall << "\n";
+    LOG(INFO) << "          int(u.n)|_wall = " << intun_wall << "\n";
     double intun_inflow = integrate( markedfaces( u.functionSpace()->mesh(),mesh->markerName( "inflow" ) ), _Q<uOrder+2*( GeoOrder-1 )>(), idv( u )*N() ).evaluate()( 0, 0 );
-    Log() << "        int(u.n)|_inflow = " << intun_inflow << "\n";
+    LOG(INFO) << "        int(u.n)|_inflow = " << intun_inflow << "\n";
     double intun_outflow = integrate( markedfaces( u.functionSpace()->mesh(),mesh->markerName( "outflow" ) ), _Q<uOrder+2*( GeoOrder-1 )>(), idv( u )*N() ).evaluate()( 0, 0 );
-    Log() << "       int(u.n)|_outflow = " << intun_outflow << "\n";
+    LOG(INFO) << "       int(u.n)|_outflow = " << intun_outflow << "\n";
     double intun_cylinder = integrate( markedfaces( u.functionSpace()->mesh(),mesh->markerName( "cylinder" ) ), _Q<uOrder+2*( GeoOrder-1 )>(), idv( u )*N() ).evaluate()( 0, 0 );
-    Log() << "      int(u.n)|_cylinder = " << intun_cylinder << "\n";
+    LOG(INFO) << "      int(u.n)|_cylinder = " << intun_cylinder << "\n";
 
     return intdiv;
 }
@@ -595,28 +595,28 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U )
 {
     boost::timer total_ti;
     boost::timer ti;
-    Log() << "exportResults starts\n";
+    LOG(INFO) << "exportResults starts\n";
 
     auto mesh = M_Xh->mesh();
     auto u = U.template element<0>();
     auto p = U.template element<1>();
 
     double DeltaP = p( this->xa() )( 0, 0, 0 ) - p( this->xe() )( 0, 0, 0 );
-    Log() << "DeltaP=" << DeltaP << "\n";
+    LOG(INFO) << "DeltaP=" << DeltaP << "\n";
 
-    Log() << "[exportResults] Dp : " << ti.elapsed() << "\n";
+    LOG(INFO) << "[exportResults] Dp : " << ti.elapsed() << "\n";
     ti.restart();
 
     auto defv = 0.5*( gradv( u )+trans( gradv( u ) ) );
     auto SigmaNv = ( -idv( p )*N()+2*this->nu()*defv*N() );
 
     auto Force = integrate( markedfaces( mesh,mesh->markerName( "cylinder" ) ), _Q<uOrder-1+3*( GeoOrder-1 )>(), SigmaNv ).evaluate();
-    Log() << "Force=" << Force << "\n";
-    Log() << "Scaling=" << this->scalingForce() << "\n";
+    LOG(INFO) << "Force=" << Force << "\n";
+    LOG(INFO) << "Scaling=" << this->scalingForce() << "\n";
     Force *= this->scalingForce();
-    Log() << "Force after scaling=" << Force << "\n";
+    LOG(INFO) << "Force after scaling=" << Force << "\n";
 
-    Log() << "[exportResults] CD, CL : " << ti.elapsed() << "\n";
+    LOG(INFO) << "[exportResults] CD, CL : " << ti.elapsed() << "\n";
 
     M_data.precision( 8 );
     M_data.setf( std::ios::scientific );
@@ -639,11 +639,11 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U )
 
         else
         {
-            Log() << "invalid export strategy: using EXPORT_SAME_MESH\n";
+            LOG(INFO) << "invalid export strategy: using EXPORT_SAME_MESH\n";
             exporter->step( time )->setMesh( M_pressure_oplagp1->dualImageSpace()->mesh() );
         }
 
-        Log() << "[exportResults] setMesh : " << ti.elapsed() << "\n";
+        LOG(INFO) << "[exportResults] setMesh : " << ti.elapsed() << "\n";
         ti.restart();
 
         exporter->step( time )->addScalar( "CD", Force( 0,0 ) );
@@ -674,7 +674,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U )
 
         exporter->step( time )->add( "pressure", p );
 
-        Log() << "[exportResults] pid, U, u, v, p : " << ti.elapsed() << "\n";
+        LOG(INFO) << "[exportResults] pid, U, u, v, p : " << ti.elapsed() << "\n";
         ti.restart();
         //
         pressure_element_type aux( M_Xh->template functionSpace<1>(), "mag" );
@@ -682,7 +682,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U )
 
         exporter->step( time )->add( "velocity_mag", aux );
 
-        Log() << "[exportResults] ||U|| : " << ti.elapsed() << "\n";
+        LOG(INFO) << "[exportResults] ||U|| : " << ti.elapsed() << "\n";
         ti.restart();
 
         // cell Reynolds number
@@ -690,7 +690,7 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U )
 
         exporter->step( time )->add( "cellRe", aux );
 
-        Log() << "[exportResults] cellRe : " << ti.elapsed() << "\n";
+        LOG(INFO) << "[exportResults] cellRe : " << ti.elapsed() << "\n";
         ti.restart();
 
         if ( Dim == 3 )
@@ -725,15 +725,15 @@ Turek<Dim, Order, GeoOrder>::exportResults( double time, fluid_element_type& U )
             exporter->step( time )->add( "vorticity", aux );
         }
 
-        Log() << "[exportResults] vorticity : " << ti.elapsed() << "\n";
+        LOG(INFO) << "[exportResults] vorticity : " << ti.elapsed() << "\n";
         ti.restart();
         exporter->save();
     }
 
 
-    Log() << "[exportResults] save : " << ti.elapsed() << "\n";
+    LOG(INFO) << "[exportResults] save : " << ti.elapsed() << "\n";
 
-    Log() << "time spent in exportResults :  " << total_ti.elapsed() << "s\n";
+    LOG(INFO) << "time spent in exportResults :  " << total_ti.elapsed() << "s\n";
 } // Turek::export
 
 

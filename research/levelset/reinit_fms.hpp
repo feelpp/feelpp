@@ -191,7 +191,7 @@ ReinitializerFMS<FunctionSpaceType, Iterator>::operator()
 ( element_type const& phi ) const
 {
 
-    //     Debug() << "[ReinitFMS] operator()\n";
+    //     VLOG(1) << "[ReinitFMS] operator()\n";
 
     element_type __v( _M_functionspace );
     __v.clear();

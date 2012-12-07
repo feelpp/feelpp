@@ -1,0 +1,7 @@
+This file is not yet operational.  Eventually it should record all changes.
+Till then, you are advised to resort to our git server where all changes are
+logged.  This is how to get anonymous read-only access:
+$ git clone git://www.ginac.de/ginac.git ginac
+$ cd ginac; git whatchanged
+Alternatively you can browse the repository on-line at
+http://www.ginac.de/ginac.git

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-21
 
   Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
@@ -23,12 +23,13 @@
 */
 /**
    \file options.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-21
  */
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
@@ -41,13 +42,44 @@
 
 namespace Feel
 {
+po::options_description
+file_options( std::string const& appname )
+{
+    po::options_description file( "File options" );
+    file.add_options()
+        ( "config-file", po::value<std::string>()->default_value(appname), "specify .cfg file" )
+        ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
+        ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
+        ;
+    return file;
+}
+
+po::options_description
+generic_options()
+{
+    po::options_description generic( "Generic options" );
+    generic.add_options()
+        ( "authors", "prints the authors list" )
+        ( "copyright", "prints the copyright statement" )
+        ( "help", "prints this help message" )
+        ( "license", "prints the license text" )
+        ( "version", "prints the version" )
+        ( "v", po::value<int>(), "verbosity level" )
+        ( "feelinfo", "prints feel libraries information" )
+        ( "nochdir", "Don't change repository directory even though it is called" )
+        ;
+    return generic;
+}
 
 po::options_description
 feel_options( std::string const& prefix  )
 {
-    return
+    auto opt = benchmark_options( prefix )
+        .add( mesh_options( 1, prefix ) )
+        .add( mesh_options( 2, prefix ) )
+        .add( mesh_options( 3, prefix ) )
         /* alg options */
-        backend_options()
+        .add( backend_options() )
 #if defined(FEELPP_HAS_PETSC_H)
         .add( backendpetsc_options( prefix ) )
 #endif
@@ -65,8 +97,13 @@ feel_options( std::string const& prefix  )
         .add( exporter_options( prefix ) )
 
         /* material options */
-        .add( material_options( prefix ) );
+        .add( material_options( prefix ) )
 
+        ;
+
+    if ( prefix.empty() )
+        opt.add( generic_options() );
+    return opt;
 
 }
 }

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-01-03
 
   Copyright (C) 2008-2011 Christophe Prud'homme
@@ -24,7 +24,7 @@
 */
 /**
    \file matrixpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-01-03
  */
 #include <boost/timer.hpp>
@@ -54,6 +54,69 @@ MatrixPetsc<T>::MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldCo
     super( dmRow,dmCol,worldComm ),
     _M_destroy_mat_on_exit( true )
 {}
+
+template <typename T>
+inline
+MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol )
+    :
+    super(),
+    _M_destroy_mat_on_exit( true )
+{
+    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    int ierr=0;
+    PetscInt nrow;
+    PetscInt ncol;
+    ISGetSize(isrow,&nrow);
+    ISGetSize(iscol,&ncol);
+    DataMap dmrow(nrow, nrow);
+    DataMap dmcol(ncol, ncol);
+    this->setMapRow(dmrow);
+    this->setMapCol(dmcol);
+    ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    CHKERRABORT( this->comm(),ierr );
+    this->setInitialized( true );
+    this->close();
+}
+
+template <typename T>
+inline
+MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int> const& rowIndex, std::vector<int> const& colIndex )
+    :
+    super(),
+    _M_destroy_mat_on_exit( true )
+{
+    MatrixPetsc<T> const* A = dynamic_cast<MatrixPetsc<T> const*> ( &M );
+    int ierr=0;
+    IS isrow;
+    IS iscol;
+    PetscInt *rowMap;
+    PetscInt *colMap;
+    int nrow = rowIndex.size();
+    int ncol = colIndex.size();
+
+    PetscMalloc(nrow*sizeof(PetscInt),&rowMap);
+    PetscMalloc(ncol*sizeof(PetscInt),&colMap);
+
+    for (int i=0; i<nrow; i++) rowMap[i] = rowIndex[i];
+    for (int i=0; i<ncol; i++) colMap[i] = colIndex[i];
+
+    ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
+    CHKERRABORT( this->comm(),ierr );
+    PetscFree(rowMap);
+    PetscFree(colMap);
+
+    DataMap dmrow(nrow, nrow);
+    DataMap dmcol(ncol, ncol);
+    this->setMapRow(dmrow);
+    this->setMapCol(dmcol);
+    ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
+    CHKERRABORT( this->comm(),ierr );
+    this->setInitialized( true );
+    this->close();
+}
+
 
 template <typename T>
 inline
@@ -383,7 +446,7 @@ void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<int> > const &index
         CHKERRABORT( this->comm(),ierr );
 
 #if 0
-        ISView( _M_petscIS[i],PETSC_VIEWER_STDOUT_SELF );
+        ISView( _M_petscIS[i],PETSC_VIEWER_STDOUT_WORLD ); // PETSC_VIEWER_STDOUT_SELF
 
         PetscInt n;
         /*
@@ -756,6 +819,24 @@ MatrixPetsc<T>::addMatrix ( int* rows, int nrows,
     CHKERRABORT( this->comm(),ierr );
 }
 
+template <typename T>
+void
+MatrixPetsc<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Res )
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not initialized" );
+
+    FEELPP_ASSERT( this->size2() == In.size1() )( this->size2() )( In.size1() ).error( "incompatible dimension" );
+
+    MatrixPetsc<T> const* X = dynamic_cast<MatrixPetsc<T> const*> ( &In );
+    MatrixPetsc<T>* Y = dynamic_cast<MatrixPetsc<T>*> ( &Res );
+
+    FEELPP_ASSERT ( X != 0 ).error( "invalid petsc matrix" );
+    int ierr=0;
+
+    ierr = MatMatMult(this->_M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
+    CHKERRABORT( this->comm(),ierr );
+
+}
 
 #if 0
 template <typename T>
@@ -902,7 +983,7 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> &X_in )
     // 2.2.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
-    ierr = MatAXPY( &a,  X->_M_mat, _M_mat, ( MatStructure )SAME_NONZERO_PATTERN );
+    ierr = MatAXPY( &a,  X->_M_mat, _M_mat, MatStructure::SAME_NONZERO_PATTERN );
     CHKERRABORT( this->comm(),ierr );
 
     // 2.3.x & newer
@@ -910,16 +991,16 @@ MatrixPetsc<T>::addMatrix ( const T a_in, MatrixSparse<T> &X_in )
 
     if ( this->comm().size()>1 )
     {
-        ierr = MatAXPY( _M_mat, a, X->_M_mat, ( MatStructure )DIFFERENT_NONZERO_PATTERN );
-        //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
+        //ierr = MatAXPY( _M_mat, a, X->_M_mat, MatStructure::DIFFERENT_NONZERO_PATTERN );
+        ierr = MatAXPY(_M_mat, a, X->_M_mat, MatStructure::SAME_NONZERO_PATTERN);
     }
 
     else
     {
         //this->close();
-        //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SAME_NONZERO_PATTERN);
-        //ierr = MatAXPY(_M_mat, a, X->_M_mat, (MatStructure)SUBSET_NONZERO_PATTERN );
-        ierr = MatAXPY( _M_mat, a, X->_M_mat, ( MatStructure )DIFFERENT_NONZERO_PATTERN );
+        ierr = MatAXPY(_M_mat, a, X->_M_mat, MatStructure::SAME_NONZERO_PATTERN);
+        //ierr = MatAXPY(_M_mat, a, X->_M_mat, MatStructure::SUBSET_NONZERO_PATTERN );
+        //ierr = MatAXPY( _M_mat, a, X->_M_mat, MatStructure::DIFFERENT_NONZERO_PATTERN );
         //ierr = MatDuplicate(X->mat(),MAT_COPY_VALUES,&_M_mat);
     }
 
@@ -1128,7 +1209,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
     //if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
     if ( 0 )
     {
-        Debug() << "symmetrize zero-out  operation\n";
+        VLOG(1) << "symmetrize zero-out  operation\n";
 
         for ( size_type i = 0; i < rows.size(); ++i )
         {
@@ -1253,7 +1334,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
     if ( isSymmetric )
     {
-        Log() << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
+        LOG(INFO) << "[MatrixPetsc<T>::symmetricPart] Matrix is already symmetric, don't do anything\n";
 #if (PETSC_VERSION_MAJOR >= 3)
         MatSetOption( _M_mat,MAT_SYMMETRIC,PETSC_TRUE );
 #else
@@ -1323,7 +1404,7 @@ MatrixPetsc<T>::symmetricPart( MatrixSparse<value_type>& Mt ) const
 
     if ( isSymmetric )
     {
-        Log() << "[MatrixPetsc<T>::symmetricPart] symmetric part is really symmetric\n";
+        LOG(INFO) << "[MatrixPetsc<T>::symmetricPart] symmetric part is really symmetric\n";
 #if (PETSC_VERSION_MAJOR >= 3)
         ierr = MatSetOption( B->_M_mat,MAT_SYMMETRIC,PETSC_TRUE );
 #else
@@ -1376,7 +1457,7 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
             size_type start = u.firstLocalIndex();
 
             for ( size_type i = 0; i < s; ++i )
-                u.set( start + i, __u( start + i ) );
+                u.set( start + i, __u(  start + i ) );
         }
         VectorPetsc<value_type> v( __v.size(), __v.localSize() );
         {
@@ -1390,7 +1471,6 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
 
         if ( !transpose )
             MatMult( _M_mat, u.vec(), z.vec() );
-
         else
             MatMultTranspose( _M_mat, u.vec(), z.vec() );
 
@@ -1987,6 +2067,7 @@ inline
 void
 MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> &X_in )
 {
+#if 0
     if (this->hasGraph() && X_in.hasGraph() &&
         static_cast<void*>( const_cast<graph_type*>(this->graph().get()) ) == static_cast<void*>( const_cast<graph_type*>(X_in.graph().get())) )
         {
@@ -1996,6 +2077,9 @@ MatrixPetscMPI<T>::addMatrix( const T a_in, MatrixSparse<T> &X_in )
         {
             super::addMatrix(a_in,X_in);
         }
+#else
+    super::addMatrix(a_in,X_in);
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------//
@@ -2387,6 +2471,70 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     // ???
 #endif
 } // zeroRows
+
+//----------------------------------------------------------------------------------------------------//
+template<typename T>
+typename MatrixPetscMPI<T>::value_type
+MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
+                           Vector<value_type> const& __u,
+                           bool transpose ) const
+{
+    this->close();
+
+    PetscScalar e;
+
+    if ( dynamic_cast<VectorPetscMPI<T> const*>( &__v ) != ( VectorPetscMPI<T> const* )0 )
+    {
+        VectorPetscMPI<T> const& v   = dynamic_cast<VectorPetscMPI<T> const&>( __v );
+        VectorPetscMPI<T> const& u   = dynamic_cast<VectorPetscMPI<T> const&>( __u );
+        VectorPetscMPI<value_type> z( this->mapRow() );
+
+        if ( !transpose )
+            MatMult( this->mat(), u.vec(), z.vec() );
+        else
+            MatMultTranspose( this->mat(), u.vec(), z.vec() );
+
+        VecDot( v.vec(), z.vec(), &e );
+    }
+
+    else
+    {
+        VectorPetscMPI<value_type> u( this->mapRow() );
+        {
+            //size_type s = u.localSize();
+            size_type s = u.map().nLocalDofWithGhost();
+            size_type start = u.firstLocalIndex();
+
+            for ( size_type i = 0; i < s; ++i )
+                u.set( start + i, __u( start + i ) );
+        }
+
+        VectorPetscMPI<value_type> v( this->mapRow() );
+        {
+            //size_type s = v.localSize();
+            size_type s = v.map().nLocalDofWithGhost();
+            size_type start = v.firstLocalIndex();
+
+            for ( size_type i = 0; i < s; ++i )
+                v.set( start + i, __v( start + i ) );
+        }
+        VectorPetscMPI<value_type> z( this->mapRow() );
+
+        u.close();
+        v.close();
+
+        if ( !transpose )
+            MatMult( this->mat(), u.vec() , z.vec() );
+
+        else
+            MatMultTranspose( this->mat(), u.vec(), z.vec() );
+
+        VecDot( v.vec(), z.vec(), &e );
+    }
+
+    return e;
+}
+
 
 //----------------------------------------------------------------------------------------------------//
 

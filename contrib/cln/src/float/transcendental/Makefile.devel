@@ -1,0 +1,16 @@
+# This is the developer's makefile, not the user's makefile.
+# Don't use it unless you know exactly what you do!
+
+
+SRCDIR = ../..
+include $(SRCDIR)/Makerules.devel
+
+
+DATA_HEADERS = cl_F_ln2_var.h cl_F_ln10_var.h cl_F_pi_var.h cl_F_exp1_var.h cl_F_eulerconst_var.h cl_F_catalanconst_var.h
+
+all : $(DATA_HEADERS)
+
+$(DATA_HEADERS) : % : %.in $(DIGIT_HEADER)
+	$(DIGIT_HEADER) < $< > $@
+
+

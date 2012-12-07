@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-06-06
 
   Copyright (C) 2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file test_stokes.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-06-06
  */
 //#define USE_BOOST_TEST 1
@@ -128,7 +128,7 @@ makeAbout()
                            "Copyright (c) 2005-2006 EPFL" );
 
     about.addAuthor( "Christoph Winkelmann", "developer", "christoph.winkelmann@epfl.ch", "" );
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -188,12 +188,12 @@ public:
         timers( nMesh )
 
     {
-        Debug() << "[TestConvergence] hsize = " << initialMeshSize << "\n";
-        Debug() << "[TestConvergence] beta = " << beta << "\n";
-        Debug() << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
-        Debug() << "[TestConvergence] nmesh = " << nMesh << "\n";
-        Debug() << "[TestConvergence] bctype = " << this->vm()["bctype"].template as<int>() << "\n";
-        Debug() << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
+        VLOG(1) << "[TestConvergence] hsize = " << initialMeshSize << "\n";
+        VLOG(1) << "[TestConvergence] beta = " << beta << "\n";
+        VLOG(1) << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
+        VLOG(1) << "[TestConvergence] nmesh = " << nMesh << "\n";
+        VLOG(1) << "[TestConvergence] bctype = " << this->vm()["bctype"].template as<int>() << "\n";
+        VLOG(1) << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
 
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
@@ -210,12 +210,12 @@ public:
         timeSet( new timeset_type( "test_convergence" ) ),
         timers( nMesh )
     {
-        Debug() << "[TestConvergence] hsize = " << initialMeshSize << "\n";
-        Debug() << "[TestConvergence] beta = " << beta << "\n";
-        Debug() << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
-        Debug() << "[TestConvergence] nmesh = " << nMesh << "\n";
-        Debug() << "[TestConvergence] bctype = " << this->vm()["bctype"].template as<int>() << "\n";
-        Debug() << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
+        VLOG(1) << "[TestConvergence] hsize = " << initialMeshSize << "\n";
+        VLOG(1) << "[TestConvergence] beta = " << beta << "\n";
+        VLOG(1) << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
+        VLOG(1) << "[TestConvergence] nmesh = " << nMesh << "\n";
+        VLOG(1) << "[TestConvergence] bctype = " << this->vm()["bctype"].template as<int>() << "\n";
+        VLOG(1) << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
 
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );
@@ -232,12 +232,12 @@ public:
         timeSet( new timeset_type( "test_convergence" ) ),
         timers( tc.timers )
     {
-        Debug() << "[TestConvergence] hsize = " << initialMeshSize << "\n";
-        Debug() << "[TestConvergence] beta = " << beta << "\n";
-        Debug() << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
-        Debug() << "[TestConvergence] nmesh = " << nMesh << "\n";
-        Debug() << "[TestConvergence] bcweak = " << this->vm().count( "bcweak" ) << "\n";
-        Debug() << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
+        VLOG(1) << "[TestConvergence] hsize = " << initialMeshSize << "\n";
+        VLOG(1) << "[TestConvergence] beta = " << beta << "\n";
+        VLOG(1) << "[TestConvergence] bccoeff = " << bcCoeff << "\n";
+        VLOG(1) << "[TestConvergence] nmesh = " << nMesh << "\n";
+        VLOG(1) << "[TestConvergence] bcweak = " << this->vm().count( "bcweak" ) << "\n";
+        VLOG(1) << "[TestConvergence] export = " << this->vm().count( "export" ) << "\n";
 
         timeSet->setTimeIncrement( 1.0 );
         exporter->addTimeSet( timeSet );

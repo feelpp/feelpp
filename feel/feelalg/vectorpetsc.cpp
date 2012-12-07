@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-02
 
   Copyright (C) 2007-2011 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file vectorpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-02
  */
 #include <feel/feelcore/feel.hpp>
@@ -89,6 +89,13 @@ VectorPetsc<T>::clear ()
     }
 
     this->M_is_closed = this->M_is_initialized = false;
+}
+
+template <typename T>
+void
+VectorPetsc<T>::localize(const Vector<T>& /*V*/)
+{
+    FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
 }
 
 template <typename T>
@@ -167,6 +174,15 @@ VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
 {
     int ierr = 0;
     PetscScalar a = static_cast<PetscScalar>( a_in );
+
+    if ( this->comm().size()>1 )
+    {
+        const_cast<VectorPetscMPI<T>*>( dynamic_cast<const VectorPetscMPI<T>*>( &v_in ) )->close();
+    }
+    else
+    {
+        const_cast<VectorPetsc<T>*>( dynamic_cast<const VectorPetsc<T>*>( &v_in ) )->close();
+    }
 
     const VectorPetsc<T>* v = dynamic_cast<const VectorPetsc<T>*>( &v_in );
 
@@ -289,7 +305,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name ) const
 
     if ( !this->closed() )
     {
-        Debug() << "closing vector\n";
+        VLOG(1) << "closing vector\n";
         const_cast<VectorPetsc<T>*>( this )->close();
     }
 
@@ -346,6 +362,27 @@ void VectorPetsc<T>::printMatlab ( const std::string name ) const
     CHKERRABORT( this->comm(),ierr );
 }
 
+
+template <typename T>
+typename VectorPetsc<T>::value_type
+VectorPetsc<T>::dot( Vector<T> const& __v )
+{
+    this->close();
+    PetscScalar e;
+
+    VectorPetsc<value_type> v( __v.size(), __v.localSize() );
+    {
+        size_type s = v.localSize();
+        size_type start = v.firstLocalIndex();
+
+        for ( size_type i = 0; i < s; ++i )
+            v.set( start + i, __v( start + i ) );
+    }
+
+    VecDot( this->vec(), v.vec(), &e );
+
+    return e;
+}
 
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
@@ -586,11 +623,11 @@ template <typename T>
 void
 VectorPetscMPI<T>::clear()
 {
-    super::clear();
-
-    if ( /*(this->isInitialized()) &&*/ ( this->destroy_vec_on_exit() ) )
+    if ( this->isInitialized() )
     {
-        int ierr=0;
+        super::clear();
+
+       int ierr=0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         ierr = VecDestroy( &_M_vecLocal );
         CHKERRABORT( this->comm(),ierr );
@@ -888,6 +925,32 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
 }
 
 //----------------------------------------------------------------------------------------------------//
+
+
+template <typename T>
+typename VectorPetsc<T>::value_type
+VectorPetscMPI<T>::dot( Vector<T> const& __v )
+{
+    this->close();
+    PetscScalar e;
+
+    VectorPetscMPI<value_type> v( this->map() );
+    {
+        size_type s = v.map().nLocalDofWithGhost();
+        size_type start = v.firstLocalIndex();
+
+        for ( size_type i = 0; i < s; ++i )
+            v.set( start + i, __v( start + i ) );
+    }
+
+    v.close();
+
+    VecDot( this->vec(), v.vec(), &e );
+
+    return e;
+}
+
+
 
 template class VectorPetsc<double>;
 template class VectorPetscMPI<double>;

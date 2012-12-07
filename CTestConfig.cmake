@@ -18,7 +18,6 @@ set(CTEST_PROJECT_SUBPROJECTS
   feel++
   doc
   testsuite
-  examples
   benchmarks
   crb
   research/apee

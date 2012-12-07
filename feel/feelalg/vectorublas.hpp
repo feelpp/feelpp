@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-11-13
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file vectorublas.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-13
  */
 #ifndef __VectorUblas_H
@@ -58,7 +58,7 @@ class VectorUblas
     : public Vector<T>
     , boost::addable<VectorUblas<T,Storage> >
     , boost::subtractable<VectorUblas<T,Storage> >
-
+    , boost::multipliable<VectorUblas<T,Storage>, T >
 {
     typedef Vector<T> super1;
 public:
@@ -262,6 +262,17 @@ public:
         return *this;
     }
 
+    /**
+     * multiplication by a scalar value
+     */
+    Vector<T>& operator*=( T const& v )
+    {
+        checkInvariant();
+        this->outdateGlobalValues();
+        this->scale( v );
+
+        return *this;
+    }
     //@}
 
     /** @name Accessors
@@ -866,6 +877,7 @@ public:
                                   const size_type proc_id = 0 ) const;
 
 
+    value_type dot( Vector<T> const& __v );
     //@}
 
 

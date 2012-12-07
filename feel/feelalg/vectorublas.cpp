@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-03-20
 
   Copyright (C) 2008, 2009, 2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file vectorublas.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-03-20
  */
 /**
@@ -683,6 +683,40 @@ VectorUblas<T,Storage>::pow( int n ) const
         _out[i] = math::pow( this->operator[]( i ), n );
 
     return _out;
+}
+
+template<typename T, typename Storage>
+typename VectorUblas<T,Storage>::value_type
+VectorUblas<T,Storage>::dot( Vector<T> const& __v )
+{
+    VectorUblas<T,Storage> const *v = dynamic_cast<VectorUblas<T,Storage> const*>( &__v );
+    real_type local_in_prod = 0;
+    real_type global_in_prod = 0;
+    if ( this->comm().size() == 1 )
+    {
+        local_in_prod = ublas::inner_prod( _M_vec, v->vec() );
+        global_in_prod = local_in_prod;
+    }
+    else
+    {
+        size_type s = this->localSize();
+        size_type start = this->firstLocalIndex();
+        for ( size_type i = 0; i < s; ++i )
+        {
+            if ( !this->localIndexIsGhost( start + i ) )
+            {
+                real_type value1 =   _M_vec.operator()( start + i );
+                real_type value2 = v->vec().operator()( start + i );
+                local_in_prod += value1*value2;
+            }
+        }
+#ifdef FEELPP_HAS_MPI
+        mpi::all_reduce( this->comm(), local_in_prod, global_in_prod, std::plus<real_type>() );
+#endif
+    }
+
+    return global_in_prod;
+
 }
 
 //

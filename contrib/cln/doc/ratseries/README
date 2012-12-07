@@ -1,0 +1,15 @@
+This directory contains an explanation of the algorithms CLN uses for the
+computation of transcendental functions. This stuff was presented at the
+IMACS/ACA 1997 in Hawaii and is published in the ANTS III proceedings.
+
+  paper/      An updated version of the paper.
+  slides/     The slides used in the IMACS/ACA talk.
+
+It is published as
+
+  Bruno Haible, Thomas Papanikolaou:
+  Fast multiprecision evaluation of series of rational numbers.
+  In: Algorithmic Number Theory, Third International Symposium, ANTS-III,
+      J. P. Buhler ed., Lecture Notes in Computer Science 1423,
+      Springer Verlag (1998).
+

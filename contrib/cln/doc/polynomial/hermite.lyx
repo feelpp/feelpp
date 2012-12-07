@@ -1,0 +1,199 @@
+#This file was created by <bruno> Sun Feb 16 00:38:14 1997
+#LyX 0.10 (C) 1995 1996 Matthias Ettrich and the LyX Team
+\lyxformat 2.10
+\textclass article
+\language default
+\inputencoding latin1
+\fontscheme default
+\epsfig dvips
+\papersize a4paper 
+\paperfontsize 12 
+\baselinestretch 1.00 
+\secnumdepth 3 
+\tocdepth 3 
+\paragraph_separation indent 
+\quotes_language english 
+\quotes_times 2 
+\paperorientation portrait 
+\papercolumns 0 
+\papersides 1 
+\paperpagestyle plain 
+
+\layout Standard
+
+The Hermite polynomials 
+\begin_inset Formula  \( H_{n}(x) \)
+\end_inset 
+
+ are defined through 
+\begin_inset Formula 
+\[
+H_{n}(x)=(-1)^{n}e^{x^{2}}\cdot \left( \frac{d}{dx}\right) ^{n}\left( e^{-x^{2}}\right) \]
+
+\end_inset 
+
+
+\layout Description
+
+Theorem:
+\layout Standard
+
+
+\begin_inset Formula  \( H_{n}(x) \)
+\end_inset 
+
+ satisfies the recurrence relation
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+H_{0}(x)=1\]
+
+\end_inset 
+
+
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+H_{n+1}(x)=2x\cdot H_{n}(x)-2n\cdot H_{n-1}(x)\]
+
+\end_inset 
+
+ for 
+\begin_inset Formula  \( n\geq 0 \)
+\end_inset 
+
+ and the differential equation 
+\begin_inset Formula  \( H_{n}^{''}(x)-2x\cdot H_{n}^{'}(x)+2n\cdot H_{n}(x)=0 \)
+\end_inset 
+
+ for all 
+\begin_inset Formula  \( n\geq 0 \)
+\end_inset 
+
+.
+
+\layout Description
+
+Proof:
+\layout Standard
+
+Let 
+\begin_inset Formula  \( F:=\sum ^{\infty }_{n=0}\frac{H_{n}(x)}{n!}z^{n} \)
+\end_inset 
+
+ be the exponential generating function of the sequence of polynomials.
+ Then, because the Taylor series development theorem holds in formal power
+ series rings (see [1], section 2.
+16), we can simplify
+\begin_inset Formula 
+\begin{eqnarray*}
+F & = & e^{x^{2}}\cdot \sum ^{\infty }_{n=0}\frac{1}{n!}\left( \frac{d}{dx}\right) ^{n}\left( e^{-x^{2}}\right) \cdot (-z)^{n}\\
+ & = & e^{x^{2}}\cdot e^{-(x-z)^{2}}\\
+ & = & e^{2xz-z^{2}}
+\end{eqnarray*}
+
+\end_inset 
+
+It follows that 
+\begin_inset Formula  \( \frac{d}{dz}F=(2x-2z)\cdot F \)
+\end_inset 
+
+.
+ This is equivalent to the claimed recurrence.
+
+\layout Standard
+\cursor 190 
+Starting from this equation, we compute a linear relation for the partial
+ derivatives of 
+\begin_inset Formula  \( F \)
+\end_inset 
+
+.
+ Write 
+\begin_inset Formula  \( \partial _{x}=\frac{d}{dx} \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( \Delta _{z}=z\frac{d}{dz} \)
+\end_inset 
+
+.
+ One computes
+\begin_inset Formula 
+\[
+F=1\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\partial _{x}F=2z\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\partial _{x}^{2}F=4z^{2}\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\Delta _{z}F=(2xz-2z^{2})\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\partial _{x}\Delta _{z}F=(2z+4xz^{2}-4z^{3})\cdot F\]
+
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+\Delta _{z}^{2}F=\left( 2x\cdot z+(4x^{2}-4)\cdot z^{2}-8x\cdot z^{3}+4\cdot z^{4}\right) \cdot F\]
+
+\end_inset 
+
+ Solve a homogeneous 
+\begin_inset Formula  \( 5\times 6 \)
+\end_inset 
+
+ system of linear equations over 
+\begin_inset Formula  \( Q(x) \)
+\end_inset 
+
+ to get 
+\begin_inset Formula 
+\[
+(-2x)\cdot \partial _{x}F+\partial _{x}^{2}F+2\cdot \Delta _{z}F=0\]
+
+\end_inset 
+
+ This is equivalent to the claimed equation 
+\begin_inset Formula  \( H_{n}^{''}(x)-2x\cdot H_{n}^{'}(x)+2n\cdot H_{n}(x)=0 \)
+\end_inset 
+
+.
+
+\layout Bibliography
+
+[1] Bruno Haible: D-finite power series in several variables.
+ 
+\shape italic 
+Diploma thesis, University of Karlsruhe, June 1989
+\shape default 
+.
+ Sections 2.
+15 and 2.
+22.
+

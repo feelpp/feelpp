@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-07-05
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file mesh.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-07-05
  */
 #ifndef __mesh_H
@@ -78,6 +78,17 @@
 
 namespace Feel
 {
+
+struct MeshMarkerName
+{
+	std::string name;
+	std::vector<int> ids;
+
+};
+
+std::vector<MeshMarkerName> markerMap( int Dim );
+po::options_description mesh_options( int Dim, std::string const& prefix = "" );
+
 const size_type EXTRACTION_KEEP_POINTS_IDS                = ( 1<<0 );
 const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
 const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
@@ -155,6 +166,8 @@ public:
     typedef typename super::face_iterator face_iterator;
     typedef typename super::face_const_iterator face_const_iterator;
 
+    typedef typename super::edge_type edge_type;
+
     typedef typename super::points_type points_type;
     typedef typename super::point_type point_type;
     typedef typename super::point_iterator point_iterator;
@@ -218,6 +231,31 @@ public:
      */
     //@{
 
+    /**
+     * \retirm the number of elements associated to the current processor
+     */
+#if 0
+    size_type numElements() const
+        {
+
+            return std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                  this->endElementWithProcessId( this->worldComm().rank() ) );
+        }
+#endif
+
+
+    size_type numGlobalElements() const
+        {
+            //int ne = numElements();
+            int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                    this->endElementWithProcessId( this->worldComm().rank() ) );
+            int gne;
+            mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
+                             {
+                                 return x + y;
+                             } );
+            return gne;
+        }
     /**
      * \return the topological dimension
      */
@@ -338,22 +376,28 @@ public:
     /**
      * \return the id associated to the \p marker
      */
-    int markerName( std::string const& marker ) const
+    size_type markerName( std::string const& marker ) const
     {
-        return M_markername.find( marker )->second[0];
+        auto mit = M_markername.find( marker );
+        if (  mit != M_markername.end() )
+            return mit->second[0];
+        return invalid_size_type_value;
     }
     /**
      * \return the topological dimension associated to the \p marker
      */
-    int markerDim( std::string const& marker ) const
+    size_type markerDim( std::string const& marker ) const
     {
-        return M_markername.find( marker )->second[1];
+        auto mit = M_markername.find( marker );
+        if (  mit != M_markername.end() )
+            return mit->second[1];
+        return invalid_size_type_value;
     }
 
     /**
      * \return the marker names
      */
-    std::map<std::string, std::vector<int> > markerNames() const
+    std::map<std::string, std::vector<size_type> > markerNames() const
     {
         return M_markername;
     }
@@ -392,7 +436,7 @@ public:
     /**
      * add a new marker name
      */
-    void addMarkerName( std::pair<std::string, std::vector<int> > const& marker )
+    void addMarkerName( std::pair<std::string, std::vector<size_type> > const& marker )
     {
         M_markername.insert( marker );
     }
@@ -402,11 +446,13 @@ public:
      */
     void addMarkerName( std::string __name, int __id ,int __topoDim )
     {
-        std::vector<int> data(2);
+        std::vector<size_type> data(2);
         data[0]=__id;
         data[1]=__topoDim;
         M_markername[__name]=data;
     }
+
+    flag_type markerId( boost::any const& marker );
 
     /**
      * erase element at position \p position
@@ -548,7 +594,9 @@ public:
     {
         renumber( mpl::bool_<( nDim > 1 )>() );
     }
-
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<1> );
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<2> );
+    void renumber( std::vector<size_type> const& node_map, mpl::int_<3> );
 
     /**
      * This function only take sense in the 3D modal case with a simplex mesh.
@@ -652,7 +700,7 @@ public:
             std::cout << "try loading " << p.native()  << "\n";
             if ( !fs::exists( p ) )
             {
-                Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                 std::ostringstream os2;
                 os2 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
@@ -660,14 +708,14 @@ public:
 
                 if ( !fs::exists( p ) )
                 {
-                    Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                    LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                     return false;
                 }
             }
 
             if ( !fs::is_regular_file( p ) )
             {
-                Log() << "[mesh::load] failed loading " << p.native() << "\n";
+                LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                 return false;
             }
 
@@ -725,7 +773,7 @@ public:
      * is anticlockwise oriented. For the time being, this function
      * only applies to tetrahedra meshes
      */
-    void checkLocalPermutation( mpl::bool_<false> ) const {};
+    void checkLocalPermutation( mpl::bool_<false> ) const {}
     void checkLocalPermutation( mpl::bool_<true> ) const;
 
 
@@ -757,6 +805,10 @@ public:
             this->updateForUse();
         }
 private:
+
+    void propagateMarkers( mpl::int_<1> ) {}
+    void propagateMarkers( mpl::int_<2> ) {}
+    void propagateMarkers( mpl::int_<3> );
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -1035,6 +1087,7 @@ public:
          * True if the node p is in mesh->element(id)
          */
         boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt ) const;
+        boost::tuple<bool,node_type,double> isIn( size_type _id, const node_type & _pt, const matrix_node_type & setPoints, mpl::int_<1> /**/ ) const;
         boost::tuple<uint16_type,std::vector<bool> > isIn( std::vector<size_type> _ids, const node_type & _pt );
 
         /*---------------------------------------------------------------
@@ -1156,6 +1209,8 @@ public:
         meshChanged.connect( obs );
     }
 
+    void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
+
     //@}
 
 protected:
@@ -1163,6 +1218,8 @@ protected:
      * Update connectivity of entities of codimension 1
      */
     void updateEntitiesCoDimensionOne();
+    void updateEntitiesCoDimensionOne(mpl::bool_<true>);
+    void updateEntitiesCoDimensionOne(mpl::bool_<false>);
 
     /**
      * Update in ghost cells of entities of codimension 1
@@ -1173,6 +1230,7 @@ protected:
      * check mesh connectivity
      */
     void check() const;
+
 
 private:
 
@@ -1185,6 +1243,11 @@ private:
      * \sa renumber()
      */
     void renumber( mpl::bool_<true> );
+
+    void updateOnBoundary( mpl::int_<1> );
+    void updateOnBoundary( mpl::int_<2> );
+    void updateOnBoundary( mpl::int_<3> );
+
 
 private:
 
@@ -1223,7 +1286,7 @@ private:
      * get<0>() provides the id
      * get<1>() provides the topological dimension
      */
-    std::map<std::string, std::vector<int> > M_markername;
+    std::map<std::string, std::vector<size_type> > M_markername;
 
     /**
      * to encode points coordinates
@@ -1245,6 +1308,11 @@ private:
      */
     boost::shared_ptr<Localization> M_tool_localization;
 };
+
+template<typename Shape, typename T, int Tag>
+const uint16_type Mesh<Shape, T, Tag>::nDim;
+template<typename Shape, typename T, int Tag>
+const uint16_type Mesh<Shape, T, Tag>::nOrder;
 
 template<typename Shape, typename T, int Tag>
 template<typename RangeT>
@@ -1694,7 +1762,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
     return new_mesh;
 }
-
 
 
 } // Feel

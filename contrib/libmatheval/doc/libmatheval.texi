@@ -1,0 +1,2047 @@
+\input texinfo @c -*-texinfo-*-
+@c %**start of header
+@setfilename libmatheval.info
+@settitle GNU libmatheval manual
+@smallbook
+@setchapternewpage on
+@c %**end of header
+
+@include version.texi
+@syncodeindex fn cp
+
+@dircategory GNU libraries
+@direntry
+* libmatheval: (libmatheval).   library for evaluating symbolic expressions
+@end direntry
+
+@ifnottex
+This file documents GNU @code{libmatheval} library.
+
+Copyright @copyright{} 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2011
+Aleksandar Samardzic
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1 or
+any later version published by the Free Software Foundation; with the
+Invariant Sections being ``Rationale and history'', with no
+Front-Cover Texts, and with no Back-Cover Texts.  A copy of the
+license is included in the section entitled ``Copying''.
+@end ifnottex
+
+@titlepage
+@title{GNU @code{libmatheval} manual}
+@subtitle{Manual edition @value{EDITION}}
+@subtitle{For GNU @code{libmatheval} version @value{VERSION}}
+@subtitle{Last updated @value{UPDATED}}
+@author{Aleksandar Samardzic}
+
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2011
+Aleksandar Samardzic
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1 or
+any later version published by the Free Software Foundation; with the
+Invariant Sections being ``Rationale and history'', with no
+Front-Cover Texts, and with no Back-Cover Texts.
+@end titlepage
+
+@ifnottex
+@node Top, License, (dir), (dir)
+@top GNU @code{libmatheval} manual
+
+GNU @code{libmatheval} is small library of procedures for evaluating
+mathematical functions.  This manual documents how to use the library;
+this is manual edition @value{EDITION}, last updated @value{UPDATED},
+corresponding to library version @value{VERSION}.
+@end ifnottex
+
+@menu
+* License::               Library license conditions.
+* Introduction::          Overview of library usage.
+* Reference::             Reference of functions exposed by library.
+* Fortran interface::     Description of library Fortran interface.
+* Hacking::               Library internals.
+* Bugs::                  Reporting bugs.
+* Rationale and history:: Background of project.
+* Copying::               GNU Free Documentation License.
+* Index::                 Index of concepts and symbol names.
+@end menu
+
+@node License, Introduction, Top, Top
+@unnumbered License
+@cindex license
+
+GNU libmatheval is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+GNU libmatheval is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with GNU libmatheval.  If not, see <http://www.gnu.org/licenses/>.
+
+@node Introduction, Reference, License, Top
+@chapter Introduction
+@cindex introduction
+@cindex usage
+
+GNU @code{libmatheval} is library comprising several procedures that
+makes possible to create in-memory tree representation of mathematical
+functions over single or multiple variables and later use this
+representation to evaluate function for specified variable values, to
+create corresponding tree for function derivative over specified
+variable or to get back textual representation of in-memory tree.
+
+This section discuss use of programming interface exposed by library
+from C programs. Readers interested in Fortran interface should switch
+immediately to @ref{Fortran interface} section.
+
+In order to use GNU @code{libmatheval} library from C code, it is
+necessary first to include header file @file{matheval.h} from all
+files calling GNU @code{libmatheval} procedures and then refer to
+@file{libmatheval} library among other linker option.  Thus, command
+to compile C program using library and stored in file @file{example.c}
+using GNU C compiler would look like (supposing that library is
+installed using default prefix @code{/usr/local/lib}):
+
+@example
+gcc example.c -I/usr/local/include -L/usr/local/lib -lmatheval -o example
+@end example
+
+Alternatively, @code{pkg-config} metadata file for @code{libmatheval}
+is installed along with the library too, thus on system with
+@code{pkg-config} installed following command could be used instead:
+
+@example
+gcc example.c $(pkg-config --cflags --libs) -o example
+@end example
+
+First step in actually utilizing library after including appropriate
+header file would be to declare variable of @code{void *} type to
+point to evaluator object that will represent given mathematical
+function:
+
+@example
+void *f;
+@end example
+
+Then, given that textual representation of function is stored into
+string @code{buffer}, evaluator object corresponding to given
+mathematical function could be created using @code{evaluator_create}
+procedure (see @ref{evaluator_create}) as follows (see documentation
+for this procedure also for description of notation that should be
+used to describe mathematical functions):
+
+@example
+f = evaluator_create (buffer);
+assert (f);
+@end example
+
+Return value should be always checked, because above procedure will
+return null pointer if there exist syntax errors in notation.  After
+that, one could utilize @code{evaluator_get_variables} (see
+@ref{evaluator_get_variables}) procedure to obtain a list of variable
+names appearing in function:
+
+@example
+@{
+  char **names;
+  int count;
+  int i;
+
+  evaluator_get_variables (f, &names, &count);
+  for (i = 0; i < count; i++)
+    printf ("%s ", names[i]);
+  printf ("\n");
+@}
+@end example
+
+Procedure @code{evaluator_evaluate} (see @ref{evaluator_evaluate})
+could be used to evaluate function for specific variable values.  Say
+that above function is over variable ``x'' only, then following code
+will evaluate and print function value for x = 0.1:
+
+@example
+@{
+  char *names[] = @{ "x" @};
+  double values[] = @{ 0.1 @};
+
+  printf ("f(0.1) = %g\n", evaluator_evaluate (f, 1, names, 
+                                               values));
+@}
+@end example
+
+Or alternatively, since function is over variable with standard name
+``x'', convenience procedure @code{evaluator_evaluate_x}
+(@ref{evaluator_evaluate_x}) could be used to accomplish same by
+following:
+
+@example
+printf ("f(0.1) = %g\n", evaluator_evaluate_x (f, 0.1));
+@end example
+
+Evaluator object for function derivative over some variable could be
+created from evaluator object for given function.  In order to
+accomplish this, a declaration for derivative evaluator object should
+be added to variable declarations section:
+
+@example
+void *f_prim;
+@end example
+
+After that (supposing that ``x'' is used as derivation variable),
+derivative evaluator object could be created using
+@code{evaluator_derivative} procedure (see
+@ref{evaluator_derivative}):
+
+@example
+f_prim = evaluator_derivative (f, "x");
+@end example
+
+or alternatively using @code{evaluator_derivative_x} convenience
+procedure (see @ref{evaluator_derivative_x}):
+
+@example
+f_prim = evaluator_derivative_x (f);
+@end example
+
+Derivative evaluator object could be used to evaluate derivative
+values or say textual representation of derivative could be written to
+standard output through utilizing @code{evaluator_get_string}
+procedure (see @ref{evaluator_get_string}) to get string representing
+given evaluator.  Following code would accomplish this:
+
+@example
+printf ("  f'(x) = %s\n", evaluator_get_string (f_prim));
+@end example
+
+All evaluator objects must be destroyed after finished with using them
+and @code{evaluator_destroy} procedure (see @ref{evaluator_destroy})
+is intended for this:
+
+@example
+evaluator_destroy (f);
+evaluator_destroy (f_prim);
+@end example
+
+Here follows complete program connecting above fragments.  Program
+read from standard input string representing function over variable
+``x'', create evaluators for function and its first derivative, print
+textual representation of function derivative to standard output, then
+read value of variable ``x'' and finally print to standard output
+values of function and its first derivative for given value of
+variable ``x''.
+
+@example
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <matheval.h>
+
+/* Size of input buffer.  */
+#define BUFFER_SIZE 256
+
+/* Program is demonstrating use of GNU libmatheval library of procedures
+   for evaluating mathematical functions.  */
+int
+main (int argc, char **argv)
+@{
+  char buffer[BUFFER_SIZE];	/* Input buffer.  */
+  int length;			/* Length of above buffer. */
+  void *f, *f_prim;		/* Evaluators for function and function derivative.  */
+  char **names;			/* Function variables names. */
+  int count;			/* Number of function variables. */
+  double x;			/* Variable x value.  */
+  int i;			/* Loop counter. */
+
+  /* Read function.  Function has to be over variable x, or result may
+     be undetermined.  Size of textual represenatation of function is
+     bounded here to 256 characters, in real conditions one should
+     probably use GNU readline() instead of fgets() to overcome this
+     limit.  */
+  printf ("f(x) = ");
+  fgets (buffer, BUFFER_SIZE, stdin);
+  length = strlen (buffer);
+  if (length > 0 && buffer[length - 1] == '\n')
+    buffer[length - 1] = '\0';
+
+  /* Create evaluator for function.  */
+  f = evaluator_create (buffer);
+  assert (f);
+
+  /* Print variable names appearing in function. */
+  evaluator_get_variables (f, &names, &count);
+  printf ("  ");
+  for (i = 0; i < count; i++)
+    printf ("%s ", names[i]);
+  printf ("\n");
+
+  /* Create evaluator for function derivative and print textual
+     representation of derivative.  */
+  f_prim = evaluator_derivative_x (f);
+  printf ("  f'(x) = %s\n", evaluator_get_string (f_prim));
+
+  /* Read variable x value.  */
+  printf ("x = ");
+  scanf ("%lf", &x);
+
+  /* Calculate and print values of function and its derivative for given
+     value of x.  */
+  printf ("  f(%g) = %g\n", x, evaluator_evaluate_x (f, x));
+  printf ("  f'(%g) = %g\n", x, evaluator_evaluate_x (f_prim, x));
+
+  /* Destroy evaluators.  */
+  evaluator_destroy (f);
+  evaluator_destroy (f_prim);
+
+  exit (EXIT_SUCCESS);
+@}
+@end example
+
+Above example exercise most of library main procedures (see @ref{Main
+entry points}), as well as some of convenience procedures (see
+@ref{Convenience procedures}).  For full documentation, see
+@ref{Reference}.
+
+@node Reference, Fortran interface, Introduction, Top
+@chapter Reference
+@cindex reference
+
+This section documents procedures constituting GNU @code{libmatheval}
+library.  The convention is that all procedures have @code{evaluator_}
+prefix.
+
+@menu
+* Main entry points::      Library main procedures
+* Convenience procedures:: Library convenience procedures
+@end menu
+
+@node Main entry points, Convenience procedures, Reference, Reference
+@section Main entry points
+@cindex main entry points
+
+@menu
+* evaluator_create::        @code{evaluator_create} procedure
+* evaluator_destroy::       @code{evaluator_destroy} procedure
+* evaluator_evaluate::      @code{evaluator_evaluate} procedure
+* evaluator_get_string::    @code{evaluator_get_string} procedure
+* evaluator_get_variables:: @code{evaluator_get_variables} procedure
+* evaluator_derivative::    @code{evaluator_derivative} procedure
+@end menu
+
+@node evaluator_create, evaluator_destroy, Main entry points, Main entry points
+@subsection @code{evaluator_create}
+@findex @code{evaluator_create}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+void *evaluator_create (char *string);
+@end example
+
+@unnumberedsubsubsec Description
+
+Create evaluator object from @code{string} containing mathematical
+representation of function.  Evaluator object could be used later to
+evaluate function for specific variable values or to calculate
+function derivative over some variable.
+
+String representation of function is allowed to consist of decimal
+numbers, constants, variables, elementary functions, unary and binary
+operations.
+
+Supported constants are (names that should be used are given in
+parenthesis): e (@code{e}), log2(e) (@code{log2e}), log10(e)
+(@code{log10e}), ln(2) (@code{ln2}), ln(10) (@code{ln10}), pi
+(@code{pi}), pi / 2 (@code{pi_2}), pi / 4 (@code{pi_4}), 1 / pi
+(@code{1_pi}), 2 / pi (@code{2_pi}), 2 / sqrt(pi) (@code{2_sqrtpi}),
+sqrt(2) (@code{sqrt}) and sqrt(1 / 2) (@code{sqrt1_2}).
+
+Variable name is any combination of alphanumericals and @code{_}
+characters beginning with a non-digit that is not elementary function
+name.
+
+Supported elementary functions are (names that should be used are given
+in parenthesis): exponential (@code{exp}), logarithmic (@code{log}),
+square root (@code{sqrt}), sine (@code{sin}), cosine (@code{cos}),
+tangent (@code{tan}), cotangent (@code{cot}), secant (@code{sec}),
+cosecant (@code{csc}), inverse sine (@code{asin}), inverse cosine
+(@code{acos}), inverse tangent (@code{atan}), inverse cotangent
+(@code{acot}), inverse secant (@code{asec}), inverse cosecant
+(@code{acsc}), hyperbolic sine (@code{sinh}), cosine (@code{cosh}),
+hyperbolic tangent (@code{tanh}), hyperbolic cotangent (@code{coth}),
+hyperbolic secant (@code{sech}), hyperbolic cosecant (@code{csch}),
+hyperbolic inverse sine (@code{asinh}), hyperbolic inverse cosine
+(@code{acosh}), hyperbolic inverse tangent (@code{atanh}), hyperbolic
+inverse cotangent (@code{acoth}), hyperbolic inverse secant
+(@code{asech}), hyperbolic inverse cosecant (@code{acsch}), absolute
+value (@code{abs}), Heaviside step function (@code{step}) with value 1
+defined for x = 0, Dirac delta function with infinity (@code{delta}) and
+not-a-number (@code{nandelta}) values defined for x = 0, and error
+function (@code{erf}).
+
+Supported unary operation is unary minus (@code{'-'}).
+
+Supported binary operations are addition (@code{'+'}), subtraction
+(@code{'+'}), multiplication (@code{'*'}), division multiplication
+(@code{'/'}) and exponentiation (@code{'^'}).
+
+Usual mathematical rules regarding operation precedence
+apply. Parenthesis (@code{'('} and @code{')'}) could be used to change
+priority order.
+
+Blanks and tab characters are allowed in string representing function;
+newline characters must not appear in this string.
+
+@unnumberedsubsubsec Return value
+
+Pointer to evaluator object if operation successful, null pointer
+otherwise.  Evaluator object is opaque, one should only use return
+pointer to pass it to other functions from library.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_destroy}, @ref{evaluator_evaluate},
+@ref{evaluator_get_string}, @ref{evaluator_get_variables},
+@ref{evaluator_derivative}
+
+@node evaluator_destroy, evaluator_evaluate, evaluator_create, Main entry points
+@subsection @code{evaluator_destroy}
+@findex @code{evaluator_destroy}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+void evaluator_destroy (void *evaluator);
+@end example
+
+@unnumberedsubsubsec Description
+
+Destroy evaluator object pointer by @code{evaluator} pointer.  After
+returning from this call @code{evaluator} pointer must not be
+dereferenced because evaluator object gets invalidated.
+
+@unnumberedsubsubsec Return value
+
+None.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}
+
+@node evaluator_evaluate, evaluator_get_string, evaluator_destroy, Main entry points
+@subsection @code{evaluator_evaluate}
+@findex @code{evaluator_evaluate}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+double evaluator_evaluate (void *evaluator, int count, char **names,
+				    double *values);
+@end example
+
+@unnumberedsubsubsec Description
+
+Calculate value of function represented by evaluator object for given
+variable values.  Evaluator object is pointed by @code{evaluator}
+pointer.  Variable names and corresponding values are given by
+@code{names} and @code{values} array respectively.  Length of arrays
+is given by @code{count} argument.
+
+@unnumberedsubsubsec Return value
+
+Function value for given variable values.  If some variable that
+appears in function is not mentioned in arguments, result is
+indeterminate.  If all variables that appear in function are given,
+presence of variable or variables that doesn't appear in function in
+arguments has no effect, i.e. result is still exact.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy},
+@ref{evaluator_evaluate_x}, @ref{evaluator_evaluate_x_y},
+@ref{evaluator_evaluate_x_y_z}
+
+@node evaluator_get_string, evaluator_get_variables, evaluator_evaluate, Main entry points
+@subsection @code{evaluator_get_string}
+@findex @code{evaluator_get_string}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+char *evaluator_get_string (void *evaluator);
+@end example
+
+@unnumberedsubsubsec Description
+
+Return textual representation (i.e. mathematical function) of
+evaluator object pointed by @code{evaluator}.  For notation used, see
+@ref{evaluator_create} documentation.
+
+@unnumberedsubsubsec Return value
+
+String with textual representation of evaluator object.  This string
+is stored in evaluator object and caller must not free pointer
+returned by this function.  Returned string is valid until evaluator
+object destroyed.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy}, @ref{evaluator_get_variables}
+
+@node evaluator_get_variables, evaluator_derivative, evaluator_get_string, Main entry points
+@subsection @code{evaluator_get_variables}
+@findex @code{evaluator_get_variables}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+void evaluator_get_variables (void *evaluator, char ***names, int *count);
+@end example
+
+@unnumberedsubsubsec Description
+
+Return array of strings with names of variables appearing in function
+represented by evaluator.  Address of array first element is stored by
+function in location pointed by second argument and number of array
+elements is stored in location pointed by third argument.  Array with
+function variable names is stored in evaluator object and caller must
+not free any of strings returned by this function nor array itself.
+Returned values are valid until evaluator object destroyed.
+
+@unnumberedsubsubsec Return value
+
+None.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy}, @ref{evaluator_get_string}
+
+@node evaluator_derivative,  , evaluator_get_variables, Main entry points
+@subsection @code{evaluator_derivative}
+@findex @code{evaluator_derivative}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+void *evaluator_derivative (void *evaluator, char *name);
+@end example
+
+@unnumberedsubsubsec Description
+
+Create evaluator for derivative of function represented by given
+evaluator object.  Evaluator object is pointed to by @code{evaluator}
+pointer and derivation variable is determined by @code{name} argument.
+Calculated derivative is in mathematical sense correct no matters of
+fact that derivation variable appears or not in function represented
+by evaluator.
+
+@unnumberedsubsubsec Return value
+
+Pointer to evaluator object representing derivative of given function.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy},
+@ref{evaluator_derivative_x}, @ref{evaluator_derivative_y},
+@ref{evaluator_derivative_z}
+
+@node Convenience procedures,  , Main entry points, Reference
+@section Convenience procedures
+@cindex convenience procedures
+
+@menu
+* evaluator_evaluate_x::     @code{evaluator_evaluate_x} procedure
+* evaluator_evaluate_x_y::   @code{evaluator_evaluate_x_y} procedure
+* evaluator_evaluate_x_y_z:: @code{evaluator_evaluate_x_y_z} procedure
+* evaluator_derivative_x::   @code{evaluator_derivative_x} procedure
+* evaluator_derivative_y::   @code{evaluator_derivative_y} procedure
+* evaluator_derivative_z::   @code{evaluator_derivative_z} procedure
+@end menu
+
+@node evaluator_evaluate_x, evaluator_evaluate_x_y, Convenience procedures, Convenience procedures
+@subsection @code{evaluator_evaluate_x}
+@findex @code{evaluator_evaluate_x}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+double evaluator_evaluate_x (void *evaluator, double x);
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to evaluate function for given variable ``x''
+value.  Function is equivalent to following:
+
+@example
+char *names[] = @{ "x" @};
+double values[] = @{ x @};
+
+evaluator_evaluate (evaluator, sizeof (names) / sizeof(names[0]),
+			     names, values);
+@end example
+
+See @ref{evaluator_evaluate} for further information.
+
+@unnumberedsubsubsec Return value
+
+Value of function for given value of variable ``x''.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy},
+@ref{evaluator_evaluate}
+
+@node evaluator_evaluate_x_y, evaluator_evaluate_x_y_z, evaluator_evaluate_x, Convenience procedures
+@subsection @code{evaluator_evaluate_x_y}
+@findex @code{evaluator_evaluate_x_y}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+double evaluator_evaluate_x_y (void *evaluator, double x, double y);
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to evaluate function for given variables ``x''
+and ``y'' values.  Function is equivalent to following:
+
+@example
+char *names[] = @{ "x", "y" @};
+double values[] = @{ x, y @};
+
+evaluator_evaluate (evaluator, sizeof (names) / sizeof(names[0]),
+			     names, values);
+@end example
+
+See @ref{evaluator_evaluate} for further information.
+
+@unnumberedsubsubsec Return value
+
+Value of function for given values of variables ``x'' and ``y''.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy},
+@ref{evaluator_evaluate}
+
+@node evaluator_evaluate_x_y_z, evaluator_derivative_x, evaluator_evaluate_x_y, Convenience procedures
+@subsection @code{evaluator_evaluate_x_y_z}
+@findex @code{evaluator_evaluate_x_y_z}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+double evaluator_evaluate_x_y_z (void *evaluator, double x, double y,
+					  double z);
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to evaluate function for given variables ``x'',
+``y'' and ``z'' values.  Function is equivalent to following:
+
+@example
+char *names[] = @{ "x", "y", "z" @};
+double values[] = @{ x, y, z @};
+
+evaluator_evaluate (evaluator, sizeof (names) / sizeof(names[0]),
+			     names, values);
+@end example
+
+See @ref{evaluator_evaluate} for further information.
+
+@unnumberedsubsubsec Return value
+
+Value of function for given values of variables ``x'', ``y'' and
+``z''.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy},
+@ref{evaluator_evaluate}
+
+@node evaluator_derivative_x, evaluator_derivative_y, evaluator_evaluate_x_y_z, Convenience procedures
+@subsection @code{evaluator_derivative_x}
+@findex @code{evaluator_derivative_x}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+void *evaluator_derivative_x (void *evaluator);
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to differentiate function using ``x'' as
+derivation variable.  Function is equivalent to:
+
+@example
+evaluator_derivative (evaluator, "x");
+@end example
+
+See @ref{evaluator_derivative} for further information.
+
+@unnumberedsubsubsec Return value
+
+Evaluator object representing derivative of function over variable
+``x''.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy},
+@ref{evaluator_derivative}
+
+@node evaluator_derivative_y, evaluator_derivative_z, evaluator_derivative_x, Convenience procedures
+@subsection @code{evaluator_derivative_y}
+@findex @code{evaluator_derivative_y}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+void *evaluator_derivative_y (void *evaluator);
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to differentiate function using ``y'' as
+derivation variable.  Function is equivalent to:
+
+@example
+evaluator_derivative (evaluator, "y");
+@end example
+
+See @ref{evaluator_derivative} for further information.
+
+@unnumberedsubsubsec Return value
+
+Evaluator object representing derivative of function over variable
+``y''.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy},
+@ref{evaluator_derivative}
+
+@node evaluator_derivative_z,  , evaluator_derivative_y, Convenience procedures
+@subsection @code{evaluator_derivative_z}
+@findex @code{evaluator_derivative_z}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+#include <matheval.h>
+
+void *evaluator_derivative_z (void *evaluator);
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to differentiate function using ``z'' as
+derivation variable.  Function is equivalent to:
+
+@example
+evaluator_derivative (evaluator, "z");
+@end example
+
+See @ref{evaluator_derivative} for further information.
+
+@unnumberedsubsubsec Return value
+
+Evaluator object representing derivative of function over variable
+``z''.
+
+@unnumberedsubsubsec See also
+
+@ref{evaluator_create}, @ref{evaluator_destroy},
+@ref{evaluator_derivative}
+
+@node Fortran interface, Hacking, Reference, Top
+@chapter Fortran interface
+@cindex Fortran interface
+
+Fortran interface to GNU @code{libmatheval} library is very similar to
+C interface; still, complete documentation from @ref{Reference} is
+reproduced here using Fortran terms in order to have Fortran
+programmer not to mess with C terms that he may not understand.
+Besides documentation for all library exported procedures, an example
+Fortran program of structure similar to sequence of code fragments
+presented for C programmers in @ref{Introduction} section as well as
+notes on how to link library with Fortran programs are presented here.
+
+Since passing arguments between C and Fortran is not (yet)
+standardized, Fortran interface of library applies only to GNU Fortran
+77 compiler; but note that same interface is working fine for GNU
+Fortran 95 compiler.  Requests to adapt interface to other Fortran
+compilers are welcome (see section @ref{Bugs} for contact
+information), under condition that access to corresponding compiler is
+provided.
+
+@menu
+* Fortran main entry points::      Library main procedures
+* Fortran convenience procedures:: Library convenience procedures
+* Fortran sample program::         Demonstrating use of interface.
+* Fortran build process::          Notes on compilation and linking.
+@end menu
+
+@node Fortran main entry points, Fortran convenience procedures, Fortran interface, Fortran interface
+@section Fortran main entry points
+@cindex Fortran, main entry points
+
+@menu
+* Fortran evaluator_create::               @code{evaluator_create} procedure
+* Fortran evaluator_destroy::              @code{evaluator_destroy} procedure
+* Fortran evaluator_evaluate::             @code{evaluator_evaluate()} procedure
+* Fortran evaluator_get_string_length::    @code{evaluator_get_string_length} procedure
+* Fortran evaluator_get_string_chars::     @code{evaluator_get_string_chars} procedure
+* Fortran evaluator_get_variables_length:: @code{evaluator_get_variables_length} procedure
+* Fortran evaluator_get_variables_chars::  @code{evaluator_get_variables_chars} procedure
+* Fortran evaluator_derivative::           @code{evaluator_derivative} procedure
+@end menu
+
+@node Fortran evaluator_create, Fortran evaluator_destroy, Fortran main entry points, Fortran main entry points
+@subsection @code{evaluator_create}
+@findex Fortran, @code{evaluator_create}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+integer*8 function evaluator_create (string) character(len=*) ::
+string end function evaluator_create
+@end example
+
+@unnumberedsubsubsec Description
+
+Create evaluator object from @code{string} containing mathematical
+representation of function.  Evaluator object could be used later to
+evaluate function for specific variable values or to calculate
+function derivative over some variable.
+
+String representation of function is allowed to consist of decimal
+numbers, constants, variables, elementary functions, unary and binary
+operations.
+
+Supported constants are (names that should be used are given in
+parenthesis): e (@code{e}), log2(e) (@code{log2e}), log10(e)
+(@code{log10e}), ln(2) (@code{ln2}), ln(10) (@code{ln10}), pi
+(@code{pi}), pi / 2 (@code{pi_2}), pi / 4 (@code{pi_4}), 1 / pi
+(@code{1_pi}), 2 / pi (@code{2_pi}), 2 / sqrt(pi) (@code{2_sqrtpi}),
+sqrt(2) (@code{sqrt}) and sqrt(1 / 2) (@code{sqrt1_2}).
+
+Variable name is any combination of alphanumericals and @code{_}
+characters beginning with a non-digit that is not elementary function
+name.
+
+Supported elementary functions are (names that should be used are given
+in parenthesis): exponential (@code{exp}), logarithmic (@code{log}),
+square root (@code{sqrt}), sine (@code{sin}), cosine (@code{cos}),
+tangent (@code{tan}), cotangent (@code{cot}), secant (@code{sec}),
+cosecant (@code{csc}), inverse sine (@code{asin}), inverse cosine
+(@code{acos}), inverse tangent (@code{atan}), inverse cotangent
+(@code{acot}), inverse secant (@code{asec}), inverse cosecant
+(@code{acsc}), hyperbolic sine (@code{sinh}), cosine (@code{cosh}),
+hyperbolic tangent (@code{tanh}), hyperbolic cotangent (@code{coth}),
+hyperbolic secant (@code{sech}), hyperbolic cosecant (@code{csch}),
+hyperbolic inverse sine (@code{asinh}), hyperbolic inverse cosine
+(@code{acosh}), hyperbolic inverse tangent (@code{atanh}), hyperbolic
+inverse cotangent (@code{acoth}), hyperbolic inverse secant
+(@code{asech}), hyperbolic inverse cosecant (@code{acsch}), absolute
+value (@code{abs}), Heaviside step function (@code{step}) with value 1
+defined for x = 0, Dirac delta function with infinity (@code{delta}) and
+not-a-number (@code{nandelta}) values defined for x = 0, and error
+function (@code{erf})
+
+Supported unary operation is unary minus (@code{'-'}).
+
+Supported binary operations are addition (@code{'+'}), subtraction
+(@code{'+'}), multiplication (@code{'*'}), division multiplication
+(@code{'/'}) and exponentiation (@code{'^'}).
+
+Usual mathematical rules regarding operation precedence
+apply. Parenthesis (@code{'('} and @code{')'}) could be used to change
+priority order.
+
+Blanks and tab characters are allowed in string representing function;
+newline characters must not appear in this string.
+
+@unnumberedsubsubsec Return value
+
+Positive 64-bit integer representing evaluator object unique handle if
+operation successful, 0 otherwise.  Return value should be used only
+to pass it to other functions from library.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_destroy}, @ref{Fortran evaluator_evaluate},
+@ref{Fortran evaluator_get_string_length}, @ref{Fortran
+evaluator_get_string_chars}, @ref{Fortran
+evaluator_get_variables_length}, @ref{Fortran
+evaluator_get_variables_chars}, @ref{Fortran evaluator_derivative}
+
+@node Fortran evaluator_destroy, Fortran evaluator_evaluate, Fortran evaluator_create, Fortran main entry points
+@subsection @code{evaluator_destroy}
+@findex Fortran, @code{evaluator_destroy}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+subroutine evaluator_destroy (evaluator) integer*8 :: evaluator end
+subroutine evaluator_destroy
+@end example
+
+@unnumberedsubsubsec Description
+
+Destroy evaluator object denoted by @code{evaluator} handle.  After
+returning from this call evaluator object gets invalidated, so value
+of @code{evaluator} handle should not be used any more.
+
+@unnumberedsubsubsec Return value
+
+None.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}
+
+@node Fortran evaluator_evaluate, Fortran evaluator_get_string_length, Fortran evaluator_destroy, Fortran main entry points
+@subsection @code{evaluator_evaluate}
+@findex Fortran, @code{evaluator_evaluate}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+double precision function evaluator_evaluate (evaluator, count, names,
+values) integer*8 :: evaluator integer :: count character(len=*) ::
+names double precision :: values dimension values(*) end function
+evaluator_evaluate
+@end example
+
+@unnumberedsubsubsec Description
+
+Calculate value of function represented by evaluator object for given
+variable values.  Evaluator object is identified by @code{evaluator}
+handle.  Variable names are given by @code{names} string and
+corresponding values are given by @code{values} array respectively.
+Number of variables is given by @code{count} argument.  Variable names
+in @code{names} string should be delimited by one or more blank
+characters.
+
+@unnumberedsubsubsec Return value
+
+Function value for given variable values.  If some variable that
+appears in function is not mentioned in arguments, result is
+indeterminate.  If all variables that appear in function are given,
+presence of variable or variables that doesn't appear in function in
+arguments has no effect, i.e. result is still exact.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy},
+@ref{Fortran evaluator_evaluate_x}, @ref{Fortran
+evaluator_evaluate_x_y}, @ref{Fortran evaluator_evaluate_x_y_z}
+
+@node Fortran evaluator_get_string_length, Fortran evaluator_get_string_chars, Fortran evaluator_evaluate, Fortran main entry points
+@subsection @code{evaluator_get_string_length}
+@findex Fortran, @code{evaluator_get_string_length}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+integer function evaluator_get_string_length (evaluator) integer*8 ::
+evaluator end function evaluator_get_string_length
+@end example
+
+@unnumberedsubsubsec Description
+
+Return length of textual representation (i.e. mathematical function)
+of evaluator object pointed by @code{evaluator}.
+
+@unnumberedsubsubsec Return value
+
+Evaluator textual representation string length.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy}, @ref{Fortran evaluator_get_string_chars}
+
+@node Fortran evaluator_get_string_chars, Fortran evaluator_get_variables_length, Fortran evaluator_get_string_length, Fortran main entry points
+@subsection @code{evaluator_get_string_chars}
+@findex Fortran, @code{evaluator_get_string_chars}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+subroutine evaluator_get_string_chars (evaluator) integer*8 ::
+evaluator character(len=*) :: string end subroutine
+evaluator_get_string_chars
+@end example
+
+@unnumberedsubsubsec Description
+
+Write textual representation (i.e. mathematical function) of evaluator
+object pointed by @code{evaluator} to string specified.  For notation
+used, see @ref{Fortran evaluator_create} documentation.  In order to
+declare string of appropriate length to be passed to this function,
+@ref{Fortran evaluator_get_string_length} function should be utilized.
+
+@unnumberedsubsubsec Return value
+
+None.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy}, @ref{Fortran evaluator_get_string_length}
+
+@node Fortran evaluator_get_variables_length, Fortran evaluator_get_variables_chars, Fortran evaluator_get_string_chars, Fortran main entry points
+@subsection @code{evaluator_get_variables_length}
+@findex Fortran, @code{evaluator_get_variables_length}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+integer function evaluator_get_variables_length (evaluator) integer*8
+:: evaluator end function evaluator_get_variables_length
+@end example
+
+@unnumberedsubsubsec Description
+
+Return length of string with names of all variables (separated by a
+blank character) appearing in evaluator object pointed by
+@code{evaluator}.
+
+@unnumberedsubsubsec Return value
+
+Variable names string length.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy}, @ref{Fortran evaluator_get_variables_chars}
+
+@node Fortran evaluator_get_variables_chars, Fortran evaluator_derivative, Fortran evaluator_get_variables_length, Fortran main entry points
+@subsection @code{evaluator_get_variables_chars}
+@findex Fortran, @code{evaluator_get_variables_chars}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+subroutine evaluator_get_variables_chars (evaluator) integer*8 ::
+evaluator character(len=*) :: string end subroutine
+evaluator_get_variables_chars
+@end example
+
+@unnumberedsubsubsec Description
+
+Write names of all variables appearing in evaluator object pointed by
+@code{evaluator} into given string (separated by a blank character).
+In order to declare string of appropriate length to be passed to this
+function, @ref{Fortran evaluator_get_variables_length} function should
+be utilized.
+
+@unnumberedsubsubsec Return value
+
+None.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy}, @ref{Fortran evaluator_get_variables_length}
+
+@node Fortran evaluator_derivative,  , Fortran evaluator_get_variables_chars, Fortran main entry points
+@subsection @code{evaluator_derivative}
+@findex Fortran, @code{evaluator_derivative}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+integer*8 function evaluator_derivative (evaluator, name) integer*8 ::
+evaluator character(len=*) ::  name end function evaluator_derivative
+@end example
+
+@unnumberedsubsubsec Description
+
+Create evaluator for derivative of function represented by given
+evaluator object.  Evaluator object is identified by @code{evaluator}
+handle and derivation variable is determined by @code{name} argument.
+Calculated derivative is in mathematical sense correct no matters of
+fact that derivation variable appears or not in function represented
+by evaluator.
+
+@unnumberedsubsubsec Return value
+
+64-bit integer uniquely identifying evaluator object representing
+derivative of given function.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy},
+@ref{Fortran evaluator_derivative_x}, @ref{Fortran
+evaluator_derivative_y}, @ref{Fortran evaluator_derivative_z}
+
+@node Fortran convenience procedures, Fortran sample program, Fortran main entry points, Fortran interface
+@section Fortran convenience procedures
+@cindex Fortran, convenience procedures
+
+@menu
+* Fortran evaluator_evaluate_x::     @code{evaluator_evaluate_x} procedure
+* Fortran evaluator_evaluate_x_y::   @code{evaluator_evaluate_x_y} procedure
+* Fortran evaluator_evaluate_x_y_z:: @code{evaluator_evaluate_x_y_z} procedure
+* Fortran evaluator_derivative_x::   @code{evaluator_derivative_x} procedure
+* Fortran evaluator_derivative_y::   @code{evaluator_derivative_y} procedure
+* Fortran evaluator_derivative_z::   @code{evaluator_derivative_z} procedure
+@end menu
+
+@node Fortran evaluator_evaluate_x, Fortran evaluator_evaluate_x_y, Fortran convenience procedures, Fortran convenience procedures
+@subsection @code{evaluator_evaluate_x}
+@findex Fortran, @code{evaluator_evaluate_x}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+double precision function evaluator_evaluate_x (evaluator, x)
+integer*8 :: evaluator double precision ::  x end function
+evaluator_evaluate_x
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to evaluate function for given variable ``x''
+value.  Function is equivalent to following:
+
+@example
+evaluator_evaluate (evaluator, 1, 'x', (/ x /))
+@end example
+
+See @ref{Fortran evaluator_evaluate} for further information.
+
+@unnumberedsubsubsec Return value
+
+Value of function for given value of variable ``x''.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy},
+@ref{Fortran evaluator_evaluate}
+
+@node Fortran evaluator_evaluate_x_y, Fortran evaluator_evaluate_x_y_z, Fortran evaluator_evaluate_x, Fortran convenience procedures
+@subsection @code{evaluator_evaluate_x_y}
+@findex Fortran, @code{evaluator_evaluate_x_y}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+double precision function evaluator_evaluate_x_y (evaluator, x, y)
+integer*8 :: evaluator double precision ::  x, y end function
+evaluator_evaluate_x_y
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to evaluate function for given variables ``x''
+and ``y'' values.  Function is equivalent to following:
+
+@example
+evaluator_evaluate (evaluator, 2, 'x y', (/ x, y /))
+@end example
+
+See @ref{Fortran evaluator_evaluate} for further information.
+
+@unnumberedsubsubsec Return value
+
+Value of function for given values of variables ``x'' and ``y''.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy},
+@ref{Fortran evaluator_evaluate}
+
+@node Fortran evaluator_evaluate_x_y_z, Fortran evaluator_derivative_x, Fortran evaluator_evaluate_x_y, Fortran convenience procedures
+@subsection @code{evaluator_evaluate_x_y_z}
+@findex Fortran, @code{evaluator_evaluate_x_y_z}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+double precision function evaluator_evaluate_x_y_z (evaluator, x, y,
+z) integer*8 :: evaluator double precision :: x, y, z end function
+evaluator_evaluate_x_y_z
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to evaluate function for given variables ``x'',
+``y'' and ``z'' values.  Function is equivalent to following:
+
+@example
+evaluator_evaluate (evaluator, 2, 'x y z', (/ x, y, z /))
+@end example
+
+See @ref{Fortran evaluator_evaluate} for further information.
+
+@unnumberedsubsubsec Return value
+
+Value of function for given values of variables ``x'', ``y'' and
+``z''.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy},
+@ref{Fortran evaluator_evaluate}
+
+@node Fortran evaluator_derivative_x, Fortran evaluator_derivative_y, Fortran evaluator_evaluate_x_y_z, Fortran convenience procedures
+@subsection @code{evaluator_derivative_x}
+@findex Fortran, @code{evaluator_derivative_x}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+integer*8 function evaluator_derivative_x (evaluator) integer*8 ::
+evaluator end function evaluator_derivative_x
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to differentiate function using ``x'' as
+derivation variable.  Function is equivalent to:
+
+@example
+evaluator_derivative (evaluator, 'x');
+@end example
+
+See @ref{Fortran evaluator_derivative} for further information.
+
+@unnumberedsubsubsec Return value
+
+Evaluator object representing derivative of function over variable
+``x''.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy},
+@ref{Fortran evaluator_derivative}
+
+@node Fortran evaluator_derivative_y, Fortran evaluator_derivative_z, Fortran evaluator_derivative_x, Fortran convenience procedures
+@subsection @code{evaluator_derivative_y}
+@findex Fortran, @code{evaluator_derivative_y}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+integer*8 function evaluator_derivative_y (evaluator) integer*8 ::
+evaluator end function evaluator_derivative_y
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to differentiate function using ``y'' as
+derivation variable.  Function is equivalent to:
+
+@example
+evaluator_derivative (evaluator, 'y');
+@end example
+
+See @ref{Fortran evaluator_derivative} for further information.
+
+@unnumberedsubsubsec Return value
+
+Evaluator object representing derivative of function over variable
+``y''.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy},
+@ref{Fortran evaluator_derivative}
+
+@node Fortran evaluator_derivative_z,  , Fortran evaluator_derivative_y, Fortran convenience procedures
+@subsection @code{evaluator_derivative_z}
+@findex Fortran, @code{evaluator_derivative_z}
+
+@unnumberedsubsubsec Synopsis
+
+@example
+integer*8 function evaluator_derivative_z (evaluator) integer*8 ::
+evaluator end function evaluator_derivative_z
+@end example
+
+@unnumberedsubsubsec Description
+
+Convenience function to differentiate function using ``z'' as
+derivation variable.  Function is equivalent to:
+
+@example
+evaluator_derivative (evaluator, 'z');
+@end example
+
+See @ref{Fortran evaluator_derivative} for further information.
+
+@unnumberedsubsubsec Return value
+
+Evaluator object representing derivative of function over variable
+``z''.
+
+@unnumberedsubsubsec See also
+
+@ref{Fortran evaluator_create}, @ref{Fortran evaluator_destroy},
+@ref{Fortran evaluator_derivative}
+
+@node Fortran sample program, Fortran build process, Fortran convenience procedures, Fortran interface
+@section Fortran sample program
+@cindex Fortran, sample program
+
+Here follows sample program demonstrating use of library Fortran
+interface.  Hopefully, comments throughout code will be enough for
+Fortran programmer to get acquainted with library usage.  Basic
+functioning of program is equivalent to code presented for C
+programmer in @ref{Introduction} sequence, except that textual
+representation of function derivative is not printed to standard
+output and this is avoided simply because of Fortran 77 ugly string
+handling.  Following code is written in Fortran 77 with GNU Fortran 77
+compiler extensions (most notable of these certainly is free form of
+source code).
+
+@example
+! Program is demonstrating use of GNU libmatheval library of procedures
+! for evaluating mathematical functions.
+program evaluator
+  implicit none
+
+  ! Declarations of GNU libmatheval procedures used.
+  integer*8 evaluator_create
+  integer*8 evaluator_derivative_x
+  double precision evaluator_evaluate_x
+  external evaluator_destroy
+
+  ! Size of input buffer.
+  integer :: BUFFER_SIZE
+  parameter(BUFFER_SIZE = 256)
+
+  character(len = BUFFER_SIZE) :: buffer ! Input buffer.
+  integer*8 :: f, f_prim ! Evaluators for function and function derivative.
+  double precision :: x ! Variable x value.
+
+  ! Read function.  Function has to be over variable x, or result may
+  ! be undetermined.  Size of textual represenatation will be truncated
+  ! here to BUFFER_SIZE characters, in real conditions one should 
+  ! probably come with something smarter to avoid this limit.
+  write (*, '(A)') 'f(x) = '
+  read (*, '(A)') buffer
+
+  ! Create evaluator for function.
+  f = evaluator_create (buffer);
+  if (f == 0) stop
+
+  ! Create evaluator for function derivative.
+  f_prim = evaluator_derivative_x (f);
+  if (f_prim == 0) stop
+
+  ! Read variable x value.
+  write (*, '(A)') 'x = '
+  read (*, *) x
+
+  ! Calculate and print values of function and its derivative for given
+  ! value of x.
+  write (*,*) '  f (', x, ') = ', evaluator_evaluate_x (f, x)
+  write (*,*) '  f'' (', x, ') = ', evaluator_evaluate_x (f_prim, x)
+
+  ! Destroy evaluators.
+  call evaluator_destroy (f)
+  call evaluator_destroy (f_prim)
+end program evaluator
+@end example
+
+@node Fortran build process,  , Fortran sample program, Fortran interface
+@section Fortran build process
+@cindex Fortran, build process
+
+In order to be able to reference GNU @code{libmatheval} procedures
+from Fortran code, declarations of procedures that will be used should
+be repeated, like demonstrated by @ref{Fortran sample program} (once
+when interface upgraded to Fortran 90, modules and @code{use}
+statement will be employed here).  Command for compilation Fortran
+program using library and stored in file @file{example.f} using GNU
+Fortran 77 compiler would look like (again supposing that library is
+installed using default prefix @file{/usr/local/lib}):
+
+@example
+f77 example.f -ff90 -ffree-form -L/usr/local/lib -lmatheval -o example
+@end example
+
+@node Hacking, Bugs, Fortran interface, Top
+@chapter Hacking
+@cindex hacking
+
+@menu
+* Design notes::          Overall project design.
+* Project structure::     Source files locations.
+* Intended improvements:: List of items that I'm willing to work on.
+@end menu
+
+@node Design notes, Project structure, Hacking, Hacking
+@section Design notes
+@cindex design notes
+
+As usual with an open source project, ultimate reference for anyone
+willing to hack on it is its source code.  Every effort is put to have
+source code properly commented; having in mind that GNU
+@code{libmatheval} is rather simple project, it is reasonable to
+expect that this would be enough for anyone interested in project
+internals to get acquainted with it.  Still, this section will briefly
+explain project design. See @ref{Project structure} section for
+description of where each functionality is located in source code.
+
+Mathematical functions are represented as trees in computer memory.
+There are five different nodes in such a tree: number, constants,
+variables, functions, unary operations and binary operations.  Single
+data structure is employed for tree nodes, while union is used over
+what is different among them.  Numbers have unique value, unary and
+binary operations have unique pointer(s) to their operand(s) node(s).
+To represent constants, variables and functions, a symbol table is
+employed; thus constants, variables and functions have unique pointers
+to corresponding symbol table records (functions also have unique
+pointer to their argument node).  All operations related to functions
+(e.g. evaluation or derivative calculation) are implemented as
+recursive operations on tree nodes.  There exist a node operation that
+is not visible as external procedure and this is node simplification;
+this operation is very important regarding overall efficiency of other
+operations and is employed each time when new tree created.
+
+Symbol table is implemented as hash table, where each bucket has
+linked list of records stored in it.  Records store information of
+symbol name and type (variable or function), as well as some unique
+information related to evaluation: variable records store temporary
+variable value and function records store pointer to procedure used to
+actually calculate function value during evaluation.  Hashing function
+described in @cite{A.V. Aho, R. Sethi, J.D. Ullman, ``Compilers -
+Principle, Techniques, and Tools'', Addison-Wesley, 1986, pp 435-437}
+is used.  Symbol tables are reference counted objects, i.e. could be
+shared.
+
+Evaluator objects actually consists of function tree and reference to
+symbol table.  Most of operations on evaluator objects are simply
+delegated to function tree root node.
+
+For parsing strings representing mathematical functions, Lex and Yacc
+are employed.  Scanner is creating symbol table records for variables,
+while for constants and functions it is only looking up existing
+symbol table records (before starting scanning, symbol table should be
+populated with records for constants and functions recognized by
+scanner).  Parser is responsible for building function tree
+representation.
+
+Couple error reporting procedures, as well as replacements for
+standard memory allocation routines are also present.  These are
+rather standard for all GNU projects, so deserve no further
+discussion.  Further present in project are couple procedures for
+mathematical functions not implemented by C standard library, like
+cotangent, inverse cotangent and some hyperbolic and inverse
+hyperbolic functions.
+
+Also present in project are stubs for Fortran code calling
+library. These stubs uses knowledge of GNU Fortran 77 compiler calling
+conventions, take parameters from Fortran 77 calls, eventually mangle
+them to satisfy primary C library interface and call library
+procedures to actually do the work, finally eventually mangling return
+values to satisfy Fortran 77 calling conventions again.
+
+Most important thing to know before criticizing library design is that
+it is intentionally left as simple as it could be.  Decision is now
+that eventual library usage should direct its improvements.  Some
+obvious and intended improvements if enough interest for library arise
+are enumerated in @ref{Intended improvements} section.  If having
+further suggestions, pleas see @ref{Bugs} sections for contact
+information.
+
+@node Project structure, Intended improvements, Design notes, Hacking
+@section Project structure
+@cindex physical structure
+
+Interesting source files are mostly concentrated in @file{lib}
+subdirectory of distribution.  Basic arrangement is rather standard
+for GNU projects, thus scanner is in @file{scanner.l} file, parser in
+@file{parser.y}, error handling routines are in @file{error.c} and
+@file{error.h} files, replacements for standard memory allocation
+routines are in @file{xmalloc.c} and @file{xmalloc.h}, additional
+mathematical functions are in @file{xmath.c} and @file{xmath.c}.
+Project specific files are: @file{node.h} and @file{node.c} files for
+tree representing mathematical function data structures and
+procedures, @file{symbol_table.c} and @file{symbol_table.h} for symbol
+table data structures and procedures and finally @file{evaluator.c} and
+@file{matheval.h} for evaluator object data structures and procedures
+(evaluator object data structure is moved to @file{.c} file because
+@file{matheval.h} is public header file and this data structure should
+be opaque).  Fortran interface is implemented in
+@file{f77_interface.c} file.
+
+File @file{libmatheval.texi} under @file{doc} subdirectory of
+distribution contains Texinfo source of project documentation
+(i.e. what you are reading now).
+
+Subdirectory @file{tests} contains library test suite.  Kind of mixed
+design is employed here - GNU autotest is used for test framework in
+order to achieve more portability, while number of small Guile scripts
+are performing tests.  File @file{matheval.c} in @file{tests}
+subdirectory contains program extending Guile interpreter with GNU
+@code{libmatheval} procedures.  Files with @file{.at} extension in
+same subdirectory in turn consist of fragments of Guile code that this
+extended Guile interpreter executes in order to conduct tests.  File
+@file{matheval.sh} is shell wrapper for program contained in
+@file{matheval.c} file; this wrapper is used by autotest during
+testing instead of original program.  Most interesting aspect of code
+from @file{tests} subdirectory is certainly Guile interface for
+library that is implemented in @file{matheval.c} file; anyone
+intending to write more tests must before approaching this task become
+familiar with this interface.
+
+@node Intended improvements,  , Project structure, Hacking
+@section Intended improvements
+@cindex intended improvements
+
+As stated in @ref{Design notes} section, GNU @code{libmatheval} is
+designed with intention to be simple and understandable and to
+eventually have its usage to govern improvements.  Thus, further work
+will be primarily directed by user requests and of course, as usual
+with open source projects, with amount of spare time of primary
+developer (see @ref{Bugs} for contact information).  However, there
+exist several obvious improvements that I'm willing to work on
+immediately if any interest of library arise and these are (in random
+order) listed below:
+
+@itemize @bullet
+@item
+Extend scanner to recognize more mathematical functions, to recognize
+alternative names for existing functions (e.g. to recognize both
+@samp{tg} and @samp{tan} as names for tangent function) and to
+recognize more constants.
+
+@item
+Implement variable hash table length for symbol table.  As for now,
+hash table length is fixed to 211 that is reasonable for most cases,
+but it would certainly be more robust to have hash table to be
+constructed of length proportional say to length of string
+representing function.
+
+@item
+Add more simplifications to function tree representation.  Only basic
+simplifications, mostly related to numbers subtrees consolidation and
+binary operations neutral elements are employed now.  More ambitious
+optimization, using commutative, associative and distributive rules
+for binary operations would be desirable.
+
+@item
+Improve output when evaluator object is printed.  Presently,
+parenthesis are always used around operations, while using them when
+necessary to establish proper evaluation priority order only would
+give prettier output
+
+@item
+Add more tests.  Basic functionality of library is exercised through
+existing test suite, but present number of tests is certainly far from
+enough.
+
+@item
+Extend and improve error handling.  There are couple @code{assert}s
+left in code that may be replaced with some other mechanism, also
+probably error handling of more error conditions should be added to
+library.
+
+@item
+Add command line interface to library, i.e. write a program that will
+make possible to evaluate expression for given variable values where
+both specified in command line, as program arguments (for expressions
+without variables this program could be useful as a calculator).
+@end itemize
+
+There exists also an improvement that is obvious and necessary but
+because I'm not native speaker I'm unfortunately not able to
+accomplish it anything more than I already tried:
+
+@itemize @bullet
+@item
+Clean up English used in documentation.
+
+@end itemize
+
+@node Bugs, Rationale and history, Hacking, Top
+@chapter Bugs
+@cindex bugs
+
+If you encounter something that you think is a bug, please report it
+immediately.  Try to include a clear description of the undesired
+behavior.  A test case that exhibits the bug or maybe even patch
+fixing it, would too be of course very useful.
+
+Suggestions on improving library would be also more than
+welcome.  Please see @ref{Hacking}, for further information.
+
+Please direct bug reports and eventual patches to
+@email{bug-libmatheval@@gnu.org} mailing list.  For suggestions
+regarding improvements and other @code{libmatheval} related
+conversation use author e-mail address
+@email{asamardzic@@gnu.org}.
+
+@node Rationale and history, Copying, Bugs, Top
+@chapter Rationale and history
+@cindex rationale
+@cindex history
+
+The library is developed as a back-end for ``Numerical Analysis''
+course taught during 1999/2000, 2000/2001 and 2001/2002 school years
+at Department of Mathematics, University of Belgrade.  Most numerical
+libraries (library accompanying ``Numerical Recipes'' book most
+notably example) are asking programmer to write corresponding C code
+when it comes to evaluate mathematical functions.  It seemed to me
+that it would be more appropriate (well, at least for above mentioned
+course) to have library that will make possible to specify functions
+as strings and then have them evaluated for given variable values, so
+I wrote first version of library during November 1999.  Fortran
+interface is added to the library later; during January 2001 interface
+for Pacific Sierra VAST Fortran 90 translator was implemented and
+during September 2001 it was replaced by interface for Intel Fortran
+90 compiler @footnote{That was in turn replaced by interface for GNU
+Fortran 77 compiler in order to meet requirement that no GNU project
+should require use of non-free software}.  This library eventually
+went into rather stable state and was tested by number of other
+programs implementing various numerical methods and developed for the
+same course.
+
+After completing engagement with this course, I thought it may be
+interesting for someone else to use this code and decided to make it
+publicly available.  So, having some spare time during June 2002, I
+re-wrote whole library in preparation for public release, now
+employing simpler overall design and also using GNU auto-tools and
+what else was necessary according to GNU guidelines.  The benefit is
+that final product looks much better now (well, at least to me and at
+least at the very moment of this writing), the drawback is that code
+is not thoroughly tested again.  But certainly author would be more
+than happy to further improve and maintain it.  Please see @ref{Bugs},
+for contact information.
+
+The library source code was hosted on Savannah
+(@uref{http://savannah.gnu.org/}) since Septembar 2002.  In September
+2003, library officially became part of GNU project.
+
+@ifnottex
+@node Copying, Index, Rationale and history, Top
+@chapter GNU Free Documentation License
+@cindex copying
+@cindex GNU Free Documentation License
+
+@verbatim
+                        Version 1.1, March 2000
+     Copyright (C) 2000 Free Software Foundation, Inc.
+     51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+     
+     Everyone is permitted to copy and distribute verbatim copies
+     of this license document, but changing it is not allowed.
+
+  0. PREAMBLE
+
+     The purpose of this License is to make a manual, textbook, or other
+     written document "free" in the sense of freedom: to assure everyone
+     the effective freedom to copy and redistribute it, with or without
+     modifying it, either commercially or noncommercially.  Secondarily,
+     this License preserves for the author and publisher a way to get
+     credit for their work, while not being considered responsible for
+     modifications made by others.
+
+     This License is a kind of "copyleft", which means that derivative
+     works of the document must themselves be free in the same sense.
+     It complements the GNU General Public License, which is a copyleft
+     license designed for free software.
+
+     We have designed this License in order to use it for manuals for
+     free software, because free software needs free documentation: a
+     free program should come with manuals providing the same freedoms
+     that the software does.  But this License is not limited to
+     software manuals; it can be used for any textual work, regardless
+     of subject matter or whether it is published as a printed book.
+     We recommend this License principally for works whose purpose is
+     instruction or reference.
+
+  1. APPLICABILITY AND DEFINITIONS
+
+     This License applies to any manual or other work that contains a
+     notice placed by the copyright holder saying it can be distributed
+     under the terms of this License.  The "Document", below, refers to
+     any such manual or work.  Any member of the public is a licensee,
+     and is addressed as "you".
+
+     A "Modified Version" of the Document means any work containing the
+     Document or a portion of it, either copied verbatim, or with
+     modifications and/or translated into another language.
+
+     A "Secondary Section" is a named appendix or a front-matter
+     section of the Document that deals exclusively with the
+     relationship of the publishers or authors of the Document to the
+     Document's overall subject (or to related matters) and contains
+     nothing that could fall directly within that overall subject.
+     (For example, if the Document is in part a textbook of
+     mathematics, a Secondary Section may not explain any mathematics.)
+     The relationship could be a matter of historical connection with
+     the subject or with related matters, or of legal, commercial,
+     philosophical, ethical or political position regarding them.
+
+     The "Invariant Sections" are certain Secondary Sections whose
+     titles are designated, as being those of Invariant Sections, in
+     the notice that says that the Document is released under this
+     License.
+
+     The "Cover Texts" are certain short passages of text that are
+     listed, as Front-Cover Texts or Back-Cover Texts, in the notice
+     that says that the Document is released under this License.
+
+     A "Transparent" copy of the Document means a machine-readable copy,
+     represented in a format whose specification is available to the
+     general public, whose contents can be viewed and edited directly
+     and straightforwardly with generic text editors or (for images
+     composed of pixels) generic paint programs or (for drawings) some
+     widely available drawing editor, and that is suitable for input to
+     text formatters or for automatic translation to a variety of
+     formats suitable for input to text formatters.  A copy made in an
+     otherwise Transparent file format whose markup has been designed
+     to thwart or discourage subsequent modification by readers is not
+     Transparent.  A copy that is not "Transparent" is called "Opaque".
+
+     Examples of suitable formats for Transparent copies include plain
+     ASCII without markup, Texinfo input format, LaTeX input format,
+     SGML or XML using a publicly available DTD, and
+     standard-conforming simple HTML designed for human modification.
+     Opaque formats include PostScript, PDF, proprietary formats that
+     can be read and edited only by proprietary word processors, SGML
+     or XML for which the DTD and/or processing tools are not generally
+     available, and the machine-generated HTML produced by some word
+     processors for output purposes only.
+
+     The "Title Page" means, for a printed book, the title page itself,
+     plus such following pages as are needed to hold, legibly, the
+     material this License requires to appear in the title page.  For
+     works in formats which do not have any title page as such, "Title
+     Page" means the text near the most prominent appearance of the
+     work's title, preceding the beginning of the body of the text.
+
+  2. VERBATIM COPYING
+
+     You may copy and distribute the Document in any medium, either
+     commercially or noncommercially, provided that this License, the
+     copyright notices, and the license notice saying this License
+     applies to the Document are reproduced in all copies, and that you
+     add no other conditions whatsoever to those of this License.  You
+     may not use technical measures to obstruct or control the reading
+     or further copying of the copies you make or distribute.  However,
+     you may accept compensation in exchange for copies.  If you
+     distribute a large enough number of copies you must also follow
+     the conditions in section 3.
+
+     You may also lend copies, under the same conditions stated above,
+     and you may publicly display copies.
+
+  3. COPYING IN QUANTITY
+
+     If you publish printed copies of the Document numbering more than
+     100, and the Document's license notice requires Cover Texts, you
+     must enclose the copies in covers that carry, clearly and legibly,
+     all these Cover Texts: Front-Cover Texts on the front cover, and
+     Back-Cover Texts on the back cover.  Both covers must also clearly
+     and legibly identify you as the publisher of these copies.  The
+     front cover must present the full title with all words of the
+     title equally prominent and visible.  You may add other material
+     on the covers in addition.  Copying with changes limited to the
+     covers, as long as they preserve the title of the Document and
+     satisfy these conditions, can be treated as verbatim copying in
+     other respects.
+
+     If the required texts for either cover are too voluminous to fit
+     legibly, you should put the first ones listed (as many as fit
+     reasonably) on the actual cover, and continue the rest onto
+     adjacent pages.
+
+     If you publish or distribute Opaque copies of the Document
+     numbering more than 100, you must either include a
+     machine-readable Transparent copy along with each Opaque copy, or
+     state in or with each Opaque copy a publicly-accessible
+     computer-network location containing a complete Transparent copy
+     of the Document, free of added material, which the general
+     network-using public has access to download anonymously at no
+     charge using public-standard network protocols.  If you use the
+     latter option, you must take reasonably prudent steps, when you
+     begin distribution of Opaque copies in quantity, to ensure that
+     this Transparent copy will remain thus accessible at the stated
+     location until at least one year after the last time you
+     distribute an Opaque copy (directly or through your agents or
+     retailers) of that edition to the public.
+
+     It is requested, but not required, that you contact the authors of
+     the Document well before redistributing any large number of
+     copies, to give them a chance to provide you with an updated
+     version of the Document.
+
+  4. MODIFICATIONS
+
+     You may copy and distribute a Modified Version of the Document
+     under the conditions of sections 2 and 3 above, provided that you
+     release the Modified Version under precisely this License, with
+     the Modified Version filling the role of the Document, thus
+     licensing distribution and modification of the Modified Version to
+     whoever possesses a copy of it.  In addition, you must do these
+     things in the Modified Version:
+
+       A. Use in the Title Page (and on the covers, if any) a title
+          distinct from that of the Document, and from those of
+          previous versions (which should, if there were any, be listed
+          in the History section of the Document).  You may use the
+          same title as a previous version if the original publisher of
+          that version gives permission.
+
+       B. List on the Title Page, as authors, one or more persons or
+          entities responsible for authorship of the modifications in
+          the Modified Version, together with at least five of the
+          principal authors of the Document (all of its principal
+          authors, if it has less than five).
+
+       C. State on the Title page the name of the publisher of the
+          Modified Version, as the publisher.
+
+       D. Preserve all the copyright notices of the Document.
+
+       E. Add an appropriate copyright notice for your modifications
+          adjacent to the other copyright notices.
+
+       F. Include, immediately after the copyright notices, a license
+          notice giving the public permission to use the Modified
+          Version under the terms of this License, in the form shown in
+          the Addendum below.
+
+       G. Preserve in that license notice the full lists of Invariant
+          Sections and required Cover Texts given in the Document's
+          license notice.
+
+       H. Include an unaltered copy of this License.
+
+       I. Preserve the section entitled "History", and its title, and
+          add to it an item stating at least the title, year, new
+          authors, and publisher of the Modified Version as given on
+          the Title Page.  If there is no section entitled "History" in
+          the Document, create one stating the title, year, authors,
+          and publisher of the Document as given on its Title Page,
+          then add an item describing the Modified Version as stated in
+          the previous sentence.
+
+       J. Preserve the network location, if any, given in the Document
+          for public access to a Transparent copy of the Document, and
+          likewise the network locations given in the Document for
+          previous versions it was based on.  These may be placed in
+          the "History" section.  You may omit a network location for a
+          work that was published at least four years before the
+          Document itself, or if the original publisher of the version
+          it refers to gives permission.
+
+       K. In any section entitled "Acknowledgments" or "Dedications",
+          preserve the section's title, and preserve in the section all
+          the substance and tone of each of the contributor
+          acknowledgments and/or dedications given therein.
+
+       L. Preserve all the Invariant Sections of the Document,
+          unaltered in their text and in their titles.  Section numbers
+          or the equivalent are not considered part of the section
+          titles.
+
+       M. Delete any section entitled "Endorsements".  Such a section
+          may not be included in the Modified Version.
+
+       N. Do not retitle any existing section as "Endorsements" or to
+          conflict in title with any Invariant Section.
+
+     If the Modified Version includes new front-matter sections or
+     appendices that qualify as Secondary Sections and contain no
+     material copied from the Document, you may at your option
+     designate some or all of these sections as invariant.  To do this,
+     add their titles to the list of Invariant Sections in the Modified
+     Version's license notice.  These titles must be distinct from any
+     other section titles.
+
+     You may add a section entitled "Endorsements", provided it contains
+     nothing but endorsements of your Modified Version by various
+     parties--for example, statements of peer review or that the text
+     has been approved by an organization as the authoritative
+     definition of a standard.
+
+     You may add a passage of up to five words as a Front-Cover Text,
+     and a passage of up to 25 words as a Back-Cover Text, to the end
+     of the list of Cover Texts in the Modified Version.  Only one
+     passage of Front-Cover Text and one of Back-Cover Text may be
+     added by (or through arrangements made by) any one entity.  If the
+     Document already includes a cover text for the same cover,
+     previously added by you or by arrangement made by the same entity
+     you are acting on behalf of, you may not add another; but you may
+     replace the old one, on explicit permission from the previous
+     publisher that added the old one.
+
+     The author(s) and publisher(s) of the Document do not by this
+     License give permission to use their names for publicity for or to
+     assert or imply endorsement of any Modified Version.
+
+  5. COMBINING DOCUMENTS
+
+     You may combine the Document with other documents released under
+     this License, under the terms defined in section 4 above for
+     modified versions, provided that you include in the combination
+     all of the Invariant Sections of all of the original documents,
+     unmodified, and list them all as Invariant Sections of your
+     combined work in its license notice.
+
+     The combined work need only contain one copy of this License, and
+     multiple identical Invariant Sections may be replaced with a single
+     copy.  If there are multiple Invariant Sections with the same name
+     but different contents, make the title of each such section unique
+     by adding at the end of it, in parentheses, the name of the
+     original author or publisher of that section if known, or else a
+     unique number.  Make the same adjustment to the section titles in
+     the list of Invariant Sections in the license notice of the
+     combined work.
+
+     In the combination, you must combine any sections entitled
+     "History" in the various original documents, forming one section
+     entitled "History"; likewise combine any sections entitled
+     "Acknowledgments", and any sections entitled "Dedications".  You
+     must delete all sections entitled "Endorsements."
+
+  6. COLLECTIONS OF DOCUMENTS
+
+     You may make a collection consisting of the Document and other
+     documents released under this License, and replace the individual
+     copies of this License in the various documents with a single copy
+     that is included in the collection, provided that you follow the
+     rules of this License for verbatim copying of each of the
+     documents in all other respects.
+
+     You may extract a single document from such a collection, and
+     distribute it individually under this License, provided you insert
+     a copy of this License into the extracted document, and follow
+     this License in all other respects regarding verbatim copying of
+     that document.
+
+  7. AGGREGATION WITH INDEPENDENT WORKS
+
+     A compilation of the Document or its derivatives with other
+     separate and independent documents or works, in or on a volume of
+     a storage or distribution medium, does not as a whole count as a
+     Modified Version of the Document, provided no compilation
+     copyright is claimed for the compilation.  Such a compilation is
+     called an "aggregate", and this License does not apply to the
+     other self-contained works thus compiled with the Document, on
+     account of their being thus compiled, if they are not themselves
+     derivative works of the Document.
+
+     If the Cover Text requirement of section 3 is applicable to these
+     copies of the Document, then if the Document is less than one
+     quarter of the entire aggregate, the Document's Cover Texts may be
+     placed on covers that surround only the Document within the
+     aggregate.  Otherwise they must appear on covers around the whole
+     aggregate.
+
+  8. TRANSLATION
+
+     Translation is considered a kind of modification, so you may
+     distribute translations of the Document under the terms of section
+     4.  Replacing Invariant Sections with translations requires special
+     permission from their copyright holders, but you may include
+     translations of some or all Invariant Sections in addition to the
+     original versions of these Invariant Sections.  You may include a
+     translation of this License provided that you also include the
+     original English version of this License.  In case of a
+     disagreement between the translation and the original English
+     version of this License, the original English version will prevail.
+
+  9. TERMINATION
+
+     You may not copy, modify, sublicense, or distribute the Document
+     except as expressly provided for under this License.  Any other
+     attempt to copy, modify, sublicense or distribute the Document is
+     void, and will automatically terminate your rights under this
+     License.  However, parties who have received copies, or rights,
+     from you under this License will not have their licenses
+     terminated so long as such parties remain in full compliance.
+
+ 10. FUTURE REVISIONS OF THIS LICENSE
+
+     The Free Software Foundation may publish new, revised versions of
+     the GNU Free Documentation License from time to time.  Such new
+     versions will be similar in spirit to the present version, but may
+     differ in detail to address new problems or concerns.  See
+     `http://www.gnu.org/copyleft/'.
+
+     Each version of the License is given a distinguishing version
+     number.  If the Document specifies that a particular numbered
+     version of this License "or any later version" applies to it, you
+     have the option of following the terms and conditions either of
+     that specified version or of any later version that has been
+     published (not as a draft) by the Free Software Foundation.  If
+     the Document does not specify a version number of this License,
+     you may choose any version ever published (not as a draft) by the
+     Free Software Foundation.
+
+ADDENDUM: How to use this License for your documents
+----------------------------------------------------
+
+  To use this License in a document you have written, include a copy of
+the License in the document and put the following copyright and license
+notices just after the title page:
+
+       Copyright (C)  YEAR  YOUR NAME.
+       Permission is granted to copy, distribute and/or modify this document
+       under the terms of the GNU Free Documentation License, Version 1.1
+       or any later version published by the Free Software Foundation;
+       with the Invariant Sections being LIST THEIR TITLES, with the
+       Front-Cover Texts being LIST, and with the Back-Cover Texts being LIST.
+       A copy of the license is included in the section entitled ``GNU
+       Free Documentation License''.
+
+  If you have no Invariant Sections, write "with no Invariant Sections"
+instead of saying which ones are invariant.  If you have no Front-Cover
+Texts, write "no Front-Cover Texts" instead of "Front-Cover Texts being
+LIST"; likewise for Back-Cover Texts.
+
+  If your document contains nontrivial examples of program code, we
+recommend releasing these examples in parallel under your choice of
+free software license, such as the GNU General Public License, to
+permit their use in free software.
+@end verbatim
+@end ifnottex
+
+@node Index,  , Copying, Top
+@unnumbered Index
+
+@printindex cp
+
+@contents
+
+@bye

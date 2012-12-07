@@ -1,0 +1,555 @@
+.TH ginsh 1 "January, 2000" "GiNaC @VERSION@" "The GiNaC Group"
+.SH NAME
+ginsh \- GiNaC Interactive Shell
+.SH SYNPOSIS
+.B ginsh
+.RI [ file\&... ]
+.SH DESCRIPTION
+.B ginsh
+is an interactive frontend for the GiNaC symbolic computation framework.
+It is intended as a tool for testing and experimenting with GiNaC's
+features, not as a replacement for traditional interactive computer
+algebra systems. Although it can do many things these traditional systems
+can do, ginsh provides no programming constructs like loops or conditional
+expressions. If you need this functionality you are advised to write
+your program in C++, using the "native" GiNaC class framework.
+.SH USAGE
+.SS INPUT FORMAT
+After startup, ginsh displays a prompt ("> ") signifying that it is ready
+to accept your input. Acceptable input are numeric or symbolic expressions
+consisting of numbers (e.g.
+.BR 42 ", " 2/3 " or " 0.17 ),
+symbols (e.g.
+.BR x " or " result ),
+mathematical operators like
+.BR + " and  " * ,
+and functions (e.g.
+.BR sin " or " normal ).
+Every input expression must be terminated with either a semicolon
+.RB ( ; )
+or a colon
+.RB ( : ).
+If terminated with a semicolon, ginsh will evaluate the expression and print
+the result to stdout. If terminated with a colon, ginsh will only evaluate the
+expression but not print the result. It is possible to enter multiple
+expressions on one line. Whitespace (spaces, tabs, newlines) can be applied
+freely between tokens. To quit ginsh, enter
+.BR quit " or " exit ,
+or type an EOF (Ctrl-D) at the prompt.
+.SS COMMENTS
+Anything following a double slash
+.RB ( // )
+up to the end of the line, and all lines starting with a hash mark
+.RB ( # )
+are treated as a comment and ignored.
+.SS NUMBERS
+ginsh accepts numbers in the usual decimal notations. This includes arbitrary
+precision integers and rationals as well as floating point numbers in standard
+or scientific notation (e.g.
+.BR 1.2E6 ).
+The general rule is that if a number contains a decimal point
+.RB ( . ),
+it is an (inexact) floating point number; otherwise it is an (exact) integer or
+rational.
+Integers can be specified in binary, octal, hexadecimal or arbitrary (2-36) base
+by prefixing them with
+.BR #b ", " #o ", " #x ", or "
+.BI # n R
+, respectively.
+.SS SYMBOLS
+Symbols are made up of a string of alphanumeric characters and the underscore
+.RB ( _ ),
+with the first character being non-numeric. E.g.
+.BR a " and " mu_1
+are acceptable symbol names, while
+.B 2pi
+is not. It is possible to use symbols with the same names as functions (e.g.
+.BR sin );
+ginsh is able to distinguish between the two.
+.PP
+Symbols can be assigned values by entering
+.RS
+.IB symbol " = " expression ;
+.RE
+.PP
+To unassign the value of an assigned symbol, type
+.RS
+.BI unassign(' symbol ');
+.RE
+.PP
+Assigned symbols are automatically evaluated (= replaced by their assigned value)
+when they are used. To refer to the unevaluated symbol, put single quotes
+.RB ( ' )
+around the name, as demonstrated for the "unassign" command above.
+.PP
+Symbols are considered to be in the complex domain by default, i.e. they are
+treated as if they stand in for complex numbers. This behavior can be changed
+by using the keywords
+.BI real_symbols
+and 
+.BI complex_symbols
+and affects all newly created symbols.
+.PP
+The following symbols are pre-defined constants that cannot be assigned
+a value by the user:
+.RS
+.TP 8m
+.B Pi
+Archimedes' Constant
+.TP
+.B Catalan
+Catalan's Constant
+.TP
+.B Euler
+Euler-Mascheroni Constant
+.TP
+.B I
+sqrt(-1)
+.TP
+.B FAIL
+an object of the GiNaC "fail" class
+.RE
+.PP
+There is also the special
+.RS
+.B Digits
+.RE
+symbol that controls the numeric precision of calculations with inexact numbers.
+Assigning an integer value to digits will change the precision to the given
+number of decimal places.
+.SS WILDCARDS
+The has(), find(), match() and subs() functions accept wildcards as placeholders
+for expressions. These have the syntax
+.RS
+.BI $ number
+.RE
+for example $0, $1 etc.
+.SS LAST PRINTED EXPRESSIONS
+ginsh provides the three special symbols
+.RS
+%, %% and %%%
+.RE
+that refer to the last, second last, and third last printed expression, respectively.
+These are handy if you want to use the results of previous computations in a new
+expression.
+.SS OPERATORS
+ginsh provides the following operators, listed in falling order of precedence:
+.RS
+.TP 8m
+\" GINSH_OP_HELP_START
+.B !
+postfix factorial
+.TP
+.B ^
+powering
+.TP
+.B +
+unary plus
+.TP
+.B \-
+unary minus
+.TP
+.B *
+multiplication
+.TP
+.B /
+division
+.TP
+.B +
+addition
+.TP
+.B \-
+subtraction
+.TP
+.B <
+less than
+.TP
+.B >
+greater than
+.TP
+.B <=
+less or equal
+.TP
+.B >=
+greater or equal
+.TP
+.B ==
+equal
+.TP
+.B !=
+not equal
+.TP
+.B =
+symbol assignment
+\" GINSH_OP_HELP_END
+.RE
+.PP
+All binary operators are left-associative, with the exception of
+.BR ^ " and " =
+which are right-associative. The result of the assignment operator
+.RB ( = )
+is its right-hand side, so it's possible to assign multiple symbols in one
+expression (e.g.
+.BR "a = b = c = 2;" ).
+.SS LISTS
+Lists are used by the
+.B subs
+and
+.B lsolve
+functions. A list consists of an opening curly brace
+.RB ( { ),
+a (possibly empty) comma-separated sequence of expressions, and a closing curly
+brace
+.RB ( } ).
+.SS MATRICES
+A matrix consists of an opening square bracket
+.RB ( [ ),
+a non-empty comma-separated sequence of matrix rows, and a closing square bracket
+.RB ( ] ).
+Each matrix row consists of an opening square bracket
+.RB ( [ ),
+a non-empty comma-separated sequence of expressions, and a closing square bracket
+.RB ( ] ).
+If the rows of a matrix are not of the same length, the width of the matrix
+becomes that of the longest row and shorter rows are filled up at the end
+with elements of value zero.
+.SS FUNCTIONS
+A function call in ginsh has the form
+.RS
+.IB name ( arguments )
+.RE
+where
+.I arguments
+is a comma-separated sequence of expressions. ginsh provides a couple of built-in
+functions and also "imports" all symbolic functions defined by GiNaC and additional
+libraries. There is no way to define your own functions other than linking ginsh
+against a library that defines symbolic GiNaC functions.
+.PP
+ginsh provides Tab-completion on function names: if you type the first part of
+a function name, hitting Tab will complete the name if possible. If the part you
+typed is not unique, hitting Tab again will display a list of matching functions.
+Hitting Tab twice at the prompt will display the list of all available functions.
+.PP
+A list of the built-in functions follows. They nearly all work as the
+respective GiNaC methods of the same name, so I will not describe them in
+detail here. Please refer to the GiNaC documentation.
+.PP
+.RS
+\" GINSH_FCN_HELP_START
+.BI charpoly( matrix ", " symbol )
+\- characteristic polynomial of a matrix
+.br
+.BI coeff( expression ", " object ", " number )
+\- extracts coefficient of object^number from a polynomial
+.br
+.BI collect( expression ", " object-or-list )
+\- collects coefficients of like powers (result in recursive form)
+.br
+.BI collect_distributed( expression ", " list )
+\- collects coefficients of like powers (result in distributed form)
+.br
+.BI collect_common_factors( expression )
+\- collects common factors from the terms of sums
+.br
+.BI conjugate( expression )
+\- complex conjugation
+.br
+.BI content( expression ", " symbol )
+\- content part of a polynomial
+.br
+.BI decomp_rational( expression ", " symbol )
+\- decompose rational function into polynomial and proper rational function
+.br
+.BI degree( expression ", " object )
+\- degree of a polynomial
+.br
+.BI denom( expression )
+\- denominator of a rational function
+.br
+.BI determinant( matrix )
+\- determinant of a matrix
+.br
+.BI diag( expression... )
+\- constructs diagonal matrix
+.br
+.BI diff( expression ", " "symbol [" ", " number] )
+\- partial differentiation
+.br
+.BI divide( expression ", " expression )
+\- exact polynomial division
+.br
+.BI eval( "expression [" ", " level] )
+\- evaluates an expression, replacing symbols by their assigned value
+.br
+.BI evalf( "expression [" ", " level] )
+\- evaluates an expression to a floating point number
+.br
+.BI evalm( expression )
+\- evaluates sums, products and integer powers of matrices
+.br
+.BI expand( expression )
+\- expands an expression
+.br
+.BI factor( expression )
+\- factorizes an expression (univariate)
+.br
+.BI find( expression ", " pattern )
+\- returns a list of all occurrences of a pattern in an expression
+.br
+.BI fsolve( expression ", " symbol ", " number ", " number )
+\- numerically find root of a real-valued function within an interval
+.br
+.BI gcd( expression ", " expression )
+\- greatest common divisor
+.br
+.BI has( expression ", " pattern )
+\- returns "1" if the first expression contains the pattern as a subexpression, "0" otherwise
+.br
+.BI integer_content( expression )
+\- integer content of a polynomial
+.br
+.BI inverse( matrix )
+\- inverse of a matrix
+.br
+.BI is( relation )
+\- returns "1" if the relation is true, "0" otherwise (false or undecided)
+.br
+.BI lcm( expression ", " expression )
+\- least common multiple
+.br
+.BI lcoeff( expression ", " object )
+\- leading coefficient of a polynomial
+.br
+.BI ldegree( expression ", " object )
+\- low degree of a polynomial
+.br
+.BI lsolve( equation-list ", " symbol-list )
+\- solve system of linear equations
+.br
+.BI map( expression ", " pattern )
+\- apply function to each operand; the function to be applied is specified as a pattern with the "$0" wildcard standing for the operands
+.br
+.BI match( expression ", " pattern )
+\- check whether expression matches a pattern; returns a list of wildcard substitutions or "FAIL" if there is no match
+.br
+.BI nops( expression )
+\- number of operands in expression
+.br
+.BI normal( "expression [" ", " level] )
+\- rational function normalization
+.br
+.BI numer( expression )
+\- numerator of a rational function
+.br
+.BI numer_denom( expression )
+\- numerator and denumerator of a rational function as a list
+.br
+.BI op( expression ", " number )
+\- extract operand from expression
+.br
+.BI power( expr1 ", " expr2 )
+\- exponentiation (equivalent to writing expr1^expr2)
+.br
+.BI prem( expression ", " expression ", " symbol )
+\- pseudo-remainder of polynomials
+.br
+.BI primpart( expression ", " symbol )
+\- primitive part of a polynomial
+.br
+.BI quo( expression ", " expression ", " symbol )
+\- quotient of polynomials
+.br
+.BI rank( matrix )
+\- rank of a matrix
+.br
+.BI rem( expression ", " expression ", " symbol )
+\- remainder of polynomials
+.br
+.BI resultant( expression ", " expression ", " symbol )
+\- resultant of two polynomials with respect to symbol s
+.br
+.BI series( expression ", " relation-or-symbol ", " order )
+\- series expansion
+.br
+.BI sprem( expression ", " expression ", " symbol )
+\- sparse pseudo-remainder of polynomials
+.br
+.BI sqrfree( "expression [" ", " symbol-list] )
+\- square-free factorization of a polynomial
+.br
+.BI sqrt( expression )
+\- square root
+.br
+.BI subs( expression ", " relation-or-list )
+.br
+.BI subs( expression ", " look-for-list ", " replace-by-list )
+\- substitute subexpressions (you may use wildcards)
+.br
+.BI tcoeff( expression ", " object )
+\- trailing coefficient of a polynomial
+.br
+.BI time( expression )
+\- returns the time in seconds needed to evaluate the given expression
+.br
+.BI trace( matrix )
+\- trace of a matrix
+.br
+.BI transpose( matrix )
+\- transpose of a matrix
+.br
+.BI unassign( 'symbol' )
+\- unassign an assigned symbol (mind the quotes, please!)
+.br
+.BI unit( expression ", " symbol )
+\- unit part of a polynomial
+.br
+\" GINSH_FCN_HELP_END
+.RE
+.SS SPECIAL COMMANDS
+To exit ginsh, enter
+.RS
+.B quit
+.RE
+or
+.RS
+.B exit
+.RE
+.PP
+ginsh can display a (short) help for a given topic (mostly about functions
+and operators) by entering
+.RS
+.BI ? topic
+.RE
+Typing
+.RS
+.B ??
+.RE
+will display a list of available help topics.
+.PP
+The command
+.RS
+.BI print( expression );
+.RE
+will print a dump of GiNaC's internal representation for the given
+.IR expression .
+This is useful for debugging and for learning about GiNaC internals.
+.PP
+The command
+.RS
+.BI print_latex( expression );
+.RE
+prints a LaTeX representation of the given
+.IR expression .
+.PP
+The command
+.RS
+.BI print_csrc( expression );
+.RE
+prints the given
+.I expression
+in a way that can be used in a C or C++ program.
+.PP
+The command
+.RS
+.BI iprint( expression );
+.RE
+prints the given
+.I expression
+(which must evaluate to an integer) in decimal, octal, and hexadecimal representations.
+.PP
+Finally, the shell escape
+.RS
+.B !
+.RI [ "command  " [ arguments ]]
+.RE
+passes the given
+.I command
+and optionally
+.I arguments
+to the shell for execution. With this method, you can execute shell commands
+from within ginsh without having to quit.
+.SH EXAMPLES
+.nf
+> a = x^2\-x\-2;
+\-2\-x+x^2
+> b = (x+1)^2;
+(x+1)^2
+> s = a/b;
+(x+1)^(\-2)*(\-2\-x+x^2)
+> diff(s, x);
+(2*x\-1)*(x+1)^(\-2)\-2*(x+1)^(\-3)*(\-x+x^2\-2)
+> normal(s);
+(x\-2)*(x+1)^(\-1)
+> x = 3^50;
+717897987691852588770249
+> s;
+717897987691852588770247/717897987691852588770250
+> Digits = 40;
+40
+> evalf(s);
+0.999999999999999999999995821133292704384960990679
+> unassign('x');
+x
+> s;
+(x+1)^(\-2)*(\-x+x^2\-2)
+> series(sin(x),x==0,6);
+1*x+(\-1/6)*x^3+1/120*x^5+Order(x^6)
+> lsolve({3*x+5*y == 7}, {x, y});
+{x==\-5/3*y+7/3,y==y}
+> lsolve({3*x+5*y == 7, \-2*x+10*y == \-5}, {x, y});
+{x==19/8,y==\-1/40}
+> M = [ [a, b], [c, d] ];
+[[\-x+x^2\-2,(x+1)^2],[c,d]]
+> determinant(M);
+\-2*d\-2*x*c\-x^2*c\-x*d+x^2*d\-c
+> collect(%, x);
+(\-d\-2*c)*x+(d\-c)*x^2\-2*d\-c
+> solve quantum field theory;
+parse error at quantum
+> quit
+.fi
+.SH DIAGNOSTICS
+.TP
+.RI "parse error at " foo
+You entered something which ginsh was unable to parse. Please check the syntax
+of your input and try again.
+.TP
+.RI "argument " num " to " function " must be a " type
+The argument number
+.I num
+to the given
+.I function
+must be of a certain type (e.g. a symbol, or a list). The first argument has
+number 0, the second argument number 1, etc.
+.SH AUTHOR
+.TP
+The GiNaC Group:
+.br
+Christian Bauer <Christian.Bauer@uni-mainz.de>
+.br
+Alexander Frink <Alexander.Frink@uni-mainz.de>
+.br
+Richard Kreckel <Richard.Kreckel@uni-mainz.de>
+.br
+Jens Vollinga <vollinga@thep.physik.uni-mainz.de>
+.SH SEE ALSO
+GiNaC Tutorial \- An open framework for symbolic computation within the
+C++ programming language
+.PP
+CLN \- A Class Library for Numbers, Bruno Haible
+.SH COPYRIGHT
+Copyright \(co 1999-2011 Johannes Gutenberg Universit\(:at Mainz, Germany
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.

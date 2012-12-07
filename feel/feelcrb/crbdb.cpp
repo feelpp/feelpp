@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2011-06-15
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file crbdb.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-06-15
  */
 #include <boost/archive/text_oarchive.hpp>
@@ -54,9 +54,10 @@ CRBDB::CRBDB( std::string prefixdir,
     M_vm( vm ),
     M_isloaded( false )
 {
-    //std::cout << prefixdir << "," << name << "\n";
+    LOG(INFO) << prefixdir << "," << name << "\n";
+
     this->setDBFilename( ( boost::format( "%1%.crbdb" ) % dbprefix ).str() );
-    //std::cout << "database name " << dbFilename() << "\n";
+    LOG(INFO) << "database name " << dbFilename() << "\n";
 
 
 }
@@ -93,10 +94,24 @@ CRBDB::dbSystemPath() const
 fs::path
 CRBDB::dbLocalPath() const
 {
+
+    int proc_number =  Environment::worldComm().globalRank();
+    int nb_proc = Environment::worldComm().globalSize();
+    std::string suf;
+    if( M_vm.count( "database_name" ) )
+        {
+            std::string database_name = M_vm["database_name"].as<std::string>();
+            suf = database_name+ ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
+        }
+    else if ( M_vm.count( "hsize" ) )
+        {
+            suf = ( boost::format( "h_%1$.2e_proc%2%on%3%/" ) % M_vm["hsize"].as<double>() %proc_number %nb_proc ).str();
+        }
     // generate the local repository db path
-    std::string localpath = ( boost::format( "%1%/db/crb/%2%/" )
+    std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
                               % Feel::Environment::rootRepository()
-                              % M_prefixdir ).str();
+                              % M_prefixdir
+                              % suf ).str();
     fs::path rep_path = localpath;
     fs::create_directories( rep_path );
 

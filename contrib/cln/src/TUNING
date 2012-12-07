@@ -1,0 +1,52 @@
+Tips for performance tuning on a specific architecture:
+
+1a. Choose the optimal digit size (intDsize). This is fundamental. On 32-bit
+    platforms intDsize=32 is best. On 64-bit platforms intDsize=64 may be
+    better, especially if there is a 64x64-bit multiplication in hardware.
+
+1b. Alternatively, tune GMP. When GMP is used, CLN's digit size (intDsize) has
+    to match GMP's limb size (sizeof(mp_limb_t)). There is nothing to do at the
+    CLN side: The configure script will take care of intDsize automatically.
+
+2.  The break-even points between several algorithms for the same task
+    have to be determined experimentally, in the order given below:
+
+    multiplication:
+      cl_DS_mul.cc          karatsuba_threshold
+      cl_DS_mul.cc          function cl_fftm_suitable
+    division:
+      cl_DS_div.cc          function cl_recip_suitable
+    2-adic reciprocal:
+      cl_2DS_recip.cc       recip2adic_threshold
+    2-adic division:
+      cl_2DS_div.cc         function cl_recip_suitable
+    square root:
+      cl_DS_sqrt.cc         function cl_recipsqrt_suitable
+      cl_LF_sqrt.cc         "if (len > ...)"
+    gcd:
+      cl_I_gcd.cc           cl_gcd_double_threshold
+    binary->decimal conversion:
+      cl_I_to_digits.cc     cl_digits_div_threshold
+    pi:
+      cl_LF_pi.cc           best of 4 algorithms
+    exp, log:
+      cl_F_expx.cc          factor limit_slope of isqrt(d)
+      cl_R_exp.cc           inside function exp
+      cl_R_ln.cc            inside function ln
+    eulerconst:
+      cl_LF_eulerconst.cc   function compute_eulerconst
+    sin, cos, sinh, cosh:
+      cl_F_sinx.cc          factor limit_slope of isqrt(d)
+      cl_R_sin.cc           inside function sin
+      cl_R_cos.cc           inside function cos
+      cl_R_cossin.cc        inside function cl_cos_sin
+      cl_F_sinhx.cc         factor limit_slope of isqrt(d)
+      cl_R_sinh.cc          inside function sinh
+      cl_R_cosh.cc          inside function cosh
+      cl_R_coshsinh.cc      inside function cl_cosh_sinh
+      cl_F_atanx.cc         factor limit_slope of isqrt(d)
+      cl_F_atanx.cc         inside function atanx
+      cl_F_atanhx.cc        factor limit_slope of isqrt(d)
+      cl_F_atanhx.cc        inside function atanhx
+
+

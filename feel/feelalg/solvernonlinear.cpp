@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-04-17
 
   Copyright (C) 2008-2012 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file solvernonlinear.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-04-17
  */
 #include <feel/feelcore/feel.hpp>
@@ -51,7 +51,11 @@ SolverNonLinear<T>::SolverNonLinear (WorldComm const& worldComm)
     M_relativeResidualTol( 0 ),
     M_absoluteResidualTol( 0 ),
     M_absoluteSolutionTol( 0 ),
-    M_nbItMax( 0 )
+    M_nbItMax( 0 ),
+    M_reuse_jac( 0 ),
+    M_reuse_prec( 0 ),
+    M_showKSPMonitor(false), M_showSNESMonitor(false),
+    M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false )
 {
 }
 
@@ -73,7 +77,12 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     M_relativeResidualTol( snl.M_relativeResidualTol ),
     M_absoluteResidualTol( snl.M_absoluteResidualTol ),
     M_absoluteSolutionTol( snl.M_absoluteSolutionTol ),
-    M_nbItMax( snl.M_nbItMax )
+    M_nbItMax( snl.M_nbItMax ),
+    M_reuse_jac( snl.M_reuse_jac ),
+    M_reuse_prec( snl.M_reuse_prec ),
+    M_showKSPMonitor( snl.M_showKSPMonitor ),
+    M_showSNESMonitor( snl.M_showSNESMonitor ),
+    M_showKSPConvergedReason( snl.M_showKSPConvergedReason ), M_showSNESConvergedReason( snl.M_showSNESConvergedReason )
 {
 }
 
@@ -107,8 +116,8 @@ SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefi
 
     else
     {
-        Log() << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
-        Log() << "[Backend] use fallback  gmm\n";
+        LOG(INFO) << "[SolverNonLinear] solver " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG(INFO) << "[Backend] use fallback  gmm\n";
 #if defined( FEELPP_HAS_PETSC )
         solver_package = SOLVERS_PETSC;
 #endif
@@ -157,8 +166,8 @@ SolverNonLinear<T>::build( SolverPackage solver_package, WorldComm const& worldC
 
     if ( solver_package != SOLVERS_PETSC )
     {
-        Log() << "[SolverNonLinear] solver " << solver_package << " not available\n";
-        Log() << "[Backend] use fallback  petsc: " << SOLVERS_PETSC << "\n";
+        LOG(INFO) << "[SolverNonLinear] solver " << solver_package << " not available\n";
+        LOG(INFO) << "[Backend] use fallback  petsc: " << SOLVERS_PETSC << "\n";
         solver_package = SOLVERS_PETSC;
     }
 

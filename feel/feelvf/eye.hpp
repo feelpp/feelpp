@@ -2,10 +2,10 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-04-11
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 */
 /**
    \file eye.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-04-11
  */
 #ifndef __Eye_H
@@ -135,9 +135,9 @@ public:
         typedef this_type expression_type;
         typedef typename expression_type::value_type value_type;
         typedef value_type return_value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -254,10 +254,10 @@ private:
  */
 template<int M, int N>
 inline
-Expr<detail::Eye<M,N> >
+Expr<vf::detail::Eye<M,N> >
 eye()
 {
-    return Expr< detail::Eye<M,N> >(  detail::Eye<M, N>() );
+    return Expr< vf::detail::Eye<M,N> >(  vf::detail::Eye<M, N>() );
 }
 } // vf
 } // Feel

@@ -35,7 +35,7 @@
 
 namespace Feel
 {
-template<class DomainSpace, class DualImageSpace> class Projector;
+    template<class DomainSpace, class DualImageSpace> class Projector;
 
 namespace detail
 {
@@ -139,6 +139,7 @@ public :
         applyOn( range, expr, mpl::int_<idim_type::value>() );
     }
 
+
     BOOST_PARAMETER_MEMBER_FUNCTION( ( domain_element_type ),
                                      project,
                                      tag,
@@ -155,13 +156,13 @@ public :
     {
         using namespace vf;
 
-        de = this->domainSpace()->element();
+        auto sol = this->domainSpace()->element();
 
         ie = M_backend->newVector( this->dualImageSpace() );
 
         form1( _test=this->dualImageSpace(), _vector=ie, _init=true );
 
-        if ( M_proj_type != LIFT )
+        if ( (M_proj_type != LIFT) )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
                 integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ),
@@ -208,9 +209,9 @@ public :
         if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG )  )
             this->applyOn(range, expr);
 
-        M_backend->solve( M_matrixFull, de, ie );
+        M_backend->solve( M_matrixFull, sol, ie );
 
-        return de;
+        return sol;
     }
 
     template<typename RhsExpr>
@@ -262,6 +263,30 @@ public :
     {
         de=this->project( rhs_expr );
     }
+
+
+    template< typename Expr>
+    domain_element_type derivate( Expr expr )
+    {
+        de = this->domainSpace()->element();
+        ie = M_backend->newVector( this->dualImageSpace() );
+
+        form1( _test=this->dualImageSpace(), _vector=ie, _init=true );
+
+        form1( _test=this->dualImageSpace(), _vector=ie ) +=
+            integrate(_range = elements( this->domainSpace()->mesh() ),
+                      _expr = - trace( expr * trans( grad( this->dualImageSpace()->element() ) ) ) );
+
+        form1(_test=this->dualImageSpace(), _vector=ie) +=
+            integrate(_range = boundaryfaces( this->domainSpace()->mesh() ),
+                      _expr =  trans( id( this->dualImageSpace()->element() ) ) * expr * vf::N() );
+
+        ie->close();
+
+        M_backend->solve( M_matrix, de, ie );
+        return de;
+    }
+
 
     //@}
 
@@ -355,6 +380,8 @@ private :
 
         }
         break;
+        case NODAL:
+            break;
         }
 
         M_matrix->close();
@@ -371,11 +398,10 @@ private :
                 _matrix=M_matrixFull ) +=  on( _range=range , _element=de, _rhs=ie, _expr=expr );
     }
 
-
     backend_ptrtype M_backend;
     const double M_epsilon;
     const double M_gamma;
-    ProjectorType M_proj_type;
+    const ProjectorType M_proj_type;
     DirichletType M_dir;
     matrix_ptrtype M_matrix;
     matrix_ptrtype M_matrixFull;
@@ -398,14 +424,14 @@ boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            boost::shared_ptr<TDualImageSpace> const& imagespace,
            typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ),
-           ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK )
+           ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK)
 {
-    typedef Projector<TDomainSpace, TDualImageSpace> Proj_type;
+    typedef Projector<TDomainSpace, TDualImageSpace > Proj_type;
     boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, epsilon, gamma, dirichlet_type ) );
     return proj;
 }
 
-BOOST_PARAMETER_FUNCTION( ( typename detail::projector_args<Args>::return_type ),
+BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_type ),
                           opProjection,
                           tag,
                           ( required
@@ -421,7 +447,7 @@ BOOST_PARAMETER_FUNCTION( ( typename detail::projector_args<Args>::return_type )
     return projector( domainSpace,imageSpace, backend, type, 0.01, penaldir );
 }
 
-BOOST_PARAMETER_FUNCTION( ( typename detail::lift_args<Args>::lift_return_type ),
+BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::lift_args<Args>::lift_return_type ),
                           opLift,
                           tag,
                           ( required

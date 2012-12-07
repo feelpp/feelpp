@@ -1,7 +1,7 @@
 /*
   This file is part of the Feel library.
 
-  Author: Christophe Prud'homme (christophe.prudhomme@ujf-grenoble.fr)
+  Author: Christophe Prud'homme (christophe.prudhomme@feelpp.org)
 
   Copyright (C) 2009 Université de Grenoble 1
   Copyright (C) 2004 EPFL
@@ -55,7 +55,7 @@ namespace posix_time = boost::posix_time;
   *\ingroup Core
   *\brief Area debugging tool
 
-  \c Debug() provides a debug stream to which you can pass a number, say 100, associated
+  \c VLOG(1) provides a debug stream to which you can pass a number, say 100, associated
   to an area of the code, say a class \c A.  In the implementation of the class \c A, you use
   debug statement like
 
@@ -78,7 +78,7 @@ namespace posix_time = boost::posix_time;
    With this tool you can select the area you want to debug explicitly while keeping the
    others hidden.
 
-  @author Christophe Prud'homme (christophe.prudhomme@ujf-grenoble.fr)
+  @author Christophe Prud'homme (christophe.prudhomme@feelpp.org)
 */
 enum DebugLevels
 {

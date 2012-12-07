@@ -1,0 +1,12 @@
+Files in this directory
+=======================
+
+Makefile.in             master Makefile, instantiated by running "configure"
+
+exam*                   test result for specific input (like a pupils' exam)
+
+test*                   test coherence of results among each other,
+                        for random input
+
+main.cc                 playing around
+

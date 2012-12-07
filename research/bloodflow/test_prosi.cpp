@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-02-16
 
   Copyright (C) 2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file main.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-02-16
  */
 #include <map>
@@ -81,7 +81,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2006 EPFL" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Martin Prosi", "developer", "martin.prosi@mate.polimi.it", "" );
     return about;
 
@@ -192,13 +192,13 @@ public:
 
         setFunctionSpaces();
 
-        Debug() << "time elapsed in TwoDomainsMTApp::setFunctionSpaces() : " << t1.elapsed() << "\n";
+        VLOG(1) << "time elapsed in TwoDomainsMTApp::setFunctionSpaces() : " << t1.elapsed() << "\n";
         t1.restart();
 
         solveSystem();
-        Debug() << "time elapsed in TwoDomainsMTApp::solveSystem() : " << t1.elapsed() << "\n";
+        VLOG(1) << "time elapsed in TwoDomainsMTApp::solveSystem() : " << t1.elapsed() << "\n";
 
-        Debug() << "time elapsed in TwoDomainsMTApp::run() : " << t.elapsed() << "\n";
+        VLOG(1) << "time elapsed in TwoDomainsMTApp::run() : " << t.elapsed() << "\n";
     }
 
 private:
@@ -227,12 +227,12 @@ TwoDomainsMTApp::setFunctionSpaces()
 
     // lumen concentration
     Ch_lumen = concentration_space_type::New( _M_mesh_c );
-    Debug() << "creating concentration lumen space done\n"
+    VLOG(1) << "creating concentration lumen space done\n"
             << " - dimension = " << Ch_lumen->nDof() << "\n";
 
     // wall concentration
     Ch_wall = concentration_space_type::New( _M_mesh_c );
-    Debug() << "creating concentration wall space done\n"
+    VLOG(1) << "creating concentration wall space done\n"
             << " - dimension = " << Ch_wall->nDof() << "\n";
 
     // lumen fluid
@@ -244,7 +244,7 @@ TwoDomainsMTApp::setFunctionSpaces()
                               _M_mesh_c->endElementWithMarker( LUMEN  ) );
     Uh_lumen = velocity_lumen_space_type::New( _M_mesh_u_lumen );
     Ph_lumen = pressure_space_type::New( _M_mesh_u_lumen );
-    Debug() << "creating velocity/pressurelumen space done\n"
+    VLOG(1) << "creating velocity/pressurelumen space done\n"
             << " - dimension Uh_lumen = " << Uh_lumen->nDof() << "\n"
             << " - dimension Ph_lumen = " << Ph_lumen->nDof() << "\n";
 
@@ -257,7 +257,7 @@ TwoDomainsMTApp::setFunctionSpaces()
                               _M_mesh_c->endElementWithMarker( WALL  ) );
     Uh_wall = velocity_wall_space_type::New( _M_mesh_u_wall );
     Ph_wall = pressure_space_type::New( _M_mesh_u_wall );
-    Debug() << "creating velocity/pressure wall space done\n"
+    VLOG(1) << "creating velocity/pressure wall space done\n"
             << " - dimension Uh_wall = " << Uh_wall->nDof() << "\n"
             << " - dimension Ph_wall = " << Ph_wall->nDof() << "\n";
 
@@ -340,7 +340,7 @@ TwoDomainsMTApp::concentrationStep( value_type dt,
             c_l( i ) = C_l( i );
         }
 
-        //Debug() << "[timer] solver time : " << timer.elapsed() << "\n";
+        //VLOG(1) << "[timer] solver time : " << timer.elapsed() << "\n";
 
         alpha_w = - c_map["P_w"] / ( porosity * D_w ) - ublas::scalar_vector<value_type>( c_w.size(), Klag*u_filt/D_w );
         beta_w = ublas::element_prod( c_map["P_w"], c_l ) / D_w;
@@ -490,7 +490,7 @@ int main( int argc,  char** argv )
     ;
 
     TwoDomainsMTApp app( argc, argv, makeAbout(), test );
-    Debug() << "N process: " << Application::nProcess() << "\n"
+    VLOG(1) << "N process: " << Application::nProcess() << "\n"
             << "Id : " << Application::processId() << "\n";
 
     app.run();

@@ -1,0 +1,27 @@
+SUBCLASS_cl_...
+
+
+cl_MI_export.h:class cl_heap_modint_ring : public cl_heap {
+cl_hash.h:struct cl_heap_hashtable : public cl_heap {
+cl_hash1.h:struct cl_heap_hashtable_1 : public cl_heap_hashtable <cl_htentry1 <key1_type,value_type> > {
+cl_hash1weak.h:struct cl_heap_weak_hashtable_1 : public cl_heap_hashtable_1 <key1_type,value_type> {
+cl_hash2.h:struct cl_heap_hashtable_2 : public cl_heap_hashtable <cl_htentry2 <key1_type,key2_type,value_type> > {
+cl_hashset.h:struct cl_heap_hashtable_set : public cl_heap_hashtable <cl_htsetentry <key1_type> > {
+cl_hashuniq.h:struct cl_heap_hashtable_uniq : public cl_heap_hashtable <cl_htuniqentry <key1_type,value_type> > {
+cl_hashuniqweak.h:struct cl_heap_weak_hashtable_uniq : public cl_heap_hashtable_uniq <key1_type,value_type> {
+cl_string.h:struct cl_heap_string : public cl_heap {
+cl_V_I.cc:struct cl_heap_V_I_general : public cl_heap_V_I {
+cl_C.h:struct cl_heap_complex : cl_heap {
+cl_DF.h:struct cl_heap_dfloat : cl_heap {
+cl_FF.h:struct cl_heap_ffloat : cl_heap {
+cl_I.h:struct cl_heap_bignum : cl_heap {
+cl_LF.h:struct cl_heap_lfloat : cl_heap {
+cl_RA.h:struct cl_heap_ratio : cl_heap {
+cl_V_I.h:struct cl_heap_V_I : cl_heap {
+
+cl_C.h: cl_heap_complex* p = (cl_heap_complex*) cl_malloc_hook(sizeof(cl_heap_complex));
+cl_DF.h:        cl_heap_dfloat* p = (cl_heap_dfloat*) cl_malloc_hook(sizeof(cl_heap_dfloat));
+cl_DF.h:        cl_heap_dfloat* p = (cl_heap_dfloat*) cl_malloc_hook(sizeof(cl_heap_dfloat));
+cl_FF.h:        cl_heap_ffloat* p = (cl_heap_ffloat*) cl_malloc_hook(sizeof(cl_heap_ffloat));
+cl_RA.h:        cl_heap_ratio* p = (cl_heap_ratio*) cl_malloc_hook(sizeof(cl_heap_ratio));
+cl_V_I.cc:      var cl_heap_V_I_general* hv = (cl_heap_V_I_general*) cl_malloc_hook(offsetofa(cl_heap_V_I_general,data)+sizeof(cl_I)*len);
