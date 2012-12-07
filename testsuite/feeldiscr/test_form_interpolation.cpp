@@ -31,10 +31,7 @@
 // give a name to the testsuite
 #define BOOST_TEST_MODULE form_interpolation testsuite
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 
@@ -124,14 +121,14 @@ void run( Application_ptrtype & theApp )
     Omega.setMarker( _type="line",_name="Sortie",_marker2=true );
     Omega.setMarker( _type="line",_name="Paroi",_marker1=true,_marker3=true );
     Omega.setMarker( _type="surface",_name="Fluid",_markerAll=true );
-    auto mesh = Omega.createMesh<mesh_type>( "omega_"+ mesh_type::shape_type::name() );
+    auto mesh = Omega.createMesh(_mesh=new mesh_type,_name="omega_"+ mesh_type::shape_type::name() );
 
     GeoTool::Rectangle OmegaBis( meshSizeBis,"Omega",x1,x2 );
     OmegaBis.setMarker( _type="line",_name="Entree",_marker4=true );
     OmegaBis.setMarker( _type="line",_name="Sortie",_marker2=true );
     OmegaBis.setMarker( _type="line",_name="Paroi",_marker1=true,_marker3=true );
     OmegaBis.setMarker( _type="surface",_name="Fluid",_markerAll=true );
-    auto meshBis = OmegaBis.createMesh<mesh_bis_type>( "omegaBis_"+ mesh_type::shape_type::name() );
+    auto meshBis = OmegaBis.createMesh(_mesh=new mesh_bis_type,_name="omegaBis_"+ mesh_type::shape_type::name() );
 
     //auto meshBis= mesh->createP1mesh();
 
@@ -274,16 +271,16 @@ void run( Application_ptrtype & theApp )
 
 #if USE_BOOST_TEST
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_form_interpolation::makeAbout(),
+                                 test_form_interpolation::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( form_interpolation )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( form_interpolation )
 {
-    auto theApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                       boost::unit_test::framework::master_test_suite().argv,
-                                       test_form_interpolation::makeAbout(),
-                                       test_form_interpolation::makeOptions() ) );
+
+    auto theApp = Application_ptrtype( new Application_type );
+
 
     test_form_interpolation::run<2>( theApp );
 }
@@ -297,9 +294,7 @@ main( int argc, char** argv )
 
     Feel::Environment env( argc, argv );
 
-    auto theApp = Application_ptrtype( new Application_type( argc,argv,
-                                       test_form_interpolation::makeAbout(),
-                                       test_form_interpolation::makeOptions() ) );
+    auto theApp = Application_ptrtype( new Application_type );
 
     if ( theApp->vm().count( "help" ) )
     {

@@ -1,0 +1,26 @@
+/* CLN version information */
+
+#ifndef _CL_VERSION_H
+#define _CL_VERSION_H
+
+/* CLN release number */
+#undef CL_VERSION
+
+/* Major version number of CLN */
+#undef CL_VERSION_MAJOR
+
+/* Minor version number of CLN */
+#undef CL_VERSION_MINOR
+
+/* Patchlevel version number of CLN */
+#undef CL_VERSION_PATCHLEVEL
+
+namespace cln {
+
+extern const int version_major;
+extern const int version_minor;
+extern const int version_patchlevel;
+
+}  // namespace cln
+
+#endif  /* _CL_VERSION_H */

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-06-20
 
   Copyright (C) 2012 Universit� Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file vectoreigen.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-06-20
  */
 #ifndef __VectorEigen_H
@@ -728,6 +728,11 @@ public:
                                   const size_type proc_id = 0 ) const;
 
 
+    value_type dot( Vector<T> const& __v )
+    {
+        throw std::logic_error( "[vetor eigen] ERROR dot function not yet implemented" );
+        return 0;
+    }
     //@}
 
 

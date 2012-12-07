@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-04
 
   Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file solvereigen.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-04
  */
 #ifndef __SolverEigen_H
@@ -491,10 +491,10 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
     eigen->setSpectralTransform( transform );
     eigen->setTolerance( tolerance );
 
-    Log() << "number of eigen values = " << nev << "\n";
-    Log() << "number of eigen values converged = " << ncv << "\n";
-    Log() << "number of eigen value solver iterations = " << maxit << "\n";
-    Log() << "eigenvalue tolerance = " << tolerance << "\n";
+    LOG(INFO) << "number of eigen values = " << nev << "\n";
+    LOG(INFO) << "number of eigen values converged = " << ncv << "\n";
+    LOG(INFO) << "number of eigen value solver iterations = " << maxit << "\n";
+    LOG(INFO) << "eigenvalue tolerance = " << tolerance << "\n";
 
     unsigned int nconv, nits;
     std::vector<double> err( ncv );

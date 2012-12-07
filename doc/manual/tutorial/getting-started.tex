@@ -10,7 +10,7 @@
 
 \marginpar{\lstinline!myapp.cpp!}
 
-\subsection{Application and Options}
+\subsection{Environment, Application and Options}
 \label{sec:options}
 
 As a \feel user, the first step in order to use \feel is to create an
@@ -28,75 +28,78 @@ Next to ease the programming and reading, we use the \lstinline!using!
   using namespace Feel;
 \end{lstlisting}
 
-Then we define the command line options that the applications will
-provide. Note that on the \lstinline!return! line, we incorporate the
-options defined internally in \feel.
+The next step is to create a \lstinline!main()! function and to initialize the
+\feel runtime \lstinline!Environment!, we then instantiate our
+\lstinline!Application!  and \lstinline!run! it.
+
+
+\lstinputlisting[linerange=marker7-endmarker7]{tutorial/myapp.cpp}
+
+The \lstinline!Environment! class is responsible for:
+\begin{itemize}
+\item parsing the command line options in \lstinline!argv! and providing them
+  through a dictionary;
+\item setting general information about the application such as the name of the
+  Application or its authors;
+\item initializing the runtime environment for \feel namely MPI, PETSc and SLEPc.
+\end{itemize}
+
+We pass to \lstinline!Environment! the command line options descriptions with
+\lstinline!makeOptions!.
 
 \lstinputlisting[linerange=marker2-endmarker2]{tutorial/myapp.cpp}
 
-In the example, we provide the options \lstinline!dt! which takes an
-argument, a \lstinline!double! and its default value is \lstinline!1!
-if the options is not set by the command line. Then we describe the application by defining a class
-\lstinline!AboutData! which will be typically used by the
-\lstinline!help! command line options to describe the application
 
+In the example, we provide the options \lstinline!dt! which takes an argument, a
+\lstinline!double! and its default value is \lstinline!1!  if the options is not
+set by the command line. Note that on the \lstinline!return! line, we
+incorporate the options defined internally in \feel.
 
-\lstinputlisting[linerange=marker3-endmarker3]{tutorial/myapp.cpp}
+We then pass some general information to the Environment object through the
+\lstinline!\_about! argument.
 
 
 Now we turn to the class \lstinline!MyApp! itself: it derives from
-\lstinline!Feel::Application!. This class provides two constructors : one with only description and one with additionnal parameters which enables to add options
-\lstinline!argc! and \lstinline!argv!.
-%and the \lstinline!AboutData! as well as possibly the description of the command line options \lstinline!Feel::po::option_description!.
-This class \lstinline!MyApp! has to redefine the \lstinline!run()! method. It is defined as a pure virtual function in \lstinline!Application!.
+\lstinline!Feel::Application!. This class \lstinline!MyApp! has to redefine the
+\lstinline!run()! method. It is defined as a pure virtual function in
+\lstinline!Application!.
 
 
 \lstinputlisting[linerange=marker4-endmarker4]{tutorial/myapp.cpp}
 
-The implementation of the constructors is usually simple, we pass the
-arguments to the super class \lstinline!Application! that will analyze
-them and subsequently provide them with a
-\lstinline!Feel::po::variable_map! data structure which operates like
-a \lstinline!map!. Have a look at the document \lstinline!boost::program_options!\footnote{\url{http://www.boost.org/doc/html/program_options.html}} for further details. Here our two constructors do nothing ( because $\{ \}$).
-
-\lstinputlisting[linerange=marker5-endmarker5]{tutorial/myapp.cpp}
-
-The \lstinline!run()! member function holds the application
-commands/statements. Here we provide the smallest code unit: we print
-the description of the application if the \lstinline!--help! command
-line options is set.
+The implementation of the constructors is usually simple, we pass the arguments
+to the super class \lstinline!Application! that will analyze them and
+subsequently provide them with a \lstinline!Feel::po::variable_map! data
+structure which operates like a \lstinline!map!. Have a look at the document
+\lstinline!boost::program_options!\footnote{\url{http://www.boost.org/doc/html/program_options.html}}
+for further details. The \lstinline!run()! member function holds the application
+commands/statements:
+\begin{itemize}
+\item first we change from the current directory to the \feel repository in
+  \verb!$HOME!, see \ref{sec:appl-logg-arch};
+\item then we print in the logfile some information from the command line option.
+\end{itemize}
 
 \lstinputlisting[linerange=marker6-endmarker6]{tutorial/myapp.cpp}
 
-Finally the \lstinline!main()! function can be implemented. We pass
-the results of the \lstinline!makeAbout()! and
-\lstinline!makeOptions()! to the constructor of \lstinline!MyApp! as
-well as \lstinline!argc! and \lstinline!argv!. Then we call the
-\lstinline!run()! member function to execute the application.
-
-\lstinputlisting[linerange=marker7-endmarker7]{tutorial/myapp.cpp}
 
 Now, you can check if your first \feel application is working. To compile \lstinline!myapp!, type in a command-line :
 \begin{unixcom}
-		cd feel.opt/doc/manual
-		make feel_doc_myapp
+		cd feel.opt/doc/manual/tutorial
+		make feelpp_doc_myapp
 \end{unixcom}
 
-You are now able to execute it (obviously here \verb|./feel_doc_myapp| won't produce anything but you can try it to check the execution is ok)
+You are now able to execute it (obviously here \verb|./feelpp_doc_myapp| won't produce anything but you can try it to check the execution is ok)
 
 \begin{lstlisting}[language=sh]
-> ./feel_doc_myapp --help
+> ./feelpp_doc_myapp --help
 myapp: my first Feel application
 Allowed options:
 
 MyApp options:
   --dt arg (=1)                              time step value
 
->./feel_doc_myapp --authors
-myapp: my first Feel application
-          Author Name       Task                          Email Address
------------------------------------------------------------------------
-Christophe Prud'homme   developer  christophe.prudhomme@ujf-grenoble.fr
+<...some other Feel++ options...>
 \end{lstlisting}
 
 \subsection{Application, Logging, Archiving, Configuring}
@@ -110,14 +113,13 @@ example the following code
 
 \lstinputlisting[linerange=marker8-endmarker8]{tutorial/myapp.cpp}
 
-will create the directory \lstinline!~/feel/doc/tutorial/! and will store the
-logfile and any files created after calling
+will create the directory \lstinline!~/feel/doc/manual/tutorial/! and will store
+ any files created after calling
 \lstinline!changeRepository!. Refer to the documentation of
 \lstinline!Boost::format! of further details about the arguments to be
 passed to \lstinline!changeRepository!. The logfile is named
-\lstinline!~/feel/doc/tutorial/myapp-1.0!. The name of the logfile is built
-using the application name, here \lstinline!myapp!, the number of
-processes, here 1 and the id of the current process, here 0.
+\lstinline!feelpp_doc_myapp.INFO! and is stored in \lstinline!/tmp/!. The name of the logfile is built
+using the application name, here \lstinline!myapp!.
 
 \paragraph{Configuring}
 
@@ -134,25 +136,33 @@ The \verb|.cfg| file is searched in the following order
   \emph{e.g.} in\\ Debian \verb|/usr/share/feel/config/|
 \end{enumerate}
 The name of the file can be constructed in two ways \verb|<appname>.cfg| and
-\verb|feel_<appname>.cfg| where \verb|<appname>| is the string given in the
+\verb|feelpp_<appname>.cfg| where \verb|<appname>| is the string given in the
 \verb|AboutData| data structure passed to the construction of the
 \verb|Application| class.
 Here are two examples of the logfiles in the case that there was not \verb|myapp.cfg| created.
 
 \begin{lstlisting}[language=sh]
-> ./feel_doc_myapp
-> cat ~/feel/doc/tutorial/myapp/myapp-1.0
-myapp-1.0 is opened for debug
-the value of dt is 1
-the value of myapp-solver-type is gmres
-the value of myapp-pc-type is lu
+> ./feelpp_doc_myapp
+> cat /tmp/feelpp_doc_myapp.INFO
+Log file created at: 2012/10/01 01:26:28
+Running on machine: debian64
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I1001 01:26:28.881165 15579 environment.cpp:750] rep_path="/home/prudhomm/feel/doc/manual/tutorial/myapp/np_1"
+I1001 01:26:28.881511 15579 myapp.cpp:92] this is process number 0 out of 1
+I1001 01:26:28.881544 15579 myapp.cpp:95] the value of dt is 1
+I1001 01:26:28.881571 15579 myapp.cpp:97] the value of myapp-solver-type is gmres
+I1001 01:26:28.881584 15579 myapp.cpp:99] the value of myapp-pc-type is lu
 
-> ./feel_doc_myapp --dt=0.2
-> cat ~feel/doc/tutorial/myapp/myapp-1.0
-myapp-1.0 is opened for debug
-the value of dt is 0.2
-the value of myapp-solver-type is gmres
-the value of myapp-pc-type is lu
+> ./feelpp_doc_myapp --dt=0.2
+> cat /tmp/feelpp_doc_myapp.INFO
+Log file created at: 2012/10/01 01:26:57
+Running on machine: debian64
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I1001 01:26:57.810785 15596 environment.cpp:750] rep_path="/home/prudhomm/feel/doc/manual/tutorial/myapp/np_1"
+I1001 01:26:57.811302 15596 myapp.cpp:92] this is process number 0 out of 1
+I1001 01:26:57.811336 15596 myapp.cpp:95] the value of dt is 0.2
+I1001 01:26:57.811362 15596 myapp.cpp:97] the value of myapp-solver-type is gmres
+I1001 01:26:57.811375 15596 myapp.cpp:99] the value of myapp-pc-type is lu
 \end{lstlisting}
 
 If you want to create a configured file, you have to create \verb|myapp.cfg| such as, for example :
@@ -166,19 +176,18 @@ This configured file will be parsed automatically before being executed. In that
 
 \subsubsection{MPI Application}
 
-\marginpar{\lstinline!mympiapp.cpp!}
-
 \feel relies on MPI for parallel computations and the class
-\lstinline!Application!  initialises the MPI environment, for that, you should go to the appropriate repertory and call \lstinline!ccmake .!. Then turn on the \lstinline!FEELPP_ENABLE_MPI_MODE!
-To launch a parallel computation for your application, you have to call the application \verb|mpirun| such as
+\lstinline!Application!  initialises the MPI environment, for that, you should
+go to the appropriate repertory and call \lstinline!ccmake .!. Then turn on the
+\lstinline!FEELPP_ENABLE_MPI_MODE! which is set on by default. To launch a
+parallel computation for your application, you have to call the application
+\verb|mpirun| such as
 \begin{lstlisting}[language=sh]
-mpirun -np 2 mympiapp
+mpirun -np 2 feelpp_doc_myapp
 \end{lstlisting}
 
 \begin{lstlisting}[language=sh]
-> cat ~/feel/mympiapp/mympiapp-2.0
-mympiapp-2.0 is opened for debug
-[Area 0] the value of dt is 1
+> cat /tmp/feelpp_doc_myapp.INFO
 [Area 0] we are on processor eta
 [Area 0] this is process number 0 out of 2
 > cat ~/feel/mympiapp/mympiapp-2.1
@@ -207,7 +216,7 @@ mympiapp-2.1 is opened for debug
 
 PETSc is a suite of data structures and routines for the scalable (parallel)
 solution of scientific applications modeled by partial differential
-equations. It employs the MPI standard for parallelism.  
+equations. It employs the MPI standard for parallelism.
 
 The Trilinos Project is an effort to develop algorithms and enabling
 technologies within an object-oriented software framework for the solution of
@@ -215,7 +224,7 @@ large-scale, complex multi-physics engineering and scientific problems.
 
 \feel supports the PETSc and Trilinos framework, the class
 \lstinline!Application!\index{Class!Application} takes care of initialize the
-associated environments. 
+associated environments.
 
 
 \section{Mesh Manipulation}
@@ -263,14 +272,22 @@ customary, and usually a very good practice, to define the
 %\lstinputlisting[linerange=marker3-endmarker3]{tutorial/mymesh.cpp}
 
 \subsection{Mesh file format}
-The next step is to read some mesh files. \feel supports essentially the Gmsh mesh file format. It provides also some classes to manipulate Gmsh \lstinline!.geo! files and generate \lstinline!.msh! files. To begin, we use some helper classes and functions to generate a \lstinline!.geo! file.
+The next step is to read some mesh files. \feel supports essentially the Gmsh
+mesh file format. It provides also some classes to manipulate Gmsh
+\lstinline!.geo! files and generate \lstinline!.msh! files. To begin, we use
+some helper classes and functions to generate a \lstinline!.geo! file.
 
 \begin{itemize}
-\item \lstinline!domain! is a function which allows to generate a \verb|.geo| string description of simple domains such as simplex and hypercube.
+\item \lstinline!domain! is a function which allows to generate a \verb|.geo|
+  string description of simple domains such as simplex and hypercube.
 
-\item \lstinline!createGMSHMesh! is a function which allows to generate a mesh file \verb|.msh| automatically from a description file ( \verb|.geo| for example) by using the \verb|_desc| parameter and store the generated mesh into the \verb|_mesh| parameter allocated when calling the function.
+\item \lstinline!createGMSHMesh! is a function which allows to generate a mesh
+  file \verb|.msh| automatically from a description file ( \verb|.geo| for
+  example) by using the \verb|_desc| parameter and store the generated mesh into
+  the \verb|_mesh| parameter allocated when calling the function.
 
-\item \lstinline!GmshSimplexDomain! is a class which will enable you to create simplex domains (e.g segment, triangle or tetrahedron). It allows to modify
+\item \lstinline!GmshSimplexDomain! is a class which will enable you to create
+  simplex domains (e.g segment, triangle or tetrahedron). It allows to modify
   	\begin{itemize}
 	 \item the characteristic size of the mesh (default $h=0.1$)
   	\item the domain vertices (default is $(-1,-1,-1), (1,-1,-1), (-1,1,-1), (-1,-1,1)$)
@@ -322,8 +339,8 @@ Here is an example of how to get a simplex or hypercube geometry :
 The parameter \lstinline!_h! in the function \lstinline!domain! allows to change the mesh characteristic size to \lstinline!M_meshsize! which is given for example on the command-line using the Application framework, please refer to ~\ref{sec:creat-appl} for more details. You can see the meshes, by executing with the followings ordering :
 
 \begin{unixcom}
-		./feel_doc_mymesh --shape=simplex
-		./feel_doc_mymesh --shape=hypercube
+		./feelpp_doc_mymesh --shape=simplex
+		./feelpp_doc_mymesh --shape=hypercube
 \end{unixcom}
 we generate some of the following graphics (which are located in \verb|~/feel/doc/tutorial/mymesh/| \newline \verb|hypercube-x/h_y.z| or \verb|~/feel/doc/tutorial/mymesh/simplex-x/h_y.z|)
 
@@ -382,8 +399,8 @@ By default, the  export format is ensight. We can use the code \lstinline!Export
 
 To take into account the exporting format, you have to type thoses syntaxes
 \begin{unixcom}
-		./feel_doc_mymesh  --exporter= gmsh
-		./feel_doc_mymesh  --exporter= paraview
+		./feelpp_doc_mymesh  --exporter= gmsh
+		./feelpp_doc_mymesh  --exporter= paraview
 \end{unixcom}
 
 
@@ -418,7 +435,7 @@ where $ d=1,2$ or $3$ and $\mathbf{x}=(x_1,...,x_d)$.
 These domains are plotted in the section ~\ref{sec:mesh-manipulation} (If it's
 not yet done, compile all examples which are used in this tutorial, go to
 \lstinline!~/FEEL/feel.opt/doc/manual/! and type \verb|make| and execute the
-application \verb|feel_doc_mymesh|). The execution will result in several meshes
+application \verb|feelpp_doc_mymesh|). The execution will result in several meshes
 as it is explained in ~\ref{mesh:examples}.
 
 Here are the integrals we want to compute :
@@ -565,7 +582,7 @@ Now that we have a computational mesh, we can compute the integrals as we have s
 
 \subsection{Results}
 
-After compiling \lstinline!feel_doc_myintegrals! with the defaults options
+After compiling \lstinline!feelpp_doc_myintegrals! with the defaults options
 \begin{lstlisting}
   --hsize arg (=0.20000000000000001)    mesh size
   --shape arg (=hypercube)              shape of the domain
@@ -598,7 +615,7 @@ int_Omega (sin(x^2+y^2+z^2)) [with order 2 max exact integration] = 0.731693[ 0.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-This application can be executed in parallel as well. The results in dimension 2 of each integral are as follow : 
+This application can be executed in parallel as well. The results in dimension 2 of each integral are as follow :
 \begin{lstlisting}
 ------------------------------------------------------------
 Execute MyIntegrals<2>

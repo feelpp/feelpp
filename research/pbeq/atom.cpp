@@ -190,7 +190,7 @@ void Atom::showMe() const
     ostr << M_charge << " "
          << M_radius;
 
-    Log() << ostr.str() << "\n";
+    LOG(INFO) << ostr.str() << "\n";
 
 }
 

@@ -3,7 +3,7 @@
    This file is part of the Feel library
 
    Author(s): Christoph Winkelmann <christoph.winkelmann@epfl.ch>
-              Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+              Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2007-01-18
 
    Copyright (C) 2007 EPFL
@@ -28,7 +28,7 @@
    \file backendtrilinos.hpp
    \author Christoph Winkelmann <christoph.winkelmann@epfl.ch>
    \author Goncalo Pena <goncalo.pena@epfl.ch>
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-08-14
 */
 #ifndef _BACKENDTRILINOS_HPP_

@@ -56,11 +56,19 @@ public :
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
                               mpl::identity< Mesh< Simplex< mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
                               mpl::identity< Mesh< Hypercube<mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_faces_type;
+
     typedef boost::shared_ptr<mesh_faces_type> mesh_faces_ptrtype;
 
+    typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
+                              mpl::identity< Mesh< Simplex< (mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
+                              mpl::identity< Mesh< Hypercube<(mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_edges_type;
+    typedef boost::shared_ptr<mesh_edges_type> mesh_edges_ptrtype;
+
     typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
-                               mesh_type,
-                               mesh_faces_type>::type mesh_build_type;
+                               mpl::identity<mesh_type>,
+                               typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_FACES> >,
+                                                  mpl::identity<mesh_faces_type>,
+                                                  mpl::identity<mesh_edges_type> >::type>::type::type mesh_build_type;
 
     typedef boost::shared_ptr<mesh_build_type> mesh_build_ptrtype;
 
@@ -82,6 +90,7 @@ private:
     mesh_ptrtype build( mpl::int_<MESH_ELEMENTS> /**/ );
 
     mesh_faces_ptrtype build( mpl::int_<MESH_FACES> /**/ );
+    mesh_edges_ptrtype build( mpl::int_<MESH_EDGES> /**/ );
 
     mesh_ptrtype M_mesh;
     range_type M_range;
@@ -366,6 +375,135 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
             newElem.setPoint( n, newMesh->point( new_node_numbers[oldElem.point( n ).id()] ) );
 
         } // end for n
+
+        // set id of element
+        newElem.setId ( n_new_elem );
+        newElem.setProcessId ( oldElem.processId() );
+
+        // increment the new element counter
+        n_new_elem++;
+
+        // Add an equivalent element type to the new_mesh
+        newMesh->addElement( newElem );
+
+    } // end for it
+
+
+    newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
+
+    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
+    // Prepare the new_mesh for use
+    newMesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    newMesh->updateForUse();
+
+
+
+    return newMesh;
+}
+
+template <typename MeshType,typename IteratorRange>
+typename createSubmeshTool<MeshType,IteratorRange>::mesh_edges_ptrtype
+createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_EDGES> /**/ )
+{
+    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
+    mesh_edges_ptrtype newMesh( new mesh_edges_type( M_mesh->worldComm()) );
+    //mesh_edges_ptrtype newMesh( new mesh_edges_type );
+
+    //-----------------------------------------------------------//
+    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] extraction mesh edges" << "\n";
+    // inherit the table of markersName
+    BOOST_FOREACH( auto itMark, M_mesh->markerNames() )
+    {
+        Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] adding marker " << itMark.first <<"\n";
+        newMesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
+    }
+
+    //-----------------------------------------------------------//
+
+    typedef typename mesh_edges_type::element_type new_element_type;
+
+    std::vector<size_type> new_node_numbers ( M_mesh->numPoints() );
+    std::vector<size_type> new_vertex ( M_mesh->numPoints() );
+
+    std::fill ( new_node_numbers.begin(),
+                new_node_numbers.end(),
+                invalid_size_type_value );
+
+    std::fill ( new_vertex.begin(),
+                new_vertex.end(),
+                0 );
+
+    // the number of nodes on the new mesh, will be incremented
+    unsigned int n_new_nodes = 0;
+    unsigned int n_new_elem  = 0;
+    size_type n_new_edges = 0;
+
+    //-----------------------------------------------------------//
+
+    iterator_type it, en;
+    boost::tie( boost::tuples::ignore, it, en ) = M_range;
+
+    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] extracting " << std::distance(it,en)  << " edges " << "\n";
+    for ( ; it != en; ++ it )
+    {
+        // create a new element
+        //element_type const& old_elem = *it;
+        auto oldElem = *it;
+        Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh]   + face : " << it->id() << "\n";
+
+        // copy element so that we can modify it
+        new_element_type newElem;// = oldElem;
+
+        // get element markers
+        newElem.setMarker( oldElem.marker().value() );
+        newElem.setMarker2( oldElem.marker2().value() );
+        newElem.setMarker3( oldElem.marker3().value() );
+
+        // partitioning update
+        newElem.setProcessIdInPartition( oldElem.pidInPartition() );
+        newElem.setNumberOfPartitions(oldElem.numberOfPartitions());
+        newElem.setProcessId(oldElem.processId());
+        newElem.setIdInPartition( oldElem.pidInPartition(), n_new_elem );
+        newElem.setNeighborPartitionIds(oldElem.neighborPartitionIds());// TODO
+
+
+        Debug( 4015 ) << "\n oldElem.nPoints " << oldElem.nPoints() << "\n";
+        // Loop over the nodes on this element.
+        for ( unsigned int n=0; n < oldElem.nPoints(); n++ )
+        {
+
+            if ( new_node_numbers[oldElem.point( n ).id()] == invalid_size_type_value )
+            {
+                new_node_numbers[oldElem.point( n ).id()] = n_new_nodes;
+
+                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] insert point " << oldElem.point(n) << "\n";
+
+                typename mesh_edges_type::point_type pt( oldElem.point( n ) );
+                pt.setId( n_new_nodes );
+
+                // Add this node to the new mesh
+                newMesh->addPoint( pt );
+
+                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << newMesh->numPoints() << "\n";
+
+                // Increment the new node counter
+                n_new_nodes++;
+
+                if ( n < new_element_type::numVertices )
+                {
+                    FEELPP_ASSERT( new_vertex[oldElem.point( n ).id()] == 0 ).error( "already seen this point?" );
+                    new_vertex[oldElem.point( n ).id()]=1;
+                }
+
+            }
+
+            newElem.setPoint( n, newMesh->point( new_node_numbers[oldElem.point( n ).id()] ) );
+            newElem.setFace( n, newMesh->point( new_node_numbers[oldElem.point( n ).id()] ) );
+        } // end for n
+        FEELPP_ASSERT( newElem.pointPtr(0) ).error( "invalid point 0 in edge" );
+        FEELPP_ASSERT( newElem.pointPtr(1) ).error( "invalid point 1 in edge" );
+        FEELPP_ASSERT( newElem.facePtr(0) ).error( "invalid face 0 in edge" );
+        FEELPP_ASSERT( newElem.facePtr(1) ).error( "invalid face 1 in edge" );
 
         // set id of element
         newElem.setId ( n_new_elem );

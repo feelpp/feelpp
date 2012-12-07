@@ -2,11 +2,9 @@
 
 #define USE_BOOST_TEST 1
 
-#if USE_BOOST_TEST
+
 #define BOOST_TEST_MODULE test_form_severaltrialtestmesh
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 
@@ -131,7 +129,6 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
 
     auto mesh = createTheMesh(theApp,mpl::int_<nDim>());
 
-    //auto mesh = Omega.createMesh<mesh_type>( "omega_"+ mesh_type::shape_type::name() );
 
 #if 1
     auto meshParoi = mesh->trace();//createSubmesh( mesh,markedfaces( mesh,"Paroi" ) );
@@ -153,7 +150,7 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
     L4.setMarker(_type="point",_name="corners",_markerAll=true);
     L4.setMarker(_type="line",_name="OmegaParoi",_markerAll=true);*/
 
-    auto meshParoi = ( L1+L2+L3+L4 ).createMesh<mesh_trace_type>( "trace_"+ mesh_type::shape_type::name() );
+    auto meshParoi = ( L1+L2+L3+L4 ).createMesh(_mesh=new mesh_trace_type,_name= "trace_"+ mesh_type::shape_type::name() );
 #endif
 
     //--------------------------------------------------------------------------------------------------//
@@ -266,10 +263,16 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
     //--------------------------------------------------------------------------------------------------//
 
     std::cout << "\n solve system start "<< std::endl;mytimer.restart();
+    auto myprec = preconditioner( _matrix=AbB,
+                                  _pc=PreconditionerType::LU_PRECOND,
+                                  _backend=backend,
+                                  _pcfactormatsolverpackage=MatSolverPackageType::MATSOLVER_UMFPACK );
+
     backend->solve( _matrix=AbB,
                     _solution=UbB,
                     _rhs=FbB,
-                    _pcfactormatsolverpackage="umfpack" );
+                    _prec=myprec );
+                    //_pcfactormatsolverpackage="umfpack" );
     std::cout << "\n solve system finish in"<< mytimer.elapsed() << "s"  << std::endl;
 
     //--------------------------------------------------------------------------------------------------//
@@ -409,21 +412,19 @@ void run( Application_ptrtype & theApp )
  *_________________________________________________*/
 
 #if USE_BOOST_TEST
+
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_form_severaltrialtestmesh::makeAbout(),
+                                 test_form_severaltrialtestmesh::makeOptions() )
+
 BOOST_AUTO_TEST_SUITE( form_severaltrialtestmesh )
 
 typedef Feel::Application Application_type;
 typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( form_severaltrialtestmesh1 )
 {
-    auto theApp = Application_ptrtype( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                       boost::unit_test::framework::master_test_suite().argv,
-                                       test_form_severaltrialtestmesh::makeAbout(),
-                                       test_form_severaltrialtestmesh::makeOptions()
-                                                           ) );
+    auto theApp = Application_ptrtype( new Application_type );
 
     if ( theApp->vm().count( "help" ) )
     {
@@ -443,10 +444,11 @@ main( int argc, char** argv )
 {
     typedef Feel::Application Application_type;
     typedef boost::shared_ptr<Application_type> Application_ptrtype;
-    Feel::Environment env( argc,argv );
-    auto theApp = Application_ptrtype( new Application_type( argc,argv,
-                                       test_form_severaltrialtestmesh::makeAbout(),
-                                       test_form_severaltrialtestmesh::makeOptions() ) );
+    Feel::Environment env( argc,argv,
+                           test_form_severaltrialtestmesh::makeAbout(),
+                           test_form_severaltrialtestmesh::makeOptions() );
+    auto theApp = Application_ptrtype( new Application_type );
+
 
 
     if ( theApp->vm().count( "help" ) )

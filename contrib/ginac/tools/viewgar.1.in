@@ -1,0 +1,47 @@
+.TH viewgar 1 "January, 2000" "GiNaC @VERSION@" "The GiNaC Group"
+.SH NAME
+viewgar \- GiNaC archive file viewer
+.SH SYNPOSIS
+.B viewgar
+[\-d]
+.RI [ file\&... ]
+.SH DESCRIPTION
+.B viewgar
+displays the contents of GiNaC archive files. By default it will print the
+archived expressions in standard mathematical notation. If given the
+.B "\-d"
+option it will output a raw dump of the archive contents).
+.SH OPTIONS
+.TP
+.B \-d
+print raw dump of archive instead of formatted expressions
+.SH AUTHOR
+.TP
+The GiNaC Group:
+.br
+Christian Bauer <Christian.Bauer@uni-mainz.de>
+.br
+Alexander Frink <Alexander.Frink@uni-mainz.de>
+.br
+Richard Kreckel <Richard.Kreckel@uni-mainz.de>
+.br
+Jens Vollinga <vollinga@thep.physik.uni-mainz.de>
+.SH SEE ALSO
+GiNaC Tutorial \- An open framework for symbolic computation within the
+C++ programming language
+.SH COPYRIGHT
+Copyright \(co 1999-2011 Johannes Gutenberg Universit\(:at Mainz, Germany
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.

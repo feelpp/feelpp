@@ -1,0 +1,208 @@
+%% This LaTeX-file was created by <bruno> Sun Feb 16 14:05:43 1997
+%% LyX 0.10 (C) 1995 1996 by Matthias Ettrich and the LyX Team
+
+%% Don't edit this file unless you are sure what you are doing.
+\documentclass[12pt,a4paper,oneside,onecolumn]{article}
+\usepackage[]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage[dvips]{epsfig}
+
+%%
+%% BEGIN The lyx specific LaTeX commands.
+%%
+
+\makeatletter
+\def\LyX{L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\spacefactor1000}%
+\newcommand{\lyxtitle}[1] {\thispagestyle{empty}
+\global\@topnum\z@
+\section*{\LARGE \centering \sffamily \bfseries \protect#1 }
+}
+\newcommand{\lyxline}[1]{
+{#1 \vspace{1ex} \hrule width \columnwidth \vspace{1ex}}
+}
+\newenvironment{lyxsectionbibliography}
+{
+\section*{\refname}
+\@mkboth{\uppercase{\refname}}{\uppercase{\refname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\newenvironment{lyxchapterbibliography}
+{
+\chapter*{\bibname}
+\@mkboth{\uppercase{\bibname}}{\uppercase{\bibname}}
+\begin{list}{}{
+\itemindent-\leftmargin
+\labelsep 0pt
+\renewcommand{\makelabel}{}
+}
+}
+{\end{list}}
+\def\lxq{"}
+\newenvironment{lyxcode}
+{\list{}{
+\rightmargin\leftmargin
+\raggedright
+\itemsep 0pt
+\parsep 0pt
+\ttfamily
+}%
+\item[]
+}
+{\endlist}
+\newcommand{\lyxlabel}[1]{#1 \hfill}
+\newenvironment{lyxlist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{#1}
+\setlength{\leftmargin}{\labelwidth}
+\addtolength{\leftmargin}{\labelsep}
+\renewcommand{\makelabel}{\lyxlabel}}}
+{\end{list}}
+\newcommand{\lyxletterstyle}{
+\setlength\parskip{0.7em}
+\setlength\parindent{0pt}
+}
+\newcommand{\lyxaddress}[1]{
+\par {\raggedright #1 
+\vspace{1.4em}
+\noindent\par}
+}
+\newcommand{\lyxrightaddress}[1]{
+\par {\raggedleft \begin{tabular}{l}\ignorespaces
+#1
+\end{tabular}
+\vspace{1.4em}
+\par}
+}
+\newcommand{\lyxformula}[1]{
+\begin{eqnarray*}
+#1
+\end{eqnarray*}
+}
+\newcommand{\lyxnumberedformula}[1]{
+\begin{eqnarray}
+#1
+\end{eqnarray}
+}
+\makeatother
+
+%%
+%% END The lyx specific LaTeX commands.
+%%
+
+\pagestyle{plain}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\begin{document}
+
+The Tschebychev polynomials (of the 1st kind)  \( T_{n}(x) \) are defined through
+the recurrence relation
+
+
+\[
+T_{0}(x)=1\]
+
+
+
+\[
+T_{1}(x)=x\]
+
+
+
+\[
+T_{n+2}(x)=2x\cdot T_{n+1}(x)-T_{n}(x)\]
+ for  \( n\geq 0 \).
+
+\begin{description}
+
+\item [Theorem:]~
+
+\end{description}
+
+ \( T_{n}(x) \) satisfies the differential equation  \( (x^{2}-1)\cdot T_{n}^{''}(x)+x\cdot T_{n}^{'}(x)-n^{2}\cdot T_{n}(x)=0 \) for all  \( n\geq 0 \).
+
+\begin{description}
+
+\item [Proof:]~
+
+\end{description}
+
+Let  \( F:=\sum ^{\infty }_{n=0}T_{n}(x)z^{n} \) be the generating function of the sequence of polynomials. The
+recurrence is equivalent to the equation 
+\[
+(1-2x\cdot z+z^{2})\cdot F=1-x\cdot z\]
+
+
+\begin{description}
+
+\item [Proof~1:]~
+
+\end{description}
+
+ \( F \) is a rational function in  \( z \),  \( F=\frac{1-xz}{1-2xz+z^{2}} \). From the theory of recursions with
+constant coefficients, we know that we have to perform a partial fraction
+decomposition. So let  \( p(z)=z^{2}-2x\cdot z+1 \) be the denominator and  \( \alpha =x+\sqrt{x^{2}-1} \) and  \( \alpha ^{-1} \) its zeroes.
+The partial fraction decomposition reads 
+\[
+F=\frac{1-xz}{1-2xz+z^{2}}=\frac{1}{2}\left( \frac{1}{1-\alpha z}+\frac{1}{1-\alpha ^{-1}z}\right) \]
+ hence  \( T_{n}(x)=\frac{1}{2}(\alpha ^{n}+\alpha ^{-n}) \). Note that the
+field  \( Q(x)(\alpha ) \), being a finite dimensional extension field of  \( Q(x) \) in characteristic
+0, has a unique derivation extending  \( \frac{d}{dx} \) on  \( Q(x) \). We can therefore try
+to construct an annihilating differential operator for  \( T_{n}(x) \) by combination
+of annihilating differential operators for  \( \alpha ^{n} \) and  \( \alpha ^{-n} \). In fact,  \( L_{1}:=(\alpha -x)\frac{d}{dx}-n \) satisfies
+ \( L_{1}[\alpha ^{n}]=0 \), and  \( L_{2}:=(\alpha -x)\frac{d}{dx}+n \) satisfies  \( L_{2}[\alpha ^{-n}]=0 \). A common multiple of  \( L_{1} \) and  \( L_{2} \) is easily found
+by solving an appropriate system of linear equations:
+
+ \( L=(x^{2}-1)\left( \frac{d}{dx}\right) ^{2}+x\frac{d}{dx}-n^{2}=\left( (\alpha -x)\frac{d}{dx}+n\right) \cdot L_{1}=\left( (\alpha -x)\frac{d}{dx}-n\right) \cdot L_{2} \)
+
+It follows that both  \( L[\alpha ^{n}]=0 \) and  \( L[\alpha ^{-n}]=0 \), hence  \( L[T_{n}(x)]=0 \).
+
+\begin{description}
+
+\item [Proof~2:]~
+
+\end{description}
+
+Starting from the above equation, we compute a linear relation for
+the partial derivatives of  \( F \). Write  \( \partial _{x}=\frac{d}{dx} \) and  \( \Delta _{z}=z\frac{d}{dz} \). One computes
+
+
+\[
+\left( 1-2xz+z^{2}\right) \cdot F=1-xz\]
+
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \partial _{x}F=z-z^{3}\]
+
+\[
+\left( 1-2xz+z^{2}\right) ^{3}\cdot \partial _{x}^{2}F=4z^{2}-4z^{4}\]
+
+\[
+\left( 1-2xz+z^{2}\right) ^{2}\cdot \Delta _{z}F=xz-2z^{2}+xz^{3}\]
+
+\[
+\left( 1-2xz+z^{2}\right) ^{3}\cdot \partial _{x}\Delta _{z}F=z+2xz^{2}-6z^{3}+2xz^{4}+z^{5}\]
+
+\[
+\left( 1-2xz+z^{2}\right) ^{3}\cdot \Delta _{z}^{2}F=xz+(2x^{2}-4)z^{2}-(2x^{2}-4)z^{4}-xz^{5}\]
+
+
+Solve a  \( 6\times 6 \) system of linear equations over  \( Q(x) \) to get 
+\[
+x\cdot \partial _{x}F+(x^{2}-1)\cdot \partial _{x}^{2}F-\Delta _{z}^{2}F=0\]
+
+
+This is equivalent to the claimed equation  \( (x^{2}-1)\cdot T_{n}^{''}(x)+x\cdot T_{n}^{'}(x)-n^{2}\cdot T_{n}(x)=0 \).
+
+\begin{lyxsectionbibliography}
+
+\item [1] Bruno Haible: D-finite power series in several variables. \em Diploma
+thesis, University of Karlsruhe, June 1989. \em Sections 2.12 and
+2.15.
+
+\end{lyxsectionbibliography}
+
+\end{document}

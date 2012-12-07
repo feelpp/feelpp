@@ -1,0 +1,5 @@
+#cmakedefine HAVE_STDINT_H
+#cmakedefine HAVE_UNISTD_H
+#cmakedefine HAVE_LIBREADLINE
+#cmakedefine HAVE_READLINE_READLINE_H
+#cmakedefine HAVE_READLINE_HISTORY_H

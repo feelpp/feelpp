@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-08-17
 
   Copyright (C) 2005,2006 EPFL
@@ -23,7 +23,7 @@
 */
 /**
    \file glastransposed.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-08-17
  */
 #ifndef __FEELPP_GLAS_TRANSPOSED_HPP

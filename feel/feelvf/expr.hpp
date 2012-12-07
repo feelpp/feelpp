@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-01-17
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file expr.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-17
  */
 #ifndef __Expr_H
@@ -140,9 +140,9 @@ public:
 
         typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
         typedef typename tensor_expr_type::value_type value_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::NDim, Scalar, false> shape;
 
@@ -317,7 +317,7 @@ public:
         return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
     }
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<detail::gmc<0>,boost::shared_ptr<detail::gmc<0> > >,fusion::pair<detail::gmc<1>,boost::shared_ptr<detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
 
@@ -1097,7 +1097,7 @@ public:
         typedef typename Cst<T>::expression_type expression_type;
         typedef typename Cst<T>::value_type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >, mpl::identity<detail::gmc<0> >, mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
@@ -1259,9 +1259,9 @@ public:
     struct tensor
     {
         typedef this_type expression_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
@@ -1749,9 +1749,9 @@ public:
         typedef typename strongest_numeric_type<typename l_type::value_type,
                 typename r_type::value_type>::type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -1944,9 +1944,9 @@ public:
         typedef typename strongest_numeric_type<typename l_type::value_type,
                 typename r_type::value_type>::type value_type;
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -2152,9 +2152,9 @@ public:
                 typename r_type::value_type>::type value_type;
 
 
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename l_type::shape shape;
@@ -2322,15 +2322,21 @@ Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
     return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
 
+
 template<typename ExprT1,  typename ExprT2>
 inline
 Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-      mpl::identity<Cst<ExprT1> >,
-      mpl::identity<ExprT1> >::type::type,
-      typename mpl::if_<boost::is_arithmetic<ExprT2>,
-      mpl::identity<Cst<ExprT2> >,
-      mpl::identity<ExprT2> >::type::type> >
-      operator^( ExprT1 const& __e1, ExprT2 const& __e2 )
+                            mpl::identity<Cst<ExprT1> >,
+                            mpl::identity<Expr<ExprT1> > >::type::type,
+          typename mpl::if_<boost::is_arithmetic<ExprT2>,
+                            mpl::identity<Cst<ExprT2> >,
+                            mpl::identity<Expr<ExprT2> > >::type::type> >
+operator^( typename mpl::if_<boost::is_arithmetic<ExprT1>,
+                             mpl::identity<ExprT1>,
+                             mpl::identity<Expr<ExprT1> > >::type::type const& __e1,
+           typename mpl::if_<boost::is_arithmetic<ExprT2>,
+                             mpl::identity<ExprT2>,
+                             mpl::identity<Expr<ExprT2> > >::type::type const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
             mpl::identity<Cst<ExprT1> >,
@@ -2574,9 +2580,9 @@ public:
     struct tensor
     {
         typedef this_type expression_type;
-        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, detail::gmc<0> >,
-                mpl::identity<detail::gmc<0> >,
-                mpl::identity<detail::gmc<1> > >::type::type key_type;
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<0> >,
+                mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
@@ -2653,7 +2659,7 @@ public:
         }
         void update( Geo_t const& geom )
         {
-            //Debug() << "[GElem] updating element " << fusion::at_key<key_type>( geom )->id() << "\n";
+            //VLOG(1) << "[GElem] updating element " << fusion::at_key<key_type>( geom )->id() << "\n";
             typename basis_type::iterator it = const_cast<basis_type&>( M_expr.basis() ).find( fusion::at_key<key_type>( geom )->id() );
             typename basis_type::iterator en = const_cast<basis_type&>( M_expr.basis() ).end();
 

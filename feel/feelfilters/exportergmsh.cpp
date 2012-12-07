@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2007-07-21
 
    Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file exportergmsh.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-21
 */
 #ifndef __EXPORTERGMSH_CPP
@@ -190,7 +190,7 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
 
         if ( out.fail() )
         {
-            Log() << "[ExporterGmsh::SaveMesh] cannot open " << filename << "\n";
+            LOG(INFO) << "[ExporterGmsh::SaveMesh] cannot open " << filename << "\n";
             exit( 0 );
         }
 

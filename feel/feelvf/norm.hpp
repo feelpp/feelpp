@@ -2,10 +2,10 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-17
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 */
 /**
    \file norm.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-17
  */
 #ifndef __norm_H
@@ -62,7 +62,7 @@ inner_prod( ExprL l, ExprR r ) -> decltype( trace( trans( l ) * r ) )
 {
     return trace( trans( l ) * r );
 }
-
+#if 0
 /**
  * dot product of the left and right expressions
  *
@@ -77,7 +77,7 @@ dot( ExprL l, ExprR r ) -> decltype( trans( l ) * r )
 {
     return trans( l ) * r;
 }
-
+#endif
 /**
  * double dot product of the left and right expressions
  *

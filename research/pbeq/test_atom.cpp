@@ -47,7 +47,7 @@ main( int argc, char** argv )
 
     if ( pqrfile.fail() )
     {
-        Feel::Log() << "failed to open " << argv[1] << "\n";
+        LOG(INFO) << "failed to open " << argv[1] << "\n";
         return 1;
     }
 
@@ -57,9 +57,9 @@ main( int argc, char** argv )
     }
 
     else
-        Feel::Log() << "Problems reading atom" << "\n";
+        LOG(INFO) << "Problems reading atom" << "\n";
 
-    Feel::Log() << "Finished" << "\n";
+    LOG(INFO) << "Finished" << "\n";
 
     return 0;
 

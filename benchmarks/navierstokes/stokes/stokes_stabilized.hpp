@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2006-06-15
 
    Copyright (C) 2006 EPFL
@@ -174,9 +174,9 @@ public:
         nu( this->vm()["nu"].template as<double>() ),
         exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
     {
-        Debug() << "[StokesStabilized] hsize = " << meshSize << "\n";
-        Debug() << "[StokesStabilized] nu = " << nu << "\n";
-        Debug() << "[StokesStabilized] export = " << this->vm().count( "export" ) << "\n";
+        VLOG(1) << "[StokesStabilized] hsize = " << meshSize << "\n";
+        VLOG(1) << "[StokesStabilized] nu = " << nu << "\n";
+        VLOG(1) << "[StokesStabilized] export = " << this->vm().count( "export" ) << "\n";
 
     }
 

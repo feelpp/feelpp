@@ -44,8 +44,8 @@ LevelSet::LevelSet( int argc, char** argv, AboutData const& ad )
     M_timers(),
     M_im()
 {
-    Debug() << "[LevelSet] hsize = " << M_meshSize << "\n";
-    Debug() << "[LevelSet] export = " << this->vm()["export"].as<int>()
+    VLOG(1) << "[LevelSet] hsize = " << M_meshSize << "\n";
+    VLOG(1) << "[LevelSet] export = " << this->vm()["export"].as<int>()
             << "\n";
 
     M_timeSet->setTimeIncrement( this->vm()["dt"].as<double>() );
@@ -65,8 +65,8 @@ LevelSet::LevelSet( int argc,
     M_timers(),
     M_im()
 {
-    Debug() << "[LevelSet] hsize = " << M_meshSize << "\n";
-    Debug() << "[LevelSet] export = " << this->vm()["export"].as<int>()
+    VLOG(1) << "[LevelSet] hsize = " << M_meshSize << "\n";
+    VLOG(1) << "[LevelSet] export = " << this->vm()["export"].as<int>()
             << "\n";
 
     M_timeSet->setTimeIncrement( this->vm()["dt"].as<double>() );
@@ -83,8 +83,8 @@ LevelSet::LevelSet( LevelSet const& tc )
     M_timers( tc.M_timers ),
     M_im()
 {
-    Debug() << "[LevelSet] hsize = " << M_meshSize << "\n";
-    Debug() << "[LevelSet] export = " << this->vm()["export"].as<int>()
+    VLOG(1) << "[LevelSet] hsize = " << M_meshSize << "\n";
+    VLOG(1) << "[LevelSet] export = " << this->vm()["export"].as<int>()
             << "\n";
 
     M_timeSet->setTimeIncrement( this->vm()["dt"].as<double>() );
@@ -119,7 +119,7 @@ LevelSet::createMesh( double meshSize )
     mesh->accept( import );
 
     M_timers["mesh"].second = M_timers["mesh"].first.elapsed();
-    Debug() << "[LevelSet] createMesh(): "
+    VLOG(1) << "[LevelSet] createMesh(): "
             << M_timers["mesh"].second << "\n";
 
     return mesh;
@@ -170,8 +170,8 @@ LevelSet::run()
     element_i_type kappa( space_i, "kappa" );
     psLogger.log( "t=0, elements" );
 
-    Debug() << "[LevelSet] h = " << M_meshSize << "\n";
-    Debug() << "[LevelSet] N = " << space_p->nDof() << "\n";
+    VLOG(1) << "[LevelSet] h = " << M_meshSize << "\n";
+    VLOG(1) << "[LevelSet] N = " << space_p->nDof() << "\n";
 
     backend_ptrtype backend( backend_type::build( this->vm() ) );
 #warning TODO
@@ -282,21 +282,21 @@ LevelSet::run()
     psi = vf::project( space_p, elements( mesh ), phi0 );
 
     double massBefore = mass( psi );
-    Debug() << "[LevelSet] mass before reinit = " << massBefore << "\n";
-    Debug() << "[LevelSet]   rel. mass error  = " << massBefore/mass0-1.0
+    VLOG(1) << "[LevelSet] mass before reinit = " << massBefore << "\n";
+    VLOG(1) << "[LevelSet]   rel. mass error  = " << massBefore/mass0-1.0
             << "\n";
     M_timers["init"].second = M_timers["init"].first.elapsed();
 
     M_timers["reinit"].first.restart();
     indicator.update( psi );
-    Debug() << "[LevelSet] indicator update : "
+    VLOG(1) << "[LevelSet] indicator update : "
             << M_timers["reinit"].first.elapsed() << "\n";
     kappa = indicator.indicatorGamma();
     phi = reinitializerILP( psi, kappa );
-    Debug() << "[LevelSet] + ILP            : "
+    VLOG(1) << "[LevelSet] + ILP            : "
             << M_timers["reinit"].first.elapsed() << "\n";
     phi = reinitializerFMS( phi );
-    Debug() << "[LevelSet] + FMS            : "
+    VLOG(1) << "[LevelSet] + FMS            : "
             << M_timers["reinit"].first.elapsed() << "\n";
     M_timers["reinit"].second = M_timers["reinit"].first.elapsed();
 
@@ -358,7 +358,7 @@ LevelSet::run()
         }
 
         M_timers["update"].second += M_timers["update"].first.elapsed();
-        Debug() << "[LevelSet] assembly time: "
+        VLOG(1) << "[LevelSet] assembly time: "
                 << M_timers["update"].first.elapsed() << "\n";
         msg.str( "" );
         msg << "t=" << time << " advreact update";
@@ -369,7 +369,7 @@ LevelSet::run()
         M_timers["solve"].first.restart();
         advreact.solve();
         M_timers["solve"].second += M_timers["solve"].first.elapsed();
-        Debug() << "[LevelSet] solving  time: "
+        VLOG(1) << "[LevelSet] solving  time: "
                 << M_timers["solve"].first.elapsed() << "\n";
         msg.str( "" );
         msg << "t=" << time << " advreact solve";
@@ -379,12 +379,12 @@ LevelSet::run()
 
         phio = phi;
 
-        Debug() << "[LevelSet] t = " << time << "\n";
+        VLOG(1) << "[LevelSet] t = " << time << "\n";
         std::cout << "[LevelSet] t = " << time << "\n";
 
         massBefore = mass( psi );
-        Debug() << "[LevelSet] mass before reinit = " << massBefore << "\n";
-        Debug() << "[LevelSet]   rel. mass error  = "
+        VLOG(1) << "[LevelSet] mass before reinit = " << massBefore << "\n";
+        VLOG(1) << "[LevelSet]   rel. mass error  = "
                 << massBefore/mass0-1.0 << "\n";
 
         // --- reinitialize
@@ -437,21 +437,21 @@ LevelSet::run()
     double forthBackL2 =
         std::sqrt( integrate( elements( mesh ), M_im,
                               vf::pow( idv( phi ) - phi1, 2.0 ) ).evaluate()( 0,0 ) );
-    Debug() << "[LevelSet] forth-back L2 error = " << forthBackL2 << "\n";
+    VLOG(1) << "[LevelSet] forth-back L2 error = " << forthBackL2 << "\n";
 
     double signChgErr = integrate( elements( mesh ), M_im,
                                    chi( idv( phi )*phi1<0 )
                                  ).evaluate()( 0,0 );
-    Debug() << "[LevelSet] global sgn chg err = " << signChgErr << "\n";
-    Debug() << "[LevelSet] gl.  sgn chg err/h = "
+    VLOG(1) << "[LevelSet] global sgn chg err = " << signChgErr << "\n";
+    VLOG(1) << "[LevelSet] gl.  sgn chg err/h = "
             << signChgErr/M_meshSize << "\n";
 
-    Debug() << "[LevelSet] total timings:\n";
-    Debug() << "[LevelSet]   init:     " << M_timers["init"].second << "\n";
-    Debug() << "[LevelSet]   mesh:     " << M_timers["mesh"].second << "\n";
-    Debug() << "[LevelSet]   assembly: " << M_timers["update"].second << "\n";
-    Debug() << "[LevelSet]   solving:  " << M_timers["solve"].second << "\n";
-    Debug() << "[LevelSet]   reinit.:  " << M_timers["reinit"].second << "\n";
+    VLOG(1) << "[LevelSet] total timings:\n";
+    VLOG(1) << "[LevelSet]   init:     " << M_timers["init"].second << "\n";
+    VLOG(1) << "[LevelSet]   mesh:     " << M_timers["mesh"].second << "\n";
+    VLOG(1) << "[LevelSet]   assembly: " << M_timers["update"].second << "\n";
+    VLOG(1) << "[LevelSet]   solving:  " << M_timers["solve"].second << "\n";
+    VLOG(1) << "[LevelSet]   reinit.:  " << M_timers["reinit"].second << "\n";
 
 } // LevelSet::run
 
@@ -490,7 +490,7 @@ LevelSet::exportResults( int iter,
     } // export
 
     M_timers["export"].second += M_timers["export"].first.elapsed();
-    Debug() << "[LevelSet] exporting time: "
+    VLOG(1) << "[LevelSet] exporting time: "
             << M_timers["export"].second << "\n";
 } // LevelSet::export
 
@@ -503,25 +503,25 @@ LevelSet::statsAfterReinit( const element_p_type& psi,
     using namespace Feel::vf;
 
     double massAfter = mass( phi );
-    Debug() << "[LevelSet] mass after  reinit = " << massAfter << "\n";
-    Debug() << "[LevelSet]   rel. mass error  = " << massAfter/mass0-1.0
+    VLOG(1) << "[LevelSet] mass after  reinit = " << massAfter << "\n";
+    VLOG(1) << "[LevelSet]   rel. mass error  = " << massAfter/mass0-1.0
             << "\n";
-    Debug() << "[LevelSet]   rel. reinit err. = " << massAfter/massBefore-1.0
+    VLOG(1) << "[LevelSet]   rel. reinit err. = " << massAfter/massBefore-1.0
             << "\n";
 
     double signChgErr =
         integrate( elements( *( psi.functionSpace()->mesh() ) ), M_im,
                    chi( idv( phi )*idv( psi )<0 )
                  ).evaluate()( 0,0 );
-    Debug() << "[LevelSet] sign change error  = " << signChgErr << "\n";
-    Debug() << "[LevelSet] sign chg. error/h  = " << signChgErr/M_meshSize
+    VLOG(1) << "[LevelSet] sign change error  = " << signChgErr << "\n";
+    VLOG(1) << "[LevelSet] sign chg. error/h  = " << signChgErr/M_meshSize
             << "\n";
 
     double gradMag =
         integrate( elements( *( psi.functionSpace()->mesh() ) ), M_im,
                    sqrt( gradv( phi )*trans( gradv( phi ) ) )
                  ).evaluate()( 0,0 ) / M_domainSize;
-    Debug() << "[LevelSet] mean gradient magnitude = " << gradMag
+    VLOG(1) << "[LevelSet] mean gradient magnitude = " << gradMag
             << "\n";
 
     double distDist =
@@ -529,7 +529,7 @@ LevelSet::statsAfterReinit( const element_p_type& psi,
                               pow( sqrt( gradv( phi )*trans( gradv( phi ) ) ) - 1.0,
                                    2.0 )
                             ).evaluate()( 0,0 ) );
-    Debug() << "[LevelSet] distance from dist = " << distDist << "\n";
+    VLOG(1) << "[LevelSet] distance from dist = " << distDist << "\n";
 
 } // LevelSet::statsAfterReinit
 

@@ -1,0 +1,22 @@
+* Requirements
+
+ - G++ (>=4.4)
+ - Boost (>=1.46)
+ - PETSc (>=3.1)
+ - Gmsh
+
+* Building Feel++
+
+Note that in-source builds of Feel++ are not possible.
+
+** Out source build
+
+#+begin_src:
+mkdir opt
+cd opt
+cmake <top level feel directory>
+make
+ctest
+#+end_src:
+
+More details in Feel++ manual and Feel++ website (http://www.feelpp.org)

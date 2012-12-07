@@ -557,12 +557,12 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
 
             if ( M_epsCompress > 0 )
             {
-                Debug() << "[Oseen] adding pseudo compressibility term with coeff= " << M_epsCompress << "\n";
+                VLOG(1) << "[Oseen] adding pseudo compressibility term with coeff= " << M_epsCompress << "\n";
                 form( M_space, M_space, M_matrixStab ) +=
                     integrate( elements( M_mesh ), typename im<2*pOrder>::type(),
                                M_epsCompress * id( q ) * idt( p )
                              );
-                Debug() << "[Oseen] adding pseudo compressibility term with coeff= " << M_epsCompress << " done\n";
+                VLOG(1) << "[Oseen] adding pseudo compressibility term with coeff= " << M_epsCompress << " done\n";
             }
 
             M_matrixStab->close();
@@ -646,9 +646,9 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
     // added pressure and viscous terms. \attention addMatrix can be
     // called only on closed matrices
     //M_matrixFull->addMatrix( 1.0, M_matrixStab );
-    Debug() << "[Oseen] added stabilisation matrix\n";
+    VLOG(1) << "[Oseen] added stabilisation matrix\n";
     M_matrixFull->addMatrix( 1.0, M_matrixAu );
-    Debug() << "[Oseen] added standard oseen matrix\n";
+    VLOG(1) << "[Oseen] added standard oseen matrix\n";
 
     if ( M_export_matlab )
     {

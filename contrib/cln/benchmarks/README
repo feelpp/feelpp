@@ -1,0 +1,11 @@
+Bench1 is a benchmark for the transcendental functions I found on the LiDIA
+home page.
+
+Some of its tests are not good because they fall into pitfalls of some systems
+(for example exp(log(2)) is not a good test because in CLN, exp(x) begins
+by computing x mod log(2)). Also it fails to benchmark the most basic
+operations: multiplication and division.
+
+Bench2 is a benchmark jointly designed by the LiDIA and CLN developers to
+overcome these flaws.
+

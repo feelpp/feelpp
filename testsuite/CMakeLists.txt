@@ -23,7 +23,7 @@
 #
 add_custom_target( testsuite )
 
-foreach( testdir core alg mesh poly filters material discr )
+foreach( testdir core alg mesh poly filters material discr crb )
   add_subdirectory( feel${testdir} )
 endforeach()
 

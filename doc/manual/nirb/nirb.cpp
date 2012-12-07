@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-02-01
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file nirb.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-02-01
  */
 #include <feel/options.hpp>
@@ -110,7 +110,7 @@ inline AboutData makeAbout()
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2011 Universite Joseph Fourier" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -123,14 +123,13 @@ inline AboutData makeAbout()
  */
 int main( int argc, char** argv )
 {
-    Environment env( argc, argv );
-    Application app( argc, argv, makeAbout(), makeOptions() );
+    using namespace Feel;
 
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
+    Application app;
 
     /**
      * register the simgets
@@ -141,17 +140,17 @@ int main( int argc, char** argv )
 
     if ( polynomialOrder == 1 )
     {
-        app.add( new NIRBTEST<1>( app.vm(), app.about() ) );
+        app.add( new NIRBTEST<1>() );
     }
 
     else if ( polynomialOrder == 2 )
     {
-        app.add( new NIRBTEST<2>( app.vm(), app.about() ) );
+        app.add( new NIRBTEST<2>() );
     }
 
     else if ( polynomialOrder == 3 )
     {
-        app.add( new NIRBTEST<3>( app.vm(), app.about() ) );
+        app.add( new NIRBTEST<3>() );
     }
 
     else

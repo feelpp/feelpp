@@ -1,0 +1,63 @@
+Benchmark for Computer-Algebra Libraries
+========================================
+
+(jointly developed by the LiDIA and CLN developers, 1996)
+
+A. Elementary integer computations
+B. Transcendental functions
+C. Elementary polynomial functions
+D. Polynomial factorization
+
+A. Elementary integer computations:
+   The tests are run with N = 100, 1000, 10000, 100000 decimal digits.
+   Precompute x1 = floor((sqrt(5)+1)/2 * 10^(2N))
+              x2 = floor(sqrt(3) * 10^N)
+              x3 = 10^N+1
+   Then time the following operations:
+   1. Multiplication x1*x2,
+   2. Division (with remainder) x1 / x2,
+   3. integer_sqrt(x3),
+   4. gcd(x1,x2),
+A'. (from Pari)
+      u=1;v=1;p=1;q=1;for(k=1..1000){w=u+v;u=v;v=w;p=p*w;q=lcm(q,w);}
+
+B. Transcendental functions: The tests are run with a precision of
+   N = 100, 1000, 10000, 100000 decimal digits.
+   Precompute x1 = sqrt(2)
+              x2 = sqrt(3)
+              x3 = log(2)
+   Then time the following operations:
+   1. Multiplication x1*x2,
+   2. Square root sqrt(x3),
+   3. pi (once),
+   4. Euler's constant C (once),
+   5. e (once),
+   6. exp(-x1),
+   7. log(x2),
+   8. sin(5*x1),
+   9. cos(5*x1),
+  10. asin(x3),
+  11. acos(x3),
+  12. atan(x3),
+  13. sinh(x2),
+  14. cosh(x2),
+  15. asinh(x3),
+  16. acosh(1+x3),
+  17. atanh(x3).
+
+C. Univariate polynomials: The tests are run with degree N = 100, 1000, and
+   with coefficient bound M = 10^9, 10^20.
+   Precompute p1(X) = sum(i=0..2N, (floor(sqrt(5)*M*i) mod M)*(-1)^i * X^i)
+              p2(X) = sum(i=0..N, (floor(sqrt(3)*M*i) mod M) * x^i
+   Then time the following operations:
+   1. Multiplication p1(X)*p2(X),
+   2. Pseudo-division p1(X)*c^N = p2(X)*q(X)+r(X),
+   3. gcd(p1(X),p2(X)).
+
+D. Factorization of univariate polynomials: The benchmark by J. von zur Gathen.
+   For N = 500, precompute p := smallest prime >= pi*2^N.
+   Then time the following operation:
+   1. Factorize X^N+X+1 mod p in the ring F_p[X].
+   [von zur Gathen: A Polynomial Factorization Challenge.
+    SIGSAM Bulletin 26,2 (1992), 22-24.]
+

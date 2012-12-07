@@ -27,9 +27,7 @@
 */
 
 #define BOOST_TEST_MODULE test_lift
-//#define USE_LIFT
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -104,9 +102,9 @@ public:
     /**
      * Constructor
      */
-    TestLift( po::variables_map const& vm, AboutData const& about )
+    TestLift()
         :
-        super( vm, about ),
+        super(),
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
@@ -261,13 +259,13 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 
     if ( exporter->doExport() )
         {
-            Log() << "exportResults starts\n";
+            LOG(INFO) << "exportResults starts\n";
             exporter->step( 0 )->setMesh( mesh );
             exporter->step( 0 )->add( "u", u );
             exporter->step( 0 )->add( "glift", glift2 );
             exporter->step( 0 )->add( "g", gproj );
             exporter->save();
-            Log() << "exportResults done\n";
+            LOG(INFO) << "exportResults done\n";
         }
 } // TestLift::run
 
@@ -275,21 +273,14 @@ TestLift<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N
 /**
  * main code
  */
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( lift )
-Environment env( boost::unit_test::framework::master_test_suite().argc,
-                 boost::unit_test::framework::master_test_suite().argv );
 BOOST_AUTO_TEST_CASE( MyLiftCase )
 {
+    Application app;
 
-    Application app( boost::unit_test::framework::master_test_suite().argc,
-                     boost::unit_test::framework::master_test_suite().argv, makeAbout(), makeOptions() );
-
-    if ( app.vm().count( "help" ) )
-        {
-            std::cout << app.optionsDescription() << "\n";
-        }
     //app.add( new TestLift<1>( app.vm(), app.about() ) );
-    app.add( new TestLift<2>( app.vm(), app.about() ) );
+    app.add( new TestLift<2>() );
     //app.add( new TestLift<3>( app.vm(), app.about() ) );
     app.run();
 }

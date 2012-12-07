@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2005-11-08
 
   Copyright (C) 2005,2006 EPFL
@@ -24,7 +24,7 @@
 */
 /**
    \file test_space.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-11-08
  */
 #define USE_BOOST_TEST 1
@@ -36,11 +36,7 @@
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
-#if defined(USE_BOOST_TEST)
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
-#endif
+#include <testsuite/testsuite.hpp>
 
 #include <boost/timer.hpp>
 
@@ -75,11 +71,11 @@ public:
         typedef Mesh<Simplex<Dim, 1> > mesh_type;
         typedef Simplex<Dim, 1> convex_type;
 
-        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<N, Scalar> >, T> scalar_space_type;
+        typedef FunctionSpace<mesh_type, bases<Lagrange<N, Scalar> >, T> scalar_space_type;
         BOOST_STATIC_ASSERT( scalar_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( scalar_space_type::N_COMPONENTS == 1 );
 
-        typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<N, Vectorial> >, T> vectorial_space_type;
+        typedef FunctionSpace<mesh_type, bases<Lagrange<N, Vectorial> >, T> vectorial_space_type;
         BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
@@ -123,7 +119,7 @@ class TestSpace2
 {
 public:
     typedef Mesh<Simplex<Dim, 1> > mesh_type;
-    typedef fusion::vector<Lagrange<2, Vectorial>,
+    typedef bases<Lagrange<2, Vectorial>,
             Lagrange<1, Scalar>,
             Lagrange<1, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type, T> space_type;
@@ -299,12 +295,12 @@ public:
         typedef Mesh<Simplex<Dim, 1> > mesh_type;
         typedef Simplex<Dim, 1> convex_type;
 
-        typedef FunctionSpace<mesh_type, fusion::vector<BoundaryAdaptedPolynomialSet<N, Scalar> >, T> scalar_space_type;
+        typedef FunctionSpace<mesh_type, bases<BoundaryAdaptedPolynomialSet<N, Scalar> >, T> scalar_space_type;
         BOOST_STATIC_ASSERT( scalar_space_type::nDim == Dim );
         BOOST_STATIC_ASSERT( scalar_space_type::N_COMPONENTS == 1 );
 
         //std::cout << "antes vectorial\n";
-        //        typedef FunctionSpace<mesh_type, fusion::vector<detail::BoundaryAdaptedPolynomialSet<Dim, N, Vectorial, T> >, T> vectorial_space_type;
+        //        typedef FunctionSpace<mesh_type, bases<detail::BoundaryAdaptedPolynomialSet<Dim, N, Vectorial, T> >, T> vectorial_space_type;
         //	BOOST_STATIC_ASSERT( vectorial_space_type::nDim == Dim );
         //        BOOST_STATIC_ASSERT( vectorial_space_type::N_COMPONENTS == Dim );
 
@@ -450,9 +446,9 @@ public:
 
 #if USE_BOOST_TEST
 
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( space )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
 
 BOOST_AUTO_TEST_CASE( test_space1_11 )
 {

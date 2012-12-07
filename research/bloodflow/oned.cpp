@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-11-08
 
   Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file oned.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-11-08
  */
 #include <feel/options.hpp>
@@ -76,7 +76,7 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2007 University Joseph Fourier Grenoble 1" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Tiziano Passerini", "developer", "tiziano.passerini@polimit.it", "" );
     return about;
 
@@ -142,8 +142,8 @@ public:
         timers(),
         stats()
     {
-        Log() << "[OneD] hsize = " << meshSize << "\n";
-        //Log() << "[OneD] export = " << this->vm().count("export") << "\n";
+        LOG(INFO) << "[OneD] hsize = " << meshSize << "\n";
+        //LOG(INFO) << "[OneD] export = " << this->vm().count("export") << "\n";
 
         //timeSet->setTimeIncrement( 1.0 );
         //exporter->addTimeSet( timeSet );
@@ -159,8 +159,8 @@ public:
         timers(),
         stats()
     {
-        Log() << "[OneD] hsize = " << meshSize << "\n";
-        Log() << "[OneD] export = " << this->vm().count( "export" ) << "\n";
+        LOG(INFO) << "[OneD] hsize = " << meshSize << "\n";
+        LOG(INFO) << "[OneD] export = " << this->vm().count( "export" ) << "\n";
 
         //timeSet->setTimeIncrement( 1.0 );
         //exporter->addTimeSet( timeSet );
@@ -230,7 +230,7 @@ OneD::createMesh( double meshSize )
     mesh->accept( import );
 #endif
     timers["mesh"].second = timers["mesh"].first.elapsed();
-    Log() << "[timer] createMesh(): " << timers["mesh"].second << "\n";
+    LOG(INFO) << "[timer] createMesh(): " << timers["mesh"].second << "\n";
 
     return mesh;
 } // OneD::createMesh
@@ -267,7 +267,7 @@ OneD::run()
     //const int Left = 1;
     //const int Right = 2;
 
-    Log() << "----------------1----------------\n";
+    LOG(INFO) << "----------------1----------------\n";
 
     /*
      * The function space and some associate elements are then defined
@@ -282,7 +282,7 @@ OneD::run()
     timers["init"].second = timers["init"].first.elapsed();
     stats["ndof"] = Xh->nDof();
 
-    Log() << "----------------2----------------\n";
+    LOG(INFO) << "----------------2----------------\n";
 
     /*
      * a quadrature rule for numerical integration
@@ -302,7 +302,7 @@ OneD::run()
     value_type alpha = this->vm()["alpha"].as<value_type>();
     value_type Kr = this->vm()["Kr"].as<value_type>();
 
-    Log() << "----------------3----------------\n";
+    LOG(INFO) << "----------------3----------------\n";
 
 
 
@@ -322,7 +322,7 @@ OneD::run()
     vector_ptrtype rhsA( M_backend->newVector( Xh ) );
     vector_ptrtype rhsQ( M_backend->newVector( Xh ) );
 
-    Log() << "----------------4----------------\n";
+    LOG(INFO) << "----------------4----------------\n";
 
     sparse_matrix_ptrtype M( M_backend->newMatrix( Xh, Xh ) );
     sparse_matrix_ptrtype MA( M_backend->newMatrix( Xh, Xh ) );
@@ -339,15 +339,15 @@ OneD::run()
     An = ublas::scalar_vector<double>( An.size(), A0_coeff );
     Qn = ublas::scalar_vector<double>( Qn.size(), 0 );
 
-    Log() << "----------------5----------------\n";
+    LOG(INFO) << "----------------5----------------\n";
 
     int iteration = 1;
 
     // time loop
     for ( double t = dt; t < Tf; t+=dt, ++iteration )
     {
-        Log() << "============================================================\n";
-        Log() << "time = " << t << "\n";
+        LOG(INFO) << "============================================================\n";
+        LOG(INFO) << "time = " << t << "\n";
 
         auto H = mat<2,2>( constant( 0 ), constant( 1 ),
                            -alpha*( ( idv( Qn )/idv( An ) )^( 2 ) )+beta*sqrt( idv( An ) )/( 2*rho*A0 ), 2*alpha*idv( Qn )/idv( An ) );
@@ -415,8 +415,8 @@ OneD::run()
         ublas::vector<value_type> ubar( 2 );
         ubar[0] = Qn( 0.0 )/An( 0.0 );
         ubar[1] = Qn( 1.0 )/An( 1.0 );
-        Log() << "ubar(z=0)=" << ubar[0]<< "\n";
-        Log() << "ubar(z=L)=" << ubar[1]<< "\n";
+        LOG(INFO) << "ubar(z=0)=" << ubar[0]<< "\n";
+        LOG(INFO) << "ubar(z=L)=" << ubar[1]<< "\n";
 
         ublas::vector<value_type> c1( 2 );
         c1[0] = math::sqrt( beta_coeff/( 2*rho*A0_coeff ) )*math::pow( An( 0. ), .25 );
@@ -434,8 +434,8 @@ OneD::run()
         L1( 0, 1 )= 1;
         L1( 1, 0 )= -calpha[1]-alpha*ubar[1];
         L1( 1, 1 )= 1;
-        Log() << "L(z=0)=" << L0 << "]\n";
-        Log() << "L(z=L)=" << L1 << "]\n";
+        LOG(INFO) << "L(z=0)=" << L0 << "]\n";
+        LOG(INFO) << "L(z=L)=" << L1 << "]\n";
 
         ublas::vector<value_type> lambda0( 2 );
         lambda0[0] = alpha*ubar[0]+calpha[0];
@@ -444,8 +444,8 @@ OneD::run()
         lambda1[0] = alpha*ubar[1]+calpha[1];
         lambda1[1] = alpha*ubar[1]-calpha[1];
 
-        Log() << "Lambda(z=0)=[" << lambda0[0] << "," << lambda0[1] << "]\n";
-        Log() << "Lambda(z=L)=[" << lambda1[0] << "," << lambda1[1] << "]\n";
+        LOG(INFO) << "Lambda(z=0)=[" << lambda0[0] << "," << lambda0[1] << "]\n";
+        LOG(INFO) << "Lambda(z=L)=[" << lambda1[0] << "," << lambda1[1] << "]\n";
 
 
         // 2- compute the foot of the characteristic
@@ -456,8 +456,8 @@ OneD::run()
         ublas::vector<value_type> z1( 2 );
         z1[0] = 1.0 - dt*lambda1[0]; // this is inside(>0)
         z1[1] = 1.0 - dt*lambda1[1];
-        Log() << "foot(z=0)=[" << z0[1] << "\n";
-        Log() << "foot(z=K)=[" << z1[0] << "\n";
+        LOG(INFO) << "foot(z=0)=[" << z0[1] << "\n";
+        LOG(INFO) << "foot(z=K)=[" << z1[0] << "\n";
 
 
         // 3- solve the pseudo-characteristics variable ode
@@ -473,8 +473,8 @@ OneD::run()
         Z1[0]= L1( 0,0 )*An( z1[0] )+L0( 0,1 )*Qn( z1[0] )- // l_1 Un^*
                dt*( L1( 0,0 )*0+ L1( 0,1 )*Kr*Qn( z1[0] )/An( z1[0] ) );
 
-        Log() << "Z(z=0)=" << Z0 << "\n";
-        Log() << "Z(z=L)=" << Z1 << "\n";
+        LOG(INFO) << "Z(z=0)=" << Z0 << "\n";
+        LOG(INFO) << "Z(z=L)=" << Z1 << "\n";
 
         // WARNING: we simplified the L*B(U^*) because Beta
         // and A0 are actually constant for the moment
@@ -490,8 +490,8 @@ OneD::run()
         value_type Q_1=( Z1[1]-L1( 1,0 )*Z1[0]/L1( 0,0 ) )/( L1( 1,1 )-L1( 1,0 )*L1( 0,1 )/L1( 0,0 ) );
         value_type A_1=-L1( 0,1 )*Q_1/L1( 0,0 ) + Z1[0]/L1( 0,0 );
 
-        Log() << "A(z=0)=" << A_0 << " Q(z=0)=" << Q_0 << "\n";
-        Log() << "A(z=L)=" << A_1 << " Q(z=L)=" << Q_1 << "\n";
+        LOG(INFO) << "A(z=0)=" << A_0 << " Q(z=0)=" << Q_0 << "\n";
+        LOG(INFO) << "A(z=L)=" << A_1 << " Q(z=L)=" << Q_1 << "\n";
 
         form2( Xh, Xh, MA ) += on( markedfaces( mesh,"Left" ), Anp1, rhsA, constant( A_0 ) );
         form2( Xh, Xh, MA ) += on( markedfaces( mesh,"Right" ), Anp1, rhsA, constant( A_1 ) );
@@ -594,15 +594,15 @@ OneD::run()
         An = Anp1;
         Qn = Qnp1;
 
-        Log() << "[timer] run():     init: " << timers["init"].second << "\n";
-        Log() << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
-        Log() << "[timer] run():     o D : " << timers["assembly_D"].second << "\n";
-        Log() << "[timer] run():     o F : " << timers["assembly_F"].second << "\n";
-        Log() << "[timer] run():     o M : " << timers["assembly_M"].second << "\n";
-        Log() << "[timer] run():     o L : " << timers["assembly_L"].second << "\n";
-        Log() << "[timer] run():     o i : " << timers["assembly_evaluate"].second << "\n";
-        Log() << "[timer] run():   solver: " << timers["solver"].second << "\n";
-        Log() << "[timer] run():   solver: " << timers["export"].second << "\n";
+        LOG(INFO) << "[timer] run():     init: " << timers["init"].second << "\n";
+        LOG(INFO) << "[timer] run(): assembly: " << timers["assembly"].second << "\n";
+        LOG(INFO) << "[timer] run():     o D : " << timers["assembly_D"].second << "\n";
+        LOG(INFO) << "[timer] run():     o F : " << timers["assembly_F"].second << "\n";
+        LOG(INFO) << "[timer] run():     o M : " << timers["assembly_M"].second << "\n";
+        LOG(INFO) << "[timer] run():     o L : " << timers["assembly_L"].second << "\n";
+        LOG(INFO) << "[timer] run():     o i : " << timers["assembly_evaluate"].second << "\n";
+        LOG(INFO) << "[timer] run():   solver: " << timers["solver"].second << "\n";
+        LOG(INFO) << "[timer] run():   solver: " << timers["export"].second << "\n";
     }// time loop
 } // OneD::run
 
@@ -617,9 +617,9 @@ OneD::solve( sparse_matrix_ptrtype const& D,
     M_backend->solve( D, D, U, F, false );
     u = *U;
 
-    //Log() << "u = " << u.container() << "\n";
+    //LOG(INFO) << "u = " << u.container() << "\n";
     timers["solver"].second = timers["solver"].first.elapsed();
-    Log() << "[timer] solve(): " << timers["solver"].second << "\n";
+    LOG(INFO) << "[timer] solve(): " << timers["solver"].second << "\n";
 } // OneD::solve
 
 template<typename f1_type, typename f2_type>
@@ -637,7 +637,7 @@ OneD::exportResults( double t,
     exporter->save();
 
     timers["export"].second = timers["export"].first.elapsed();
-    Log() << "[timer] exportResults(): " << timers["export"].second << "\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
 } // OneD::export
 
 const uint16_type OneD::Order;

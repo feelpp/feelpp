@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-05-25
 
   Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file backendpetsc.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-05-25
  */
 
@@ -355,6 +355,7 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                         vector_ptrtype& x,
                         vector_ptrtype const& b )
 {
+    M_solver_petsc.setPrefix( this->prefix() );
     M_solver_petsc.setPreconditionerType( this->pcEnumType() );
     M_solver_petsc.setSolverType( this->kspEnumType() );
     if (!M_solver_petsc.initialized())
@@ -367,14 +368,17 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
                                   _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
     M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
+    M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
+    M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
-    //std::pair<size_type,value_type> res = M_solver_petsc.solve( *A, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
     auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
-    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>()/*first*/ << "\n";
-    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>()/*second*/ << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
-    //bool converged = (res.first < this->maxIterations()) && (res.second < this->rTolerance());
-    return res;//boost::make_tuple( converged, res.first, res.second );
+    if ( !res.template get<0>() )
+        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
+
+    return res;
 } // BackendPetsc::solve
 
 
@@ -384,6 +388,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
                         vector_type& x,
                         vector_type const& b )
 {
+    M_solver_petsc.setPrefix( this->prefix() );
     M_solver_petsc.setPreconditionerType( this->pcEnumType() );
     M_solver_petsc.setSolverType( this->kspEnumType() );
     if (!M_solver_petsc.initialized())
@@ -396,13 +401,17 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
                                   _maxit = this->maxIterations() );
     M_solver_petsc.setPrecMatrixStructure( this->precMatrixStructure() );
     M_solver_petsc.setMatSolverPackageType( this->matSolverPackageEnumType() );
+    M_solver_petsc.setShowKSPMonitor( this->showKSPMonitor() );
+    M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
-    std::pair<size_type,value_type> res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
-    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.first << "\n";
-    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.second << "\n";
+    auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
+    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
+    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
-    bool converged = ( res.first < this->maxIterations() ) && ( res.second < this->rTolerance() );
-    return boost::make_tuple( converged, res.first, res.second );
+    if ( !res.template get<0>() )
+        LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
+
+    return res;
 } // BackendPetsc::solve
 
 po::options_description backendpetsc_options( std::string const& prefix = "" );

@@ -4,11 +4,10 @@
 #include "penalisation.hpp"
 
 using namespace Feel;
-using namespace Feel::vf;
 
 template <int Dim>
-Penalisation<Dim>::Penalisation( int argc, char** argv, AboutData const& ad , po::options_description const& od ):
-    Application( argc,argv,ad,od ),
+Penalisation<Dim>::Penalisation():
+    Application(),
     H1( 2. ),
     H2( 2. ),
     L1( 4. ),
@@ -26,11 +25,11 @@ Penalisation<Dim>::Penalisation( int argc, char** argv, AboutData const& ad , po
     dt( this->vm()["DT"].template as<double>() ),
     Ylimit( this->vm()["Ylimit"].template as<double>() )
 {
-    std::cout<<"Dimension : "<<Dim<<std::endl;
+    LOG(INFO)<<"Dimension : "<<Dim<<"\n";
 
     if ( this->vm().count( "help" ) )
     {
-        std::cout << this->optionsDescription() << "\n";
+        LOG(INFO) << this->optionsDescription() << "\n";
         exit( 0 );
     }
 
@@ -40,16 +39,18 @@ Penalisation<Dim>::Penalisation( int argc, char** argv, AboutData const& ad , po
         this->changeRepository( boost::format( OutFolder ) );
 
     std::string File_Mesh= this->vm()["ImportMeshFromFile"].template as<std::string>();
-    std::cout<<"chargement maillage"<<std::endl;
-#if 0
-    mesh = loadGMSHMesh( _mesh=new mesh_type,
-                         _filename=File_Mesh,
-                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
-#else
-    mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=geo( _filename=File_Mesh,_dim=2,_h=this->vm()["hsize"].template as<double>() ),
-                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                           _partitions=this->comm().size() );
+    LOG(INFO)<<"chargement maillage"<<"\n";
+
+    if ( fs::path( File_Mesh ).extension().string() == ".msh" )
+        mesh = loadGMSHMesh( _mesh=new mesh_type,
+                             _filename=File_Mesh,
+                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                             _rebuild_partitions=true);
+    else
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=geo( _filename=File_Mesh,_dim=Dim,_h=Environment::vm(_name="hsize").template as<double>() ),
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+
 
 #if 0
     mesh_visu = createGMSHMesh( _mesh=new mesh_type,
@@ -58,30 +59,33 @@ Penalisation<Dim>::Penalisation( int argc, char** argv, AboutData const& ad , po
 #else
     mesh_visu = mesh;
 #endif
-#endif
+
     exporter.reset( Exporter<mesh_type>::New( this->vm(),this->about().appName() ) );
 
     Xh=space_type::New( mesh );
     Yh=space_carac_type::New( mesh );
     P0h=space_p0_type::New( mesh );
-    std::cout << "mesh.elements:" << mesh->numElements() << "\n";
-    std::cout << "P0h.nLocalDof:" << P0h->nLocalDof() << "\n";
-    std::cout << "Xi.nLocalDof:" << Yh->nLocalDof() << "\n";
+    LOG(INFO) << "mesh.elements:" << mesh->numElements() << "\n";
+    LOG(INFO) << "P0h.nLocalDof:" << P0h->nLocalDof() << "\n";
+    LOG(INFO) << "Xi.nLocalDof:" << Yh->nLocalDof() << "\n";
 
     t=0;
     iter=0;
     Tfinal=this->vm()["Tfinal"].template as<double>();
+    // if we are in test mode then do only one (or a small multiple of) time step
+    if ( Environment::vm().count( "test" ) )
+        Tfinal =  Environment::vm( _name="test" ).template as<int>()*dt;
     xp=this->vm()["x0"].template as<double>();
     yp=this->vm()["y0"].template as<double>();
     zp=this->vm()["z0"].template as<double>();
 
     backend= backend_type::build( this->vm(), "stokes_backend" );
 
-    U=Xh->element();
-    std::cout<<"U.size = "<<U.size()<<std::endl;
-    std::cout<<"U.constenair.size = "<<( U.container() ).size()<<std::endl;
+    U=Xh->elementPtr();
+    LOG(INFO)<<"U.size = "<<U->size()<<"\n";
+    LOG(INFO)<<"U.constenair.size = "<<( U->container() ).size()<<"\n";
 
-    std::cout<<"out of constructor"<<std::endl;
+    LOG(INFO)<<"out of constructor"<<"\n";
 }//Penalisation
 
 
@@ -91,21 +95,21 @@ void Penalisation<Dim>::initStokes()
     boost::timer local_chrono;
     auto V = Xh->element();
 
-    element_veloc_type u = U.template element<0>();
+    element_veloc_type u = U->template element<0>();
     element_veloc_type v = V.template element<0>();
 
-    element_pressure_type p= U.template element<1>();
+    element_pressure_type p= U->template element<1>();
     element_pressure_type q= V.template element<1>();
 
-    element_lag_type lambda= U.template element<2>();
+    element_lag_type lambda= U->template element<2>();
 
     auto deft = sym( gradt( u ) );
     auto def  = sym( grad( v ) );
 
-    std::cout<<"check mesh\n";
-    std::cout<<"H1 = "<<integrate( markedfaces( mesh, "Inflow" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<std::endl;
-    std::cout<<"Wall = "<<integrate( markedfaces( mesh, "Wall" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<std::endl;
-    std::cout<<"H2 = "<<integrate( markedfaces( mesh, "Outflowtop" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<std::endl;
+    LOG(INFO)<<"check mesh\n";
+    LOG(INFO)<<"H1 = "<<integrate( markedfaces( mesh, "Inflow" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<"\n";
+    LOG(INFO)<<"Wall = "<<integrate( markedfaces( mesh, "Wall" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<"\n";
+    LOG(INFO)<<"H2 = "<<integrate( markedfaces( mesh, "Outflowtop" ), vf::cst( 1. ) ).evaluate()( 0,0 )<<"\n";
 
     D=backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
@@ -120,8 +124,8 @@ void Penalisation<Dim>::initStokes()
 
     F->close();
     // F->printMatlab("F.m");
-    std::cout<<"F closed"<<std::endl;
-    std::cout<<"assemblage F  : "<<local_chrono.elapsed()<<" s"<<std::endl;
+    LOG(INFO)<<"F closed"<<"\n";
+    LOG(INFO)<<"assemblage F  : "<<local_chrono.elapsed()<<" s"<<"\n";
 
     local_chrono.restart();
 
@@ -138,8 +142,8 @@ void Penalisation<Dim>::initStokes()
     form2( Xh, Xh, C )+= integrate( elements( mesh ),id( lambda )*idt( q ) );
     C->close();
 
-    std::cout<<"Fin de l'assemblage statique (C) temps : "<<
-             local_chrono.elapsed()<<" s"<<std::endl;
+    LOG(INFO)<<"Fin de l'assemblage statique (C) temps : "<<
+             local_chrono.elapsed()<<" s"<<"\n";
 
     local_chrono.restart();
 
@@ -150,7 +154,7 @@ template <int Dim>
 void Penalisation<Dim>::stokes()
 {
     boost::timer local_chrono;
-    auto u = U.template element<0>();
+    auto u = U->template element<0>();
 
     auto V = Xh->element();
     auto v = V.template element<0>();
@@ -162,30 +166,30 @@ void Penalisation<Dim>::stokes()
     D=backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D )= integrate( marked3elements( mesh,1 ),
                                    idv( carac ) * nu * trace( def*trans( deft ) ) / epsilon );
-    std::cout<<"fin assemblage : "<<local_chrono.elapsed()<<" s"<<std::endl;
+    LOG(INFO)<<"fin assemblage : "<<local_chrono.elapsed()<<" s"<<"\n";
 
     local_chrono.restart();
     D->addMatrix( 1.0, C );
-    std::cout<<"fin copie ajout D : "<<local_chrono.elapsed()<<" s"<<std::endl;
+    LOG(INFO)<<"fin copie ajout D : "<<local_chrono.elapsed()<<" s"<<"\n";
 
     D->close();
 
     addCL();
 
-    backend->solve( _matrix=D,_solution=U,_rhs=F );
+    Feel::backend(_rebuild=true)->solve( _matrix=D,_solution=U,_rhs=F );
 
-    std::cout<<"fin resolution : "<<local_chrono.elapsed()<<" s"<<std::endl;
+    LOG(INFO)<<"fin resolution : "<<local_chrono.elapsed()<<" s"<<"\n";
 
     double Q0, Q1, Q2;
     Q0 = integrate( markedfaces( mesh,mesh->markerName( "Inflow" ) ),trans( idv( u ) )*vf::N() ).evaluate()( 0,0 );
     Q1 = integrate( markedfaces( mesh,mesh->markerName( "Outflowtop" ) ),trans( idv( u ) )*vf::N() ).evaluate()( 0,0 );
     Q2 = integrate( markedfaces( mesh,mesh->markerName( "Outflowbottom" ) ),trans( idv( u ) )*vf::N() ).evaluate()( 0,0 );
 
-    std::cout<<"Q0 = "<<Q0<<std::endl;
-    std::cout<<"Q1 = "<<Q1<<std::endl;
-    std::cout<<"Q2 = "<<Q2<<std::endl;
-    std::cout<<"div(u)="<<integrate( elements( mesh ),
-                                     divv( u ) ).evaluate()( 0,0 )<<std::endl;
+    LOG(INFO)<<"Q0 = "<<Q0<<"\n";
+    LOG(INFO)<<"Q1 = "<<Q1<<"\n";
+    LOG(INFO)<<"Q2 = "<<Q2<<"\n";
+    LOG(INFO)<<"div(u)="<<integrate( elements( mesh ),
+                                     divv( u ) ).evaluate()( 0,0 )<<"\n";
 
 }//stokes
 
@@ -193,7 +197,8 @@ void Penalisation<Dim>::stokes()
 template <int Dim>
 void Penalisation<Dim>::addCL()
 {
-    auto u = U.template element<0>();
+    LOG(INFO) << "adding boundary conditions...\n";
+    auto u = U->template element<0>();
 
     if ( Dim==2 )
     {
@@ -235,51 +240,67 @@ void Penalisation<Dim>::addCL()
             on( markedfaces( mesh, "Outflowbottom" ),
                 u, F,  - outflowbottom * vf::N() );
     }
-
+    LOG(INFO) << "adding boundary conditions done.\n";
 }
 
 
 template <int Dim>
 void Penalisation<Dim>::updateChi()
 {
+    LOG(INFO) << "update chi...\n";
     auto carac_expr = vf::chi( radius*radius >
                                ( vf::Px()-xp )*( vf::Px()-xp ) +
                                ( vf::Py()-yp )*( vf::Py()-yp ) +
                                ( vf::Pz()-zp )*( vf::Pz()-zp ) );
     carac=vf::project( Yh, elements( mesh ),carac_expr );
+    LOG(INFO) << "caracteristic function built...\n";
     p0.zero();
     p0 = integrate( _range=elements( mesh ),_expr=idv( carac ), _quad=_Q<6>() ).broken( P0h );
-
+    LOG(INFO) << "p0 built...\n";
+    google::FlushLogFiles(google::INFO);
+#if 0
     for ( auto it=p0.begin(),en=p0.end(); it != en; ++it )
     {
         if ( math::abs( *it ) > 1e-10 ) *it = 1;
 
         else *it = 0;
     }
-
+#else
+    p0 = vf::project( _space=P0h, _range=elements(mesh), _expr=chi(abs(idv(p0)) > 1e-10) );
+#endif
+    LOG(INFO) << "update marker3 built...\n";
+    google::FlushLogFiles(google::INFO);
     mesh->updateMarker3( p0 );
-    double aire = integrate( marked3elements( mesh,1 ),
-                             idv( carac ) ).evaluate()( 0,0 );
-    std::cout<<"updateChi: aire = "<<aire << "  (exact: " << M_PI*radius*radius << ")" <<std::endl;
+    LOG(INFO) << "updated marker3...\n";
+    google::FlushLogFiles(google::INFO);
+    LOG(INFO) << "number of marked 3 elements(1): " << nelements( marked3elements( mesh, 1 ) ) << "\n";
+    google::FlushLogFiles(google::INFO);
+    LOG(INFO) << "number of marked 3 elements(0): " << nelements( marked3elements( mesh, 0 ) ) << "\n";
+    google::FlushLogFiles(google::INFO);
+    LOG(INFO) << "updateChi: p0.size=  " << p0.size() << "\n";
+    google::FlushLogFiles(google::INFO);
+    LOG(INFO) << "updateChi: carac.size=  " << carac.size() << "\n";
+    google::FlushLogFiles(google::INFO);
 
-    std::cout << "number of marked 3 elements: " << std::distance( marked3elements( mesh, 1 ).get<1>(),
-              marked3elements( mesh, 1 ).get<2>() ) << "\n";
-    std::cout << "updateChi: p0.size=  " << p0.size() << "\n";
-    std::cout << "updateChi: carac.size=  " << carac.size() << "\n";
-    std::cout << "updateChi: mesh.size=  " << mesh->numElements() << "\n";
+    double aire = integrate( marked3elements( mesh, 1 ), idv( carac ) ).evaluate()( 0,0 );
+    LOG(INFO)<<"updateChi: aire = "<<aire << "  (exact: " << M_PI*radius*radius << ")" <<"\n";
+
+    google::FlushLogFiles(google::INFO);
+#if 0
     p0.printMatlab( "p0" );
     carac.printMatlab( "ca" );
+#endif
 }//updateChi
 
 
 template <int Dim>
 void Penalisation<Dim>::updatePosition()
 {
-    element_veloc_type u = U.template element<0>();
+    element_veloc_type u = U->template element<0>();
 
     double aire = integrate( marked3elements( mesh,1 ),
                              idv( carac ) ).evaluate()( 0,0 );
-    std::cout<<"aire = "<<aire<<std::endl;
+    LOG(INFO)<<"aire = "<<aire<<"\n";
 
     auto Velo = integrate( marked3elements( mesh,1 ),
                            idv( carac )*idv( u ) ).evaluate() / aire ;
@@ -294,14 +315,14 @@ void Penalisation<Dim>::updatePosition()
     else
         Vz = 0;
 
-    std::cout<<"Vx, Vy, Vz \n"<<Vx<<" "<<Vy<<" "<<Vz<<std::endl;
+    LOG(INFO)<<"Vx, Vy, Vz \n"<<Vx<<" "<<Vy<<" "<<Vz<<"\n";
 
     //Euler
     xp +=  dt * Vx;
     yp +=  dt * Vy;
     zp +=  dt * Vz;
 
-    std::cout<<"x y z \n"<<xp<<" "<<yp<<" "<<zp<<std::endl;
+    LOG(INFO)<<"x y z \n"<<xp<<" "<<yp<<" "<<zp<<"\n";
 
 }//updatePosition
 
@@ -312,8 +333,8 @@ void Penalisation<Dim>::exportResults()
     exporter->step( t )->setMesh( mesh_visu );
     exporter->step( t )->add( "elements", p0 );
     exporter->step( t )->add( "chi", carac );
-    exporter->step( t )->add( "u", U.template element<0>() );
-    exporter->step( t )->add( "p", U.template element<1>() );
+    exporter->step( t )->add( "u", U->template element<0>() );
+    exporter->step( t )->add( "p", U->template element<1>() );
     exporter->save();
 }//exportResults
 
@@ -325,12 +346,12 @@ void Penalisation<Dim>::run()
     p0=P0h->element();
     std::ofstream TrajFile;
     TrajFile.open( "Trajectory" );
-    TrajFile<<"# time  x  y  z  Vx  Vy  Vz"<<std::endl;
+    TrajFile<<"# time  x  y  z  Vx  Vy  Vz"<<"\n";
 
     chrono.restart();
     this->initStokes();
-    std::cout<<"Init_Stokes : "<<chrono.elapsed()<<" s"<<std::endl;
-
+    LOG(INFO)<<"Init_Stokes : "<<chrono.elapsed()<<" s"<<"\n";
+    google::FlushLogFiles(google::INFO);
     updateChi();
     exportResults();
 
@@ -339,15 +360,15 @@ void Penalisation<Dim>::run()
         chrono.restart();
         // need to rebuild backend (it stores information about chi !)
         // backend= backend_type::build(this->vm(), "stokes_backend");
-        // std::cout<<"reinit backend : "<<chrono.elapsed()<<" s"<<std::endl;
+        // LOG(INFO)<<"reinit backend : "<<chrono.elapsed()<<" s"<<"\n";
 
         iter++;
-        std::cout<<"===========================================================================================\n";
-        std::cout<<"stokes, iter "<<iter<<std::endl;
-        std::cout<<"t= "<<t<<std::endl;
+        LOG(INFO)<<"===========================================================================================\n";
+        LOG(INFO)<<"stokes, iter "<<iter<<"\n";
+        LOG(INFO)<<"t= "<<t<<"\n";
         chrono.restart();
         stokes();
-        std::cout<<"stokes : "<<chrono.elapsed()<<" s"<<std::endl;
+        LOG(INFO)<<"stokes : "<<chrono.elapsed()<<" s"<<"\n";
         updatePosition();
         updateChi();
 

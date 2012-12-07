@@ -1,0 +1,763 @@
+#This file was created by <bruno> Sun Feb 16 14:19:06 1997
+#LyX 0.10 (C) 1995 1996 Matthias Ettrich and the LyX Team
+\lyxformat 2.10
+\textclass article
+\begin_preamble
+\catcode`@=11 % @ ist ab jetzt ein gewoehnlicher Buchstabe
+\def\Res{\mathop{\operator@font Res}}
+\def\ll{\langle\!\langle}
+\def\gg{\rangle\!\rangle}
+\catcode`@=12 % @ ist ab jetzt wieder ein Sonderzeichen
+
+\end_preamble
+\language default
+\inputencoding latin1
+\fontscheme default
+\epsfig dvips
+\papersize a4paper 
+\paperfontsize 12 
+\baselinestretch 1.00 
+\secnumdepth 3 
+\tocdepth 3 
+\paragraph_separation indent 
+\quotes_language english 
+\quotes_times 2 
+\paperorientation portrait 
+\papercolumns 0 
+\papersides 1 
+\paperpagestyle plain 
+
+\layout LaTeX Title
+
+The diagonal of a rational function
+\layout Description
+
+Theorem:
+\layout Standard
+
+Let 
+\begin_inset Formula  \( M \)
+\end_inset 
+
+ be a torsion-free 
+\begin_inset Formula  \( R \)
+\end_inset 
+
+-module, and 
+\begin_inset Formula  \( d>0 \)
+\end_inset 
+
+.
+ Let 
+\begin_inset Formula 
+\[
+f=\sum _{n_{1},...,n_{d}}a_{n_{1},...,n_{d}}\, x_{1}^{n_{1}}\cdots x_{d}^{n_{d}}\in M[[x_{1},\ldots x_{d}]]\]
+
+\end_inset 
+
+be a rational function, i.
+e.
+ there are 
+\begin_inset Formula  \( P\in M[x_{1},\ldots ,x_{d}] \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( Q\in R[x_{1},\ldots ,x_{d}] \)
+\end_inset 
+
+ with 
+\begin_inset Formula  \( Q(0,\ldots ,0)=1 \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( Q\cdot f=P \)
+\end_inset 
+
+.
+ Then the full diagonal of 
+\begin_inset Formula  \( f \)
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+g=\sum ^{\infty }_{n=0}a_{n,\ldots ,n}\, x_{1}^{n}\]
+
+\end_inset 
+
+is a D-finite element of 
+\begin_inset Formula  \( M[[x_{1}]] \)
+\end_inset 
+
+, w.
+r.
+t.
+ 
+\begin_inset Formula  \( R[x_{1}] \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( \{\partial _{x_{1}}\} \)
+\end_inset 
+
+.
+
+\layout Description
+
+Proof:
+\layout Standard
+
+From the hypotheses, 
+\begin_inset Formula  \( M[[x_{1},\ldots ,x_{d}]] \)
+\end_inset 
+
+ is a torsion-free differential module over 
+\begin_inset Formula  \( R[x_{1},\ldots ,x_{d}] \)
+\end_inset 
+
+ w.
+r.
+t.
+ the derivatives 
+\begin_inset Formula  \( \{\partial _{x_{1}},\ldots ,\partial _{x_{d}}\} \)
+\end_inset 
+
+, and 
+\begin_inset Formula  \( f \)
+\end_inset 
+
+ is a D-finite element of 
+\begin_inset Formula  \( M[[x_{1},\ldots ,x_{d}]] \)
+\end_inset 
+
+ over 
+\begin_inset Formula  \( R[x_{1},\ldots ,x_{d}] \)
+\end_inset 
+
+ w.
+r.
+t.
+ 
+\begin_inset Formula  \( \{\partial _{x_{1}},\ldots ,\partial _{x_{d}}\} \)
+\end_inset 
+
+.
+ Now apply the general diagonal theorem ([1], section 2.
+18) 
+\begin_inset Formula  \( d-1 \)
+\end_inset 
+
+ times.
+
+\layout Description
+
+Theorem:
+\layout Standard
+
+Let 
+\begin_inset Formula  \( R \)
+\end_inset 
+
+ be an integral domain of characteristic 0 and 
+\begin_inset Formula  \( M \)
+\end_inset 
+
+ simultaneously a torsion-free 
+\begin_inset Formula  \( R \)
+\end_inset 
+
+-module and a commutative 
+\begin_inset Formula  \( R \)
+\end_inset 
+
+-algebra without zero divisors.
+ Let 
+\begin_inset Formula 
+\[
+f=\sum _{m,n\geq 0}a_{m,n}x^{m}y^{n}\in M[[x,y]]\]
+
+\end_inset 
+
+ be a rational function.
+ Then the diagonal of 
+\begin_inset Formula  \( f \)
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+g=\sum ^{\infty }_{n=0}a_{n,n}\, x^{n}\]
+
+\end_inset 
+
+ is algebraic over 
+\begin_inset Formula  \( R[x] \)
+\end_inset 
+
+.
+
+\layout Description
+
+Motivation
+\protected_separator 
+of
+\protected_separator 
+proof:
+\layout Standard
+
+The usual proof ([2]) uses complex analysis and works only for 
+\begin_inset Formula  \( R=M=C \)
+\end_inset 
+
+.
+ The idea is to compute
+\begin_inset Formula 
+\[
+g(x^{2})=\frac{1}{2\pi i}\oint _{|z|=1}f(xz,\frac{x}{z})\frac{dz}{z}\]
+
+\end_inset 
+
+This integral, whose integrand is a rational function in 
+\begin_inset Formula  \( x \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( z \)
+\end_inset 
+
+, is calculated using the residue theorem.
+ Since 
+\begin_inset Formula  \( f(x,y) \)
+\end_inset 
+
+ is continuous at 
+\begin_inset Formula  \( (0,0) \)
+\end_inset 
+
+, there is a 
+\begin_inset Formula  \( \delta >0 \)
+\end_inset 
+
+ such that 
+\begin_inset Formula  \( f(x,y)\neq \infty  \)
+\end_inset 
+
+ for 
+\begin_inset Formula  \( |x|<\delta  \)
+\end_inset 
+
+, 
+\begin_inset Formula  \( |y|<\delta  \)
+\end_inset 
+
+.
+ It follows that for all 
+\begin_inset Formula  \( \varepsilon >0 \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( |x|<\delta \varepsilon  \)
+\end_inset 
+
+ all the poles of 
+\begin_inset Formula  \( f(xz,\frac{x}{z}) \)
+\end_inset 
+
+ are contained in 
+\begin_inset Formula  \( \{z:|z|<\varepsilon \}\cup \{z:|z|>\frac{1}{\varepsilon }\} \)
+\end_inset 
+
+.
+ Thus the poles of 
+\begin_inset Formula  \( f(xz,\frac{x}{z}) \)
+\end_inset 
+
+, all algebraic functions of 
+\begin_inset Formula  \( x \)
+\end_inset 
+
+ -- let's call them 
+\begin_inset Formula  \( \zeta _{1}(x),\ldots \zeta _{s}(x) \)
+\end_inset 
+
+ --, can be divided up into those for which 
+\begin_inset Formula  \( |\zeta _{i}(x)|=O(|x|) \)
+\end_inset 
+
+ as 
+\begin_inset Formula  \( x\rightarrow 0 \)
+\end_inset 
+
+ and those for which 
+\begin_inset Formula  \( \frac{1}{|\zeta _{i}(x)|}=O(|x|) \)
+\end_inset 
+
+ as 
+\begin_inset Formula  \( x\rightarrow 0 \)
+\end_inset 
+
+.
+ It follows from the residue theorem that for 
+\begin_inset Formula  \( |x|<\delta  \)
+\end_inset 
+
+
+\begin_inset Formula 
+\[
+g(x^{2})=\sum _{\zeta =0\vee \zeta =O(|x|)}\Res _{z=\zeta }\, f(xz,\frac{x}{z})\]
+
+\end_inset 
+
+ This is algebraic over 
+\begin_inset Formula  \( C(x) \)
+\end_inset 
+
+.
+ Hence 
+\begin_inset Formula  \( g(x) \)
+\end_inset 
+
+ is algebraic over 
+\begin_inset Formula  \( C(x^{1/2}) \)
+\end_inset 
+
+, hence also algebraic over 
+\begin_inset Formula  \( C(x) \)
+\end_inset 
+
+.
+
+\layout Description
+
+Proof:
+\layout Standard
+
+Let 
+\begin_inset Formula 
+\[
+h(x,z):=f(xz,\frac{x}{z})=\sum ^{\infty }_{m,n=0}a_{m,n}x^{m+n}z^{m-n}\in M[[xz,xz^{-1}]]\]
+
+\end_inset 
+
+Then 
+\begin_inset Formula  \( g(x^{2}) \)
+\end_inset 
+
+ is the coefficient of 
+\begin_inset Formula  \( z^{0} \)
+\end_inset 
+
+ in 
+\begin_inset Formula  \( h(x,z) \)
+\end_inset 
+
+.
+ Let 
+\begin_inset Formula  \( N(x,z):=z^{d}Q(xz,\frac{x}{z}) \)
+\end_inset 
+
+ (with 
+\begin_inset Formula  \( d:=\max (\deg _{y}P,\deg _{y}Q) \)
+\end_inset 
+
+) be 
+\begin_inset Quotes eld
+\end_inset 
+
+the denominator
+\begin_inset Quotes erd
+\end_inset 
+
+ of 
+\begin_inset Formula  \( h(x,z) \)
+\end_inset 
+
+.
+ We have 
+\begin_inset Formula  \( N(x,z)\in R[x,z] \)
+\end_inset 
+
+ and 
+\begin_inset Formula  \( N\neq 0 \)
+\end_inset 
+
+ (because 
+\begin_inset Formula  \( N(0,z)=z^{d} \)
+\end_inset 
+
+).
+ Let 
+\begin_inset Formula  \( K \)
+\end_inset 
+
+ be the quotient field of 
+\begin_inset Formula  \( R \)
+\end_inset 
+
+.
+ Thus 
+\begin_inset Formula  \( N(x,z)\in K[x][z]\setminus \{0\} \)
+\end_inset 
+
+.
+
+\layout Standard
+
+It is well-known (see [3], p.
+64, or [4], chap.
+ IV, §2, prop.
+ 8, or [5], chap.
+ III, §1) that the splitting field of 
+\begin_inset Formula  \( N(x,z) \)
+\end_inset 
+
+ over 
+\begin_inset Formula  \( K(x) \)
+\end_inset 
+
+ can be embedded into a field 
+\begin_inset Formula  \( L((x^{1/r})) \)
+\end_inset 
+
+, where 
+\begin_inset Formula  \( r \)
+\end_inset 
+
+ is a positive integer and 
+\begin_inset Formula  \( L \)
+\end_inset 
+
+ is a finite-algebraic extension field of 
+\begin_inset Formula  \( K \)
+\end_inset 
+
+, i.
+e.
+ a simple algebraic extension 
+\begin_inset Formula  \( L=K(\alpha )=K\alpha ^{0}+\cdots +K\alpha ^{u-1} \)
+\end_inset 
+
+.
+ 
+\layout Standard
+
+
+\begin_inset Formula  \( \widetilde{M}:=(R\setminus \{0\})^{-1}\cdot M \)
+\end_inset 
+
+ is a 
+\begin_inset Formula  \( K \)
+\end_inset 
+
+-vector space and a commutative 
+\begin_inset Formula  \( K \)
+\end_inset 
+
+-algebra without zero divisors.
+ 
+\begin_inset Formula  \( \widehat{M}:=\widetilde{M}\alpha ^{0}+\cdots +\widetilde{M}\alpha ^{u-1} \)
+\end_inset 
+
+ is an 
+\begin_inset Formula  \( L \)
+\end_inset 
+
+-vector space and a commutative 
+\begin_inset Formula  \( L \)
+\end_inset 
+
+-algebra without zero divisors.
+ 
+\layout Standard
+
+
+\begin_inset Formula 
+\begin{eqnarray*}
+\widehat{M}\ll x,z\gg  & := & \widehat{M}[[x^{1/r}\cdot z,x^{1/r}\cdot z^{-1},x^{1/r}]][x^{-1/r}]\\
+ & = & \left\{ \sum _{m,n}c_{m,n}x^{m/r}z^{n}:c_{m,n}\neq 0\Rightarrow |n|\leq m+O(1)\right\} 
+\end{eqnarray*}
+
+\end_inset 
+
+is an 
+\begin_inset Formula  \( L \)
+\end_inset 
+
+-algebra which contains 
+\begin_inset Formula  \( \widehat{M}((x^{1/r})) \)
+\end_inset 
+
+.
+
+\layout Standard
+
+Since 
+\begin_inset Formula  \( N(x,z) \)
+\end_inset 
+
+ splits into linear factors in 
+\begin_inset Formula  \( L((x^{1/r}))[z] \)
+\end_inset 
+
+, 
+\begin_inset Formula  \( N(x,z)=l\prod ^{s}_{i=1}(z-\zeta _{i}(x))^{k_{i}} \)
+\end_inset 
+
+, there exists a partial fraction decomposition of 
+\begin_inset Formula  \( h(x,z)=\frac{P(xz,\frac{x}{z})}{Q(xz,\frac{x}{z})}=\frac{z^{d}P(xz,\frac{x}{z})}{N(x,z)} \)
+\end_inset 
+
+ in 
+\begin_inset Formula  \( \widehat{M}\ll x,z\gg  \)
+\end_inset 
+
+:
+\layout Standard
+
+
+\begin_inset Formula 
+\[
+h(x,z)=\sum ^{l}_{j=0}P_{j}(x)z^{j}+\sum ^{s}_{i=1}\sum ^{k_{i}}_{k=1}\frac{P_{i,k}(x)}{(z-\zeta _{i}(x))^{k}}\]
+
+\end_inset 
+
+with 
+\begin_inset Formula  \( P_{j}(x),P_{i,k}(x)\in \widehat{M}((x^{1/r})) \)
+\end_inset 
+
+.
+
+\layout Standard
+
+Recall that we are looking for the coefficient of 
+\begin_inset Formula  \( z^{0} \)
+\end_inset 
+
+ in 
+\begin_inset Formula  \( h(x,z) \)
+\end_inset 
+
+.
+ We compute it separately for each summand.
+
+\layout Standard
+
+If 
+\begin_inset Formula  \( \zeta _{i}(x)=ax^{m/r}+... \)
+\end_inset 
+
+ with 
+\begin_inset Formula  \( a\in L\setminus \{0\} \)
+\end_inset 
+
+, 
+\begin_inset Formula  \( m>0 \)
+\end_inset 
+
+, or 
+\begin_inset Formula  \( \zeta _{i}(x)=0 \)
+\end_inset 
+
+, we have
+\layout Standard
+
+
+\begin_inset Formula 
+\begin{eqnarray*}
+\frac{1}{(z-\zeta _{i}(x))^{k}} & = & \frac{1}{z^{k}}\cdot \frac{1}{\left( 1-\frac{\zeta _{i}(x)}{z}\right) ^{k}}\\
+ & = & \frac{1}{z^{k}}\cdot \sum ^{\infty }_{j=0}{k-1+j\choose k-1}\left( \frac{\zeta _{i}(x)}{z}\right) ^{j}\\
+ & = & \sum ^{\infty }_{j=0}{k-1+j\choose k-1}\frac{\zeta _{i}(x)^{j}}{z^{k+j}}
+\end{eqnarray*}
+
+\end_inset 
+
+hence the coefficient of 
+\begin_inset Formula  \( z^{0} \)
+\end_inset 
+
+ in 
+\begin_inset Formula  \( \frac{P_{i,k}(x)}{(z-\zeta _{i}(x))^{k}} \)
+\end_inset 
+
+ is 
+\begin_inset Formula  \( 0 \)
+\end_inset 
+
+.
+
+\layout Standard
+\cursor 59 
+If 
+\begin_inset Formula  \( \zeta _{i}(x)=ax^{m/r}+... \)
+\end_inset 
+
+ with 
+\begin_inset Formula  \( a\in L\setminus \{0\} \)
+\end_inset 
+
+, 
+\begin_inset Formula  \( m<0 \)
+\end_inset 
+
+, we have
+\begin_inset Formula 
+\[
+\frac{1}{(z-\zeta _{i}(x))^{k}}=\frac{1}{(-\zeta _{i}(x))^{k}}\cdot \frac{1}{\left( 1-\frac{z}{\zeta _{i}(x)}\right) ^{k}}=\frac{1}{(-\zeta _{i}(x))^{k}}\cdot \sum _{j=0}^{\infty }{k-1+j\choose k-1}\left( \frac{z}{\zeta _{i}(x)}\right) ^{j}\]
+
+\end_inset 
+
+hence the coefficient of 
+\begin_inset Formula  \( z^{0} \)
+\end_inset 
+
+ in 
+\begin_inset Formula  \( \frac{P_{i,k}(x)}{(z-\zeta _{i}(x))^{k}} \)
+\end_inset 
+
+ is 
+\begin_inset Formula  \( \frac{P_{i,k}(x)}{(-\zeta _{i}(x))^{k}} \)
+\end_inset 
+
+.
+
+\layout Standard
+
+The case 
+\begin_inset Formula  \( \zeta _{i}(x)=ax^{m/r}+... \)
+\end_inset 
+
+ with 
+\begin_inset Formula  \( a\in L\setminus \{0\} \)
+\end_inset 
+
+, 
+\begin_inset Formula  \( m=0 \)
+\end_inset 
+
+, cannot occur, because it would imply 
+\begin_inset Formula  \( 0=N(0,\zeta _{i}(0))=N(0,a)=a^{d}. \)
+\end_inset 
+
+
+\layout Standard
+
+Altogether we have
+\begin_inset Formula 
+\[
+g(x^{2})=[z^{0}]h(x,z)=P_{0}(x)+\sum _{\frac{1}{\zeta _{i}(x)}=o(x)}\sum ^{k_{i}}_{k=1}\frac{P_{i,k}(x)}{(-\zeta _{i}(x))^{k}}\in \widehat{M}((x^{1/r}))\]
+
+\end_inset 
+
+
+\layout Standard
+
+Since all 
+\begin_inset Formula  \( \zeta _{i}(x) \)
+\end_inset 
+
+(in 
+\begin_inset Formula  \( L((x^{1/r})) \)
+\end_inset 
+
+) and all 
+\begin_inset Formula  \( P_{j}(x),P_{i,k}(x) \)
+\end_inset 
+
+ (in 
+\begin_inset Formula  \( \widehat{M}((x^{1/r})) \)
+\end_inset 
+
+) are algebraic over 
+\begin_inset Formula  \( K(x) \)
+\end_inset 
+
+, the same holds also for 
+\begin_inset Formula  \( g(x^{2}) \)
+\end_inset 
+
+.
+ Hence 
+\begin_inset Formula  \( g(x) \)
+\end_inset 
+
+ is algebraic over 
+\begin_inset Formula  \( K(x^{1/2}) \)
+\end_inset 
+
+, hence also over 
+\begin_inset Formula  \( K(x) \)
+\end_inset 
+
+.
+ After clearing denominators, we finally conclude that 
+\begin_inset Formula  \( g(x) \)
+\end_inset 
+
+ is algebraic over 
+\begin_inset Formula  \( R[x] \)
+\end_inset 
+
+.
+
+\layout Bibliography
+
+[1] Bruno Haible: D-finite power series in several variables.
+ 
+\shape italic 
+Diploma thesis, University of Karlsruhe, June 1989.
+
+\shape default 
+ Sections 2.
+18 and 2.
+20.
+
+\layout Bibliography
+
+[2] M.
+ L.
+ J.
+ Hautus, D.
+ A.
+ Klarner: The diagonal of a double power series.
+ 
+\shape italic 
+Duke Math.
+ J.
+
+\shape default 
+ 
+\series bold 
+38
+\series default 
+ (1971), 229-235.
+
+\layout Bibliography
+
+[3] C.
+ Chevalley: Introduction to the theory of algebraic functions of one variable.
+ 
+\shape italic 
+Mathematical Surveys VI.
+ American Mathematical Society.
+
+\layout Bibliography
+
+[4] Jean-Pierre Serre: Corps locaux.
+ 
+\shape italic 
+Hermann.
+ Paris 
+\shape default 
+1968.
+
+\layout Bibliography
+
+[5] Martin Eichler: Introduction to the theory of algebraic numbers and
+ functions.
+
+\shape italic 
+ Academic Press.
+ New York, London 
+\shape default 
+1966.
+

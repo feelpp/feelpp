@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2011-06-18
 
   Copyright (C) 2011 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file aw.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-06-18
  */
 #ifndef __AnisotropicWavespeed_H
@@ -76,7 +76,7 @@ makeAnisotropicWavespeedAbout( std::string const& str = "aw" )
                            Feel::AboutData::License_GPL,
                            "Copyright (c) 2011 Université de Grenoble 1 (Joseph Fourier)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 }
 
@@ -433,7 +433,7 @@ AnisotropicWavespeed::init()
         return;
 
     M_is_initialized = true;
-    Log() << "[AW::init] starting...\n";
+    LOG(INFO) << "[AW::init] starting...\n";
     // geometry is a ]0,1[x]0,1[
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 1,1 );
@@ -477,7 +477,7 @@ AnisotropicWavespeed::init()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Log() << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
     form1( Xh, M_Fq[0][0], _init=true ) = integrate( elements( mesh ), id( v ) );
@@ -502,7 +502,7 @@ AnisotropicWavespeed::init()
     M->close();
 
 
-    Log() << "[AW::init] done\n";
+    LOG(INFO) << "[AW::init] done\n";
 
 } // AnisotropicWavespeed::run
 
@@ -533,7 +533,7 @@ AnisotropicWavespeed::exportResults( element_type& U )
 {
     if ( M_do_export )
     {
-        Log() << "exportResults starts\n";
+        LOG(INFO) << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
 

@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-10-21
 
   Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file test_submesh.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-10-21
  */
 #define USE_BOOST_TEST 1
@@ -33,13 +33,7 @@
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
 #define BOOST_TEST_MODULE submesh testsuite
-// disable the main function creation, use our own
-//#define BOOST_TEST_NO_MAIN
-
-
-#include <boost/test/unit_test.hpp>
-using boost::unit_test::test_suite;
-#include <boost/test/floating_point_comparison.hpp>
+#include <testsuite/testsuite.hpp>
 
 #include <feel/feelalg/backend.hpp>
 
@@ -80,9 +74,9 @@ struct test_submesh: public Application
     typedef typename mesh_type::location_element_const_iterator location_element_const_iterator;
     typedef Backend<value_type> backend_type;
 
-    test_submesh( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    test_submesh()
         :
-        Application( argc, argv, ad, od ),
+        Application(),
         backend( Backend<double>::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
@@ -201,29 +195,27 @@ makeAbout()
                            Feel::AboutData::License_GPL,
                            "Copyright (C) 2010 Université Joseph Fourier (Grenoble I)" );
 
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@ujf-grenoble.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( submesh )
-Feel::Environment env( boost::unit_test::framework::master_test_suite().argc,
-                       boost::unit_test::framework::master_test_suite().argv );
-//typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<1> > dim_types;
-typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
+//typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D)" );
-    Feel::test_submesh<double,T::value> t( boost::unit_test::framework::master_test_suite().argc,
-                                           boost::unit_test::framework::master_test_suite().argv,
-                                           makeAbout(), makeOptions() );
+    Feel::test_submesh<double,T::value> t;
     t();
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D) done." );
 }

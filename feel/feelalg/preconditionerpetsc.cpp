@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-01-16
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,10 +23,11 @@
 */
 /**
    \file preconditionerpetsc.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
 #include <feel/feelalg/preconditionerpetsc.hpp>
+#include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/matrixpetsc.hpp>
 #include <feel/feelalg/vectorpetsc.hpp>
 
@@ -35,6 +36,9 @@ namespace Feel
 template <typename T>
 void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y )
 {
+    if ( !this->M_is_initialized ) this->init();
+
+
     VectorPetsc<T> & x_pvec = dynamic_cast<VectorPetsc<T>&>( const_cast<Vector<T>&>( x ) );
     VectorPetsc<T> & y_pvec = dynamic_cast<VectorPetsc<T>&>( const_cast<Vector<T>&>( y ) );
 
@@ -46,16 +50,33 @@ void PreconditionerPetsc<T>::apply( const Vector<T> & x, Vector<T> & y )
 }
 
 
+/*----------------------- inline functions ----------------------------------*/
+template <typename T>
+PreconditionerPetsc<T>::PreconditionerPetsc ( std::string const& name, WorldComm const& worldComm )
+    :
+    Preconditioner<T>( name, worldComm )
+{
+}
+template <typename T>
+PreconditionerPetsc<T>::PreconditionerPetsc ( PreconditionerPetsc const& p )
+    :
+    Preconditioner<T>( p )
+{
+}
+
+
+
+template <typename T>
+PreconditionerPetsc<T>::~PreconditionerPetsc ()
+{
+    this->clear ();
+}
 
 
 template <typename T>
 void PreconditionerPetsc<T>::init ()
 {
-    if ( !this->M_matrix )
-    {
-        std::cerr << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << std::endl;
-    }
-
+    CHECK( this->M_matrix ) << "ERROR: No matrix set for PreconditionerPetsc, but init() called" << "\n";
     this->M_matrix->close();
 
     // Clear the preconditioner in case it has been created in the past
@@ -63,14 +84,43 @@ void PreconditionerPetsc<T>::init ()
     {
         // Create the preconditioning object
         int ierr = PCCreate( this->worldComm().globalComm(),&M_pc );
+
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        ierr = PCSetFromOptions ( M_pc );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        const PCType pc_type;
+        ierr = PCGetType ( M_pc, &pc_type );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+        LOG(INFO) << "preconditionerpetsc set as "  << pc_type << "\n";
         MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>( this->M_matrix.get() );
 
         M_mat = pmatrix->mat();
+
+        if (this->M_preconditioner_type==FIELDSPLIT_PRECOND )
+        {
+            ierr = PCSetType( M_pc,( char* ) PCFIELDSPLIT );
+            CHKERRABORT( this->worldComm(),ierr );
+            pmatrix->updatePCFieldSplit( M_pc );
+        }
+
+    }
+    else if (this->M_mat_has_changed)
+    {
+        MatrixPetsc<T> * pmatrix = dynamic_cast<MatrixPetsc<T>*>( this->M_matrix.get() );
+        M_mat = pmatrix->mat();
+        if (this->M_preconditioner_type==FIELDSPLIT_PRECOND )
+        {
+            int ierr = PCSetType( M_pc,( char* ) PCFIELDSPLIT );
+            CHKERRABORT( this->worldComm(),ierr );
+            pmatrix->updatePCFieldSplit( M_pc );
+        }
+        this->M_mat_has_changed = false;
     }
 
-    int ierr = PCSetOperators( M_pc,M_mat,M_mat,( MatStructure )SAME_NONZERO_PATTERN );
+    //int ierr = PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::SAME_NONZERO_PATTERN) );
+    //int ierr = PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(MatrixStructure::DIFFERENT_NONZERO_PATTERN) );
+    int ierr = PCSetOperators( M_pc,M_mat,M_mat, PetscGetMatStructureEnum(this->M_prec_matrix_structure) );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the PCType.  Note: this used to be done *before* the call to
@@ -80,7 +130,11 @@ void PreconditionerPetsc<T>::init ()
     // the operators have been set.
     // 2.) It should be safe to call set_petsc_preconditioner_type()
     // multiple times.
-    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,this->worldComm() );
+    VLOG(2) << "prec : "  << this->M_preconditioner_type << "\n";
+    setPetscPreconditionerType( this->M_preconditioner_type,this->M_matSolverPackage_type,M_pc,this->worldComm(),this->name() );
+    VLOG(2) << "mat solver package : "  << this->M_matSolverPackage_type << "("  << Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>() << ")\n";
+    std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
+    this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
 
     this->M_is_initialized = true;
 }
@@ -89,21 +143,91 @@ void PreconditionerPetsc<T>::init ()
 template <typename T>
 void PreconditionerPetsc<T>::clear ()
 {
+    LOG(INFO) << "PreconditionerPetsc<T>::clear\n";
+
     if ( this-> M_is_initialized )
     {
         this->M_is_initialized = false;
-        PETSc::PCDestroy( M_pc );
+
+        PetscTruth is_petsc_initialized;
+        PetscInitialized( &is_petsc_initialized );
+        if ( is_petsc_initialized )
+        {
+            LOG(INFO) << "calling PCDestroy\n";
+            PETSc::PCDestroy( M_pc );
+        }
     }
+
 }
 
 
+void
+configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::string prefix = "" )
+{
+    LOG(INFO) << "configuring PC...\n";
+    google::FlushLogFiles(google::INFO);
+    const char* pctype;
+    int ierr = PCGetType ( pc, &pctype );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    LOG(INFO) << "configuring PC (" << prefix << "." << sub << ")" << pctype <<  "\n";
+    google::FlushLogFiles(google::INFO);
+    if ( std::string(pctype) == "gasm" )
+    {
+        std::string t = Environment::vm(_name="pc-gasm-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+        if ( t == "restrict" ) PCGASMSetType( pc, PC_GASM_RESTRICT );
+        if ( t == "basic" ) PCGASMSetType( pc, PC_GASM_BASIC );
+        if ( t == "interpolate" ) PCGASMSetType( pc, PC_GASM_INTERPOLATE );
+        if ( t == "none" ) PCGASMSetType( pc, PC_GASM_NONE );
 
+        int levels = Environment::vm(_name="pc-gasm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
+        PCGASMSetOverlap( pc, levels );
+
+    }
+    if ( std::string(pctype) == "asm" )
+    {
+        std::string t = Environment::vm(_name="pc-asm-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+        if ( t == "restrict" ) PCASMSetType( pc, PC_ASM_RESTRICT );
+        if ( t == "basic" ) PCASMSetType( pc, PC_ASM_BASIC );
+        if ( t == "interpolate" ) PCASMSetType( pc, PC_ASM_INTERPOLATE );
+        if ( t == "none" ) PCASMSetType( pc, PC_ASM_NONE );
+
+        int levels = Environment::vm(_name="pc-asm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
+        PCASMSetOverlap( pc, levels );
+
+    }
+    if ( std::string(pctype) == "lu" )
+    {
+        std::string t = Environment::vm(_name="pc-factor-mat-solver-package-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+        LOG(INFO) << "mat solver package: " << t << "\n";
+        google::FlushLogFiles(google::INFO);
+        // set factor package
+        PCFactorSetMatSolverPackage( pc, t.c_str() );
+
+    }
+    if ( std::string(pctype) == "ilu" )
+    {
+        // do we need to set the mat solver package for ilu ?
+        //PetscPCFactorSetMatSolverPackage( pc, "petsc" );
+        ierr = PCFactorSetLevels( pc, Environment::vm(_name="pc-factor-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>() );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        ierr = PCFactorSetFill( pc, Environment::vm(_name="pc-factor-fill",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<double>() );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+    }
+
+    if ( Environment::vm(_name="pc-view",_sub=sub,_prefix=prefix).as<bool>() )
+        PCView( pc, PETSC_VIEWER_STDOUT_SELF );
+
+    LOG(INFO) << "configuring PC " << pctype << " done\n";
+    google::FlushLogFiles(google::INFO);
+}
 
 template <typename T>
 void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                                           const MatSolverPackageType & matSolverPackage_type,
                                                           PC & pc,
-                                                          WorldComm const& worldComm )
+                                                          WorldComm const& worldComm,
+                                                          std::string const& name )
+
 {
     //mpi::communicator world;
     int ierr = 0;
@@ -141,11 +265,9 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
             // But PETSc has no truly parallel ILU, instead you have to set
             // an actual parallel preconditioner (e.g. block Jacobi) and then
             // assign ILU sub-preconditioners.
-            ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
+            ierr = PCSetType ( pc, ( char* ) PCGASM );
             CHKERRABORT( worldComm.globalComm(),ierr );
 
-            // Set ILU as the sub preconditioner type
-            setPetscSubpreconditionerType( PCILU, pc, worldComm );
         }
 
         break;
@@ -161,18 +283,22 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( worldComm.globalComm(),ierr );
+
         }
 
         else
         {
             // But PETSc has no truly parallel LU, instead you have to set
-            // an actual parallel preconditioner (e.g. block Jacobi) and then
+            // an actual parallel preconditioner (e.g. gasm) and then
             // assign LU sub-preconditioners.
-            ierr = PCSetType ( pc, ( char* ) PCBJACOBI );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+            ierr = PCSetType ( pc, ( char* ) PCGASM );
+#else
+            ierr = PCSetType ( pc, ( char* ) PCASM );
+#endif
             CHKERRABORT( worldComm.globalComm(),ierr );
 
-            // Set ILU as the sub preconditioner type
-            setPetscSubpreconditionerType( PCLU, pc, worldComm );
+
         }
 
         break;
@@ -180,14 +306,18 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
 
     case ASM_PRECOND:
     {
-        // In parallel, I think ASM uses ILU by default as the sub-preconditioner...
-        // I tried setting a different sub-preconditioner here, but apparently the matrix
-        // is not in the correct state (at this point) to call PCSetUp().
         ierr = PCSetType ( pc, ( char* ) PCASM );
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
     }
-
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+    case GASM_PRECOND:
+    {
+        ierr = PCSetType ( pc, ( char* ) PCGASM );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+    }
+#endif
     case JACOBI_PRECOND:
         ierr = PCSetType ( pc, ( char* ) PCJACOBI );
         CHKERRABORT( worldComm.globalComm(),ierr );
@@ -227,13 +357,16 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
-    case FIELDSPLIT_PRECOND: {
+    case FIELDSPLIT_PRECOND:
         ierr = PCSetType( pc,( char* ) PCFIELDSPLIT );
         CHKERRABORT( worldComm.globalComm(),ierr );
-        const PCType subpctypes[5] = { PCLU,PCNONE,PCLU,PCLU,PCLU };
-        const KSPType subksptypes[5] = { KSPPREONLY,KSPMINRES,KSPMINRES,KSPMINRES,KSPMINRES };
-        setPetscFieldSplitPreconditionerType( PC_COMPOSITE_SCHUR, subksptypes, subpctypes, pc, worldComm );
-        break; }
+        break;
+
+    case ML_PRECOND:
+        ierr = PCSetType( pc,( char* ) PCML );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        break;
+
 
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
@@ -252,22 +385,25 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     }
 
 #endif
+    // before configurePC else pc-view doesn't work really
+    if ( preconditioner_type == FIELDSPLIT_PRECOND )
+        setPetscFieldSplitPreconditionerType( pc, worldComm, name );
 
-    // Let the commandline override stuff
-    if ( preconditioner_type != AMG_PRECOND )
-    {
-        ierr = PCSetFromOptions( pc );
-        CHKERRABORT( worldComm.globalComm(),ierr );
-    }
+    configurePC( pc, worldComm, "", name );
+
+    if ( preconditioner_type == ASM_PRECOND ||
+         preconditioner_type == GASM_PRECOND ||
+         preconditioner_type == BLOCK_JACOBI_PRECOND )
+        setPetscSubpreconditionerType( pc, worldComm, name );
 }
 
 
 
 template <typename T>
 #if PETSC_VERSION_LESS_THAN(3,0,0)
-void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc )
+void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string const& prefix  )
 #else
-    void PreconditionerPetsc<T>::setPetscSubpreconditionerType( const PCType type, PC& pc, WorldComm const& worldComm )
+    void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, WorldComm const& worldComm, std::string const& prefix )
 #endif
 {
     // For catching PETSc error return codes
@@ -282,7 +418,9 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
     // error messages...
     ierr = PCSetUp( pc );
     CHKERRABORT( worldComm.globalComm(),ierr );
-
+    const PCType thepctype;
+    ierr = PCGetType( pc, &thepctype );
+    CHKERRABORT( worldComm.globalComm(),ierr );
     // To store array of local KSP contexts on this processor
     KSP* subksps;
 
@@ -292,11 +430,22 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
     // The global number of the first block on this processor.
     // This is not used, so we just pass PETSC_NULL instead.
     // int first_local;
-
     // Fill array of local KSP contexts
-    ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
-    CHKERRABORT( worldComm.globalComm(),ierr );
+    LOG(INFO) << "[setPetscSubpreconditionerType] preconditioner type: " << thepctype << "\n";
+    google::FlushLogFiles(google::INFO);
+    if ( std::string( thepctype ) == "block_jacobi" || std::string( thepctype ) == "bjacobi" )
+        ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+    else if ( std::string( thepctype ) == "asm" )
+        ierr = PCASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+    else if ( std::string( thepctype ) == "gasm" )
+        ierr = PCGASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
+#endif
 
+    CHKERRABORT( worldComm.globalComm(),ierr );
+    std::string subpctype =  Environment::vm(_name="pc-type",_sub="sub",_prefix=prefix).template as<std::string>();
+    LOG(INFO) << "subpctype: " << subpctype << "\n";
+    google::FlushLogFiles(google::INFO);
     // Loop over sub-ksp objects, set ILU preconditioner
     for ( int i=0; i<n_local; ++i )
     {
@@ -307,8 +456,11 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
         CHKERRABORT( worldComm.globalComm(),ierr );
 
         // Set requested type on the sub PC
-        ierr = PCSetType( subpc, type );
+        ierr = PCSetType( subpc, subpctype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
+        LOG(INFO) << "pc " << i << "\n";
+        google::FlushLogFiles(google::INFO);
+        configurePC( subpc, worldComm, "sub", prefix );
     }
 
 }
@@ -316,17 +468,39 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PCType type, PC& pc 
 
 template <typename T>
 void
-PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( const PCCompositeType type,
-                                                              const KSPType * subksptypes,
-                                                              const PCType * subpctypes,
-                                                              PC& pc,
-                                                              WorldComm const& worldComm )
+PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
+                                                              WorldComm const& worldComm,
+                                                              std::string const& prefix )
 {
     // For catching PETSc error return codes
     int ierr = 0;
 
-    ierr = PCFieldSplitSetType( pc, type );
+    PCCompositeType theFieldSplitType = PC_COMPOSITE_SCHUR;
+    std::string t = Environment::vm(_name="fieldsplit-type",_prefix=prefix,_worldcomm=worldComm).template as<std::string>();
+    if ( t == "schur" ) theFieldSplitType = PC_COMPOSITE_SCHUR;
+    if ( t == "additive" ) theFieldSplitType = PC_COMPOSITE_ADDITIVE;
+    if ( t == "multiplicative" ) theFieldSplitType = PC_COMPOSITE_MULTIPLICATIVE;
+    if ( t == "symmetric-multiplicative" ) theFieldSplitType = PC_COMPOSITE_SYMMETRIC_MULTIPLICATIVE;
+    if ( t == "special" ) theFieldSplitType = PC_COMPOSITE_SPECIAL;
+
+    ierr = PCFieldSplitSetType( pc, theFieldSplitType );
     CHKERRABORT( worldComm.globalComm(),ierr );
+
+    if ( t == "schur" )
+    {
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+        PCFieldSplitSchurFactType theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
+        std::string t2 = Environment::vm(_name="fieldsplit-schur-fact-type",_prefix=prefix,_worldcomm=worldComm).template as<std::string>();
+        if (t2 == "diag")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_DIAG;
+        if (t2 == "lower")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_LOWER;
+        if (t2 == "upper")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_UPPER;
+        if (t2 == "full")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
+
+        ierr = PCFieldSplitSetSchurFactType( pc,theSchurFactType );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+#endif
+    }
+
 
     // call necessary before PCFieldSplitGetSubKSP
     ierr = PCSetUp( pc );
@@ -342,9 +516,24 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( const PCCompositeT
     // Loop over sub-ksp objects, set ILU preconditioner
     for ( int i=0; i<n_local; ++i )
     {
-        // Set requested type on the sub KSP
-        ierr = KSPSetType ( subksps[i], subksptypes[i] );
+        std::string prefixSplit = prefixvm(prefix , (boost::format( "fieldsplit-%1%" )  %i ).str() );
+
+        std::string subksptype =  Environment::vm(_name="ksp-type",_prefix=prefixSplit).template as<std::string>();
+        //std::cout<< " subksptype " << subksptype << std::endl;
+        ierr = KSPSetType ( subksps[i], subksptype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
+#if 0
+        Mat A00;Mat A01;Mat A10; Mat A11;
+        ierr = PCFieldSplitGetSchurBlocks(pc,&A00,&A01,&A10, &A11);
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        if (i==0) {
+        ierr = KSPSetOperators( subksps[i], A00, A00,
+                                PetscGetMatStructureEnum(MatrixStructure::SAME_PRECONDITIONER));
+        CHKERRABORT( worldComm.globalComm(),ierr ); }
+#endif
+
+        LOG(INFO) << "configure split " << i << "\n";
+        google::FlushLogFiles(google::INFO);
 
         // Get pointer to sub KSP object's PC
         PC subpc;
@@ -352,8 +541,25 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( const PCCompositeT
         CHKERRABORT( worldComm.globalComm(),ierr );
 
         // Set requested type on the sub PC
-        ierr = PCSetType( subpc, subpctypes[i] );
+        std::string subpctype =  Environment::vm(_name="pc-type",_prefix=prefixSplit).template as<std::string>();
+        ierr = PCSetType( subpc, subpctype.c_str() );
         CHKERRABORT( worldComm.globalComm(),ierr );
+
+        //LOG(INFO) << "configure split " << i << " (" << prefixSplit << ")" << subpctype <<  "\n";
+        //google::FlushLogFiles(google::INFO);
+
+        // configure sub PC
+        configurePC( subpc, worldComm, "", prefixSplit );
+
+        // configure maybe sub sub PC
+        const char* thesubpctype;
+        ierr = PCGetType( subpc, &thesubpctype );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        if ( std::string( thesubpctype ) == "block_jacobi" || std::string( thesubpctype ) == "bjacobi" ||
+             std::string( thesubpctype ) == "asm" ||
+             std::string( thesubpctype ) == "gasm" )
+        setPetscSubpreconditionerType( subpc, worldComm, prefixSplit );
+
     }
 
 }
@@ -364,4 +570,3 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( const PCCompositeT
 template class PreconditionerPetsc<double>;
 
 }
-

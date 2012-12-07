@@ -2,7 +2,7 @@
 
    This file is part of the Feel library
 
-   Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2005-03-17
 
    Copyright (C) 2009 Université de Grenoble 1
@@ -24,7 +24,7 @@
 */
 /**
    \file about.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-03-17
  */
 #ifndef __about_H
@@ -164,7 +164,7 @@ private:
  *
  * @brief Holds information needed by the "About" box and other
  * classes.
- * @author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+ * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  */
 class AboutData
 {
@@ -179,8 +179,10 @@ public:
         License_Unknown = 0,
         License_GPL  = 1,
         License_GPL_V2 = 1,
+        License_GPL_V3 = 1,
         License_LGPL = 2,
         License_LGPL_V2 = 2,
+        License_LGPL_V3 = 2,
         License_BSD  = 3,
         License_Artistic = 4,
         License_QPL = 5,
@@ -219,18 +221,18 @@ public:
      *        is correct, "some.domain" is not.
      *
      * @param bugsEmailAddress The bug report email address string.
-     *        This defaults to the feel-dev@webmail.polimi.it mailing list.
+     *        This defaults to the feelpp-dev@feelpp.org mailing list.
      *
      */
-    AboutData( const char* appName,
-               const char* programName,
-               const char* version,
+    AboutData( const char* appName = "feel++",
+               const char* programName = "feel++",
+               const char* version = Info::versionString(),
                const char* shortDescription = "",
-               int licenseType = License_Unknown,
+               int licenseType = License_GPL_V3,
                const char* copyrightStatement = "",
                const char* text = "",
                const char* homePageAddress = "",
-               const char* bugsEmailAddress = "feel-dev@webmail.polimi.it"
+               const char* bugsEmailAddress = "feelpp-devel@feelpp.org"
              );
 
     AboutData( AboutData const& ad );
@@ -496,6 +498,27 @@ private:
  * @return the ostream
  */
 std::ostream& operator<<( std::ostream& os, AboutData const& about );
+
+BOOST_PARAMETER_FUNCTION(
+    (AboutData), about, tag,
+    ( required (name, *  ) )
+    ( optional
+      ( author,  *, "Feel++"  )
+      ( task,  *, "developer"  )
+      ( email,  *, "feelpp-devel@feelpp.org"  )
+      ( desc, *, "Feel++ application" )
+      ( license, (int), AboutData::License_GPL_V3 )
+      ( copyright, *, "Copyright (C) Feel++ Consortium" )
+      ( home, *, "http://www.feelpp.org" )
+      ( bugs, *, "feelpp-devel@feelpp.org" )
+      ( version, *, Feel::Info::versionString() )
+        ))
+{
+    AboutData a( name, name, version, desc,
+                 license, copyright, "", home, bugs );
+    a.addAuthor( author, task, email, home );
+    return a;
+}
 
 }
 #endif /* __about_H */

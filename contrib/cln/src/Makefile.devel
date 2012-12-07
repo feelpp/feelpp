@@ -1,0 +1,16 @@
+# This is the developer's makefile, not the user's makefile.
+# Don't use it unless you know exactly what you do!
+
+
+# Some important programs:
+SHELL = /bin/sh
+MAKE = make
+
+
+SUBMAKEFILES := $(shell find . -name Makefile.devel)
+
+all : force
+	for file in $(SUBMAKEFILES); do dir=`dirname $$file`; if test "$$dir" != "."; then (cd $$dir; $(MAKE) -f Makefile.devel) ; fi ; done
+
+
+force :

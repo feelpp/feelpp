@@ -2,10 +2,10 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-21
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@
 */
 /**
    \file options.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-21
  */
 #ifndef _FEELPP_OPTIONS_HPP
@@ -34,6 +34,9 @@
 namespace Feel
 {
 namespace po = boost::program_options;
+
+po::options_description
+file_options( std::string const& prefix );
 
 po::options_description
 feel_options( std::string const& prefix = "" );

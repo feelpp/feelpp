@@ -2,7 +2,7 @@
 
   This file is part of the Feel library
 
-  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-01-16
 
   Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
@@ -23,7 +23,7 @@
 */
 /**
    \file preconditionerpetsc.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-01-16
  */
 #ifndef __PreconditionerPetsc_H
@@ -67,7 +67,7 @@ public:
     //@{
 
     //! default constructor
-    PreconditionerPetsc( WorldComm const& worldComm=Environment::worldComm() );
+    PreconditionerPetsc( std::string const& name, WorldComm const& worldComm=Environment::worldComm() );
     //! copy constructor
     PreconditionerPetsc( PreconditionerPetsc const & );
     //! destructor
@@ -129,7 +129,8 @@ public:
     static void setPetscPreconditionerType ( const PreconditionerType & preconditioner_type,
                                              const MatSolverPackageType & matSolverPackage_type,
                                              PC & pc,
-                                             WorldComm const& worldComm=Environment::worldComm() );
+                                             WorldComm const& worldComm=Environment::worldComm(),
+                                             std::string const& prefix="");
 
 
     //@}
@@ -158,13 +159,11 @@ public:
      */
     Mat M_mat;
 
-    static void setPetscSubpreconditionerType( const PCType type, PC& pc, WorldComm const& worldComm=Environment::worldComm() );
+    static void setPetscSubpreconditionerType( PC& pc, WorldComm const& worldComm=Environment::worldComm(), std::string const& prefix="" );
 
-    static void setPetscFieldSplitPreconditionerType( const PCCompositeType type,
-                                                      const KSPType * subksptypes,
-                                                      const PCType * subpctypes,
-                                                      PC& pc,
-                                                      WorldComm const& worldComm=Environment::worldComm() );
+    static void setPetscFieldSplitPreconditionerType( PC& pc,
+                                                      WorldComm const& worldComm=Environment::worldComm(),
+                                                      std::string const& prefix="" );
 
 private:
     /**
@@ -186,23 +185,6 @@ private:
 
 
 
-/*----------------------- inline functions ----------------------------------*/
-template <typename T>
-FEELPP_STRONG_INLINE
-PreconditionerPetsc<T>::PreconditionerPetsc ( WorldComm const& worldComm )
-    :
-    Preconditioner<T>( worldComm )
-{
-}
-
-
-
-template <typename T>
-FEELPP_STRONG_INLINE
-PreconditionerPetsc<T>::~PreconditionerPetsc ()
-{
-    this->clear ();
-}
 
 } // Feel
 #endif /* __PreconditionerPetsc_H */
