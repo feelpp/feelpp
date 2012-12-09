@@ -148,11 +148,11 @@ public:
     typedef Lagrange<0, Scalar> basis_l_type;
 
     // use lagrange multipliers to ensure zero mean pressure
-#if defined( FEELPP_USE_LM )
+    //#if defined( FEELPP_USE_LM )
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
-#else
-    typedef bases<basis_u_type,basis_p_type> basis_type;
-#endif
+// #else
+//     typedef bases<basis_u_type,basis_p_type> basis_type;
+//#endif
 
     //# endmarker1 #
 
@@ -175,7 +175,7 @@ public:
     typedef Exporter<mesh_type> export_type;
 
     FEELPP_DONT_INLINE
-   Stokes_Dirichlet_Neumann( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+   Stokes_Dirichlet_Neumann( );
 
     // init mesh and space
     FEELPP_DONT_INLINE
@@ -216,9 +216,9 @@ private:
 }; // Stokes
 
 
-Stokes_Dirichlet_Neumann::Stokes_Dirichlet_Neumann( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+Stokes_Dirichlet_Neumann::Stokes_Dirichlet_Neumann( )
     :
-    super( argc, argv, ad, od ),
+    super( ),
     M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     mu( this->vm()["mu"].as<value_type>() ),
@@ -343,20 +343,36 @@ Stokes_Dirichlet_Neumann::run()
     auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
-#if (STOKESPRESSMESHTYPE == 2)
-    //*********************  solution exacte (profile de poiseuille)3D ********************
-    auto u_exact=vec(  (1-Py()*Py()-Pz()*Pz() ) , cst(0.) , cst(0.) );
-    auto p_exact=(-4*Px()+20);
-    auto  f=vec(cst(0.) , cst(0.), cst(0.) );
-#elif (STOKESPRESSMESHTYPE == 1)
-    //*********************  solution exacte (profile de poiseuille) **********************
-     auto u_exact=vec(Py()*(1-Py()),cst(0.) );
-     auto p_exact=(-2*Px()+2);
-     auto f=vec(cst(0.) , cst(0.) );
-#endif
-
+    auto r=1;
+    auto L=5;
     auto p_inlet=cst(1.);
     auto p_outlet=cst(0.);
+
+#if (STOKESPRESSMESHTYPE == 1)
+    //*********************  solution exacte (profile de poiseuille)2D *****************
+    auto u_exact=vec((1-(Py()*Py())/(r*r))*(p_inlet-p_outlet)/(2*mu*L),cst(0.) );
+    auto p_exact=(p_outlet-p_inlet)*Px()/L + p_inlet;
+    auto f=vec(cst(0.) , cst(0.) );
+
+#elif  (STOKESPRESSMESHTYPE == 2)
+    //*********************  solution exacte (profile de poiseuille)3D **********************
+    auto u_exact=vec(  (p_inlet-p_outlet)*r*r*(1-(Py()*Py()+Pz()*Pz())/(r*r))/(4*L) , cst(0.) , cst(0.) );
+    auto p_exact=(-Px()*(p_inlet-p_outlet)/L + p_inlet);
+    auto f=vec(cst(0.) , cst(0.), cst(0.) );
+#endif
+
+// #if (STOKESPRESSMESHTYPE == 2)
+//     //*********************  solution exacte (profile de poiseuille)3D ********************
+//     auto u_exact=vec(  (1-Py()*Py()-Pz()*Pz() ) , cst(0.) , cst(0.) );
+//     auto p_exact=(-4*Px()+20);
+//     auto  f=vec(cst(0.) , cst(0.), cst(0.) );
+// #elif (STOKESPRESSMESHTYPE == 1)
+//     //*********************  solution exacte (profile de poiseuille) **********************
+//      auto u_exact=vec(Py()*(1-Py()),cst(0.) );
+//      auto p_exact=(-2*Px()+2);
+//      auto f=vec(cst(0.) , cst(0.) );
+// #endif
+
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
@@ -375,16 +391,11 @@ Stokes_Dirichlet_Neumann::run()
     std::cout << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
     stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaNt,id( v ) ) );
-    //stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaNt,id( v ) )-inner( SigmaN,idt( u ) )+penalbc*inner( idt( u ),id( v ) )/hFace() );
     stokes +=integrate( markedfaces( mesh, "outerWall" ), -inner( SigmaNt,id( v ) ) );
-    //stokes +=integrate( markedfaces( mesh, "outerWall" ), -inner( SigmaNt,id( v ) )-inner( SigmaN,idt( u ) )+penalbc*inner( idt( u ),id( v ) )/hFace() );
-    // stokes +=integrate( markedfaces( mesh, "wall2" ), -inner( SigmaNt,id( v ) ) );
     stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaN,idt( u ) ) );
     stokes +=integrate( markedfaces( mesh, "inlet" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
     stokes +=integrate( markedfaces( mesh, "outerWall" ), -inner( SigmaN,idt( u ) ) );
     stokes +=integrate( markedfaces( mesh, "outerWall" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-    // stokes +=integrate( markedfaces( mesh, "wall2" ), -inner( SigmaN,idt( u ) ) );
-    //stokes +=integrate( markedfaces( mesh, "wall2" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
 #elif (STOKESPRESSMESHTYPE == 1)
     //******************* 2D **********************************
@@ -504,6 +515,22 @@ Stokes_Dirichlet_Neumann::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
+
+#if (STOKESPRESSMESHTYPE ==2)
+    auto deff = gradv(u);
+    auto SigmaNN =(-idv(p)*vf::N()+mu*deff*vf::N());
+    auto Fapp = integrate( boundaryfaces( mesh ) , SigmaNN).evaluate();
+    auto Fapp1 = Fapp(0,0); //pour la prémière composante
+    auto Fapp2 = Fapp(1,0); //pour la seconde
+    auto Fapp3 = Fapp(2,0);
+    std::cout << "Fapp1 = "<< Fapp(0,0) << "\n" ;
+    LOG(INFO) << "Fapp1 = "<< Fapp(0,0) << "\n" ;
+    std::cout << "Fapp2 = "<< Fapp(1,0) << "\n" ;
+    LOG(INFO) << "Fapp2 = "<< Fapp(0,0) << "\n" ;
+    std::cout << "Fapp3 = "<< Fapp(2,0) << "\n" ;
+    LOG(INFO) << "Fapp3 = "<< Fapp(0,0) << "\n" ;
+#endif
+
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
@@ -530,8 +557,10 @@ main( int argc, char** argv )
     using namespace Feel;
 
     Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions() );
-
+                     _desc=makeOptions(),
+                     _about=about(_name="stokes",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
     /* assertions handling */
     Feel::Assert::setLog( "stokes.assert" );
 
@@ -548,6 +577,6 @@ main( int argc, char** argv )
 
 
     /* define and run application */
-    Feel::Stokes_Dirichlet_Neumann Stokes_Dirichlet_Neumann( argc, argv, makeAbout(), makeOptions() );
+    Feel::Stokes_Dirichlet_Neumann Stokes_Dirichlet_Neumann;
    Stokes_Dirichlet_Neumann.run();
 }
