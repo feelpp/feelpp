@@ -35,15 +35,20 @@ int
 main( int argc, char** argv )
 {
 
-    Feel::Environment env( argc, argv );
-    Feel::OpusApp<Feel::OpusModelRB<2,1,2> > app( argc, argv,
-            Feel::makeEadsAbout( "eadscrb" ),
-            Feel::makeEadsOptions() );
+    Feel::Environment env( _argc=argc, _argv=argv,
+                           _desc=opusapp_options("eadscrb")
+                           .add(makeEadsOptions())
+                           .add(crbOptions())
+                           .add(eimOptions()),
+                           _about=makeEadsAbout( "eadscrb" ));
+
+    Feel::OpusApp<Feel::OpusModelRB<2,1,2> > app ;
 
     if ( app.vm().count( "help" ) )
     {
         std::cout << app.optionsDescription() << "\n";
         return 0;
+
     }
 
     app.run();

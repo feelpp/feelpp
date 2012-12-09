@@ -34,17 +34,17 @@
 #include <iomanip>
 #include <boost/foreach.hpp>
 
-#include <feel/options.hpp>
+#include <feel/feel.hpp>
+//#include <feel/options.hpp>
+//#include <feel/feelalg/backend.hpp>
+//#include <feel/feelalg/solvereigen.hpp>
+//#include <feel/feeldiscr/functionspace.hpp>
+//#include <feel/feeldiscr/region.hpp>
+//#include <feel/feeldiscr/operatorlagrangep1.hpp>
+//#include <feel/feelpoly/im.hpp>
+//#include <feel/feeldiscr/bdf2.hpp>
+//#include <feel/feelvf/vf.hpp>
 
-#include <feel/feelalg/backend.hpp>
-#include <feel/feelalg/solvereigen.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
-#include <feel/feeldiscr/operatorlagrangep1.hpp>
-#include <feel/feelpoly/im.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
-#include <feel/feelvf/vf.hpp>
 
 #include <opusdefs.hpp>
 

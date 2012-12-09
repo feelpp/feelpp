@@ -45,13 +45,13 @@ makeOptions()
     po::options_description lShapeoptions( "LShape options" );
     lShapeoptions.add_options()
         ( "nDim", po::value<int>()->default_value( 2 ), "dimension" )
-        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+        ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
         ( "Lx", po::value<double>()->default_value( 2.0 ), "length (x) of Lshape" )
         ( "Ly", po::value<double>()->default_value( 2.0 ), "length (y) of Lshape" )
         ( "Lz", po::value<double>()->default_value( 1.0 ), "length (z) of Lshape" )
         ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
         ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
-        ( "penaldir", Feel::po::value<double>()->default_value( 10 ),
+        ( "penaldir", Feel::po::value<double>()->default_value( 60 ),
           "penalisation parameter for the weak boundary Dirichlet formulation" )
         ("meshadapt_type", Feel::po::value<std::string>()->default_value( "isotropic" ), "type of mesh adaptation (isotropic, anisotropic)" )
         ("tolerance", Feel::po::value<double>()->default_value( 0.5 ), "tolerance parameter mesh adaptation criterion")
