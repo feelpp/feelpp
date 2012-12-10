@@ -77,6 +77,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB( po::variables_map const& vm )
 
     LOG(INFO) << "[constructor::vm] constructor, build backend done" << "\n";
     initParametrization();
+    init();
 }
 template<int OrderU, int OrderP, int OrderT>
 OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
@@ -100,6 +101,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
     backendM = backend_type::build( BACKEND_PETSC );
     LOG(INFO) << "[default] constructor, build backend done" << "\n";
     initParametrization();
+    init();
     LOG(INFO) << "[default] init done" << "\n";
 }
 template<int OrderU, int OrderP, int OrderT>
