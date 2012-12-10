@@ -669,13 +669,26 @@ project( FunctionSpaceType const& __functionspace,
 /// \cond DETAIL
 namespace detail
 {
+template<typename S>
+struct space_ptr
+{
+    typedef typename S::value_type type;
+};
+
+template<typename S>
+struct space_value
+{
+    typedef S type;
+};
+
 template<typename Args>
 struct project
 {
     typedef typename clean_type<Args,tag::space>::type the_space_type;
     typedef typename mpl::if_<is_shared_ptr<the_space_type>,
-            mpl::identity<typename the_space_type::value_type>,
-            mpl::identity<the_space_type> >::type::type _space_type;
+                              mpl::identity<space_ptr<the_space_type> >,
+                              mpl::identity<space_value<the_space_type> > >::type::type space_type;
+    typedef typename space_type::type _space_type;
     typedef boost::shared_ptr<_space_type> _space_ptrtype;
     typedef typename _space_type::element_type element_type;
     //typedef typename clean_type<Args,tag::expr>::type _expr_type;
