@@ -5541,7 +5541,7 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
         mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
     }
 
-    auto Xh = space_type::New( mesh );
+    //auto Xh = space_type::New( mesh );
 
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_output_index );
