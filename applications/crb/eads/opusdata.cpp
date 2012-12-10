@@ -466,6 +466,8 @@ OpusData::createMesh( double h, bool ref )
 
     //std::ofstream costr( "constants.geo" );
     std::ostringstream costr;
+    costr << gmshp->preamble()<<"\n";
+
     costr << "m=1;mm=10^-3;"
           << "\n"
           << "//\n"
@@ -512,6 +514,7 @@ OpusData::createMesh( double h, bool ref )
 
     std::ostringstream nameStr;
     std::ofstream ostr( "geometry_heat.geo" );
+    ostr << gmshp->preamble()<<"\n";
     ostr
             << "/**\n"
             << " * Geometry for the Opus model\n"
@@ -626,6 +629,7 @@ OpusData::createMeshLine( double h )
     gmsh_ptrtype gmshp( new Gmsh );
 
     std::ofstream costr( "constantsline.geo" );
+    costr<< gmshp->preamble()<<"\n";
     costr << "m=1;mm=10^-3;"
           << "\n"
           << "//\n"
@@ -656,6 +660,7 @@ OpusData::createMeshLine( double h )
           << "// thickness\n"
           << "e_A = " << this->component( "AIR" ).e() << "*m;\n";
 
+    ostr << gmshp->preamble()<<"\n";
     ostr << "Include \"constantsline.geo\";"
          << "\n"
          << "h=" << h << "*mm-1e-8;\n"
@@ -684,6 +689,7 @@ OpusData::createMeshCrossSection2( double h )
     gmsh_ptrtype gmshp( new Gmsh );
 
     std::ofstream costr( "constantscs2.geo" );
+    costr << gmshp->preamble()<<"\n";
     costr << "m=1;mm=10^-3;"
           << "\n"
           << "//\n"
@@ -738,6 +744,7 @@ OpusData::createMeshAir( double h )
     gmsh_ptrtype gmshp( new Gmsh );
 
     std::ostringstream costr;
+    costr << gmshp->preamble()<<"\n";
     costr << "m=1;mm=10^-3;"
           << "\n"
 
@@ -778,7 +785,7 @@ OpusData::createMeshAir( double h )
     std::ofstream ostr( "geometry_air.geo" );;
     std::ostringstream nameStr;
 
-
+    ostr << gmshp->preamble()<<"\n";
     ostr << "p1=newp;Point(p1) = {0,0,0,h};\n"
          << "p2=newp;Point(p2) = {e_PCB,0,0,h};\n"
          << "\n"
