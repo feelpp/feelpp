@@ -303,8 +303,8 @@ OpusModel<OrderU,OrderP,OrderT>::run()
     auto ft = constant( 1.0-( !this->data()->isSteady() )*math::exp( -time/3.0 ) );
     auto vy = ft*constant( 3. )/( 2.*( e_AIR-e_IC ) )*flow_rate*( 1.-vf::pow( ( Px()-( ( e_AIR+e_IC )/2+e_PCB ) )/( ( e_AIR-e_IC )/2 ),2 ) );
 
-    u = vf::project( _space=M_Xh->template functionSpace<0>(), _range=markedelements( M_Xh->mesh(), "AIR4" ), _expr=vec( constant( 0. ),vy ) );
-    p = vf::project( _space=M_Xh->template functionSpace<1>(), _range=markedelements( M_Xh->mesh(), "AIR4" ), _expr=constant( 0. ) );
+    u = vf::project( _space=M_Xh->template functionSpace<0>(), _expr=vec( constant( 0. ),vy ), _range=markedelements( M_Xh->mesh(), "AIR4" ) );
+    p = vf::project( _space=M_Xh->template functionSpace<1>(), _expr=constant( 0. ) , _range=markedelements( M_Xh->mesh(), "AIR4" ));
 
 
     LOG(INFO) << "fluid and temperature fields set\n";
