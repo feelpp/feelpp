@@ -93,21 +93,20 @@ public:
 
 
     /* velocity */
-    typedef fusion::vector<Lagrange<Order, Vectorial> > velocity_basis_type;
+    typedef bases<Lagrange<Order, Vectorial> > velocity_basis_type;
     typedef FunctionSpace<mesh_type, velocity_basis_type> velocity_functionspace_type;
     typedef boost::shared_ptr<velocity_functionspace_type> velocity_functionspace_ptrtype;
     typedef typename velocity_functionspace_type::element_type velocity_element_type;
     typedef boost::shared_ptr<velocity_element_type> velocity_element_ptrtype;
 
     /* pressure */
-    typedef fusion::vector<Lagrange<Order-1, Scalar> > pressure_basis_type;
+    typedef bases<Lagrange<Order-1, Scalar> > pressure_basis_type;
     typedef FunctionSpace<mesh_type, pressure_basis_type, value_type> pressure_functionspace_type;
     typedef boost::shared_ptr<pressure_functionspace_type> pressure_functionspace_ptrtype;
     typedef typename pressure_functionspace_type::element_type pressure_element_type;
     typedef boost::shared_ptr<pressure_element_type> pressure_element_ptrtype;
     /* fluid */
-    typedef fusion::vector<fem::Lagrange<Dim, Order, Vectorial, Continuous, double, Simplex>,
-            fem::Lagrange<Dim, Order-1, Scalar, Continuous, double, Simplex> > fluid_basis_type;
+    typedef bases<Lagrange<Order, Vectorial>, Lagrange<Order-1> > fluid_basis_type;
 
     typedef FunctionSpace<mesh_type, fluid_basis_type, value_type> fluid_functionspace_type;
     typedef boost::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
@@ -131,7 +130,7 @@ public:
     typedef OperatorLagrangeP1<pressure_functionspace_type> pressure_oplagp1_type;
     typedef boost::shared_ptr<pressure_oplagp1_type> pressure_oplagp1_ptrtype;
 
-    typedef FunctionSpace<typename velocity_oplagp1_type::image_mesh_type, fusion::vector<fem::Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<typename velocity_oplagp1_type::image_mesh_type, bases<Lagrange<Dim, 0, Scalar, Discontinuous> > > p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /* time */
