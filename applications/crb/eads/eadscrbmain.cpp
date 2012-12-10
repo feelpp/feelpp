@@ -34,25 +34,16 @@
 int
 main( int argc, char** argv )
 {
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=opusapp_options("eadscrb")
+                     .add(makeEadsOptions())
+                     .add(crbOptions())
+                     .add(eimOptions()),
+                     _about=makeEadsAbout( "eadscrb" ));
 
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=opusapp_options("eadscrb")
-                           .add(makeEadsOptions())
-                           .add(crbOptions())
-                           .add(eimOptions()),
-                           _about=makeEadsAbout( "eadscrb" ));
-
-    Feel::OpusApp<Feel::OpusModelRB<2,1,2> > app ;
-
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-
-    }
-
+    OpusApp<OpusModelRB<2,1,2> > app ;
     app.run();
-
 }
 
 
