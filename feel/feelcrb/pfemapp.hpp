@@ -105,7 +105,8 @@ public:
 
         if ( mutype <= 0 )
         {
-            mu = crbmodel_type::parameterspace_type::logRandom( model->parameterSpace() );
+            bool broadcast = true;
+            mu = crbmodel_type::parameterspace_type::logRandom( model->parameterSpace(), broadcast );
         }
 
         else if ( mutype == 1 )
