@@ -50,6 +50,8 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
   feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
 
+  feelpp_add_application( doc_stokes_pressure SRCS stokes_pressure.cpp LABEL doc )
+
   feelpp_add_application( doc_stokes_Dirichlet_Dirichlet SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc NO_TEST )
   feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_lm SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS FEELPP_USE_LM NO_TEST )
   feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_cylinder SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
