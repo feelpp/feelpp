@@ -273,6 +273,7 @@ Stokes::run()
     chrono.restart();
 #if defined( FEELPP_USE_LM )
     stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*T()*idt( lambda ) -trans( idt( u ))*T()*id( nu ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*T()*idt( lambda ) -trans( idt( u ))*T()*id( nu ) );
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
