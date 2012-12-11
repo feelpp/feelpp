@@ -37,6 +37,7 @@ endforeach()
 if( NOT FEELPP_MINIMAL_CONFIGURATION )
 
   feelpp_add_application( doc_laplacian SRCS laplacian.cpp LABEL doc CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )
+  feelpp_add_application( m1cssi_laplacian SRCS m1cssi_laplacian.cpp LABEL doc  )
 
   feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LABEL doc  )
   feelpp_add_application( doc_stokes_periodic SRCS stokes_periodic.cpp LABEL doc  )
