@@ -46,6 +46,7 @@ makeOptions()
         ( "p_in", Feel::po::value<double>()->default_value( 10 ), "pressure at inlet" )
         ( "p_out", Feel::po::value<double>()->default_value( 1 ), "pressure at outlet" )
         ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
+        ( "geofile", Feel::po::value<std::string>()->default_value( "tube.geo" ), "geometry file name" )
         ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
         ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
         ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
@@ -174,11 +175,7 @@ Stokes::init()
 
 
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
-                                         _shape="hypercube",
-                                         _dim=convex_type().dimension(),
-                                         _h=meshSize,
-                                         _xmax=L ) );
+                           _desc=geo(_filename=Environment::vm()["geofile"].as<std::string>(),_h=meshSize) );
 
 
     Xh = space_type::New( mesh );
@@ -225,7 +222,7 @@ Stokes::run()
 
     auto u_exact = expr<2,1,2>( u_exact_g, {x,y} );
     auto p_exact = expr( p_exact_g, {x,y} );
-	auto f_g = -mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose();
+	auto f_g = 1*(-mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose());
     LOG(INFO) << "f = " << f_g << "\n";
 
     //# marker5 #
@@ -254,8 +251,8 @@ Stokes::run()
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     stokes_rhs += integrate( markedfaces( mesh, wall ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
-    stokes_rhs += integrate( markedfaces( mesh,inlet ), inner( p_in*N(),id( v ) ) );
-    stokes_rhs += integrate( markedfaces( mesh,outlet ), inner( p_out*N(),id( v ) ) );
+    stokes_rhs += integrate( markedfaces( mesh,inlet ), inner( -p_in*N(),id( v ) ) );
+    stokes_rhs += integrate( markedfaces( mesh,outlet ), inner( -p_out*N(),id( v ) ) );
     LOG(INFO) << "chrono lhs: " << chrono.elapsed() << "\n";
     LOG(INFO) << "[stokes] vector local assembly done\n";
 
@@ -282,9 +279,11 @@ Stokes::run()
     stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaN,idt( u ) ) );
     stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
+#if! defined( FEELPP_USE_LM )
     //stokes +=integrate( markedfaces( mesh,{inlet,outlet} ), -inner( mu*deft*N(),id( v ) ) );
     stokes +=integrate( markedfaces( mesh,inlet ), -inner( mu*deft*N(),id( v ) ) );
     stokes +=integrate( markedfaces( mesh,outlet ), -inner( mu*deft*N(),id( v ) ) );
+#endif
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
     chrono.restart();
     //# endmarker7 #
