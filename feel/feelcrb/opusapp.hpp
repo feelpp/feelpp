@@ -346,7 +346,11 @@ public:
                 }
 
                 std::ostringstream mu_str;
-                for ( int i=0; i<size-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
+                //if too many parameters, it will crash
+                int sizemax=8;
+                if( size < sizemax )
+                    sizemax=size;
+                for ( int i=0; i<sizemax-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
                 mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
 
 
