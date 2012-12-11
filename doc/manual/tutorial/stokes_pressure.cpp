@@ -222,7 +222,7 @@ Stokes::run()
 
     auto u_exact = expr<2,1,2>( u_exact_g, {x,y} );
     auto p_exact = expr( p_exact_g, {x,y} );
-	auto f_g = 1*(-mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose());
+	auto f_g = 0*(-mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose());
     LOG(INFO) << "f = " << f_g << "\n";
 
     //# marker5 #
@@ -232,10 +232,10 @@ Stokes::run()
 
     //# marker6 #
     // total stress tensor (trial)
-    auto SigmaNt = -idt( p )*N()+mu*deft*N();
+    auto SigmaNt = -idt( p )*N()+2*mu*deft*N();
 
     // total stress tensor (test)
-    auto SigmaN = -id( p )*N()+mu*def*N();
+    auto SigmaN = -id( p )*N()+2*mu*def*N();
     //# endmarker6 #
 
     // f is such that f = \Delta u_exact + \nabla p_exact
@@ -249,7 +249,7 @@ Stokes::run()
     chrono.restart();
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
-    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
+    //stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     stokes_rhs += integrate( markedfaces( mesh, wall ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
     stokes_rhs += integrate( markedfaces( mesh,inlet ), inner( -p_in*N(),id( v ) ) );
     stokes_rhs += integrate( markedfaces( mesh,outlet ), inner( -p_out*N(),id( v ) ) );
@@ -262,15 +262,16 @@ Stokes::run()
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
 
-    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
+    stokes += integrate( elements( mesh ), 2*mu*inner( deft,def ) );
     LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #if defined( FEELPP_USE_LM )
-    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*T()*idt( lambda ) -trans( idt( u ))*T()*id( nu ) );
-    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*T()*idt( lambda ) -trans( idt( u ))*T()*id( nu ) );
+    auto t = vec(-Ny(),Nx());
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
@@ -281,8 +282,8 @@ Stokes::run()
 
 #if! defined( FEELPP_USE_LM )
     //stokes +=integrate( markedfaces( mesh,{inlet,outlet} ), -inner( mu*deft*N(),id( v ) ) );
-    stokes +=integrate( markedfaces( mesh,inlet ), -inner( mu*deft*N(),id( v ) ) );
-    stokes +=integrate( markedfaces( mesh,outlet ), -inner( mu*deft*N(),id( v ) ) );
+    stokes +=integrate( markedfaces( mesh,inlet ), -inner( 2*mu*deft*N(),id( v ) ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -inner( 2*mu*deft*N(),id( v ) ) );
 #endif
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
     chrono.restart();
