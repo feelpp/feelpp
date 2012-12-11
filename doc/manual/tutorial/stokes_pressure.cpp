@@ -58,6 +58,7 @@ makeOptions()
 
 namespace Feel
 {
+
 /**
  * \class Stokes class
  * \brief solves the stokes equations
@@ -155,7 +156,7 @@ Stokes::Stokes()
     p_in( this->vm()["p_in"].as<value_type>() ),
     p_out( this->vm()["p_out"].as<value_type>() ),
     mu( this->vm()["mu"].as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].as<value_type>() ),
+    penalbc( this->vm()["bccoeff"].as<value_type>() )
 
 
 {
@@ -246,13 +247,15 @@ Stokes::run()
     auto F = M_backend->newVector( Xh );
     auto D =  M_backend->newMatrix( Xh, Xh );
 
+    std::string inlet("inlet"), outlet("outlet"), wall("wall");
+
     chrono.restart();
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-    stokes_rhs += integrate( markedfaces( mesh, "wall" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
-    stokes_rhs += integrate( markedfaces( mesh,"inlet" ), inner( p_in*N(),id( v ) ) );
-    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( p_out*N(),id( v ) ) );
+    stokes_rhs += integrate( markedfaces( mesh, wall ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+    stokes_rhs += integrate( markedfaces( mesh,inlet ), inner( p_in*N(),id( v ) ) );
+    stokes_rhs += integrate( markedfaces( mesh,outlet ), inner( p_out*N(),id( v ) ) );
     LOG(INFO) << "chrono lhs: " << chrono.elapsed() << "\n";
     LOG(INFO) << "[stokes] vector local assembly done\n";
 
@@ -269,16 +272,18 @@ Stokes::run()
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #if defined( FEELPP_USE_LM )
-    stokes +=integrate( markedfaces( mesh,{"inlet","outlet"} ), id( v )*T()*idt( lambda ) + idt( u )*T()*id( nu ) );
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*T()*idt( lambda ) -trans( idt( u ))*T()*id( nu ) );
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
 
-    stokes +=integrate( markedfaces( mesh,"wall" ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh,"wall" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh,"wall" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaNt,id( v ) ) );
+    stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaN,idt( u ) ) );
+    stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
-    stokes +=integrate( markedfaces( mesh,{"inlet","outlet"} ), -inner( mu*deft*N(),id( v ) ) );
+    //stokes +=integrate( markedfaces( mesh,{inlet,outlet} ), -inner( mu*deft*N(),id( v ) ) );
+    stokes +=integrate( markedfaces( mesh,inlet ), -inner( mu*deft*N(),id( v ) ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -inner( mu*deft*N(),id( v ) ) );
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
     chrono.restart();
     //# endmarker7 #
