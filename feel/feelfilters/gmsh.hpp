@@ -685,7 +685,7 @@ BOOST_PARAMETER_FUNCTION(
 
     if ( save )
     {
-        exporter.reset( Exporter<_mesh_type,_mesh_type::nOrder>::New( "gmsh"/*test_app->vm()*/, "straightener" ) );
+        exporter = Exporter<_mesh_type,_mesh_type::nOrder>::New( "gmsh"/*test_app->vm()*/, "straightener" );
         exporter->step( 0 )->setMesh( _mesh );
         exporter->step( 0 )->add( "xHo", xHo );
         exporter->step( 0 )->add( "xLo", xLo );
