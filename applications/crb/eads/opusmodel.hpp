@@ -103,17 +103,16 @@ public:
             mpl::vector<mpl::int_<4>, mpl::int_<11>, mpl::int_<14> >
             > >  discontinuity_type;
 #if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
-    typedef fusion::vector<Lagrange<OrderT, Scalar, discontinuity_type> > temp_basis_type;
+    typedef bases<Lagrange<OrderT, Scalar, discontinuity_type> > temp_basis_type;
 #else
-    typedef fusion::vector<Lagrange<OrderT, Scalar> > temp_basis_type;
+    typedef bases<Lagrange<OrderT, Scalar> > temp_basis_type;
 #endif
-    typedef fusion::vector<Lagrange<OrderT, Vectorial> > grad_temp_basis_type;
-    typedef Periodic<1,2,value_type> periodic_type;
+    typedef bases<Lagrange<OrderT, Vectorial> > grad_temp_basis_type;
+    //typedef Periodic<1,2,value_type> periodic_type;
+    typedef Periodic<> periodic_type;
 
 
-
-
-    typedef FunctionSpace<mesh_type, temp_basis_type, periodic_type> temp_functionspace_type;
+    typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
     typedef boost::shared_ptr<temp_functionspace_type> temp_functionspace_ptrtype;
     typedef typename temp_functionspace_type::element_type temp_element_type;
     typedef boost::shared_ptr<temp_element_type> temp_element_ptrtype;
@@ -124,14 +123,14 @@ public:
     typedef boost::shared_ptr<grad_temp_element_type> grad_temp_element_ptrtype;
 
     /* 1D profil */
-    typedef fusion::vector<Lagrange<1, Scalar> > p1_basis_type;
+    typedef bases<Lagrange<1, Scalar> > p1_basis_type;
     typedef FunctionSpace<mesh12_type, p1_basis_type, value_type> p1_functionspace_type;
     typedef boost::shared_ptr<p1_functionspace_type> p1_functionspace_ptrtype;
     typedef typename p1_functionspace_type::element_type p1_element_type;
     typedef boost::shared_ptr<p1_element_type> p1_element_ptrtype;
 
     /* P0 */
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
     typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
     typedef boost::shared_ptr<p0_element_type> p0_element_ptrtype;
@@ -140,23 +139,22 @@ public:
     typedef boost::shared_ptr<thermal_operator_type> thermal_operator_ptrtype;
 
     /* velocity */
-    typedef fusion::vector<Lagrange<OrderU, Vectorial> > velocity_basis_type;
+    typedef bases<Lagrange<OrderU, Vectorial> > velocity_basis_type;
     typedef FunctionSpace<mesh_type, velocity_basis_type, value_type> velocity_functionspace_type;
     typedef boost::shared_ptr<velocity_functionspace_type> velocity_functionspace_ptrtype;
     typedef typename velocity_functionspace_type::element_type velocity_element_type;
     typedef boost::shared_ptr<velocity_element_type> velocity_element_ptrtype;
 
     /* pressure */
-    typedef fusion::vector<Lagrange<OrderP, Scalar> > pressure_basis_type;
+    typedef bases<Lagrange<OrderP, Scalar> > pressure_basis_type;
     typedef FunctionSpace<mesh_type, pressure_basis_type, value_type> pressure_functionspace_type;
     typedef boost::shared_ptr<pressure_functionspace_type> pressure_functionspace_ptrtype;
     typedef typename pressure_functionspace_type::element_type pressure_element_type;
     typedef boost::shared_ptr<pressure_element_type> pressure_element_ptrtype;
     /* fluid */
-    typedef fusion::vector<Lagrange<OrderU, Vectorial>,
-            Lagrange<OrderP, Scalar> > fluid_basis_type;
+    typedef bases<Lagrange<OrderU, Vectorial>,Lagrange<OrderP, Scalar> > fluid_basis_type;
 
-    typedef FunctionSpace<mesh_type, fluid_basis_type, value_type> fluid_functionspace_type;
+    typedef FunctionSpace<mesh_type, fluid_basis_type> fluid_functionspace_type;
     typedef boost::shared_ptr<fluid_functionspace_type> fluid_functionspace_ptrtype;
     typedef typename fluid_functionspace_type::element_type fluid_element_type;
     typedef boost::shared_ptr<fluid_element_type> fluid_element_ptrtype;

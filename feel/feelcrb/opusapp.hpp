@@ -346,7 +346,11 @@ public:
                 }
 
                 std::ostringstream mu_str;
-                for ( int i=0; i<size-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
+                //if too many parameters, it will crash
+                int sizemax=8;
+                if( size < sizemax )
+                    sizemax=size;
+                for ( int i=0; i<sizemax-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
                 mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
 
 
@@ -375,6 +379,9 @@ public:
                     std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                     if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                     printEntry( ostr, mu, o );
+
+                    std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                    res << "output="<< o[0] << "\n";
 
                 }
                 break;

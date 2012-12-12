@@ -190,8 +190,12 @@ public:
 
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
-    typedef Eigen::VectorXd theta_vector_type;
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
+    typedef std::vector< std::vector< double > > beta_vector_type;
+
+    typedef boost::tuple<
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
+        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
 
 
     /**
@@ -267,6 +271,40 @@ public:
         return 1;
     }
 
+    int mMaxA( int q )
+    {
+        if ( q < Qa() )
+            return 1;
+        else
+            throw std::logic_error( "[Model thermalblock] ERROR : try to acces to mMaxA(q) with a bad value of q");
+    }
+
+    int mMaxM( int q )
+    {
+        if ( q < 1 )
+            return 1;
+        else
+            throw std::logic_error( "[Model thermalblock] ERROR : try to acces to mMaxM(q) with a bad value of q");
+    }
+
+    int mMaxF( int output_index, int q)
+    {
+        if ( q < 1 )
+            return 1;
+        else
+            throw std::logic_error( "[Model thermalblock] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
+    }
+
+    int QInitialGuess() const
+    {
+        return 1;
+    }
+
+    int mMaxInitialGuess( int q )
+    {
+        return 1;
+    }
+
     /**
      * \brief Returns the function space
      */
@@ -293,36 +331,53 @@ public:
         return M_Dmu;
     }
 
-    boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=0 )
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
     {
-        M_thetaAq.resize( Qa() );
+        return computeBetaQm( mu , time );
+    }
+
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    computeBetaQm( parameter_type const& mu , double time=0 )
+    {
+        M_betaAqm.resize( Qa() );
+        for(int j=0; j<this->Qa(); j++)
+            M_betaAqm[j].resize(1);
 
         //mu_i inside the domain (all subdomains index)
         for ( int i=0; i<nx*ny; i++ )
         {
-            M_thetaAq( i ) = mu( i );
-            //std::cout<<"[computeThetaAq] M_thetaAq("<<i<<") = mu ("<<i<<")"<<std::endl;
+            M_betaAqm[i][0] = mu( i );
+            //std::cout<<"[computeBetaAqm] M_betaAqm("<<i<<") = mu ("<<i<<")"<<std::endl;
         }
 
         //IMPORTANT REMARK, subdomain indices begin at 1 and not 0
-        int index_theta=nx*ny;
+        int index_beta=nx*ny;
 
         for ( int i=0; i<north_subdomain_index.size(); i++ )
         {
-            M_thetaAq( index_theta ) = mu ( north_subdomain_index[i]-1 );
-            //std::cout<<"M_thetaAq("<<index_theta<<") = mu ("<<north_subdomain_index[i]-1<< ")"<<std::endl;
-            index_theta++;
+            M_betaAqm[index_beta][0] = mu ( north_subdomain_index[i]-1 );
+            //std::cout<<"M_betaAqm("<<index_beta<<") = mu ("<<north_subdomain_index[i]-1<< ")"<<std::endl;
+            index_beta++;
         }
 
-        M_thetaAq( index_theta ) = 1;
+        M_betaAqm[index_beta][0] = 1;
 
-        M_thetaFq.resize( Nl() );
-        M_thetaFq[0].resize( Ql( 0 ) );
+        M_betaFqm.resize( Nl() );
+        for(int i=0; i<Nl(); i++)
+        {
+            M_betaFqm[i].resize( Ql(i) );
+            for(int j=0;j<Ql(i);j++)
+                M_betaFqm[i][j].resize(1);
+        }
+        //compliant output
+        for ( int i=0; i<Ql( 0 ); i++ ) M_betaFqm[0][i][0] = 1;
 
-        for ( int i=0; i<Ql( 0 ); i++ ) M_thetaFq[0]( i ) = 1;
+        M_betaInitialGuessQm.resize( QInitialGuess() );
+        M_betaInitialGuessQm[0].resize( 1 );
+        M_betaInitialGuessQm[0][0] = 0;
 
-        return boost::make_tuple( M_thetaAq, M_thetaFq );
+        return boost::make_tuple( M_betaAqm, M_betaFqm, M_betaInitialGuessQm );
     }
 
 
@@ -330,9 +385,9 @@ public:
      * \brief return the coefficient vector \p q component
      *
      */
-    value_type thetaAq( int q ) const
+    value_type betaAqm( int q, int m ) const
     {
-        return M_thetaAq( q );
+        return M_betaAqm[q][m];
     }
 
 
@@ -340,18 +395,22 @@ public:
     /**
      * \brief return the coefficient vector
      */
-    std::vector<theta_vector_type> const& thetaFq() const
+    std::vector<beta_vector_type> const& betaFqm() const
     {
-        return M_thetaFq;
+        return M_betaFqm;
     }
 
+    value_type betaInitialGuessQm( int q, int m ) const
+    {
+        return M_betaInitialGuessQm[q][m];
+    }
 
     /**
      * \return the \p q -th term of the \p l -th output
      */
-    value_type thetaL( int l, int q ) const
+    value_type betaL( int l, int q, int m ) const
     {
-        return M_thetaFq[l]( q );
+        return M_betaFqm[l][q][m];
     }
 
     /**
@@ -378,12 +437,20 @@ public:
     /**
      * solve for a given parameter \p mu
      */
-    void solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu );
 
     /**
      * solve \f$ M u = f \f$
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
+
+    /**
+     * H1 scalar product
+     */
+    sparse_matrix_ptrtype innerProduct ( void )
+    {
+        return M;
+    }
 
     /**
      * returns the scalar product of the boost::shared_ptr vector x and
@@ -413,7 +480,7 @@ public:
      * \return the newly created matrix
      */
     sparse_matrix_ptrtype newMatrix() const;
-
+    vector_ptrtype newVector() const;
 private:
 
     po::variables_map M_vm;
@@ -448,16 +515,18 @@ private:
     std::vector<std::string> southMarkers ;
 
     //vectors contain index of subdomains along south and north boudaries
-    //useful to implement computeThetaq
+    //useful to implement computeBetaQm
     //they are filled in the init() function
     std::vector<int> south_subdomain_index;
     std::vector<int> north_subdomain_index;
 
-    std::vector<sparse_matrix_ptrtype> M_Aq;
-    std::vector<std::vector<vector_ptrtype> > M_Fq;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
+    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
-    theta_vector_type M_thetaAq;
-    std::vector<theta_vector_type> M_thetaFq;
+    beta_vector_type M_betaAqm;
+    beta_vector_type M_betaInitialGuessQm;
+    std::vector<beta_vector_type> M_betaFqm;
 
 }; // ThermalBlock
 
@@ -468,6 +537,8 @@ thermalBlockGeometry( int nx, int ny, double hsize )
     std::ostringstream ostr;
     std::ostringstream nameStr;
 
+    gmsh_ptrtype gmshp( new Gmsh );
+    ostr << gmshp->preamble() <<" \n ";
     ostr << "nx=" << nx << ";\n"
          << "ny=" << ny << ";\n"
          << "hsize=" << hsize << ";\n"
@@ -534,7 +605,6 @@ thermalBlockGeometry( int nx, int ny, double hsize )
 
     nameStr << "thermalblock";
 
-    gmsh_ptrtype gmshp( new Gmsh );
     gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );
     return gmshp;
@@ -585,21 +655,24 @@ ThermalBlock::init()
     pT = element_ptrtype( new element_type( Xh ) );
 
     //  initialization
-    M_Aq.resize( Qa() );
+    M_Aqm.resize( Qa() );
 
-    for ( int i=0; i<Qa(); i++ )
+    for ( int q=0; q<Qa(); q++ )
     {
-        M_Aq[i] = M_backend->newMatrix( Xh, Xh );
+        M_Aqm[q].resize( 1 );
+        M_Aqm[q][0] = M_backend->newMatrix( Xh, Xh );
     }
 
-    M_Fq.resize( 1 );
-    M_Fq[0].resize( Ql( 0 ) );
-
-    for ( int i=0; i<Ql( 0 ); i++ )
+    M_Fqm.resize( Nl() );
+    for(int l=0; l<Nl(); l++)
     {
-        M_Fq[0][i] = M_backend->newVector( Xh );
+        M_Fqm[l].resize( Ql(l) );
+        for(int q=0; q<Ql(l) ; q++)
+        {
+            M_Fqm[l][q].resize(1);
+            M_Fqm[l][q][0] = M_backend->newVector( Xh );
+        }
     }
-
     LOG(INFO) <<"[ThermalBlock::init] done allocating matrices/vectors \n";
     D = M_backend->newMatrix( Xh, Xh );
     F = M_backend->newVector( Xh );
@@ -626,51 +699,57 @@ ThermalBlock::init()
 
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
-    int index=0;//index for M_Fq or M_Aq
+    int index=0;//index for M_Fqm or M_Aqm
     int subdomain_index; //index for subdomains along a boundary
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) ;
+    form1( Xh, M_Fqm[0][0][0], _init=true ) ;
     BOOST_FOREACH( auto marker, southMarkers )
     {
-        form1( Xh, M_Fq[0][0] ) += integrate( markedfaces( mmesh,marker ), id( v ) );
+        form1( Xh, M_Fqm[0][0][0] ) += integrate( markedfaces( mmesh,marker ), id( v ) );
         subdomain_index = subdomainId( marker );
         south_subdomain_index.push_back( subdomain_index );
     }
-    M_Fq[0][0]->close();
+    M_Fqm[0][0][0]->close();
     LOG(INFO) <<"[ThermalBlock::init] done with rhs\n";
     // on boundary north we have u=0 so term from weak dirichlet condition
     // vanish in the right hand side
     BOOST_FOREACH( auto domain, domainMarkers )
     {
         LOG(INFO) <<"[ThermalBlock::init] domain " << domain << "\n";
-        form2( Xh, Xh, M_Aq[index],_init=true ) =
+        form2( Xh, Xh, M_Aqm[index][0],_init=true ) =
             integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) );
-        M_Aq[index]->close();
-        LOG(INFO) <<"[ThermalBlock::init] done with Aq[" << index << "]\n";
+        M_Aqm[index][0]->close();
+        LOG(INFO) <<"[ThermalBlock::init] done with Aqm[" << index << "]\n";
         index++;
 
     }
     LOG(INFO) <<"[ThermalBlock::init] done with domainMarkers\n";
-    int last_index_Aq = Qa()-1;
-    form2( Xh, Xh, M_Aq[last_index_Aq],_init=true );
+    int last_index_Aqm = Qa()-1;
+    form2( Xh, Xh, M_Aqm[last_index_Aqm][0],_init=true );
     BOOST_FOREACH( auto marker, northMarkers )
     {
         std::string sid = subdomainFromBoundary( marker );
-        form2( Xh, Xh, M_Aq[index], _init=true ) =  integrate( markedfaces( mmesh, marker ),
+        form2( Xh, Xh, M_Aqm[index][0], _init=true ) =  integrate( markedfaces( mmesh, marker ),
                 -gradt( u )*vf::N()*id( v )
                 -grad( u )*vf::N()*idt( v )
                                                              );
-        M_Aq[index]->close();
+        M_Aqm[index][0]->close();
         index++;
 
-        form2( Xh, Xh, M_Aq[last_index_Aq] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
+        form2( Xh, Xh, M_Aqm[last_index_Aqm][0] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
 
         subdomain_index = subdomainId( marker );
         north_subdomain_index.push_back( subdomain_index );
     }
-    M_Aq[last_index_Aq]->close();
+    M_Aqm[last_index_Aqm][0]->close();
     LOG(INFO) <<"[ThermalBlock::init] done with boundaryMarkers\n";
+
+    auto ini_cond = Xh->elementPtr();
+    ini_cond->setZero();
+    M_InitialGuessQm.resize( 1 );
+    M_InitialGuessQm[0].resize( 1 );
+    M_InitialGuessQm[0][0] = ini_cond;
 
     M = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
@@ -685,49 +764,56 @@ const uint16_type ThermalBlock::Order;
 typename ThermalBlock::affine_decomposition_type
 ThermalBlock::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Aq, M_Fq );
+    return boost::make_tuple( M_Aqm, M_Fqm, M_InitialGuessQm );
 }
 
 
 void
 ThermalBlock::update( parameter_type const& mu )
 {
+    D->close();
     D->zero();
 
-    for ( size_type q = 0; q < M_Aq.size(); ++q )
+    for ( size_type q = 0; q < M_Aqm.size(); ++q )
     {
-        //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
-        D->addMatrix( M_thetaAq[q], M_Aq[q] );
+        for ( size_type m = 0; m < mMaxA(q); ++m )
+        {
+            D->addMatrix( M_betaAqm[q][m], M_Aqm[q][m] );
+            //std::cout << "[affine decomp] scale q=" << q << " with " << M_betaAqm[q][m] << "\n";
+        }
     }
-
     F->close();
     F->zero();
 
-    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
+    for ( size_type q = 0; q < Ql(0); ++q )
     {
-        //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
-        F->add( M_thetaFq[0][q], M_Fq[0][q] );
+        for ( size_type m = 0; m < mMaxF(0,q); ++m )
+        {
+            F->add( M_betaFqm[0][q][m], M_Fqm[0][q][m] );
+        }
     }
+
 }
 
 
-void
+typename ThermalBlock::element_type
 ThermalBlock::solve( parameter_type const& mu )
 {
     //sd::cout<<"solve (mu) for mu = ["
     //int size = mu.size();
     //for(int i=0;i<size-1;i++) std::cout<<mu(i)<<" , ";
     //std::cout<< mu(size-1)<<"] "<<std::endl;
-    element_ptrtype u( new element_type( Xh ) );
-    this->solve( mu, u );
-    this->exportResults( *u );
+    //element_ptrtype u( new element_type( Xh ) );
+    this->solve( mu, pT );
+    //this->exportResults( *pT );
+    return *pT;
 }
 
 
 void
 ThermalBlock::solve( parameter_type const& mu, element_ptrtype& u )
 {
-    this->computeThetaq( mu );
+    this->computeBetaQm( mu );
     this->update( mu );
     M_backend->solve( _matrix=D,  _solution=u, _rhs=F );
 }
@@ -764,23 +850,41 @@ ThermalBlock::newMatrix() const
     return M_backend->newMatrix( Xh, Xh );
 }
 
+typename ThermalBlock::vector_ptrtype
+ThermalBlock::newVector() const
+{
+    return M_backend->newVector( Xh );
+}
+
 
 
 double
 ThermalBlock::output( int output_index, parameter_type const& mu )
 {
+
     using namespace vf;
     this->solve( mu, pT );
     vector_ptrtype U( M_backend->newVector( Xh ) );
     *U = *pT;
 
-    // right hand side (compliant)
-    if ( output_index == 0 )
+    double output=0;
+
+    if ( output_index==0 )
     {
-        return M_thetaFq[0]( 0 )*dot( M_Fq[0][0], U );
+        for ( int q=0; q<Ql( output_index ); q++ )
+        {
+            for ( int m=0; m<mMaxF(output_index,q); m++ )
+            {
+                output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+            }
+        }
+    }
+    else
+    {
+        throw std::logic_error( "[ThermalBlock::output] error with output_index : only 0 " );
     }
 
-    return 0;
+    return output;
 }//output
 
 

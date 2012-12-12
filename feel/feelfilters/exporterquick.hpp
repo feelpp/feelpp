@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-21
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -52,7 +52,7 @@ public:
 
     ExporterQuick( std::string const& name, po::variables_map& vm )
         :
-        exporter( new ExporterEnsight<mesh_type,1> ),//Exporter<mesh_type>::New( vm["exporter"].template as<std::string>() )->setOptions( vm ) ),
+        exporter( new ExporterEnsight<mesh_type,1> ( vm )),//Exporter<mesh_type>::New( vm["exporter"].template as<std::string>() )->setOptions( vm ) ),
         timeSet( new timeset_type( name ) )
     {
         exporter->setOptions( vm );
@@ -63,7 +63,7 @@ public:
     }
     ExporterQuick( std::string const& name, std::string const& exp )
         :
-        exporter( new ExporterEnsight<mesh_type,1> ),//Exporter<mesh_type>::New( exp ) ),
+        exporter( new ExporterEnsight<mesh_type,1> ( exp ) ),//Exporter<mesh_type>::New( exp ) ),
         timeSet( new timeset_type( name ) )
     {
         timeSet->setTimeIncrement( 1.0 );

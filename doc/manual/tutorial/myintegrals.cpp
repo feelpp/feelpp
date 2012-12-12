@@ -98,20 +98,13 @@ MyIntegrals<Dim>::run()
     /*
      * First we create the mesh
      */
-    auto mesh = mesh_type::New();
-    bool is_mesh_loaded = mesh->load( _name="mymesh",_path=".",_type="text" );
-
-    if ( !is_mesh_loaded )
-    {
-        //# marker11 #
-        mesh = createGMSHMesh( _mesh=new mesh_type,
-                                    _desc=domain( _name=shape,
-                                                  _shape=shape,
-                                                  _order=1,
-                                                  _dim=Dim,
-                                                  _h=meshSize ) );
-        mesh->save( _name="mymesh",_path=".",_type="text" );
-    }
+    //# marker11 #
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=domain( _name=shape,
+                                              _shape=shape,
+                                              _order=1,
+                                              _dim=Dim,
+                                              _h=meshSize ) );
     //# endmarker11 #
 
     /*
