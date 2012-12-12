@@ -2918,6 +2918,14 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
                     CHECK( dofs[it_elt->id()][l].get<0>() != invalid_size_type_value ) << "invalid dof entry after renumbering\n";
                 }
             }
+            // update dof markers
+            it_elt = M.beginElementWithProcessId( processor );
+            en_elt = M.endElementWithProcessId( processor );
+            for ( ; it_elt!=en_elt; ++it_elt )
+            {
+                size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
+                _M_dof_marker[gdof] = dofs[it_elt->id()][l].get<0>();
+            }
             _M_el_l2g = dofs;
         } // if
 
