@@ -2817,42 +2817,110 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         {
             this->addDofFromElement( *it_elt, next_free_dof, processor );
         } // elements loop
-#if 0
-        // do an extra loop to renumber the dof according to the markers
-        next_free_dof = 0;
+#if 1
+        if ( !mesh->markerNames().empty() &&
+             ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
+             ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
+        {
+            // do an extra loop to renumber the dof according to the markers
+            next_free_dof = 0;
 
-        it_elt = M.beginElementWithProcessId( processor );
-        en_elt = M.endElementWithProcessId( processor );
-        for ( ; it_elt!=en_elt; ++it_elt )
-        {
-            size_type nldof =
-                fe_type::nDofPerVolume * element_type::numVolumes +
-                fe_type::nDofPerFace * element_type::numGeometricFaces +
-                fe_type::nDofPerEdge * element_type::numEdges +
-                fe_type::nDofPerVertex * element_type::numVertices;
-            for( int l = 0; l < nldof; ++l )
+            // copy the dofs
+            Container dofs( _M_el_l2g );
+
+            it_elt = M.beginElementWithProcessId( processor );
+            en_elt = M.endElementWithProcessId( processor );
+            for ( ; it_elt!=en_elt; ++it_elt )
             {
-                size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
-                if ( _M_dof_marker[gdof] == 0 || _M_dof_marker[gdof] == 30 )
-                    _M_el_l2g[it_elt->id()][l].get<0>() = next_free_dof++;
+                size_type nldof =
+                    fe_type::nDofPerVolume * element_type::numVolumes +
+                    fe_type::nDofPerFace * element_type::numGeometricFaces +
+                    fe_type::nDofPerEdge * element_type::numEdges +
+                    fe_type::nDofPerVertex * element_type::numVertices;
+                for( int l = 0; l < nldof; ++l )
+                {
+                    size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
+                    if ( _M_dof_marker[gdof] == 0 || _M_dof_marker[gdof] == 30 )
+                        dofs[it_elt->id()][l].get<0>() = next_free_dof++;
+                    else
+                    {
+                        // init to invalid value to check afterwards that we handle all dofs
+                        dofs[it_elt->id()][l].get<0>() = invalid_size_type_value;
+                    }
+                }
             }
-        }
-        it_elt = M.beginElementWithProcessId( processor );
-        en_elt = M.endElementWithProcessId( processor );
-        for ( ; it_elt!=en_elt; ++it_elt )
-        {
-            size_type nldof =
-                fe_type::nDofPerVolume * element_type::numVolumes +
-                fe_type::nDofPerFace * element_type::numGeometricFaces +
-                fe_type::nDofPerEdge * element_type::numEdges +
-                fe_type::nDofPerVertex * element_type::numVertices;
-            for( int l = 0; l < nldof; ++l )
+            // handle faces
+            it_elt = M.beginElementWithProcessId( processor );
+            en_elt = M.endElementWithProcessId( processor );
+            for ( ; it_elt!=en_elt; ++it_elt )
             {
-                size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
-                if ( _M_dof_marker[gdof] == 0 || _M_dof_marker[gdof] == 30 )
-                    _M_el_l2g[it_elt->id()][l].get<0>() = next_free_dof++;
+                size_type nldof =
+                    fe_type::nDofPerVolume * element_type::numVolumes +
+                    fe_type::nDofPerFace * element_type::numGeometricFaces +
+                    fe_type::nDofPerEdge * element_type::numEdges +
+                    fe_type::nDofPerVertex * element_type::numVertices;
+                for( int l = 0; l < nldof; ++l )
+                {
+                    size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
+                    // face from top to bottom (up to 6 in 3D)
+                    if ( _M_dof_marker[gdof] >= 3 && _M_dof_marker[gdof] <= 8  )
+                        dofs[it_elt->id()][l].get<0>() = next_free_dof++;
+                }
             }
-        }
+            // handle wirebasket
+            it_elt = M.beginElementWithProcessId( processor );
+            en_elt = M.endElementWithProcessId( processor );
+            for ( ; it_elt!=en_elt; ++it_elt )
+            {
+                size_type nldof =
+                    fe_type::nDofPerVolume * element_type::numVolumes +
+                    fe_type::nDofPerFace * element_type::numGeometricFaces +
+                    fe_type::nDofPerEdge * element_type::numEdges +
+                    fe_type::nDofPerVertex * element_type::numVertices;
+                for( int l = 0; l < nldof; ++l )
+                {
+                    size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
+                    // marker wirebasket
+                    if ( _M_dof_marker[gdof] == 2  )
+                        dofs[it_elt->id()][l].get<0>() = next_free_dof++;
+                }
+            }
+            // handle crosspoints
+            it_elt = M.beginElementWithProcessId( processor );
+            en_elt = M.endElementWithProcessId( processor );
+            for ( ; it_elt!=en_elt; ++it_elt )
+            {
+                size_type nldof =
+                    fe_type::nDofPerVolume * element_type::numVolumes +
+                    fe_type::nDofPerFace * element_type::numGeometricFaces +
+                    fe_type::nDofPerEdge * element_type::numEdges +
+                    fe_type::nDofPerVertex * element_type::numVertices;
+                for( int l = 0; l < nldof; ++l )
+                {
+                    size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
+                    // marker crosspoints
+                    if ( _M_dof_marker[gdof] == 1  )
+                        dofs[it_elt->id()][l].get<0>() = next_free_dof++;
+                }
+            }
+            // check that everything is all right
+            it_elt = M.beginElementWithProcessId( processor );
+            en_elt = M.endElementWithProcessId( processor );
+            for ( ; it_elt!=en_elt; ++it_elt )
+            {
+                size_type nldof =
+                    fe_type::nDofPerVolume * element_type::numVolumes +
+                    fe_type::nDofPerFace * element_type::numGeometricFaces +
+                    fe_type::nDofPerEdge * element_type::numEdges +
+                    fe_type::nDofPerVertex * element_type::numVertices;
+                for( int l = 0; l < nldof; ++l )
+                {
+                    CHECK( dofs[it_elt->id()][l].get<0>() != invalid_size_type_value ) << "invalid dof entry after renumbering\n";
+                }
+            }
+            _M_el_l2g = dofs
+        } // if
+
 #endif // 0
         // printing Dof table only in debug mode
 #if !defined( NDEBUG )
