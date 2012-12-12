@@ -2825,6 +2825,12 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
             // do an extra loop to renumber the dof according to the markers
             next_free_dof = 0;
 
+            size_type nldof =
+                fe_type::nDofPerVolume * element_type::numVolumes +
+                fe_type::nDofPerFace * element_type::numGeometricFaces +
+                fe_type::nDofPerEdge * element_type::numEdges +
+                fe_type::nDofPerVertex * element_type::numVertices;
+
             // copy the dofs
             Container dofs( _M_el_l2g );
 
@@ -2832,11 +2838,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
             en_elt = M.endElementWithProcessId( processor );
             for ( ; it_elt!=en_elt; ++it_elt )
             {
-                size_type nldof =
-                    fe_type::nDofPerVolume * element_type::numVolumes +
-                    fe_type::nDofPerFace * element_type::numGeometricFaces +
-                    fe_type::nDofPerEdge * element_type::numEdges +
-                    fe_type::nDofPerVertex * element_type::numVertices;
                 for( int l = 0; l < nldof; ++l )
                 {
                     size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
@@ -2854,11 +2855,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
             en_elt = M.endElementWithProcessId( processor );
             for ( ; it_elt!=en_elt; ++it_elt )
             {
-                size_type nldof =
-                    fe_type::nDofPerVolume * element_type::numVolumes +
-                    fe_type::nDofPerFace * element_type::numGeometricFaces +
-                    fe_type::nDofPerEdge * element_type::numEdges +
-                    fe_type::nDofPerVertex * element_type::numVertices;
                 for( int l = 0; l < nldof; ++l )
                 {
                     size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
@@ -2872,11 +2868,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
             en_elt = M.endElementWithProcessId( processor );
             for ( ; it_elt!=en_elt; ++it_elt )
             {
-                size_type nldof =
-                    fe_type::nDofPerVolume * element_type::numVolumes +
-                    fe_type::nDofPerFace * element_type::numGeometricFaces +
-                    fe_type::nDofPerEdge * element_type::numEdges +
-                    fe_type::nDofPerVertex * element_type::numVertices;
                 for( int l = 0; l < nldof; ++l )
                 {
                     size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
@@ -2890,11 +2881,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
             en_elt = M.endElementWithProcessId( processor );
             for ( ; it_elt!=en_elt; ++it_elt )
             {
-                size_type nldof =
-                    fe_type::nDofPerVolume * element_type::numVolumes +
-                    fe_type::nDofPerFace * element_type::numGeometricFaces +
-                    fe_type::nDofPerEdge * element_type::numEdges +
-                    fe_type::nDofPerVertex * element_type::numVertices;
                 for( int l = 0; l < nldof; ++l )
                 {
                     size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
@@ -2908,24 +2894,24 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
             en_elt = M.endElementWithProcessId( processor );
             for ( ; it_elt!=en_elt; ++it_elt )
             {
-                size_type nldof =
-                    fe_type::nDofPerVolume * element_type::numVolumes +
-                    fe_type::nDofPerFace * element_type::numGeometricFaces +
-                    fe_type::nDofPerEdge * element_type::numEdges +
-                    fe_type::nDofPerVertex * element_type::numVertices;
                 for( int l = 0; l < nldof; ++l )
                 {
                     CHECK( dofs[it_elt->id()][l].get<0>() != invalid_size_type_value ) << "invalid dof entry after renumbering\n";
                 }
             }
+            dof_map_type dof_marker( _M_dof_marker );
             // update dof markers
             it_elt = M.beginElementWithProcessId( processor );
             en_elt = M.endElementWithProcessId( processor );
             for ( ; it_elt!=en_elt; ++it_elt )
             {
-                size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
-                _M_dof_marker[gdof] = dofs[it_elt->id()][l].get<0>();
+                for( int l = 0; l < nldof; ++l )
+                {
+                    size_type gdof = _M_el_l2g[it_elt->id()][l].get<0>();
+                    _M_dof_marker.insert(std::make_pair( dofs[it_elt->id()][l].get<0>(), dof_marker[gdof] ) );
+                }
             }
+            // overwrite dof table
             _M_el_l2g = dofs;
         } // if
 
