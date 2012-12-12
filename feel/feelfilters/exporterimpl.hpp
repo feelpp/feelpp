@@ -116,7 +116,7 @@ Exporter<MeshType, N>::~Exporter()
 {}
 
 template<typename MeshType, int N>
-Exporter<MeshType, N>*
+boost::shared_ptr<Exporter<MeshType, N> >
 Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix, WorldComm const& worldComm )
 {
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
@@ -130,11 +130,11 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
-    return exporter;
+    return boost::shared_ptr<Exporter<MeshType, N> >(exporter);
 }
 
 template<typename MeshType, int N>
-Exporter<MeshType, N>*
+boost::shared_ptr<Exporter<MeshType, N> >
 Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, WorldComm const& worldComm )
 {
     std::string estr = vm["exporter.format"].template as<std::string>();
@@ -152,7 +152,7 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     //std::cout << "[exporter::New] do export = " << exporter->doExport() << std::endl;
     exporter->addTimeSet( timeset_ptrtype( new timeset_type( prefix ) ) );
     exporter->setPrefix( prefix );
-    return exporter;
+    return boost::shared_ptr<Exporter<MeshType, N> >( exporter );
 }
 
 template<typename MeshType, int N>
