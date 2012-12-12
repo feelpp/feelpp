@@ -79,18 +79,19 @@ public:
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
     /*mesh*/
-    typedef Simplex<2> convex_type;
-    typedef Mesh<convex_type> mesh_type;
+    typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef Mesh<Simplex<1,1,2> > mesh_lag_type;
+    typedef boost::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
 
     /*basis*/
     //# marker1 #,
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<1, Scalar> basis_p_type;
-    typedef Lagrange<0, Scalar> basis_l_type;
+    typedef Lagrange<2, Scalar> basis_l_type;
     // use lagrange multipliers to ensure zero mean pressure
 #if defined( FEELPP_USE_LM )
-    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
+    typedef bases<basis_u_type,basis_p_type, basis_l_type,basis_l_type> basis_type;
 #else
     typedef bases<basis_u_type,basis_p_type> basis_type;
 #endif
@@ -98,8 +99,13 @@ public:
 
     /*space*/
     //# marker2 #
+#if defined( FEELPP_USE_LM )
+    typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag_type,mesh_lag_type>, basis_type> space_type;
+#else
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+#endif
     typedef boost::shared_ptr<space_type> space_ptrtype;
+
     //# endmarker2 #
 
     /* functions */
@@ -167,9 +173,8 @@ Stokes::Stokes()
 void
 Stokes::init()
 {
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%/P%3%P%4%/h_%5%/" )
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/P%2%P%3%/h_%4%/" )
                                    % this->about().appName()
-                                   % convex_type::name()
                                    % basis_u_type::nOrder % basis_p_type::nOrder
                                    % this->vm()["hsize"].as<double>() );
 
@@ -177,9 +182,14 @@ Stokes::init()
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=geo(_filename=Environment::vm()["geofile"].as<std::string>(),_h=meshSize) );
 
-
+#if defined (FEELPP_USE_LM)
+    auto mesh_lag1 = mesh->trace( markedfaces(mesh,"inlet") );
+    auto mesh_lag2 = mesh->trace( markedfaces(mesh,"outlet") );
+    auto meshv = fusion::make_vector(mesh,mesh,mesh_lag1,mesh_lag2);
+    Xh = space_type::New( _mesh=meshv );
+#else
     Xh = space_type::New( mesh );
-
+#endif
 }
 void
 Stokes::run()
@@ -195,8 +205,10 @@ Stokes::run()
     auto p = U.element<1>( "p" );
     auto q = V.element<1>( "p" );
 #if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda1 = U.element<2>();
+    auto nu1 = V.element<2>();
+    auto lambda2 = U.element<3>();
+    auto nu2 = V.element<3>();
 #endif
     //# endmarker4 #
 
@@ -268,10 +280,11 @@ Stokes::run()
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
-#if defined( FEELPP_USE_LM )
     auto t = vec(-Ny(),Nx());
-    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
-    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
+#if defined( FEELPP_USE_LM )
+
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda1 ) -trans( idt( u ))*t*id( nu1 ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda2 ) -trans( idt( u ))*t*id( nu2 ) );
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
@@ -292,6 +305,15 @@ Stokes::run()
 
     chrono.restart();
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
+
+    LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";
+    LOG(INFO) << "int_inlet T = " << integrate( markedfaces( mesh,inlet ), t ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), trans(idv(u))*t ).evaluate() << "\n";
+    LOG(INFO) << "int_inlet  u.T = " << integrate( markedfaces( mesh,inlet ), trans(idv(u))*t ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet x u.T = " << integrate( markedfaces( mesh,outlet ), Px()*trans(idv(u))*t ).evaluate() << "\n";
+    LOG(INFO) << "int_inlet x u.T = " << integrate( markedfaces( mesh,inlet ), Px()*trans(idv(u))*t ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet x^2 u.T = " << integrate( markedfaces( mesh,outlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";
+    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";
 
     this->exportResults( u_exact, p_exact, U, V );
@@ -340,7 +362,7 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     boost::shared_ptr<export_type> exporter( export_type::New() );
     if ( exporter->doExport() )
     {
-        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        exporter->step( 0 )->setMesh( mesh );
         exporter->step( 0 )->addRegions();
         auto v = U.functionSpace()->functionSpace<0> ()->element();
         v = U.element<0>();
