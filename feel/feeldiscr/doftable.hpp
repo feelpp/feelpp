@@ -2817,7 +2817,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         {
             this->addDofFromElement( *it_elt, next_free_dof, processor );
         } // elements loop
-#if 1
+
         if ( !mesh->markerNames().empty() &&
              ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
              ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
@@ -2918,10 +2918,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
                     CHECK( dofs[it_elt->id()][l].get<0>() != invalid_size_type_value ) << "invalid dof entry after renumbering\n";
                 }
             }
-            _M_el_l2g = dofs
+            _M_el_l2g = dofs;
         } // if
 
-#endif // 0
+
         // printing Dof table only in debug mode
 #if !defined( NDEBUG )
         const int ncdof = is_product?nComponents:1;
