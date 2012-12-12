@@ -136,8 +136,7 @@ public:
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef fusion::vector<Lagrange<Order, Scalar>,
-            Lagrange<0, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar>,Lagrange<0, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
@@ -150,8 +149,7 @@ public:
     typedef typename element_type::sub_element<0>::type element_0_type;
     typedef typename element_type::sub_element<1>::type element_1_type;
 
-    //typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous>
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
     typedef boost::shared_ptr<p0_space_type> p0_space_ptrtype;
     typedef typename p0_space_type::element_type p0_element_type;
 

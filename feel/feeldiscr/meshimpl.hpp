@@ -387,6 +387,34 @@ Mesh<Shape, T, Tag>::operator+=( self_type const& m )
 }
 template<typename Shape, typename T, int Tag>
 void
+Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<2> )
+{
+    // propagate top-down marker from face if edge has not been marked
+    std::for_each( this->beginFace(), this->endFace(),
+                   [this]( face_type const& f )
+                   {
+                       if ( f.marker().isOff() )
+                           return;
+
+                       // update points
+                       for( int i = 0; i < face_type::numPoints; ++i )
+                       {
+                           if ( f.point( i ).marker().isOff() )
+                           {
+                               // inherit marker from edge
+                               this->points().modify( this->points().iterator_to( f.point(i) ),
+                                                      [&f] ( point_type& p )
+                                                      {
+                                                          p.setMarker( f.marker().value() );
+                                                      } );
+
+                           }
+                       }
+                   } );
+}
+
+template<typename Shape, typename T, int Tag>
+void
 Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
 {
     // first propagate top-down  marker from edges if points have not been marked
