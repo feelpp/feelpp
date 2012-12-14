@@ -227,9 +227,9 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
         if ( exporter->doExport() )
         {
 //            T->print(std::cout);
-            Log() << "exportResults starts\n";
+            LOG(INFO) << "exportResults starts\n";
             this->exportResults( T, i );
-            Log() << "exportResults done\n";
+            LOG(INFO) << "exportResults done\n";
 
         }
 #endif
@@ -303,7 +303,7 @@ Convection_crb::output( int output_index, parameter_type const& mu )
     //<< integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
 
 #if defined( FEELPP_USE_LM )
-    Log() << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
+    LOG(INFO) << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
     // std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
 #endif
 
