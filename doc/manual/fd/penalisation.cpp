@@ -60,7 +60,7 @@ Penalisation<Dim>::Penalisation():
     mesh_visu = mesh;
 #endif
 
-    exporter.reset( Exporter<mesh_type>::New( this->vm(),this->about().appName() ) );
+    exporter =  Exporter<mesh_type>::New();
 
     Xh=space_type::New( mesh );
     Yh=space_carac_type::New( mesh );
