@@ -364,7 +364,7 @@ public:
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
 
-    boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double,double,double, vectorN_type > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
     void run( const double * X, unsigned long N, double * Y, unsigned long P ){};
 
     //! set the truth offline model
@@ -1165,7 +1165,7 @@ CRBTrilinear<TruthModelType>::printMuSelection( void )
 }
 
 template<typename TruthModelType>
-boost::tuple<double,double,double,double>
+boost::tuple<double,double,double,double,typename CRBTrilinear<TruthModelType>::vectorN_type >
 CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
@@ -1192,7 +1192,7 @@ CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     double e = 0;
     double condition_number = o.template get<1>();
 
-    return boost::make_tuple( output , e, Nwn , condition_number );
+    return boost::make_tuple( output , e, Nwn , condition_number, uN);
 }
 
 
@@ -1219,7 +1219,15 @@ template<typename TruthModelType>
 typename CRBTrilinear<TruthModelType>::element_type
 CRBTrilinear<TruthModelType>::expansion( vectorN_type const& u , int const N) const
 {
-    FEELPP_ASSERT( N == u.size() )( N )( u.size() ).error( "invalid expansion size");
+    int Nwn;
+
+    if( N > 0 )
+        Nwn = N;
+    else
+        Nwn = M_N;
+
+    //FEELPP_ASSERT( N == u.size() )( N )( u.size() ).error( "invalid expansion size");
+    FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
     return Feel::expansion( M_WN, u, N );
 }
 
