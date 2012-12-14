@@ -784,7 +784,7 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<double,double,double,double, std::vector<vectorN_type> > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double,double,double, vectorN_type > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -5228,7 +5228,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N) const
 
 
 template<typename TruthModelType>
-boost::tuple<double,double,double,double,std::vector<typename CRB<TruthModelType>::vectorN_type>>
+boost::tuple<double,double,double,double, typename CRB<TruthModelType>::vectorN_type>
 CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
@@ -5287,7 +5287,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
         buildFunctionFromRbCoefficients( uNduold, M_WNdu, Unduold );
         compareResidualsForTransientProblems( mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
-    return boost::make_tuple( output , e, Nwn , condition_number, uN );
+    return boost::make_tuple( output , e, Nwn , condition_number, uN[0] );
 }
 
 
