@@ -1,0 +1,17 @@
+COMPILING FEEL++ ON TITANE
+--------------------------
+
+Adapted from curie's scripts
+
+Tested with Feel++/mortar_m2an/r49c501572531
+on Fri, Dec 14, 2012
+
+Minimal requirements
+ - g++    >=4.4  (tested with 4.6.3)
+ - lapack        (tested with 3.4.1)
+ - petsc  >=3.1  (tested with 3.3)
+ - boost  >=1.46 (tested with 1.49)
+ - gmsh          (tested with 2.6.1)
+
+Use $CCCWORKDIR for local libraries
+Use $SCRATCHDIR for build files
