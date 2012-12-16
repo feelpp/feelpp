@@ -784,7 +784,7 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double,double,double, vectorN_type > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -5214,14 +5214,21 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::expansion( vectorN_type const& u , int const N) const
 {
+    int Nwn;
+
+    if( N > 0 )
+        Nwn = N;
+    else
+        Nwn = M_N;
+
     //FEELPP_ASSERT( M_WN.size() == u.size() )( M_WN.size() )( u.size() ).error( "invalid expansion size");
-    FEELPP_ASSERT( N == u.size() )( N )( u.size() ).error( "invalid expansion size");
-    return Feel::expansion( M_WN, u, N );
+    FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
+    return Feel::expansion( M_WN, u, Nwn );
 }
 
 
 template<typename TruthModelType>
-boost::tuple<double,double,double,double>
+boost::tuple<double,double,double,double, typename CRB<TruthModelType>::vectorN_type>
 CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
@@ -5280,7 +5287,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
         buildFunctionFromRbCoefficients( uNduold, M_WNdu, Unduold );
         compareResidualsForTransientProblems( mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
-    return boost::make_tuple( output , e, Nwn , condition_number );
+    return boost::make_tuple( output , e, Nwn , condition_number, uN[0] );
 }
 
 
@@ -5301,26 +5308,38 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
 
     std::cout<<"N = "<<N<<" et P = "<<P<<std::endl;
 
-    for ( unsigned long p= 0; p < N-3; ++p ) std::cout<<"mu["<<p<<"] = "<<X[p]<<std::endl;
+    for ( unsigned long p= 0; p < N-5; ++p ) std::cout<<"mu["<<p<<"] = "<<X[p]<<std::endl;
 
 
     parameter_type mu( M_Dmu );
 
     // the last parameter is the max error
-    for ( unsigned long p= 0; p < N-3; ++p )
+    for ( unsigned long p= 0; p < N-5; ++p )
         mu( p ) = X[p];
 
 
     //double meshSize  = X[N-4];
     //M_model->setMeshSize(meshSize);
-    setOutputIndex( ( int )X[N-4] );
-    std::cout<<"output index = "<<X[N-4]<<std::endl;
-    int Nwn =  X[N-3];
-    std::cout<<"Nwn : "<<X[N-3]<<std::endl;
-    //size_type maxerror = X[N-2];
-    std::cout<<"maxerror = "<<X[N-2]<<std::endl;
+    // setOutputIndex( ( int )X[N-3] );
+    // std::cout<<"output index = "<<X[N-3]<<std::endl;
+    // int Nwn =  X[N-2];
+    // std::cout<<"Nwn : "<<X[N-2]<<std::endl;
+    // size_type maxerror = X[N-1];
+    // std::cout<<"maxerror = "<<X[N-1]<<std::endl;
     //CRBErrorType errorType =(CRBErrorType)X[N-1];
     //setCRBErrorType(errorType);
+
+    setOutputIndex( ( int )X[N-5] );
+    std::cout<<"output_index = "<<X[N-5]<<std::endl;
+    int Nwn =  X[N-4];
+    std::cout<<" Nwn = "<<Nwn<<std::endl;
+    int maxerror = X[N-3];
+    std::cout<<" maxerror = "<<maxerror<<std::endl;
+    CRBErrorType errorType =( CRBErrorType )X[N-2];
+    std::cout<<"errorType = "<<X[N-2]<<std::endl;
+    setCRBErrorType( errorType );
+    M_compute_variance = X[N-1];
+    std::cout<<"M_compute_variance = "<<M_compute_variance<<std::endl;
 
 
 #if 0
@@ -5366,11 +5385,11 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
         std::cout << "mu( " << p << " ) = " << mu( p ) << std::endl;
       }
 
-    std::cout<<" list of parameters : [";
+    // std::cout<<" list of parameters : [";
 
-    for ( unsigned long i=0; i<N-1; i++ ) std::cout<<X[i]<<" , ";
+    // for ( unsigned long i=0; i<N-1; i++ ) std::cout<<X[i]<<" , ";
 
-    std::cout<<X[N-1]<<" ] "<<std::endl;
+    // std::cout<<X[N-1]<<" ] "<<std::endl;
 
 
     setOutputIndex( ( int )X[N-5] );

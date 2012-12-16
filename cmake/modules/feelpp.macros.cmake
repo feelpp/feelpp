@@ -159,6 +159,7 @@ macro(feelpp_add_test)
         # extract geo filename  to be copied in binary dir
         get_filename_component( GEO_NAME ${geo} NAME )
         configure_file( ${geo} ${GEO_NAME} )
+        configure_file( ${geo} $ENV{HOME}/feel/geo/${GEO_NAME})
       endforeach()
     endif(FEELPP_TEST_GEO)
 

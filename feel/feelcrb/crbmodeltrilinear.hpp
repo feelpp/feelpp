@@ -598,7 +598,18 @@ public:
     }
 
     //@}
-
+    bool isSteady()
+    {
+        return isSteady( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    bool isSteady( mpl::bool_<true> )
+    {
+        return M_model->isSteady();
+    }
+    bool isSteady( mpl::bool_<false> )
+    {
+        return true;
+    }
 
 
 protected:

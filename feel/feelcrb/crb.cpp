@@ -75,6 +75,7 @@ crbOptions( std::string const& prefix )
     ( "crb.compute-stat",Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
     ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")
     ( "crb.run-on-WNmu",Feel::po::value<bool>()->default_value( false ), "use mu taken for build the reduced basis, so for steady problems we are very accurate")
+    ( "crb.script-mode",Feel::po::value<bool>()->default_value( false ), "disable error computation (need FEM computation) if true")
     ;
 
 

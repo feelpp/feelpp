@@ -772,7 +772,7 @@ public:
 private:
 
     void propagateMarkers( mpl::int_<1> ) {}
-    void propagateMarkers( mpl::int_<2> ) {}
+    void propagateMarkers( mpl::int_<2> );
     void propagateMarkers( mpl::int_<3> );
 
     friend class boost::serialization::access;
