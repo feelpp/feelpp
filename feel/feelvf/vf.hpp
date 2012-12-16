@@ -108,14 +108,14 @@ struct ExtractGm
 #include <feel/feelvf/matvec.hpp>
 //#include <feel/feelvf/integral.hpp>
 
-
+#include <feel/feelvf/form.hpp>
 #include <feel/feelvf/integrator.hpp>
 //#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelvf/evaluator.hpp>
 
 
-#include <feel/feelvf/form.hpp>
+
 #include <feel/feelvf/ginac.hpp>
 
 #include <boost/preprocessor/comparison/equal.hpp>
