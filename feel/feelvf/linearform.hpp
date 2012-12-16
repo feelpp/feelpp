@@ -471,13 +471,13 @@ public:
     LinearForm( LinearForm const & __vf );
 
     LinearForm( space_ptrtype const& __X,
-                vector_ptrtype& __F,
+                vector_ptrtype __F,
                 size_type rowstart = 0,
                 bool init = true,
                 bool do_threshold = false,
                 value_type threshold = type_traits<value_type>::epsilon() );
     LinearForm( space_ptrtype const& __X,
-                vector_ptrtype& __F,
+                vector_ptrtype __F,
                 list_block_type const& __lb,
                 size_type rowstart = 0,
                 bool init = true,
@@ -777,7 +777,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
-        vector_ptrtype& __F,
+        vector_ptrtype __F,
         size_type rowstart,
         bool init,
         bool do_threshold,
@@ -806,7 +806,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
-        vector_ptrtype& __F,
+        vector_ptrtype __F,
         list_block_type const& __lb,
         size_type rowstart,
         bool init,
@@ -871,7 +871,7 @@ struct LFAssign
                 __list_block.push_back( Block( 0, 0, _M_Xh->nDofStart( _M_index ), 0 ) );
 
             LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
-                    _M_lf.representation(),
+                    _M_lf.vectorPtr(),
                     __list_block,
                     _M_lf.rowStartInVector(),
                     false );
