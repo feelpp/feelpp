@@ -457,7 +457,14 @@ namespace detail
 template<typename Args>
 struct compute_exporter_return
 {
-    typedef typename Feel::vf::detail::clean_type<Args, tag::mesh>::type::element_type mesh_type;
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<Args, tag::mesh>::type
+                >::type
+            >::type
+        >::type::element_type mesh_type;
+    //typename Feel::vf::detail::clean_type<Args, tag::mesh>::type::element_type mesh_type;
     //typedef typename parameter::value_type<Args, tag::order>::type order_type;
     //typedef boost::shared_ptr<Exporter<mesh_type,order_type::value> > type;
     typedef Exporter<mesh_type,1> type;
