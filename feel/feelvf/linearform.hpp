@@ -606,6 +606,10 @@ public:
     {
         return _M_F;
     }
+    vector_ptrtype vectorPtr()
+    {
+        return _M_F;
+    }
 
     list_block_type const& blockList() const
     {
