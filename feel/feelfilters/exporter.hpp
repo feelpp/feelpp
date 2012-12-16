@@ -335,7 +335,7 @@ public:
     void
     add( std::string const& name, F const& u )
         {
-            this->step( 0 )->add( name, u );
+            this->step( 0 )->add( this->prefix()+"."+name, u );
         }
 
     void
@@ -481,10 +481,12 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                           ) // required
                           ( optional                                  // 4. one required parameter, and
                             ( order,*, mpl::int_<1>() )
+                            ( name,*, "exporter" )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
     auto e =  exporter_type::New();
+    e->setPrefix( name );
     e->setMesh( mesh );
     e->addRegions();
     return e;
