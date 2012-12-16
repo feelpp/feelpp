@@ -433,6 +433,34 @@ protected:
 
 po::options_description exporter_options( std::string const& prefix = "" );
 
+namespace detail
+{
+template<typename Args>
+struct compute_exporter_return
+{
+    typedef typename Feel::vf::detail::clean_type<Args, tag::mesh>::type mesh_type;
+    //typedef typename parameter::value_type<Args, tag::order>::type order_type;
+    //typedef boost::shared_ptr<Exporter<mesh_type,order_type::value> > type;
+    //typedef boost::shared_ptr<Exporter<mesh_type,1> > type;
+    typedef boost::shared_ptr<Exporter<Mesh<Simplex<2> >,1> > type;
+
+};
+}
+BOOST_PARAMETER_FUNCTION( (boost::shared_ptr<Exporter<Mesh<Simplex<2> >,1> >), //( typename detail::compute_exporter_return<Args>::type ),
+                          exporter,                                       // 2. name of the function template
+                          tag,                                        // 3. namespace of tag types
+                          ( required                                  // 4. one required parameter, and
+                            ( mesh, * )
+                          ) // required
+                          ( optional                                  // 4. one required parameter, and
+                            ( order,*, mpl::int_<1>() )
+                          ) )
+{
+    //typedef typename compute_exporter_return<Args>::type exporter_type;
+    //return exporter_type::New( mesh );
+    return Exporter<Mesh<Simplex<2> >,1>::New();
+}
+
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
