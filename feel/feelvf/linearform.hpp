@@ -89,6 +89,7 @@ public:
     typedef typename space_type::value_type value_type;
     typedef typename space_type::real_type real_type;
     typedef VectorType vector_type;
+    typedef boost::shared_ptr<VectorType> vector_ptrtype;
     typedef typename space_type::template Element<value_type, ElemContType> element_type;
 
 #if 0
@@ -470,13 +471,13 @@ public:
     LinearForm( LinearForm const & __vf );
 
     LinearForm( space_ptrtype const& __X,
-                vector_type& __F,
+                vector_ptrtype& __F,
                 size_type rowstart = 0,
                 bool init = true,
                 bool do_threshold = false,
                 value_type threshold = type_traits<value_type>::epsilon() );
     LinearForm( space_ptrtype const& __X,
-                vector_type& __F,
+                vector_ptrtype& __F,
                 list_block_type const& __lb,
                 size_type rowstart = 0,
                 bool init = true,
@@ -599,6 +600,10 @@ public:
 
     vector_type& representation() const
     {
+        return *_M_F;
+    }
+    vector_ptrtype vectorPtr() const
+    {
         return _M_F;
     }
 
@@ -690,11 +695,11 @@ public:
         if ( _M_do_threshold )
         {
             if ( doThreshold( v ) )
-                _M_F.add( i+this->rowStartInVector(), v );
+                _M_F->add( i+this->rowStartInVector(), v );
         }
 
         else
-            _M_F.add( i+this->rowStartInVector(), v );
+            _M_F->add( i+this->rowStartInVector(), v );
     }
 
     /**
@@ -707,7 +712,7 @@ public:
             for ( int k = 0; k< n ; ++k )
                 i[k]+=this->rowStartInVector();
 
-        _M_F.addVector( i, n, v );
+        _M_F->addVector( i, n, v );
     }
 
     /**
@@ -716,7 +721,7 @@ public:
      */
     void set( size_type i,  value_type const& v )
     {
-        _M_F.set( i, v );
+        _M_F->set( i, v );
     }
 
 
@@ -733,7 +738,7 @@ private:
 
     space_ptrtype _M_X;
 
-    vector_type& _M_F;
+    vector_ptrtype _M_F;
 
     list_block_type _M_lb;
 
@@ -762,13 +767,13 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
 {
     Debug( 5060 ) << "LinearForm copy constructor\n";
     Debug( 5060 ) << "     n Dof : " << _M_X->nDof() << "\n";
-    Debug( 5060 ) << "    F size : " << _M_F.size() << "\n";
+    Debug( 5060 ) << "    F size : " << _M_F->size() << "\n";
     Debug( 5060 ) << "block size : " << _M_lb.size() << "\n";
 }
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
-        vector_type& __F,
+        vector_ptrtype& __F,
         size_type rowstart,
         bool init,
         bool do_threshold,
@@ -792,12 +797,12 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     }
 
     if (  init )
-        _M_F.zero();
+        _M_F->zero();
 }
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const& __X,
-        vector_type& __F,
+        vector_ptrtype& __F,
         list_block_type const& __lb,
         size_type rowstart,
         bool init,
@@ -812,7 +817,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     _M_threshold( threshold )
 {
     if ( init )
-        _M_F.zero();
+        _M_F->zero();
 }
 
 template<typename LFType, typename TheSpaceType, typename ExprType>
@@ -942,7 +947,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __ex
             size_type g_ic_start = __bit->globalRowStart();
             Debug( 5050 ) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
 
-            _M_F.zero( g_ic_start,g_ic_start + _M_X->nDof() );
+            _M_F->zero( g_ic_start,g_ic_start + _M_X->nDof() );
         }
     }
 
