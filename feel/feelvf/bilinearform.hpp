@@ -898,7 +898,7 @@ public:
      */
     value_type operator()( element_1_type const& __v,  element_2_type const& __u ) const
     {
-        return _M_matrix.energy( __v, __u );
+        return _M_matrix->energy( __v, __u );
     }
 
     /**
@@ -1126,15 +1126,15 @@ public:
         if ( _M_do_threshold )
         {
             if ( doThreshold( v ) )
-                _M_matrix.add( i+this->rowStartInMatrix(),
-                               j+this->colStartInMatrix(),
-                               v );
+                _M_matrix->add( i+this->rowStartInMatrix(),
+                                j+this->colStartInMatrix(),
+                                v );
         }
 
         else
-            _M_matrix.add( i+this->rowStartInMatrix(),
-                           j+this->colStartInMatrix(),
-                           v );
+            _M_matrix->add( i+this->rowStartInMatrix(),
+                            j+this->colStartInMatrix(),
+                            v );
 
     }
     /**
@@ -1153,7 +1153,7 @@ public:
             for ( int i=0; i<ncols; ++i )
                 cols[i]+=this->colStartInMatrix();
 
-        _M_matrix.addMatrix( rows, nrows, cols, ncols, data );
+        _M_matrix->addMatrix( rows, nrows, cols, ncols, data );
     }
 
 
@@ -1164,7 +1164,7 @@ public:
      */
     void set( size_type i,  size_type j,  value_type const& v )
     {
-        _M_matrix.set( i, j, v );
+        _M_matrix->set( i, j, v );
     }
 
     void addToNOz( size_type i, size_type n )
@@ -1191,7 +1191,7 @@ public:
                                        ( in_out( solution ),* )
                                        ( rhs, * ) ) )
         {
-            return backend()->solve( _matrix=this->matrixPtr(), _rhs=rhs->vectorPtr(), _solution=solution );
+            return backend()->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(), _solution=solution );
         }
 
     //@}
@@ -1217,7 +1217,7 @@ private:
     space_1_ptrtype _M_X1;
     space_2_ptrtype _M_X2;
 
-    matrix_ptrtype& _M_matrix;
+    matrix_ptrtype _M_matrix;
 
     bool _M_do_build;
 
@@ -1305,7 +1305,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         {
             size_type g_ic_start = _M_row_startInMatrix + __bit->globalRowStart();
             size_type g_jc_start = _M_col_startInMatrix + __bit->globalColumnStart();
-            _M_matrix.zero( g_ic_start, g_ic_start + _M_X1->nDof(),
+            _M_matrix->zero( g_ic_start, g_ic_start + _M_X1->nDof(),
                             g_jc_start, g_jc_start + _M_X2->nDof() );
         }
     }
@@ -1324,7 +1324,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 {
     Debug( 5050 ) << "BilinearForm::assign() start loop on test spaces\n";
 
-    if ( init ) _M_matrix.zero();
+    if ( init ) _M_matrix->zero();
 
     assign( __expr, mpl::bool_<true>(), mpl::bool_<( FE1::nSpaces > 1 && FE2::nSpaces > 1 )>() );
     Debug( 5050 ) << "BilinearForm::assign() stop loop on test spaces\n";
@@ -1402,7 +1402,7 @@ BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
         Vector<value_type>& rhs,
         Feel::Context const& on_context )
 {
-    _M_matrix.zeroRows( __dofs, __values, rhs, on_context );
+    _M_matrix->zeroRows( __dofs, __values, rhs, on_context );
 }
 
 

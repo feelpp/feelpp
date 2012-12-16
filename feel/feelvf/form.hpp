@@ -30,6 +30,7 @@
 #define __Form_H 1
 
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -64,7 +65,7 @@ template<typename X1, typename RepType>
 inline
 vf::detail::LinearForm<X1, RepType, RepType>
 form( boost::shared_ptr<X1> const& __X1,
-      RepType& __M,
+      boost::shared_ptr<RepType> __M,
       size_type rowstart = 0,
       bool init = false,
       bool do_threshold = false,
@@ -111,7 +112,8 @@ struct compute_form1_return
 {
 #if 1
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::test>::type>::type::element_type test_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::vector>::type>::type::element_type vector_type;
+    //typedef typename boost::remove_reference<typename parameter::binding<Args, tag::vector>::type>::type::element_type vector_type;
+    typedef typename Backend<double>::vector_type vector_type;
     typedef vf::detail::LinearForm<test_type,
             vector_type,
             vector_type> type;
@@ -131,9 +133,9 @@ BOOST_PARAMETER_FUNCTION(
     tag,                                        // 3. namespace of tag types
     ( required                                  // 4. one required parameter, and
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) ) )
-
     ( optional                                  //    four optional parameters, with defaults
-      ( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ), backend()->newVector( _test=test ) )
+      //( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ), backend()->newVector( _test=test ) )
+      ( in_out( vector ),   *, backend()->newVector( test ) )
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
       ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
