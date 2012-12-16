@@ -6227,6 +6227,21 @@ expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
     return res;
 }
 
+/**
+ * \fn Pch<k,MeshType>
+ *
+ * build a function space of continuous function which are piecewise polynomial
+ * of degree (total or in each variable) less than k.
+ */
+template<int Order,typename MeshType>
+inline
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order>>>>
+Pch( boost::shared_ptr<MeshType> mesh )
+{
+    return FunctionSpace<MeshType,bases<Lagrange<Order>>>::New( mesh );
+}
+
+
 } // Feel
 
 
@@ -6275,6 +6290,8 @@ struct version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type >
 #
 
 #endif
+
+
 
 
 #endif /* __FunctionSpace_H */
