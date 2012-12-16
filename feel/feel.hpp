@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-09-18
  */
+#include <boost/math/constants/constants.hpp>
+
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/application.hpp>
@@ -52,5 +54,9 @@ namespace Feel
 {
 using GiNaC::symbol;
 using GiNaC::ex;
+
+namespace constants = boost::math::constants;
+const double pi = constants::pi<double>();
+const double two_pi = constants::two_pi<double>();
 }
 
