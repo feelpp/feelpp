@@ -144,18 +144,18 @@ public:
      * of the \p exportername and using \p prefix for the prefix of the data
      * files.
      */
-    static Exporter<MeshType,N>* New( std::string const& exportername,
-                                      std::string prefix = "export",
-                                      WorldComm const& worldComm = Environment::worldComm() );
+    static boost::shared_ptr<Exporter<MeshType,N> > New( std::string const& exportername,
+                                                         std::string prefix = Environment::about().appName(),
+                                                         WorldComm const& worldComm = Environment::worldComm() );
 
     /**
      * Static function instantiating from the Exporter Factory an exporter out
      * of the variables_map \p vm and using \p prefix for the prefix of the data
      * files.
      */
-    static Exporter<MeshType,N>* New( po::variables_map const& vm = Environment::vm(),
-                                      std::string prefix = Environment::about().appName(),
-                                      WorldComm const& worldComm = Environment::worldComm() );
+    static boost::shared_ptr<Exporter<MeshType,N> > New( po::variables_map const& vm = Environment::vm(),
+                                                         std::string prefix = Environment::about().appName(),
+                                                         WorldComm const& worldComm = Environment::worldComm() );
 
     //@}
 
