@@ -55,8 +55,6 @@ namespace Feel
 using GiNaC::symbol;
 using GiNaC::ex;
 
-namespace constants = boost::math::constants;
-const double pi = constants::pi<double>();
-const double two_pi = constants::two_pi<double>();
+
 }
 
