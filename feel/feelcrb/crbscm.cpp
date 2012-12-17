@@ -52,6 +52,7 @@ crbSCMOptions( std::string const& prefix )
     ( "crb.scm.solvereigen-maxiter" ,  Feel::po::value<int>()->default_value( 10000 ), "solver eigen maxiter " )
     ( "crb.scm.solvereigen-nev" ,  Feel::po::value<int>()->default_value( 1 ), "solver eigen nev " )
     ( "crb.scm.solvereigen-ncv" ,  Feel::po::value<int>()->default_value( 3 ), "solver eigen ncv " )
+    ( "crb.scm.solvereigen-solver-type" ,  Feel::po::value<int>()->default_value( 1 ), "solver eigen type " )
     ;
 
 
