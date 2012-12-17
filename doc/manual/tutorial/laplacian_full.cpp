@@ -254,7 +254,6 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     int bctype = this->vm()["bctype"].template as<int>();
 
     double t = 0;
-    value_type pi = M_PI;
     auto g = val( exp( -cst_ref( t ) )*sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ) );
     auto f = ( -1*( t > 0 )+pi*pi*Dim )*g;
 
