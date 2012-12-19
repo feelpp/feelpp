@@ -281,8 +281,8 @@ public:
         M_Xi( new sampling_type( M_Dmu ) ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_WNmu_complement(),
-        M_scmA( new scm_type( name+"_a", vm ) ),
-        M_scmM( new scm_type( name+"_m", vm ) ),
+        M_scmA( new scm_type( name+"_a", vm , model ) ),
+        M_scmM( new scm_type( name+"_m", vm , model ) ),
         exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) )
     {
         this->setTruthModel( model );
@@ -447,8 +447,8 @@ public:
         LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
     }
 
-        M_scmA->setTruthModel( M_model );
-        M_scmM->setTruthModel( M_model );
+    //M_scmA->setTruthModel( M_model );
+    //M_scmM->setTruthModel( M_model );
     }
 
     //! set max iteration number
