@@ -300,6 +300,16 @@ public:
         return M_model->computeTrilinearForm( xi );
     }
 
+    sparse_matrix_ptrtype jacobian( element_type const& xi )
+    {
+        return M_model->jacobian( xi );
+    }
+
+    vector_ptrtype residual( element_type const& xi )
+    {
+        return M_model->residual( xi );
+    }
+
 
     //! return the number of outputs
     size_type Nl() const

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-24
 
-  Copyright (C) 2009-2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009-2012 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,6 @@
 #include <feel/feelcrb/crbscm.hpp>
 #include <feel/feelcore/serialization.hpp>
 #include <feel/feelfilters/exporter.hpp>
-
 
 namespace Feel
 {
@@ -297,7 +296,9 @@ public:
     void updateResidual( const map_dense_vector_type& X, map_dense_vector_type& R , parameter_type const& mu , int N ) const;
 
 
-
+    void displayVector(const map_dense_vector_type& V ) const ;
+    void displayVector(const vectorN_type& V ) const ;
+    void displayMatrix(const matrixN_type& M ) const ;
     // -------- from crb
 
     void orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
@@ -499,6 +500,7 @@ template<typename TruthModelType>
 typename CRBTrilinear<TruthModelType>::convergence_type
 CRBTrilinear<TruthModelType>::offline()
 {
+
     int proc_number = this->worldComm().globalRank();
 
     bool rebuild_database = this->vm()["crb.rebuild-database"].template as<bool>() ;
@@ -663,7 +665,6 @@ CRBTrilinear<TruthModelType>::offline()
 
         timer2.restart();
 
-
         LOG(INFO) << "[CRB::offline] solving primal" << "\n";
         *u = M_model->solve( mu );
 
@@ -685,7 +686,6 @@ CRBTrilinear<TruthModelType>::offline()
         }
 
         LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
-
         for  (size_type q = 0; q < M_model->Qa(); ++q )
         {
             M_Aqm_pr[q][0].conservativeResize( M_N, M_N );
@@ -735,7 +735,6 @@ CRBTrilinear<TruthModelType>::offline()
             }
         }//loop over q
 
-
         sparse_matrix_ptrtype trilinear_form;
         for  (size_type q = 0; q < M_model->QaTri(); ++q )
         {
@@ -750,7 +749,7 @@ CRBTrilinear<TruthModelType>::offline()
                 {
                     for ( int j = 0; j < M_N; ++j )
                     {
-                        M_Aqm_tril_pr[q][k]( i, j ) = trilinear_form->energy( M_WN[i], M_WN[j] );
+                        M_Aqm_tril_pr[q][k]( i, j ) = trilinear_form->energy( M_WN[j], M_WN[i] );
                     }//j
                 }//i
             }//k
@@ -980,13 +979,37 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
         {
             for ( int i = 0; i < N; ++i )
             {
-                map_J( k, i ) += ( M_Aqm_tril_pr[q][k].row( i ).head( N ) ).dot(map_X);
-                map_J( k, i ) += ( (M_Aqm_tril_pr[q][k].col( i ).head( N ) ).transpose() ).dot(map_X);
+                map_J( i, k ) += ( M_Aqm_tril_pr[q][k].row( i ).head( N ) ).dot(map_X);
+                //map_J( i, k ) += ( (M_Aqm_tril_pr[q][k].col( i ).head( N ) ).transpose() ).dot(map_X);
             }
         }
     }
 
+    if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
+    {
+        //bring the jacobian matrix from the model and then project it into the reduced basis
+        auto expansionX = expansion( map_X , N);
+        auto J = M_model->jacobian( expansionX );
+        matrixN_type model_reduced_jacobian( N , N );
+        for(int i=0; i<N; i++)
+        {
+            for(int j=0; j<N; j++)
+                model_reduced_jacobian(i,j) = J->energy( M_WN[i], M_WN[j]);
+        }
+        //compute difference
+        matrixN_type diff = map_J - model_reduced_jacobian;
+        double max = diff.maxCoeff();
+        std::cout<<std::setprecision(14)<<"[CRB::updateJacobian] with X : "; this->displayVector(map_X); std::cout<<" the max coeff of the difference jacobian matrix : "<<max<<std::endl;
+        if( math::abs(max) > 1e-14  )
+        {
+            std::cout<<"here is the jacobian matrix containing difference between reduced jacobian from CRB and the model";
+            this->displayMatrix( diff );
+        }
+        std::cout<<std::endl;
+    }
 }
+
+
 
 template<typename TruthModelType>
 void
@@ -1006,16 +1029,78 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
         {
             for ( int i = 0; i < N; ++i )
             {
-                temp( k, i ) += map_X.dot( M_Aqm_tril_pr[0][k].row( i ).head( N ) ) ;
+                temp( k, i ) += 0.5*map_X.dot( M_Aqm_tril_pr[0][k].row( i ).head( N ) ) ;
             }
         }
     }
     map_R += temp * map_X ;
+
+    if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
+    {
+        //bring the residual matrix from the model and then project it into the reduced basis
+        auto expansionX = expansion( map_X , N);
+        auto R = M_model->residual( expansionX );
+        vectorN_type model_reduced_residual( N );
+        element_ptrtype eltR( new element_type( M_model->functionSpace() ) );
+        for(int i=0; i<eltR->localSize();i++)
+            eltR->operator()(i)=R->operator()(i);
+        for(int i=0; i<N; i++)
+            model_reduced_residual(i) = inner_product( *eltR , M_WN[i] );
+        //compute difference
+        vectorN_type diff = map_R - model_reduced_residual;
+        double max = diff.maxCoeff();
+        std::cout<<std::setprecision(14)<<"[CRB::updateResidual] with X :"; this->displayVector(map_X); std::cout<<" Residual :";this->displayVector(map_R);
+        std::cout<<" the max error  : "<<max<<std::endl;
+        if( math::abs(max) > 1e-14  )
+        {
+            std::cout<<"here is the residual containing difference between reduced residual from CRB and the model";
+            this->displayVector( diff );
+        }
+        std::cout<<std::endl;
+    }
 }
 
+template<typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::displayVector( const map_dense_vector_type& V ) const
+{
+    int size=V.size();
+    std::cout<<std::setprecision(14)<<" ( ";
+    for(int i=0; i<size-1;i++)
+        std::cout<<V(i)<<" , ";
+    std::cout<<V(size-1)<<" ) ";
+}
+
+template<typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::displayVector( const vectorN_type& V ) const
+{
+    int size=V.size();
+    std::cout<<std::setprecision(14)<<" ( ";
+    for(int i=0; i<size-1;i++)
+        std::cout<<V(i)<<" , ";
+    std::cout<<V(size-1)<<" ) ";
+}
+
+template<typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::displayMatrix( const matrixN_type& M ) const
+{
+    std::cout<<std::setprecision(14)<<"\n[ ";
+    int cols = M.cols();
+    int rows = M.rows();
+    for(int i=0; i<rows-1;i++)
+    {
+        for(int j=0; j<cols-1;j++)
+            std::cout<<M(i,j)<<" , ";
+        std::cout<<M(i,cols-1)<<" ]"<<std::endl;std::cout<<"[ ";
+    }
+    for(int j=0; j<cols-1;j++)
+        std::cout<<M(rows-1,j)<<" , ";
+    std::cout<<M(rows-1,cols-1)<<" ]"<<std::endl;std::cout<<" ";
 
 
-
+}
 
 
 //---------------- from crb
