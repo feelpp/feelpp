@@ -136,17 +136,18 @@ public:
 #if (STOKESPRESSMESHTYPE == 1)
     typedef Simplex<2> convex_type;
 #elif (STOKESPRESSMESHTYPE == 2)
-    typedef Simplex<3> convex_type;
+    typedef Simplex<3,3> convex_type;
 #endif
-
+    
+    //static const int QuadOrder = 10;
 
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     //# marker1 #,
-    typedef Lagrange<2, Vectorial> basis_u_type;
-    typedef Lagrange<1, Scalar> basis_p_type;
+    typedef Lagrange<4, Vectorial> basis_u_type;
+    typedef Lagrange<3, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
 
     // use lagrange multipliers to ensure zero mean pressure
@@ -364,11 +365,29 @@ Stokes_Dirichlet_Dirichlet::run()
 #endif
 
 
+    ////////////////////////////////////////////////////////////////////////////////////////
+    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
+    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    double taille = 4*math::atan(1.)*r*r*L;
+    double mean_p_exact = integrate( elements( mesh ),  p_exact, _quad=_Q<15>() ).evaluate()(0,0) /taille;
+    std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
-    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-    stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
-    stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ), _quad=_Q<15>());
+    stokes_rhs += integrate( elements( mesh ),id(nu)* p_exact, _quad=_Q<15>() );   //add the mean of the exact pressure
+    stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ), _quad=_Q<15>() );
+    stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ), _quad=_Q<15>() );
+    //************
+
+    //***********
+    //************
+    //***********
+
+
+
 
     Log(INFO) << "[stokes] vector local assembly done\n";
 
@@ -378,21 +397,21 @@ Stokes_Dirichlet_Dirichlet::run()
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     boost::timer chrono;
-    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
+    stokes += integrate( elements( mesh ), mu*inner( deft,def ) , _quad=_Q<15>());
     std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
-    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
+    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ), _quad=_Q<15>() );
     std::cout << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
     //#if defined( FEELPP_USE_LM )
-    stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
+    stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) , _quad=_Q<15>());
     std::cout << "(lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
     //#endif
 
-    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ), _quad=_Q<15>() );
+    stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) , _quad=_Q<15>());
+    stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace(), _quad=_Q<15>() );
 
     std::cout << "bc: " << chrono.elapsed() << "\n";
     chrono.restart();
@@ -444,39 +463,41 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
 
     auto u_exact_proj=vf::project(P7,elements(mesh),u_exact);
 
-    double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
-    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
+    double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ), _quad=_Q<15>() ).evaluate()( 0, 0 );
+    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
+    Log(INFO) <<"||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
 
-    double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
-    Log(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    double meas = integrate( elements( u.mesh() ), cst( 1.0 ) , _quad=_Q<15>()).evaluate()( 0, 0 );
+    Log(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to "<< 4*math::atan(1.)*5 << ")\n";
+    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to "<< 4*math::atan(1.)*5 << ")\n";
 
-    double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
+    double mean_p = integrate( elements( u.mesh() ), idv( p ) , _quad=_Q<15>()).evaluate()( 0, 0 )/meas;
     Log(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    double mean_p_exact = integrate( elements( u.mesh() ),  p_exact ).evaluate()( 0, 0 )/meas;
-    std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
-    //////////////////////////////////////////////////////////////////////////////////////////
+    // ////////////////////////////////////////////////////////////////////////////////////////
+    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
+    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+    // //////////////////////////////////////////////////////////////////////////////////////////
 
 
-    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ) ).evaluate()( 0, 0 );
-    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
-
+    // double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ), _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact ), _quad=_Q<15>()).evaluate()( 0, 0 );
+    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
+    Log(INFO) <<"||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
     Log(INFO) << "[stokes] solve for D done\n";
 
 
-    double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
+    double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact ), _quad=_Q<15>()).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )), _quad=_Q<15>() ).evaluate()( 0, 0 );
     double H1_u=math::sqrt( u_errorH1 );
-    std::cout << "||u_errorH1||_2 = " <<H1_u<< "\n";;
+    std::cout << "||u_errorH1||_2 = " <<H1_u<< "\n";
+    Log(INFO) << "||u_errorH1||_2 = " <<H1_u<< "\n";
 
-
-    double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
+    double mean_div_u = integrate( elements( u.mesh() ), divv( u ), _quad=_Q<15>() ).evaluate()( 0, 0 );
     Log(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
+    double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ), _quad=_Q<15>() ).evaluate()( 0, 0 );
     Log(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
@@ -486,7 +507,7 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
 #if (STOKESPRESSMESHTYPE ==2)
     auto deff = gradv(u);
     auto SigmaNN =(-idv(p)*vf::N()+mu*deff*vf::N());
-    auto Fapp = integrate( boundaryfaces( mesh ) , SigmaNN).evaluate();
+    auto Fapp = integrate( boundaryfaces( mesh ) , SigmaNN, _quad=_Q<15>()).evaluate();
     auto Fapp1 = Fapp(0,0); //pour la prémière composante
     auto Fapp2 = Fapp(1,0); //pour la seconde
     auto Fapp3 = Fapp(2,0);
