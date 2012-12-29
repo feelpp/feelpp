@@ -186,7 +186,6 @@ DAR<Dim>::run()
      */
     /** \code */
     //# marker1 #
-    value_type pi = M_PI;
     //! deduce from expression the type of g (thanks to keyword 'auto')
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     gproj = vf::project( Xh, elements( mesh ), g );

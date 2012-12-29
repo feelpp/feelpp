@@ -107,6 +107,12 @@ namespace lambda = boost::lambda;
 namespace po = boost::program_options;
 namespace mpi=boost::mpi;
 namespace constants=boost::math::constants;
+//namespace constants = boost::math::constants;
+//using boost::math::double_constants;
+const double pi = constants::pi<double>();
+const double two_pi = constants::two_pi<double>();
+
+
 namespace algorithm=boost::algorithm;
 using google::WARNING;
 using google::ERROR;

@@ -262,6 +262,7 @@ public:
 
     //typedef ublas::compressed_matrix<value_type, ublas::row_major> csr_matrix_type;
     typedef MatrixSparse<value_type> matrix_type;
+    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
     static const bool is_row_major = true;//matrix_type::is_row_major;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
@@ -814,7 +815,7 @@ public:
      */
     BilinearForm( space_1_ptrtype const& __X1,
                   space_2_ptrtype const& __X2,
-                  matrix_type& __M,
+                  matrix_ptrtype& __M,
                   size_type rowstart = 0,
                   size_type colstart = 0,
                   bool build = true,
@@ -824,7 +825,7 @@ public:
 
     BilinearForm( space_1_ptrtype const& __X1,
                   space_2_ptrtype const& __X2,
-                  matrix_type& __M,
+                  matrix_ptrtype& __M,
                   list_block_type const& __lb,
                   size_type rowstart = 0,
                   size_type colstart = 0,
@@ -897,7 +898,7 @@ public:
      */
     value_type operator()( element_1_type const& __v,  element_2_type const& __u ) const
     {
-        return _M_matrix.energy( __v, __u );
+        return _M_matrix->energy( __v, __u );
     }
 
     /**
@@ -1011,10 +1012,20 @@ public:
      */
     matrix_type const& matrix() const
     {
-        return _M_matrix;
+        return *_M_matrix;
     }
 
     matrix_type& matrix()
+    {
+        return *_M_matrix;
+    }
+
+    matrix_ptrtype const& matrixPtr() const
+    {
+        return _M_matrix;
+    }
+
+    matrix_ptrtype& matrixPtr()
     {
         return _M_matrix;
     }
@@ -1115,15 +1126,15 @@ public:
         if ( _M_do_threshold )
         {
             if ( doThreshold( v ) )
-                _M_matrix.add( i+this->rowStartInMatrix(),
-                               j+this->colStartInMatrix(),
-                               v );
+                _M_matrix->add( i+this->rowStartInMatrix(),
+                                j+this->colStartInMatrix(),
+                                v );
         }
 
         else
-            _M_matrix.add( i+this->rowStartInMatrix(),
-                           j+this->colStartInMatrix(),
-                           v );
+            _M_matrix->add( i+this->rowStartInMatrix(),
+                            j+this->colStartInMatrix(),
+                            v );
 
     }
     /**
@@ -1142,7 +1153,7 @@ public:
             for ( int i=0; i<ncols; ++i )
                 cols[i]+=this->colStartInMatrix();
 
-        _M_matrix.addMatrix( rows, nrows, cols, ncols, data );
+        _M_matrix->addMatrix( rows, nrows, cols, ncols, data );
     }
 
 
@@ -1153,7 +1164,7 @@ public:
      */
     void set( size_type i,  size_type j,  value_type const& v )
     {
-        _M_matrix.set( i, j, v );
+        _M_matrix->set( i, j, v );
     }
 
     void addToNOz( size_type i, size_type n )
@@ -1173,6 +1184,15 @@ public:
         return M_n_nz[i];
     }
 
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
+                                     solve,
+                                     tag,
+                                     ( required
+                                       ( in_out( solution ),* )
+                                       ( rhs, * ) ) )
+        {
+            return backend()->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(), _solution=solution );
+        }
 
     //@}
 
@@ -1197,7 +1217,7 @@ private:
     space_1_ptrtype _M_X1;
     space_2_ptrtype _M_X2;
 
-    matrix_type& _M_matrix;
+    matrix_ptrtype _M_matrix;
 
     bool _M_do_build;
 
@@ -1214,7 +1234,7 @@ private:
 template<typename FE1,  typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
         space_2_ptrtype const& Yh,
-        matrix_type& __M,
+        matrix_ptrtype& __M,
         size_type rowstart,
         size_type colstart,
         bool build,
@@ -1245,7 +1265,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
 template<typename FE1,  typename FE2, typename ElemContType>
 BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
         space_2_ptrtype const& Yh,
-        matrix_type& __M,
+        matrix_ptrtype& __M,
         list_block_type const& __lb,
         size_type rowstart,
         size_type colstart,
@@ -1285,7 +1305,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         {
             size_type g_ic_start = _M_row_startInMatrix + __bit->globalRowStart();
             size_type g_jc_start = _M_col_startInMatrix + __bit->globalColumnStart();
-            _M_matrix.zero( g_ic_start, g_ic_start + _M_X1->nDof(),
+            _M_matrix->zero( g_ic_start, g_ic_start + _M_X1->nDof(),
                             g_jc_start, g_jc_start + _M_X2->nDof() );
         }
     }
@@ -1304,7 +1324,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 {
     Debug( 5050 ) << "BilinearForm::assign() start loop on test spaces\n";
 
-    if ( init ) _M_matrix.zero();
+    if ( init ) _M_matrix->zero();
 
     assign( __expr, mpl::bool_<true>(), mpl::bool_<( FE1::nSpaces > 1 && FE2::nSpaces > 1 )>() );
     Debug( 5050 ) << "BilinearForm::assign() stop loop on test spaces\n";
@@ -1382,7 +1402,7 @@ BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
         Vector<value_type>& rhs,
         Feel::Context const& on_context )
 {
-    _M_matrix.zeroRows( __dofs, __values, rhs, on_context );
+    _M_matrix->zeroRows( __dofs, __values, rhs, on_context );
 }
 
 
@@ -1438,7 +1458,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
                 trial_space_type,
                 ublas::vector_range<ublas::vector<double> > > bf_type;
 
-        bf_type bf( _M_test,trial, _M_bf.matrix(), list_block,  _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern()  );
+        bf_type bf( _M_test,trial, _M_bf.matrixPtr(), list_block,  _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern()  );
 
         bf += _M_expr;
     }
@@ -1503,7 +1523,7 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
                 trial_space_type,
                 ublas::vector_range<ublas::vector<double> > > bf_type;
 
-        bf_type bf( test, _M_trial, _M_bf.matrix(), list_block, _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern() );
+        bf_type bf( test, _M_trial, _M_bf.matrixPtr(), list_block, _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern() );
 
         bf += _M_expr;
     }

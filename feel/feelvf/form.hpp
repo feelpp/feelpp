@@ -30,6 +30,7 @@
 #define __Form_H 1
 
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vector.hpp>
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -49,7 +50,7 @@ inline
 vf::detail::BilinearForm<X1, X2>
 form( boost::shared_ptr<X1> const& __X1,
       boost::shared_ptr<X2> const& __X2,
-      MatrixSparse<double>& __M,
+      boost::shared_ptr<MatrixSparse<double> > __M,
       size_type rowstart = 0,
       size_type colstart = 0,
       bool init = false,
@@ -64,7 +65,7 @@ template<typename X1, typename RepType>
 inline
 vf::detail::LinearForm<X1, RepType, RepType>
 form( boost::shared_ptr<X1> const& __X1,
-      RepType& __M,
+      boost::shared_ptr<RepType> __M,
       size_type rowstart = 0,
       bool init = false,
       bool do_threshold = false,
@@ -111,7 +112,8 @@ struct compute_form1_return
 {
 #if 1
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::test>::type>::type::element_type test_type;
-    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::vector>::type>::type::element_type vector_type;
+    //typedef typename boost::remove_reference<typename parameter::binding<Args, tag::vector>::type>::type::element_type vector_type;
+    typedef typename Backend<double>::vector_type vector_type;
     typedef vf::detail::LinearForm<test_type,
             vector_type,
             vector_type> type;
@@ -130,9 +132,10 @@ BOOST_PARAMETER_FUNCTION(
     form1,                                       // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required                                  // 4. one required parameter, and
-      ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ) ) ) // required
+      ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) ) )
     ( optional                                  //    four optional parameters, with defaults
+      //( in_out( vector ),   *( detail::is_vector_ptr<mpl::_> ), backend()->newVector( _test=test ) )
+      ( in_out( vector ),   *, backend()->newVector( test ) )
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
       ( threshold,        *( boost::is_floating_point<mpl::_> ), type_traits<double>::epsilon() )
@@ -143,7 +146,7 @@ BOOST_PARAMETER_FUNCTION(
     //Feel::detail::ignore_unused_variable_warning(boost_parameter_enabler_argument);
     Feel::detail::ignore_unused_variable_warning( args );
     //return form( test, *vector, init, false, 1e-16 );
-    return form( test, *vector, rowstart, init, do_threshold, threshold );
+    return form( test, vector, rowstart, init, do_threshold, threshold );
 } // form
 
 BOOST_PARAMETER_FUNCTION(
@@ -152,7 +155,8 @@ BOOST_PARAMETER_FUNCTION(
     tag,                                        // 3. namespace of tag types
     ( required                                  // 4. one required parameter, and
       ( test,             *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
-      ( in_out( vector ),   *(detail::is_vector_ptr<mpl::_> ) ) ) // required
+      ( in_out( vector ),   *(detail::is_vector_ptr<mpl::_> ) )
+        ) // required
     ( optional                                  //    four optional parameters, with defaults
       ( init,             *( boost::is_integral<mpl::_> ), false )
       ( do_threshold,     *( boost::is_integral<mpl::_> ), bool( false ) )
@@ -222,9 +226,9 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                           ( required                                  // 4. one required parameter, and
                             ( test,             * )
                             ( trial,            * )
-                            ( in_out( matrix ),   * )
                           ) // required
                           ( optional                                  //    four optional parameters, with defaults
+                            ( in_out( matrix ),   *, backend()->newMatrix( _test=test, _trial=trial ) )
                             ( init,             *( boost::is_integral<mpl::_> ), false )
                             ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
                             ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
@@ -236,7 +240,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
     bool do_threshold = false;
     double threshold = 1e-16;
-    return form( test, trial, *matrix, rowstart, colstart, init, do_threshold, threshold, pattern );
+    return form( test, trial, matrix, rowstart, colstart, init, do_threshold, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, pattern );
     //return form( test, trial, *matrix, init, false, threshold, 0 );
 } //

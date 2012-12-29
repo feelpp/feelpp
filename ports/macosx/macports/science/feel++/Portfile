@@ -7,13 +7,18 @@ PortSystem  1.0
 #PortGroup   cmake 1.0
 
 name                 feel++
-version              0.91.3
+
+fetch.type           git
+git.url              https://code.google.com/p/feelpp
+git.branch           4be79d40d260
+
+version              0.92.0-git-${git.branch}
 categories           science
 platforms            macosx darwin freebsd
-maintainers          ujf-grenoble.fr:Christophe.Prudhomme
+maintainers          feelpp.org:christophe.prudhomme
 description          Finite Element Embedded Library and Language in C++
 long_description    \
- Feel++ (formerly known as Life) is a versatile finite element library\
+ Feel++ is a versatile finite element library\
  to solve partial differential equations.\
  \
  Support 1D, 2D, 3D\
@@ -43,14 +48,12 @@ long_description    \
  projection and numerical integration
 
 homepage            http://www.feelpp.org
-master_sites        http://feelpp.googlecode.com/files/
 
-checksums           md5     972ac4117d65c370cbee07c1f4642698\
-                    sha1    90c3889711356cb4fe3f1bee401ef92998a38a90\
-                    rmd160  3ad7c8a58c97cedff43e66f43fa2f60f7c2f9907
-
-worksrcdir	build
-configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../feel++-${version}" }
+worksrcdir	feel++-${version}
+configure	{
+    file mkdir ${worksrcdir}/build
+    system "cd ${worksrcdir}/build && cmake ${configure.args} ../"
+}
 
 configure.env-append  PETSC_DIR=/opt/local/lib/petsc
 configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
@@ -61,8 +64,9 @@ configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
 # standard place to install extra CMake modules
 set cmake_share_module_dir ${prefix}/share/cmake/modules
 configure.cmd       cmake
-configure.pre_args  -DCMAKE_INSTALL_PREFIX=${prefix}
-configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
+#configure.pre_args
+configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
+                    -DCMAKE_VERBOSE_MAKEFILE=ON \
                     -DCMAKE_COLOR_MAKEFILE=ON \
                     -DCMAKE_BUILD_TYPE=Release \
                     -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
@@ -88,18 +92,9 @@ variant gcc46 conflicts gcc44 gcc45 gcc47 description {Build with gcc 4.6} {}
 variant gcc47 conflicts gcc44 gcc45 gcc46 description {Build with gcc 4.7} {}
 
 
-if {[variant_isset gcc45]} {
-    depends_lib-append  port:gcc45
-    configure.compiler  macports-gcc-4.5
-} else if {[variant_isset gcc46]} {
-    default_variants    +gcc46
-    depends_lib-append  port:gcc46
-    configure.compiler  macports-gcc-4.6
-} else if {[variant_isset gcc46]} {
-    default_variants    +gcc47
-    depends_lib-append  port:gcc47
-    configure.compiler  macports-gcc-4.7
-}
+default_variants    +gcc46
+depends_lib-append  port:gcc46
+configure.compiler  macports-gcc-4.6
 
 configure.args-append \
     -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
@@ -115,10 +110,11 @@ depends_lib    \
     port:openmpi\
     port:boost \
     port:petsc\
-    port:slepc\
-    port:gmsh\
+    port:gmsh-devel\
     port:libANN \
     port:glpk
+
+#    port:slepc\
 
 variant octave description {Add octave bindings} {
   depends_lib_append \

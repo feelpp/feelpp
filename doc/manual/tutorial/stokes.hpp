@@ -170,7 +170,7 @@ public:
 
     /* functions */
     //# marker3 #
-    typedef space_type::element_type element_type;
+    typedef typename space_type::element_type element_type;
     //# endmarker3 #
 
     /* export */
@@ -222,9 +222,9 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::Stokes_Dirichlet_Dirichlet( )
     :
     super( ),
     M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].as<double>() ),
-    mu( this->vm()["mu"].as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].as<value_type>() ),
+    meshSize( this->vm()["hsize"].template as<double>() ),
+    mu( this->vm()["mu"].template as<value_type>() ),
+    penalbc( this->vm()["bccoeff"].template as<value_type>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
 
@@ -232,7 +232,7 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::Stokes_Dirichlet_Dirichlet( )
 
 template<int POrder, int GeoOrder>
 void
-Stokes_Dirichlet_Dirichlet::init()
+Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::init()
 {
     if ( this->vm().count( "help" ) )
     {
@@ -242,12 +242,12 @@ Stokes_Dirichlet_Dirichlet::init()
 
 
     if ( this->vm().count( "nochdir" ) == false )
-        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/Part%6%/P%3%P%4%/h_%5%/" )
+        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/Part%6%/P%3%P%4%G%5%/h_%6%/" )
                                 % this->about().appName()
                                 % convex_type::name()
                                 % basis_u_type::nOrder % basis_p_type::nOrder
-                                % this->vm()["hsize"].as<double>()
-                                % Environment::numberOfProcessors() );
+                                % GeoOrder
+                                % this->vm()["hsize"].template as<double>() );
 
 #if (STOKESPRESSMESHTYPE == 1)
     //********************** Rectangle ***************************************
@@ -291,19 +291,19 @@ Stokes_Dirichlet_Dirichlet::init()
 }
 template<int POrder, int GeoOrder>
 void
-Stokes_Dirichlet_Dirichlet::run()
+Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
 {
     this->init();
 
     auto U = Xh->element( "(u,p)" );
     auto V = Xh->element( "(u,q)" );
-    auto u = U.element<0>( "u" );
-    auto v = V.element<0>( "u" );
-    auto p = U.element<1>( "p" );
-    auto q = V.element<1>( "p" );
+    auto u = U.template element<0>( "u" );
+    auto v = V.template element<0>( "u" );
+    auto p = U.template element<1>( "p" );
+    auto q = V.template element<1>( "p" );
     //#if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
     //#endif
     //# endmarker4 #
 
@@ -366,10 +366,12 @@ Stokes_Dirichlet_Dirichlet::run()
     //*************************************************************************************
 #endif
 
-
+    double meas = integrate(elements(mesh),cst(1.)).evaluate()(0,0);
+    double mean_p_exact = integrate(elements(mesh),p_exact,_quad=_Q<10>()).evaluate()(0,0)/meas;
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
+    stokes_rhs += integrate( elements( mesh ), mean_p_exact*id(nu),_quad=_Q<10>());
     //stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
     //stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
@@ -415,27 +417,27 @@ Stokes_Dirichlet_Dirichlet::run()
 
     LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
     LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    LOG(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
 template<int POrder, int GeoOrder>
 template<typename ExprUExact, typename ExprPExact>
 void
-Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exact,
-                       element_type& U, element_type& V )
+Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_exact,
+                                                            element_type& U, element_type& V )
 {
-    auto u = U.element<0>();
-    auto p = U.element<1>();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
 
-    auto v = V.element<0>();
-    auto q = V.element<1>();
+    auto v = V.template element<0>();
+    auto q = V.template element<1>();
     //#if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
     LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
@@ -460,7 +462,7 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
     //////////////////////////////////////////////////////////////////////////////////////////
 
 
-    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ) ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )- p_exact )*( idv( p )-p_exact ) ).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
     LOG(INFO) << "[stokes] solve for D done\n";
@@ -485,10 +487,22 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
 #if (STOKESPRESSMESHTYPE ==2)
     auto deff = gradv(u);
     auto SigmaNN =(-idv(p)*vf::N()+mu*deff*vf::N());
-    auto Fapp = integrate( boundaryfaces( mesh ) , SigmaNN).evaluate();
+    auto s = integrate( markedfaces( mesh,"Wall" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    std::cout << "s wall="  << s.norm() << "\n";
+    std::cout << "error s wall="  << math::abs(pi-s.norm()) << "\n";
+    s = integrate( markedfaces( mesh,"Inlet" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    std::cout << "s inlet="  << s.norm() << "\n";
+    std::cout << "error s wall="  << math::abs(pi-s.norm()) << "\n";
+    s = integrate( markedfaces( mesh,"Outlet" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    std::cout << "s outlet="  << math::sqrt(s.dot(s)) << "\n";
+    std::cout << "error s wall="  << math::abs(s.norm()) << "\n";
+
+    auto Fappwall = integrate( markedfaces( mesh,"Wall" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    auto Fapp = integrate( boundaryfaces( mesh ) , SigmaNN,_quad=_Q<12>()).evaluate();
     auto Fapp1 = Fapp(0,0); //pour la prémière composante
     auto Fapp2 = Fapp(1,0); //pour la seconde
     auto Fapp3 = Fapp(2,0);
+    std::cout << "erreur bdy="  << math::sqrt(Fapp.dot(Fapp)) << "\n";
     std::cout << "Fapp1 = "<< Fapp(0,0) << "\n" ;
     std::cout << "Fapp2 = "<< Fapp(1,0) << "\n" ;
     std::cout << "Fapp3 = "<< Fapp(2,0) << "\n" ;
@@ -502,35 +516,21 @@ Stokes_Dirichlet_Dirichlet::exportResults( ExprUExact u_exact, ExprPExact p_exac
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
         exporter->step( 0 )->addRegions();
-        auto v = U.functionSpace()->functionSpace<0> ()->element();
-        v = U.element<0>();
-        exporter->step( 0 )->add( "u", U.element<0>() );
+        auto v = U.functionSpace()->template functionSpace<0> ()->element();
+        v = U.template element<0>();
+        exporter->step( 0 )->add( "u", U.template element<0>() );
         //exporter->step( 0 )->add( "ux", v.comp( X ) );
         //exporter->step( 0 )->add( "uy", v.comp( Y ) );
-        exporter->step( 0 )->add( "u", U.element<0>() );
-        exporter->step( 0 )->add( "p", U.element<1>() );
-        exporter->step( 0 )->add( "u_exact", V.element<0>() );
-        exporter->step( 0 )->add( "p_exact", V.element<1>() );
+        exporter->step( 0 )->add( "u", U.template element<0>() );
+        exporter->step( 0 )->add( "p", U.template element<1>() );
+        exporter->step( 0 )->add( "u_exact", V.template element<0>() );
+        exporter->step( 0 )->add( "p_exact", V.template element<1>() );
         exporter->save();
     }
 
 } // Stokes::export
 } // Feel
 
-int
-main( int argc, char** argv )
-{
-
-    using namespace Feel;
-
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name="stokes",
-                                  _author="Christophe Prud'homme",
-                                  _email="christophe.prudhomme@feelpp.org") );
-    Feel::Stokes_Dirichlet_Dirichlet Stokes_Dirichlet_Dirichlet;
-    Stokes_Dirichlet_Dirichlet.run();
-}
 
 
 

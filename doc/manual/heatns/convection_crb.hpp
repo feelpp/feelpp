@@ -380,6 +380,8 @@ public:
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
     sparse_matrix_ptrtype computeTrilinearForm( const element_type& X );
+    sparse_matrix_ptrtype jacobian( const element_type& X );
+    vector_ptrtype residual( const element_type& X );
 
 private:
 

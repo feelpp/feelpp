@@ -1172,6 +1172,50 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 
+
+/**
+ * build a mesh of the unit segment [0,1]
+ */
+inline
+boost::shared_ptr<Mesh<Simplex<1> > >
+unitSegment()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
+                          _desc=domain( _name="segment",
+                                        _shape="hypercube",
+                                        _dim=3,
+                                        _h=Environment::vm(_name="mesh1d.hsize").as<double>() ) );
+}
+
+/**
+ * build a mesh of the unit square [0,1]^2 using triangles
+ */
+inline
+boost::shared_ptr<Mesh<Simplex<2> > >
+unitSquare()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
+                          _desc=domain( _name="square",
+                                        _shape="hypercube",
+                                        _dim=2,
+                                        _h=Environment::vm(_name="mesh2d.hsize").as<double>() ) );
+}
+
+/**
+ * build a mesh of the unit square [0,1]^3 using tetrahedrons
+ */
+inline
+boost::shared_ptr<Mesh<Simplex<3> > >
+unitCube()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<3> >,
+                          _desc=domain( _name="cube",
+                                        _shape="hypercube",
+                                        _dim=3,
+                                        _h=Environment::vm(_name="mesh3d.hsize").as<double>() ) );
+}
+
+
 } // Feel
 
 #endif /* __Gmsh_H */
