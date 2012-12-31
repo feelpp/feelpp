@@ -887,7 +887,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 
         current_mu << current_Grashofs, current_Prandtl;
 
-        M_model->computeBetaQm( current_mu );
+        //M_model->computeBetaQm( current_mu );
         this->updateLinearTerms( current_mu , N );
 
         //M_nlsolver->setRelativeResidualTol( 1e-12 );
@@ -973,14 +973,18 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
     LOG(INFO) << "updateJacobian \n";
     map_J = M_bilinear_terms;
 
-    for ( size_type q = 0; q < M_model->QaTri(); ++q )
+    bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
+    if( enable )
     {
-        for (int k = 0 ; k < N; ++k)
+        for ( size_type q = 0; q < M_model->QaTri(); ++q )
         {
-            for ( int i = 0; i < N; ++i )
+            for (int k = 0 ; k < N; ++k)
             {
-                map_J( i, k ) += ( M_Aqm_tril_pr[q][k].row( i ).head( N ) ).dot(map_X);
-                //map_J( i, k ) += ( (M_Aqm_tril_pr[q][k].col( i ).head( N ) ).transpose() ).dot(map_X);
+                for ( int i = 0; i < N; ++i )
+                {
+                    map_J( i, k ) += ( M_Aqm_tril_pr[q][k].row( i ).head( N ) ).dot(map_X);
+                    //map_J( i, k ) += ( (M_Aqm_tril_pr[q][k].col( i ).head( N ) ).transpose() ).dot(map_X);
+                }
             }
         }
     }
@@ -1023,17 +1027,21 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     map_R = M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
-    for ( size_type q = 0; q < M_model->QaTri(); ++q )
+    bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
+    if( enable )
     {
-        for (int k = 0 ; k < N; ++k)
+        for ( size_type q = 0; q < M_model->QaTri(); ++q )
         {
-            for ( int i = 0; i < N; ++i )
+            for (int k = 0 ; k < N; ++k)
             {
-                temp( k, i ) += 0.5*map_X.dot( M_Aqm_tril_pr[0][k].row( i ).head( N ) ) ;
+                for ( int i = 0; i < N; ++i )
+                {
+                    temp( k, i ) += 0.5*map_X.dot( M_Aqm_tril_pr[0][k].row( i ).head( N ) ) ;
+                }
             }
         }
+        map_R += temp * map_X ;
     }
-    map_R += temp * map_X ;
 
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
