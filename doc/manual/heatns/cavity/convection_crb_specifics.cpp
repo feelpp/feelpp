@@ -31,13 +31,13 @@
 
 #include "convection_crb.hpp"
 
-/*
+
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
 typedef Eigen::MatrixXd matrixN_type;
-*/
+
 
 typedef std::vector< std::vector< double > > beta_vector_type;
 
@@ -93,7 +93,6 @@ void Convection_crb::init()
     double Prmax( this->vm()["Prmax"]. as<double>() );
     mu_max << Grmax, Prmax;
     M_Dmu->setMax( mu_max );
-
 
     //  initialisation de A0, A1, A2
     M_Aqm.resize( Qa() );
@@ -343,6 +342,7 @@ Convection_crb::update( parameter_type const& mu )
 
 void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
+
     LOG(INFO) << "[updateJacobian] start\n";
 
     auto mesh = Xh->mesh();
@@ -418,8 +418,38 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
 
     J->zero();
     J->addMatrix(1.,D);
-    J->addMatrix(1.,M_Aqm[3][0]);
+    if ( this->vm()["enable-convection-terms"]. as<bool>() )
+        J->addMatrix(1.,M_Aqm[3][0]);
 
+}
+
+
+//return the jacobian matrix evaluated at X
+typename Convection_crb::sparse_matrix_ptrtype
+Convection_crb::jacobian( const element_type& X )
+{
+    sparse_matrix_ptrtype J;
+    J = M_backend->newMatrix( _test=Xh, _trial=Xh );
+
+    vector_ptrtype XX( M_backend->newVector( Xh ) );
+    *XX = X;
+
+    updateJacobian( XX,  J);
+
+    return J;
+}
+//return the residual vector evaluated at X
+typename Convection_crb::vector_ptrtype
+Convection_crb::residual( const element_type& X )
+{
+    vector_ptrtype R ( M_backend->newVector( Xh ) );
+
+    vector_ptrtype XX( M_backend->newVector( Xh ) );
+    *XX = X;
+
+    updateResidual( XX, R );
+
+    return R;
 }
 
 typename Convection_crb ::sparse_matrix_ptrtype
