@@ -1202,6 +1202,24 @@ unitSquare()
 }
 
 /**
+ * build a mesh of the unit circle using triangles
+ */
+template<int Ngeo=1>
+inline
+boost::shared_ptr<Mesh<Simplex<2,Ngeo> > >
+unitCircle()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<2,Ngeo> >,
+                          _desc=domain( _name="square",
+                                        _shape="ellipsoid",
+                                        _dim=2,
+                                        _xmin=-1,
+                                        _ymin=-1,
+                                        _h=Environment::vm(_name="mesh2d.hsize").template as<double>() ) );
+}
+
+
+/**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons
  */
 inline
