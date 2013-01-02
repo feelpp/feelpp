@@ -262,7 +262,7 @@ Stokes::run()
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     //stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-    stokes_rhs += integrate( markedfaces( mesh, wall ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+    //stokes_rhs += integrate( markedfaces( mesh, wall ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
     stokes_rhs += integrate( markedfaces( mesh,inlet ), inner( -p_in*N(),id( v ) ) );
     stokes_rhs += integrate( markedfaces( mesh,outlet ), inner( -p_out*N(),id( v ) ) );
     LOG(INFO) << "chrono lhs: " << chrono.elapsed() << "\n";
@@ -289,9 +289,9 @@ Stokes::run()
     chrono.restart();
 #endif
 
-    stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    //stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaNt,id( v ) ) );
+    //stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaN,idt( u ) ) );
+    //stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
 #if! defined( FEELPP_USE_LM )
     //stokes +=integrate( markedfaces( mesh,{inlet,outlet} ), -inner( mu*deft*N(),id( v ) ) );
@@ -301,7 +301,7 @@ Stokes::run()
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
     chrono.restart();
     //# endmarker7 #
-
+    stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=F, _expr=vec(constant(0.),constant(0.)));
 
     chrono.restart();
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
