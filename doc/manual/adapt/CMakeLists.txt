@@ -27,5 +27,5 @@ if (OCTAVE_FOUND)
   add_octave_module(residualestimator)
 endif()
 
-feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg LABEL doc )
+feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABEL doc )
 
