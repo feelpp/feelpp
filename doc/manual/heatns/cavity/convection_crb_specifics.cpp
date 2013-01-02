@@ -31,13 +31,13 @@
 
 #include "convection_crb.hpp"
 
-/*
+
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
 typedef Eigen::MatrixXd matrixN_type;
-*/
+
 
 typedef std::vector< std::vector< double > > beta_vector_type;
 
@@ -93,7 +93,6 @@ void Convection_crb::init()
     double Prmax( this->vm()["Prmax"]. as<double>() );
     mu_max << Grmax, Prmax;
     M_Dmu->setMax( mu_max );
-
 
     //  initialisation de A0, A1, A2
     M_Aqm.resize( Qa() );
@@ -204,31 +203,14 @@ void Convection_crb::init()
     M_InitialGuessQm[0][0] = ini_cond;
 
 
-    // right hand side
-#if CONVECTION_DIM == 2
     form1( Xh, _vector=M_Fqm[0][0][0] ) =
-        integrate ( elements( mesh ),
-                    // buyoancy force
-                    -expansion*trans( vec( constant( 0. ),idv( t ) ) )*id( v ) );
-#else
-    // right hand side
-    form1( Xh, _vector=M_Fqm[0][0][0] ) =
-        integrate ( elements( mesh ),
-                    // buyoancy force
-                    -expansion*trans( vec( cst(0.), constant( 0. ),idv( t ) ) )*id( v ) );
-#endif
-    M_Fqm[0][0][0]->close();
-
-    form1( Xh, _vector=M_Fqm[0][1][0] ) =
         integrate ( markedfaces( mesh, "Tflux"),
                     // heat flux on the right side
                     - id( s )  );
-    M_Fqm[0][1][0]->close();
-
+    M_Fqm[0][0][0]->close();
     //output : \int_{\Omega} T
     form1( _test=Xh, _vector=M_Fqm[1][0][0] ) = integrate( _range=markedfaces( mesh,"Tflux" ), _expr= id(s) );//*(1.0/area) ) ;
     M_Fqm[1][0][0]->close();
-
 }
 
 // \return the number of terms in affine decomposition of left hand
@@ -280,7 +262,7 @@ int Convection_crb::mMaxInitialGuess( int q )
  */
 int Convection_crb::Ql( int l ) const
 {
-    if ( l == 0 ) return 2;
+    if ( l == 0 ) return 1;
     return 1;
 }
 
@@ -313,9 +295,9 @@ Convection_crb::computeBetaQm( parameter_type const& mu, double )
     M_betaFqm.resize( Nl() );
     M_betaFqm[0].resize( Ql( 0 ) );
     M_betaFqm[0][0].resize(1);
-    M_betaFqm[0][1].resize(1);
-    M_betaFqm[0][0][0] = 1. ;
-    M_betaFqm[0][1][0] = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) );
+    //M_betaFqm[0][1].resize(1);
+    M_betaFqm[0][0][0] = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) );
+    //M_betaFqm[0][1][0] = 1/( mu( 1 )*math::sqrt( mu ( 0 ) ) );
 
     M_betaFqm[1].resize( Ql( 1 ) );
     M_betaFqm[1][0].resize(1);
@@ -360,6 +342,7 @@ Convection_crb::update( parameter_type const& mu )
 
 void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
+
     LOG(INFO) << "[updateJacobian] start\n";
 
     auto mesh = Xh->mesh();
@@ -435,8 +418,38 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
 
     J->zero();
     J->addMatrix(1.,D);
-    J->addMatrix(1.,M_Aqm[3][0]);
+    if ( this->vm()["enable-convection-terms"]. as<bool>() )
+        J->addMatrix(1.,M_Aqm[3][0]);
 
+}
+
+
+//return the jacobian matrix evaluated at X
+typename Convection_crb::sparse_matrix_ptrtype
+Convection_crb::jacobian( const element_type& X )
+{
+    sparse_matrix_ptrtype J;
+    J = M_backend->newMatrix( _test=Xh, _trial=Xh );
+
+    vector_ptrtype XX( M_backend->newVector( Xh ) );
+    *XX = X;
+
+    updateJacobian( XX,  J);
+
+    return J;
+}
+//return the residual vector evaluated at X
+typename Convection_crb::vector_ptrtype
+Convection_crb::residual( const element_type& X )
+{
+    vector_ptrtype R ( M_backend->newVector( Xh ) );
+
+    vector_ptrtype XX( M_backend->newVector( Xh ) );
+    *XX = X;
+
+    updateResidual( XX, R );
+
+    return R;
 }
 
 typename Convection_crb ::sparse_matrix_ptrtype

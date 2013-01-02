@@ -64,8 +64,9 @@ makeThermalBlockOptions()
     ( "hsize", po::value<double>()->default_value( 0.05 ), "mesh size" )
     ( "nx", po::value<int>()->default_value( 3 ), "number of blocks in the x direction" )
     ( "ny", po::value<int>()->default_value( 3 ), "number of blocks in the y direction" )
-    ( "gamma_dir", Feel::po::value<double>()->default_value( 10 ),
-      "penalisation parameter for the weak boundary Dirichlet formulation" )
+    ( "geofile", Feel::po::value<std::string>()->default_value( "" ), "name of the geofile input (used to store DB)")
+    ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
+    ( "gamma_dir", Feel::po::value<double>()->default_value( 10 ), "penalisation parameter for the weak boundary Dirichlet formulation" )
     ;
     return thermalblockoptions.add( Feel::feel_options() );
 }
@@ -614,10 +615,21 @@ thermalBlockGeometry( int nx, int ny, double hsize )
 void
 ThermalBlock::init()
 {
-    mmesh = createGMSHMesh( _mesh=new mesh_type,
-                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                            _desc=thermalBlockGeometry( nx, ny, meshSize ) );
 
+    std::string mshfile_name = M_vm["mshfile"].template as<std::string>();
+
+    if( mshfile_name=="" )
+    {
+        mmesh = createGMSHMesh( _mesh=new mesh_type,
+                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                                _desc=thermalBlockGeometry( nx, ny, meshSize ) );
+    }
+    else
+    {
+        mmesh = loadGMSHMesh( _mesh=new mesh_type,
+                             _filename=M_vm["mshfile"].template as<std::string>(),
+                             _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    }
 
     auto names = mmesh->markerNames();
     southMarkers.clear();
@@ -792,7 +804,6 @@ ThermalBlock::update( parameter_type const& mu )
             F->add( M_betaFqm[0][q][m], M_Fqm[0][q][m] );
         }
     }
-
 }
 
 

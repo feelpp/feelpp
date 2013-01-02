@@ -78,7 +78,8 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 
     //choix de la valeur des paramètres dimensionnés ou adimensionnés
     double a=0.0,b=0.0,c=0.0;
-
+    bool bool_enable_convection = this->vm()["enable-convection-terms"]. as<bool>();
+    int enable_convection = (int) bool_enable_convection;
     a=1;
     b=1/math::sqrt( gr );
     c=1/( pr*math::sqrt( gr ) );
@@ -91,7 +92,7 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     form1( Xh, _vector=R ) =
         integrate ( elements( mesh ),
                     // convection
-                    cst( a )*trans( gradv( u )*idv( u ) )*id( v ) );
+                    cst(enable_convection) * cst( a )*trans( gradv( u )*idv( u ) )*id( v ) );
 
     form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
@@ -131,10 +132,10 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     form1( Xh, _vector=R ) +=
         integrate ( elements( mesh ),
                     // heat convection by the fluid
-                    grad( s )*( idv( t ) * idv( u ) ) );
+                    cst(enable_convection) * grad( s )*( idv( t ) * idv( u ) ) );
     form1( Xh, _vector=R ) +=
         integrate ( boundaryfaces( mesh ),
-                    ( trans( idv( u ) )*N() )*id( s )*idv( t ) );
+                    cst(enable_convection) * ( trans( idv( u ) )*N() )*id( s )*idv( t ) );
 
 
 

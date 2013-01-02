@@ -90,7 +90,9 @@ inline po::options_description makeOptions()
         ( "Grmin", po::value<double>()->default_value( 10 ), "Grmin" )
         ( "Prmin", po::value<double>()->default_value( 1 ), "Prmin" )
         ( "Grmax", po::value<double>()->default_value( 10 ), "Grmax" )
-        ( "Prmax", po::value<double>()->default_value( 1 ), "Prmax" );
+        ( "Prmax", po::value<double>()->default_value( 1 ), "Prmax" )
+        ( "enable-convection-terms",po::value<bool>()->default_value(true), "enable convections terms" )
+        ;
 //        ( "no-export", "don't export results" );
 
     // return the options as well as the feel options

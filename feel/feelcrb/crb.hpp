@@ -281,8 +281,8 @@ public:
         M_Xi( new sampling_type( M_Dmu ) ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_WNmu_complement(),
-        M_scmA( new scm_type( name+"_a", vm ) ),
-        M_scmM( new scm_type( name+"_m", vm ) ),
+        M_scmA( new scm_type( name+"_a", vm , model ) ),
+        M_scmM( new scm_type( name+"_m", vm , model ) ),
         exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) )
     {
         this->setTruthModel( model );
@@ -300,6 +300,7 @@ public:
         M_iter_max( o.M_iter_max ),
         M_factor( o.M_factor ),
         M_error_type( o.M_error_type ),
+        M_maxerror( o.M_maxerror ),
         M_Dmu( o.M_Dmu ),
         M_Xi( o.M_Xi ),
         M_WNmu( o.M_WNmu ),
@@ -446,8 +447,8 @@ public:
         LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
     }
 
-        M_scmA->setTruthModel( M_model );
-        M_scmM->setTruthModel( M_model );
+    //M_scmA->setTruthModel( M_model );
+    //M_scmM->setTruthModel( M_model );
     }
 
     //! set max iteration number
@@ -906,6 +907,8 @@ private:
 
     CRBErrorType M_error_type;
 
+    double M_maxerror;
+
     // parameter space
     parameterspace_ptrtype M_Dmu;
 
@@ -1053,7 +1056,6 @@ CRB<TruthModelType>::offline()
 
     parameter_type mu( M_Dmu );
 
-    double maxerror;
     double delta_pr;
     double delta_du;
     size_type index;
@@ -1350,11 +1352,11 @@ CRB<TruthModelType>::offline()
             }
         }
 
-        maxerror = 1e10;
+        M_maxerror = 1e10;
         delta_pr = 0;
         delta_du = 0;
         no_residual_index = 0;
-        //boost::tie( maxerror, mu, index ) = maxErrorBounds( N );
+        //boost::tie( M_maxerror, mu, index ) = maxErrorBounds( N );
 
         LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
         M_Aqm_pr.resize( M_model->Qa() );
@@ -1498,9 +1500,15 @@ CRB<TruthModelType>::offline()
 #endif
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
-    if( proc_number == 0 ) std::cout << "[CRB::offline] strategy "<< M_error_type <<"\n";
+    if( proc_number == this->worldComm().masterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<"\n";
 
-    while ( maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size )
+    if( M_error_type == CRB_NO_RESIDUAL )
+    {
+        //in this case it makes no sens to check the estimated error
+        M_maxerror = 1e10;
+    }
+
+    while ( M_maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size )
     {
 
         //if ( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( no_residual_index );
@@ -1523,9 +1531,9 @@ CRB<TruthModelType>::offline()
             if( proc_number == 0 )
             {
                 std::cout << "============================================================"<<std::endl;
-                std::cout << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance <<" ( nb proc : "<<worldComm().globalSize()<<")"<< std::endl;
+                std::cout << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << M_maxerror << " / "  << M_tolerance <<" ( nb proc : "<<worldComm().globalSize()<<")"<< std::endl;
             }
-            LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << maxerror << " / "  << M_tolerance << "\n";
+            LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << M_maxerror << " / "  << M_tolerance << "\n";
         }
 
 
@@ -2208,7 +2216,7 @@ CRB<TruthModelType>::offline()
 
         if ( M_error_type == CRB_NO_RESIDUAL )
         {
-            maxerror=M_iter_max-M_N;
+            //M_maxerror=M_iter_max-M_N;
             //no_residual_index++;
             //M_no_residual_index = no_residual_index;
 
@@ -2232,7 +2240,7 @@ CRB<TruthModelType>::offline()
         }
         else
         {
-            boost::tie( maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
+            boost::tie( M_maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
 
             M_index.push_back( index );
             M_current_mu = mu;
@@ -2244,7 +2252,7 @@ CRB<TruthModelType>::offline()
             timer2.restart();
         }
 
-        M_rbconv.insert( convergence( M_N, boost::make_tuple(maxerror,delta_pr,delta_du) ) );
+        M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
 
         //mu = M_Xi->at( M_N );//M_WNmu_complement->min().template get<0>();
 
@@ -5625,6 +5633,13 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
     }
+
+    //version 5 : data structure
+    if( version >= 6 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_maxerror );
+    }
+
 }
 
 template<typename TruthModelType>
@@ -5781,6 +5796,12 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         }
     }
 
+    //version 5 : data structure
+    if( version >= 6 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_maxerror );
+    }
+
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
               << "[loadDB] N : " << M_N << "\n"
@@ -5876,10 +5897,10 @@ namespace serialization
 template< typename T>
 struct version< Feel::CRB<T> >
 {
-    // at the moment the version of the CRB DB is 5. if any changes is done
+    // at the moment the version of the CRB DB is 6. if any changes is done
     // to the format it is mandatory to increase the version number below
     // and use the new version number of identify the new entries in the DB
-    typedef mpl::int_<5> type;
+    typedef mpl::int_<6> type;
     typedef mpl::integral_c_tag tag;
     static const unsigned int value = version::type::value;
 };
