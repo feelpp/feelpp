@@ -75,22 +75,26 @@ public:
 
     typedef double value_type;
 
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+#if defined(DIM2)
+    static const uint16_type nDim = DIM2;
+#elif defined(DIM3)
+    static const uint16_type nDim = DIM3;
+#endif
 
     /*mesh*/
-    typedef Mesh<Simplex<2> > mesh_type;
+    typedef Mesh<Simplex<nDim> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef Mesh<Simplex<1,1,2>> mesh_lag_type;
+    typedef Mesh<Simplex<nDim-1,1,nDim>> mesh_lag_type;
     typedef boost::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
-    //typedef Mesh<Simplex<1,1,2>,value_type,2> mesh_lag2_type;
-    //typedef boost::shared_ptr<mesh_lag2_type> mesh_lag2_ptrtype;
 
     /*basis*/
-    //# marker1 #,
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<1, Scalar> basis_p_type;
+#if defined( DIM2 )
     typedef Lagrange<2, Scalar> basis_l_type;
+#elif defined( DIM3 )
+    typedef Lagrange<2, Vectorial> basis_l_type;
+#endif
     // use lagrange multipliers to ensure zero mean pressure
 #if defined( FEELPP_USE_LM )
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
@@ -142,7 +146,6 @@ private:
 
 private:
 
-    backend_ptrtype M_backend;
     double meshSize;
     double L;
     double p_in,p_out;
@@ -157,7 +160,6 @@ private:
 Stokes::Stokes()
     :
     super(),
-    M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     L( this->vm()["L"].as<value_type>() ),
     p_in( this->vm()["p_in"].as<value_type>() ),
@@ -249,14 +251,11 @@ Stokes::run()
     // f is such that f = \Delta u_exact + \nabla p_exact
     auto f = expr<2,1,2>( f_g, {x,y} );
 
-    auto F = M_backend->newVector( Xh );
-    auto D =  M_backend->newMatrix( Xh, Xh );
-
     std::string inlet("inlet"), outlet("outlet"), wall("wall");
 
     chrono.restart();
     // right hand side
-    auto stokes_rhs = form1( _test=Xh, _vector=F );
+    auto stokes_rhs = form1( _test=Xh );
     //stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     //stokes_rhs += integrate( markedfaces( mesh, wall ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
     stokes_rhs += integrate( markedfaces( mesh,inlet ), inner( -p_in*N(),id( v ) ) );
@@ -267,8 +266,7 @@ Stokes::run()
     /*
      * Construction of the left hand side
      */
-    //# marker7 #
-    auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
+    auto stokes = form2( _test=Xh, _trial=Xh );
 
     stokes += integrate( elements( mesh ), 2*mu*inner( deft,def ) );
     LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";
@@ -276,14 +274,22 @@ Stokes::run()
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
-    auto t = vec(-Ny(),Nx());
-#if defined( FEELPP_USE_LM )
 
+    auto t = vec(-Ny(),Nx());
+
+#if defined( FEELPP_USE_LM )
+#if defined( DIM2 )
     stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
     stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
+#elif defined( DIM3 )
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
+    stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
+
+#endif // DIM3
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
+
 
     //stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaNt,id( v ) ) );
     //stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaN,idt( u ) ) );
@@ -297,11 +303,11 @@ Stokes::run()
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
     chrono.restart();
     //# endmarker7 #
-    stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=F, _expr=vec(constant(0.),constant(0.)));
+    stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
 
     chrono.restart();
-    M_backend->solve( _matrix=D, _solution=U, _rhs=F );
-
+    stokes.solve( _solution=U, _rhs=stokes_rhs );
+#if defined( DIM2 )
     LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";
     LOG(INFO) << "int_inlet T = " << integrate( markedfaces( mesh,inlet ), t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), trans(idv(u))*t ).evaluate() << "\n";
@@ -310,6 +316,14 @@ Stokes::run()
     LOG(INFO) << "int_inlet x u.T = " << integrate( markedfaces( mesh,inlet ), Px()*trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet x^2 u.T = " << integrate( markedfaces( mesh,outlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";
+#elif defined( DIM3 )
+    LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), cross(idv(u),N()) ).evaluate() << "\n";
+    LOG(INFO) << "int_inlet  u.T = " << integrate( markedfaces( mesh,inlet ), cross(idv(u),N()) ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet x u.T = " << integrate( markedfaces( mesh,outlet ), Px()*cross(idv(u),N()) ).evaluate() << "\n";
+    LOG(INFO) << "int_inlet x u.T = " << integrate( markedfaces( mesh,inlet ), Px()*cross(idv(u),N()) ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet x^2 u.T = " << integrate( markedfaces( mesh,outlet ), Px()*Px()*cross(idv(u),N() )).evaluate() << "\n";
+    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*cross(idv(u),N())).evaluate() << "\n";
+#endif
     LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";
 
     this->exportResults( u_exact, p_exact, U, V );
