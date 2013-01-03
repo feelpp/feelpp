@@ -155,7 +155,7 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 }; // Stokes
-
+const uint16_type Stokes::nDim;
 
 Stokes::Stokes()
     :
@@ -173,10 +173,11 @@ Stokes::Stokes()
 void
 Stokes::init()
 {
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/P%2%P%3%/h_%4%/" )
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%5%D/P%2%P%3%/h_%4%/" )
                                    % this->about().appName()
                                    % basis_u_type::nOrder % basis_p_type::nOrder
-                                   % this->vm()["hsize"].as<double>() );
+                                   % this->vm()["hsize"].as<double>()
+                                   % nDim );
 
 
     mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -221,58 +222,35 @@ Stokes::run()
     LOG(INFO) << "   hsize = " << meshSize << "\n";
     LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
     LOG(INFO) << "      mu = " << mu << "\n";
-    LOG(INFO) << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
-    symbol x("x"),y("y");
-    auto u1 = 0.;
-    auto u2 = 0.;
-    matrix u_exact_g = matrix(2,1);
-    u_exact_g = u1,u2;
-    auto p_exact_g = p_in+x*(p_out-p_in)/L;
-
-    auto u_exact = expr<2,1,2>( u_exact_g, {x,y} );
-    auto p_exact = expr( p_exact_g, {x,y} );
-	auto f_g = 0*(-mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose());
-    LOG(INFO) << "f = " << f_g << "\n";
-
-    //# marker5 #
     auto deft = sym(gradt( u ));
     auto def = sym(grad( v ));
-    //# endmarker5 #
 
-    //# marker6 #
     // total stress tensor (trial)
     auto SigmaNt = -idt( p )*N()+2*mu*deft*N();
 
     // total stress tensor (test)
     auto SigmaN = -id( p )*N()+2*mu*def*N();
-    //# endmarker6 #
-
-    // f is such that f = \Delta u_exact + \nabla p_exact
-    auto f = expr<2,1,2>( f_g, {x,y} );
 
     std::string inlet("inlet"), outlet("outlet"), wall("wall");
 
     chrono.restart();
     // right hand side
     auto stokes_rhs = form1( _test=Xh );
-    //stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-    //stokes_rhs += integrate( markedfaces( mesh, wall ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
-    stokes_rhs += integrate( markedfaces( mesh,inlet ), inner( -p_in*N(),id( v ) ) );
-    stokes_rhs += integrate( markedfaces( mesh,outlet ), inner( -p_out*N(),id( v ) ) );
+    stokes_rhs += integrate( markedfaces( mesh,inlet ),  -trans(p_in*N())*id( v ) );
+    stokes_rhs += integrate( markedfaces( mesh,outlet ), -trans(p_out*N())*id( v ) );
     LOG(INFO) << "chrono lhs: " << chrono.elapsed() << "\n";
-    LOG(INFO) << "[stokes] vector local assembly done\n";
+    LOG(INFO) << "[stokes] vector local assembly done\n";google::FlushLogFiles(google::GLOG_INFO);
 
-    /*
-     * Construction of the left hand side
-     */
+    // left hand side
     auto stokes = form2( _test=Xh, _trial=Xh );
 
-    stokes += integrate( elements( mesh ), 2*mu*inner( deft,def ) );
-    LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";
+    stokes += integrate( elements( mesh ), 2*mu*trace(trans( deft)*def ) );
+    LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
-    LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
 
     auto t = vec(-Ny(),Nx());
@@ -286,7 +264,7 @@ Stokes::run()
     stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
 
 #endif // DIM3
-    LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
 #endif
 
@@ -300,7 +278,7 @@ Stokes::run()
     stokes +=integrate( markedfaces( mesh,inlet ), -inner( 2*mu*deft*N(),id( v ) ) );
     stokes +=integrate( markedfaces( mesh,outlet ), -inner( 2*mu*deft*N(),id( v ) ) );
 #endif
-    LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
     //# endmarker7 #
     stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
@@ -308,26 +286,28 @@ Stokes::run()
     chrono.restart();
     stokes.solve( _solution=U, _rhs=stokes_rhs );
 #if defined( DIM2 )
-    LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     LOG(INFO) << "int_inlet T = " << integrate( markedfaces( mesh,inlet ), t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_inlet  u.T = " << integrate( markedfaces( mesh,inlet ), trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet x u.T = " << integrate( markedfaces( mesh,outlet ), Px()*trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_inlet x u.T = " << integrate( markedfaces( mesh,inlet ), Px()*trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet x^2 u.T = " << integrate( markedfaces( mesh,outlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";
-    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";
+    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 #elif defined( DIM3 )
-    LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), cross(idv(u),N()) ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), cross(idv(u),N()) ).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     LOG(INFO) << "int_inlet  u.T = " << integrate( markedfaces( mesh,inlet ), cross(idv(u),N()) ).evaluate() << "\n";
     LOG(INFO) << "int_outlet x u.T = " << integrate( markedfaces( mesh,outlet ), Px()*cross(idv(u),N()) ).evaluate() << "\n";
     LOG(INFO) << "int_inlet x u.T = " << integrate( markedfaces( mesh,inlet ), Px()*cross(idv(u),N()) ).evaluate() << "\n";
     LOG(INFO) << "int_outlet x^2 u.T = " << integrate( markedfaces( mesh,outlet ), Px()*Px()*cross(idv(u),N() )).evaluate() << "\n";
-    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*cross(idv(u),N())).evaluate() << "\n";
+    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*cross(idv(u),N())).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 #endif
-    LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
+    auto u_exact = zero<nDim,1>();
+    auto p_exact = cst(0.);
     this->exportResults( u_exact, p_exact, U, V );
-    LOG(INFO) << "chrono export: " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono export: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
 } // Stokes::run
 
@@ -392,18 +372,6 @@ main( int argc, char** argv )
                      _about=about(_name="stokes_pressure",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
-
-    // SOME BAD ELEMENTS
-    // P1/P0 : locking
-    //typedef Feel::Stokes<Simplex<2>, Lagrange<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
-    // P1/P1 : spurious modes
-    //typedef Feel::Stokes<Simplex<2>, Lagrange<1, Vectorial>,Lagrange<1, Scalar> > stokes_type;
-
-    // SOME GOOD ELEMENTS
-    // P2/P1
-    // CR0/P0
-    //typedef Feel::Stokes<Simplex<2>, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
-
 
     /* define and run application */
     Stokes stokes;
