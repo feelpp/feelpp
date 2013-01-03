@@ -560,8 +560,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_EVALQ, ()); \
                     return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
                 }                                                       \
+                ret_type const&                                         \
+                    evalq( uint16_type q ) const                        \
+                {                                                       \
+                    BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_EVALQ, ()); \
+                    return M_loc[q];                                    \
+                }                                                       \
             private:                                                    \
-                                               \
+                                                                        \
                     result_type                                         \
                     evaliq_( uint16_type /*i*/,                       \
                              uint16_type /*c1*/, uint16_type /*c2*/,    \
