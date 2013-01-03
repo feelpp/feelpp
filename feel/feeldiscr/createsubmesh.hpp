@@ -38,7 +38,7 @@ namespace Feel
 
 template <typename C, typename V, int T> class Mesh;
 
-template <typename MeshType,typename IteratorRange>
+template <typename MeshType,typename IteratorRange, int TheTag=MeshType::tag>
 class createSubmeshTool
 {
 public :
@@ -47,7 +47,7 @@ public :
     typedef typename boost::tuples::template element<0, range_type>::type idim_type;
     typedef typename boost::tuples::template element<1, range_type>::type iterator_type;
 
-    static const uint16_type tag = MeshType::tag;
+    static const uint16_type tag = TheTag;
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
 
@@ -98,9 +98,9 @@ private:
 
 };
 
-template <typename MeshType,typename IteratorRange>
-typename createSubmeshTool<MeshType,IteratorRange>::mesh_ptrtype
-createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_ELEMENTS> /**/ )
+template <typename MeshType,typename IteratorRange,int TheTag>
+typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_ptrtype
+createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS> /**/ )
 {
     typedef typename mesh_type::element_type element_type;
     typedef typename mesh_type::point_type point_type;
@@ -276,9 +276,9 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_ELEMENTS> /**/ 
     return newMesh;
 }
 
-template <typename MeshType,typename IteratorRange>
-typename createSubmeshTool<MeshType,IteratorRange>::mesh_faces_ptrtype
-createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
+template <typename MeshType,typename IteratorRange,int TheTag>
+typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_faces_ptrtype
+createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /**/ )
 {
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
     mesh_faces_ptrtype newMesh( new mesh_faces_type( M_mesh->worldComm()) );
@@ -401,9 +401,9 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_FACES> /**/ )
     return newMesh;
 }
 
-template <typename MeshType,typename IteratorRange>
-typename createSubmeshTool<MeshType,IteratorRange>::mesh_edges_ptrtype
-createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_EDGES> /**/ )
+template <typename MeshType,typename IteratorRange,int TheTag>
+typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_edges_ptrtype
+createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /**/ )
 {
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
     mesh_edges_ptrtype newMesh( new mesh_edges_type( M_mesh->worldComm()) );
@@ -530,17 +530,13 @@ createSubmeshTool<MeshType,IteratorRange>::build( mpl::int_<MESH_EDGES> /**/ )
     return newMesh;
 }
 
-
-
-
-
-template <typename MeshType,typename IteratorRange>
-typename createSubmeshTool<MeshType,IteratorRange>::mesh_build_ptrtype
+template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
+typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_build_ptrtype
 createSubmesh( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range )
 {
     Debug( 4015 ) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
                   << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
-    createSubmeshTool<MeshType,IteratorRange> cSmT( inputMesh,range );
+    createSubmeshTool<MeshType,IteratorRange,TheTag> cSmT( inputMesh,range );
     return cSmT.build();
 }
 
