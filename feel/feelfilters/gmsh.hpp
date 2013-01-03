@@ -1049,7 +1049,8 @@ BOOST_PARAMETER_FUNCTION(
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
         std::vector<std::string> depends_on_files;
-        algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
+        if ( !depends.empty() )
+            algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
         // copy include/merged files needed by geometry file
         boost::for_each( depends_on_files,
                          [&cp, &files_path]( std::string const& _filename )
