@@ -81,8 +81,10 @@ public:
     /*mesh*/
     typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef Mesh<Simplex<1,1,2> > mesh_lag_type;
-    typedef boost::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
+    typedef Mesh<Simplex<1,1,2>,value_type,1> mesh_lag1_type;
+    typedef boost::shared_ptr<mesh_lag1_type> mesh_lag1_ptrtype;
+    typedef Mesh<Simplex<1,1,2>,value_type,2> mesh_lag2_type;
+    typedef boost::shared_ptr<mesh_lag2_type> mesh_lag2_ptrtype;
 
     /*basis*/
     //# marker1 #,
@@ -100,7 +102,7 @@ public:
     /*space*/
     //# marker2 #
 #if defined( FEELPP_USE_LM )
-    typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag_type,mesh_lag_type>, basis_type> space_type;
+    typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag1_type,mesh_lag2_type>, basis_type> space_type;
 #else
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 #endif
@@ -113,9 +115,6 @@ public:
     typedef space_type::element_type element_type;
     //# endmarker3 #
 
-    /* export */
-    typedef Exporter<mesh_type> export_type;
-    typedef Exporter<mesh_lag_type> export_lag_type;
 
     FEELPP_DONT_INLINE
     Stokes();
@@ -152,9 +151,6 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
-    boost::shared_ptr<export_type> exporter;
-    boost::shared_ptr<export_lag_type> exporter1d1;
-    boost::shared_ptr<export_lag_type> exporter1d2;
 }; // Stokes
 
 
@@ -167,10 +163,7 @@ Stokes::Stokes()
     p_in( this->vm()["p_in"].as<value_type>() ),
     p_out( this->vm()["p_out"].as<value_type>() ),
     mu( this->vm()["mu"].as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].as<value_type>() ),
-    exporter( export_type::New( this->vm(), this->about().appName()+"_up" ) ),
-    exporter1d1( export_lag_type::New( this->vm(), this->about().appName()+"_Lambda1" ) ),
-    exporter1d2( export_lag_type::New( this->vm(), this->about().appName()+"_Lambda2" ) )
+    penalbc( this->vm()["bccoeff"].as<value_type>() )
 {
 
 }
@@ -188,8 +181,8 @@ Stokes::init()
                            _desc=geo(_filename=Environment::vm()["geofile"].as<std::string>(),_h=meshSize) );
 
 #if defined (FEELPP_USE_LM)
-    auto mesh_lag1 = mesh->trace( markedfaces(mesh,"inlet") );
-    auto mesh_lag2 = mesh->trace( markedfaces(mesh,"outlet") );
+    auto mesh_lag1 = mesh->trace( markedfaces(mesh,"inlet"), Tag<1>());
+    auto mesh_lag2 = mesh->trace( markedfaces(mesh,"outlet"), Tag<2>());
     auto meshv = fusion::make_vector(mesh,mesh,mesh_lag1,mesh_lag2);
     Xh = space_type::New( _mesh=meshv );
 #else
@@ -310,46 +303,50 @@ Stokes::run()
 
     chrono.restart();
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
-
+#if 1
     auto mesh_lag1 = mesh->trace( markedfaces(mesh,"inlet") );
     auto mesh_lag2 = mesh->trace( markedfaces(mesh,"outlet") );
     std::cout << "*****in**** " << integrate( markedfaces( mesh,inlet ),
                                             Px()+Py()
-                                            ).evaluate()( 0,0 ) 
+                                            ).evaluate()( 0,0 )
               << std::endl;
     std::cout << "*****out**** " << integrate( markedfaces( mesh,outlet ),
                                             Px()+Py()
-                                            ).evaluate()( 0,0 ) 
+                                            ).evaluate()( 0,0 )
               << std::endl;
 
     std::cout << "******lag1*** " << integrate( elements( mesh_lag1 ),
                                             Px()+Py()
-                                            ).evaluate()( 0,0 ) 
+                                            ).evaluate()( 0,0 )
               << std::endl;
     std::cout << "******lag2*** " << integrate( elements( mesh_lag2 ),
                                             Px()+Py()
-                                            ).evaluate()( 0,0 ) 
+                                            ).evaluate()( 0,0 )
               << std::endl;
 
+#if defined( FEELPP_USE_LM )
 
     std::cout << "******l1*** " << integrate( elements( lambda1.mesh() ),
                                             Px()+Py()
-                                            ).evaluate()( 0,0 ) 
+                                            ).evaluate()( 0,0 )
               << std::endl;
     std::cout << "******l2*** " << integrate( elements( lambda2.mesh() ),
                                             Px()+Py()
-                                            ).evaluate()( 0,0 ) 
+                                            ).evaluate()( 0,0 )
               << std::endl;
+#endif
+
+#if 0
     std::cout << "******u1*** " << integrate( elements( U.element<2>().mesh() ),
                                             Px()+Py()
-                                            ).evaluate()( 0,0 ) 
+                                            ).evaluate()( 0,0 )
               << std::endl;
     std::cout << "******u2*** " << integrate( elements( U.element<3>().mesh() ),
                                             Px()+Py()
-                                            ).evaluate()( 0,0 ) 
+                                            ).evaluate()( 0,0 )
               << std::endl;
-
-
+#endif
+#endif
     LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";
     LOG(INFO) << "int_inlet T = " << integrate( markedfaces( mesh,inlet ), t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), trans(idv(u))*t ).evaluate() << "\n";
@@ -403,32 +400,21 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
-    /*
-    boost::shared_ptr<export_type> exporter( export_type::New() );
-    boost::shared_ptr<export_lag_type> exporter1d1( export_lag_type::New() );
-    boost::shared_ptr<export_lag_type> exporter1d2( export_lag_type::New() );
-    */
-    if ( exporter->doExport() )
-    {
-        auto v = U.functionSpace()->functionSpace<0> ()->element();
-        v = U.element<0>();
 
 #if defined( FEELPP_USE_LM )
-        exporter1d1->step( 0 )->setMesh( lambda1.mesh() );
-        exporter1d1->step( 0 )->add( "lambda1", lambda1 );
-        exporter1d1->save();
+    auto exporter1d1 = exporter( _mesh=lambda1.mesh(), _name=this->about().appName()+"_lambda1" );
+    exporter1d1->add( "lambda1", lambda1 );
+    exporter1d1->save();
 
-        exporter1d2->step( 0 )->setMesh( lambda2.mesh() );
-        exporter1d2->step( 0 )->add( "lambda2", lambda2 );
-        exporter1d2->save();
+    auto exporter1d2 = exporter( _mesh=lambda2.mesh(), _name=this->about().appName()+"_lambda2"  );
+    exporter1d2->add( "lambda2", lambda2 );
+    exporter1d2->save();
 #endif
-        exporter->step( 0 )->setMesh( mesh );
-        exporter->step( 0 )->addRegions();
-        exporter->step( 0 )->add( "u", u );
-        exporter->step( 0 )->add( "p", p );
-        exporter->save();
 
-    }
+    auto myexporter = exporter( _mesh=mesh, _name=this->about().appName() );
+    myexporter->add( "u", u );
+    myexporter->add( "p", p );
+    myexporter->save();
 
 } // Stokes::export
 } // Feel
