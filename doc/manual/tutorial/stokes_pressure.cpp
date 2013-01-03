@@ -81,10 +81,10 @@ public:
     /*mesh*/
     typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef Mesh<Simplex<1,1,2>,value_type,1> mesh_lag1_type;
-    typedef boost::shared_ptr<mesh_lag1_type> mesh_lag1_ptrtype;
-    typedef Mesh<Simplex<1,1,2>,value_type,2> mesh_lag2_type;
-    typedef boost::shared_ptr<mesh_lag2_type> mesh_lag2_ptrtype;
+    typedef Mesh<Simplex<1,1,2>> mesh_lag_type;
+    typedef boost::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
+    //typedef Mesh<Simplex<1,1,2>,value_type,2> mesh_lag2_type;
+    //typedef boost::shared_ptr<mesh_lag2_type> mesh_lag2_ptrtype;
 
     /*basis*/
     //# marker1 #,
@@ -93,7 +93,7 @@ public:
     typedef Lagrange<2, Scalar> basis_l_type;
     // use lagrange multipliers to ensure zero mean pressure
 #if defined( FEELPP_USE_LM )
-    typedef bases<basis_u_type,basis_p_type, basis_l_type,basis_l_type> basis_type;
+    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
 #else
     typedef bases<basis_u_type,basis_p_type> basis_type;
 #endif
@@ -102,7 +102,7 @@ public:
     /*space*/
     //# marker2 #
 #if defined( FEELPP_USE_LM )
-    typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag1_type,mesh_lag2_type>, basis_type> space_type;
+    typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag_type>, basis_type> space_type;
 #else
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 #endif
@@ -181,9 +181,9 @@ Stokes::init()
                            _desc=geo(_filename=Environment::vm()["geofile"].as<std::string>(),_h=meshSize) );
 
 #if defined (FEELPP_USE_LM)
-    auto mesh_lag1 = mesh->trace( markedfaces(mesh,"inlet"), Tag<1>());
-    auto mesh_lag2 = mesh->trace( markedfaces(mesh,"outlet"), Tag<2>());
-    auto meshv = fusion::make_vector(mesh,mesh,mesh_lag1,mesh_lag2);
+    auto mesh_lag = merge( mesh->trace( markedfaces(mesh,"inlet") ),
+                           mesh->trace( markedfaces(mesh,"outlet") ) );
+    auto meshv = fusion::make_vector(mesh,mesh,mesh_lag);
     Xh = space_type::New( _mesh=meshv );
 #else
     Xh = space_type::New( mesh );
@@ -203,10 +203,8 @@ Stokes::run()
     auto p = U.element<1>( "p" );
     auto q = V.element<1>( "p" );
 #if defined( FEELPP_USE_LM )
-    auto lambda1 = U.element<2>();
-    auto nu1 = V.element<2>();
-    auto lambda2 = U.element<3>();
-    auto nu2 = V.element<3>();
+    auto lambda = U.element<2>();
+    auto nu = V.element<2>();
 #endif
     //# endmarker4 #
 
@@ -281,8 +279,8 @@ Stokes::run()
     auto t = vec(-Ny(),Nx());
 #if defined( FEELPP_USE_LM )
 
-    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda1 ) -trans( idt( u ))*t*id( nu1 ) );
-    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda2 ) -trans( idt( u ))*t*id( nu2 ) );
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 #endif
@@ -303,50 +301,7 @@ Stokes::run()
 
     chrono.restart();
     M_backend->solve( _matrix=D, _solution=U, _rhs=F );
-#if 1
-    auto mesh_lag1 = mesh->trace( markedfaces(mesh,"inlet") );
-    auto mesh_lag2 = mesh->trace( markedfaces(mesh,"outlet") );
-    std::cout << "*****in**** " << integrate( markedfaces( mesh,inlet ),
-                                            Px()+Py()
-                                            ).evaluate()( 0,0 )
-              << std::endl;
-    std::cout << "*****out**** " << integrate( markedfaces( mesh,outlet ),
-                                            Px()+Py()
-                                            ).evaluate()( 0,0 )
-              << std::endl;
 
-    std::cout << "******lag1*** " << integrate( elements( mesh_lag1 ),
-                                            Px()+Py()
-                                            ).evaluate()( 0,0 )
-              << std::endl;
-    std::cout << "******lag2*** " << integrate( elements( mesh_lag2 ),
-                                            Px()+Py()
-                                            ).evaluate()( 0,0 )
-              << std::endl;
-
-#if defined( FEELPP_USE_LM )
-
-    std::cout << "******l1*** " << integrate( elements( lambda1.mesh() ),
-                                            Px()+Py()
-                                            ).evaluate()( 0,0 )
-              << std::endl;
-    std::cout << "******l2*** " << integrate( elements( lambda2.mesh() ),
-                                            Px()+Py()
-                                            ).evaluate()( 0,0 )
-              << std::endl;
-#endif
-
-#if 0
-    std::cout << "******u1*** " << integrate( elements( U.element<2>().mesh() ),
-                                            Px()+Py()
-                                            ).evaluate()( 0,0 )
-              << std::endl;
-    std::cout << "******u2*** " << integrate( elements( U.element<3>().mesh() ),
-                                            Px()+Py()
-                                            ).evaluate()( 0,0 )
-              << std::endl;
-#endif
-#endif
     LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";
     LOG(INFO) << "int_inlet T = " << integrate( markedfaces( mesh,inlet ), t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), trans(idv(u))*t ).evaluate() << "\n";
@@ -375,11 +330,8 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     auto v = V.element<0>();
     auto q = V.element<1>();
 #if defined( FEELPP_USE_LM )
-    auto lambda1 = U.element<2>();
-    auto lambda2 = U.element<3>();
+    auto lambda = U.element<2>();
     auto nu = V.element<2>();
-    LOG(INFO) << "value of the Lagrange multiplier lambda1= " << lambda1( 0 ) << "\n";
-
 #endif
 
     double u_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( u )-u_exact ) );
@@ -402,13 +354,9 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
 #if defined( FEELPP_USE_LM )
-    auto exporter1d1 = exporter( _mesh=lambda1.mesh(), _name=this->about().appName()+"_lambda1" );
-    exporter1d1->add( "lambda1", lambda1 );
+    auto exporter1d1 = exporter( _mesh=lambda.mesh(), _name=this->about().appName()+"_lambda" );
+    exporter1d1->add( "lambda", lambda );
     exporter1d1->save();
-
-    auto exporter1d2 = exporter( _mesh=lambda2.mesh(), _name=this->about().appName()+"_lambda2"  );
-    exporter1d2->add( "lambda2", lambda2 );
-    exporter1d2->save();
 #endif
 
     auto myexporter = exporter( _mesh=mesh, _name=this->about().appName() );
