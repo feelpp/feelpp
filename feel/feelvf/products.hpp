@@ -413,7 +413,7 @@ public:
 
         typedef typename l_tensor_expr_type::shape left_shape;
         typedef typename r_tensor_expr_type::shape right_shape;
-        typedef Shape<left_shape::nDim,Scalar,false,false> shape;
+        typedef Shape<3,Vectorial,false,false> shape;
         static const bool l_is_terminal = left_expression_type::is_terminal;
         static const bool r_is_terminal = right_expression_type::is_terminal;
         BOOST_MPL_ASSERT_MSG( left_shape::nDim == 3, INVALID_DIMENSION__IT_SHOULD_BE_3, (mpl::int_<left_shape::nDim>));
@@ -481,58 +481,28 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
-            return evalijq( i, j, cc1, cc2, q, typename mpl::and_<mpl::bool_<l_is_terminal>,mpl::bool_<l_is_terminal> >::type() );
-        }
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<0> ) const
-        {
-            double res = 0;
-
-            for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                {
-                    res += M_l_tensor_expr.evalijq( i, j, c1, c2, q )*M_r_tensor_expr.evalijq( i, j, c1, c2, q );
-                }
-
+            double res =  M_l_tensor_expr.evalijq( i, j, (cc1+1)%3, 0, q )*M_r_tensor_expr.evalijq( i, j, (cc1+2)%3, 0, q );
+            res -= M_l_tensor_expr.evalijq( i, j, (cc1+2)%3, 0, q )*M_r_tensor_expr.evalijq( i, j, (cc1+1)%3, 0, q );
             return res;
-        }
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1> ) const
-        {
-            //if ( Type == 1 )
-            {
-                return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
-            }
         }
         value_type
         evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
-            double res = 0;
-
-            for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                {
-                    res += M_l_tensor_expr.evaliq( i, c1, c2, q )*M_r_tensor_expr.evaliq( i, c1, c2, q );
-                }
+            double res =  M_l_tensor_expr.evaliq( i, (cc1+1)%3, 0, q )*M_r_tensor_expr.evaliq( i, (cc1+2)%3, 0, q );
+            res -= M_l_tensor_expr.evaliq( i, (cc1+2)%3, 0, q )*M_r_tensor_expr.evaliq( i, (cc1+1)%3, 0, q );
             return res;
         }
         value_type
         evalq( uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
-            double res = 0;
-
-            for ( int c2 = 0; c2 < left_shape::N; ++ c2 )
-                for ( int c1 = 0; c1 < left_shape::M; ++ c1 )
-                {
-                    res += M_l_tensor_expr.evalq( c1, c2, q )*M_r_tensor_expr.evalq( c1, c2, q );
-                }
+            double res =  M_l_tensor_expr.evalq( (cc1+1)%3, 0, q )*M_r_tensor_expr.evalq( (cc1+2)%3, 0, q );
+            res -= M_l_tensor_expr.evalq( (cc1+2)%3, 0, q )*M_r_tensor_expr.evalq( (cc1+1)%3, 0, q );
             return res;
         }
 
     private:
         l_tensor_expr_type M_l_tensor_expr;
         r_tensor_expr_type M_r_tensor_expr;
-        mutable Eigen::Matrix<value_type,left_shape::M,left_shape::N> M1,M2;
     };
 
 private:
