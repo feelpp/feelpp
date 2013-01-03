@@ -31,13 +31,20 @@ checksums           rmd160  f11f9e7f8e60ad017f8b10ec26ad237b0be97a74 \
 
 depends_build-append  port:cmake
 depends_lib-append  port:hdf5-18 \
-                    port:libyaml
+                    port:libyaml\
+		    port:scotch\
+		    port:suitesparse
 
 require_active_variants hdf5-18 fortran
 
 configure.args      --prefix=${prefix}/lib/petsc \
                     --with-mpi=1 \
-                    --with-clanguage=C++ \
+   		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
+		--with-shared-libraries=0 --PETSC_ARCH=darwin \
+        --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
+        --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
+        --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
+        --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
                     --download-metis \
                     --download-parmetis \
                     --download-blacs \
