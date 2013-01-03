@@ -217,7 +217,10 @@ Stokes::run()
     LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
     LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
     LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
-
+#if defined( FEELPP_USE_LM )
+    LOG(INFO) << "[dof]      number of dof(L): " << Xh->functionSpace<2>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(L): " << Xh->functionSpace<2>()->nLocalDof()  << "\n";
+#endif
     LOG(INFO) << "Data Summary:\n";
     LOG(INFO) << "   hsize = " << meshSize << "\n";
     LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
