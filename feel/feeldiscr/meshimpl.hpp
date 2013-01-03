@@ -1839,16 +1839,15 @@ merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
     typedef typename Mesh<Shape, T, TheTag>::element_iterator element_iterator;
     typedef typename Mesh<Shape, T, TheTag>::face_type face_type;
     typedef typename Mesh<Shape, T, TheTag>::element_type element_type;
-    static const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
-            face_type::numEdges*face_type::nbPtsPerEdge+
-            face_type::numFaces*face_type::nbPtsPerFace );
-
-    static const uint16_type npoints_per_element = element_type::numPoints;
 
     auto addface = [&]( boost::shared_ptr<Mesh<Shape, T, TheTag> > m, face_iterator it, size_type shift )
         {
             face_type pf = *it;
-
+            pf.disconnect();
+            pf.setOnBoundary( true );
+            const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
+                                                   face_type::numEdges*face_type::nbPtsPerEdge+
+                                                   face_type::numFaces*face_type::nbPtsPerFace );
             for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
             {
                 pf.setPoint( jj, m->point( shift+it->point(jj).id() ) );
@@ -1871,10 +1870,14 @@ merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
         {
             element_type pf = *it;
 
+            static const uint16_type npoints_per_element = element_type::numPoints;
+
+#if 0
             for ( uint16_type jj = 0; jj < pf.numLocalFaces; ++jj )
             {
                 pf.setFace( jj, m->face( shift_f+it->face(jj).id() ) );
             }
+#endif
             for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
             {
                 pf.setPoint( jj, m->point( shift_p+it->point(jj).id() ) );
@@ -1890,6 +1893,8 @@ merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
         // don't forget to shift the point id in the face
         addelement( m, it, shift_f, shift_p );
     }
+    m->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    m->updateForUse();
     return m;
 }
 
