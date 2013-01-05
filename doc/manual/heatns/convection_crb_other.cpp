@@ -221,7 +221,6 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
         this->update( M_current_mu );
 
 //        T->print(std::cout);
-
         M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R );
 #if 0
         if ( exporter->doExport() )
@@ -338,6 +337,12 @@ Convection_crb::output( int output_index, parameter_type const& mu )
 
         output = AverageT;
 
+    }
+
+    if( output_index == 2 )
+    {
+        //output = integrate( elements(mesh) ,  trans( idv( u ) )*idv( u )  ).evaluate()( 0,0 ) ;
+        output = integrate( elements(mesh) ,  idv( u.comp(X) )  ).evaluate()( 0,0 ) ;
     }
 
     return output;
