@@ -50,6 +50,7 @@ makeOptions()
         ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
         ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
         ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+        ( "eps", Feel::po::value<double>()->default_value( 1e-10 ), "penalisation parameter for lagrange multipliers" )
         ;
     return stokesoptions.add( Feel::feel_options() ) ;
 }
@@ -265,6 +266,8 @@ Stokes::run()
 #elif defined( DIM3 )
     stokes +=integrate( markedfaces( mesh,inlet ), -trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
     stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
+    stokes += integrate( markedfaces( mesh,inlet ), option("eps").as<double>()*trans(idt(lambda))*id( nu ) );
+    stokes += integrate( markedfaces( mesh,outlet ), option("eps").as<double>()*trans(idt(lambda))*id( nu ) );
 
 #endif // DIM3
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
