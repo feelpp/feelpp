@@ -41,7 +41,7 @@ typedef Eigen::MatrixXd matrixN_type;
 
 typedef std::vector< std::vector< double > > beta_vector_type;
 
-void Convection_crb::init()
+void ConvectionCrb::init()
 {
     mesh_ptrtype mesh;
 
@@ -220,15 +220,15 @@ void Convection_crb::init()
 
 // \return the number of terms in affine decomposition of left hand
 // side bilinear form
-int Convection_crb::Qa() const
+int ConvectionCrb::Qa() const
 {
     return 4;
 }
-int Convection_crb::QaTri() const
+int ConvectionCrb::QaTri() const
 {
     return 1;
 }
-int Convection_crb::mMaxA( int q )
+int ConvectionCrb::mMaxA( int q )
 {
     if ( q < 4 )
         return 1;
@@ -242,12 +242,12 @@ int Convection_crb::mMaxA( int q )
  *
  * \return number of outputs associated to the model
  */
-int Convection_crb::Nl() const
+int ConvectionCrb::Nl() const
 {
     return 3;
 }
 
-int Convection_crb::mMaxF( int output_index, int q)
+int ConvectionCrb::mMaxF( int output_index, int q)
 {
     if ( q < Ql(output_index) )
         return 1;
@@ -255,7 +255,7 @@ int Convection_crb::mMaxF( int output_index, int q)
         throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
 }
 
-int Convection_crb::mMaxInitialGuess( int q )
+int ConvectionCrb::mMaxInitialGuess( int q )
 {
     return 1;
 }
@@ -265,14 +265,14 @@ int Convection_crb::mMaxInitialGuess( int q )
  * \param l the index of output
  * \return number of terms  in affine decomposition of the \p q th output term
  */
-int Convection_crb::Ql( int l ) const
+int ConvectionCrb::Ql( int l ) const
 {
     if ( l == 0 ) return 1;
     return 1;
 }
 
 
-int Convection_crb::QInitialGuess() const
+int ConvectionCrb::QInitialGuess() const
 {
     return 1;
 }
@@ -285,7 +285,7 @@ int Convection_crb::QInitialGuess() const
  */
 
 boost::tuple<beta_vector_type, std::vector<beta_vector_type> , beta_vector_type >
-Convection_crb::computeBetaQm( parameter_type const& mu, double )
+ConvectionCrb::computeBetaQm( parameter_type const& mu, double )
 {
 
     M_betaAqm.resize( Qa() );
@@ -323,7 +323,7 @@ Convection_crb::computeBetaQm( parameter_type const& mu, double )
 }
 
 void
-Convection_crb::update( parameter_type const& mu )
+ConvectionCrb::update( parameter_type const& mu )
 {
     D->zero();
 
@@ -352,7 +352,7 @@ Convection_crb::update( parameter_type const& mu )
 
 }
 
-void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+void ConvectionCrb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
 {
 
     LOG(INFO) << "[updateJacobian] start\n";
@@ -437,8 +437,8 @@ void Convection_crb ::updateJacobian( const vector_ptrtype& X, sparse_matrix_ptr
 
 
 //return the jacobian matrix evaluated at X
-typename Convection_crb::sparse_matrix_ptrtype
-Convection_crb::jacobian( const element_type& X )
+typename ConvectionCrb::sparse_matrix_ptrtype
+ConvectionCrb::jacobian( const element_type& X )
 {
     sparse_matrix_ptrtype J;
     J = M_backend->newMatrix( _test=Xh, _trial=Xh );
@@ -451,8 +451,8 @@ Convection_crb::jacobian( const element_type& X )
     return J;
 }
 //return the residual vector evaluated at X
-typename Convection_crb::vector_ptrtype
-Convection_crb::residual( const element_type& X )
+typename ConvectionCrb::vector_ptrtype
+ConvectionCrb::residual( const element_type& X )
 {
     vector_ptrtype R ( M_backend->newVector( Xh ) );
 
@@ -464,8 +464,8 @@ Convection_crb::residual( const element_type& X )
     return R;
 }
 
-typename Convection_crb ::sparse_matrix_ptrtype
-Convection_crb::computeTrilinearForm( const element_type& X )
+typename ConvectionCrb ::sparse_matrix_ptrtype
+ConvectionCrb::computeTrilinearForm( const element_type& X )
 {
     auto mesh = Xh->mesh();
     auto U = Xh->element( "U" );
@@ -523,4 +523,4 @@ Convection_crb::computeTrilinearForm( const element_type& X )
 }
 
 // instantiation
-// class Convection_crb<2,1,2>;
+// class ConvectionCrb<2,1,2>;
