@@ -3,13 +3,6 @@ Mesh.CharacteristicLengthExtendFromBoundary=1;
 Mesh.CharacteristicLengthFromPoints=1;
 Mesh.ElementOrder=1;
 Mesh.SecondOrderIncomplete = 0;
-Mesh.Algorithm = 6;
-Mesh.Algorithm3D = 1;
-//Mesh.OptimizeNetgen=1;
-// partitioning data
-Mesh.Partitioner=1;
-Mesh.NbPartitions=1;
-Mesh.MshFilePartitioned=0;
 
 h=0.1;
 Mesh.CharacteristicLengthMax=h;
