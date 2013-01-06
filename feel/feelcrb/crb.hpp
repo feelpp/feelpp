@@ -131,6 +131,7 @@ public:
 
     typedef typename convergence_type::value_type convergence;
 
+    typedef CRB self_type;
 
     //! scm
     typedef CRBSCM<truth_model_type> scm_type;
@@ -168,6 +169,9 @@ public:
 
     typedef Eigen::VectorXd vectorN_type;
     typedef Eigen::MatrixXd matrixN_type;
+
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
+    typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
 
 
 
@@ -214,6 +218,7 @@ public:
     CRB()
         :
         super(),
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_output_index( 0 ),
         M_tolerance( 1e-2 ),
@@ -237,7 +242,7 @@ public:
                name,
                ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                vm ),
-
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend_type::build( vm ) ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
@@ -271,6 +276,7 @@ public:
                vm ),
 
         M_model(),
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_backend( backend_type::build( vm ) ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
         M_tolerance( vm["crb.error-max"].template as<double>() ),
@@ -295,6 +301,7 @@ public:
     CRB( CRB const & o )
         :
         super( o ),
+        M_nlsolver( o.M_nlsolver ),
         M_output_index( o.M_output_index ),
         M_tolerance( o.M_tolerance ),
         M_iter_max( o.M_iter_max ),
@@ -638,6 +645,47 @@ public:
     //    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
     boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, int K=0 ) const;
 
+    /*
+     * update the jacobian
+     * \param map_X : solution
+     * \param map_J : jacobian
+     * \param mu : current parameter
+     * \param N : dimension of the reduced basis
+     */
+    void updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu , int N) const ;
+
+    /*
+     * update the residual
+     * \param map_X : solution
+     * \param map_R : residual
+     * \param mu : current parameter
+     * \param N : dimension of the reduced basis
+     */
+    void updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type & mu, int N ) const ;
+
+    /*
+     * compute the projection of the initial guess
+     * \param mu : current parameter
+     * \param N : dimension of the reduced basis
+     * \param initial guess
+     */
+    void computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const ;
+
+    /*
+     * newton algorithm to solve non linear problem
+     * \param N : dimension of the reduced basis
+     * \param mu : current parameter
+     * \param uN : reduced solution ( vectorN_type )
+     * \param condition number of the reduced jacobian
+     */
+    void newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number) const ;
+
+    /*
+     * computation of the conditioning number of a given matrix
+     * \param A : reduced matrix
+     */
+    double computeConditioning( matrixN_type & A ) const ;
+
 
     /**
      * Returns the lower bound of the output
@@ -892,6 +940,7 @@ public:
 
 
 private:
+    boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 
     truth_model_ptrtype M_model;
 
@@ -994,6 +1043,12 @@ private:
     std::vector < std::vector<matrixN_type> > M_Aqm_du;
     std::vector < std::vector<matrixN_type> > M_Aqm_pr_du;
 
+    //jacobian
+    std::vector < std::vector<matrixN_type> > M_Jqm_pr;
+
+    //residual
+    std::vector < std::vector<vectorN_type> > M_Rqm_pr;
+
     //mass matrix
     std::vector < std::vector<matrixN_type> > M_Mqm_pr;
     std::vector < std::vector<matrixN_type> > M_Mqm_du;
@@ -1020,6 +1075,8 @@ private:
 
     bool M_database_contains_variance_info;
 
+    bool M_use_newton;
+
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1038,6 +1095,8 @@ CRB<TruthModelType>::offline()
     orthonormalize_primal = this->vm()["crb.orthonormalize-primal"].template as<bool>() ;
     orthonormalize_dual = this->vm()["crb.orthonormalize-dual"].template as<bool>() ;
     solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+
+    M_use_newton = this->vm()["crb.use-newton"].template as<bool>() ;
 
     if ( this->worldComm().globalSize() > 1 )
         solve_dual_problem = false;
@@ -1426,7 +1485,14 @@ CRB<TruthModelType>::offline()
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
-    boost::tie( Mqm, Aqm, Fqm, MFqm ) = M_model->computeAffineDecomposition();
+
+    std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > Rqm;
+
+    if( M_use_newton )
+        boost::tie( Mqm , Jqm, Rqm , MFqm ) = M_model->computeAffineDecomposition();
+    else
+        boost::tie( Mqm, Aqm, Fqm, MFqm ) = M_model->computeAffineDecomposition();
 
 #if 0
     vector_ptrtype u1( M_backend->newVector( M_model->functionSpace() ) );
@@ -1545,7 +1611,7 @@ CRB<TruthModelType>::offline()
         u->setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
         udu->setName( ( boost::format( "fem-dual-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
 
-        if ( M_model->isSteady() || !model_type::is_time_dependent )
+        if ( M_model->isSteady() && ! M_use_newton )
         {
             mu.check();
             u->zero();
@@ -1613,7 +1679,22 @@ CRB<TruthModelType>::offline()
 
         }
 
-        else
+        if ( M_model->isSteady() && ! M_use_newton )
+        {
+            mu.check();
+            u->zero();
+
+            timer2.restart();
+
+            LOG(INFO) << "[CRB::offline] solving primal" << "\n";
+            *u = M_model->solve( mu );
+
+            if( proc_number == this->worldComm().masterRank() ) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
+            timer2.restart();
+        }
+
+
+        if( ! M_model->isSteady() )
         {
             M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal" );
             M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_save" );
@@ -1809,16 +1890,17 @@ CRB<TruthModelType>::offline()
         }//end of transient case
 
 
-        for ( size_type l = 0; l < M_model->Nl(); ++l )
+        if( ! M_use_newton )
         {
-            F[l]->close();
-            element_ptrtype eltF( new element_type( M_model->functionSpace() ) );
-            *eltF = *F[l];
-            LOG(INFO) << "u^T F[" << l << "]= " << inner_product( *u, *eltF ) << "\n";
+            for ( size_type l = 0; l < M_model->Nl(); ++l )
+            {
+                F[l]->close();
+                element_ptrtype eltF( new element_type( M_model->functionSpace() ) );
+                *eltF = *F[l];
+                LOG(INFO) << "u^T F[" << l << "]= " << inner_product( *u, *eltF ) << "\n";
+            }
+            LOG(INFO) << "[CRB::offline] energy = " << A->energy( *u, *u ) << "\n";
         }
-
-
-        LOG(INFO) << "[CRB::offline] energy = " << A->energy( *u, *u ) << "\n";
 
         M_WNmu->push_back( mu, index );
         M_WNmu_complement = M_WNmu->complement();
@@ -1965,14 +2047,14 @@ CRB<TruthModelType>::offline()
 
         }//end of transient case
 
-	//in the case of transient problem, we can add severals modes for a same mu
-	//Moreover, if the case where the initial condition is not zero and we don't orthonormalize elements in the basis,
-	//we add the initial condition in the basis (so one more element)
+        //in the case of transient problem, we can add severals modes for a same mu
+        //Moreover, if the case where the initial condition is not zero and we don't orthonormalize elements in the basis,
+        //we add the initial condition in the basis (so one more element)
         size_type number_of_added_elements = M_Nm + ( M_N==0 && orthonormalize_primal==false && norm_zero==false && !M_model->isSteady() );
 
-	//in the case of steady problems, we add only one element
-	if( M_model->isSteady() )
-	    number_of_added_elements=1;
+        //in the case of steady problems, we add only one element
+        if( M_model->isSteady() )
+            number_of_added_elements=1;
 
         M_N+=number_of_added_elements;
 
@@ -1990,40 +2072,129 @@ CRB<TruthModelType>::offline()
             orthonormalize( M_N, M_WNdu, number_of_added_elements );
         }
 
-        LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
-
-        for  (size_type q = 0; q < M_model->Qa(); ++q )
+        if( ! M_use_newton )
         {
-            for( size_type m = 0; m < M_model->mMaxA(q); ++m )
+            LOG(INFO) << "[CRB::offline] compute Aq_pr, Aq_du, Aq_pr_du" << "\n";
+
+            for  (size_type q = 0; q < M_model->Qa(); ++q )
             {
-                M_Aqm_pr[q][m].conservativeResize( M_N, M_N );
-                M_Aqm_du[q][m].conservativeResize( M_N, M_N );
-                M_Aqm_pr_du[q][m].conservativeResize( M_N, M_N );
-
-                // only compute the last line and last column of reduced matrices
-                for ( size_type i = M_N-number_of_added_elements; i < M_N; i++ )
+                for( size_type m = 0; m < M_model->mMaxA(q); ++m )
                 {
-                    for ( size_type j = 0; j < M_N; ++j )
-                    {
-                        M_Aqm_pr[q][m]( i, j ) = Aqm[q][m]->energy( M_WN[i], M_WN[j] );
-                        M_Aqm_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Aqm_pr_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WN[j] );
-                    }
-                }
+                    M_Aqm_pr[q][m].conservativeResize( M_N, M_N );
+                    M_Aqm_du[q][m].conservativeResize( M_N, M_N );
+                    M_Aqm_pr_du[q][m].conservativeResize( M_N, M_N );
 
-                for ( size_type j=M_N-number_of_added_elements; j < M_N; j++ )
+                    // only compute the last line and last column of reduced matrices
+                    for ( size_type i = M_N-number_of_added_elements; i < M_N; i++ )
+                    {
+                        for ( size_type j = 0; j < M_N; ++j )
+                        {
+                            M_Aqm_pr[q][m]( i, j ) = Aqm[q][m]->energy( M_WN[i], M_WN[j] );
+                            M_Aqm_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
+                            M_Aqm_pr_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        }
+                    }
+
+                    for ( size_type j=M_N-number_of_added_elements; j < M_N; j++ )
+                    {
+                        for ( size_type i = 0; i < M_N; ++i )
+                        {
+                            M_Aqm_pr[q][m]( i, j ) = Aqm[q][m]->energy( M_WN[i], M_WN[j] );
+                            M_Aqm_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
+                            M_Aqm_pr_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        }
+                    }
+                }//loop over m
+            }//loop over q
+
+            LOG(INFO) << "[CRB::offline] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
+
+
+            LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
+
+            for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+            {
+                for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
                 {
-                    for ( size_type i = 0; i < M_N; ++i )
+                    M_Fqm_pr[q][m].conservativeResize( M_N );
+                    M_Fqm_du[q][m].conservativeResize( M_N );
+                    for ( size_type l = 1; l <= number_of_added_elements; ++l )
                     {
-                        M_Aqm_pr[q][m]( i, j ) = Aqm[q][m]->energy( M_WN[i], M_WN[j] );
-                        M_Aqm_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Aqm_pr_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        int index = M_N-l;
+                        M_Fqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_WN[index] );
+                        M_Fqm_du[q][m]( index ) = M_model->Fqm( 0, q, m, M_WNdu[index] );
                     }
-                }
-            }//loop over m
-        }//loop over q
+                }//loop over m
+            }//loop over q
 
-        LOG(INFO) << "[CRB::offline] compute Mq_pr, Mq_du, Mq_pr_du" << "\n";
+        }//end of "if ! use_newton"
+
+
+        if( M_use_newton )
+        {
+            LOG(INFO) << "[CRB::offline] compute Jq_pr " << "\n";
+
+            for  (size_type q = 0; q < M_model->Qa(); ++q )
+            {
+                for( size_type m = 0; m < M_model->mMaxA(q); ++m )
+                {
+                    M_Jqm_pr[q][m].conservativeResize( M_N, M_N );
+
+                    // only compute the last line and last column of reduced matrices
+                    for ( size_type i = M_N-number_of_added_elements; i < M_N; i++ )
+                    {
+                        for ( size_type j = 0; j < M_N; ++j )
+                        {
+                            M_Jqm_pr[q][m]( i, j ) = Jqm[q][m]->energy( M_WN[i], M_WN[j] );
+                        }
+                    }
+
+                    for ( size_type j=M_N-number_of_added_elements; j < M_N; j++ )
+                    {
+                        for ( size_type i = 0; i < M_N; ++i )
+                        {
+                            M_Jqm_pr[q][m]( i, j ) = Jqm[q][m]->energy( M_WN[i], M_WN[j] );
+                        }
+                    }
+                }//loop over m
+            }//loop over q
+
+
+            LOG(INFO) << "[CRB::offline] compute Rq_pr" << "\n";
+
+            for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+            {
+                for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
+                {
+                    M_Rqm_pr[q][m].conservativeResize( M_N );
+                    for ( size_type l = 1; l <= number_of_added_elements; ++l )
+                    {
+                        int index = M_N-l;
+                        M_Rqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_WN[index] );
+                    }
+                }//loop over m
+            }//loop over q
+
+        }//end if use_newton case
+
+
+        LOG(INFO) << "[CRB::offline] compute MFqm" << "\n";
+
+        for ( size_type q = 0; q < M_model->Qmf(); ++q )
+        {
+            for( size_type m = 0; m < M_model->mMaxMF(q); ++m )
+            {
+                M_MFqm_pr[q][m].conservativeResize( M_N );
+                for ( size_type j = 0; j < M_N; ++j )
+                {
+                    MFqm[q][m]->close();
+                    element_ptrtype eltMF( new element_type( M_model->functionSpace() ) );
+                    *eltMF = *MFqm[q][m];
+                    M_MFqm_pr[q][m]( j ) = inner_product( *eltMF , M_WN[j] );
+                }
+            }
+        }
+
 
         for ( size_type q = 0; q < M_model->Qm(); ++q )
         {
@@ -2054,45 +2225,6 @@ CRB<TruthModelType>::offline()
                 }
             }//loop over m
         }//loop over q
-
-        LOG(INFO) << "[CRB::offline] compute MFqm" << "\n";
-
-        for ( size_type q = 0; q < M_model->Qmf(); ++q )
-        {
-            for( size_type m = 0; m < M_model->mMaxMF(q); ++m )
-            {
-                M_MFqm_pr[q][m].conservativeResize( M_N );
-                for ( size_type j = 0; j < M_N; ++j )
-                {
-                    MFqm[q][m]->close();
-                    element_ptrtype eltMF( new element_type( M_model->functionSpace() ) );
-                    *eltMF = *MFqm[q][m];
-                    M_MFqm_pr[q][m]( j ) = inner_product( *eltMF , M_WN[j] );
-                }
-            }
-        }
-
-
-        LOG(INFO) << "[CRB::offline] compute Fq_pr, Fq_du" << "\n";
-
-        for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
-        {
-
-            for( size_type m = 0; m < M_model->mMaxF( 0, q ); ++m )
-            {
-
-                M_Fqm_pr[q][m].conservativeResize( M_N );
-                M_Fqm_du[q][m].conservativeResize( M_N );
-
-                for ( size_type l = 1; l <= number_of_added_elements; ++l )
-                {
-                    int index = M_N-l;
-                    M_Fqm_pr[q][m]( index ) = M_model->Fqm( 0, q, m, M_WN[index] );
-                    M_Fqm_du[q][m]( index ) = M_model->Fqm( 0, q, m, M_WNdu[index] );
-                }
-            }//loop over m
-        }//loop over q
-
 
         LOG(INFO) << "[CRB::offline] compute Lq_pr, Lq_du" << "\n";
 
@@ -2320,9 +2452,9 @@ CRB<TruthModelType>::checkInitialGuess( const element_type expansion_uN , parame
     auto mesh = Xh->mesh();
     error(0) = math::sqrt(
                           integrate( _range=elements(mesh) ,
-                          _expr=vf::idv( initial_guess ) * vf::idv( expansion_uN )
-                              * vf::idv( initial_guess ) * vf::idv( expansion_uN )
-                          ).evaluate()(0,0)
+                                     _expr=vf::idv( initial_guess ) * vf::idv( expansion_uN )
+                                     * vf::idv( initial_guess ) * vf::idv( expansion_uN )
+                                     ).evaluate()(0,0)
                           );
 
 
@@ -3037,6 +3169,125 @@ CRB<TruthModelType>::correctionTerms(parameter_type const& mu, std::vector< vect
 
 }
 
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const
+{
+
+    LOG(INFO) <<"Compute projection of initial guess\n";
+    beta_vector_type betaMqm;
+    beta_vector_type betaMFqm;
+
+    matrixN_type Mass ( ( int )N, ( int )N ) ;
+    vectorN_type F ( ( int )N );
+
+
+    boost::tie( betaMqm,  boost::tuples::ignore, boost::tuples::ignore  , betaMFqm ) = M_model->computeBetaQm( mu );
+
+    Mass.setZero( N,N );
+
+    for ( size_type q = 0; q < M_model->Qm(); ++q )
+    {
+        for(int m=0; m<M_model->mMaxM(q); m++)
+            Mass += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
+    }
+    LOG(INFO) << "Mass=" << Mass << "\n";
+    google::FlushLogFiles(google::GLOG_INFO);
+    F.setZero( N );
+    for ( size_type q = 0; q < M_model->Qmf(); ++q )
+    {
+        for(int m=0; m<M_model->mMaxMF(q); m++)
+            F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
+    }
+    LOG(INFO) << "F=" << F << "\n";
+
+    google::FlushLogFiles(google::GLOG_INFO);
+
+    initial_guess = Mass.lu().solve( F );
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu , int N) const
+{
+    //map_J.setZero( N , N );
+    map_J.setZero( );
+    beta_vector_type betaJqm;
+    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N ), mu , 0 );
+    for ( size_type q = 0; q < M_model->Qa(); ++q )
+    {
+        for(int m=0; m<M_model->mMaxA(q); m++)
+            map_J += betaJqm[q][m]*M_Jqm_pr[q][m].block( 0,0,N,N );
+    }
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_dense_vector_type& map_R , const parameter_type & mu, int N ) const
+{
+    map_R.setZero( );
+    std::vector< beta_vector_type > betaRqm;
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N ), mu , 0 );
+    for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+    {
+        for(int m=0; m<M_model->mMaxF(0,q); m++)
+            map_R += betaRqm[0][q][m]*M_Rqm_pr[q][m].head( N );
+    }
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number) const
+{
+    matrixN_type J ( ( int )N, ( int )N ) ;
+    vectorN_type R ( ( int )N );
+
+    double *r_data = R.data();
+    double *j_data = J.data();
+    double *uN_data = uN.data();
+
+    Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_R ( r_data, N );
+    Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , 1> > map_uN ( uN_data, N );
+    Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic , Eigen::Dynamic> > map_J ( j_data, N , N );
+
+    computeProjectionInitialGuess( mu , N , uN );
+
+    M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , mu , N );
+    M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , mu , N );
+    M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
+
+    condition_number = computeConditioning( J );
+}
+
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeConditioning( matrixN_type & A ) const
+{
+    Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
+    eigen_solver.compute( A );
+    int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
+    //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
+    std::vector<double> eigen_values( number_of_eigenvalues );
+
+
+    for ( int i=0; i<number_of_eigenvalues; i++ )
+    {
+        if ( imag( eigen_solver.eigenvalues()[i] )>1e-12 )
+        {
+            throw std::logic_error( "[CRB::lb] ERROR : complex eigenvalues were found" );
+        }
+
+        eigen_values[i]=real( eigen_solver.eigenvalues()[i] );
+    }
+
+    int position_of_largest_eigenvalue=number_of_eigenvalues-1;
+    int position_of_smallest_eigenvalue=0;
+    double eig_max = eigen_values[position_of_largest_eigenvalue];
+    double eig_min = eigen_values[position_of_smallest_eigenvalue];
+    return eig_max / eig_min;
+}
+
 template<typename TruthModelType>
 boost::tuple<double,double>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
@@ -3121,6 +3372,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             uNold[0]( n ) = M_coeff_pr_ini_online[n];
     }
 
+    double condition_number;
     //-- end of initialization step
 
     //vector containing outputs from time=time_step until time=time_for_output
@@ -3135,7 +3387,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     //in transient case, the model has a function initializationField
     //uNold[0].setOnes(M_N);
-
+    if( M_use_newton )
+        newton( N , mu , uN[0] , condition_number );
+    else
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
 
@@ -3298,30 +3552,8 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     }
     time_index--;
 
-    //compute conditioning of matrix A
-    Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
-    eigen_solver.compute( A );
-    int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
-    //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
-    std::vector<double> eigen_values( number_of_eigenvalues );
-
-
-    for ( int i=0; i<number_of_eigenvalues; i++ )
-    {
-        if ( imag( eigen_solver.eigenvalues()[i] )>1e-12 )
-        {
-            throw std::logic_error( "[CRB::lb] ERROR : complex eigenvalues were found" );
-        }
-
-        eigen_values[i]=real( eigen_solver.eigenvalues()[i] );
-    }
-
-    int position_of_largest_eigenvalue=number_of_eigenvalues-1;
-    int position_of_smallest_eigenvalue=0;
-    double eig_max = eigen_values[position_of_largest_eigenvalue];
-    double eig_min = eigen_values[position_of_smallest_eigenvalue];
-    double condition_number = eig_max / eig_min;
-    //end of computation of conditionning
+    if( ! M_use_newton )
+        condition_number = computeConditioning( A );
 
     double s_wo_correction = L.dot( uN [time_index] );
     double s = s_wo_correction ;
@@ -3330,9 +3562,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     //if (  this->vm()["crb.solve-dual-problem"].template as<bool>() || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM || !M_compute_variance )
     bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
-    if( this->worldComm().globalSize() > 1 )
+     if( this->worldComm().globalSize() > 1 )
         solve_dual_problem=false;
-    if ( solve_dual_problem )// || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+    if ( solve_dual_problem && ! M_use_newton )// || M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
     {
         double time;
         if ( M_model->isSteady() )
@@ -5636,10 +5868,9 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
     //version 5 : data structure
     if( version >= 6 )
-    {
         ar & BOOST_SERIALIZATION_NVP( M_maxerror );
-    }
-
+    if( version >= 7 )
+        ar & BOOST_SERIALIZATION_NVP( M_use_newton );
 }
 
 template<typename TruthModelType>
@@ -5798,8 +6029,17 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     //version 5 : data structure
     if( version >= 6 )
-    {
         ar & BOOST_SERIALIZATION_NVP( M_maxerror );
+    if( version >=7 )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_use_newton );
+        if( this->vm()["crb.use-newton"].template as<bool>() != M_use_newton  )
+        {
+            if( M_use_newton )
+                throw std::logic_error( "[CRB::loadDB] ERROR in the database used the option use-newton=true and it's not the case in your option" );
+            else
+                throw std::logic_error( "[CRB::loadDB] ERROR in the database used the option use-newton=false and it's not the case in your option" );
+        }
     }
 
 #if 0
