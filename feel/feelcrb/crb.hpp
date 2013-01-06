@@ -5870,7 +5870,11 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     if( version >= 6 )
         ar & BOOST_SERIALIZATION_NVP( M_maxerror );
     if( version >= 7 )
+    {
         ar & BOOST_SERIALIZATION_NVP( M_use_newton );
+        ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
+    }
 }
 
 template<typename TruthModelType>
@@ -6033,6 +6037,9 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     if( version >=7 )
     {
         ar & BOOST_SERIALIZATION_NVP( M_use_newton );
+        ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
+        ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
+
         if( this->vm()["crb.use-newton"].template as<bool>() != M_use_newton  )
         {
             if( M_use_newton )
