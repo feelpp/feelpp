@@ -223,7 +223,6 @@ LaplacianLM<Dim, Order>::run()
     element_0_type v = V.template element<0>() ;
     element_1_type nu = V.template element<1>() ;
 
-    auto pi = constants::pi<double>();
     auto g= sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );;
     auto grad_g = vec(
                       +pi*cos( pi*Px() )*cos( pi*Py() ),

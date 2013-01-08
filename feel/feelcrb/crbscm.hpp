@@ -157,6 +157,34 @@ public:
             std::cout << "Database " << this->lookForDB() << " available and loaded\n";
     }
 
+
+    //! constructor from command line options
+    CRBSCM( std::string const& name,
+            po::variables_map const& vm ,
+            truth_model_ptrtype const & model )
+        :
+        super( "scm",
+               ( boost::format( "%1%" ) % name ).str(),
+               ( boost::format( "%1%" ) % name ).str(),
+               vm ),
+        M_is_initialized( false ),
+        M_model(),
+        M_tolerance( vm["crb.scm.tol"].template as<double>() ),
+        M_iter_max( vm["crb.scm.iter-max"].template as<int>() ),
+        M_Mplus( vm["crb.scm.Mplus"].template as<int>() ),
+        M_Malpha( vm["crb.scm.Malpha"].template as<int>()  ),
+        M_Dmu( new parameterspace_type ),
+        M_Xi( new sampling_type( M_Dmu ) ),
+        M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_vm( vm ),
+        M_scm_for_mass_matrix( false )
+    {
+        this->setTruthModel( model );
+        if ( this->loadDB() )
+            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+    }
+
     //! copy constructor
     CRBSCM( CRBSCM const & o )
         :
@@ -499,7 +527,6 @@ template<typename TruthModelType>
 std::vector<boost::tuple<double,double,double> >
 CRBSCM<TruthModelType>::offline()
 {
-
     std::ofstream os_y( "y.m" );
     std::ofstream os_C( "C.m" );
 
@@ -598,7 +625,7 @@ CRBSCM<TruthModelType>::offline()
         Matrix->symmetricPart( symmMatrix );
         B = M_model->innerProduct();
 
-        if( M_print_matrix )
+        if( M_print_matrix && ( Environment::worldComm().globalSize() == 1 ) )
         {
             if( M_scm_for_mass_matrix)
             {
@@ -628,7 +655,7 @@ CRBSCM<TruthModelType>::offline()
         modes=
             eigs( _matrixA=symmMatrix,
                   _matrixB=B,
-                  _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
+                  _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
                   _spectrum=SMALLEST_REAL,
                   //_spectrum=LARGEST_MAGNITUDE,
                   _transform=SINVERT,
@@ -673,7 +700,7 @@ CRBSCM<TruthModelType>::offline()
             {
                 value_type aqmw = Matrixq[q][m_eim]->energy( eigenvector, eigenvector );
                 value_type bw = B->energy( eigenvector, eigenvector );
-                //std::cout << "[scm_offline] q=" << q << " aqw = " << aqw << ", bw = " << bw << "\n";
+                std::cout << "[scm_offline] q=" << q << " aqmw = " << aqmw << ", bw = " << bw << "\n";
                 M_Y_ub[K-1][ q ](m_eim) = aqmw/bw;
             }
 
@@ -809,9 +836,11 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
     SolverEigen<double>::eigenmodes_type modesmin=
         eigs( _matrixA=Matrix,
               _matrixB=M,
-              _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
+              _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
               //_spectrum=LARGEST_MAGNITUDE,
+              //_spectrum=LARGEST_REAL,
               _spectrum=SMALLEST_REAL,
+              //_spectrum=SMALLEST_MAGNITUDE,
               _transform=SINVERT,
               _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
               _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
@@ -834,7 +863,7 @@ boost::tuple<typename CRBSCM<TruthModelType>::value_type,
     SolverEigen<double>::eigenmodes_type modesmax=
         eigs( _matrixA=Matrix,
               _matrixB=M,
-              _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].as<int>(),
+              _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].as<int>(),
               _spectrum=LARGEST_MAGNITUDE,
               _ncv=M_vm["crb.scm.solvereigen-ncv"].as<int>(),
               _nev=M_vm["crb.scm.solvereigen-nev"].as<int>(),
@@ -1254,7 +1283,6 @@ CRBSCM<TruthModelType>::computeYBounds()
 
         for ( int m = 0; m < mMax(q) ; ++m )
         {
-
             //std::cout << "================================================================================\n";
             //std::cout << "[ComputeYBounds] = q = " << q << " / " << M_model->Qa() << "\n";
             LOG(INFO) << "[CRBSCM<TruthModelType>::computeYBounds()] q = " << q << "/" << M_model->Qa() << "\n";
@@ -1268,12 +1296,14 @@ CRBSCM<TruthModelType>::computeYBounds()
 
             Matrix->close();
             Matrix->symmetricPart( symmMatrix );
-            os << "yb_Matrix" << q << " - "<< m << ".m";
-            Matrix->printMatlab( os.str() );
-            os.str( "" );
-            os << "yb_symmMatrix" << q << " - "<< m <<".m";
-            symmMatrix->printMatlab( os.str() );
-
+            if( Environment::worldComm().globalSize() == 1 )
+            {
+                os << "yb_Matrix" << q << " - "<< m << ".m";
+                Matrix->printMatlab( os.str() );
+                os.str( "" );
+                os << "yb_symmMatrix" << q << " - "<< m <<".m";
+                symmMatrix->printMatlab( os.str() );
+            }
             if ( symmMatrix->l1Norm()==0.0 )
             {
                 std::cout << "matrix is null\n" ;
@@ -1307,7 +1337,6 @@ CRBSCM<TruthModelType>::computeYBounds()
                 double eigmax=eigenvalue_ub;
 #else
 
-
                 SolverEigen<double>::eigenmodes_type modes;
 #if 1
                 // solve  for eigenvalue problem at \p mu
@@ -1316,10 +1345,9 @@ CRBSCM<TruthModelType>::computeYBounds()
                           _matrixB=B,
                           //_problem=(EigenProblemType)PGNHEP,
                           _problem=( EigenProblemType )GHEP,
-                          _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
-                          _spectrum=SMALLEST_REAL,
-                          //_spectrum=SMALLEST_MAGNITUDE,
-                          //_transform=SINVERT,
+                          _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
+                          //_spectrum=SMALLEST_REAL,
+                          _spectrum=SMALLEST_MAGNITUDE,
                           _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
                           _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
                           _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
@@ -1331,6 +1359,7 @@ CRBSCM<TruthModelType>::computeYBounds()
                 if ( modes.empty() )
                 {
                     LOG(INFO) << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)\n";
+                    std::cout << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)"<<std::endl;
                 }
 
                 double eigmin = modes.empty()?0:modes.begin()->second.template get<0>();
@@ -1340,14 +1369,14 @@ CRBSCM<TruthModelType>::computeYBounds()
                           _matrixB=B,
                           //_problem=(EigenProblemType)PGNHEP,
                           _problem=( EigenProblemType )GHEP,
-                          _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].template as<int>(),
+                          _solver=( EigenSolverType )M_vm["crb.scm.solvereigen-solver-type"].template as<int>(),
                           _spectrum=LARGEST_REAL,
                           //_spectrum=LARGEST_MAGNITUDE,
                           _ncv=M_vm["crb.scm.solvereigen-ncv"].template as<int>(),
                           //_ncv=20,
                           _nev=M_vm["crb.scm.solvereigen-nev"].template as<int>(),
-                          //_tolerance=M_vm["solvereigen-tol"].template as<double>(),
-                          _tolerance=1e-7,
+                          _tolerance=M_vm["crb.scm.solvereigen-tol"].template as<double>(),
+                          //_tolerance=1e-7,
                           _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
                           );
 
@@ -1356,9 +1385,12 @@ CRBSCM<TruthModelType>::computeYBounds()
                 if ( modes.empty() )
                 {
                     LOG(INFO) << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)\n";
+                    std::cout << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)"<<std::endl;
                 }
 
                 double eigmax = modes.empty()?0:modes.rbegin()->second.template get<0>();
+                std::cout<<"[computeYBounds] bounds for (q,m) = ("<<q<<","<<m<<") [ "<<eigmin<<" ; "<<eigmax<<"]"<<std::endl;
+                LOG(INFO)<<"[computeYBounds] bounds for (q,m) = ("<<q<<","<<m<<") [ "<<eigmin<<" ; "<<eigmax<<"]\n";
                 //std::cout << "[Computeybounds] q= " << q << " eigmin=" << std::setprecision(16) << eigmin << " eigmax=" << std::setprecision(16) << eigmax << "\n";
                 //std::cout << std::setprecision(16) << eigmin << " " << eigmax << "\n";
 
@@ -1465,14 +1497,13 @@ CRBSCM<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & M_Y_ub;
     ar & M_Xi;
 
-    int Qmax = nb_decomposition_terms_q();
+    int Qmax = this->nb_decomposition_terms_q();
     M_y_bounds.resize( Qmax );
     for ( int q=0; q<Qmax; q++ )
     {
         for(int m=0; m<mMax(q); m++)
             M_y_bounds[q].push_back( boost::make_tuple( M_y_bounds_0[q][m] , M_y_bounds_1[q][m] ) );
     }
-
 }
 
 template<typename TruthModelType>

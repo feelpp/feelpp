@@ -493,6 +493,17 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
 namespace detail
 {
+template<typename T >
+struct v_ptr1
+{
+    typedef T type;
+};
+template<typename T >
+struct v_ptr2
+{
+    typedef typename T::vector_ptrtype type;
+};
+
 template<typename Args>
 struct integratoron_type
 {
@@ -500,14 +511,43 @@ struct integratoron_type
     typedef typename clean_type<Args,tag::rhs>::type _rhs_type;
     typedef typename clean_type<Args,tag::element>::type _element_type;
     typedef typename clean_type<Args,tag::expr>::type _expr_type;
-
-
-    typedef IntegratorOnExpr<_range_type, _element_type, _rhs_type,
+#if 1
+    typedef typename mpl::if_<Feel::detail::is_vector_ptr<_rhs_type>,
+                              mpl::identity<v_ptr1<_rhs_type> >,
+                              mpl::identity<v_ptr2<_rhs_type> > >::type::type::type the_rhs_type;
+#else
+    typedef _rhs_type the_rhs_type;
+#endif
+typedef IntegratorOnExpr<_range_type, _element_type, the_rhs_type,
             typename mpl::if_<boost::is_arithmetic<_expr_type>,
             mpl::identity<Expr<Cst<_expr_type> > >,
             mpl::identity<_expr_type> >::type::type> type;
     typedef Expr<type> expr_type;
 };
+
+template<typename V>
+typename V::vector_ptrtype
+getRhsVector( V const&  v, mpl::false_ )
+{
+    return v.vectorPtr();
+}
+
+template<typename V>
+V
+getRhsVector( V const&  v, mpl::true_ )
+{
+    return v;
+}
+
+template<typename V>
+typename mpl::if_<Feel::detail::is_vector_ptr<V>,
+                  mpl::identity<v_ptr1<V> >,
+                  mpl::identity<v_ptr2<V> > >::type::type::type
+getRhsVector( V const&  v )
+{
+    return getRhsVector( v, Feel::detail::is_vector_ptr<V>() );
+}
+
 
 }
 /**
@@ -539,7 +579,8 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
+    typename vf::detail::integratoron_type<Args>::type ion( range, element, Feel::vf::detail::getRhsVector(rhs), expr, type );
+    //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
     return typename vf::detail::integratoron_type<Args>::expr_type( ion );
 }
 
