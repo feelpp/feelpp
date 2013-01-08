@@ -137,16 +137,15 @@ public:
 #if (STOKESPRESSMESHTYPE == 1)
     typedef Simplex<2> convex_type;
 #elif (STOKESPRESSMESHTYPE == 2)
-
     typedef Simplex<3,GeoOrder> convex_type;
 #endif
+
 
     typedef Mesh<convex_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     /*basis*/
     //# marker1 #,
-
     typedef Lagrange<POrder+1, Vectorial> basis_u_type;
     typedef Lagrange<POrder, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
@@ -243,12 +242,12 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::init()
 
 
     if ( this->vm().count( "nochdir" ) == false )
-        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/Part%6%/P%3%P%4%/h_%5%/" )
+        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/Part%6%/P%3%P%4%G%5%/h_%6%/" )
                                 % this->about().appName()
                                 % convex_type::name()
                                 % basis_u_type::nOrder % basis_p_type::nOrder
-                                % this->vm()["hsize"].template as<double>()
-                                % Environment::numberOfProcessors() );
+                                % GeoOrder
+                                % this->vm()["hsize"].template as<double>() );
 
 #if (STOKESPRESSMESHTYPE == 1)
     //********************** Rectangle ***************************************
@@ -278,7 +277,6 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::init()
                         _name="mymesh",
                         _partitions=Environment::worldComm().localSize(),
                         _worldcomm=Environment::worldComm() );
-    std::cout << "number of elements : " << mesh->numElements() << "\n";
 #endif
     //*************************************************************************
 
@@ -299,13 +297,13 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
 
     auto U = Xh->element( "(u,p)" );
     auto V = Xh->element( "(u,q)" );
-    auto u = U.element<0>( "u" );
-    auto v = V.element<0>( "u" );
-    auto p = U.element<1>( "p" );
-    auto q = V.element<1>( "p" );
+    auto u = U.template element<0>( "u" );
+    auto v = V.template element<0>( "u" );
+    auto p = U.template element<1>( "p" );
+    auto q = V.template element<1>( "p" );
     //#if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
     //#endif
     //# endmarker4 #
 
@@ -368,25 +366,14 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
     //*************************************************************************************
 #endif
 
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
-    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-    double taille = 4*math::atan(1.)*r*r*L;
-    double mean_p_exact = integrate( elements( mesh ),  p_exact ).evaluate()(0,0) /taille;
-    std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
-
+    double meas = integrate(elements(mesh),cst(1.)).evaluate()(0,0);
+    double mean_p_exact = integrate(elements(mesh),p_exact,_quad=_Q<10>()).evaluate()(0,0)/meas;
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
-    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ));
-    stokes_rhs += integrate( elements( mesh ),id(nu)* p_exact );   //add the mean of the exact pressure
-    //stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ), _quad=_Q<15>() );
-    //stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ), _quad=_Q<15>() );
-    //************
-
-
+    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
+    stokes_rhs += integrate( elements( mesh ), mean_p_exact*id(nu),_quad=_Q<10>());
+    //stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+    //stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
 
     LOG(INFO) << "[stokes] vector local assembly done\n";
 
@@ -403,7 +390,7 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
     std::cout << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
     //#if defined( FEELPP_USE_LM )
-    stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ));
+    stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ) );
     std::cout << "(lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
     //#endif
@@ -412,12 +399,10 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaNt,id( v ) ) );
     stokes +=integrate( boundaryfaces( mesh ), -inner( SigmaN,idt( u ) ) );
     stokes +=integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-
 #else
     stokes+=on( _range=boundaryfaces(mesh), _element=u,_rhs=stokes_rhs,
                 _expr=u_exact );
 #endif
-
     std::cout << "bc: " << chrono.elapsed() << "\n";
     chrono.restart();
     //# endmarker7 #
@@ -425,30 +410,17 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
     //M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
     stokes.solve( _rhs=stokes_rhs, _solution=U);
-    size_type nnz = 0 ;
-    auto nNz = D->graph()->nNz() ;
-    for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
-        nnz += ( *iter ) ;
-    size_type gnnz=0;
-    mpi::all_reduce( this->comm(), nnz, gnnz, [] ( size_type x, size_type y ) {return x + y;} );
-    LOG(INFO) << "[nnz]       number of local nnz: " << nnz << " global: "  << gnnz << "\n";
-    LOG(INFO) << "[dof]             number of dof: " << Xh->nDof() << "\n";
-    LOG(INFO) << "[dof]        number of dof/proc: " << Xh->nLocalDof() << "\n";
-    LOG(INFO) << "[dof]          number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    LOG(INFO) << "[dof]     number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    LOG(INFO) << "[dof]          number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    LOG(INFO) << "[dof]     number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
-    std::cout << "[nnz]       number of local nnz: " << nnz << " global: "  << gnnz << "\n";
-    std::cout << "[dof]             number of dof: " << Xh->nDof() << "\n";
-    std::cout << "[dof]        number of dof/proc: " << Xh->nLocalDof() << "\n";
-    std::cout << "[dof]          number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-    std::cout << "[dof]     number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-    std::cout << "[dof]          number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-    std::cout << "[dof]     number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+    this->exportResults( u_exact, p_exact, U, V );
 
 
- this->exportResults( u_exact, p_exact, U, V );
+
+    LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 } // Stokes::run
 
 
@@ -456,16 +428,16 @@ template<int POrder, int GeoOrder>
 template<typename ExprUExact, typename ExprPExact>
 void
 Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_exact,
-                       element_type& U, element_type& V )
+                                                            element_type& U, element_type& V )
 {
-    auto u = U.element<0>();
-    auto p = U.element<1>();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
 
-    auto v = V.element<0>();
-    auto q = V.element<1>();
+    auto v = V.template element<0>();
+    auto q = V.template element<1>();
     //#if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
     LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
@@ -474,49 +446,39 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::exportResults( ExprUExact u_exact, 
     auto u_exact_proj=vf::project(P7,elements(mesh),u_exact);
 
     double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
-    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
-    Log(INFO) <<"||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
+    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";;
 
-    double meas = integrate( elements( u.mesh() ), cst( 1.0 )).evaluate()( 0, 0 );
-#if (STOKESPRESSMESHTYPE ==2)
-    Log(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to "<< 4*math::atan(1.)*5 << ")\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to "<< 4*math::atan(1.)*5 << ")\n";
-#elif (STOKESPRESSMESHTYPE == 1)
-    Log(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to  1)\n";
-    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to  1)\n";
-#endif
+    double meas = integrate( elements( u.mesh() ), cst( 1.0 ) ).evaluate()( 0, 0 );
+    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
+    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to 1)\n";
 
     double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
-    Log(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
-
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    // ////////////////////////////////////////////////////////////////////////////////////////
-    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
-    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
-    // //////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////
+    double mean_p_exact = integrate( elements( u.mesh() ),  p_exact ).evaluate()( 0, 0 )/meas;
+    std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+    //////////////////////////////////////////////////////////////////////////////////////////
 
 
-    // double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ), _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 );
-    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact )).evaluate()( 0, 0 );
-    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
-    Log(INFO) <<"||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
-    Log(INFO) << "[stokes] solve for D done\n";
+    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )- p_exact )*( idv( p )-p_exact ) ).evaluate()( 0, 0 );
+    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";;
 
+    LOG(INFO) << "[stokes] solve for D done\n";
 
 
     double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
     double H1_u=math::sqrt( u_errorH1 );
-    std::cout << "||u_errorH1||_2 = " <<H1_u<< "\n";
-    Log(INFO) << "||u_errorH1||_2 = " <<H1_u<< "\n";
+    std::cout << "||u_errorH1||_2 = " <<H1_u<< "\n";;
+
 
     double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
-    Log(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    Log(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
-
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
@@ -525,39 +487,28 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::exportResults( ExprUExact u_exact, 
 #if (STOKESPRESSMESHTYPE ==2)
     auto deff = gradv(u);
     auto SigmaNN =(-idv(p)*vf::N()+mu*deff*vf::N());
-    auto FappIn = integrate(markedfaces( mesh,"Inlet" ) , SigmaNN).evaluate();
-    auto Fapp1In = FappIn(0,0); //pour la prémière composante
-    auto Fapp2In = FappIn(1,0); //pour la seconde
-    auto Fapp3In = FappIn(2,0);
-    std::cout << "Fapp1In = "<<Pi- FappIn(0,0) << "\n" ;
-    std::cout << "Fapp2In = "<< FappIn(1,0) << "\n" ;
-    std::cout << "Fapp3In = "<< FappIn(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1In = "<< Pi-FappIn(0,0) << "\n" ;
-    LOG(INFO) << "Fapp2In = "<< FappIn(1,0) << "\n" ;
-    LOG(INFO) << "Fapp3In = "<< FappIn(2,0) << "\n" ;
+    auto s = integrate( markedfaces( mesh,"Wall" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    std::cout << "s wall="  << s.norm() << "\n";
+    std::cout << "error s wall="  << math::abs(pi-s.norm()) << "\n";
+    s = integrate( markedfaces( mesh,"Inlet" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    std::cout << "s inlet="  << s.norm() << "\n";
+    std::cout << "error s wall="  << math::abs(pi-s.norm()) << "\n";
+    s = integrate( markedfaces( mesh,"Outlet" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    std::cout << "s outlet="  << math::sqrt(s.dot(s)) << "\n";
+    std::cout << "error s wall="  << math::abs(s.norm()) << "\n";
 
-auto FappOut = integrate(markedfaces( mesh,"Outlet" ) , SigmaNN).evaluate();
-    auto Fapp1Out = FappOut(0,0); //pour la prémière composante
-    auto Fapp2Out = FappOut(1,0); //pour la seconde
-    auto Fapp3Out = FappOut(2,0);
-    std::cout << "Fapp1Out = "<< FappOut(0,0) << "\n" ;
-    std::cout << "Fapp2Out = "<< FappOut(1,0) << "\n" ;
-    std::cout << "Fapp3Out = "<< FappOut(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1Out = "<< FappOut(0,0) << "\n" ;
-    LOG(INFO) << "Fapp2Out = "<< FappOut(1,0) << "\n" ;
-    LOG(INFO) << "Fapp3Out = "<< FappOut(2,0) << "\n" ;
-
-auto FappWall = integrate(markedfaces( mesh,"Wall" ) , SigmaNN).evaluate();
-    auto Fapp1Wall = FappWall(0,0); //pour la prémière composante
-    auto Fapp2Wall = FappWall(1,0); //pour la seconde
-    auto Fapp3Wall = FappWall(2,0);
-    std::cout << "Fapp1Wall = "<< FappWall(0,0)+Pi << "\n" ;
-    std::cout << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
-    std::cout << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1Wall = "<< FappWall(0,0)+Pi << "\n" ;
-    LOG(INFO) << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
-    LOG(INFO) << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
-
+    auto Fappwall = integrate( markedfaces( mesh,"Wall" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    auto Fapp = integrate( boundaryfaces( mesh ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    auto Fapp1 = Fapp(0,0); //pour la prémière composante
+    auto Fapp2 = Fapp(1,0); //pour la seconde
+    auto Fapp3 = Fapp(2,0);
+    std::cout << "erreur bdy="  << math::sqrt(Fapp.dot(Fapp)) << "\n";
+    std::cout << "Fapp1 = "<< Fapp(0,0) << "\n" ;
+    std::cout << "Fapp2 = "<< Fapp(1,0) << "\n" ;
+    std::cout << "Fapp3 = "<< Fapp(2,0) << "\n" ;
+    LOG(INFO) << "Fapp1 = "<< Fapp(0,0) << "\n" ;
+    LOG(INFO) << "Fapp2 = "<< Fapp(1,0) << "\n" ;
+    LOG(INFO) << "Fapp3 = "<< Fapp(2,0) << "\n" ;
 #endif
 
 
@@ -567,11 +518,11 @@ auto FappWall = integrate(markedfaces( mesh,"Wall" ) , SigmaNN).evaluate();
         exporter->step( 0 )->addRegions();
         auto v = U.functionSpace()->template functionSpace<0> ()->element();
         v = U.template element<0>();
-        exporter->step( 0 )->add( "u", U.element<0>() );
+        exporter->step( 0 )->add( "u", U.template element<0>() );
         //exporter->step( 0 )->add( "ux", v.comp( X ) );
         //exporter->step( 0 )->add( "uy", v.comp( Y ) );
-        exporter->step( 0 )->add( "u", U.element<0>() );
-        exporter->step( 0 )->add( "p", U.element<1>() );
+        exporter->step( 0 )->add( "u", U.template element<0>() );
+        exporter->step( 0 )->add( "p", U.template element<1>() );
         exporter->step( 0 )->add( "u_exact", V.template element<0>() );
         exporter->step( 0 )->add( "p_exact", V.template element<1>() );
         exporter->save();
@@ -580,21 +531,6 @@ auto FappWall = integrate(markedfaces( mesh,"Wall" ) , SigmaNN).evaluate();
 } // Stokes::export
 } // Feel
 
-int
-main( int argc, char** argv )
-{
-
-    using namespace Feel;
-
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name="stokes",
-                                  _author="Christophe Prud'homme",
-                                  _email="christophe.prudhomme@feelpp.org") );
-
-    Feel::Stokes_Dirichlet_Dirichlet<3,3> Stokes_Dirichlet_Dirichlet;
-    Stokes_Dirichlet_Dirichlet.run();
-}
 
 
 
