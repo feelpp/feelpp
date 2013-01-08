@@ -1049,7 +1049,8 @@ BOOST_PARAMETER_FUNCTION(
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
         std::vector<std::string> depends_on_files;
-        algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
+        if ( !depends.empty() )
+            algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
         // copy include/merged files needed by geometry file
         boost::for_each( depends_on_files,
                          [&cp, &files_path]( std::string const& _filename )
@@ -1200,6 +1201,24 @@ unitSquare()
                                         _dim=2,
                                         _h=Environment::vm(_name="mesh2d.hsize").as<double>() ) );
 }
+
+/**
+ * build a mesh of the unit circle using triangles
+ */
+template<int Ngeo=1>
+inline
+boost::shared_ptr<Mesh<Simplex<2,Ngeo> > >
+unitCircle()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<2,Ngeo> >,
+                          _desc=domain( _name="square",
+                                        _shape="ellipsoid",
+                                        _dim=2,
+                                        _xmin=-1,
+                                        _ymin=-1,
+                                        _h=Environment::vm(_name="mesh2d.hsize").template as<double>() ) );
+}
+
 
 /**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons
