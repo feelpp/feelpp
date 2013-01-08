@@ -366,5 +366,18 @@ public:
 };
 
 
+BOOST_PARAMETER_FUNCTION(
+    (po::variable_value), option, tag,
+    (required
+     (name,(std::string)))
+    (optional
+     (worldcomm, ( WorldComm ), Environment::worldComm() )
+     (sub,( std::string ),"")
+     (prefix,( std::string ),"")
+        ))
+{
+    return Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix);
+}
+
 }
 #endif /* __Environment_H */
