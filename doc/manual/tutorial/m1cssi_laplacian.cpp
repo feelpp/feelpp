@@ -166,7 +166,6 @@ Laplacian<Dim,Order>::run()
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
 
-    double pi = M_PI;
     auto g = sin(2*pi*Px());
     auto gradg= 2*pi*cos(2*pi*Px());
     auto f = 4*pi*pi*sin(2*pi*Px());

@@ -140,7 +140,6 @@ MyFunctionSpace<Dim,Order>::run()
     /** \endcode */
 
     value_type alpha = this->vm()["alpha"].template as<double>();
-    value_type pi = M_PI;
 
     //# marker4 #
     auto g = sin( 2*pi*Px() )*cos( 2*pi*Py() )*cos( 2*pi*Pz() );

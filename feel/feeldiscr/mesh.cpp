@@ -124,8 +124,9 @@ po::options_description mesh_options( int Dim, std::string const& prefix )
 {
     po::options_description _options( (boost::format("Mesh %1%D ")%Dim).str() + prefix + " options" );
     _options.add_options()
-    // solver options
+        ( prefixvm( prefix, (boost::format("mesh%1%d.hsize") % Dim).str() ).c_str(), Feel::po::value<double>()->default_value(0.1), "mesh characteristic size" )
         ( prefixvm( prefix, (boost::format("mesh%1%d.markers") % Dim).str() ).c_str(), Feel::po::value<std::string>(), "mesh markers map" )
+
         ;
     return _options;
 }

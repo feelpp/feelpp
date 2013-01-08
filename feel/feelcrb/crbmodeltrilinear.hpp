@@ -285,7 +285,7 @@ public:
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
     size_type Qa() const
     {
-        return M_model->Qa();
+        return M_model->Qa()-M_model->QaTri();
     }
 
 
@@ -298,6 +298,16 @@ public:
     sparse_matrix_ptrtype computeTrilinearForm( element_type const& xi )
     {
         return M_model->computeTrilinearForm( xi );
+    }
+
+    sparse_matrix_ptrtype jacobian( element_type const& xi )
+    {
+        return M_model->jacobian( xi );
+    }
+
+    vector_ptrtype residual( element_type const& xi )
+    {
+        return M_model->residual( xi );
     }
 
 
@@ -598,7 +608,18 @@ public:
     }
 
     //@}
-
+    bool isSteady()
+    {
+        return isSteady( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    bool isSteady( mpl::bool_<true> )
+    {
+        return M_model->isSteady();
+    }
+    bool isSteady( mpl::bool_<false> )
+    {
+        return true;
+    }
 
 
 protected:

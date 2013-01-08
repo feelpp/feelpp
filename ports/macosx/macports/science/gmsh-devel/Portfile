@@ -8,7 +8,7 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        13935
+svn.revision        14186
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
@@ -38,7 +38,7 @@ configure.compiler macports-gcc-4.6
 worksrcdir	build
 configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../trunk" }
 
-#configure.pre_args  
+#configure.pre_args
 configure.args-append \
     -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.6\
     -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.6\
@@ -49,14 +49,15 @@ configure.args-append \
     -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
     -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
+    -DENABLE_OS_SPECIFIC_INSTALL=OFF\
+    -DENABLE_APP_BUNDLE=OFF \
     -DENABLE_BUILD_LIB=OFF\
     -DENABLE_BUILD_SHARED=ON\
     -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
     -DENABLE_OCC:BOOL=OFF \
     -DENABLE_FLTK:BOOL=ON\
     -DENABLE_GRAPHICS:BOOL=ON\
-    -DENABLE_APP_BUNDLE=OFF \
-    -DENABLE_METIS=OFF \
+    -DENABLE_METIS=ON \
     -DENABLE_TAUCS=OFF
 
 build.target all shared
