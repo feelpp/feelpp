@@ -173,6 +173,7 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
     google::FlushLogFiles(google::INFO);
     if ( std::string(pctype) == "gasm" )
     {
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         std::string t = Environment::vm(_name="pc-gasm-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
         if ( t == "restrict" ) PCGASMSetType( pc, PC_GASM_RESTRICT );
         if ( t == "basic" ) PCGASMSetType( pc, PC_GASM_BASIC );
@@ -181,7 +182,7 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
 
         int levels = Environment::vm(_name="pc-gasm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
         PCGASMSetOverlap( pc, levels );
-
+#endif
     }
     if ( std::string(pctype) == "asm" )
     {
@@ -265,7 +266,11 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
             // But PETSc has no truly parallel ILU, instead you have to set
             // an actual parallel preconditioner (e.g. block Jacobi) and then
             // assign ILU sub-preconditioners.
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
             ierr = PCSetType ( pc, ( char* ) PCGASM );
+#else
+            ierr = PCSetType ( pc, ( char* ) PCASM );
+#endif
             CHKERRABORT( worldComm.globalComm(),ierr );
 
         }
