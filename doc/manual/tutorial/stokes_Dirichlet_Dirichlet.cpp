@@ -299,13 +299,13 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
 
     auto U = Xh->element( "(u,p)" );
     auto V = Xh->element( "(u,q)" );
-    auto u = U.element<0>( "u" );
-    auto v = V.element<0>( "u" );
-    auto p = U.element<1>( "p" );
-    auto q = V.element<1>( "p" );
+    auto u = U.template element<0>( "u" );
+    auto v = V.template element<0>( "u" );
+    auto p = U.template element<1>( "p" );
+    auto q = V.template element<1>( "p" );
     //#if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
     //#endif
     //# endmarker4 #
 
@@ -458,14 +458,14 @@ void
 Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_exact,
                        element_type& U, element_type& V )
 {
-    auto u = U.element<0>();
-    auto p = U.element<1>();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
 
-    auto v = V.element<0>();
-    auto q = V.element<1>();
+    auto v = V.template element<0>();
+    auto q = V.template element<1>();
     //#if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
     LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
@@ -567,11 +567,11 @@ auto FappWall = integrate(markedfaces( mesh,"Wall" ) , SigmaNN).evaluate();
         exporter->step( 0 )->addRegions();
         auto v = U.functionSpace()->template functionSpace<0> ()->element();
         v = U.template element<0>();
-        exporter->step( 0 )->add( "u", U.element<0>() );
+        exporter->step( 0 )->add( "u", U.template element<0>() );
         //exporter->step( 0 )->add( "ux", v.comp( X ) );
         //exporter->step( 0 )->add( "uy", v.comp( Y ) );
-        exporter->step( 0 )->add( "u", U.element<0>() );
-        exporter->step( 0 )->add( "p", U.element<1>() );
+        exporter->step( 0 )->add( "u", U.template element<0>() );
+        exporter->step( 0 )->add( "p", U.template element<1>() );
         exporter->step( 0 )->add( "u_exact", V.template element<0>() );
         exporter->step( 0 )->add( "p_exact", V.template element<1>() );
         exporter->save();
