@@ -179,10 +179,9 @@ ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
 {
     using namespace vf;
     Feel::ParameterSpace<2>::Element M_current_mu( mu );
-
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+    //M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobianWithoutAffineDecomposition, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
-
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
 
@@ -216,11 +215,10 @@ ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
         //std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
 
         M_current_mu << M_current_Grashofs, M_current_Prandtl;
-
         this->computeBetaQm( M_current_mu );
         this->update( M_current_mu );
-
 //        T->print(std::cout);
+        //M_backend->nlSolve(_solution=T);
         M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R );
 #if 0
         if ( exporter->doExport() )
@@ -341,8 +339,14 @@ ConvectionCrb::output( int output_index, parameter_type const& mu )
 
     if( output_index == 2 )
     {
+        //auto ux = u.comp(X);
+        auto ux = u.comp<X>();
         //output = integrate( elements(mesh) ,  trans( idv( u ) )*idv( u )  ).evaluate()( 0,0 ) ;
-        output = integrate( elements(mesh) ,  idv( u.comp(X) )  ).evaluate()( 0,0 ) ;
+        //double output2 = integrate( elements(mesh) ,  idv( u.comp(X) )  ).evaluate()( 0,0 ) ;
+        //double output4 = integrate( elements(mesh) ,  idv( ux )  ).evaluate()( 0,0 ) ;
+        output = integrate( elements(mesh) ,  idv( u )(0)  ).evaluate()( 0,0 ) ;
+        //double output3 = integrate( elements(mesh) ,  trans( idv( u ) ) * vec( cst(1) , cst(0) ) ).evaluate()( 0,0 ) ;
+        //std::cout<<"output = "<<output<<" et output2 = "<<output2<<" et output3 = "<<output3<<" et output4 = "<<output4<<std::endl;
     }
 
     return output;
