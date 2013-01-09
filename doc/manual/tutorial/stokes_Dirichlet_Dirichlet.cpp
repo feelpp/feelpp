@@ -529,12 +529,12 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::exportResults( ExprUExact u_exact, 
     auto Fapp1In = FappIn(0,0); //pour la prémière composante
     auto Fapp2In = FappIn(1,0); //pour la seconde
     auto Fapp3In = FappIn(2,0);
-    std::cout << "Fapp1In = "<<Pi- FappIn(0,0) << "\n" ;
-    std::cout << "Fapp2In = "<< FappIn(1,0) << "\n" ;
-    std::cout << "Fapp3In = "<< FappIn(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1In = "<< Pi-FappIn(0,0) << "\n" ;
-    LOG(INFO) << "Fapp2In = "<< FappIn(1,0) << "\n" ;
-    LOG(INFO) << "Fapp3In = "<< FappIn(2,0) << "\n" ;
+    std::cout << "Fapp1In = "<<pi- FappIn(0,0) << "\n" ;
+    std::cout << "Fapp2In = "<< -FappIn(1,0) << "\n" ;
+    std::cout << "Fapp3In = "<< -FappIn(2,0) << "\n" ;
+    LOG(INFO) << "Fapp1In = "<< pi-FappIn(0,0) << "\n" ;
+    LOG(INFO) << "Fapp2In = "<< -FappIn(1,0) << "\n" ;
+    LOG(INFO) << "Fapp3In = "<< -FappIn(2,0) << "\n" ;
 
 auto FappOut = integrate(markedfaces( mesh,"Outlet" ) , SigmaNN).evaluate();
     auto Fapp1Out = FappOut(0,0); //pour la prémière composante
@@ -551,10 +551,10 @@ auto FappWall = integrate(markedfaces( mesh,"Wall" ) , SigmaNN).evaluate();
     auto Fapp1Wall = FappWall(0,0); //pour la prémière composante
     auto Fapp2Wall = FappWall(1,0); //pour la seconde
     auto Fapp3Wall = FappWall(2,0);
-    std::cout << "Fapp1Wall = "<< FappWall(0,0)+Pi << "\n" ;
+    std::cout << "Fapp1Wall = "<< FappWall(0,0)+pi << "\n" ;
     std::cout << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
     std::cout << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1Wall = "<< FappWall(0,0)+Pi << "\n" ;
+    LOG(INFO) << "Fapp1Wall = "<< FappWall(0,0)+pi << "\n" ;
     LOG(INFO) << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
     LOG(INFO) << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
 
@@ -592,7 +592,7 @@ main( int argc, char** argv )
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
-    Feel::Stokes_Dirichlet_Dirichlet<3,3> Stokes_Dirichlet_Dirichlet;
+    Feel::Stokes_Dirichlet_Dirichlet<1,1> Stokes_Dirichlet_Dirichlet;
     Stokes_Dirichlet_Dirichlet.run();
 }
 
