@@ -34,8 +34,6 @@
 
 #include <feel/feel.hpp>
 
-#define PROJ_INT_BY_PART 1
-
 namespace Feel
 {
 /**
@@ -79,6 +77,13 @@ public:
     typedef typename spaceP1_type::element_type elementP1_type;
 
 
+    // ---------------- P1 Vec space -----------------
+    typedef bases<Lagrange<1, Vectorial> > basisP1_Vec_type;
+    typedef FunctionSpace<mesh_type, basisP1_Vec_type> spaceP1_Vec_type;
+    typedef boost::shared_ptr<spaceP1_Vec_type> spaceP1_Vec_ptrtype;
+    typedef typename spaceP1_Vec_type::element_type elementP1_Vec_type;
+
+
     /*basis*/
     //# marker1 #
     typedef BasisU basis_u_type;
@@ -110,6 +115,13 @@ public:
                                   range_visu_ho_type> op_inte_N_to_P1_type;
 
     typedef boost::shared_ptr<op_inte_N_to_P1_type> op_inte_N_to_P1_ptrtype;
+
+    typedef OperatorInterpolation<space_Vec_type, //espace depart
+                                  spaceP1_Vec_type, //espace arrivee
+                                  range_visu_ho_type> op_inte_N_to_P1_Vec_type;
+
+
+    typedef boost::shared_ptr<op_inte_N_to_P1_Vec_type> op_inte_N_to_P1_Vec_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -261,7 +273,13 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     // projectors
 
-    double diffnum = std::pow(meshSizeInit(), std::max(1,BasisU::nOrder-1)) ;
+
+    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder*BasisU::nOrder);
+    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder); // with this one I can get order 1 !
+    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / BasisU::nOrder; // order 0
+
+        //std::pow((meshSizeInit() / std::pow(2,level())) , BasisU::nOrder) ;
+    // std::pow(meshSizeInit(), std::max(1,BasisU::nOrder-1)) ;
 
     auto l2p = opProjection(Xh , Xh, _type=L2);
     auto l2pVec = opProjection(Xh_Vec, Xh_Vec, _type=L2);
@@ -324,42 +342,32 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                                     vf::chi( idv(Delta_proj)>0.0001) * vf::cst(1.) );
     mesh->updateMarker2(marker_delta);
 
+    double max_modgradphi=0.9;
+
+    auto modgradphi = sqrt( gradv(init_shape) * trans(gradv(init_shape)));
 
     /* +++++++++++++++ compute quantities with different projections +++++++++++ */
 
+    // auto modgradphituned = sqrt( gradv(init_shape) * trans(gradv(init_shape))) * chi( abs(idv(init_shape)) <= 1.5*h())
+    //     + chi( abs(idv(init_shape)) > 1.5*h() );
+
     /* ------------------ nodal projection ---------------- */
     auto n_nod = vf::project(Xh_Vec, elements(mesh),
-                             trans(gradv(init_shape)) /
-                             sqrt( gradv(init_shape) * trans(gradv(init_shape))));
+                             trans(gradv(init_shape)) / modgradphi );
     auto k_nod = vf::project(Xh, elements(mesh),
                              divv(n_nod) );
-
     auto nk_nod = vf::project(Xh_Vec, elements(mesh),
                              trans(gradv(k_nod)) /
                              sqrt( gradv(k_nod) * trans(gradv(k_nod))));
     auto kk_nod = vf::project(Xh, elements(mesh),
                              divv(nk_nod) );
 
-
     auto phi_nod = init_shape;
 
 
-    double max_modgradphi=0.9;
-
-    /* ------------------ L2 projection ---------------- */
-    auto n_l2 = l2pVec->project( gradv(init_shape) /
-                                 vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi) );
-    auto k_l2 = l2p->project( divv(n_l2) );
-    auto nk_l2 = l2pVec->project( gradv(k_l2) /
-                                 vf::max(sqrt( gradv(k_l2) * trans(gradv(k_l2))), max_modgradphi) );
-    auto kk_l2 = l2p->project( divv(nk_l2) );
-
-    auto phi_l2 = l2p->project( shape_expr );
-
-
     /* ------------------ smooth projection ---------------- */
-    auto n_smooth = smoothVec->project( gradv(init_shape) /
-                                        vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi) );
+    auto n_smooth = smoothVec->project( gradv(init_shape) / modgradphi );
+
     auto k_smooth = smooth->project( divv(n_smooth) );
     auto phi_smooth = smooth->project( shape_expr );
 
@@ -368,52 +376,38 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     auto kk_smooth = smooth->project( divv(nk_smooth) );
 
 
+    /* ------------------ L2 projection ---------------- */
+    auto n_l2 = l2pVec->project( gradv(init_shape) / modgradphi );
+    auto k_l2 = l2p->project( divv(n_l2) );
+    auto nk_l2 = l2pVec->project( gradv(k_l2) /
+                                 vf::max(sqrt( gradv(k_l2) * trans(gradv(k_l2))), max_modgradphi) );
+    auto kk_l2 = l2p->project( divv(nk_l2) );
+
+    auto phi_l2 = l2p->project( shape_expr );
+
+
+
     /* ------------------ from hessian (ok if |grad(init_shape)| = 1 ) ---------------- */
     auto k_hess = vf::project(Xh, elements(mesh), trace( hessv(init_shape) ) );
     auto kk_hess = vf::project(Xh, elements(mesh), trace( hessv(k_hess) ) );
 
 
-    #if PROJ_INT_BY_PART
-    /* instead of solving : int_omega k * v = int_omega div( grad(phi) / |grad phi|)
-       solve : int k * v = - int_omega grad(phi) / |grad phi| . grad(v) + int_Gamma grad(phi) / |grad phi| . N * v
-    */
-    // backend_int = backend_type::build( this->vm() );
-    // auto k_int = Xh->element();
-    // auto kk_int = Xh->element();
-
-    // D = backend_int->newMatrix(Xh, Xh);
-    // F = backend_int->newVector(Xh);
-
-    // form2(Xh, Xh, D) = integrate(elements(mesh), idt(k_int) * id(k_int) * vf::max(sqrt( gradv(init_shape) * trans(gradv(init_shape))), max_modgradphi) );
-    // form1(Xh, F) = integrate(elements(mesh),
-    //                            - gradv(init_shape) * trans(grad(init_shape)) );
-
-    // form1(Xh, F) += integrate(boundaryfaces(mesh),
-    //                              gradv(init_shape) * N() * id(init_shape) );
-
-    // D->close();
-    // F->close();
-
-    // backend_int->solve(D, k_int, F);
-
-    // form2(Xh, Xh, D) = integrate(elements(mesh), idt(kk_int) * id(kk_int) * vf::max(sqrt( gradv(k_int) * trans(gradv(k_int))), max_modgradphi) );
-    // form1(Xh, F) = integrate(elements(mesh),
-    //                            - gradv(k_int) * trans(grad(k_int)) );
-
-    // form1(Xh, F) += integrate(boundaryfaces(mesh),
-    //                              gradv(k_int) * N() * id(k_int) );
-
-    // D->close();
-    // F->close();
-
-    // backend_int->solve(D, kk_int, F);
-
-    auto n_int = l2pVec->derivate( idv(init_shape) ); // /modgradphi
+    /*  ------------------ integrate by part ----------------------------------   */
+    auto n_int = l2pVec->derivate( idv(init_shape) / modgradphi );
     auto k_int = l2p->derivate( trans(idv(n_int)) );
-    auto nn_int = l2pVec->derivate( idv(k_int) );
-    auto kk_int = l2p->derivate( trans(idv((nn_int))) );
+    auto nk_int = l2pVec->derivate( idv(k_int) );
+    auto kk_int = l2p->derivate( trans(idv((nk_int))) );
 
-    #endif
+
+    /* ------------------ optimal projection ---------------- */
+    /*           try to get the better combinaison            */
+    auto n_opt = n_nod;
+    auto k_opt = l2p->derivate( trans(idv(n_opt)) );
+    auto nk_opt = vf::project( Xh_Vec, elements(mesh),
+                               trans( gradv( k_opt ) )
+                               / sqrt( gradv(k_opt) * trans(gradv(k_opt)) ) );
+
+    auto kk_opt = l2p->derivate( trans( idv(nk_opt) ) );
 
     auto Radius_expr = sqrt( Px() * Px() + Py() * Py() );
 
@@ -472,18 +466,16 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     M_stats.put( "e.l2.phi", error_l2_phi);
 
 
-    #if PROJ_INT_BY_PART
     double error_l2_int = integrate(marked2elements(mesh, 1.),
                                     (idv(k_int) -  1 / Radius_expr) * (idv(k_int) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_l2_int = std::sqrt( error_l2_int );
-    M_stats.put( "e.l2.kk_int", error_l2_int);
+    M_stats.put( "e.int.k", error_l2_int);
 
     double error_l2_int_kk = integrate(marked2elements(mesh, 1.),
                                     (idv(kk_int) -  1 / Radius_expr) * (idv(kk_int) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_l2_int_kk = std::sqrt( error_l2_int_kk );
-    M_stats.put( "e.l2.kk_int", error_l2_int_kk);
+    M_stats.put( "e.int.kk", error_l2_int_kk);
 
-    #endif
 
     /* smooth */
     double error_smooth = integrate(marked2elements(mesh, 1.),
@@ -524,6 +516,20 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     M_stats.put( "e.hs.k", error_hessp);
     LOG(INFO) << "e.hs.k = " << error_hessp << "\n";
 
+    /* opt */
+    double error_opt = integrate(marked2elements(mesh, 1.),
+                             (idv(k_opt) - 1 / Radius_expr) * (idv(k_opt) - 1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
+    error_opt = std::sqrt(error_opt);
+    M_stats.put( "e.opt.k", error_opt);
+    LOG(INFO) << "e.opt.k = " << error_opt << "\n";
+
+    double error_opt_kk = integrate(marked2elements(mesh, 1.),
+                             (idv(kk_opt) - 1 / Radius_expr) * (idv(kk_opt) - 1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
+    error_opt_kk = std::sqrt(error_opt_kk);
+    M_stats.put( "e.opt.kk", error_opt_kk);
+    LOG(INFO) << "e.opt.kk = " << error_opt_kk << "\n";
+
+
     std::cout<<"exporting ...\n";
 
     if ( exporter->doExport() )
@@ -535,10 +541,20 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 op_inte_N_to_P1_ptrtype op_inte_N_to_P1;
                 OperatorLagrangeP1<space_type> * opLagP1;
 
+                op_inte_N_to_P1_Vec_ptrtype op_inte_N_to_P1_Vec;
+                OperatorLagrangeP1<space_Vec_type> * opLagP1Vec;
+
                 auto backend_oplag = backend_type::build( this->vm() );
+                auto backend_oplagVec = backend_type::build( this->vm() );
                 opLagP1 = new OperatorLagrangeP1<space_type> (Xh, backend_oplag);
+                opLagP1Vec = new OperatorLagrangeP1<space_Vec_type> (Xh_Vec, backend_oplagVec);
+
                 auto Xh_P1 = spaceP1_type::New(_mesh=opLagP1->mesh() );
                 op_inte_N_to_P1 = opInterpolation(_domainSpace = Xh, _imageSpace = Xh_P1);
+
+                auto Xh_P1_Vec = spaceP1_Vec_type::New(_mesh=opLagP1Vec->mesh() );
+                op_inte_N_to_P1_Vec = opInterpolation(_domainSpace = Xh_Vec, _imageSpace = Xh_P1_Vec);
+
 
                 auto delta_p1 = Xh_P1->element();
                 auto k_l2_p1 = Xh_P1->element();
@@ -546,12 +562,15 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 auto k_nod_p1 = Xh_P1->element();
                 auto k_hess_p1 = Xh_P1->element();
                 auto k_int_p1 = Xh_P1->element();
+                auto k_opt_p1 = Xh_P1->element();
 
-                auto kk_nod_p1 = Xh_P1->element();
-                auto kk_l2_p1  = Xh_P1->element();
-                auto kk_smooth_p1 = Xh_P1->element();
-                auto kk_int_p1 = Xh_P1->element();
-                auto kk_hess_p1 = Xh_P1->element();
+
+                auto nk_l2_p1 = Xh_P1_Vec->element();
+                auto nk_nod_p1 = Xh_P1_Vec->element();
+                auto nk_smooth_p1 = Xh_P1_Vec->element();
+                auto nk_int_p1 = Xh_P1_Vec->element();
+                auto nk_opt_p1 = Xh_P1_Vec->element();
+
 
                 op_inte_N_to_P1->apply(Delta_proj, delta_p1);
                 op_inte_N_to_P1->apply(k_l2, k_l2_p1);
@@ -559,12 +578,14 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 op_inte_N_to_P1->apply(k_nod, k_nod_p1);
                 op_inte_N_to_P1->apply(k_hess, k_hess_p1);
                 op_inte_N_to_P1->apply(k_int, k_int_p1);
+                op_inte_N_to_P1->apply(k_opt, k_opt_p1);
 
-                op_inte_N_to_P1->apply(kk_l2, kk_l2_p1);
-                op_inte_N_to_P1->apply(kk_smooth, kk_smooth_p1);
-                op_inte_N_to_P1->apply(kk_nod, kk_nod_p1);
-                op_inte_N_to_P1->apply(kk_hess, kk_hess_p1);
-                op_inte_N_to_P1->apply(kk_int, kk_int_p1);
+
+                op_inte_N_to_P1_Vec->apply( nk_l2, nk_l2_p1);
+                op_inte_N_to_P1_Vec->apply( nk_nod, nk_nod_p1);
+                op_inte_N_to_P1_Vec->apply( nk_smooth, nk_smooth_p1);
+                op_inte_N_to_P1_Vec->apply( nk_int, nk_int_p1);
+                op_inte_N_to_P1_Vec->apply( nk_opt, nk_opt_p1);
 
                 exporter->step( 0 )->setMesh( opLagP1->mesh() );
                 exporter->step( 0 )->add( "Delta", delta_p1 );
@@ -573,17 +594,20 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 exporter->step( 0 )->add("k_nod", k_nod_p1);
                 exporter->step( 0 )->add("k_hess", k_hess_p1);
                 exporter->step( 0 )->add("k_int", k_int_p1);
+                exporter->step( 0 )->add("k_opt", k_opt_p1);
 
-
-                exporter->step( 0 )->add("kk_nod", kk_nod_p1);
-                exporter->step( 0 )->add("kk_l2", kk_l2_p1);
-                exporter->step( 0 )->add("kk_smooth", kk_smooth_p1);
-                exporter->step( 0 )->add("kk_int", kk_int_p1);
-                exporter->step( 0 )->add("kk_hess", kk_hess_p1);
-
+                exporter->step( 0 )->add("nk_l2", nk_l2_p1);
+                exporter->step( 0 )->add("nk_nod", nk_nod_p1);
+                exporter->step( 0 )->add("nk_smooth", nk_smooth_p1);
+                exporter->step( 0 )->add("nk_int", nk_int_p1);
+                exporter->step( 0 )->add("nk_opt", nk_opt_p1);
 
                 exporter->step( 0 )->add("marker_delta", marker_delta);
                 exporter->step( 0 )->add("n_l2", n_l2);
+
+                exporter->step(0)->add("modgradphi", l2p->project( modgradphi ));
+
+                exporter->step( 0 )->add("init_shape", init_shape);
 
                 exporter->save();
             }
@@ -598,13 +622,9 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 exporter->step( 0 )->add("k_int", k_int);
                 exporter->step( 0 )->add("marker_delta", marker_delta);
 
-                exporter->step( 0 )->add("kk_l2", kk_l2);
-                exporter->step( 0 )->add("kk_smooth", kk_smooth);
-                exporter->step( 0 )->add("kk_int", kk_int);
-                exporter->step( 0 )->add("kk_hess", kk_hess);
-
                 exporter->step( 0 )->add("n_l2", n_l2);
 
+                exporter->step( 0 )->add("init_shape", init_shape);
                 exporter->save();
             }
 
