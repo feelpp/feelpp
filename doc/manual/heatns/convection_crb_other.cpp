@@ -40,7 +40,7 @@
 
 // ****** CONSTRUCTEURS ****** //
 
-Convection_crb::Convection_crb( )
+ConvectionCrb::ConvectionCrb( )
 :
 M_backend( backend_type::build( BACKEND_PETSC ) ),
 exporter( Exporter<mesh_type>::New( "ensight" ) ),
@@ -49,7 +49,7 @@ M_Dmu( new parameterspace_type )
     this->init();
 }
 
-Convection_crb::Convection_crb( po::variables_map const& vm )
+ConvectionCrb::ConvectionCrb( po::variables_map const& vm )
 :
 M_vm( vm ),
 M_backend( backend_type::build( vm ) ),
@@ -61,7 +61,7 @@ M_Dmu( new parameterspace_type )
 
 // <int Order_s, int Order_p, int Order_t>
 Feel::gmsh_ptrtype
-Convection_crb::createMesh()
+ConvectionCrb::createMesh()
 {
 
     timers["mesh"].first.restart();
@@ -126,7 +126,7 @@ Convection_crb::createMesh()
 
 
 void
-Convection_crb::exportResults( element_type& U )
+ConvectionCrb::exportResults( element_type& U )
 {
     exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
     exporter->step( 0 )->add( "u", U. element<0>() );
@@ -137,7 +137,7 @@ Convection_crb::exportResults( element_type& U )
 }
 
 // <int Order_s, int Order_p, int Order_t>
-void Convection_crb ::exportResults( element_ptrtype& U, int i )
+void ConvectionCrb ::exportResults( element_ptrtype& U, int i )
 {
     exporter->step( i )->setMesh( U->functionSpace()->mesh() );
     exporter->step( i )->add( "u", U-> element<0>() );
@@ -147,7 +147,7 @@ void Convection_crb ::exportResults( element_ptrtype& U, int i )
 }
 
 // <int Order_s, int Order_p, int Order_t>
-void Convection_crb ::exportResults( element_type& U, double t )
+void ConvectionCrb ::exportResults( element_type& U, double t )
 {
     exporter->step( t )->setMesh( U.functionSpace()->mesh() );
     exporter->step( t )->add( "u", U. element<0>() );
@@ -157,7 +157,7 @@ void Convection_crb ::exportResults( element_type& U, double t )
 }
 
 void
-Convection_crb::solve( sparse_matrix_ptrtype& D,
+ConvectionCrb::solve( sparse_matrix_ptrtype& D,
               element_type& u,
               vector_ptrtype& F )
 {
@@ -167,22 +167,21 @@ Convection_crb::solve( sparse_matrix_ptrtype& D,
     u = *U;
 }
 
-typename Convection_crb::element_type
-Convection_crb::solve( parameter_type const& mu )
+typename ConvectionCrb::element_type
+ConvectionCrb::solve( parameter_type const& mu )
 {
     this->solve( mu, pT );
     return *pT;
 }
 
 void
-Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
+ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
 {
     using namespace vf;
     Feel::ParameterSpace<2>::Element M_current_mu( mu );
-
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+    //M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobianWithoutAffineDecomposition, boost::ref( *this ), _1, _2 );
     M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
-
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
 
@@ -216,12 +215,10 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
         //std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
 
         M_current_mu << M_current_Grashofs, M_current_Prandtl;
-
         this->computeBetaQm( M_current_mu );
         this->update( M_current_mu );
-
 //        T->print(std::cout);
-
+        //M_backend->nlSolve(_solution=T);
         M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R );
 #if 0
         if ( exporter->doExport() )
@@ -238,24 +235,24 @@ Convection_crb::solve( parameter_type const& mu, element_ptrtype& T )
 }
 
 void
-Convection_crb::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
+ConvectionCrb::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     M_backend->solve( _matrix=M,  _solution=u, _rhs=f );
 }
 
 double
-Convection_crb::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
+ConvectionCrb::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
 {
     return M->energy( x, y );
 }
 double
-Convection_crb::scalarProduct( vector_type const& x, vector_type const& y )
+ConvectionCrb::scalarProduct( vector_type const& x, vector_type const& y )
 {
     return M->energy( x, y );
 }
 
 void
-Convection_crb::run( const double * X, unsigned long N, double * Y, unsigned long P )
+ConvectionCrb::run( const double * X, unsigned long N, double * Y, unsigned long P )
 {
 
 /*    using namespace vf;
@@ -280,7 +277,7 @@ Convection_crb::run( const double * X, unsigned long N, double * Y, unsigned lon
 
 
 double
-Convection_crb::output( int output_index, parameter_type const& mu )
+ConvectionCrb::output( int output_index, parameter_type const& mu )
 {
     using namespace vf;
     //this->solve( mu, pT );
@@ -340,9 +337,21 @@ Convection_crb::output( int output_index, parameter_type const& mu )
 
     }
 
+    if( output_index == 2 )
+    {
+        //auto ux = u.comp(X);
+        auto ux = u.comp<X>();
+        //output = integrate( elements(mesh) ,  trans( idv( u ) )*idv( u )  ).evaluate()( 0,0 ) ;
+        //double output2 = integrate( elements(mesh) ,  idv( u.comp(X) )  ).evaluate()( 0,0 ) ;
+        //double output4 = integrate( elements(mesh) ,  idv( ux )  ).evaluate()( 0,0 ) ;
+        output = integrate( elements(mesh) ,  idv( u )(0)  ).evaluate()( 0,0 ) ;
+        //double output3 = integrate( elements(mesh) ,  trans( idv( u ) ) * vec( cst(1) , cst(0) ) ).evaluate()( 0,0 ) ;
+        //std::cout<<"output = "<<output<<" et output2 = "<<output2<<" et output3 = "<<output3<<" et output4 = "<<output4<<std::endl;
+    }
+
     return output;
 
 }
 
 // instantiation
-// class Convection_crb<2,1,2>;
+// class ConvectionCrb<2,1,2>;
