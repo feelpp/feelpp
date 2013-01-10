@@ -112,6 +112,8 @@ public:
 
     typedef CRBModel<ModelType> crbmodelbilinear_type;
 
+    typedef typename ModelType::parameter_type parameter_type;
+    typedef std::vector< parameter_type > vector_parameter_type;
     OpusApp()
         :
         super(),
@@ -324,6 +326,15 @@ public:
             if( crb->useWNmu() )
                 Sampling = crb->wnmu();
 
+            /* Example of use of the setElements
+            vector_parameter_type V;
+            parameter_type UserMu( model->parameterSpace() );
+            UserMu(0)=1;  UserMu(1)=1; V.push_back(UserMu );
+            UserMu(0)=10; UserMu(1)=1; V.push_back(UserMu );
+            UserMu(0)=20; UserMu(1)=1; V.push_back(UserMu );
+            Sampling->setElements( V );
+            */
+
             //Statistics
             vectorN_type l2_error_vector( Sampling->size() );
             vectorN_type h1_error_vector( Sampling->size() );
@@ -333,6 +344,7 @@ public:
             vectorN_type relative_estimated_error_vector;
             if( crb->errorType()!=2 )
                 relative_estimated_error_vector.resize( Sampling->size() );
+
 
             BOOST_FOREACH( auto mu, *Sampling )
             {

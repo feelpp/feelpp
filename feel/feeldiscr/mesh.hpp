@@ -204,10 +204,18 @@ public:
 
     typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
-    typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                              mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type, Tag > >,
-                              mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type, Tag > > >::type::type trace_mesh_type;
-    typedef typename boost::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
+    template<int TheTag>
+    struct trace_mesh
+    {
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                                  mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
+                                  mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+        typedef boost::shared_ptr<type> ptrtype;
+        typedef boost::shared_ptr<const type> const_ptrtype;
+    };
+    typedef typename trace_mesh<Tag>::type trace_mesh_type;
+    typedef typename trace_mesh<Tag>::ptrtype trace_mesh_ptrtype;
+
     //@}
 
     /**
@@ -463,16 +471,20 @@ public:
      *
      * \todo make use of \c extraction_policies
      */
-    trace_mesh_ptrtype
+    template<int TheTag=Tag>
+    typename trace_mesh<TheTag>::ptrtype
     trace() const
     {
-        return trace(boundaryfaces(this->shared_from_this()));
+        return trace<TheTag>(boundaryfaces(this->shared_from_this()));
     }
 
     template<typename RangeT>
-    trace_mesh_ptrtype
+    typename trace_mesh<Tag>::ptrtype
     trace( RangeT const& range ) const;
 
+    template<typename RangeT, int TheTag>
+    typename trace_mesh<TheTag>::ptrtype
+    trace( RangeT const& range, mpl::int_<TheTag> ) const;
 
     template<typename Iterator>
     void createSubmesh( self_type& mesh,
@@ -1281,12 +1293,25 @@ const uint16_type Mesh<Shape, T, Tag>::nOrder;
 
 template<typename Shape, typename T, int Tag>
 template<typename RangeT>
-typename Mesh<Shape, T, Tag>::trace_mesh_ptrtype
+typename Mesh<Shape, T, Tag>::template trace_mesh<Tag>::ptrtype
 Mesh<Shape, T, Tag>::trace( RangeT const& range ) const
 {
     Debug( 4015 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                   << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
-    return Feel::createSubmesh( this->shared_from_this(), range );
+    return Feel::createSubmesh<const mesh_type,RangeT,Tag>( this->shared_from_this(), range );
+
+}
+
+template<int TheTag> struct Tag : public mpl::int_<TheTag>  {};
+
+template<typename Shape, typename T, int Tag>
+template<typename RangeT,int TheTag>
+typename Mesh<Shape, T, Tag>::template trace_mesh<TheTag>::ptrtype
+Mesh<Shape, T, Tag>::trace( RangeT const& range, mpl::int_<TheTag> ) const
+{
+    Debug( 4015 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
+    return Feel::createSubmesh<const mesh_type,RangeT,TheTag>( this->shared_from_this(), range );
 
 }
 

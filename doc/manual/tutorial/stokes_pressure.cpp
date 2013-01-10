@@ -50,6 +50,7 @@ makeOptions()
         ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
         ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
         ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+        ( "eps", Feel::po::value<double>()->default_value( 1e-10 ), "penalisation parameter for lagrange multipliers" )
         ;
     return stokesoptions.add( Feel::feel_options() ) ;
 }
@@ -75,23 +76,29 @@ public:
 
     typedef double value_type;
 
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
+#if defined(DIM2)
+    static const uint16_type nDim = DIM2;
+#elif defined(DIM3)
+    static const uint16_type nDim = DIM3;
+#endif
 
     /*mesh*/
-    typedef Mesh<Simplex<2> > mesh_type;
+    typedef Mesh<Simplex<nDim> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef Mesh<Simplex<1,1,2> > mesh_lag_type;
+    typedef Mesh<Simplex<nDim-1,1,nDim>> mesh_lag_type;
     typedef boost::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
 
     /*basis*/
-    //# marker1 #,
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<1, Scalar> basis_p_type;
+#if defined( DIM2 )
     typedef Lagrange<2, Scalar> basis_l_type;
+#elif defined( DIM3 )
+    typedef Lagrange<2, Vectorial> basis_l_type;
+#endif
     // use lagrange multipliers to ensure zero mean pressure
 #if defined( FEELPP_USE_LM )
-    typedef bases<basis_u_type,basis_p_type, basis_l_type,basis_l_type> basis_type;
+    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
 #else
     typedef bases<basis_u_type,basis_p_type> basis_type;
 #endif
@@ -100,7 +107,7 @@ public:
     /*space*/
     //# marker2 #
 #if defined( FEELPP_USE_LM )
-    typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag_type,mesh_lag_type>, basis_type> space_type;
+    typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag_type>, basis_type> space_type;
 #else
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 #endif
@@ -113,8 +120,6 @@ public:
     typedef space_type::element_type element_type;
     //# endmarker3 #
 
-    /* export */
-    typedef Exporter<mesh_type> export_type;
 
     FEELPP_DONT_INLINE
     Stokes();
@@ -142,7 +147,6 @@ private:
 
 private:
 
-    backend_ptrtype M_backend;
     double meshSize;
     double L;
     double p_in,p_out;
@@ -152,20 +156,17 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 }; // Stokes
-
+const uint16_type Stokes::nDim;
 
 Stokes::Stokes()
     :
     super(),
-    M_backend( backend_type::build( this->vm() ) ),
     meshSize( this->vm()["hsize"].as<double>() ),
     L( this->vm()["L"].as<value_type>() ),
     p_in( this->vm()["p_in"].as<value_type>() ),
     p_out( this->vm()["p_out"].as<value_type>() ),
     mu( this->vm()["mu"].as<value_type>() ),
     penalbc( this->vm()["bccoeff"].as<value_type>() )
-
-
 {
 
 }
@@ -173,19 +174,20 @@ Stokes::Stokes()
 void
 Stokes::init()
 {
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/P%2%P%3%/h_%4%/" )
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%5%D/P%2%P%3%/h_%4%/" )
                                    % this->about().appName()
                                    % basis_u_type::nOrder % basis_p_type::nOrder
-                                   % this->vm()["hsize"].as<double>() );
+                                   % this->vm()["hsize"].as<double>()
+                                   % nDim );
 
 
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=geo(_filename=Environment::vm()["geofile"].as<std::string>(),_h=meshSize) );
 
 #if defined (FEELPP_USE_LM)
-    auto mesh_lag1 = mesh->trace( markedfaces(mesh,"inlet") );
-    auto mesh_lag2 = mesh->trace( markedfaces(mesh,"outlet") );
-    auto meshv = fusion::make_vector(mesh,mesh,mesh_lag1,mesh_lag2);
+    auto mesh_lag = merge( mesh->trace( markedfaces(mesh,"inlet") ),
+                           mesh->trace( markedfaces(mesh,"outlet") ) );
+    auto meshv = fusion::make_vector(mesh,mesh,mesh_lag);
     Xh = space_type::New( _mesh=meshv );
 #else
     Xh = space_type::New( mesh );
@@ -205,10 +207,8 @@ Stokes::run()
     auto p = U.element<1>( "p" );
     auto q = V.element<1>( "p" );
 #if defined( FEELPP_USE_LM )
-    auto lambda1 = U.element<2>();
-    auto nu1 = V.element<2>();
-    auto lambda2 = U.element<3>();
-    auto nu2 = V.element<3>();
+    auto lambda = U.element<2>();
+    auto nu = V.element<2>();
 #endif
     //# endmarker4 #
 
@@ -218,106 +218,102 @@ Stokes::run()
     LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
     LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
     LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
-
+#if defined( FEELPP_USE_LM )
+    LOG(INFO) << "[dof]      number of dof(L): " << Xh->functionSpace<2>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(L): " << Xh->functionSpace<2>()->nLocalDof()  << "\n";
+#endif
     LOG(INFO) << "Data Summary:\n";
     LOG(INFO) << "   hsize = " << meshSize << "\n";
     LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
     LOG(INFO) << "      mu = " << mu << "\n";
-    LOG(INFO) << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
-    symbol x("x"),y("y");
-    auto u1 = 0.;
-    auto u2 = 0.;
-    matrix u_exact_g = matrix(2,1);
-    u_exact_g = u1,u2;
-    auto p_exact_g = p_in+x*(p_out-p_in)/L;
-
-    auto u_exact = expr<2,1,2>( u_exact_g, {x,y} );
-    auto p_exact = expr( p_exact_g, {x,y} );
-	auto f_g = 0*(-mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose());
-    LOG(INFO) << "f = " << f_g << "\n";
-
-    //# marker5 #
     auto deft = sym(gradt( u ));
     auto def = sym(grad( v ));
-    //# endmarker5 #
 
-    //# marker6 #
     // total stress tensor (trial)
     auto SigmaNt = -idt( p )*N()+2*mu*deft*N();
 
     // total stress tensor (test)
     auto SigmaN = -id( p )*N()+2*mu*def*N();
-    //# endmarker6 #
-
-    // f is such that f = \Delta u_exact + \nabla p_exact
-    auto f = expr<2,1,2>( f_g, {x,y} );
-
-    auto F = M_backend->newVector( Xh );
-    auto D =  M_backend->newMatrix( Xh, Xh );
 
     std::string inlet("inlet"), outlet("outlet"), wall("wall");
 
     chrono.restart();
     // right hand side
-    auto stokes_rhs = form1( _test=Xh, _vector=F );
-    //stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-    stokes_rhs += integrate( markedfaces( mesh, wall ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
-    stokes_rhs += integrate( markedfaces( mesh,inlet ), inner( -p_in*N(),id( v ) ) );
-    stokes_rhs += integrate( markedfaces( mesh,outlet ), inner( -p_out*N(),id( v ) ) );
+    auto stokes_rhs = form1( _test=Xh );
+    stokes_rhs += integrate( markedfaces( mesh,inlet ),  -trans(p_in*N())*id( v ) );
+    stokes_rhs += integrate( markedfaces( mesh,outlet ), -trans(p_out*N())*id( v ) );
     LOG(INFO) << "chrono lhs: " << chrono.elapsed() << "\n";
-    LOG(INFO) << "[stokes] vector local assembly done\n";
+    LOG(INFO) << "[stokes] vector local assembly done\n";google::FlushLogFiles(google::GLOG_INFO);
 
-    /*
-     * Construction of the left hand side
-     */
-    //# marker7 #
-    auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
+    // left hand side
+    auto stokes = form2( _test=Xh, _trial=Xh );
 
-    stokes += integrate( elements( mesh ), 2*mu*inner( deft,def ) );
-    LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";
+    stokes += integrate( elements( mesh ), 2*mu*trace(trans( deft)*def ) );
+    LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
-    LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
-    auto t = vec(-Ny(),Nx());
-#if defined( FEELPP_USE_LM )
 
-    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda1 ) -trans( idt( u ))*t*id( nu1 ) );
-    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda2 ) -trans( idt( u ))*t*id( nu2 ) );
-    LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";
+    auto t = vec(-Ny(),Nx());
+
+#if defined( FEELPP_USE_LM )
+#if defined( DIM2 )
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
+#elif defined( DIM3 )
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
+    stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
+    stokes += integrate( markedfaces( mesh,inlet ), option("eps").as<double>()*trans(idt(lambda))*id( nu ) );
+    stokes += integrate( markedfaces( mesh,outlet ), option("eps").as<double>()*trans(idt(lambda))*id( nu ) );
+
+#endif // DIM3
+    LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
 #endif
 
-    stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+
+    //stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaNt,id( v ) ) );
+    //stokes +=integrate( markedfaces( mesh,wall ), -inner( SigmaN,idt( u ) ) );
+    //stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
 #if! defined( FEELPP_USE_LM )
     //stokes +=integrate( markedfaces( mesh,{inlet,outlet} ), -inner( mu*deft*N(),id( v ) ) );
     stokes +=integrate( markedfaces( mesh,inlet ), -inner( 2*mu*deft*N(),id( v ) ) );
     stokes +=integrate( markedfaces( mesh,outlet ), -inner( 2*mu*deft*N(),id( v ) ) );
 #endif
-    LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
     //# endmarker7 #
-
+    stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
 
     chrono.restart();
-    M_backend->solve( _matrix=D, _solution=U, _rhs=F );
-
-    LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";
+    stokes.solve( _solution=U, _rhs=stokes_rhs );
+#if defined( DIM2 )
+    LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     LOG(INFO) << "int_inlet T = " << integrate( markedfaces( mesh,inlet ), t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_inlet  u.T = " << integrate( markedfaces( mesh,inlet ), trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet x u.T = " << integrate( markedfaces( mesh,outlet ), Px()*trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_inlet x u.T = " << integrate( markedfaces( mesh,inlet ), Px()*trans(idv(u))*t ).evaluate() << "\n";
     LOG(INFO) << "int_outlet x^2 u.T = " << integrate( markedfaces( mesh,outlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";
-    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";
-    LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";
+    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*trans(idv(u))*t ).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+#elif defined( DIM3 )
+    LOG(INFO) << "int_outlet u.T = " << integrate( markedfaces( mesh,outlet ), cross(idv(u),N()) ).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+    LOG(INFO) << "int_inlet  u.T = " << integrate( markedfaces( mesh,inlet ), cross(idv(u),N()) ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet x u.T = " << integrate( markedfaces( mesh,outlet ), Px()*cross(idv(u),N()) ).evaluate() << "\n";
+    LOG(INFO) << "int_inlet x u.T = " << integrate( markedfaces( mesh,inlet ), Px()*cross(idv(u),N()) ).evaluate() << "\n";
+    LOG(INFO) << "int_outlet x^2 u.T = " << integrate( markedfaces( mesh,outlet ), Px()*Px()*cross(idv(u),N() )).evaluate() << "\n";
+    LOG(INFO) << "int_inlet x^2 u.T = " << integrate( markedfaces( mesh,inlet ), Px()*Px()*cross(idv(u),N())).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+#endif
+    LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
+    auto u_exact = zero<nDim,1>();
+    auto p_exact = cst(0.);
     this->exportResults( u_exact, p_exact, U, V );
-    LOG(INFO) << "chrono export: " << chrono.elapsed() << "\n";
+    LOG(INFO) << "chrono export: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
 } // Stokes::run
 
@@ -336,8 +332,6 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 #if defined( FEELPP_USE_LM )
     auto lambda = U.element<2>();
     auto nu = V.element<2>();
-    LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
-
 #endif
 
     double u_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( u )-u_exact ) );
@@ -359,24 +353,16 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
-    boost::shared_ptr<export_type> exporter( export_type::New() );
-    if ( exporter->doExport() )
-    {
-        exporter->step( 0 )->setMesh( mesh );
-        exporter->step( 0 )->addRegions();
-        auto v = U.functionSpace()->functionSpace<0> ()->element();
-        v = U.element<0>();
-
 #if defined( FEELPP_USE_LM )
-        exporter->step( 0 )->add( {"u","p","l"}, U );
-        exporter->step( 0 )->add( {"u_exact","p_exact","l_exact"}, V );
-#else
-        exporter->step( 0 )->add( std::vector<std::string>({"u","p"}), U );
-        exporter->step( 0 )->add( std::vector<std::string>({"u_exact","p_exact"}), V );
+    auto exporter1d1 = exporter( _mesh=lambda.mesh(), _name=this->about().appName()+"_lambda" );
+    exporter1d1->add( "lambda", lambda );
+    exporter1d1->save();
 #endif
 
-        exporter->save();
-    }
+    auto myexporter = exporter( _mesh=mesh, _name=this->about().appName() );
+    myexporter->add( "u", u );
+    myexporter->add( "p", p );
+    myexporter->save();
 
 } // Stokes::export
 } // Feel
@@ -392,18 +378,6 @@ main( int argc, char** argv )
                      _about=about(_name="stokes_pressure",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
-
-    // SOME BAD ELEMENTS
-    // P1/P0 : locking
-    //typedef Feel::Stokes<Simplex<2>, Lagrange<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
-    // P1/P1 : spurious modes
-    //typedef Feel::Stokes<Simplex<2>, Lagrange<1, Vectorial>,Lagrange<1, Scalar> > stokes_type;
-
-    // SOME GOOD ELEMENTS
-    // P2/P1
-    // CR0/P0
-    //typedef Feel::Stokes<Simplex<2>, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous> > stokes_type;
-
 
     /* define and run application */
     Stokes stokes;

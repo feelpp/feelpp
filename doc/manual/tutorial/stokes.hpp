@@ -241,13 +241,12 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::init()
     }
 
 
-    if ( this->vm().count( "nochdir" ) == false )
-        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/Part%6%/P%3%P%4%G%5%/h_%6%/" )
-                                % this->about().appName()
-                                % convex_type::name()
-                                % basis_u_type::nOrder % basis_p_type::nOrder
-                                % GeoOrder
-                                % this->vm()["hsize"].template as<double>() );
+    this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/P%3%P%4%G%5%/h_%6%/" )
+                            % this->about().appName()
+                            % convex_type::name()
+                            % basis_u_type::nOrder % basis_p_type::nOrder
+                            % GeoOrder
+                            % this->vm()["hsize"].template as<double>() );
 
 #if (STOKESPRESSMESHTYPE == 1)
     //********************** Rectangle ***************************************

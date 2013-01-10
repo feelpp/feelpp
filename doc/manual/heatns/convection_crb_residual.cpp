@@ -33,9 +33,9 @@
 
 //<int Order_s, int Order_p, int Order_t>
 //void
-//Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, parameter_type const& mu )
+//ConvectionCrb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R, parameter_type const& mu )
 void
-Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
+ConvectionCrb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
 {
     LOG(INFO) << "[updateResidual] start\n";
 
@@ -189,9 +189,6 @@ Convection_crb::updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
     modifVec( boundaryfaces( mesh ),u,R,one()*0 );
 
 //    R->print(std::cout);
-        
+
 }
 
-
-// instantiation
-// class Convection<2,1,2>;

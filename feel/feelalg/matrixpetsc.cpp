@@ -100,10 +100,17 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     for (int i=0; i<nrow; i++) rowMap[i] = rowIndex[i];
     for (int i=0; i<ncol; i++) colMap[i] = colIndex[i];
 
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
     CHKERRABORT( this->comm(),ierr );
     ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
     CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,&iscol);
+    CHKERRABORT( this->comm(),ierr );
+#endif
     PetscFree(rowMap);
     PetscFree(colMap);
 

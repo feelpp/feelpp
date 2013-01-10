@@ -245,6 +245,28 @@ public:
 #endif
             {}
 
+
+        /**
+         * \brief create a sampling with elements given by the user
+         * \param V : vector of element_type
+         */
+        void setElements( std::vector< element_type > V )
+        {
+            CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
+
+            // first empty the set
+            this->clear();
+
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                BOOST_FOREACH( auto mu, V )
+                    super::push_back( mu );
+            }
+
+            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+
+        }
+
         /**
          * \brief create a sampling with random elements
          * \param N the number of samples

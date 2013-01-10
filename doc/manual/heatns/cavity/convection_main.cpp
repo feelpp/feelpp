@@ -165,8 +165,8 @@ main( int argc, char** argv )
         myconvection.run();
 #else
         std::cout << "CRB_SOLVER = " << CRB_SOLVER << std::endl;
-        //Feel::OpusApp_heatns<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
-        //Feel::OpusApp<Convection_crb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
+        //Feel::OpusApp_heatns<ConvectionCrb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
+        //Feel::OpusApp<ConvectionCrb> myconvectioncrb( argc, argv, makeAbout(), makeOptions()  );
 
         Feel::Environment env( _argc=argc, _argv=argv,
                                _desc=opusapp_options("Convection")
@@ -178,8 +178,8 @@ main( int argc, char** argv )
     if ( Environment::worldComm().rank() == 0 )
         std::cout << " number of processors : "  << Environment::numberOfProcessors() << "\n";
 
-    //Feel::OpusApp<Convection_crb , CRB , CRBModel > myconvectioncrb ;
-    Feel::OpusApp<Convection_crb , CRBTrilinear , CRBModelTrilinear > myconvectioncrb ;
+    //Feel::OpusApp<ConvectionCrb , CRB , CRBModel > myconvectioncrb ;
+    Feel::OpusApp<ConvectionCrb , CRBTrilinear , CRBModelTrilinear > myconvectioncrb ;
         myconvectioncrb.run();
 #endif
 
