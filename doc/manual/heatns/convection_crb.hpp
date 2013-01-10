@@ -23,11 +23,11 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef __Convection_crb_H
-#define __Convection_crb_H 1
+#ifndef __ConvectionCrb_H
+#define __ConvectionCrb_H 1
 
 /**
-   \file convection_crb.hpp
+   \file convectionCrb.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \author Elisa Schenone
  \date 2012-08-13
@@ -52,6 +52,7 @@
 #include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelcrb/eim.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -78,7 +79,7 @@ using namespace Feel::vf;
 #endif
 
 /**
- * \class Convection_crb
+ * \class ConvectionCrb
  * The class derives from the Application class
  * the template arguments are :
  * \tparam Order_s velocity polynomial order
@@ -86,7 +87,7 @@ using namespace Feel::vf;
  * \tparam Order_p pressure polynomial order
  */
 //template< int Order_s, int Order_p, int Order_t >
-class Convection_crb 
+class ConvectionCrb
 {
 public:
 
@@ -98,7 +99,7 @@ public:
     static const int Order_s = CONVECTION_ORDER_U;
     static const int Order_p = CONVECTION_ORDER_P;
     static const int Order_t = CONVECTION_ORDER_T;
-    typedef Convection_crb self_type;
+    typedef ConvectionCrb self_type;
 
     // Definitions pour mesh
     typedef Simplex<CONVECTION_DIM> entity_type;
@@ -114,7 +115,7 @@ public:
 
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef backend_type::vector_ptrtype vector_ptrtype;
-    
+
     typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix_type;
     typedef eigen_matrix_type ematrix_type;
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
@@ -124,7 +125,12 @@ public:
     typedef Lagrange<Order_s, Vectorial,Continuous,PointSetFekete> basis_u_type; // velocity space
     typedef Lagrange<Order_p, Scalar,Continuous,PointSetFekete> basis_p_type; // pressure space
     typedef Lagrange<Order_t, Scalar,Continuous,PointSetFekete> basis_t_type; // temperature space
-    
+
+    typedef FunctionSpace<mesh_type, basis_u_type> U_space_type;
+    typedef boost::shared_ptr<U_space_type> U_space_ptrtype;
+    typedef FunctionSpace<mesh_type, basis_t_type> T_space_type;
+    typedef boost::shared_ptr<T_space_type> T_space_ptrtype;
+
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
@@ -146,9 +152,15 @@ public:
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 
+    /* EIM */
+    typedef EIMFunctionBase<U_space_type, space_type , parameterspace_type> fun_type;
+    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::vector<fun_ptrtype> funs_type;
+
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename element_type:: sub_element<0>::type element_0_type;
+    //typedef typename space_type::sub_functionspace<0>::type::element_type::element_type E0;
     typedef typename element_type:: sub_element<1>::type element_1_type;
     typedef typename element_type:: sub_element<2>::type element_2_type;
 #if defined( FEELPP_USE_LM )
@@ -159,7 +171,7 @@ public:
     typedef space_ptrtype functionspace_ptrtype;
 
     typedef boost::shared_ptr<element_type> element_ptrtype;
-    
+
     typedef OperatorLinear<space_type,space_type> oplin_type;
     typedef boost::shared_ptr<oplin_type> oplin_ptrtype;
     typedef FsFunctionalLinear<space_type> funlin_type;
@@ -172,20 +184,28 @@ public:
         std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<std::vector<vector_ptrtype> > > ,
         std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
-    
+
     typedef Eigen::MatrixXd matrixN_type;
 
     // Constructeur
-    Convection_crb( );
-    Convection_crb( po::variables_map const& vm );
+    ConvectionCrb( );
+    ConvectionCrb( po::variables_map const& vm );
 
     // generate the mesh
     Feel::gmsh_ptrtype createMesh();
-    
+
     // Functions usefull for crb resolution :
-    
+
     void init();
-    
+
+    std::string modelName()
+    {
+        std::ostringstream ostr;
+        ostr << "naturalconvection" ;
+        return ostr.str();
+    }
+
+
     //! return the parameter space
     parameterspace_ptrtype parameterSpace() const
     {
@@ -197,12 +217,12 @@ public:
         return boost::make_tuple( M_Aqm, M_Fqm, M_InitialGuessQm );
     }
 
-    
+
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
     int Qa() const;
     int QaTri() const;
-    
+
     /**
      * there is at least one output which is the right hand side of the
      * primal problem
@@ -210,7 +230,7 @@ public:
      * \return number of outputs associated to the model
      */
     int Nl() const;
-    
+
     /**
      * \param l the index of output
      * \return number of terms  in affine decomposition of the \p q th output term
@@ -235,7 +255,7 @@ public:
     {
         return computeBetaQm( mu , time );
     }
-    
+
     /**
      * \brief return the coefficient vector
      */
@@ -243,7 +263,7 @@ public:
     {
         return M_betaAqm;
     };
-    
+
     /**
      * \brief return the coefficient vector
      */
@@ -251,7 +271,7 @@ public:
     {
         return M_betaFqm;
     };
-    
+
     /**
      * \brief return the coefficient vector \p q component
      *
@@ -260,7 +280,7 @@ public:
     {
         return M_betaAqm[q][m];
     };
-    
+
     /**
      * \return the \p q -th term of the \p l -th output
      */
@@ -275,23 +295,23 @@ public:
     }
 
     void update( parameter_type const& mu );
-    
-    
-    
+
+
+
     void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
-    
+
     /**
      * \brief solve the model for parameter \p mu
      * \param mu the model parameter
      * \param T the temperature field
      */
     void solve( parameter_type const& mu, element_ptrtype& T );
-    
+
     /**
      * solve for a given parameter \p mu
      */
     element_type solve( parameter_type const& mu );
-    
+
     /**
      * solve \f$ M u = f \f$
      */
@@ -303,18 +323,18 @@ public:
     void exportResults( element_type& u );
     void exportResults( element_ptrtype& U, int t );
     void exportResults( element_type& U, double t );
-        
+
     /**
      * returns the scalar product of the boost::shared_ptr vector x and
      * boost::shared_ptr vector y
      */
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y );
-    
+
     /**
      * returns the scalar product of the vector x and vector y
      */
     double scalarProduct( vector_type const& x, vector_type const& y );
-    
+
     /**
      * specific interface for OpenTURNS
      *
@@ -324,7 +344,7 @@ public:
      * \param P size of input vector Y
      */
     void run( const double * X, unsigned long N, double * Y, unsigned long P );
-    
+
     /**
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
@@ -341,23 +361,23 @@ public:
         return M_backend->newVector( Xh );
     }
 
-    
+
     space_ptrtype functionSpace()
     {
         return Xh;
     };
-    
+
     void setMeshSize( double s )
     {
         meshSize = s;
     };
 
-    
+
     po::options_description const& optionsDescription() const
     {
         return _M_desc;
     }
-    
+
     /**
      * get the variable map
      *
@@ -368,15 +388,15 @@ public:
     {
         return M_vm;
     }
-    
 
-    
+
+
     sparse_matrix_ptrtype innerProduct()
     {
         return M;
     }
 
-    
+    void updateJacobianWithoutAffineDecomposition( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
     sparse_matrix_ptrtype computeTrilinearForm( const element_type& X );
@@ -410,11 +430,11 @@ private:
     std::vector <double> Grashofs;
     double M_current_Grashofs;
     double M_current_Prandtl;
-    
+
     // Variables usefull for crb resolution :
-    
+
     double meshSize;
-    
+
     element_ptrtype pT;
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
@@ -422,13 +442,17 @@ private:
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
     std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
-    
+
     parameterspace_ptrtype M_Dmu;
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
-    
-    
+
+    element_type M_unknown;
+    parameter_type M_mu;
+
+    funs_type M_funs;
+
 
 };
-#endif /* __Convection_crb_H */
+#endif /* __ConvectionCrb_H */
