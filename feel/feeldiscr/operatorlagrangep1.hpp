@@ -279,10 +279,10 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     //_M_p2m.addBoundaryPoints( _M_pset.points() );
     _M_p2m.visit( &_M_pset );
 
-#if !defined( NDEBUG )
-    ExporterQuick<image_mesh_type> exp( "vtk", "ensight" );
-    exp.save( _M_p2m.mesh() );
-#endif
+// #if !defined( NDEBUG )
+//     ExporterQuick<image_mesh_type> exp( "vtk", "ensight" );
+//     exp.save( _M_p2m.mesh() );
+// #endif
 
     // do not renumber the mesh entities
     _M_p2m.mesh()->components().clear ( MESH_RENUMBER );
