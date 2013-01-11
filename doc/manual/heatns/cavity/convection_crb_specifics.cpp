@@ -272,7 +272,8 @@ void ConvectionCrb::init()
     //int mMax = eim_uu->mMax();
     //for(int m=0; m<mMax; m++)
     {
-        form1( _test=Xh, _vector=M_Fqm[2][0][0] ) = integrate( _range=elements(mesh), _expr=id( v )( 0 ) );
+        form1( _test=Xh, _vector=M_Fqm[2][0][0] ) = integrate( _range=elements(mesh), _expr=trans( id( v ) )*id( v) );//random ( false )
+        //form1( _test=Xh, _vector=M_Fqm[2][0][0] ) = integrate( _range=elements(mesh), _expr=id( v )( 0 ) );//compilation failed
         //form1( _test=Xh, _vector=M_Fqm[2][0][m] ) = integrate( _range=elements(mesh), _expr=idv(eim_uu->q(m)) );
         //M_Fqm[2][0][m]->close();
     }
