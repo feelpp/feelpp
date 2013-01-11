@@ -39,6 +39,7 @@
 #endif /* BOOST_VERSION >= 103400 */
 
 #include <algorithm>
+#include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/is_class.hpp>
 #include <boost/static_assert.hpp>
@@ -243,6 +244,133 @@ public:
     expression_type M_expr;
     int M_c1, M_c2;
 };
+class CstBase {};
+class IntegratorBase {};
+class LambdaExprBase {};
+class LambdaExpr1 : public LambdaExprBase
+{
+public:
+
+    static const size_type context = 0;
+    static const bool is_terminal = false;
+
+    static const uint16_type imorder = 0;
+    static const bool imIsPoly = false;
+
+    template<typename Func>
+    struct HasTestFunction
+    {
+        static const bool result = false;
+    };
+    template<typename Func>
+    struct HasTrialFunction
+    {
+        static const bool result = false;
+    };
+
+    typedef double value_type;
+
+    template<typename TheExpr>
+    struct Lambda
+    {
+        typedef typename TheExpr::expression_type type;
+    };
+
+    template<typename ExprT>
+    typename Lambda<ExprT>::type
+    operator()( ExprT const& e ) { return e.expression(); }
+
+    template<typename ExprT>
+    typename Lambda<ExprT>::type
+    operator()( ExprT const& e ) const { return e.expression(); }
+
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    struct tensor
+    {
+        typedef LambdaExpr1 expression_type;
+        typedef typename LambdaExpr1::value_type value_type;
+
+        typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
+
+
+        template<typename Indq, typename Indi, typename Indj>
+        struct expr
+        {
+            typedef value_type type;
+        };
+
+        struct is_zero
+        {
+            static const bool value = false;
+        };
+
+        tensor( expression_type const& expr,
+                Geo_t const& /*geom*/, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
+        {
+        }
+        tensor( expression_type const& expr,
+                Geo_t const& /*geom*/, Basis_i_t const& /*fev*/ )
+        {
+        }
+        tensor( expression_type const& expr, Geo_t const& /*geom*/ )
+        {
+        }
+        template<typename IM>
+        void init( IM const& /*im*/ )
+        {
+        }
+        void update( Geo_t const&, Basis_i_t const& , Basis_j_t const&  )
+        {
+        }
+        void update( Geo_t const& , Basis_i_t const&  )
+        {
+        }
+        void update( Geo_t const& )
+        {
+        }
+        void update( Geo_t const&, uint16_type )
+        {
+        }
+
+        value_type
+        evalij( uint16_type /*i*/, uint16_type /*j*/ ) const
+        {
+            return 0;
+        }
+
+
+        value_type
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/  ) const
+        {
+            return 0;
+        }
+        template<int PatternContext>
+        value_type
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/,
+                 mpl::int_<PatternContext> ) const
+        {
+            return 0;
+        }
+
+        value_type
+        evaliq( uint16_type /*i*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/  ) const
+        {
+            return 0;
+        }
+        value_type
+        evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/ ) const
+        {
+            return 0;
+        }
+    };
+
+};
+
+
+
 /*!
   \class Expr
   \brief Variational Formulation Expression
@@ -316,6 +444,31 @@ public:
         auto ex = ComponentsExpr<Expr<ExprT> >( Expr<ExprT>( M_expr ), c1, c2 );
         return Expr<ComponentsExpr<Expr<ExprT> > >( ex );
     }
+
+    template<typename TheExpr>
+    struct Lambda
+    {
+        typedef typename ExprT::template Lambda<TheExpr>::type expr_type;
+        typedef Expr<expr_type> type;
+        //typedef expr_type type;
+    };
+
+
+
+    template<typename TheExpr>
+    typename Lambda<TheExpr>::type
+    operator()( TheExpr const& e  )
+        {
+            //typename Lambda<TheExpr>::expr_type e1( M_expr(e) );
+            //typename Lambda<TheExpr>::type r( Expr(e1 ) );
+            //return r;
+            return expr( M_expr( e ) );
+        }
+
+    template<typename TheExpr>
+    typename Lambda<TheExpr>::type
+    operator()( TheExpr const& e  ) const { return expr(M_expr(e)); }
+
 
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -538,6 +691,8 @@ exprPtr( ExprT const& exprt )
 {
     return boost::shared_ptr<Expr<ExprT> >( new Expr<ExprT>( exprt ) );
 }
+
+extern Expr<LambdaExpr1> _e1;
 
 /**
  * \class ExpressionOrder
@@ -892,6 +1047,14 @@ public:
     /** @name Operator overloads
      */
     //@{
+    template<typename TheExpr>
+    struct Lambda
+    {
+        typedef Trans<typename expression_type::template Lambda<TheExpr>::type> type;
+    };
+    template<typename TheExpr>
+    typename Lambda<TheExpr>::type
+    operator()( TheExpr const& e  ) { return trans(M_expr(e)); }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -1034,8 +1197,9 @@ trans( ExprT v )
     return Expr< trans_t >(  trans_t( v ) );
 }
 
+
 template < class T>
-class Cst
+class Cst : public CstBase
 {
 public:
 
@@ -1090,6 +1254,15 @@ public:
     {
         return M_constant;
     }
+
+    template<typename TheExpr>
+    struct Lambda
+    {
+        typedef expression_type type;
+    };
+    template<typename TheExpr>
+    typename Lambda<TheExpr>::type
+    operator()( TheExpr const& e  ) { return M_constant; }
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -1254,6 +1427,16 @@ public:
 
     One() {}
     One( One const& /*__vff*/ ) {}
+
+    template<typename TheExpr>
+    struct Lambda
+    {
+        typedef this_type type;
+    };
+    template<typename TheExpr>
+    typename Lambda<TheExpr>::type
+    operator()( TheExpr const& e  ) { return this_type(); }
+
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor

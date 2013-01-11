@@ -23,6 +23,7 @@
 #
 SET( SRC
   exprbase.cpp
+  expr.cpp
   ginac.cpp
   )
 
