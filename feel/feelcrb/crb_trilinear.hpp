@@ -652,7 +652,7 @@ CRBTrilinear<TruthModelType>::offline()
             int sampling_size = M_WNmu->readFromFile(file_name);
             M_iter_max = sampling_size;
         }
-        mu = M_WNmu->at( 0 ); // first element
+        mu = M_WNmu->at( M_N ); // first element
         std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
 
         if( proc_number == this->worldComm().masterRank() )
