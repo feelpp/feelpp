@@ -52,6 +52,7 @@
 #include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelcrb/eim.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -125,6 +126,11 @@ public:
     typedef Lagrange<Order_p, Scalar,Continuous,PointSetFekete> basis_p_type; // pressure space
     typedef Lagrange<Order_t, Scalar,Continuous,PointSetFekete> basis_t_type; // temperature space
 
+    typedef FunctionSpace<mesh_type, basis_u_type> U_space_type;
+    typedef boost::shared_ptr<U_space_type> U_space_ptrtype;
+    typedef FunctionSpace<mesh_type, basis_t_type> T_space_type;
+    typedef boost::shared_ptr<T_space_type> T_space_ptrtype;
+
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
@@ -146,9 +152,15 @@ public:
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 
+    /* EIM */
+    typedef EIMFunctionBase<U_space_type, space_type , parameterspace_type> fun_type;
+    typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    typedef std::vector<fun_ptrtype> funs_type;
+
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef typename element_type:: sub_element<0>::type element_0_type;
+    //typedef typename space_type::sub_functionspace<0>::type::element_type::element_type E0;
     typedef typename element_type:: sub_element<1>::type element_1_type;
     typedef typename element_type:: sub_element<2>::type element_2_type;
 #if defined( FEELPP_USE_LM )
@@ -185,6 +197,14 @@ public:
     // Functions usefull for crb resolution :
 
     void init();
+
+    std::string modelName()
+    {
+        std::ostringstream ostr;
+        ostr << "naturalconvection" ;
+        return ostr.str();
+    }
+
 
     //! return the parameter space
     parameterspace_ptrtype parameterSpace() const
@@ -376,7 +396,7 @@ public:
         return M;
     }
 
-
+    void updateJacobianWithoutAffineDecomposition( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateResidual( const vector_ptrtype& X, vector_ptrtype& R );
     sparse_matrix_ptrtype computeTrilinearForm( const element_type& X );
@@ -428,6 +448,10 @@ private:
     beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
 
+    element_type M_unknown;
+    parameter_type M_mu;
+
+    funs_type M_funs;
 
 
 };

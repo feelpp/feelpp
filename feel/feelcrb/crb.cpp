@@ -64,6 +64,7 @@ crbOptions( std::string const& prefix )
     ( "crb.check.residual-transient-problems" , Feel::po::value<bool>()->default_value( 0 ), "check residuals for transient problems" )
     ( "crb.save-information-for-variance",Feel::po::value<bool>()->default_value( 0 ), "if true will build variance matrix but it takes some times" )
 
+    ( "crb.use-newton",Feel::po::value<bool>()->default_value( false ), "use newton algorithm (need to provide a jacobian and a residual)" )
     ( "crb.max-fixedpoint-iterations",Feel::po::value<int>()->default_value( 10 ), "nb iteration max for the fixed point (online part)" )
     ( "crb.solution-fixedpoint-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on solution for fixed point (online part)" )
     ( "crb.output-fixedpoint-tol",Feel::po::value<double>()->default_value( 1e-10 ), "tolerance on output for fixed point (online part)" )
@@ -74,6 +75,9 @@ crbOptions( std::string const& prefix )
     ( "crb.enable-convection-terms",Feel::po::value<bool>()->default_value( true ), "only for crb_trilinear")
 
 
+    ( "crb.use-predefined-WNmu",Feel::po::value<bool>()->default_value( false ), "read parameters to take for the offline step from a file named SamplingWNmu if true")
+    ( "crb.use-logEquidistributed-WNmu",Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
+    ( "crb.use-equidistributed-WNmu",Feel::po::value<int>()->default_value( 0 ), "parameters are equidistributed for the offline step (the value indicates the number of parameters)")
 
     ( "crb.compute-stat",Feel::po::value<bool>()->default_value( true ), "compute statistics on the run if true")
     ( "crb.cvg-study",Feel::po::value<bool>()->default_value( false ), "convergence study if true")

@@ -1,5 +1,7 @@
-This is libmatheval.info, produced by makeinfo version 4.13 from
-libmatheval.texi.
+This is
+/home/u2/tarabay/Devel.git/feelpp/contrib/libmatheval/doc/libmatheval.info,
+produced by makeinfo version 4.13 from
+/home/u2/tarabay/Devel.git/feelpp/contrib/libmatheval/doc/libmatheval.texi.
 
 INFO-DIR-SECTION GNU libraries
 START-INFO-DIR-ENTRY
@@ -26,8 +28,8 @@ GNU `libmatheval' manual
 
 GNU `libmatheval' is small library of procedures for evaluating
 mathematical functions.  This manual documents how to use the library;
-this is manual edition 1.1.8, last updated 3 July 2011, corresponding
-to library version 1.1.8.
+this is manual edition 1.1.8, last updated 7 December 2012,
+corresponding to library version 1.1.8.
 
 * Menu:
 
@@ -2135,51 +2137,51 @@ Index
 
 
 Tag Table:
-Node: Top760
-Node: License1633
-Node: Introduction2363
-Node: Reference9918
-Node: Main entry points10303
-Node: evaluator_create10835
-Node: evaluator_destroy13845
-Node: evaluator_evaluate14403
-Node: evaluator_get_string15562
-Node: evaluator_get_variables16403
-Node: evaluator_derivative17375
-Node: Convenience procedures18297
-Node: evaluator_evaluate_x18845
-Node: evaluator_evaluate_x_y19696
-Node: evaluator_evaluate_x_y_z20594
-Node: evaluator_derivative_x21540
-Node: evaluator_derivative_y22298
-Node: evaluator_derivative_z23054
-Node: Fortran interface23779
-Node: Fortran main entry points25136
-Node: Fortran evaluator_create25989
-Node: Fortran evaluator_destroy29214
-Node: Fortran evaluator_evaluate29850
-Node: Fortran evaluator_get_string_length31308
-Node: Fortran evaluator_get_string_chars32059
-Node: Fortran evaluator_get_variables_length33040
-Node: Fortran evaluator_get_variables_chars33828
-Node: Fortran evaluator_derivative34763
-Node: Fortran convenience procedures35840
-Node: Fortran evaluator_evaluate_x36507
-Node: Fortran evaluator_evaluate_x_y37381
-Node: Fortran evaluator_evaluate_x_y_z38297
-Node: Fortran evaluator_derivative_x39243
-Node: Fortran evaluator_derivative_y40107
-Node: Fortran evaluator_derivative_z40969
-Node: Fortran sample program41792
-Node: Fortran build process44316
-Node: Hacking45068
-Node: Design notes45359
-Node: Project structure49490
-Node: Intended improvements51667
-Node: Bugs54417
-Node: Rationale and history55125
-Ref: Rationale and history-Footnote-157253
-Node: Copying57417
-Node: Index77294
+Node: Top876
+Node: License1753
+Node: Introduction2483
+Node: Reference10038
+Node: Main entry points10423
+Node: evaluator_create10955
+Node: evaluator_destroy13965
+Node: evaluator_evaluate14523
+Node: evaluator_get_string15682
+Node: evaluator_get_variables16523
+Node: evaluator_derivative17495
+Node: Convenience procedures18417
+Node: evaluator_evaluate_x18965
+Node: evaluator_evaluate_x_y19816
+Node: evaluator_evaluate_x_y_z20714
+Node: evaluator_derivative_x21660
+Node: evaluator_derivative_y22418
+Node: evaluator_derivative_z23174
+Node: Fortran interface23899
+Node: Fortran main entry points25256
+Node: Fortran evaluator_create26109
+Node: Fortran evaluator_destroy29334
+Node: Fortran evaluator_evaluate29970
+Node: Fortran evaluator_get_string_length31428
+Node: Fortran evaluator_get_string_chars32179
+Node: Fortran evaluator_get_variables_length33160
+Node: Fortran evaluator_get_variables_chars33948
+Node: Fortran evaluator_derivative34883
+Node: Fortran convenience procedures35960
+Node: Fortran evaluator_evaluate_x36627
+Node: Fortran evaluator_evaluate_x_y37501
+Node: Fortran evaluator_evaluate_x_y_z38417
+Node: Fortran evaluator_derivative_x39363
+Node: Fortran evaluator_derivative_y40227
+Node: Fortran evaluator_derivative_z41089
+Node: Fortran sample program41912
+Node: Fortran build process44436
+Node: Hacking45188
+Node: Design notes45479
+Node: Project structure49610
+Node: Intended improvements51787
+Node: Bugs54537
+Node: Rationale and history55245
+Ref: Rationale and history-Footnote-157373
+Node: Copying57537
+Node: Index77414
 
 End Tag Table
