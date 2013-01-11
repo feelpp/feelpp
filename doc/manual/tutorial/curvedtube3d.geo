@@ -1,8 +1,6 @@
 Mesh.MshFileVersion = 2.2;
 Mesh.CharacteristicLengthExtendFromBoundary=1;
 Mesh.CharacteristicLengthFromPoints=1;
-Mesh.ElementOrder=1;
-Mesh.SecondOrderIncomplete = 0;
 
 h=0.1;
 Mesh.CharacteristicLengthMax=h;
@@ -25,11 +23,12 @@ Plane Surface(6) = {5};
 Extrude {{0, 0, 1}, {0, 0, 0}, Pi/2} {
   Surface{6};
 }
+
+Surface Loop(29) = {27, 6, 15, 19, 23, 28};
+Volume(1) = {29};
+
 Physical Surface("inlet") = {28};
 Physical Surface("outlet") = {6};
 Physical Surface("wall") = {15, 19, 23, 27};
 
-Surface Loop(29) = {27, 6, 15, 19, 23, 28};
-Volume(30) = {29};
-
-Physical Volume("omega") = {30};
+Physical Volume("omega") = {1};
