@@ -51,7 +51,8 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
   feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
 
-  feelpp_add_application( doc_stokes_pressure SRCS stokes_pressure.cpp LABEL doc GEO curvedtube.geo curvedtube3d.geo straighttube.geo )
+  feelpp_add_application( doc_stokes_pressure_2D SRCS stokes_pressure.cpp LABEL doc GEO curvedtube.geo curvedtube3d.geo straighttube.geo DEFS DIM2=2 )
+  feelpp_add_application( doc_stokes_pressure_3D SRCS stokes_pressure.cpp LABEL doc GEO curvedtube.geo curvedtube3d.geo straighttube.geo DEFS DIM3=3 )
   feelpp_add_application( doc_stokes_pressure_lm_2D SRCS stokes_pressure.cpp LABEL doc DEFS FEELPP_USE_LM DIM2=2 )
   feelpp_add_application( doc_stokes_pressure_lm_3D SRCS stokes_pressure.cpp LABEL doc DEFS FEELPP_USE_LM DIM3=3 )
 
