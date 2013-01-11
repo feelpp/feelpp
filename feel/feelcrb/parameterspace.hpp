@@ -350,8 +350,9 @@ public:
          * in the file we expect :
          * mu_0= [ value0 , value1 , ... ]
          * mu_1= [ value0 , value1 , ... ]
+         * return the size of the sampling
          */
-        void readFromFile( std::string file_name= "list_of_parameters_taken" )
+        double readFromFile( std::string file_name= "list_of_parameters_taken" )
             {
                 std::ifstream file ( file_name );
                 double mui;
@@ -375,6 +376,7 @@ public:
                     file>>str;
                 }
                 file.close();
+                return number;
             }
 
         /**

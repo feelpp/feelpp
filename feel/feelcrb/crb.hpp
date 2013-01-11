@@ -1118,7 +1118,7 @@ CRB<TruthModelType>::offline()
     double delta_pr;
     double delta_du;
     size_type index;
-    int no_residual_index;
+
     //if M_N == 0 then there is not an already existing database
     if ( rebuild_database || M_N == 0)
     {
@@ -1414,7 +1414,6 @@ CRB<TruthModelType>::offline()
         M_maxerror = 1e10;
         delta_pr = 0;
         delta_du = 0;
-        no_residual_index = 0;
         //boost::tie( M_maxerror, mu, index ) = maxErrorBounds( N );
 
         LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
@@ -1463,7 +1462,6 @@ CRB<TruthModelType>::offline()
     else
     {
         mu = M_current_mu;
-        no_residual_index=M_no_residual_index;
         if( proc_number == 0 )
         {
             std::cout<<"we are going to enrich the reduced basis"<<std::endl;
@@ -1521,10 +1519,39 @@ CRB<TruthModelType>::offline()
 
     bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
 
-    sampling_ptrtype Sampling;
-    int sampling_size=no_residual_index+1;
+    bool use_predefined_WNmu = this->vm()["crb.use-predefined-WNmu"].template as<bool>() ;
+
+    int N_log_equi = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>() ;
+    int N_equi = this->vm()["crb.use-equidistributed-WNmu"].template as<int>() ;
+
+    if( N_log_equi > 0 || N_equi > 0 )
+        use_predefined_WNmu = true;
+
+    if ( use_predefined_WNmu )
+    {
+        std::string file_name = ( boost::format("SamplingWNmu") ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+        {
+            throw std::logic_error( "[CRB::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
+        }
+        else
+        {
+            M_WNmu->clear();
+            int sampling_size = M_WNmu->readFromFile(file_name);
+            M_iter_max = sampling_size;
+        }
+        mu = M_WNmu->at( 0 ); // first element
+        std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
+
+        if( proc_number == this->worldComm().masterRank() )
+            std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
+
+    }
+
 
 #if 0
+    sampling_ptrtype Sampling;
     if ( M_error_type == CRB_NO_RESIDUAL )
     {
         Sampling = sampling_ptrtype( new sampling_type( M_Dmu ) );
@@ -1568,16 +1595,14 @@ CRB<TruthModelType>::offline()
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
     if( proc_number == this->worldComm().masterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<"\n";
 
-    if( M_error_type == CRB_NO_RESIDUAL )
+    if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
         //in this case it makes no sens to check the estimated error
         M_maxerror = 1e10;
     }
 
-    while ( M_maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size )
+    while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
     {
-
-        //if ( M_error_type == CRB_NO_RESIDUAL )  mu = M_Xi->at( no_residual_index );
 
         boost::timer timer, timer2;
         LOG(INFO) <<"========================================"<<"\n";
@@ -1902,7 +1927,9 @@ CRB<TruthModelType>::offline()
             LOG(INFO) << "[CRB::offline] energy = " << A->energy( *u, *u ) << "\n";
         }
 
-        M_WNmu->push_back( mu, index );
+        if( ! use_predefined_WNmu )
+            M_WNmu->push_back( mu, index );
+
         M_WNmu_complement = M_WNmu->complement();
 
         bool norm_zero = false;
@@ -2346,11 +2373,9 @@ CRB<TruthModelType>::offline()
         }
 
 
-        if ( M_error_type == CRB_NO_RESIDUAL )
+        if ( M_error_type == CRB_NO_RESIDUAL && ! use_predefined_WNmu )
         {
             //M_maxerror=M_iter_max-M_N;
-            //no_residual_index++;
-            //M_no_residual_index = no_residual_index;
 
             bool already_exist;
             do
@@ -2369,6 +2394,15 @@ CRB<TruthModelType>::offline()
             while( already_exist );
 
             M_current_mu = mu;
+        }
+        else if ( use_predefined_WNmu )
+        {
+            //remmber that in this case M_iter_max = sampling size
+            if( M_N < M_iter_max )
+            {
+                mu = M_WNmu->at( M_N );
+                M_current_mu = mu;
+            }
         }
         else
         {
