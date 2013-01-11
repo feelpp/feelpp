@@ -518,7 +518,6 @@ CRBTrilinear<TruthModelType>::offline()
     double delta_pr;
     double delta_du;
     size_type index;
-    int no_residual_index;
     //if M_N == 0 then there is not an already existing database
     if ( rebuild_database || M_N == 0)
     {
@@ -576,7 +575,6 @@ CRBTrilinear<TruthModelType>::offline()
         M_maxerror = 1e10;
         delta_pr = 0;
         delta_du = 0;
-        no_residual_index = 0;
         //boost::tie( M_maxerror, mu, index ) = maxErrorBounds( N );
 
         LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
@@ -605,7 +603,6 @@ CRBTrilinear<TruthModelType>::offline()
     else
     {
         mu = M_current_mu;
-        no_residual_index=M_no_residual_index;
         if( proc_number == 0 )
         {
             std::cout<<"we are going to enrich the reduced basis"<<std::endl;
@@ -630,11 +627,40 @@ CRBTrilinear<TruthModelType>::offline()
 
     bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
 
-    sampling_ptrtype Sampling;
-    int sampling_size=no_residual_index+1;
+    bool use_predefined_WNmu = this->vm()["crb.use-predefined-WNmu"].template as<bool>() ;
+    int N_log_equi = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>() ;
+    int N_equi = this->vm()["crb.use-equidistributed-WNmu"].template as<int>() ;
 
+    std::cout<<"N_log_equi : "<<N_log_equi<<std::endl;
+    std::cout<<"N_equi : "<<N_equi<<std::endl;
+    if( N_log_equi > 0 || N_equi > 0 )
+        use_predefined_WNmu = true;
 
-    if( M_error_type == CRB_NO_RESIDUAL )
+    std::cout<<"use_predefined_WNmu : "<<use_predefined_WNmu<<std::endl;
+
+    if ( use_predefined_WNmu )
+    {
+        std::string file_name = ( boost::format("SamplingWNmu") ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+        {
+            throw std::logic_error( "[CRBTrilinear::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
+        }
+        else
+        {
+            M_WNmu->clear();
+            int sampling_size = M_WNmu->readFromFile(file_name);
+            M_iter_max = sampling_size;
+        }
+        mu = M_WNmu->at( 0 ); // first element
+        std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
+
+        if( proc_number == this->worldComm().masterRank() )
+            std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
+
+    }
+
+    if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
         //in this case it makes no sens to check the estimated error
         M_maxerror = 1e10;
@@ -644,7 +670,7 @@ CRBTrilinear<TruthModelType>::offline()
     LOG(INFO) << "[CRBTrilinear::offline] strategy "<< M_error_type <<"\n";
     if( proc_number == 0 ) std::cout << "[CRBTrilinear::offline] strategy "<< M_error_type <<"\n";
 
-    while ( M_maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size )
+    while ( M_maxerror > M_tolerance && M_N < M_iter_max )
     {
 
         boost::timer timer, timer2;
@@ -671,7 +697,10 @@ CRBTrilinear<TruthModelType>::offline()
         if( proc_number == this->worldComm().masterRank() ) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
         timer2.restart();
 
-        M_WNmu->push_back( mu, index );
+
+        if( ! use_predefined_WNmu )
+            M_WNmu->push_back( mu, index );
+
         M_WNmu_complement = M_WNmu->complement();
 
         M_WN.push_back( *u );
@@ -757,23 +786,34 @@ CRBTrilinear<TruthModelType>::offline()
 
         timer2.restart();
 
-        bool already_exist;
-        do
+        if ( ! use_predefined_WNmu )
         {
-            //initialization
-            already_exist=false;
-            //pick randomly an element
-            mu = M_Dmu->element();
-            //make sure that the new mu is not already is M_WNmu
-            BOOST_FOREACH( auto _mu, *M_WNmu )
+            bool already_exist;
+            do
             {
-                if( mu == _mu )
-                    already_exist=true;
+                //initialization
+                already_exist=false;
+                //pick randomly an element
+                mu = M_Dmu->element();
+                //make sure that the new mu is not already is M_WNmu
+                BOOST_FOREACH( auto _mu, *M_WNmu )
+                {
+                    if( mu == _mu )
+                        already_exist=true;
+                }
+            }
+            while( already_exist );
+            M_current_mu = mu;
+        }
+        else
+        {
+            //remmber that in this case M_iter_max = sampling size
+            if( M_N < M_iter_max )
+            {
+                mu = M_WNmu->at( M_N );
+                M_current_mu = mu;
             }
         }
-        while( already_exist );
-
-        M_current_mu = mu;
 
         M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
 
