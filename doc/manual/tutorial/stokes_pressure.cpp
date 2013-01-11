@@ -81,11 +81,11 @@ public:
 #elif defined(DIM3)
     static const uint16_type nDim = DIM3;
 #endif
-
+    static const uint16_type GeoOrder = 1;
     /*mesh*/
-    typedef Mesh<Simplex<nDim> > mesh_type;
+    typedef Mesh<Simplex<nDim,GeoOrder> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef Mesh<Simplex<nDim-1,1,nDim>> mesh_lag_type;
+    typedef Mesh<Simplex<nDim-1,GeoOrder,nDim>> mesh_lag_type;
     typedef boost::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
 
     /*basis*/
@@ -157,6 +157,7 @@ private:
     space_ptrtype Xh;
 }; // Stokes
 const uint16_type Stokes::nDim;
+const uint16_type Stokes::GeoOrder;
 
 Stokes::Stokes()
     :
@@ -174,11 +175,12 @@ Stokes::Stokes()
 void
 Stokes::init()
 {
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%5%D/P%2%P%3%/h_%4%/" )
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%D/P%3%P%4%G%5%/h_%6%/" )
                                    % this->about().appName()
-                                   % basis_u_type::nOrder % basis_p_type::nOrder
-                                   % this->vm()["hsize"].as<double>()
-                                   % nDim );
+                                   % nDim
+                                   % basis_u_type::nOrder % basis_p_type::nOrder % GeoOrder
+                                   % this->vm()["hsize"].as<double>() );
+
 
 
     mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -270,7 +272,9 @@ Stokes::run()
     stokes += integrate( markedfaces( mesh,outlet ), option("eps").as<double>()*trans(idt(lambda))*id( nu ) );
 
 #endif // DIM3
+
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+
     chrono.restart();
 #endif
 
@@ -280,9 +284,10 @@ Stokes::run()
     //stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
 #if! defined( FEELPP_USE_LM )
-    //stokes +=integrate( markedfaces( mesh,{inlet,outlet} ), -inner( mu*deft*N(),id( v ) ) );
     stokes +=integrate( markedfaces( mesh,inlet ), -inner( 2*mu*deft*N(),id( v ) ) );
     stokes +=integrate( markedfaces( mesh,outlet ), -inner( 2*mu*deft*N(),id( v ) ) );
+    stokes +=integrate( markedfaces( mesh,inlet ), (1./option("eps").as<double>())*trans(cross(idt(v),N()))*cross(id(v),N()) );
+    stokes +=integrate( markedfaces( mesh,outlet ), (1./option("eps").as<double>())*trans(cross(idt(v),N()))*cross(id(v),N()) );
 #endif
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
@@ -375,9 +380,14 @@ main( int argc, char** argv )
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="stokes_pressure",
-                                  _author="Christophe Prud'homme",
-                                  _email="christophe.prudhomme@feelpp.org") );
+                     _about=about(
+#if defined( FEELPP_USE_LM )
+                     _name="stokes_pressure_lm",
+#else
+                     _name="stokes_pressure",
+#endif
+                     _author="Christophe Prud'homme",
+                     _email="christophe.prudhomme@feelpp.org") );
 
     /* define and run application */
     Stokes stokes;
