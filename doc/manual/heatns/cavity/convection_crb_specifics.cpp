@@ -63,6 +63,7 @@ void ConvectionCrb::init()
 
     Xh = space_type::New( mesh );
     LOG(INFO)<<"number of dofs : "<<Xh->nLocalDof()<<"\n";
+    std::cout<<"proc "<<Environment::worldComm().globalRank()<<" number of dofs : "<<Xh->nLocalDof()<<std::endl;
     pT = element_ptrtype( new element_type( Xh ) );
 
     element_type U( Xh, "u" );
@@ -169,6 +170,7 @@ void ConvectionCrb::init()
     D = M_backend->newMatrix( Xh, Xh );
     F = M_backend->newVector( Xh );
 
+    M_A_tril = M_backend->newMatrix( Xh , Xh );
 
 
     double gamma( this->vm()["penalbc"]. as<double>() );
@@ -767,8 +769,8 @@ ConvectionCrb::computeTrilinearForm( const element_type& X )
     auto eta = V. element<3>(); // fonction test multipliers
 #endif
 
-    sparse_matrix_ptrtype A_tril;
-    A_tril = M_backend->newMatrix( _test=Xh, _trial=Xh );
+    //sparse_matrix_ptrtype A_tril;
+    //A_tril = M_backend->newMatrix( _test=Xh, _trial=Xh );
 
     double gamma( this->vm()["penalbc"]. as<double>() );
 
@@ -780,29 +782,30 @@ ConvectionCrb::computeTrilinearForm( const element_type& X )
     double T0 = this->vm()["T0"]. as<double>();
 
     // Fluid-NS
-    form2( _test=Xh,_trial=Xh, _matrix=A_tril ) = integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradt( v ) )*idv( u )  );
+    form2( _test=Xh,_trial=Xh, _matrix=M_A_tril ) = integrate ( _range=elements( mesh ), _expr=trans( id( v ) )*( gradt( v ) )*idv( u )  );
 
     //    // temperature derivatives
     //
     // heat convection by the fluid: attention 2 terms
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( elements( mesh ), gradv( t )*( idt( s )*id( v ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_A_tril ) += integrate ( elements( mesh ), gradv( t )*( idt( s )*id( v ) ) );
 
-    form2( _test=Xh, _trial=Xh, _matrix=A_tril ) += integrate ( boundaryfaces( mesh ), trans( id( v ) )*N() *idt( s )*idv( t ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_A_tril ) += integrate ( boundaryfaces( mesh ), trans( id( v ) )*N() *idt( s )*idv( t ) );
 
     if ( weakdir == 0 )
     {
         //vitesse
-        //form2( Xh, Xh, A_tril )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
-        form2( Xh, Xh, A_tril )  += on( boundaryfaces( mesh ),v, Rtemp, one()*0 );
+        //form2( Xh, Xh, M_A_tril )  += on( boundaryfaces( mesh ),u, Rtemp,one()*0. );
+        form2( Xh, Xh, M_A_tril )  += on( boundaryfaces( mesh ),v, Rtemp, one()*0 );
         if ( adim==1 )
             //temperature
-            //form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
-            form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),s,Rtemp,cst( 0.0 ) );
+            //form2( Xh, Xh, M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( 0.0 ) );
+            form2( Xh, Xh, M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),s,Rtemp,cst( 0.0 ) );
         else
-            //form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
-            form2( Xh, Xh, A_tril )  += on ( markedfaces( mesh, "Tfixed" ),s,Rtemp,cst( T0 ) );
+            //form2( Xh, Xh, M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),t,Rtemp,cst( T0 ) );
+            form2( Xh, Xh, M_A_tril )  += on ( markedfaces( mesh, "Tfixed" ),s,Rtemp,cst( T0 ) );
     }
-    return A_tril;
+    //std::cout<<"proc "<< Environment::worldComm().globalRank() << "total time for Model computeTrilinearForm : "<<ti.elapsed()<<"s end"<<std::endl;
+    return M_A_tril;
 
 }
 
