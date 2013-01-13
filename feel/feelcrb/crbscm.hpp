@@ -942,7 +942,9 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
     // Mplus from its complement
     glp_add_rows( lp,Malpha+Mplus );
     // search the the M_Malpha closest points in C_K, M_Malpha must be < K
-    sampling_ptrtype C_neighbors =  M_C->searchNearestNeighbors( mu, Malpha );
+    // index_vector will contain index of neighbors
+    std::vector<int> index_vector;
+    sampling_ptrtype C_neighbors =  M_C->searchNearestNeighbors( mu, Malpha , index_vector);
 
     //std::cout << "[CRBSCM::lb] C_neighbors size = " << C_neighbors->size() << "\n";
 
@@ -998,7 +1000,7 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
     //std::cout << "[CRBSCM::lb] add rows associated with C_K done. nnz=" << nnz_index << "\n";
 
     // search the the Mplus closest points in Xi\C_K
-    sampling_ptrtype Xi_C_neighbors =  M_C_complement->searchNearestNeighbors( mu, Mplus );
+    sampling_ptrtype Xi_C_neighbors =  M_C_complement->searchNearestNeighbors( mu, Mplus , index_vector);
 
     //std::cout << "[CRBSCM::lb] C_complement size = " << Xi_C_neighbors->size() << "\n";
 

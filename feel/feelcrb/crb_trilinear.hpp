@@ -258,6 +258,12 @@ public:
     //@{
 
     /**
+     * find the nearest neighbor of mu in the sampling WNmu
+     * return th neighbor and the index of this neighbor in WNmu
+     */
+    void findNearestNeighborInWNmu( parameter_type const& mu, parameter_type & neighbor, int & index ) const;
+
+    /**
      * Returns the lower bound of the output
      *
      * \param mu \f$ \mu\f$ the parameter at which to evaluate the output
@@ -631,12 +637,8 @@ CRBTrilinear<TruthModelType>::offline()
     int N_log_equi = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>() ;
     int N_equi = this->vm()["crb.use-equidistributed-WNmu"].template as<int>() ;
 
-    std::cout<<"N_log_equi : "<<N_log_equi<<std::endl;
-    std::cout<<"N_equi : "<<N_equi<<std::endl;
     if( N_log_equi > 0 || N_equi > 0 )
         use_predefined_WNmu = true;
-
-    std::cout<<"use_predefined_WNmu : "<<use_predefined_WNmu<<std::endl;
 
     if ( use_predefined_WNmu )
     {
@@ -653,7 +655,7 @@ CRBTrilinear<TruthModelType>::offline()
             M_iter_max = sampling_size;
         }
         mu = M_WNmu->at( M_N ); // first element
-        std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
+        //std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
 
         if( proc_number == this->worldComm().masterRank() )
             std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
@@ -773,6 +775,7 @@ CRBTrilinear<TruthModelType>::offline()
                 //bring back the matrix associated to the trilinear form for a given basis function
                 //we do this here to use only one matrix
                 trilinear_form  = M_model->computeTrilinearForm( M_WN[k] );
+
                 M_Aqm_tril_pr[q][k].conservativeResize( M_N, M_N );
                 for ( int i = 0; i < M_N; ++i )
                 {
@@ -857,6 +860,17 @@ CRBTrilinear<TruthModelType>::offline()
 
 
 template<typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::findNearestNeighborInWNmu( parameter_type const& mu, parameter_type & neighbor, int & index ) const
+{
+    std::vector<int> index_vector;
+    sampling_ptrtype S =  M_WNmu->searchNearestNeighbors( mu, 1 , index_vector);
+    neighbor = S->at( 0 );
+    index = index_vector[0];
+    //std::cout<<"[CRBTrilinear::findNearestNeighborInWNmu] for Gr = "<<mu(0)<<" th nearest neighbor in WNmu is "<<neighbor(0)<<" at index "<<index<<std::endl;
+}
+
+template<typename TruthModelType>
 boost::tuple<double,double>
 CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN ) const
 {
@@ -886,7 +900,15 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 
     vectorN_type R( (int) N );
     matrixN_type J( (int) N , (int) N );
+
+    //initialization of uN
+    //we look for the nearest neighbor of mu in the sampling WNmu
+    //let i the index of this neighbor in WNmu, we will set zeros in uN except at the i^th component where we will set 1
     uN.setZero( (int) N );
+    parameter_type neighbor( M_Dmu );
+    int index;
+    findNearestNeighborInWNmu(  mu,  neighbor, index );
+    uN( index ) = 1;
 
     double *r_data = R.data();
     double *j_data = J.data();

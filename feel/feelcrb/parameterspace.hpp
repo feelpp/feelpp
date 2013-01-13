@@ -480,9 +480,9 @@ public:
          * \brief Returns the \p M closest points to \p mu in sampling
          * \param mu the point in parameter whom we want to find the neighbors
          * \param M the number of neighbors to find
-         * \return the vector
+         * \return vector of neighbors and index of them in the sampling
          */
-        sampling_ptrtype searchNearestNeighbors( element_type const& mu, size_type M = 1  );
+        sampling_ptrtype searchNearestNeighbors( element_type const& mu, size_type M , std::vector<int>& index_vector  );
 
         /**
          * \brief if supersampling is != 0, Returns the complement
@@ -843,7 +843,8 @@ ParameterSpace<P>::Sampling::complement() const
 template<int P>
 boost::shared_ptr<typename ParameterSpace<P>::Sampling>
 ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
-                                                     size_type _M )
+                                                     size_type _M ,
+                                                     std::vector<int>& index_vector)
 {
     size_type M=_M;
     sampling_ptrtype neighbors( new sampling_type( M_space, M ) );
@@ -896,10 +897,10 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
     {
         //std::cout << "[parameterspace::sampling::searchNearestNeighbors] neighbor: " <<i << " distance = " << dists[i] << "\n";
         neighbors->at( i ) = this->at( nnIdx[i] );
+        index_vector.push_back( nnIdx[i] );
 
         if ( M_supersampling && !M_superindices.empty() )
             neighbors->M_superindices[i] = M_superindices[ nnIdx[i] ];
-
         //std::cout << "[parameterspace::sampling::searchNearestNeighbors] " << neighbors->at( i ) << "\n";
     }
 
