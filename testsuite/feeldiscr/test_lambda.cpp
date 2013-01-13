@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE( test_lambda_int )
     BOOST_TEST_MESSAGE( "test_lambda_int integral defined" );
 
     auto I1 = integrate( elements(mesh), Px()*Px()+Py()*Py() );
-    auto Xh = Pch<1>( mesh );
+    auto Xh = Pch<2>( mesh );
     auto u = project( _space=Xh, _range=elements(mesh), _expr=Px()*Px()+Py()*Py() );
 
     BOOST_CHECK_CLOSE( I1.evaluate()( 0, 0 ), 2./3., 1e-10 );
