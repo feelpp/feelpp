@@ -102,6 +102,16 @@ public:
     typedef GiNaC::ex expression_type;
     typedef GinacEx<Order> this_type;
     typedef double value_type;
+
+    template<typename TheExpr>
+    struct Lambda
+    {
+        typedef this_type type;
+    };
+    template<typename TheExpr>
+    typename Lambda<TheExpr>::type
+    operator()( TheExpr const& e  ) { return *this; }
+
     //@}
 
     /** @name Constructors, destructor
@@ -378,6 +388,16 @@ public:
     typedef GiNaC::ex expression_type;
     typedef GinacMatrix<M,N,Order> this_type;
     typedef double value_type;
+
+    template<typename TheExpr>
+    struct Lambda
+    {
+        typedef this_type type;
+    };
+    template<typename TheExpr>
+    typename Lambda<TheExpr>::type
+    operator()( TheExpr const& e  ) { return *this; }
+
     //@}
 
     /** @name Constructors, destructor

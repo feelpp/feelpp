@@ -1541,7 +1541,7 @@ CRB<TruthModelType>::offline()
             int sampling_size = M_WNmu->readFromFile(file_name);
             M_iter_max = sampling_size;
         }
-        mu = M_WNmu->at( 0 ); // first element
+        mu = M_WNmu->at( M_N ); // first element
         std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
 
         if( proc_number == this->worldComm().masterRank() )
@@ -5834,7 +5834,6 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
         mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
     }
 
-    //auto Xh = space_type::New( mesh );
 
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_output_index );
@@ -5866,8 +5865,6 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     if ( model_type::is_time_dependent )
     {
 
-        if ( version>=1 )
-        {
             ar & BOOST_SERIALIZATION_NVP( M_coeff_pr_ini_online );
             ar & BOOST_SERIALIZATION_NVP( M_coeff_du_ini_online );
             ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr );
@@ -5876,18 +5873,11 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
             ar & BOOST_SERIALIZATION_NVP( M_Cmf_du );
             ar & BOOST_SERIALIZATION_NVP( M_Cma_du );
             ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
-        }
     }
-    // if( version >= 2 )
     ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
     if( M_database_contains_variance_info )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
 
-    //if( version >= 3 )
-    //    ar & BOOST_SERIALIZATION_NVP( M_WN );
-
-    if( version >= 4 )
-    {
         ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
         ar & BOOST_SERIALIZATION_NVP( M_MFqm_pr );
 
@@ -5898,17 +5888,11 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
             ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
-    }
 
-    //version 5 : data structure
-    if( version >= 6 )
         ar & BOOST_SERIALIZATION_NVP( M_maxerror );
-    if( version >= 7 )
-    {
         ar & BOOST_SERIALIZATION_NVP( M_use_newton );
         ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
         ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
-    }
 }
 
 template<typename TruthModelType>
@@ -5917,60 +5901,36 @@ void
 CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 {
 
-    //up to version 4 : EIM was not there
-    //from version 5 : EIM
-    if( version <= 4 )
-        throw std::logic_error( "[CRB::load] ERROR while loading the existing database, since version 5 there was many changes. Please use the option --crb.rebuild-database=true " );
+    //if( version <= 4 )
+    //    throw std::logic_error( "[CRB::load] ERROR while loading the existing database, since version 5 there was many changes. Please use the option --crb.rebuild-database=true " );
     int proc_number = this->worldComm().globalRank();
 
-    LOG(INFO) <<"[CRB::load] version"<< version <<std::endl;
+    LOG(INFO) <<"[CRB::load] version"<< version <<"\n";
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
     if ( !M_model )
-        {
-            LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
-            mesh = mesh_type::New();
-
-            bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-
-            Xh = space_type::New( mesh );
-            LOG(INFO) << "[load] loading fdb files done.\n";
-        }
+    {
+        LOG(INFO) << "[load] model not initialized, loading fdb files...\n";
+        mesh = mesh_type::New();
+        bool is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+        Xh = space_type::New( mesh );
+        LOG(INFO) << "[load] loading fdb files done.\n";
+    }
     else
-        {
-            LOG(INFO) << "[load] get mesh/Xh from model...\n";
-            mesh = M_model->functionSpace()->mesh();
-            Xh = M_model->functionSpace();
-            LOG(INFO) << "[load] get mesh/Xh from model done.\n";
-        }
-
-    if( version <= 2 )
-        M_rbconv_contains_primal_and_dual_contributions = false;
-    else
-        M_rbconv_contains_primal_and_dual_contributions = true;
+    {
+        LOG(INFO) << "[load] get mesh/Xh from model...\n";
+        mesh = M_model->functionSpace()->mesh();
+        Xh = M_model->functionSpace();
+        LOG(INFO) << "[load] get mesh/Xh from model done.\n";
+    }
 
     typedef boost::bimap< int, double > old_convergence_type;
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_output_index );
     ar & BOOST_SERIALIZATION_NVP( M_N );
 
-   if( version <= 2 )
-    {
-        old_convergence_type old_M_rbconv;
-        ar & BOOST_SERIALIZATION_NVP( old_M_rbconv );
-        double delta_pr = 0;
-        double delta_du = 0;
-        typedef old_convergence_type::left_map::const_iterator iterator;
-        for(iterator it = old_M_rbconv.left.begin(); it != old_M_rbconv.left.end(); ++it)
-        {
-            int N = it->first;
-            double maxerror = it->second;
-            M_rbconv.insert( convergence( N, boost::make_tuple(maxerror,delta_pr,delta_du) ) );
-        }
-    }
-   else
 	ar & BOOST_SERIALIZATION_NVP( M_rbconv );
 
     ar & BOOST_SERIALIZATION_NVP( M_error_type );
@@ -5996,9 +5956,6 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     if ( model_type::is_time_dependent )
     {
-
-        if ( version>=1 )
-        {
             ar & BOOST_SERIALIZATION_NVP( M_coeff_pr_ini_online );
             ar & BOOST_SERIALIZATION_NVP( M_coeff_du_ini_online );
             ar & BOOST_SERIALIZATION_NVP( M_Cmf_pr );
@@ -6007,38 +5964,11 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             ar & BOOST_SERIALIZATION_NVP( M_Cmf_du );
             ar & BOOST_SERIALIZATION_NVP( M_Cma_du );
             ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
-        }
     }
 
-    //if( version >= 2 )
     ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
     if( M_database_contains_variance_info )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-
-#if 0
-    if( version >= 3 )
-    {
-        LOG(INFO) << "loading basis functions: " << M_N << "\n";
-        google::FlushLogFiles(google::GLOG_INFO);
-        auto u = M_model->functionSpace()->element();
-        LOG(INFO) << "finite element space: " << u.size() << "\n";
-        google::FlushLogFiles(google::GLOG_INFO);
-        google::FlushLogFiles(google::GLOG_INFO);
-//        for( int i = 0; i < M_N; ++i ) M_WN.push_back( u );
-        LOG(INFO) << "basis vector init done: " << M_WN.size() << "\n";
-        std::cout << "basis vector init done: " << M_WN.size() << std::endl;
-        google::FlushLogFiles(google::GLOG_INFO);
-        ar & BOOST_SERIALIZATION_NVP( M_WN );
-        LOG(INFO) << "basis vector load done: " << M_WN.size() << "\n";
-        std::cout << "basis vector load done: " << M_WN.size() << std::endl;
-        google::FlushLogFiles(google::GLOG_INFO);
-        for( int i = 0; i < M_N; ++i ) M_WN[i].setFunctionSpace( M_model->functionSpace() );
-        LOG(INFO) << "basis vector set function space done:\n";
-        google::FlushLogFiles(google::GLOG_INFO);
-    }
-#endif
-    if( version >= 4 )
-    {
         ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
         ar & BOOST_SERIALIZATION_NVP( M_MFqm_pr );
 
@@ -6063,13 +5993,8 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             ar & BOOST_SERIALIZATION_NVP( temp );
             M_WNdu[i] = temp;
         }
-    }
 
-    //version 5 : data structure
-    if( version >= 6 )
         ar & BOOST_SERIALIZATION_NVP( M_maxerror );
-    if( version >=7 )
-    {
         ar & BOOST_SERIALIZATION_NVP( M_use_newton );
         ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
         ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
@@ -6081,19 +6006,14 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
             else
                 throw std::logic_error( "[CRB::loadDB] ERROR in the database used the option use-newton=false and it's not the case in your option" );
         }
-    }
 
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
               << "[loadDB] N : " << M_N << "\n"
               << "[loadDB] error type : " << M_error_type << "\n";
 
-    for ( auto it = M_rbconv.begin(), en = M_rbconv.end();
-            it != en; ++it )
-    {
+    for ( auto it = M_rbconv.begin(), en = M_rbconv.end();it != en; ++it )
         std::cout << "[loadDB] convergence: (" << it->left << ","  << it->right  << ")\n";
-    }
-
 #endif
     LOG(INFO) << "[CRB::load] end of load function" << std::endl;
 }
@@ -6178,10 +6098,10 @@ namespace serialization
 template< typename T>
 struct version< Feel::CRB<T> >
 {
-    // at the moment the version of the CRB DB is 7. if any changes is done
+    // at the moment the version of the CRB DB is 0. if any changes is done
     // to the format it is mandatory to increase the version number below
     // and use the new version number of identify the new entries in the DB
-    typedef mpl::int_<7> type;
+    typedef mpl::int_<0> type;
     typedef mpl::integral_c_tag tag;
     static const unsigned int value = version::type::value;
 };

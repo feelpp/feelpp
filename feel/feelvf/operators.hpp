@@ -247,6 +247,14 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             {                                                           \
                 Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
             }                                                           \
+            template<typename TheExpr>                                  \
+            struct Lambda                                               \
+            {                                                           \
+                typedef this_type type;                                 \
+            };                                                          \
+            template<typename TheExpr>                                  \
+                typename Lambda<TheExpr>::type                          \
+                operator()( TheExpr const& e  ) { return *this; }       \
                                                                         \
             element_type const& e() const { return M_v; }              \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
