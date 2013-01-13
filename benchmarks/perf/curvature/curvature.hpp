@@ -274,8 +274,12 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     // projectors
 
 
-    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder*BasisU::nOrder);
-    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder); // with this one I can get order 1 !
+    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder*BasisU::nOrder);
+    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder); // with this one I can get order 1  for P1 and P2
+
+    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder+1); // 0 !
+    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*2); // order 1 for P1, P2 and P3
+
     //    double diffnum = (meshSizeInit() / std::pow(2,level())) / BasisU::nOrder; // order 0
 
         //std::pow((meshSizeInit() / std::pow(2,level())) , BasisU::nOrder) ;
