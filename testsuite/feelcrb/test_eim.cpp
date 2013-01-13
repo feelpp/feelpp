@@ -224,10 +224,7 @@ public:
 
     element_type solve( parameter_type const& mu )
         {
-            using namespace vf;
-            auto M = backend( _vm=this->vm() )->newMatrix( Xh, Xh );
-            auto a = form2( _test=Xh, _trial=Xh, _matrix=M );
-            auto F = backend( _vm=this->vm() )->newVector( Xh );
+            auto a = form2( _test=Xh, _trial=Xh  );
             auto rhs = form1( _test=Xh, _vector=F, _init=true );
             auto v = Xh->element();
             auto w = Xh->element();
@@ -235,13 +232,12 @@ public:
             a = integrate( _range=elements( mesh ), _expr=mu(0)*gradt( w )*trans( grad( v ) ) + idt(w)*id(v) );
             a+=on( _range=boundaryfaces(mesh),
                    _element=w, _rhs=F, _expr=cst(0.) );
-            backend(_vm=this->vm())->solve( _matrix=M, _solution=w, _rhs=F );
+            a.solve( _solution=w, _rhs=rhs );
             return w;
         }
     void run()
         {
-            auto exporter = Exporter<mesh_type>::New( this->vm(), this->about().appName() );
-            exporter->step(0)->setMesh( mesh );
+            auto exporter = exporter( _mesh=mesh, _prefix=this->about().appName() );
             auto S = Dmu->sampling();
             S->logEquidistribute(10);
             BOOST_FOREACH( auto fun, M_funs )
@@ -253,8 +249,8 @@ public:
                     LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
                     auto w = fun->interpolant( p );
 
-                    exporter->step(0)->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
-                    exporter->step(0)->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );
+                    exporter->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
+                    exporter->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );
 
                 }
             }
