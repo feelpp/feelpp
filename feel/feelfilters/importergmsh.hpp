@@ -795,6 +795,11 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
 
+    CHECK( mesh->numElements() > 0 ) << "The mesh does not have any elements.\n"
+                                     << "something was not right with GMSH mesh importation.\n"
+                                     << "please check that there are elements of topological dimension "
+                                     << mesh_type::nDim << "  in the mesh\n";
+
     if ( this->worldComm().localSize()>1 )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
 

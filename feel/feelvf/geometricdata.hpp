@@ -181,6 +181,15 @@ const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
         VF_GD_NAME(O) ( VF_GD_NAME(O) const& /*__vf*/ )                 \
         {                                                               \
         }                                                               \
+        template<typename TheExpr>                                      \
+        struct Lambda                                                   \
+        {                                                               \
+            typedef this_type type;                                     \
+        };                                                              \
+        template<typename TheExpr>                                      \
+        typename Lambda<TheExpr>::type                                  \
+        operator()( TheExpr const& e  ) { return this_type(); }         \
+                                                                        \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
