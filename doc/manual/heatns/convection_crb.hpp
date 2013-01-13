@@ -451,6 +451,7 @@ private:
     element_type M_unknown;
     parameter_type M_mu;
 
+    sparse_matrix_ptrtype M_A_tril;
     funs_type M_funs;
 
 
