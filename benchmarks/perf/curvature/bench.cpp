@@ -95,10 +95,10 @@ namespace Feel
 {
 // 2D
 extern template class Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>;
-extern template class Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>;
-extern template class Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>;
-extern template class Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial>, Simplex>;
-extern template class Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial>, Simplex>;
+// extern template class Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>;
+// extern template class Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>;
+// extern template class Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial>, Simplex>;
+// extern template class Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial>, Simplex>;
 
 // extern template class Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial>, Simplex>;
 
@@ -126,11 +126,11 @@ int main( int argc, char** argv )
         return 0;
     }
 #if 1
-    //benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>( "2D-P1-Simplex") );
-    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex") );
-    benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>( "2D-P3-Simplex") );
-    benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial>, Simplex>( "2D-P4-Simplex" ) );
-    benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial>, Simplex>( "2D-P5-Simplex" ) );
+    benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>( "2D-P1-Simplex") );
+    //    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex") );
+    // benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>( "2D-P3-Simplex") );
+    // benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial>, Simplex>( "2D-P4-Simplex" ) );
+    // benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial>, Simplex>( "2D-P5-Simplex" ) );
 #endif
 
 #if 0
