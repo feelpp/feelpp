@@ -222,21 +222,19 @@ public:
 
     void loadDB()
         {
-
+            bool use_predefined = this->vm()["crb.use-predefined-WNmu"].template as<bool>();
+            std::string file_name = ( boost::format("SamplingWNmu") ).str();
             int NlogEquidistributed = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>();
             int Nequidistributed = this->vm()["crb.use-equidistributed-WNmu"].template as<int>();
+            typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
             if( NlogEquidistributed+Nequidistributed > 0 )
             {
-                typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
                 if( NlogEquidistributed > 0 )
                     Sampling->logEquidistribute( NlogEquidistributed  );
                 if( Nequidistributed > 0 )
                     Sampling->equidistribute( Nequidistributed  );
-                std::string file_name = ( boost::format("SamplingWNmu") ).str();
                 Sampling->writeOnFile(file_name);
             }
-
-
 
             if ( M_mode == CRBModelMode::PFEM )
                 return;
@@ -270,9 +268,20 @@ public:
 
             if( crb->isDBLoaded() )
             {
+                bool do_offline = false;
                 int current_dimension = crb->dimension();
                 int dimension_max = this->vm()["crb.dimension-max"].template as<int>();
-                if( current_dimension < dimension_max )
+                int sampling_size = 0;
+                if( use_predefined )
+                    sampling_size = Sampling->readFromFile(file_name);
+
+                if( sampling_size > current_dimension )
+                    do_offline = true;
+
+                if( current_dimension < dimension_max && !use_predefined )
+                    do_offline=true;
+
+                if( do_offline )
                     crb->offline();
             }
         }
@@ -342,22 +351,22 @@ public:
             if( crb->useWNmu() )
                 Sampling = crb->wnmu();
 
-            /* Example of use of the setElements*
+            /* Example of use of the setElements
             vector_parameter_type V;
             parameter_type UserMu( model->parameterSpace() );
             for(int i=1; i<10; i++)        {UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
             for(int i=10; i<100; i+=10)    { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
             for(int i=1e2; i<1e3; i+=1e2)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
             for(int i=1e3; i<1e4; i+=1e3)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            UserMu(0)=1e4;  UserMu(1)=1; V.push_back(UserMu );
-            //for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            //for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            //UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
+            //UserMu(0)=1e4;  UserMu(1)=1; V.push_back(UserMu );
+            for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
             //for(int i=1e6; i<1e7; i+=1e6)
-            //    UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );
+                //    UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );
             //UserMu(0)=1e7;  UserMu(1)=1; V.push_back(UserMu );
             Sampling->setElements( V );
-            **/
+            */
 
             //Statistics
             vectorN_type l2_error_vector( Sampling->size() );

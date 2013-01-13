@@ -80,7 +80,7 @@ enum IntegratorType
  * @see IntegratorOn
  */
 template<typename Elements, typename Im, typename Expr, typename Im2=Im>
-class Integrator
+class Integrator: public IntegratorBase
 {
 public:
 
@@ -273,6 +273,31 @@ public:
      */
     //@{
 
+    template<typename TheExpr>
+    struct Lambda
+    {
+        typedef typename expression_type::template Lambda<TheExpr>::type expr_type;
+        typedef Integrator<Elements, Im, expr_type, Im2> type;
+    };
+
+    template<typename ExprT>
+    //typename Lambda<ExprT>::type
+    Integrator<Elements, Im, typename expression_type::template Lambda<ExprT>::type, Im2>
+    operator()( ExprT const& e )
+        {
+#if 0
+            typedef decltype(expr(M_expr(e))) t1;
+            typedef typename Lambda<ExprT>::expr_type t2;
+            BOOST_MPL_ASSERT_MSG( (boost::is_same<t1,t2>), INVALID_TYPE_IN_META_EXPRESSION,
+                                  (decltype(expr(M_expr(e))), typename Lambda<ExprT>::expr_type ) );
+#endif
+            auto new_expr = M_expr(e);
+            typedef decltype(new_expr) expr_type;
+            typedef typename Lambda<ExprT>::expr_type e_type;
+            //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
+            return Integrator<Elements, Im, expr_type, Im2>( M_elts, Im(), new_expr, M_gt, Im2(), M_use_tbb, M_grainsize, M_partitioner);
+
+        }
 
     //@}
 
@@ -386,6 +411,7 @@ public:
     /** @name  Methods
      */
     //@{
+
 
     template<typename Elem1, typename Elem2, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& __u,

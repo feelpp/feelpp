@@ -211,6 +211,16 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             for( int i = 0; i < nx; ++i )                               \
                 f[i] = VF_FUNC_IMPL(O)( x[i] );                         \
         }                                                               \
+        template<typename TheExpr>                                      \
+        struct Lambda                                                   \
+        {                                                               \
+            typedef VF_FUNC_NAME( O )<TheExpr> type;                    \
+        };                                                              \
+                                                                        \
+        template<typename TheExpr>                                        \
+            typename Lambda<TheExpr>::type                               \
+        operator()( TheExpr const& e ) { return VF_FUNC_NAME(O)<TheExpr>( e ); } \
+                                                                        \
                                                                         \
         expression_1_type const& expression() const { return _M_expr_1; } \
                                                                         \
