@@ -622,7 +622,6 @@ CRBTrilinear<TruthModelType>::offline()
     LOG(INFO) << "[CRBTrilinear::offline] compute affine decomposition\n";
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm_tril;
-    std::vector< std::vector<sparse_matrix_ptrtype> > trilinear_form;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
 
     boost::tie( boost::tuples::ignore, Aqm, Fqm , boost::tuples::ignore ) = M_model->computeAffineDecomposition();
