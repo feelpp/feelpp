@@ -907,7 +907,13 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     parameter_type neighbor( M_Dmu );
     int index;
     findNearestNeighborInWNmu(  mu,  neighbor, index );
-    uN( index ) = 1;
+    if( this->vm()["crb.cvg-study"].template as<bool>() == true )
+    {
+        //in this case, index may be smaller than uN.size
+        //so we do nothing
+    }
+    else
+        uN( index ) = 1;
 
     double *r_data = R.data();
     double *j_data = J.data();
