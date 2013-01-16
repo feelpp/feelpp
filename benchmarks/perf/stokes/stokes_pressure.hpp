@@ -29,32 +29,6 @@
  */
 #include <feel/feel.hpp>
 
-/**
- * This routine returns the list of options using the
- * boost::program_options library. The data returned is typically used
- * as an argument of a Feel::Application subclass.
- *
- * \return the list of options
- */
-inline
-Feel::po::options_description
-makeOptions()
-{
-    Feel::po::options_description stokesoptions( "Stokes options" );
-    stokesoptions.add_options()
-        ( "L", Feel::po::value<double>()->default_value( 1.0 ), "length of the tube" )
-        ( "p_in", Feel::po::value<double>()->default_value( 10 ), "pressure at inlet" )
-        ( "p_out", Feel::po::value<double>()->default_value( 1 ), "pressure at outlet" )
-        ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
-        ( "geofile", Feel::po::value<std::string>()->default_value( "tube.geo" ), "geometry file name" )
-        ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
-        ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
-        ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
-        ( "eps", Feel::po::value<double>()->default_value( 1e-10 ), "penalisation parameter for lagrange multipliers" )
-        ;
-    return stokesoptions.add( Feel::feel_options() ) ;
-}
-
 
 
 
@@ -66,6 +40,7 @@ namespace Feel
  * \brief solves the stokes equations
  *
  */
+template<int nDim, int uOrder, int geoOrder=1>
 class Stokes
     :
 public Simget
@@ -76,25 +51,19 @@ public:
 
     typedef double value_type;
 
-#if defined(DIM2)
-    static const uint16_type nDim = DIM2;
-#elif defined(DIM3)
-    static const uint16_type nDim = DIM3;
-#endif
-    static const uint16_type GeoOrder = 1;
     /*mesh*/
-    typedef Mesh<Simplex<nDim,GeoOrder> > mesh_type;
+    typedef Mesh<Simplex<nDim,geoOrder> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef Mesh<Simplex<nDim-1,GeoOrder,nDim>> mesh_lag_type;
+    typedef Mesh<Simplex<nDim-1,geoOrder,nDim>> mesh_lag_type;
     typedef boost::shared_ptr<mesh_lag_type> mesh_lag_ptrtype;
 
     /*basis*/
-    typedef Lagrange<2, Vectorial> basis_u_type;
-    typedef Lagrange<1, Scalar> basis_p_type;
+    typedef Lagrange<uOrder, Vectorial> basis_u_type;
+    typedef Lagrange<uOrder-1, Scalar> basis_p_type;
 #if defined( DIM2 )
-    typedef Lagrange<2, Scalar> basis_l_type;
+    typedef Lagrange<uOrder, Scalar> basis_l_type;
 #elif defined( DIM3 )
-    typedef Lagrange<2, Vectorial> basis_l_type;
+    typedef Lagrange<uOrder, Vectorial> basis_l_type;
 #endif
     // use lagrange multipliers to ensure zero mean pressure
 #if defined( FEELPP_USE_LM )
@@ -117,12 +86,12 @@ public:
 
     /* functions */
     //# marker3 #
-    typedef space_type::element_type element_type;
+    typedef typename space_type::element_type element_type;
     //# endmarker3 #
 
 
     FEELPP_DONT_INLINE
-    Stokes();
+    Stokes( std::string const& n );
 
     // init mesh and space
     FEELPP_DONT_INLINE
@@ -133,6 +102,11 @@ public:
      */
     FEELPP_DONT_INLINE
     void run();
+
+    std::string name() const
+    {
+        return config_name;
+    }
 
 private:
 
@@ -147,6 +121,7 @@ private:
 
 private:
 
+    std::string config_name;
     double meshSize;
     double L;
     double p_in,p_out;
@@ -156,35 +131,72 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 }; // Stokes
-const uint16_type Stokes::nDim;
-const uint16_type Stokes::GeoOrder;
 
-Stokes::Stokes()
+
+
+template<int nDim, int uOrder, int geoOrder>
+Stokes<nDim,uOrder,geoOrder>::Stokes(std::string const& n )
     :
     super(),
-    meshSize( this->vm()["hsize"].as<double>() ),
-    L( this->vm()["L"].as<value_type>() ),
-    p_in( this->vm()["p_in"].as<value_type>() ),
-    p_out( this->vm()["p_out"].as<value_type>() ),
-    mu( this->vm()["mu"].as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].as<value_type>() )
+    config_name( n ),
+    meshSize( this->vm()["hsize"].template as<double>() ),
+    L( this->vm()["L"].template as<value_type>() ),
+    p_in( this->vm()["p_in"].template as<value_type>() ),
+    p_out( this->vm()["p_out"].template as<value_type>() ),
+    mu( this->vm()["mu"].template as<value_type>() ),
+    penalbc( this->vm()["bccoeff"].template as<value_type>() )
 {
 
 }
 
+template<int nDim, int uOrder, int geoOrder>
 void
-Stokes::init()
+Stokes<nDim,uOrder,geoOrder>::init()
 {
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%D/P%3%P%4%G%5%/h_%6%/" )
-                                   % this->about().appName()
+    std::string geoname = fs::path( option( _name="geofile" ).template as<std::string>() ).stem().string();
+    Environment::changeRepository( boost::format( "benchmarks/%1%/%2%/%3%D/P%4%P%5%G%6%/h_%7%/l_%8%" )
+                                   % this->about().appName() % geoname
                                    % nDim
-                                   % basis_u_type::nOrder % basis_p_type::nOrder % GeoOrder
-                                   % this->vm()["hsize"].as<double>() );
+                                   % basis_u_type::nOrder % basis_p_type::nOrder % geoOrder
+                                   % meshSizeInit()
+                                   % level());
 
 
 
+#if defined( DIM2 )
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=geo(_filename=Environment::vm()["geofile"].as<std::string>(),_h=meshSize) );
+                           _desc=geo(_filename=option(_name="geofile").template as<std::string>(),
+                                     _h=meshSizeInit()),
+                           _refine=level());
+#elif defined(DIM3)
+    if ( geoname == "straighttube" )
+    {
+        GeoTool::Node Centre(0,0,0);
+        GeoTool::Node Rayon( 1);
+        GeoTool::Node Dir(1,0,0);
+        GeoTool::Node Lg(5,0,0);
+        GeoTool::Cylindre C( meshSizeInit(),"Cyl",Centre,Dir,Rayon,Lg);
+        C.setMarker(_type="surface",_name="inlet",_marker1=true);
+        C.setMarker(_type="surface",_name="outlet",_marker2=true);
+        C.setMarker(_type="surface",_name="wall",_marker3=true);
+        C.setMarker(_type="volume",_name="Omega",_markerAll=true);
+
+        mesh = C.createMesh(_mesh= new mesh_type,
+                            _name="straighttube",
+                            _partitions=Environment::worldComm().localSize(),
+                            _worldcomm=Environment::worldComm(),
+                            _refine=level() );
+
+    }
+    else
+    {
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _desc=geo(_filename=option(_name="geofile").template as<std::string>(),
+                                         _h=meshSizeInit()),
+                               _refine=level());
+    }
+
+#endif
 
 #if defined (FEELPP_USE_LM)
     auto mesh_lag = merge( mesh->trace( markedfaces(mesh,"inlet") ),
@@ -195,8 +207,9 @@ Stokes::init()
     Xh = space_type::New( mesh );
 #endif
 }
+template<int nDim, int uOrder, int geoOrder>
 void
-Stokes::run()
+Stokes<nDim,uOrder,geoOrder>::run()
 {
     mpi::timer chrono;
     this->init();
@@ -204,25 +217,31 @@ Stokes::run()
 
     auto U = Xh->element( "(u,p)" );
     auto V = Xh->element( "(u,q)" );
-    auto u = U.element<0>( "u" );
-    auto v = V.element<0>( "u" );
-    auto p = U.element<1>( "p" );
-    auto q = V.element<1>( "p" );
+    auto u = U.template element<0>( "u" );
+    auto v = V.template element<0>( "u" );
+    auto p = U.template element<1>( "p" );
+    auto q = V.template element<1>( "p" );
 #if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
 #endif
     //# endmarker4 #
 
+    M_stats.put( "h",M_meshSize );
+    M_stats.put( "n.space.nelts",Xh->template functionSpace<0>()->mesh()->numElements() );
+    M_stats.put( "n.space.ndof",Xh->nDof() );
+    M_stats.put( "n.space.ndof.u",Xh->template functionSpace<0>()->nDof() );
+    M_stats.put( "n.space.ndof.p",Xh->template functionSpace<1>()->nDof() );
+
     LOG(INFO) << "[dof]         number of dof: " << Xh->nDof() << "\n";
     LOG(INFO) << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    LOG(INFO) << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    LOG(INFO) << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(U): " << Xh-> template functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(U): " << Xh-> template functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(P): " << Xh-> template functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(P): " << Xh-> template functionSpace<1>()->nLocalDof()  << "\n";
 #if defined( FEELPP_USE_LM )
-    LOG(INFO) << "[dof]      number of dof(L): " << Xh->functionSpace<2>()->nDof()  << "\n";
-    LOG(INFO) << "[dof] number of dof/proc(L): " << Xh->functionSpace<2>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]      number of dof(L): " << Xh-> template functionSpace<2>()->nDof()  << "\n";
+    LOG(INFO) << "[dof] number of dof/proc(L): " << Xh-> template functionSpace<2>()->nLocalDof()  << "\n";
 #endif
     LOG(INFO) << "Data Summary:\n";
     LOG(INFO) << "   hsize = " << meshSize << "\n";
@@ -255,7 +274,7 @@ Stokes::run()
     stokes += integrate( elements( mesh ), 2*mu*trace(trans( deft)*def ) );
     LOG(INFO) << "chrono mu*inner(deft,def): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
-    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
+    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) - divt( u )*id( q ) );
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
 
@@ -268,8 +287,8 @@ Stokes::run()
 #elif defined( DIM3 )
     stokes +=integrate( markedfaces( mesh,inlet ), -trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
     stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
-    stokes += integrate( markedfaces( mesh,inlet ), option("eps").as<double>()*trans(idt(lambda))*id( nu ) );
-    stokes += integrate( markedfaces( mesh,outlet ), option("eps").as<double>()*trans(idt(lambda))*id( nu ) );
+    stokes += integrate( markedfaces( mesh,inlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
+    stokes += integrate( markedfaces( mesh,outlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
 
 #endif // DIM3
 
@@ -284,10 +303,9 @@ Stokes::run()
     //stokes +=integrate( markedfaces( mesh,wall ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
 #if! defined( FEELPP_USE_LM )
-    stokes +=integrate( markedfaces( mesh,inlet ), -inner( 2*mu*deft*N(),id( v ) ) );
-    stokes +=integrate( markedfaces( mesh,outlet ), -inner( 2*mu*deft*N(),id( v ) ) );
-    stokes +=integrate( markedfaces( mesh,inlet ), (1./option("eps").as<double>())*trans(cross(idt(v),N()))*cross(id(v),N()) );
-    stokes +=integrate( markedfaces( mesh,outlet ), (1./option("eps").as<double>())*trans(cross(idt(v),N()))*cross(id(v),N()) );
+    auto cTau = option("gamma-tau").template as<double>()*mu/hFace();
+    stokes +=integrate( markedfaces( mesh,inlet ), cTau*trans(cross(idt(v),N()))*cross(id(v),N()) );
+    stokes +=integrate( markedfaces( mesh,outlet ), cTau*trans(cross(idt(v),N()))*cross(id(v),N()) );
 #endif
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
@@ -295,7 +313,12 @@ Stokes::run()
     stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
 
     chrono.restart();
-    stokes.solve( _solution=U, _rhs=stokes_rhs );
+    auto retsolver = stokes.solve( _solution=U, _rhs=stokes_rhs, _rebuild=true );
+
+    M_stats.put( "d.solver.bool.converged",retsolver.template get<0>() );
+    M_stats.put( "d.solver.int.nit",retsolver.template get<1>() );
+    M_stats.put( "d.solver.double.residual",retsolver.template get<2>() );
+
 #if defined( DIM2 )
     LOG(INFO) << "int_outlet T = " << integrate( markedfaces( mesh,outlet ), t ).evaluate() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     LOG(INFO) << "int_inlet T = " << integrate( markedfaces( mesh,inlet ), t ).evaluate() << "\n";
@@ -315,48 +338,78 @@ Stokes::run()
 #endif
     LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
-    auto u_exact = zero<nDim,1>();
-    auto p_exact = cst(0.);
+    auto r=1;
+    auto L=5;
+    auto P_inlet=p_in;
+    auto P_outlet=p_out;
+#if defined(DIM2)
+    auto u_exact=vec((1-(Py()*Py())/(r*r))*(P_inlet-P_outlet)/(2*mu*L),cst(0.) );
+
+    auto p_exact=(P_outlet-P_inlet)*Px()/L + P_inlet;
+#elif defined(DIM3)
+    auto u_exact=vec(  (P_inlet-P_outlet)*r*r*(1-(Py()*Py()+Pz()*Pz())/(r*r))/(4*L) , cst(0.) , cst(0.) );
+
+    auto p_exact=(-Px()*(P_inlet-P_outlet)/L + P_inlet);
+#endif
     this->exportResults( u_exact, p_exact, U, V );
     LOG(INFO) << "chrono export: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
 } // Stokes::run
 
 
-
+template<int nDim, int uOrder, int geoOrder>
 template<typename ExprUExact, typename ExprPExact>
 void
-Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
-                       element_type& U, element_type& V )
+Stokes<nDim,uOrder,geoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_exact,
+                                             element_type& U, element_type& V )
 {
-    auto u = U.element<0>();
-    auto p = U.element<1>();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
 
-    auto v = V.element<0>();
-    auto q = V.element<1>();
+    auto v = V.template element<0>();
+    auto q = V.template element<1>();
 #if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
 #endif
+
+    auto Uh = Pchv<5>( mesh );
+
+    auto u_exact_proj=project(_space=Uh,_range=elements(mesh),_expr=u_exact);
 
     double u_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( u )-u_exact ) );
     LOG(INFO) << "||u_error||_2 = " << u_errorL2 << "\n";;
+    M_stats.put( "e.l2.u", u_errorL2 );
 
+    double u_errorsemiH1 = integrate( _range=elements( mesh ),
+                                      _expr=trace( ( gradv( u )-gradv(u_exact_proj) )*trans( gradv( u )-gradv(u_exact_proj) ) ) ).evaluate()( 0, 0 );
+    double u_error_H1 = math::sqrt( u_errorL2*u_errorL2+u_errorsemiH1 );
+    std::cout << "||u_error||_1= " << u_error_H1 << "\n";
+    M_stats.put( "e.h1.u",u_error_H1 );
 
     double mean_p = mean( _range=elements( u.mesh() ), _expr=idv( p ) )(0,0);
     LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
 
     double p_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( p )-mean_p - p_exact ) );
-    LOG(INFO) << "||p_error||_2 = " << p_errorL2 << "\n";;
+    LOG(INFO) << "||p_error||_2 = " << p_errorL2 << "\n";
+    M_stats.put( "e.l2.p", u_errorL2 );
 
     double mean_div_u = mean( _range=elements( u.mesh() ), _expr=divv( u ) )(0,0);
     LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
     double div_u_error_L2 = normL2( _range=elements( u.mesh() ), _expr=divv( u ) );
     LOG(INFO) << "[stokes] ||div(u)||_2=" << div_u_error_L2 << "\n";
+    M_stats.put( "e.l2.div", div_u_error_L2 );
 
-    v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
-    q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
+    auto deff = sym(gradv(u));
+    auto SigmaNN =(-idv(p)*N()+2*mu*deff*N());
+    auto s = integrate( markedfaces( mesh,"inlet" ) , SigmaNN,_quad=_Q<12>()).evaluate();
+    std::cout << "s inlet="  << s.norm() << "\n";
+    std::cout << "error s inlet="  << math::abs(pi-s.norm()) << "\n";
+    M_stats.put( "e.output.Fin", math::abs(pi-s.norm()) );
+
+    //v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
+    //q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
 #if defined( FEELPP_USE_LM )
     auto exporter1d1 = exporter( _mesh=lambda.mesh(), _name=this->about().appName()+"_lambda" );
@@ -371,29 +424,6 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
 
 } // Stokes::export
 } // Feel
-
-int
-main( int argc, char** argv )
-{
-
-    using namespace Feel;
-
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(
-#if defined( FEELPP_USE_LM )
-                     _name="stokes_pressure_lm",
-#else
-                     _name="stokes_pressure",
-#endif
-                     _author="Christophe Prud'homme",
-                     _email="christophe.prudhomme@feelpp.org") );
-
-    /* define and run application */
-    Stokes stokes;
-    stokes.run();
-}
-
 
 
 
