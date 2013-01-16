@@ -304,10 +304,15 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
                 eltOnProc=elt0;
                 faceIdInEltOnProc = theface.pos_first();
             }
-            else std::cout << "\nPROBLEME2!!!!"
-                           << " elt0.processId() " << elt0.processId()
-                           << " elt1.processId() " << elt1.processId()
-                           << std::endl;
+            else
+            {
+                CHECK( (elt0.processId()==myRank) ||
+                       (elt1.processId()==myRank) )
+                    << "\nPROBLEM with parallel dof table construction\n"
+                    << " elt0.processId() " << elt0.processId()
+                    << " elt1.processId() " << elt1.processId()
+                    << "\n";
+            }
 
             //------------------------------------------------------------------------------//
             // search dof on face recv
