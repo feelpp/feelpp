@@ -224,24 +224,20 @@ public:
 
     element_type solve( parameter_type const& mu )
         {
-            using namespace vf;
-            auto M = backend( _vm=this->vm() )->newMatrix( Xh, Xh );
-            auto a = form2( _test=Xh, _trial=Xh, _matrix=M );
-            auto F = backend( _vm=this->vm() )->newVector( Xh );
-            auto rhs = form1( _test=Xh, _vector=F, _init=true );
+            auto a = form2( _test=Xh, _trial=Xh  );
+            auto rhs = form1( _test=Xh );
             auto v = Xh->element();
             auto w = Xh->element();
             rhs = integrate( _range=elements( mesh ), _expr=id(v) );
             a = integrate( _range=elements( mesh ), _expr=mu(0)*gradt( w )*trans( grad( v ) ) + idt(w)*id(v) );
             a+=on( _range=boundaryfaces(mesh),
-                   _element=w, _rhs=F, _expr=cst(0.) );
-            backend(_vm=this->vm())->solve( _matrix=M, _solution=w, _rhs=F );
+                   _element=w, _rhs=rhs, _expr=cst(0.) );
+            a.solve( _solution=w, _rhs=rhs );
             return w;
         }
     void run()
         {
-            auto exporter = Exporter<mesh_type>::New( this->vm(), this->about().appName() );
-            exporter->step(0)->setMesh( mesh );
+            auto e = exporter( _mesh=mesh, _name=this->about().appName() );
             auto S = Dmu->sampling();
             S->logEquidistribute(10);
             BOOST_FOREACH( auto fun, M_funs )
@@ -253,12 +249,12 @@ public:
                     LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
                     auto w = fun->interpolant( p );
 
-                    exporter->step(0)->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
-                    exporter->step(0)->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );
+                    e->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
+                    e->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );
 
                 }
             }
-            exporter->save();
+            e->save();
 
         }
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
@@ -368,14 +364,12 @@ public:
 
     element_type solve( parameter_type const& mu )
         {
-            using namespace vf;
             auto w = Xh->element();
             return w;
         }
     void run()
         {
-            auto exporter = Exporter<mesh_type>::New( this->vm(), "model_circle" );
-            exporter->step(0)->setMesh( mesh );
+            auto e = exporter( _mesh=mesh, _name="model_circle" );
             auto S = Dmu->sampling();
             S->logEquidistribute(10);
             BOOST_FOREACH( auto fun, M_funs )
@@ -387,12 +381,12 @@ public:
                     LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
                     auto w = fun->interpolant( p );
 
-                    exporter->step(0)->add( (boost::format( "model2-%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
-                    exporter->step(0)->add( (boost::format( "model2-%1%-eim(%2%-%3%-%4%-%5%)" ) % fun->name() % p(0) %p(1) %p(2) %p(3) ).str(), w );
+                    e->add( (boost::format( "model2-%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
+                    e->add( (boost::format( "model2-%1%-eim(%2%-%3%-%4%-%5%)" ) % fun->name() % p(0) %p(1) %p(2) %p(3) ).str(), w );
 
                 }
             }
-            exporter->save();
+            e->save();
 
         }
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
@@ -417,14 +411,24 @@ BOOST_AUTO_TEST_SUITE( eimsuite )
 
 BOOST_AUTO_TEST_CASE( test_eim1 )
 {
-    BOOST_CHECK( mpi::environment::initialized() );
+    BOOST_TEST_MESSAGE( "test_eim1 done" );
+
     Application app;
-    BOOST_TEST_MESSAGE( "adding simget" );
     app.add( new model );
-    app.add( new model_circle );
     app.run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );
+
+}
+BOOST_AUTO_TEST_CASE( test_eim2 )
+{
+    BOOST_TEST_MESSAGE( "test_eim2 done" );
+
+    Application app;
+    app.add( new model_circle );
+    app.run();
+
+    BOOST_TEST_MESSAGE( "test_eim2 done" );
 
 }
 

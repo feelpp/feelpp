@@ -278,7 +278,9 @@ public:
 
     template<typename ExprT>
     typename Lambda<ExprT>::type
-    operator()( ExprT const& e ) { return e.expression(); }
+    operator()( ExprT const& e ) {
+        return e.expression();
+    }
 
     template<typename ExprT>
     typename Lambda<ExprT>::type
@@ -1240,6 +1242,13 @@ public:
     {
     }
 
+    Cst&
+    operator=( Cst const& c )
+        {
+            if ( this != &c )
+                M_constant = c.M_constant;
+            return *this;
+        }
 
     value_type value() const
     {
@@ -1262,7 +1271,7 @@ public:
     };
     template<typename TheExpr>
     typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return M_constant; }
+    operator()( TheExpr const& e  ) { return Cst<double>(M_constant); }
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
