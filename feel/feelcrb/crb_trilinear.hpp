@@ -873,6 +873,8 @@ template<typename TruthModelType>
 boost::tuple<double,double>
 CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN ) const
 {
+
+    std::cout<<"\nCRBTrilinear::lb starts with N = "<<N<<std::endl;
     google::FlushLogFiles(google::GLOG_INFO);
 
     if ( N > M_N ) N = M_N;
@@ -959,7 +961,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
         //M_nlsolver->setRelativeResidualTol( 1e-12 );
         M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
         M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
-
+        M_nlsolver->setType( TRUST_REGION );
         M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
     }
 
@@ -999,6 +1001,8 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     LOG(INFO) << "[CRBTrilinear::lb] computation of the output done";
 
     google::FlushLogFiles(google::GLOG_INFO);
+
+    //std::cout<<"[CRBTrilinear uN] : \n"<<uN<<std::endl;
 
     return boost::make_tuple( output, condition_number );
 
