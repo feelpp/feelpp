@@ -100,7 +100,6 @@ BOOST_AUTO_TEST_CASE( test_lambda_trans )
     BOOST_TEST_MESSAGE( "test_lambda_trans done" );
 }
 
-#if 1
 BOOST_AUTO_TEST_CASE( test_lambda_int_cst )
 {
     BOOST_TEST_MESSAGE( "test_lambda_int_cst" );
@@ -110,16 +109,38 @@ BOOST_AUTO_TEST_CASE( test_lambda_int_cst )
     auto I = integrate( elements(mesh), _expr=_e1, _verbose=true );
     BOOST_TEST_MESSAGE( "test_lambda_int_cst integral defined" );
 
-    //typedef decltype(I( cst(1.) )) t1;
     auto I1 = integrate( elements(mesh), cst(1.) );
-    typedef decltype(I1) t2;
-    //BOOST_MPL_ASSERT_MSG( (boost::is_same<t1,t2>::value), INVALID_TYPE,
-                           //(decltype(I( cst(1.) )), decltype(I1) ));
-#if 1
+    auto Xh = Pch<1>( mesh );
+    auto u = project( _space=Xh, _range=elements(mesh), _expr=cst(1.) );
+
     BOOST_CHECK_CLOSE( I1.evaluate()( 0, 0 ), 1, 1e-10 );
+    BOOST_CHECK_CLOSE( I( cst(1.0) ).expression().expression().expression().value(), 1, 1e-10 );
     BOOST_CHECK_CLOSE( I( cst(1.0) ).evaluate()( 0, 0 ), 1, 1e-10 );
-#endif
+    BOOST_CHECK_CLOSE( I( idv(u) ).evaluate()( 0, 0 ), 1, 1e-10 );
+
     BOOST_TEST_MESSAGE( "test_lambda_int_cst done" );
 }
-#endif
+
+BOOST_AUTO_TEST_CASE( test_lambda_int )
+{
+    BOOST_TEST_MESSAGE( "test_lambda_int" );
+    using namespace Feel;
+    auto mesh = unitSquare();
+    BOOST_TEST_MESSAGE( "test_lambda_int mesh generated" );
+    auto I = integrate( elements(mesh), _expr=_e1, _verbose=true );
+    BOOST_TEST_MESSAGE( "test_lambda_int integral defined" );
+
+    auto I1 = integrate( elements(mesh), Px()*Px()+Py()*Py() );
+    auto Xh = Pch<2>( mesh );
+    auto u = project( _space=Xh, _range=elements(mesh), _expr=Px()*Px()+Py()*Py() );
+
+    BOOST_CHECK_CLOSE( I1.evaluate()( 0, 0 ), 2./3., 1e-10 );
+    BOOST_CHECK_CLOSE( I( Px()*Px()+Py()*Py() ).evaluate()( 0, 0 ), 2./3., 1e-10 );
+    BOOST_CHECK_CLOSE( I( idv(u) ).evaluate()( 0, 0 ), 2./3., 1e-10 );
+
+    BOOST_TEST_MESSAGE( "test_lambda_int done" );
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
+
