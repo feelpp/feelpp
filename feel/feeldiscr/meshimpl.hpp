@@ -1356,7 +1356,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                     }
                 }
 
-                if ( !hasFind ) std::cout << "[mesh::updateEntitiesCoDimensionOneGhostCell] : PROBLEM NOT FIND" << std::endl;
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost cells are not available\n";
 
                 // get the good face
                 //auto face_it = faceIterator(theelt.face(j).id());
