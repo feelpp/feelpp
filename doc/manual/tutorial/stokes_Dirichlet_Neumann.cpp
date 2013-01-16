@@ -150,13 +150,7 @@ public:
     typedef Lagrange<POrder+1, Vectorial> basis_u_type;
     typedef Lagrange<POrder, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
-
-    // use lagrange multipliers to ensure zero mean pressure
-    //#if defined( FEELPP_USE_LM )
-    //typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
-    //#else
     typedef bases<basis_u_type,basis_p_type> basis_type;
-    //#endif
     //# endmarker1 #
 
     typedef bases<basis_u_type> basis_type_U;
@@ -321,8 +315,8 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::run()
 
 
     //# marker5 #
-    auto deft = gradt( u );
-    auto def = grad( v );
+    auto deft = sym(gradt( u ));
+    auto def = sym(grad( v ));
     //# endmarker5 #
 
     //# marker6 #
@@ -381,15 +375,18 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::run()
     std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
 
 
+
+#if (STOKESPRESSMESHTYPE == 2)
+    //****************** 3D **********************************************
+    auto D_ex = sym(gradv( u_exact ));
+
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     LOG(INFO) << "[stokes] vector local assembly done\n";
-    stokes_rhs += integrate( markedfaces( mesh,"inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (2*D_ex - p_exact)*N(),id(v) ) );
 
-
-#if (STOKESPRESSMESHTYPE == 2)
-    //****************** 3D **********************************************
+    // left hand side
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     mpi::timer chrono;
     stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
@@ -398,16 +395,23 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::run()
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ));
     std::cout << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
-     stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaNt,id( v ) ) );
-    // stokes +=integrate( markedfaces( mesh, "outlet" ), +inner( p_exact*N(),id( v ) ) );
-    stokes +=integrate( markedfaces( mesh, "outerWall" ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh, "inlet" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-    stokes +=integrate( markedfaces( mesh, "outerWall" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh, "outerWall" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+
+    stokes+=on( _range=markedfaces(mesh, "inlet"), _element=u,_rhs=stokes_rhs,
+                _expr=u_exact );
+    stokes+=on( _range=markedfaces(mesh, "outerWall"), _element=u,_rhs=stokes_rhs,
+                _expr=u_exact );
+
 
 #elif (STOKESPRESSMESHTYPE == 1)
     //******************* 2D **********************************
+    // right hand side
+    auto stokes_rhs = form1( _test=Xh, _vector=F );
+    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
+    LOG(INFO) << "[stokes] vector local assembly done\n";
+    stokes_rhs += integrate( markedfaces( mesh,"inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+
+
+
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     mpi::timer chrono;
     stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
@@ -599,7 +603,7 @@ main( int argc, char** argv )
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="stokes",
+                     _about=about(_name="stokes_Dirichlet_Neumann",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
