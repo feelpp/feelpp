@@ -274,8 +274,12 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     // projectors
 
 
-    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder*BasisU::nOrder);
-    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder); // with this one I can get order 1 !
+    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder*BasisU::nOrder);
+    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder); // with this one I can get order 1  for P1 and P2
+
+    //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder+1); // 0 !
+    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*2); // order 1 for P1, P2 and P3
+
     //    double diffnum = (meshSizeInit() / std::pow(2,level())) / BasisU::nOrder; // order 0
 
         //std::pow((meshSizeInit() / std::pow(2,level())) , BasisU::nOrder) ;
@@ -438,7 +442,8 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     double error_nod_kk = integrate(marked2elements(mesh, 1.),
                                (idv(kk_nod) -  1 / Radius_expr) * (idv(kk_nod) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_nod_kk = std::sqrt(error_nod_kk);
-    M_stats.put( "e.nod.kk", error_nod_kk);
+    if (error_nod_kk == error_nod_kk) // for P1 error_nod_kk = Nan and put crashes (get<double>)
+        M_stats.put( "e.nod.kk", error_nod_kk);
     LOG(INFO) << "e.nod.kk = " << error_nod_kk << "\n";
 
     double error_nod_phi = integrate(marked2elements(mesh, 1.),
