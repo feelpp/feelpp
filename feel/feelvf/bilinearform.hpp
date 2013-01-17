@@ -1189,9 +1189,14 @@ public:
                                      tag,
                                      ( required
                                        ( in_out( solution ),* )
-                                       ( rhs, * ) ) )
+                                       ( rhs, * ) )
+                                     ( optional
+                                       ( name,           ( std::string ), "" )
+                                       ( kind,           ( BackendType ), BACKEND_PETSC )
+                                       ( rebuild,        ( bool ), false )) )
         {
-            return backend()->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(), _solution=solution );
+            return backend( _name=name, _kind=kind, _rebuild=rebuild )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
+                                                                               _solution=solution);
         }
 
     //@}
