@@ -390,9 +390,9 @@ Stokes<nDim,uOrder,geoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_ex
     double mean_p = mean( _range=elements( u.mesh() ), _expr=idv( p ) )(0,0);
     LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
 
-    double p_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( p )-mean_p - p_exact ) );
+    double p_errorL2 = normL2( _range=elements( u.mesh() ), _expr=( idv( p ) - p_exact ) );
     LOG(INFO) << "||p_error||_2 = " << p_errorL2 << "\n";
-    M_stats.put( "e.l2.p", u_errorL2 );
+    M_stats.put( "e.l2.p", p_errorL2 );
 
     double mean_div_u = mean( _range=elements( u.mesh() ), _expr=divv( u ) )(0,0);
     LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
@@ -407,6 +407,7 @@ Stokes<nDim,uOrder,geoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_ex
     std::cout << "s inlet="  << s.norm() << "\n";
     std::cout << "error s inlet="  << math::abs(pi-s.norm()) << "\n";
     M_stats.put( "e.output.Fin", math::abs(pi-s.norm()) );
+    M_stats.put( "d.output.Fin", s.norm() );
 
     //v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     //q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
