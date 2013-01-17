@@ -413,11 +413,19 @@ public:
 
         typedef typename l_tensor_expr_type::shape left_shape;
         typedef typename r_tensor_expr_type::shape right_shape;
-        typedef Shape<3,Vectorial,false,false> shape;
+        typedef typename mpl::if_<mpl::equal_to<mpl::int_<left_shape::nDim>,mpl::int_<2> >,
+                                  mpl::identity<Shape<2,Scalar,false,false> >,
+                                  mpl::identity<Shape<3,Vectorial,false,false> > >::type::type shape;
         static const bool l_is_terminal = left_expression_type::is_terminal;
         static const bool r_is_terminal = right_expression_type::is_terminal;
-        BOOST_MPL_ASSERT_MSG( left_shape::nDim == 3, INVALID_DIMENSION__IT_SHOULD_BE_3, (mpl::int_<left_shape::nDim>));
-        BOOST_MPL_ASSERT_MSG( right_shape::nDim == 3, INVALID_DIMENSION__IT_SHOULD_BE_3, (mpl::int_<right_shape::nDim>));
+
+        BOOST_MPL_ASSERT_MSG( ( left_shape::nDim > 1 ),
+                              INVALID_DIMENSION,
+                              (mpl::int_<left_shape::nDim>,mpl::int_<right_shape::nDim>));
+        BOOST_MPL_ASSERT_MSG( left_shape::nDim == right_shape::nDim,
+                              INVALID_DIMENSION_LEFT_AND_RIGHT_SHOULD_BE_THE_SAME,
+                              (mpl::int_<left_shape::nDim>,mpl::int_<right_shape::nDim>));
+
         template <class Args> struct sig
         {
             typedef value_type type;
@@ -481,6 +489,18 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
+            return evalijq( i, j, cc1, cc2, q, mpl::int_<left_shape::nDim>() );
+        }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::int_<2> ) const
+        {
+            double res =  M_l_tensor_expr.evalijq( i, j, 0, 0, q )*M_r_tensor_expr.evalijq( i, j, 1, 0, q );
+            res -= M_l_tensor_expr.evalijq( i, j, 1, 0, q )*M_r_tensor_expr.evalijq( i, j, 0, 0, q );
+            return res;
+        }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::int_<3> ) const
+        {
             double res =  M_l_tensor_expr.evalijq( i, j, (cc1+1)%3, 0, q )*M_r_tensor_expr.evalijq( i, j, (cc1+2)%3, 0, q );
             res -= M_l_tensor_expr.evalijq( i, j, (cc1+2)%3, 0, q )*M_r_tensor_expr.evalijq( i, j, (cc1+1)%3, 0, q );
             return res;
@@ -488,12 +508,36 @@ public:
         value_type
         evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
+            return evaliq( i, cc1, cc2, q, mpl::int_<left_shape::nDim>() );
+        }
+        value_type
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::int_<2> ) const
+        {
+            double res =  M_l_tensor_expr.evaliq( i, 0, 0, q )*M_r_tensor_expr.evaliq( i, 1, 0, q );
+            res -= M_l_tensor_expr.evaliq( i, 1, 0, q )*M_r_tensor_expr.evaliq( i, 0, 0, q );
+            return res;
+        }
+        value_type
+        evaliq( uint16_type i, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::int_<3> ) const
+        {
             double res =  M_l_tensor_expr.evaliq( i, (cc1+1)%3, 0, q )*M_r_tensor_expr.evaliq( i, (cc1+2)%3, 0, q );
             res -= M_l_tensor_expr.evaliq( i, (cc1+2)%3, 0, q )*M_r_tensor_expr.evaliq( i, (cc1+1)%3, 0, q );
             return res;
         }
         value_type
         evalq( uint16_type cc1, uint16_type cc2, uint16_type q ) const
+        {
+            return evalq( cc1, cc2, q, mpl::int_<left_shape::nDim>() );
+        }
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::int_<2> ) const
+        {
+            double res =  M_l_tensor_expr.evalq( 0, 0, q )*M_r_tensor_expr.evalq( 1, 0, q );
+            res -= M_l_tensor_expr.evalq( 1, 0, q )*M_r_tensor_expr.evalq( 0, 0, q );
+            return res;
+        }
+        value_type
+        evalq( uint16_type cc1, uint16_type cc2, uint16_type q, mpl::int_<3> ) const
         {
             double res =  M_l_tensor_expr.evalq( (cc1+1)%3, 0, q )*M_r_tensor_expr.evalq( (cc1+2)%3, 0, q );
             res -= M_l_tensor_expr.evalq( (cc1+2)%3, 0, q )*M_r_tensor_expr.evalq( (cc1+1)%3, 0, q );
