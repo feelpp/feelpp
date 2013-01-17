@@ -496,40 +496,40 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::exportResults( ExprUExact u_exact, Ex
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
 #if (STOKESPRESSMESHTYPE ==2)
-    auto deff = gradv(u);
-    auto SigmaNN =(-idv(p)*vf::N()+mu*deff*vf::N());
+    auto deff = sym(gradv(u));
+    auto SigmaNN =(-idv(p)*vf::N()+2*mu*deff*vf::N());
     auto FappIn = integrate(markedfaces( mesh,"inlet" ) , SigmaNN).evaluate();
     auto Fapp1In = FappIn(0,0); //pour la prémière composante
     auto Fapp2In = FappIn(1,0); //pour la seconde
     auto Fapp3In = FappIn(2,0);
     std::cout << "Fapp1In = "<< pi-FappIn(0,0) << "\n" ;
-    std::cout << "Fapp2In = "<< FappIn(1,0) << "\n" ;
-    std::cout << "Fapp3In = "<< FappIn(2,0) << "\n" ;
+    std::cout << "Fapp2In = "<< -FappIn(1,0) << "\n" ;
+    std::cout << "Fapp3In = "<< -FappIn(2,0) << "\n" ;
     LOG(INFO) << "Fapp1In = "<< pi-FappIn(0,0) << "\n" ;
-    LOG(INFO) << "Fapp2In = "<< FappIn(1,0) << "\n" ;
-    LOG(INFO) << "Fapp3In = "<< FappIn(2,0) << "\n" ;
+    LOG(INFO) << "Fapp2In = "<< -FappIn(1,0) << "\n" ;
+    LOG(INFO) << "Fapp3In = "<< -FappIn(2,0) << "\n" ;
 
     auto FappOut = integrate(markedfaces( mesh,"outlet" ) , SigmaNN).evaluate();
     auto Fapp1Out = FappOut(0,0); //pour la prémière composante
     auto Fapp2Out = FappOut(1,0); //pour la seconde
     auto Fapp3Out = FappOut(2,0);
-    std::cout << "Fapp1Out = "<< FappOut(0,0) << "\n" ;
-    std::cout << "Fapp2Out = "<< FappOut(1,0) << "\n" ;
-    std::cout << "Fapp3Out = "<< FappOut(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1Out = "<< FappOut(0,0) << "\n" ;
-    LOG(INFO) << "Fapp2Out = "<< FappOut(1,0) << "\n" ;
-    LOG(INFO) << "Fapp3Out = "<< FappOut(2,0) << "\n" ;
+    std::cout << "Fapp1Out = "<< -FappOut(0,0) << "\n" ;
+    std::cout << "Fapp2Out = "<< -FappOut(1,0) << "\n" ;
+    std::cout << "Fapp3Out = "<< -FappOut(2,0) << "\n" ;
+    LOG(INFO) << "Fapp1Out = "<< -FappOut(0,0) << "\n" ;
+    LOG(INFO) << "Fapp2Out = "<< -FappOut(1,0) << "\n" ;
+    LOG(INFO) << "Fapp3Out = "<< -FappOut(2,0) << "\n" ;
 
     auto FappWall = integrate(markedfaces( mesh,"outerWall" ) , SigmaNN).evaluate();
     auto Fapp1Wall = FappWall(0,0); //pour la prémière composante
     auto Fapp2Wall = FappWall(1,0); //pour la seconde
     auto Fapp3Wall = FappWall(2,0);
-    std::cout << "Fapp1Wall = "<< +pi+FappWall(0,0) << "\n" ;
-    std::cout << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
-    std::cout << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1Wall = "<< +pi+FappWall(0,0) << "\n" ;
-    LOG(INFO) << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
-    LOG(INFO) << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
+    std::cout << "Fapp1Wall = "<< -pi-FappWall(0,0) << "\n" ;
+    std::cout << "Fapp2Wall = "<< -FappWall(1,0) << "\n" ;
+    std::cout << "Fapp3Wall = "<< -FappWall(2,0) << "\n" ;
+    LOG(INFO) << "Fapp1Wall = "<< -pi-FappWall(0,0) << "\n" ;
+    LOG(INFO) << "Fapp2Wall = "<< -FappWall(1,0) << "\n" ;
+    LOG(INFO) << "Fapp3Wall = "<< -FappWall(2,0) << "\n" ;
 
 #endif
 
@@ -565,6 +565,6 @@ main( int argc, char** argv )
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
-    Feel::Stokes_Dirichlet_Neumann<1,1> Stokes_Dirichlet_Neumann;
+    Feel::Stokes_Dirichlet_Neumann<2,1> Stokes_Dirichlet_Neumann;
     Stokes_Dirichlet_Neumann.run();
 }
