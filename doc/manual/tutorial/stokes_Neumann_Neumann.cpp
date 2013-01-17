@@ -1,4 +1,4 @@
-/*-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -23,7 +23,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file Stokes_Neumann_Neumann.cpp
+   \file stokes_Neumann_Neumann.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-01-04
  */
@@ -60,8 +60,8 @@ inline
 Feel::po::options_description
 makeOptions()
 {
-    Feel::po::options_description stokes_Neumann_Neumann( "Stokes_Neumann_Neumann options" );
-    stokes_Neumann_Neumann.add_options()
+    Feel::po::options_description stokesNeumannNeumannOptions( "Stokes_Neumann_Neumann options" );
+    stokesNeumannNeumannOptions.add_options()
     ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
     ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
     ( "mu", Feel::po::value<double>()->default_value( 1.0 ), "reaction coefficient component" )
@@ -70,7 +70,7 @@ makeOptions()
     ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
     ( "export-matlab", "export matrix and vectors in matlab" )
     ;
-    return stokes_Neumann_Neumann.add( Feel::feel_options() ) ;
+    return stokesNeumannNeumannOptions.add( Feel::feel_options() ) ;
 }
 
 
@@ -85,8 +85,8 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "Stokes_Neumann_Neumann" ,
-                           "Stokes_Neumann_Neumann" ,
+    Feel::AboutData about( "stokes_Neumann_Neumann" ,
+                           "stokes_Neumann_Neumann" ,
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
@@ -107,6 +107,7 @@ using namespace Feel::vf;
  * \brief solves the stokes equations
  *
  */
+template<int POrder=1,int GeoOrder=1>
 class Stokes_Neumann_Neumann
     :
 public Application
@@ -129,7 +130,6 @@ public:
      * STOKESMESHTYPE : mesh type
      * 1 : hypercube,2D, default
      * 2 : Cylinder, 3D
-     * 3 : read aorta mesh, 3D,!!!!! check path to mesh file !!!!!
      *************************************************************************/
 #ifndef STOKESPRESSMESHTYPE
 #define  STOKESPRESSMESHTYPE 1
@@ -137,9 +137,7 @@ public:
 #if (STOKESPRESSMESHTYPE == 1)
     typedef Simplex<2> convex_type;
 #elif (STOKESPRESSMESHTYPE == 2)
-    typedef Simplex<3> convex_type;
-#elif (STOKESPRESSMESHTYPE == 3)
-    typedef Simplex<3> convex_type;
+    typedef Simplex<3,GeoOrder> convex_type;
 #endif
 
     typedef Mesh<convex_type> mesh_type;
@@ -147,16 +145,11 @@ public:
 
     /*basis*/
     //# marker1 #,
-    typedef Lagrange<4, Vectorial> basis_u_type;
-    typedef Lagrange<3, Scalar> basis_p_type;
-    typedef Lagrange<0, Scalar> basis_l_type;
 
-    // use lagrange multipliers to ensure zero mean pressure
-#if defined( FEELPP_USE_LM )
-    typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
-#else
+    typedef Lagrange<POrder+1, Vectorial> basis_u_type;
+    typedef Lagrange<POrder, Scalar> basis_p_type;
+    typedef Lagrange<0, Scalar> basis_l_type;
     typedef bases<basis_u_type,basis_p_type> basis_type;
-#endif
     //# endmarker1 #
 
     typedef bases<basis_u_type> basis_type_U;
@@ -171,14 +164,14 @@ public:
 
     /* functions */
     //# marker3 #
-    typedef space_type::element_type element_type;
+    typedef typename space_type::element_type element_type;
     //# endmarker3 #
 
     /* export */
     typedef Exporter<mesh_type> export_type;
 
     FEELPP_DONT_INLINE
-    Stokes_Neumann_Neumann( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    Stokes_Neumann_Neumann( );
 
     // init mesh and space
     FEELPP_DONT_INLINE
@@ -196,17 +189,10 @@ private:
     /**
      * export results to ensight format (enabled by  --export cmd line options)
      */
-
-#if (STOKESPRESSMESHTYPE == 1) ||( STOKESPRESSMESHTYPE == 2 )
     template<typename ExprUExact, typename ExprPExact>
     FEELPP_DONT_INLINE
     void exportResults( ExprUExact uexact, ExprPExact pexact,
                         element_type& u, element_type& v );
-#elif (STOKESPRESSMESHTYPE == 3 )
-    /* no exact solution know for the aorta case */
-    FEELPP_DONT_INLINE
-    void exportResults(element_type& u, element_type& v );
-#endif
 
 private:
 
@@ -225,21 +211,22 @@ private:
     boost::shared_ptr<export_type> exporter;
 }; // Stokes
 
-
-Stokes_Neumann_Neumann::Stokes_Neumann_Neumann( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+template<int POrder, int GeoOrder>
+Stokes_Neumann_Neumann<POrder,GeoOrder>::Stokes_Neumann_Neumann( )
     :
-    super( argc, argv, ad, od ),
+    super( ),
     M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].as<double>() ),
-    mu( this->vm()["mu"].as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].as<value_type>() ),
+    meshSize( this->vm()["hsize"].template as<double>() ),
+    mu( this->vm()["mu"].template as<value_type>() ),
+    penalbc( this->vm()["bccoeff"].template as<value_type>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
 
 }
 
+template<int POrder, int GeoOrder>
 void
-Stokes_Neumann_Neumann::init()
+Stokes_Neumann_Neumann<POrder,GeoOrder>::init()
 {
     if ( this->vm().count( "help" ) )
     {
@@ -248,107 +235,87 @@ Stokes_Neumann_Neumann::init()
     }
 
 
-
     if ( this->vm().count( "nochdir" ) == false )
-        this->changeRepository( boost::format( "doc/tutorial/%1%/aorta_M2/Part%6%/P%3%P%4%/h_%5%/" )
+        this->changeRepository( boost::format( "doc/tutorial/%1%/%2%/Part%6%/P%3%P%4%/h_%5%/" )
                                 % this->about().appName()
                                 % convex_type::name()
                                 % basis_u_type::nOrder % basis_p_type::nOrder
-                                % this->vm()["hsize"].as<double>()
+                                % this->vm()["hsize"].template as<double>()
                                 % Environment::numberOfProcessors() );
 
-    auto r=1;
-    auto L=5;
-    /************************************************************************
-     ********************* MESH GENERATION **********************************
-     ***********************************************************************/
 #if (STOKESPRESSMESHTYPE == 1)
     //********************** Rectangle ***************************************
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                           _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
-                                         _shape="hypercube",
-                                         _dim=convex_type().dimension(),
-                                         _h=meshSize,
-                                         _xmin=0,
-                                         _xmax=L,
-                                         _ymin=-r,
-                                         _ymax=r  ) );
+                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                            _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
+                                          _shape="hypercube",
+                                          _dim=convex_type().dimension(),
+                                          _h=meshSize ) );
 
-    mesh->addMarkerName( "Inlet", 1, 1 );
-    mesh->addMarkerName( "Outlet", 3, 1 );
-    mesh->addMarkerName( "wall1", 2, 1 );
-    mesh->addMarkerName( "wall2", 4, 1 );
+     mesh->addMarkerName( "inlet", 1, 1 );
+     mesh->addMarkerName( "outlet", 3, 1 );
+     mesh->addMarkerName( "wall1", 2, 1 );
+     mesh->addMarkerName( "wall2", 4, 1 );
     std::cout << "number of elements of 2D: " << mesh->numElements() << "\n";
     //************************ Cylindre ****************************************
-#elif (STOKESPRESSMESHTYPE == 2 ) 
+#elif (STOKESPRESSMESHTYPE == 2 )
     GeoTool::Node Centre(0,0,0);
-    GeoTool::Node Rayon( r );
+    GeoTool::Node Rayon( 1);
     GeoTool::Node Dir(1,0,0);
-    GeoTool::Node Lg(L,0,0);
+    GeoTool::Node Lg(5,0,0);
     GeoTool::Cylindre C( meshSize,"Cyl",Centre,Dir,Rayon,Lg);
-    C.setMarker(_type="surface",_name="Inlet",_marker1=true);
-    C.setMarker(_type="surface",_name="Outlet",_marker2=true);
-    C.setMarker(_type="surface",_name="Wall",_marker3=true);
+    C.setMarker(_type="surface",_name="inlet",_marker1=true);
+    C.setMarker(_type="surface",_name="outlet",_marker2=true);
+    C.setMarker(_type="surface",_name="outerWall",_marker3=true);
     C.setMarker(_type="volume",_name="OmegaFluide",_markerAll=true);
 
     mesh = C.createMesh(_mesh= new mesh_type,
                         _name="mymesh",
                         _partitions=Environment::worldComm().localSize(),
                         _worldcomm=Environment::worldComm() );
-
-    //*************************************************************************
-#elif (STOKESPRESSMESHTYPE == 3)
-   //************************ Aorte ****************************************
-    mesh = loadGMSHMesh( _mesh=new mesh_type,
-                         _filename="/scratch/projet10/celine/aorta_M2.msh",
-                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                         _physical_are_elementary_regions=false,
-                         _rebuild_partitions=true,
-                         _partitions=Environment::worldComm().localSize(),
-                         _worldcomm=Environment::worldComm() );
-
-    std::cout << "number of elements of 3D: " << mesh->numElements() << "\n";
-
-    //*********************************************************************
-
+    std::cout << "number of elements : " << mesh->numElements() << "\n";
 #endif
+    //*************************************************************************
+
+
+
+
 
     Xh = space_type::New( mesh );
-    std::cout << "\nnDof "  << Xh->nDof() << std::endl;
     P7=space_type_U::New(mesh);
     F = M_backend->newVector( Xh );
     D =  M_backend->newMatrix( Xh, Xh );
 }
+template<int POrder, int GeoOrder>
 void
-Stokes_Neumann_Neumann::run()
+Stokes_Neumann_Neumann<POrder,GeoOrder>::run()
 {
     this->init();
 
     auto U = Xh->element( "(u,p)" );
     auto V = Xh->element( "(u,q)" );
-    auto u = U.element<0>( "u" );
-    auto v = V.element<0>( "u" );
-    auto p = U.element<1>( "p" );
-    auto q = V.element<1>( "p" );
-#if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
-#endif
+    auto u = U.template element<0>( "u" );
+    auto v = V.template element<0>( "u" );
+    auto p = U.template element<1>( "p" );
+    auto q = V.template element<1>( "p" );
+    //#if defined( FEELPP_USE_LM )
+    //auto lambda = U.template element<2>();
+    //auto nu = V.template element<2>();
+    //#endif
     //# endmarker4 #
 
-    Log() << "Data Summary:\n";
-    Log() << "   hsize = " << meshSize << "\n";
-    Log() << "  export = " << this->vm().count( "export" ) << "\n";
-    Log() << "      mu = " << mu << "\n";
-    Log() << " bccoeff = " << penalbc << "\n";
+    LOG(INFO) << "Data Summary:\n";
+    LOG(INFO) << "   hsize = " << meshSize << "\n";
+    LOG(INFO) << "  export = " << this->vm().count( "export" ) << "\n";
+    LOG(INFO) << "      mu = " << mu << "\n";
+    LOG(INFO) << " bccoeff = " << penalbc << "\n";
 
 
 
 
     //# marker5 #
-    auto deft = gradt( u );
-    auto def = grad( v );
+    auto deft = sym(gradt( u ));
+    auto def = sym(grad( v ));
     //# endmarker5 #
 
     //# marker6 #
@@ -358,6 +325,19 @@ Stokes_Neumann_Neumann::run()
     // total stress tensor (test)
     auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
+
+//     //*********************  solution exacte (profile de poiseuille)2D **********************
+// #if (STOKESPRESSMESHTYPE == 1)
+//     auto u_exact=vec(Py()*(1-Py()),cst(0.) );
+//     auto p_exact=(-2*Px()+1);
+//     auto f=vec(cst(0.) , cst(0.) );
+
+//     //*********************  solution exacte (profile de poiseuille)3D **********************
+// #elif (STOKESPRESSMESHTYPE == 2)
+//     auto u_exact=vec(  (1-Py()*Py()-Pz()*Pz() ) , cst(0.) , cst(0.) );
+//     auto p_exact=(-4*Px()+20);
+//     auto f=vec(cst(0.) , cst(0.), cst(0.) );
+// #endif
 
     auto r=1;
     auto L=5;
@@ -372,8 +352,6 @@ Stokes_Neumann_Neumann::run()
 
     auto f=vec(cst(0.) , cst(0.) );
     //*************************************************************************************
-
-
 #elif  (STOKESPRESSMESHTYPE == 2)
     //*********************  solution exacte (profile de poiseuille)3D **********************
     // exact solution known for cylinder (3D toy model)
@@ -383,146 +361,236 @@ Stokes_Neumann_Neumann::run()
 
     auto f=vec(cst(0.) , cst(0.), cst(0.) );
     //*************************************************************************************
-
-#elif (STOKESPRESSMESHTYPE == 3)
-    // no exact solution known for the aorta (3D)
-    // test case with f = 0
-    auto f=vec(cst(0.) , cst(0.), cst(0.) );
 #endif
-    std::cout << "Treating the right hand side \n";
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
+    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+    //////////////////////////////////////////////////////////////////////////////////////////
+
+    double taille = 4*math::atan(1.)*r*r*L;
+    double mean_p_exact = integrate( elements( mesh ),  p_exact ).evaluate()(0,0) /taille;
+    std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+
+
+
+#if (STOKESPRESSMESHTYPE == 2)
+    //****************** 3D **********************************************
+    auto u_ex_proj=vf::project(P7,elements(mesh),u_exact);
+    auto D_ex = sym(gradv(u_ex_proj ));
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
-#if (STOKESPRESSMESHTYPE==1) || (STOKESPRESSMESHTYPE == 2)
-    stokes_rhs += integrate( markedfaces( mesh,"Inlet" ),inner(-P_inlet*N(),id( v )) );
-#elif (STOKESPRESSMESHTYPE == 3)
-    stokes_rhs += integrate( markedfaces( mesh,"inlet" ),inner(-P_inlet*N(),id( v )) );
-#endif
-    /*
-     * Construction of the left hand side
-     */
-    //# marker7 #
-    std::cout << "Treating the left  hand side \n";
+    LOG(INFO) << "[stokes] vector local assembly done\n";
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (-p_exact)*N(),id(v) ) );
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (2*D_ex)*N(),id(v) ) );
+
+    stokes_rhs += integrate( markedfaces( mesh,"inlet" ), inner( (-p_exact)*N(),id(v) ) );
+    stokes_rhs += integrate( markedfaces( mesh,"inlet" ), inner( (2*D_ex)*N(),id(v) ) );
+
+    // left hand side
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
-    boost::timer chrono;
-    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
-
-
+    mpi::timer chrono;
+    stokes += integrate( elements( mesh ),2*mu*inner( deft,def ) );
     std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
-    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
-    //***cylindre
-#if (STOKESPRESSMESHTYPE == 2)
-    stokes +=integrate( markedfaces( mesh, "Wall" ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh, "Wall" ), -inner( SigmaN,id( u ) ) );
-    stokes +=integrate( markedfaces( mesh, "Wall" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-#elif (STOKESPRESSMESHTYPE == 1)
-    //***Hypercube
-    stokes +=integrate( markedfaces( mesh, "wall1" ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall2" ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall1" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall2" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall1" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-    stokes +=integrate( markedfaces( mesh, "wall2" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-#elif (STOKESPRESSMESHTYPE == 3)
-    stokes +=integrate( markedfaces( mesh, "wall" ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-#endif
+    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ));
     std::cout << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
 
+    stokes+=on( _range=markedfaces(mesh, "outerWall"), _element=u,_rhs=stokes_rhs,
+                _expr=u_exact );
 
+
+#elif (STOKESPRESSMESHTYPE == 1)
+    //******************* 2D **********************************
+    // right hand side
+    auto stokes_rhs = form1( _test=Xh, _vector=F );
+    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
+    LOG(INFO) << "[stokes] vector local assembly done\n";
+    stokes_rhs += integrate( markedfaces( mesh,"inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+
+
+
+    auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
+    mpi::timer chrono;
+    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
+    std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
+    chrono.restart();
+    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ));
+    std::cout << "(u,p): " << chrono.elapsed() << "\n";
+    chrono.restart();
+    stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaNt,id( v ) ) );
+    stokes +=integrate( markedfaces( mesh, "wall1" ), -inner( SigmaNt,id( v ) ) );
+    stokes +=integrate( markedfaces( mesh, "wall2" ), -inner( SigmaNt,id( v ) ) );
+
+    stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaN,idt( u ) ) );
+    stokes +=integrate( markedfaces( mesh, "wall1" ), -inner( SigmaN,idt( u ) ) );
+    stokes +=integrate( markedfaces( mesh, "wall2" ), -inner( SigmaN,idt( u ) ) );
+
+    stokes +=integrate( markedfaces( mesh, "inlet" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    stokes +=integrate( markedfaces( mesh, "wall1" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    stokes +=integrate( markedfaces( mesh, "wall2" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+#endif
+
+    std::cout << "bc: " << chrono.elapsed() << "\n";
+    chrono.restart();
     //# endmarker7 #
 
-    M_backend->solve( _matrix=D, _solution=U, _rhs=F );
+    //M_backend->solve( _matrix=D, _solution=U, _rhs=F );
 
-#if 0
-    U.save( _path="." );
-    u.save( _path="." );
-    p.save( _path="." );
-    V.load( _path="." );
-    v.load( _path="." );
-    q.load( _path="." );
-    std::cout << "||u-v||=" << ( u-v ).l2Norm() << "\n";
-    std::cout << "||p-q||=" << ( p-q ).l2Norm() << "\n";
-#endif
-    std::cout << "Export results..." << std::endl;
-#if (STOKESPRESSMESHTYPE == 1) || (STOKESPRESSMESHTYPE == 2)
-    this->exportResults( u_exact, p_exact, U, V );
-#elif (STOKESPRESSMESHTYPE == 3)
-    this->exportResults( U, V );
-#endif
-    Log() << "[dof]         number of dof: " << Xh->nDof() << "\n";
-    Log() << "[dof]    number of dof/proc: " << Xh->nLocalDof() << "\n";
-    Log() << "[dof]      number of dof(U): " << Xh->functionSpace<0>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(U): " << Xh->functionSpace<0>()->nLocalDof()  << "\n";
-    Log() << "[dof]      number of dof(P): " << Xh->functionSpace<1>()->nDof()  << "\n";
-    Log() << "[dof] number of dof/proc(P): " << Xh->functionSpace<1>()->nLocalDof()  << "\n";
+    stokes.solve( _rhs=stokes_rhs, _solution=U);
+    size_type nnz = 0 ;
+    auto nNz = D->graph()->nNz() ;
+    for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
+        nnz += ( *iter ) ;
+    size_type gnnz=0;
+    mpi::all_reduce( this->comm(), nnz, gnnz, [] ( size_type x, size_type y ) {return x + y;} );
+    LOG(INFO) << "[nnz]       number of local nnz: " << nnz << " global: "  << gnnz << "\n";
+    LOG(INFO) << "[dof]             number of dof: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]        number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]          number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof]     number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]          number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof]     number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+
+    std::cout << "[nnz]       number of local nnz: " << nnz << " global: "  << gnnz << "\n";
+    std::cout << "[dof]             number of dof: " << Xh->nDof() << "\n";
+    std::cout << "[dof]        number of dof/proc: " << Xh->nLocalDof() << "\n";
+    std::cout << "[dof]          number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    std::cout << "[dof]     number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    std::cout << "[dof]          number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    std::cout << "[dof]     number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+
+
+ this->exportResults( u_exact, p_exact, U, V );
 } // Stokes::run
 
 
-#if (STOKESPRESSMESHTYPE == 1) || (STOKESPRESSMESHTYPE == 2)
+template<int POrder, int GeoOrder>
 template<typename ExprUExact, typename ExprPExact>
 void
-    Stokes_Neumann_Neumann::exportResults( ExprUExact u_exact, ExprPExact p_exact,
+Stokes_Neumann_Neumann<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_exact,
                        element_type& U, element_type& V )
-#elif (STOKESPRESSMESHTYPE == 3 )
-void
-    Stokes_Neumann_Neumann::exportResults(element_type& U, element_type& V )
-#endif
 {
-    auto u = U.element<0>();
-    auto p = U.element<1>();
+    auto u = U.template element<0>();
+    auto p = U.template element<1>();
 
-    auto v = V.element<0>();
-    auto q = V.element<1>();
-#if defined( FEELPP_USE_LM )
-    auto lambda = U.element<2>();
-    auto nu = V.element<2>();
-    Log() << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
-    std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    auto v = V.template element<0>();
+    auto q = V.template element<1>();
+    //#if defined( FEELPP_USE_LM )
+    //auto lambda = U.template element<2>();
+    //auto nu = V.template element<2>();
+    //LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    //std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
-#endif
-#if (STOKESPRESSMESHTYPE == 1) || (STOKESPRESSMESHTYPE == 2)
-    double outflow_inlet = integrate( markedfaces( u.mesh(),"Inlet" ), inner( idv(u),N() ) ).evaluate()(0,0);
-    double outflow_outlet = integrate( markedfaces( u.mesh(),"Outlet" ), inner( idv(u),N() ) ).evaluate()(0,0);
-#elif (STOKESPRESSMESHTYPE == 3)
-    double outflow_inlet = integrate( markedfaces( u.mesh(),"inlet" ), inner( idv(u),N() ) ).evaluate()(0,0);
-    double outflow_outlet = integrate( markedfaces( u.mesh(),"outlets"), inner( idv(u),N() ) ).evaluate()(0,0);
-#endif
-    std::cout<<"outflow inlet = "<< outflow_inlet<<"\n";
-    std::cout<<"outflow outlet = "<< outflow_outlet<<"\n";
-    std::cout<<"flow difference = "<<outflow_inlet+outflow_outlet<<"\n";
-   // Cylindre //
-#if (STOKESPRESSMESHTYPE == 2)
-    // exact outflow known in cylinder toy model (3D)
-    auto r=1;
-    auto L=5;
-    auto P_inlet=1.;
-    auto P_outlet=0.;
-    double outflow_exact = ((4*math::atan(1.) * r * r * r * r)/(8*L))*(P_inlet-P_outlet);
-    std::cout<<"exact outflow = "<<outflow_exact<<"\n";
+    //#endif
+
+    auto u_exact_proj=vf::project(P7,elements(mesh),u_exact);
+
+    double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
+    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
+    LOG(INFO) <<"||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
+
+    double meas = integrate( elements( u.mesh() ), cst( 1.0 )).evaluate()( 0, 0 );
+#if (STOKESPRESSMESHTYPE ==2)
+    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to "<< 4*math::atan(1.)*5 << ")\n";
+    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to "<< 4*math::atan(1.)*5 << ")\n";
+#elif (STOKESPRESSMESHTYPE == 1)
+    LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to  1)\n";
+    std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to  1)\n";
 #endif
 
-#if (STOKESPRESSMESHTYPE==1) || (STOKESPRESSMESHTYPE==2)
+    double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
+    LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
+
+    std::cout << "[stokes] mean(p)=" << mean_p << "\n";
+
+    // ////////////////////////////////////////////////////////////////////////////////////////
+    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
+    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+    // //////////////////////////////////////////////////////////////////////////////////////////
+
+
+    // double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ), _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact )).evaluate()( 0, 0 );
+    std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
+    LOG(INFO) <<"||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
+    LOG(INFO) << "[stokes] solve for D done\n";
+
+
+
+    double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
+    double H1_u=math::sqrt( u_errorH1 );
+    std::cout << "||u_errorH1||_2 = " <<H1_u<< "\n";
+    LOG(INFO) << "||u_errorH1||_2 = " <<H1_u<< "\n";
+
+    double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
+    LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+    std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
+
+    double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
+    LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+
+    std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
+
     v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
+#if (STOKESPRESSMESHTYPE ==2)
+    auto deff = gradv(u);
+    auto SigmaNN =(-idv(p)*vf::N()+mu*deff*vf::N());
+    auto FappIn = integrate(markedfaces( mesh,"inlet" ) , SigmaNN).evaluate();
+    auto Fapp1In = FappIn(0,0); //pour la prémière composante
+    auto Fapp2In = FappIn(1,0); //pour la seconde
+    auto Fapp3In = FappIn(2,0);
+    std::cout << "Fapp1In = "<< pi-FappIn(0,0) << "\n" ;
+    std::cout << "Fapp2In = "<< FappIn(1,0) << "\n" ;
+    std::cout << "Fapp3In = "<< FappIn(2,0) << "\n" ;
+    LOG(INFO) << "Fapp1In = "<< pi-FappIn(0,0) << "\n" ;
+    LOG(INFO) << "Fapp2In = "<< FappIn(1,0) << "\n" ;
+    LOG(INFO) << "Fapp3In = "<< FappIn(2,0) << "\n" ;
+
+    auto FappOut = integrate(markedfaces( mesh,"outlet" ) , SigmaNN).evaluate();
+    auto Fapp1Out = FappOut(0,0); //pour la prémière composante
+    auto Fapp2Out = FappOut(1,0); //pour la seconde
+    auto Fapp3Out = FappOut(2,0);
+    std::cout << "Fapp1Out = "<< FappOut(0,0) << "\n" ;
+    std::cout << "Fapp2Out = "<< FappOut(1,0) << "\n" ;
+    std::cout << "Fapp3Out = "<< FappOut(2,0) << "\n" ;
+    LOG(INFO) << "Fapp1Out = "<< FappOut(0,0) << "\n" ;
+    LOG(INFO) << "Fapp2Out = "<< FappOut(1,0) << "\n" ;
+    LOG(INFO) << "Fapp3Out = "<< FappOut(2,0) << "\n" ;
+
+    auto FappWall = integrate(markedfaces( mesh,"outerWall" ) , SigmaNN).evaluate();
+    auto Fapp1Wall = FappWall(0,0); //pour la prémière composante
+    auto Fapp2Wall = FappWall(1,0); //pour la seconde
+    auto Fapp3Wall = FappWall(2,0);
+    std::cout << "Fapp1Wall = "<< +pi+FappWall(0,0) << "\n" ;
+    std::cout << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
+    std::cout << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
+    LOG(INFO) << "Fapp1Wall = "<< +pi+FappWall(0,0) << "\n" ;
+    LOG(INFO) << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
+    LOG(INFO) << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
+
 #endif
+
+
     if ( exporter->doExport() )
     {
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
         exporter->step( 0 )->addRegions();
-        //auto v = U.functionSpace()->functionSpace<0> ()->element();
-        //v = U.element<0>();
-        exporter->step( 0 )->add( "u", U.element<0>() );
-        exporter->step( 0 )->add( "p", U.element<1>() );
-#if (STOKESPRESSMESHTYPE==1)|| (STOKESPRESSMESHTYPE == 2)
-        exporter->step( 0 )->add( "u_exact", V.element<0>() );
-        exporter->step( 0 )->add( "p_exact", V.element<1>() );
-#endif
+        auto v = U.functionSpace()->template functionSpace<0> ()->element();
+        v = U.template element<0>();
+        exporter->step( 0 )->add( "u", U.template element<0>() );
+        //exporter->step( 0 )->add( "ux", v.comp( X ) );
+        //exporter->step( 0 )->add( "uy", v.comp( Y ) );
+        exporter->step( 0 )->add( "u", U.template element<0>() );
+        exporter->step( 0 )->add( "p", U.template element<1>() );
+        exporter->step( 0 )->add( "u_exact", V.template element<0>() );
+        exporter->step( 0 )->add( "p_exact", V.template element<1>() );
         exporter->save();
     }
 
@@ -535,12 +603,12 @@ main( int argc, char** argv )
 
     using namespace Feel;
 
-    Environment env( argc, argv );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="stokes_Neumann_Neumann",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org") );
 
-    /* assertions handling */
-    Feel::Assert::setLog( "stokes.assert" );
-
-    /* define and run application */
-    Feel::Stokes_Neumann_Neumann Stokes_Neumann_Neumann( argc, argv, makeAbout(), makeOptions() );
+    Feel::Stokes_Neumann_Neumann<1,1> Stokes_Neumann_Neumann;
     Stokes_Neumann_Neumann.run();
 }
