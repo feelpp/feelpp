@@ -386,6 +386,7 @@ Stokes<nDim,uOrder,geoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_ex
     double u_error_H1 = math::sqrt( u_errorL2*u_errorL2+u_errorsemiH1 );
     std::cout << "||u_error||_1= " << u_error_H1 << "\n";
     M_stats.put( "e.h1.u",u_error_H1 );
+    M_stats.put( "e.semih1.u", math::sqrt(u_errorsemiH1) );
 
     double mean_p = mean( _range=elements( u.mesh() ), _expr=idv( p ) )(0,0);
     LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
