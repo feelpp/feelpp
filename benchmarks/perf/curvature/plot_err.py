@@ -10,54 +10,83 @@ from scipy import *
 from numpy import *
 from pylab import *
 
+from headerFile import *
+
 # rc("text",usetex=True)
 # rc('font', family='serif')
 
 list_file = sys.argv[1:len(sys.argv)]
 
+def line_fit(_h, _e, _coeff) :
+    hh = np.arange( min(_h)/2, 2* max(_h), (2*max(_h) - min(_h) / 2.) / 50. )
+    c0 = _e[-1] / _h[-1]**_coeff
+    yy = [ c0 * _y**_coeff for _y in hh ]
+    return (hh, yy, _coeff)
+
 
 for f in list_file :
 
-    data = np.loadtxt(f, skiprows=1)
+    hf = HeaderFile( f, skiprows=1 )
 
-    h = data[:,1]
-    nod = data[:,2]
-    l2 = data[:,10]
-    l2_int = data[:,16]
-    sm = data[:,18]
-    hs_proj = data[:,20]
-    hs = data[:,22]
+    porder = 1.
 
-    nod_coeff = np.polyfit( np.log(h), np.log(nod), 1)
-    l2_coeff = np.polyfit( np.log(h), np.log(l2), 1)
-    l2_int_coeff = np.polyfit( np.log(h), np.log(l2_int), 1)
-    sm_coeff = np.polyfit( np.log(h), np.log(sm), 1)
-    hs_proj_coeff = np.polyfit( np.log(h), np.log(hs_proj), 1)
-    hs_coeff = np.polyfit( np.log(h), np.log(hs), 1)
+    h = hf["h"]
+    nod = hf["e.nod.k"]
+    nod_fit = line_fit(h, nod, hf["e.nod.k.roc"][-1])
+
+    l2 = hf["e.l2.k"]
+    l2_fit = line_fit(h, l2, hf["e.l2.k.roc"][-1])
+
+    sm = hf["e.sm.k"]
+    sm_fit = line_fit(h, sm, hf["e.sm.k.roc"][-1])
+
+    hs = hf["e.hs.k"]
+    hs_fit = line_fit(h, hs, hf["e.hs.k.roc"][-1])
+
+    opt = hf["e.opt.k"]
+    opt_fit = line_fit(h, opt, hf["e.opt.k.roc"][-1])
 
     plt.figure(1)
-    plt.plot(np.log(h), np.log(nod), marker="+", linestyle="-", label="nod coeff = %.2f "%nod_coeff[0]+f)
+    plt.title("nodal error")
+    plt.plot(np.log(h), np.log(nod), marker="^", linestyle="", label="")
+    plt.plot(np.log(nod_fit[0]), np.log(nod_fit[1]), linestyle="-", marker="", label="%.2f"%nod_fit[2])
+    plt.ylabel("error")
+    plt.xlabel("h")
+    plt.legend()
 
-    plt.figure(2)
-    plt.plot(np.log(h), np.log(l2), marker="+", linestyle="-", label="ls coeff = %.2f "%l2_coeff[0]+f)
+    # plt.figure(2)
+    # plt.title("L2 error")
+    # plt.plot(np.log(h), np.log(l2), marker="^", linestyle="", label="")
+    # plt.plot(np.log(l2_fit[0]), np.log(l2_fit[1]), linestyle="-", marker="", label="%.2f"%l2_fit[2])
+    # plt.ylabel("error")
+    # plt.xlabel("h")
+    # plt.legend()
 
     plt.figure(3)
-    plt.plot(np.log(h), np.log(l2_int), marker="+", linestyle="-", label="l2_int coeff = %.2f "%sm_coeff[0]+f)
+    plt.title("smooth error")
+    plt.plot(np.log(h), np.log(sm), marker="^", linestyle="", label="")
+    plt.plot(np.log(sm_fit[0]), np.log(sm_fit[1]), linestyle="-", marker="", label="%.2f"%sm_fit[2])
+    plt.ylabel("error")
+    plt.xlabel("h")
+    plt.legend()
 
-    plt.figure(4)
-    plt.plot(np.log(h), np.log(sm), marker="+", linestyle="-", label="sm coeff = %.2f "%sm_coeff[0]+f)
+    # plt.figure(4)
+    # plt.title("hessian error")
+    # plt.plot(np.log(h), np.log(hs), marker="^", linestyle="", label="")
+    # plt.plot(np.log(hs_fit[0]), np.log(hs_fit[1]), linestyle="-", marker="", label="%.2f"%hs_fit[2])
+    # plt.ylabel("error")
+    # plt.xlabel("h")
+    # plt.legend()
 
     plt.figure(5)
-    plt.plot(np.log(h), np.log(hs_proj), marker="+", linestyle="-", label="hs_proj coeff = %.2f "%hs_proj_coeff[0]+f)
+    plt.title("optimal error")
+    plt.plot(np.log(h), np.log(opt), marker="^", linestyle="", label="")
+    plt.plot(np.log(opt_fit[0]), np.log(opt_fit[1]), linestyle="-", marker="", label="%.2f"%opt_fit[2])
+    plt.ylabel("error")
+    plt.xlabel("h")
+    plt.legend()
 
-    plt.figure(6)
-    plt.plot(np.log(h), np.log(hs), marker="+", linestyle="-", label="hs coeff = %.2f "%hs_coeff[0]+f)
 
-    del data
-
-plt.ylabel("log(e)")
-plt.xlabel("log(h)")
-plt.legend()
 plt.show()
 
 
