@@ -58,7 +58,7 @@ std::string _o( std::string const& prefix, std::string const& opt )
 
 enum class SamplingMode
 {
-    RANDOM = 0, EQUIDISTRIBUTED = 1
+    RANDOM = 0, EQUIDISTRIBUTED = 1, LOGEQUIDISTRIBUTED = 2
 };
 
 #define prec 4
@@ -315,6 +315,10 @@ public:
             case SamplingMode::EQUIDISTRIBUTED:
                 Sampling->equidistribute( run_sampling_size  );
                 break;
+
+            case SamplingMode::LOGEQUIDISTRIBUTED:
+                Sampling->logEquidistribute( run_sampling_size  );
+                break;
             }
 
 
@@ -354,19 +358,35 @@ public:
             /* Example of use of the setElements
             vector_parameter_type V;
             parameter_type UserMu( model->parameterSpace() );
-            for(int i=1; i<10; i++)        {UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            for(int i=10; i<100; i+=10)    { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=1; i<10; i++)        { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=10; i<100; i+=10)    { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
             for(int i=1e2; i<1e3; i+=1e2)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
             for(int i=1e3; i<1e4; i+=1e3)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
             //UserMu(0)=1e4;  UserMu(1)=1; V.push_back(UserMu );
             for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //UserMu(0)=1e5;  UserMu(1)=1; V.push_back(UserMu );
             for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
             UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
             //for(int i=1e6; i<1e7; i+=1e6)
-                //    UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );
+            //    UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );
             //UserMu(0)=1e7;  UserMu(1)=1; V.push_back(UserMu );
+            //UserMu(0)=1e3;  UserMu(1)=1; V.push_back(UserMu );
             Sampling->setElements( V );
-            */
+*/
+            if( this->vm()["crb.use-predefined-test-sampling"].template as<bool>() )
+            {
+                std::string file_name = ( boost::format("SamplingForTest") ).str();
+                std::ifstream file ( file_name );
+                if( file  )
+                {
+                    Sampling->readFromFile( file_name ) ;
+                }
+                else
+                    throw std::logic_error( "[OpusApp] file SamplingForTest was not found" );
+
+            }
+
+
 
             //Statistics
             vectorN_type l2_error_vector( Sampling->size() );

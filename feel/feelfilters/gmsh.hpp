@@ -64,6 +64,10 @@ enum GMSH_PARTITIONER
     GMSH_PARTITIONER_METIS = 2
 
 };
+
+extern const int GMSH_PARTITIONER_DEFAULT;
+
+
 enum GMSH_ORDER
 {
     GMSH_ORDER_ONE = 1,
@@ -731,7 +735,7 @@ BOOST_PARAMETER_FUNCTION(
       ( rebuild_partitions,	(bool), false )
       ( rebuild_partitions_filename,	*, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_DEFAULT )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
         )
     )
