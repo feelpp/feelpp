@@ -331,18 +331,6 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
     auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
-//     //*********************  solution exacte (profile de poiseuille)2D **********************
-// #if (STOKESPRESSMESHTYPE == 1)
-//     auto u_exact=vec(Py()*(1-Py()),cst(0.) );
-//     auto p_exact=(-2*Px()+1);
-//     auto f=vec(cst(0.) , cst(0.) );
-
-//     //*********************  solution exacte (profile de poiseuille)3D **********************
-// #elif (STOKESPRESSMESHTYPE == 2)
-//     auto u_exact=vec(  (1-Py()*Py()-Pz()*Pz() ) , cst(0.) , cst(0.) );
-//     auto p_exact=(-4*Px()+20);
-//     auto f=vec(cst(0.) , cst(0.), cst(0.) );
-// #endif
 
     auto r=1;
     auto L=5;
@@ -369,11 +357,6 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
 #endif
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////
-    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
-    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
-    //////////////////////////////////////////////////////////////////////////////////////////
-
     double taille = 4*math::atan(1.)*r*r*L;
     double mean_p_exact = integrate( elements( mesh ),  p_exact ).evaluate()(0,0) /taille;
     std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
@@ -385,14 +368,9 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::run()
     //stokes_rhs += integrate( markedfaces( mesh,"Inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ), _quad=_Q<15>() );
     //stokes_rhs += integrate( markedfaces( mesh,"Outlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ), _quad=_Q<15>() );
     //************
-
-
-
     LOG(INFO) << "[stokes] vector local assembly done\n";
 
-    /*
-     * Construction of the left hand side
-     */
+    // Construction of the left hand side
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     boost::timer chrono;
@@ -491,11 +469,6 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::exportResults( ExprUExact u_exact, 
 
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-    // ////////////////////////////////////////////////////////////////////////////////////////
-    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
-    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
-    // //////////////////////////////////////////////////////////////////////////////////////////
-
 
     // double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ), _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 );
     double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact )).evaluate()( 0, 0 );
@@ -536,7 +509,7 @@ Stokes_Dirichlet_Dirichlet<POrder,GeoOrder>::exportResults( ExprUExact u_exact, 
     LOG(INFO) << "Fapp2In = "<< -FappIn(1,0) << "\n" ;
     LOG(INFO) << "Fapp3In = "<< -FappIn(2,0) << "\n" ;
 
-auto FappOut = integrate(markedfaces( mesh,"Outlet" ) , SigmaNN).evaluate();
+    auto FappOut = integrate(markedfaces( mesh,"Outlet" ) , SigmaNN).evaluate();
     auto Fapp1Out = FappOut(0,0); //pour la prémière composante
     auto Fapp2Out = FappOut(1,0); //pour la seconde
     auto Fapp3Out = FappOut(2,0);
@@ -547,7 +520,7 @@ auto FappOut = integrate(markedfaces( mesh,"Outlet" ) , SigmaNN).evaluate();
     LOG(INFO) << "Fapp2Out = "<< FappOut(1,0) << "\n" ;
     LOG(INFO) << "Fapp3Out = "<< FappOut(2,0) << "\n" ;
 
-auto FappWall = integrate(markedfaces( mesh,"Wall" ) , SigmaNN).evaluate();
+    auto FappWall = integrate(markedfaces( mesh,"Wall" ) , SigmaNN).evaluate();
     auto Fapp1Wall = FappWall(0,0); //pour la prémière composante
     auto Fapp2Wall = FappWall(1,0); //pour la seconde
     auto Fapp3Wall = FappWall(2,0);
@@ -588,7 +561,7 @@ main( int argc, char** argv )
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="stokes",
+                     _about=about(_name="stokes_Dirichlet_Dirichlet",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
