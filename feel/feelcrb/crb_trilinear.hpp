@@ -622,7 +622,6 @@ CRBTrilinear<TruthModelType>::offline()
     LOG(INFO) << "[CRBTrilinear::offline] compute affine decomposition\n";
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm_tril;
-    std::vector< std::vector<sparse_matrix_ptrtype> > trilinear_form;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
 
     boost::tie( boost::tuples::ignore, Aqm, Fqm , boost::tuples::ignore ) = M_model->computeAffineDecomposition();
@@ -874,6 +873,8 @@ template<typename TruthModelType>
 boost::tuple<double,double>
 CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN ) const
 {
+
+    std::cout<<"\nCRBTrilinear::lb starts with N = "<<N<<std::endl;
     google::FlushLogFiles(google::GLOG_INFO);
 
     if ( N > M_N ) N = M_N;
@@ -908,7 +909,13 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     parameter_type neighbor( M_Dmu );
     int index;
     findNearestNeighborInWNmu(  mu,  neighbor, index );
-    uN( index ) = 1;
+    if( this->vm()["crb.cvg-study"].template as<bool>() == true )
+    {
+        //in this case, index may be smaller than uN.size
+        //so we do nothing
+    }
+    else
+        uN( index ) = 1;
 
     double *r_data = R.data();
     double *j_data = J.data();
@@ -954,7 +961,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
         //M_nlsolver->setRelativeResidualTol( 1e-12 );
         M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
         M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
-
+        M_nlsolver->setType( TRUST_REGION );
         M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
     }
 
@@ -994,6 +1001,8 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     LOG(INFO) << "[CRBTrilinear::lb] computation of the output done";
 
     google::FlushLogFiles(google::GLOG_INFO);
+
+    //std::cout<<"[CRBTrilinear uN] : \n"<<uN<<std::endl;
 
     return boost::make_tuple( output, condition_number );
 
