@@ -137,7 +137,6 @@ public:
 #if (STOKESPRESSMESHTYPE == 1)
     typedef Simplex<2> convex_type;
 #elif (STOKESPRESSMESHTYPE == 2)
-
     typedef Simplex<3,GeoOrder> convex_type;
 #endif
 
@@ -378,18 +377,20 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::run()
 
 #if (STOKESPRESSMESHTYPE == 2)
     //****************** 3D **********************************************
-    auto D_ex = sym(gradv( u_exact ));
+    auto u_ex_proj=vf::project(P7,elements(mesh),u_exact);
+    auto D_ex = sym(gradv(u_ex_proj ));
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     LOG(INFO) << "[stokes] vector local assembly done\n";
-    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (2*D_ex - p_exact)*N(),id(v) ) );
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (-p_exact)*N(),id(v) ) );
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (2*D_ex)*N(),id(v) ) );
 
     // left hand side
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     mpi::timer chrono;
-    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
+    stokes += integrate( elements( mesh ),2*mu*inner( deft,def ) );
     std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ));
@@ -566,10 +567,10 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::exportResults( ExprUExact u_exact, Ex
     auto Fapp1Wall = FappWall(0,0); //pour la prémière composante
     auto Fapp2Wall = FappWall(1,0); //pour la seconde
     auto Fapp3Wall = FappWall(2,0);
-    std::cout << "Fapp1Wall = "<< -pi+FappWall(0,0) << "\n" ;
+    std::cout << "Fapp1Wall = "<< +pi+FappWall(0,0) << "\n" ;
     std::cout << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
     std::cout << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1Wall = "<< -pi-FappWall(0,0) << "\n" ;
+    LOG(INFO) << "Fapp1Wall = "<< +pi+FappWall(0,0) << "\n" ;
     LOG(INFO) << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
     LOG(INFO) << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
 
