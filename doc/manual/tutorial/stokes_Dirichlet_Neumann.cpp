@@ -23,7 +23,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file stokes_Dirichlet_Dirichlet.cpp
+   \file stokes_Dirichlet_Neumann.cpp
    \author Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
    \date 2009-01-04
  */
@@ -137,7 +137,6 @@ public:
 #if (STOKESPRESSMESHTYPE == 1)
     typedef Simplex<2> convex_type;
 #elif (STOKESPRESSMESHTYPE == 2)
-
     typedef Simplex<3,GeoOrder> convex_type;
 #endif
 
@@ -299,10 +298,6 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::run()
     auto v = V.template element<0>( "u" );
     auto p = U.template element<1>( "p" );
     auto q = V.template element<1>( "p" );
-    //#if defined( FEELPP_USE_LM )
-    //auto lambda = U.template element<2>();
-    //auto nu = V.template element<2>();
-    //#endif
     //# endmarker4 #
 
     LOG(INFO) << "Data Summary:\n";
@@ -327,48 +322,23 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::run()
     auto SigmaN = -id( p )*N()+mu*def*N();
     //# endmarker6 #
 
-//     //*********************  solution exacte (profile de poiseuille)2D **********************
-// #if (STOKESPRESSMESHTYPE == 1)
-//     auto u_exact=vec(Py()*(1-Py()),cst(0.) );
-//     auto p_exact=(-2*Px()+1);
-//     auto f=vec(cst(0.) , cst(0.) );
-
-//     //*********************  solution exacte (profile de poiseuille)3D **********************
-// #elif (STOKESPRESSMESHTYPE == 2)
-//     auto u_exact=vec(  (1-Py()*Py()-Pz()*Pz() ) , cst(0.) , cst(0.) );
-//     auto p_exact=(-4*Px()+20);
-//     auto f=vec(cst(0.) , cst(0.), cst(0.) );
-// #endif
-
     auto r=1;
     auto L=5;
     auto P_inlet=1;
     auto P_outlet=0.;
+
 #if (STOKESPRESSMESHTYPE == 1)
-    // //*********************  solution exacte (profile de poiseuille)2D *****************
     // exact solution known for hypercube (2D toy model)
     auto u_exact=vec((1-(Py()*Py())/(r*r))*(P_inlet-P_outlet)/(2*mu*L),cst(0.) );
-
     auto p_exact=(P_outlet-P_inlet)*Px()/L + P_inlet;
-
     auto f=vec(cst(0.) , cst(0.) );
-    //*************************************************************************************
+
 #elif  (STOKESPRESSMESHTYPE == 2)
-    //*********************  solution exacte (profile de poiseuille)3D **********************
     // exact solution known for cylinder (3D toy model)
     auto u_exact=vec(  (P_inlet-P_outlet)*r*r*(1-(Py()*Py()+Pz()*Pz())/(r*r))/(4*L) , cst(0.) , cst(0.) );
-
     auto p_exact=(-Px()*(P_inlet-P_outlet)/L + P_inlet);
-
     auto f=vec(cst(0.) , cst(0.), cst(0.) );
-    //*************************************************************************************
 #endif
-
-
-    ////////////////////////////////////////////////////////////////////////////////////////
-    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
-    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
-    //////////////////////////////////////////////////////////////////////////////////////////
 
     double taille = 4*math::atan(1.)*r*r*L;
     double mean_p_exact = integrate( elements( mesh ),  p_exact ).evaluate()(0,0) /taille;
@@ -378,18 +348,20 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::run()
 
 #if (STOKESPRESSMESHTYPE == 2)
     //****************** 3D **********************************************
-    auto D_ex = sym(gradv( u_exact ));
+    auto u_ex_proj=vf::project(P7,elements(mesh),u_exact);
+    auto D_ex = sym(gradv(u_ex_proj ));
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     LOG(INFO) << "[stokes] vector local assembly done\n";
-    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (2*D_ex - p_exact)*N(),id(v) ) );
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (-p_exact)*N(),id(v) ) );
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (2*D_ex)*N(),id(v) ) );
 
     // left hand side
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     mpi::timer chrono;
-    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
+    stokes += integrate( elements( mesh ),2*mu*inner( deft,def ) );
     std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ));
@@ -404,33 +376,32 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::run()
 
 #elif (STOKESPRESSMESHTYPE == 1)
     //******************* 2D **********************************
+    auto u_ex_proj=vf::project(P7,elements(mesh),u_exact);
+    auto D_ex = sym(gradv(u_ex_proj ));
+
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ) );
     LOG(INFO) << "[stokes] vector local assembly done\n";
-    stokes_rhs += integrate( markedfaces( mesh,"inlet" ), inner( u_exact,-SigmaN+penalbc*id( v )/hFace() ) );
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (-p_exact)*N(),id(v) ) );
+    stokes_rhs += integrate( markedfaces( mesh,"outlet" ), inner( (2*D_ex)*N(),id(v) ) );
 
-
-
+    //left hand side
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     mpi::timer chrono;
-    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );
+    stokes += integrate( elements( mesh ),2*mu*inner( deft,def ) );
     std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ));
     std::cout << "(u,p): " << chrono.elapsed() << "\n";
     chrono.restart();
-    stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall1" ), -inner( SigmaNt,id( v ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall2" ), -inner( SigmaNt,id( v ) ) );
 
-    stokes +=integrate( markedfaces( mesh, "inlet" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall1" ), -inner( SigmaN,idt( u ) ) );
-    stokes +=integrate( markedfaces( mesh, "wall2" ), -inner( SigmaN,idt( u ) ) );
-
-    stokes +=integrate( markedfaces( mesh, "inlet" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-    stokes +=integrate( markedfaces( mesh, "wall1" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-    stokes +=integrate( markedfaces( mesh, "wall2" ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+    stokes+=on( _range=markedfaces(mesh, "inlet"), _element=u,_rhs=stokes_rhs,
+                _expr=u_exact );
+    stokes+=on( _range=markedfaces(mesh, "Wall1"), _element=u,_rhs=stokes_rhs,
+                 _expr=u_exact );
+    stokes+=on( _range=markedfaces(mesh, "Wall2"), _element=u,_rhs=stokes_rhs,
+                 _expr=u_exact );
 #endif
 
     std::cout << "bc: " << chrono.elapsed() << "\n";
@@ -475,16 +446,9 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::exportResults( ExprUExact u_exact, Ex
 {
     auto u = U.template element<0>();
     auto p = U.template element<1>();
-
     auto v = V.template element<0>();
     auto q = V.template element<1>();
-    //#if defined( FEELPP_USE_LM )
-    //auto lambda = U.template element<2>();
-    //auto nu = V.template element<2>();
-    //LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
-    //std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
 
-    //#endif
 
     auto u_exact_proj=vf::project(P7,elements(mesh),u_exact);
 
@@ -503,13 +467,7 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::exportResults( ExprUExact u_exact, Ex
 
     double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
     LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
-
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
-
-    // ////////////////////////////////////////////////////////////////////////////////////////
-    // double mean_p_exact = integrate( elements( u.mesh() ),  p_exact, _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 )/meas;
-    // std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
-    // //////////////////////////////////////////////////////////////////////////////////////////
 
 
     // double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ), _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 );
@@ -566,10 +524,10 @@ Stokes_Dirichlet_Neumann<POrder,GeoOrder>::exportResults( ExprUExact u_exact, Ex
     auto Fapp1Wall = FappWall(0,0); //pour la prémière composante
     auto Fapp2Wall = FappWall(1,0); //pour la seconde
     auto Fapp3Wall = FappWall(2,0);
-    std::cout << "Fapp1Wall = "<< -pi+FappWall(0,0) << "\n" ;
+    std::cout << "Fapp1Wall = "<< +pi+FappWall(0,0) << "\n" ;
     std::cout << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
     std::cout << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
-    LOG(INFO) << "Fapp1Wall = "<< -pi-FappWall(0,0) << "\n" ;
+    LOG(INFO) << "Fapp1Wall = "<< +pi+FappWall(0,0) << "\n" ;
     LOG(INFO) << "Fapp2Wall = "<< FappWall(1,0) << "\n" ;
     LOG(INFO) << "Fapp3Wall = "<< FappWall(2,0) << "\n" ;
 
