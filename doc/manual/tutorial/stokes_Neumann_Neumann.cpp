@@ -134,7 +134,6 @@ public:
 #ifndef STOKESPRESSMESHTYPE
 #define  STOKESPRESSMESHTYPE 1
 #endif
-
 #if (STOKESPRESSMESHTYPE == 1)
     typedef Simplex<2> convex_type;
 #elif (STOKESPRESSMESHTYPE == 2)
