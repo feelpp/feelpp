@@ -919,7 +919,7 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     //KSPGetPC( ksp,&pc );
     //PCSetType(pc,PCNONE);
     PCSetType( M_pc,PCLU );
-    KSPSetTolerances( M_ksp,1e-16,PETSC_DEFAULT,PETSC_DEFAULT,20 );
+    KSPSetTolerances( M_ksp,1e-6,PETSC_DEFAULT,PETSC_DEFAULT,20 );
 
     // Older versions (at least up to 2.1.5) of SNESSolve took 3 arguments,
     // the last one being a pointer to an int to hold the number of iterations required.
