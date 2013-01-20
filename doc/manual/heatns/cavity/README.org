@@ -1,0 +1,27 @@
+#+TITLE: README
+
+* Natural convection in 3D
+
+** Finite element code
+
+The command line to execute the 3D finite element code to solve the natural
+convection problem in a cavity
+#+begin_src shell
+mpirun -np 24 ./feelpp_P3P2P3_heatns_natural_convection_cavity_3d \
+  --ksp-monitor=true \
+  --snes-monitor=true \
+  --hsize=0.075 \
+  --use_continuity=false \
+  --gr=1e7
+  --pr=0.1
+#+end_src
+
+ - =hsize= (numerical value, e.g. 0.1) set the characteristic mesh size
+
+ - =use_continuity= (boolean value, true|false) use continuation to help the non-linear solver to converge
+
+ - =gr= (numerical value: $[1e-2,1e7]$) set the Grashof number
+
+ - =pr= (numerical value: $[1e-2,1e7]$) set the Prandtl number
+
+** Reduced basis code
