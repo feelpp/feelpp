@@ -31,4 +31,4 @@ feelpp_add_application( P3P2P3_heatns_natural_convection_cavity_2d_crb SRCS conv
 
 feelpp_add_application( P3P2P3_heatns_natural_convection_cavity_3d SRCS convection_main.cpp convection_crb_specifics.cpp ${lib_convection} CFG convection.cfg LABEL doc  DEFS FEELPP_USE_LM CONVECTION_DIM=3 CRB_SOLVER=0 CONVECTION_ORDER_U=3 CONVECTION_ORDER_P=2 CONVECTION_ORDER_T=3 )
 
-feelpp_add_application( P3P2P3_heatns_natural_convection_cavity_3d_crb SRCS convection_main.cpp convection_crb_specifics.cpp ${lib_convection} CFG convection.cfg LABEL doc  DEFS FEELPP_USE_LM CONVECTION_DIM=3 CRB_SOLVER=0 CONVECTION_ORDER_U=3 CONVECTION_ORDER_P=2 CONVECTION_ORDER_T=3 CRB_SOLVER=1 )
+feelpp_add_application( P3P2P3_heatns_natural_convection_cavity_3d_crb SRCS convection_main.cpp convection_crb_specifics.cpp ${lib_convection} CFG convection.cfg LABEL doc  DEFS FEELPP_USE_LM CONVECTION_DIM=3 CRB_SOLVER=1 CONVECTION_ORDER_U=3 CONVECTION_ORDER_P=2 CONVECTION_ORDER_T=3  )
