@@ -85,6 +85,7 @@ Convection::run()
     timers["fspace"].first.restart();
     // Espace des fonctions et elements
     Xh = space_type::New( mesh );
+    P1h = lagrangeP1( _space=Xh->functionSpace<2>() );
 
     element_type U( Xh, "U" );
     element_type Un( Xh, "un" );
