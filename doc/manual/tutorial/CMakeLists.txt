@@ -86,7 +86,7 @@ main( int argc, char** argv )
   feelpp_add_application( doc_stokes_Dirichlet_Neumann_hypercube SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1 NO_TEST)
 
   feelpp_add_application( doc_stokes_Neumann_Neumann SRCS stokes_Neumann_Neumann.cpp LABEL doc NO_TEST )
-  feelpp_add_application( doc_stokes_Neumann_Neumann_aorta SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=3 NO_TEST )
+  #feelpp_add_application( doc_stokes_Neumann_Neumann_aorta SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=3 NO_TEST )
   feelpp_add_application( doc_stokes_Neumann_Neumann_cylinder SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
   feelpp_add_application( doc_stokes_Neumann_Neumann_hypercube SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1 NO_TEST)
 
