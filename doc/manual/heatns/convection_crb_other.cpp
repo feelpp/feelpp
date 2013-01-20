@@ -128,7 +128,7 @@ ConvectionCrb::createMesh()
 void
 ConvectionCrb::exportResults( element_type& U )
 {
-    exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( 0 )->setMesh( P1h->mesh() );
     exporter->step( 0 )->add( "u", U. element<0>() );
     exporter->step( 0 )->add( "p", U. element<1>() );
     exporter->step( 0 )->add( "T", U. element<2>() );
@@ -139,7 +139,7 @@ ConvectionCrb::exportResults( element_type& U )
 // <int Order_s, int Order_p, int Order_t>
 void ConvectionCrb ::exportResults( element_ptrtype& U, int i )
 {
-    exporter->step( i )->setMesh( U->functionSpace()->mesh() );
+    exporter->step( i )->setMesh( P1h->mesh() );
     exporter->step( i )->add( "u", U-> element<0>() );
     exporter->step( i )->add( "p", U-> element<1>() );
     exporter->step( i )->add( "T", U-> element<2>() );
@@ -149,7 +149,7 @@ void ConvectionCrb ::exportResults( element_ptrtype& U, int i )
 // <int Order_s, int Order_p, int Order_t>
 void ConvectionCrb ::exportResults( element_type& U, double t )
 {
-    exporter->step( t )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( t )->setMesh( P1h->mesh() );
     exporter->step( t )->add( "u", U. element<0>() );
     exporter->step( t )->add( "p", U. element<1>() );
     exporter->step( t )->add( "T", U. element<2>() );
@@ -179,9 +179,11 @@ ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
 {
     using namespace vf;
     Feel::ParameterSpace<2>::Element M_current_mu( mu );
-    M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+    static int i = 1;
+
+    backend(_rebuild=true)->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
     //M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobianWithoutAffineDecomposition, boost::ref( *this ), _1, _2 );
-    M_backend->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
+    backend()->nlSolver()->residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
 
@@ -190,6 +192,9 @@ ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
     T->zero();
     bool use_continuity = this->vm()["use_continuity"].as<bool>();
     int N=1;
+
+
+    LOG(INFO) << "nonlinear solve " << i << "  for gr=" << gr << " pr=" << pr << "\n";
 
     if( use_continuity )
         N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1.e-2 ) ) ) );
@@ -219,7 +224,15 @@ ConvectionCrb::solve( parameter_type const& mu, element_ptrtype& T )
         this->update( M_current_mu );
 //        T->print(std::cout);
         //M_backend->nlSolve(_solution=T);
-        M_backend->nlSolve(_jacobian=J , _solution=T , _residual=R );
+        //M_backend->nlSolver()->setReuse( 1, 1 );
+        //std::ostringstream ostr;
+        //ostr << M_backend->prefix() << "-" << i++;
+        i++;
+        auto p = preconditioner( _prefix=M_backend->prefix(),_pc=M_backend->pcEnumType()/*LU_PRECOND*/,
+                                 _backend=M_backend,
+                                 _pcfactormatsolverpackage=M_backend->matSolverPackageEnumType(),
+                                 _rebuild=true );
+        backend()->nlSolve(_jacobian=J , _solution=T , _residual=R, _prec=p, _reuse_jac=false, _reuse_prec=false );
 #if 0
         if ( exporter->doExport() )
         {
