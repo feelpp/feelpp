@@ -373,6 +373,7 @@ public:
             //UserMu(0)=1e3;  UserMu(1)=1; V.push_back(UserMu );
             Sampling->setElements( V );
 */
+#if 0 //need more tests ...
             if( this->vm()["crb.use-predefined-test-sampling"].template as<bool>() )
             {
                 std::string file_name = ( boost::format("SamplingForTest") ).str();
@@ -385,7 +386,7 @@ public:
                     throw std::logic_error( "[OpusApp] file SamplingForTest was not found" );
 
             }
-
+#endif
 
 
             //Statistics
