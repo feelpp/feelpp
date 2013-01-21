@@ -1,0 +1,119 @@
+\feelchapter{Crash course}
+            {Crash course}
+            {Vincent HUBER}
+            {cha:tutorial-crash\_course}
+
+This chapter is designed for impatient people who wants to test \feel as soon as possible.
+\section{Requirements}
+Before installing \feel, you need to get this \underline{required packages:}\\
+\begin{itemize}
+\item g++ ($4.4$, $4.5$, $4.6$ and $4.7$  )
+\item MPI : openmpi (preferred) or mpich
+\item Boost ($\geq$1.39)
+\item Petsc ($\geq$2.3.3)
+\item Cmake ($\geq$2.6)
+\item Gmsh\footnote{Gmsh is a pre/post processing software for scientific
+computing available at \url{http://www.geuz.org/gmsh}}
+\item Libxml2
+\end{itemize}
+
+\section{Building \feel from source on *nix}
+\feel is distributed as a tarball once in a while. The tarballs are available
+at
+\begin{center}
+  \href{http://code.google.com/p/feelpp/downloads/list}{http://code.google.com/p/feelpp/downloads/list}
+\end{center}
+Download the latest tarball. Then follow the steps and replace
+\texttt{x},\texttt{y},\texttt{z} with the corresponding numbers
+
+\begin{unixcom}
+  tar xzf feel-x.y.z.tar.gz
+  cd feel-x.y.z
+\end{unixcom}
+We define then the current directory as the source one, ie:
+\begin{unixcom}
+  export FeelppSrcDir=`pwd`
+\end{unixcom}
+
+\section{Compiling}
+In order to compile \feel and a test application, we create a new directory:
+\begin{unixcom}
+  cd $FeelppSrcDir
+  cd ..
+  mkdir FeelBin
+  cd FeelBin
+  export FeelBinDir=`pwd`
+\end{unixcom}
+and then, we are able to compile our first application:
+\begin{unixcom}
+  cd $FeelppBinDir
+  cmake $FeelppSrcDir
+  cd mycode
+  make feelpp_myFirstApp
+\end{unixcom}
+It is recommended to compile on multiple threads:
+\begin{unixcom}
+  make -j8 feelpp_myFirstApp
+\end{unixcom}
+
+\section{\feel Hello World}
+As an introduction to the aim and the way to do with \feel, we provide a sort of \textit{Hello World} program to evaluate the library.
+
+\subsection{About the math}
+We want to solve the simplest problem:
+\begin{equation}\nonumber
+  \begin{aligned}
+    - \Delta U &= 1,\\
+    U|_{\partial \Omega} &= 0,
+  \end{aligned}
+\end{equation}
+where $\Omega \in \mathbb{R}^n, n\in{1,2,3}$.\\
+
+That problem is written, in the Finite Element Method formulation:
+\begin{equation}\nonumber
+  \begin{aligned}
+    a\left( u,v \right)&=f(v).
+  \end{aligned}
+\end{equation}
+with:
+\begin{equation}\nonumber
+  \begin{aligned}
+    a\left( u,v \right)&=\int_{\Omega} \nabla u \cdot \nabla v dx,\\
+    f\left( v \right) &= \int_{\Omgea} v dx.
+  \end{aligned}
+\end{equation}
+
+The aim of \feel is to provide the simplest way to write the a and f forms.
+
+\subsection{About the code}
+This section is here to declare that we want to use the namespace \feel, to passe the command line options to the created environnement and add some informations (basics \feel options, application name).
+\lstinputlisting[linerange=marker1-endmarker1]{../../mycode/laplacian_dirichlet_homogene.cpp}
+We have to define the mesh, the approximation space and our test and trial functions.
+\lstinputlisting[linerange=marker2-endmarker2]{../../mycode/laplacian_dirichlet_homogene.cpp}
+We create now our bilinear and linear forms, we add the homogeneous Dirichlet conditions and solve the discretized (linear) system.
+\lstinputlisting[linerange=marker3-endmarker3]{../../mycode/laplacian_dirichlet_homogene.cpp}
+\feel provides the possibility to save the results:
+\lstinputlisting[linerange=marker4-endmarker4]{../../mycode/laplacian_dirichlet_homogene.cpp}
+
+
+\section{First execution \& vizualisation}
+To test that part of code, please go to:
+\begin{unixcom}
+  $Feelpp_src/mycode
+\end{unixcom}
+and execute the code, by:
+\begin{unixcomm}
+  ./myFirstApp
+\end{unixcomm}
+This will produce several files:
+\begin{unixcom}
+  dirichlet_homogene-1_0.case
+  dirichlet_homogene-1.sos
+  dirichlet_homogene.timeset
+  dirichlet_homogene.u-1_0.001
+  mymesh-1_0.geo001
+  pid-1_0.001
+  square.geo
+  square.msh
+\end{unixcom}
+You can vizualise the results using any Ensight file reader, such as Paraview, openning \textit{dirichlet_homogene-1_0.case}.
