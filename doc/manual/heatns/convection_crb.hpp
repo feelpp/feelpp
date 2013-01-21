@@ -47,7 +47,7 @@
 
 // linear operators
 #include <feel/feeldiscr/operatorlinear.hpp>
-
+#include <feel/feeldiscr/operatorlagrangep1.hpp>
 // exporter
 #include <feel/feelfilters/exporter.hpp>
 
@@ -411,6 +411,7 @@ private:
     backend_ptrtype M_backend;
 
     space_ptrtype Xh;
+    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::value_type> > P1h;
 
     oplin_ptrtype M_oplin;
     funlin_ptrtype M_lf;
