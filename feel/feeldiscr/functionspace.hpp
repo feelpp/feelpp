@@ -6255,6 +6255,18 @@ Pchv( boost::shared_ptr<MeshType> mesh )
     return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( mesh );
 }
 
+/**
+ * \fn Tch<k,MeshType>
+ *
+ */
+template<int Order,typename MeshType>
+inline
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>,Lagrange<Order,Scalar>>>>
+THch( boost::shared_ptr<MeshType> mesh )
+{
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>,Lagrange<Order,Scalar>>>::New( mesh );
+}
+
 
 } // Feel
 
