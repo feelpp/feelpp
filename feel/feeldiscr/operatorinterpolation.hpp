@@ -566,7 +566,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------
     // usefull data
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
-    matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
+    matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
     typename domain_mesh_type::Localization::container_search_iterator_type itanal,itanal_end;
     typename domain_mesh_type::Localization::container_output_iterator_type itL,itL_end;
     matrix_node_type MlocEval( domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1 );
