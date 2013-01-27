@@ -252,6 +252,9 @@ public:
 
     InterpType const& interpolationType() const { return _M_interptype; }
 
+    bool isDomainMeshRelatedToImageMesh() const { return this->domainSpace()->mesh()->isRelatedTo( this->dualImageSpace()->mesh() ); }
+
+    bool isImageMeshRelatedToDomainMesh() const { return this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ); }
 
     //@}
 
@@ -375,9 +378,17 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             return;
         }
 
-    // if same mesh but not same function space (e.g. different polynomial order, different basis)
-    if ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() )
+    // if same mesh but not same function space (e.g. different polynomial
+    // order, different basis) or if the image of domain mesh are related to
+    // each other through an extraction (one of them is the sub mesh of the
+    // other)
+    if ( ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() ) ||
+         ( this->domainSpace()->mesh()->isRelatedTo( this->dualImageSpace()->mesh() ) ) ||
+         ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) ) )
     {
+        VLOG(2) << "OperatorInterpolation: use same mesh\n";
+        VLOG(2) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
+        VLOG(2) << "isImageMeshRelatedToDomainMesh: "  << isImageMeshRelatedToDomainMesh() << "\n";
         this->updateSameMesh();
     }
     else // no relation between meshes
@@ -451,9 +462,17 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
 
+    bool image_related_to_domain = dualImageSpace()->mesh()->isRelatedTo( domainSpace()->mesh() );
+    bool domain_related_to_image = domainSpace()->mesh()->isRelatedTo( dualImageSpace()->mesh() );
+
     for ( ; it != en; ++ it )
     {
         auto idElem = detailsup::idElt( *it,idim_type() );
+        auto domain_eid = idElem;
+        if ( image_related_to_domain )
+            domain_eid = dualImageSpace()->mesh()->subMeshToMesh( idElem );
+        if( domain_related_to_image )
+            domain_eid = domainSpace()->mesh()->meshToSubMesh( idElem );
 
         // Global assembly
         for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
@@ -482,7 +501,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                     for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                     {
                         // get column
-                        const size_type j =  boost::get<0>( domaindof->localToGlobal( idElem, jloc, comp ) );
+                        const size_type j =  boost::get<0>( domaindof->localToGlobal( domain_eid, jloc, comp ) );
                         //up the pattern graph
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
                         row.template get<2>().insert( j );
