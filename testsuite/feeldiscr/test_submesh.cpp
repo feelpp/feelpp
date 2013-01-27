@@ -35,20 +35,7 @@
 #define BOOST_TEST_MODULE submesh testsuite
 #include <testsuite/testsuite.hpp>
 
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/options.hpp>
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelmesh/geoentity.hpp>
-#include <feel/feelmesh/refentity.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelmesh/filters.hpp>
-#include <feel/feelpoly/im.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 const double DEFAULT_MESH_SIZE=0.1;
 
@@ -212,12 +199,42 @@ typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int
 //typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
+#if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D)" );
     Feel::test_submesh<double,T::value> t;
     t();
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D) done." );
+}
+#endif
+
+typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim2_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
+{
+    using namespace Feel;
+    BOOST_TEST_MESSAGE( "Test submesh2 " << T::value << "D" );
+    auto mesh = unitHypercube<T::value>();
+    auto Xh = Pch<1>( mesh );
+    auto mesh2 = createSubmesh( mesh, boundaryelements( mesh ) );
+    auto Yh = Pch<1>( mesh2 );
+
+    auto opI=opInterpolation( _domainSpace=Xh,
+                              _imageSpace=Yh,
+                              _range=elements( mesh2 ) );
+    auto u1 = project( _space=Xh, _range=elements(mesh), _expr=sin(pi*Px()*Py()) );
+    auto u2 = Yh->element();
+    opI->apply( u1, u2 );
+
+    auto e1 = exporter( _mesh=mesh, _name=(boost::format("mesh1-%1%d")%T::value).str() );
+    e1->add( (boost::format("u1-%1%d")%T::value).str(), u1 );
+    e1->save();
+    auto e2 = exporter( _mesh=mesh2, _name=(boost::format("mesh2-%1%d")%T::value).str() );
+    e2->add( (boost::format("u2-%1%d")%T::value).str(), u2 );
+    e2->save();
+
+
+    BOOST_TEST_MESSAGE( "Test submesh2 "  << T::value << "D done" );
 }
 
 BOOST_AUTO_TEST_SUITE_END()

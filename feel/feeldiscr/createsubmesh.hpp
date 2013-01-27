@@ -220,7 +220,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         // Add an equivalent element type to the new_mesh
         auto const& e = newMesh->addElement( new_elem );
 
-        M_smd->insert( smd_type::bm_type::value_type( e.id(), it->id() ) );
+        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), it->id() ) );
 
         // Maybe add faces for this element
         for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )

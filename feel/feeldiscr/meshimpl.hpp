@@ -114,7 +114,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         if ( this->components().test( MESH_RENUMBER ) )
         {
 
-            this->renumber();
+            //this->renumber();
             VLOG(2) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
         }
 
