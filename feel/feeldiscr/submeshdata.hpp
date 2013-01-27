@@ -43,6 +43,7 @@ namespace Feel
 template<typename MeshType>
 class SubMeshData
 {
+public:
     /** @name Typedefs
      */
     //@{

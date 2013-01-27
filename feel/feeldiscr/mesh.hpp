@@ -1197,6 +1197,12 @@ public:
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
 
+    //! set sub mesh data
+    void setSubMeshData( smd_ptrtype smd )
+        {
+            M_smd = smd;
+        }
+
     //! \return true if mesh holds sub mesh data
     bool hasSubMeshData() const { return M_smd; }
 

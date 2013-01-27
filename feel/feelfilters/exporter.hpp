@@ -341,7 +341,7 @@ public:
     void
     addRegions()
         {
-            this->step( 0 )->addRegions();
+            this->step( 0 )->addRegions( this->prefix() );
         }
     step_ptrtype step( double time )
     {
