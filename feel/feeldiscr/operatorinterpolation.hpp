@@ -462,17 +462,17 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
 
-    bool image_related_to_domain = dualImageSpace()->mesh()->isRelatedTo( domainSpace()->mesh() );
-    bool domain_related_to_image = domainSpace()->mesh()->isRelatedTo( dualImageSpace()->mesh() );
+    const bool image_related_to_domain = this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() );
+    const bool domain_related_to_image = this->domainSpace()->mesh()->isRelatedTo( this->dualImageSpace()->mesh() );
 
     for ( ; it != en; ++ it )
     {
         auto idElem = detailsup::idElt( *it,idim_type() );
         auto domain_eid = idElem;
         if ( image_related_to_domain )
-            domain_eid = dualImageSpace()->mesh()->subMeshToMesh( idElem );
+            domain_eid = this->dualImageSpace()->mesh()->subMeshToMesh( idElem );
         if( domain_related_to_image )
-            domain_eid = domainSpace()->mesh()->meshToSubMesh( idElem );
+            domain_eid = this->domainSpace()->mesh()->meshToSubMesh( idElem );
 
         // Global assembly
         for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
