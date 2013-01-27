@@ -94,9 +94,10 @@ const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
 const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
 const size_type EXTRACTION_KEEP_VOLUMES_IDS               = ( 1<<3 );
 const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_POINTS_IDS |
-        EXTRACTION_KEEP_EDGES_IDS |
-        EXTRACTION_KEEP_FACES_IDS |
-        EXTRACTION_KEEP_VOLUMES_IDS );
+                                                              EXTRACTION_KEEP_EDGES_IDS |
+                                                              EXTRACTION_KEEP_FACES_IDS |
+                                                              EXTRACTION_KEEP_VOLUMES_IDS );
+const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
 
 /**
  * partitioner base class
