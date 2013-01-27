@@ -74,6 +74,19 @@
 #include <boost/preprocessor/facilities/identity.hpp>
 
 #include <boost/enable_shared_from_this.hpp>
+
+namespace Feel
+{
+const size_type EXTRACTION_KEEP_POINTS_IDS                = ( 1<<0 );
+const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
+const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
+const size_type EXTRACTION_KEEP_VOLUMES_IDS               = ( 1<<3 );
+const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_POINTS_IDS |
+                                                              EXTRACTION_KEEP_EDGES_IDS |
+                                                              EXTRACTION_KEEP_FACES_IDS |
+                                                              EXTRACTION_KEEP_VOLUMES_IDS );
+const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
+}
 #include <feel/feeldiscr/createsubmesh.hpp>
 
 namespace Feel
@@ -89,15 +102,6 @@ struct MeshMarkerName
 std::vector<MeshMarkerName> markerMap( int Dim );
 po::options_description mesh_options( int Dim, std::string const& prefix = "" );
 
-const size_type EXTRACTION_KEEP_POINTS_IDS                = ( 1<<0 );
-const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
-const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
-const size_type EXTRACTION_KEEP_VOLUMES_IDS               = ( 1<<3 );
-const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_POINTS_IDS |
-                                                              EXTRACTION_KEEP_EDGES_IDS |
-                                                              EXTRACTION_KEEP_FACES_IDS |
-                                                              EXTRACTION_KEEP_VOLUMES_IDS );
-const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
 
 /**
  * partitioner base class
@@ -216,6 +220,9 @@ public:
     };
     typedef typename trace_mesh<Tag>::type trace_mesh_type;
     typedef typename trace_mesh<Tag>::ptrtype trace_mesh_ptrtype;
+
+    typedef SubMeshData<mesh_type> smd_type;
+    typedef boost::shared_ptr<smd_type> smd_ptrtype;
 
     //@}
 
@@ -1189,6 +1196,37 @@ public:
 
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
+
+    //! \return true if mesh holds sub mesh data
+    bool hasSubMeshData() const { return M_smd; }
+
+    //! \return sub mesh
+    mesh_ptrtype subMesh() const
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            return M_smd->mesh;
+        }
+
+    //! \return true if the mesh is related to the mesh \p m
+    bool isRelatedTo( mesh_ptrtype m ) const
+        {
+            if ( !M_smd ) return false;
+            return M_smd->mesh == m;
+        }
+
+    //! \return id in parent mesh given the id in the sub mesh
+    size_type subMeshToMesh( size_type id )
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            return M_smd->bm.left.find( id )->second;
+        }
+
+    //! \return id in sub mesh given the id in the parent mesh
+    size_type meshToSubMesh( size_type id )
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            return M_smd->bm.right.find( id )->second;
+        }
     //@}
 
 protected:
@@ -1285,6 +1323,8 @@ private:
      * tool for localize point in the mesh
      */
     boost::shared_ptr<Localization> M_tool_localization;
+
+    smd_ptrtype M_smd;
 };
 
 template<typename Shape, typename T, int Tag>
