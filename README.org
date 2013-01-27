@@ -1,3 +1,5 @@
+#+OPTIONS: LaTeX:t
+
 * Introduction
 Feel++ is a C++ library for arbitrary order Galerkin methods (e.g. finite and spectral element methods ) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
  - the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
@@ -28,7 +30,7 @@ Feel++ is a C++ library for arbitrary order Galerkin methods (e.g. finite and sp
 **** Laplacian in 2D using P3 Lagrange basis functions
 
 Here is a full example to solve $-\Delta u = f in \Omega,\quad u=g on \partial \Omega$
-#+begin_src C++
+#+BEGIN_SRC C++
 #include <feel/feel.hpp>
 
 int main(int argc, char**argv )
@@ -58,7 +60,7 @@ int main(int argc, char**argv )
     e->add( "u", u );
     e->save();
 }
-#+end_src
+#+END_SRC
 
 * Installation
 ** Requirements
@@ -74,12 +76,12 @@ Note that in-source builds of Feel++ are not possible.
 
 *** Out source build
 
-#+begin_src shell
+#+BEGIN_SRC shell
 mkdir opt
 cd opt
 cmake <top level feel directory>
 make
 ctest
-#+end_src
+#+END_SRC
 
 More details in Feel++ manual and Feel++ website (http://www.feelpp.org)
