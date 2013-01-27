@@ -32,10 +32,11 @@
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/identity.hpp>
+#include <feel/feeldiscr/submeshdata.hpp>
+
 
 namespace Feel
 {
-
 template <typename C, typename V, int T> class Mesh;
 
 template <typename MeshType,typename IteratorRange, int TheTag=MeshType::tag>
@@ -71,11 +72,14 @@ public :
                                                   mpl::identity<mesh_edges_type> >::type>::type::type mesh_build_type;
 
     typedef boost::shared_ptr<mesh_build_type> mesh_build_ptrtype;
+    typedef SubMeshData<mesh_type> smd_type;
+    typedef boost::shared_ptr<smd_type> smd_ptrtype;
 
     createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range )
         :
         M_mesh( inputMesh ),
-        M_range( range )
+        M_range( range ),
+        M_smd( new smd_type( inputMesh ) )
     {}
 
     mesh_build_ptrtype
@@ -84,6 +88,8 @@ public :
         Debug( 4015 ) << "[createSubmeshTool] extracting mesh\n";
         return build( mpl::int_<idim_type::value>() );
     }
+
+    smd_ptrtype subMeshData() { return M_smd; }
 
 private:
 
@@ -94,7 +100,7 @@ private:
 
     mesh_ptrtype M_mesh;
     range_type M_range;
-
+    smd_ptrtype M_smd;
 
 };
 
@@ -212,7 +218,9 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
 
         // Add an equivalent element type to the new_mesh
-        newMesh->addElement( new_elem );
+        auto const& e = newMesh->addElement( new_elem );
+
+        M_smd->insert( smd_type::bm_type::value_type( e.id(), it->id() ) );
 
         // Maybe add faces for this element
         for ( unsigned int s=0; s<old_elem.numTopologicalFaces; s++ )
@@ -270,7 +278,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
     Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
-    newMesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    newMesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     newMesh->updateForUse();
 
     return newMesh;
@@ -532,12 +540,16 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_build_ptrtype
-createSubmesh( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range )
+createSubmesh( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range, size_type ctx = EXTRACTION_KEEP_MESH_RELATION )
 {
     Debug( 4015 ) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
                   << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
     createSubmeshTool<MeshType,IteratorRange,TheTag> cSmT( inputMesh,range );
-    return cSmT.build();
+    auto m = cSmT.build();
+    Context c( ctx );
+    if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )
+        m->setSubMeshData( cSmT.subMeshData() );
+    return m;
 }
 
 
