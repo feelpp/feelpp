@@ -467,7 +467,7 @@ struct compute_exporter_return
     //typename Feel::vf::detail::clean_type<Args, tag::mesh>::type::element_type mesh_type;
     //typedef typename parameter::value_type<Args, tag::order>::type order_type;
     //typedef boost::shared_ptr<Exporter<mesh_type,order_type::value> > type;
-    typedef Exporter<mesh_type,1> type;
+    typedef Exporter<mesh_type,mesh_type::nOrder> type;
     typedef boost::shared_ptr<type> ptrtype;
     //typedef boost::shared_ptr<Exporter<Mesh<Simplex<2> >,1> > type;
 
@@ -485,7 +485,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New();
+    auto e =  exporter_type::New(Environment::vm(),name);
     e->setPrefix( name );
     e->setMesh( mesh );
     e->addRegions();

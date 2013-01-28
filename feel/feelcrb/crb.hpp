@@ -275,8 +275,8 @@ public:
                ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                vm ),
 
-        M_model(),
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
+        M_model(),
         M_backend( backend_type::build( vm ) ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
         M_tolerance( vm["crb.error-max"].template as<double>() ),
