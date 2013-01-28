@@ -162,20 +162,19 @@ public:
                 std::cout << this->about().appName() << std::endl;
                 LOG(INFO) << "[OpusApp] constructor " << this->about().appName()  << "\n";
 
-                if( this->vm().count("hsize") && !this->vm().count("geofile") )
-                    {
-                        this->changeRepository( boost::format( "%1%/h_%2%/" )
-                                                % this->about().appName()
-                                                % this->vm()["hsize"].template as<double>()
-                                                );
-                    }
-                if( this->vm().count("geofile") )
-                    {
-                        this->changeRepository( boost::format( "%1%/%2%/" )
-                                                % this->about().appName()
-                                                % this->vm()["geofile"].template as<std::string>()
-                                                );
-                    }
+                // Check if user have given a name for result files repo
+                // Note : this name is also use for database storage
+                std::string results_repo_name;
+                if( this->vm().count("results-repo-name") )
+                    results_repo_name = this->vm()["results-repo-name"].template as<std::string>();
+                else
+                    results_repo_name = "default_repo";
+
+                LOG(INFO) << "Name for results repo : " << results_repo_name << "\n";
+                this->changeRepository( boost::format( "%1%/%2%/" )
+                                        % this->about().appName()
+                                        % results_repo_name
+                                        );
 
                 LOG(INFO) << "[OpusApp] ch repo" << "\n";
                 this->setLogs();
