@@ -470,10 +470,18 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         auto idElem = detailsup::idElt( *it,idim_type() );
         auto domain_eid = idElem;
         if ( image_related_to_domain )
+        {
             domain_eid = this->dualImageSpace()->mesh()->subMeshToMesh( idElem );
+            LOG(INFO) << "[image_related_to_domain] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
+        }
         if( domain_related_to_image )
+        {
             domain_eid = this->domainSpace()->mesh()->meshToSubMesh( idElem );
+            LOG(INFO) << "[domain_related_to_image] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
+        }
 
+        if ( domain_eid == invalid_size_type_value )
+            continue;
         // Global assembly
         for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
         {
