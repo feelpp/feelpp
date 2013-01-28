@@ -1223,6 +1223,24 @@ unitCircle()
                                         _h=Environment::vm(_name="mesh2d.hsize").template as<double>() ) );
 }
 
+/**
+ * build a mesh of the unit circle using triangles
+ */
+template<int Ngeo=1>
+inline
+boost::shared_ptr<Mesh<Simplex<3,Ngeo> > >
+unitSphere()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<3,Ngeo> >,
+                          _desc=domain( _name="sphere",
+                                        _shape="ellipsoid",
+                                        _dim=3,
+                                        _xmin=-1,
+                                        _ymin=-1,
+                                        _zmin=-1,
+                                        _h=Environment::vm(_name="mesh2d.hsize").template as<double>() ) );
+}
+
 
 /**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons

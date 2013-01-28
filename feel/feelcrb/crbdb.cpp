@@ -98,15 +98,21 @@ CRBDB::dbLocalPath() const
     int proc_number =  Environment::worldComm().globalRank();
     int nb_proc = Environment::worldComm().globalSize();
     std::string suf;
-    if( M_vm.count( "database_name" ) )
+    if( M_vm.count( "results-repo-name" ) )
         {
-            std::string database_name = M_vm["database_name"].as<std::string>();
-            suf = database_name+ ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
+            std::string database_name = M_vm["results-repo-name"].as<std::string>();
+            if( !database_name.empty() )
+                suf = database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
+            else
+                suf = "default_repo" + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
         }
-    else if ( M_vm.count( "hsize" ) )
+    else
         {
-            suf = ( boost::format( "h_%1$.2e_proc%2%on%3%/" ) % M_vm["hsize"].as<double>() %proc_number %nb_proc ).str();
+            std::string database_name = "default_repo";
+            suf = database_name + ( boost::format("_proc%1%on%2%") %proc_number %nb_proc ).str() ;
         }
+
+
     // generate the local repository db path
     std::string localpath = ( boost::format( "%1%/db/crb/%2%/%3%" )
                               % Feel::Environment::rootRepository()
