@@ -1231,7 +1231,10 @@ public:
     size_type meshToSubMesh( size_type id )
         {
             CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
-            return M_smd->bm.right.find( id )->second;
+            if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                M_smd->bm.right.find( id )->second;
+            // the submesh element id has not been found, return invalid value
+            return invalid_size_type_value;
         }
     //@}
 
