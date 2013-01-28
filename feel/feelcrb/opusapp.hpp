@@ -354,38 +354,39 @@ public:
             if( crb->useWNmu() )
                 Sampling = crb->wnmu();
 
-            /* Example of use of the setElements
+            /* Example of use of the setElements (but can use write in the file SamplingForTest)
             vector_parameter_type V;
             parameter_type UserMu( model->parameterSpace() );
-            //for(int i=1; i<10; i++)        { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            double j=0.1;
+            //for(int i=1; i<101; i++)  { UserMu(0)=j;  UserMu(1)=1; UserMu(2)=1.5; UserMu(3)=2; UserMu(4)=3; UserMu(5)=4; UserMu(6)=4.5; UserMu(7)=5; UserMu(8)=6; V.push_back(UserMu ); j+=0.1;}
             //for(int i=10; i<100; i+=10)    { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            for(int i=1e2; i<1e3; i+=1e2)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            for(int i=1e3; i<1e4; i+=1e3)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            //UserMu(0)=1e4;  UserMu(1)=1; V.push_back(UserMu );
-            for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            //UserMu(0)=1e5;  UserMu(1)=1; V.push_back(UserMu );
-            for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
-            //for(int i=1e6; i<1e7; i+=1e6)
-            //    UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );
-            //UserMu(0)=1e7;  UserMu(1)=1; V.push_back(UserMu );
-            //UserMu(0)=1e3;  UserMu(1)=1; V.push_back(UserMu );
-            Sampling->setElements( V );
-*/
-#if 0 //need more tests ...
+            //for(int i=1e2; i<1e3; i+=1e2)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=1e3; i<1e4; i+=1e3)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
+            //Sampling->setElements( V );
+            */
+
+            /**
+             * note that in the file SamplingForTest we expect :
+             * mu_0= [ value0 , value1 , ... ]
+             * mu_1= [ value0 , value1 , ... ]
+             **/
             if( this->vm()["crb.use-predefined-test-sampling"].template as<bool>() )
             {
                 std::string file_name = ( boost::format("SamplingForTest") ).str();
                 std::ifstream file ( file_name );
                 if( file  )
                 {
+                    Sampling->clear();
                     Sampling->readFromFile( file_name ) ;
                 }
                 else
                     throw std::logic_error( "[OpusApp] file SamplingForTest was not found" );
 
             }
-#endif
+
 
 
             //Statistics
@@ -551,7 +552,7 @@ public:
                                 LOG(INFO) << "compute error \n";
                                 auto u_error = model->functionSpace()->element();
                                 std::ostringstream u_error_str;
-                                u_error = u_fem - u_crb;
+                                u_error = (( u_fem - u_crb ).pow(2)).sqrt()  ;
                                 u_error_str << "u_error(" << mu_str.str() << ")";
                                 u_error.setName( u_error_str.str()  );
                                 exporter->step(0)->add( u_error.name(), u_error );
