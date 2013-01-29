@@ -57,6 +57,12 @@ public:
     //@{
     SubMeshData( mesh_ptrtype m ) : mesh( m )
         {}
+
+    ~SubMeshData()
+        {
+            VLOG(2) << "delete sub mesh data\n";
+        }
+
     //@}
 
 

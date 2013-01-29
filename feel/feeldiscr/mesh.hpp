@@ -1214,10 +1214,52 @@ public:
         }
 
     //! \return true if the mesh is related to the mesh \p m
-    bool isRelatedTo( mesh_ptrtype m ) const
+    bool isSubMeshFrom( mesh_type const* m ) const
         {
+            VLOG(2) << "isSubMeshFrom<mesh_ptrtype> called\n";
             if ( !M_smd ) return false;
-            return M_smd->mesh == m;
+            bool res= (M_smd->mesh.get() == m);
+            VLOG(2) << "this isSubMeshFrom m: " << res << "\n";
+            return res;
+        }
+    //! \return true if the mesh is related to the mesh \p m
+    bool isSubMeshFrom( mesh_ptrtype m ) const
+        {
+            return isSubMeshFrom( m.get() );
+        }
+
+    //! \return true if the mesh is related to the mesh \p m
+    bool isParentMeshOf( mesh_ptrtype m ) const
+        {
+            VLOG(2) << "isParentMeshOf<mesh_ptrtype> called\n";
+            bool res = m->isSubMeshFrom( this );
+            if ( res == false ) return res;
+            VLOG(2) << "this isParentMeshOf m: " << res << "\n";
+            return res;
+        }
+    template<typename M>
+    bool isSubMeshFrom( boost::shared_ptr<M> m, typename boost::enable_if<typename mpl::not_<boost::is_same<M,mesh_type> >::type>::type* dummy = 0 ) const
+        {
+            VLOG(2) << "isSubMeshFrom<M> called\n";
+            return false;
+        }
+
+    template<typename M>
+    bool isSameMesh( boost::shared_ptr<M> m ) const
+        {
+            bool same_mesh = ( dynamic_cast<void const*>( this ) == dynamic_cast<void*>( m.get() ) );
+            return same_mesh;
+        }
+    template<typename M>
+    bool isRelatedTo( boost::shared_ptr<M> m ) const
+        {
+            bool same_mesh = ( dynamic_cast<void const*>( this ) == dynamic_cast<void*>( m.get() ) );
+            VLOG(2) << "same_mesh: " << same_mesh << "\n";
+            bool is_submesh_from = isSubMeshFrom( m );
+            VLOG(2) << "isSubMeshFrom: " << is_submesh_from << "\n";
+            bool is_parentmesh_of = isParentMeshOf( m );
+            VLOG(2) << "is_parentmesh_of: " << is_parentmesh_of << "\n";
+            return same_mesh || is_submesh_from || is_parentmesh_of;
         }
 
     //! \return id in parent mesh given the id in the sub mesh
@@ -1232,10 +1274,40 @@ public:
         {
             CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
             if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
-                M_smd->bm.right.find( id )->second;
+                return M_smd->bm.right.find( id )->second;
             // the submesh element id has not been found, return invalid value
             return invalid_size_type_value;
         }
+
+    //! \return id in parent mesh given the id in the sub mesh
+    size_type subMeshToMesh( mesh_ptrtype m, size_type id )
+        {
+            if ( this == m->get() )
+                return id;
+            if ( isRelatedTo( m ) )
+            {
+                CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+                return M_smd->bm.left.find( id )->second;
+            }
+            return invalid_size_type_value;
+        }
+
+    //! \return id in sub mesh given the id in the parent mesh
+    size_type meshToSubMesh( mesh_ptrtype m, size_type id )
+        {
+            if ( this == m->get() )
+                return id;
+            if ( isRelatedTo( m ) )
+            {
+                CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+                if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                    return M_smd->bm.right.find( id )->second;
+                // the submesh element id has not been found, return invalid value
+                // will return invalid_size_type_value
+            }
+            return invalid_size_type_value;
+        }
+
     //@}
 
 protected:
