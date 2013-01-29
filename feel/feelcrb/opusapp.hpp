@@ -165,8 +165,8 @@ public:
                 // Check if user have given a name for result files repo
                 // Note : this name is also use for database storage
                 std::string results_repo_name;
-                if( this->vm().count("results-repo-name") )
-                    results_repo_name = this->vm()["results-repo-name"].template as<std::string>();
+                if( this->vm().count("crb.results-repo-name") )
+                    results_repo_name = this->vm()["crb.results-repo-name"].template as<std::string>();
                 else
                     results_repo_name = "default_repo";
 
