@@ -199,7 +199,7 @@ typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int
 //typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
-
+#if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
 {
     if ( ( T::value == 1 ) &&
@@ -259,27 +259,26 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     // with optimization
     auto opI3=opInterpolation( _domainSpace=Yh,
                                _imageSpace=Xh,
-                              _range=boundaryelements( mesh ) );
+                              _range=elements( mesh ) );
     auto u4 = Xh->element();
     opI3->apply( u2, u4 );
 
+    t1 = t.elapsed();t.restart();
     l2error = normL2( boundaryelements(mesh), idv(u4)-idv(u2) );
     BOOST_CHECK_SMALL( l2error, 1e-14 );
-    t1 = t.elapsed();t.restart();
     BOOST_TEST_MESSAGE( "Test submesh : elapsed time for optimized version (transpose) : " << t1 << "s\n" );
 
     // without optimization
     t.restart();
     auto opI4=opInterpolation( _domainSpace=Zh,
                                _imageSpace=Xh,
-                               _range=boundaryelements( mesh ) );
+                               _range=elements( mesh ) );
     auto u5 = Xh->element();
     opI4->apply( u3, u5 );
 
+    t2 = t.elapsed();t.restart();
     l2error2 = normL2( boundaryelements(mesh), idv(u5)-idv(u3) );
     BOOST_CHECK_SMALL( l2error2, 1e-14 );
-
-    t2 = t.elapsed();t.restart();
     BOOST_TEST_MESSAGE( "Test submesh : elapsed time for non-optimized version (transpose) : " << t2 << "s\n" );
 
     BOOST_CHECK_GT( t2, t1 );
@@ -298,7 +297,46 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
 
     BOOST_TEST_MESSAGE( "Test submesh2 "  << T::value << "D done" );
 }
+#endif
+//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim2_types;
+typedef boost::mpl::list<boost::mpl::int_<2> > dim2_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
+{
+    using namespace Feel;
+    BOOST_TEST_MESSAGE( "Test submesh3 " << T::value << "D" );
+    auto mesh = unitHypercube<T::value>();
+    auto Xh = Pch<1>( mesh );
+    auto v = Xh->element();
 
+    LOG(INFO) << "optimized version\n";
+    // with optimization
+    auto mesh2 = createSubmesh( mesh, boundaryelements( mesh ) );
+    auto Yh = Pch<1>( mesh2 );
+    auto u = Yh->element();
+
+    boost::mpi::timer t;
+    auto a = form2( _test=Xh, _trial=Yh );
+    a = integrate( _range=elements(mesh2), _expr=idt(u)*id(v) );
+    u = project( _space=Yh, _range=elements(mesh2), _expr=cst(1.) );
+    v = project( _space=Xh, _range=boundaryelements(mesh), _expr=cst(1.) );
+    double mass1 = a( v, u );
+    BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
+
+    LOG(INFO) << "non optimized version\n";
+    // with optimization
+    auto mesh3 = createSubmesh( mesh, boundaryelements( mesh ), 0 );
+    auto Zh = Pch<1>( mesh3 );
+    auto w = Zh->element();
+
+    t.restart();
+    auto b = form2( _test=Xh, _trial=Zh );
+    b = integrate( _range=elements(mesh3), _expr=idt(w)*id(v) );
+    w = project( _space=Zh, _range=elements(mesh3), _expr=cst(1.) );
+    double mass2 = b( v, w );
+    BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
+    BOOST_CHECK_CLOSE( mass1, mass2, 1e-14 );
+    BOOST_TEST_MESSAGE( "Test submesh3 "  << T::value << "D done" );
+}
 BOOST_AUTO_TEST_SUITE_END()
 
 #if 0

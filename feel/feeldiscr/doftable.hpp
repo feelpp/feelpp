@@ -229,6 +229,9 @@ public:
      */
     DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
 
+    mesh_type* mesh() { return M_mesh; }
+    mesh_type* mesh() const { return M_mesh; }
+
     /**
      * \return the number of dof for faces on the boundary
      */
@@ -808,6 +811,7 @@ public:
      */
     void build( mesh_type& M )
     {
+        M_mesh = boost::addressof( M );
         _M_elt_done.resize( M.numElements() );
         std::fill( _M_elt_done.begin(), _M_elt_done.end(), false );
 
@@ -2011,6 +2015,7 @@ private:
 
 private:
 
+    mesh_type* M_mesh;
     fe_ptrtype _M_fe;
 
     reference_convex_type _M_convex_ref;

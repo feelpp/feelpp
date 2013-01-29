@@ -750,10 +750,16 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
         if ( it == en )
             continue;
 
-        if ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __u->mesh().get() ) &&
-             dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) )
+        bool same_mesh = ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __u->mesh().get() ) &&
+                           dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) );
+        const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() );
+        const bool trial_related_to_test = __u->mesh()->isRelatedTo( __v->mesh() );
+        if ( same_mesh || test_related_to_trial || trial_related_to_test )
+        {
+            VLOG(2) << "[integrator::assemble bilinear form] same_mesh: " << same_mesh << " test_related_to_trial: " << test_related_to_trial << " trial_related_to_test: " << trial_related_to_test << "\n";
             assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>() );
 
+        }
         else
             assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>() );
     }
@@ -876,6 +882,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 //
                 for ( ; it != en; ++it )
                 {
+                    if ( formc->isZero( it ) )
+                        continue;
+
                     switch ( M_gt )
                     {
                     default:
@@ -956,6 +965,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             //ti1.restart();
                             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                             formc->update( mapgmc,mapgmc,mapgmc );
+
                             //LOG( INFO )  << "update gmc : " << ti1.elapsed() << "\n";
                             //t1+=ti1.elapsed();
 
@@ -985,6 +995,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             //ti1.restart();
                             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                             formc1->update( mapgmc1,mapgmc1,mapgmc1 );
+
                             //LOG( INFO )  << "update gmc : " << ti1.elapsed() << "\n";
                             //t1+=ti1.elapsed();
 
