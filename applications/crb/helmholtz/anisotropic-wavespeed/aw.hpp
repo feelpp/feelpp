@@ -441,7 +441,7 @@ AnisotropicWavespeed::init()
     R.setMarker( _type="line",_name="Top",_marker4=true,_marker2=true,_marker3=true );
     R.setMarker( _type="line",_name="Bottom",_marker1=true );
     R.setMarker( _type="surface",_name="Omega",_markerAll=true );
-    mesh = R.createMesh<mesh_type>( "Omega" );
+    mesh = R.createMesh<mesh_type>( _mesh=mesh, _name="Omega" );
 
 
     /*

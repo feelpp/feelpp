@@ -473,7 +473,7 @@ AdvectionDiffusion::init()
     R.setMarker( _type="line",_name="Top",_marker3=true );
     R.setMarker( _type="line",_name="Outflow",_marker2=true );
     R.setMarker( _type="surface",_name="Omega",_markerAll=true );
-    mesh = R.createMesh<mesh_type>( "Omega" );
+    mesh = R.createMesh<mesh_type>( _mesh=mesh, _name="Omega" );
 
 
     /*
