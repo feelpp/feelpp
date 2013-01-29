@@ -327,6 +327,25 @@ public:
     {
         return M_graph;
     }
+private:
+    size_type trialElementId( size_type trial_eid )
+        {
+            size_type idElem = trial_eid;
+            size_type domain_eid = idElem;
+            const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
+            const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
+            if ( test_related_to_trial )
+            {
+                domain_eid = _M_X1->mesh()->subMeshToMesh( idElem );
+                LOG(INFO) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+            }
+            if( trial_related_to_test )
+            {
+                domain_eid = _M_X2->mesh()->meshToSubMesh( idElem );
+                LOG(INFO) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+            }
+            return domain_eid;
+        }
 
 private:
 
@@ -659,14 +678,21 @@ template<typename X1,  typename X2>
 typename Stencil<X1,X2>::graph_ptrtype
 Stencil<X1,X2>::computeGraph( size_type hints )
 {
-    if ( (is_shared_ptr<typename test_space_type::mesh_ptrtype>::value && is_shared_ptr<typename trial_space_type::mesh_ptrtype>::value ) &&
-         dynamic_cast<void*>( _M_X1->template mesh<0>().get() ) == dynamic_cast<void*>( _M_X2->template mesh<0>().get() ) )
+    VLOG(2) << "computeGraph: deciding whether the mesh are related to optimize the stencil\n";
+    //if ( (is_shared_ptr<typename test_space_type::mesh_ptrtype>::value && is_shared_ptr<typename trial_space_type::mesh_ptrtype>::value ) &&
+    //dynamic_cast<void*>( _M_X1->template mesh<0>().get() ) == dynamic_cast<void*>( _M_X2->template mesh<0>().get() ) )
+    if ( _M_X1->template mesh<0>()->isRelatedTo( _M_X2->template mesh<0>() ) )
+    {
+        VLOG(2) << "computeGraph: meshes are related\n";
         return this->computeGraph( hints, mpl::bool_<mpl::and_< mpl::bool_< ( test_space_type::nSpaces == 1 )>,
                                                                 mpl::bool_< ( trial_space_type::nSpaces == 1 )> >::type::value >() );
-
+    }
     else
+    {
+        VLOG(2) << "computeGraph: meshes are not related\n";
         return this->computeGraphInCaseOfInterpolate( hints, mpl::bool_<mpl::and_< mpl::bool_< ( test_space_type::nSpaces == 1 )>,
                                                                                    mpl::bool_< ( trial_space_type::nSpaces == 1 )> >::type::value >() );
+    }
 }
 
 
@@ -1081,12 +1107,16 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 #endif /* NDEBUG */
         const auto & elem = *elem_it;
 
+        size_type domain_eid = trialElementId( elem.id() );
+        if ( domain_eid == invalid_size_type_value )
+            continue;
+
         // Get the global indices of the DOFs with support on this element
         //element_dof1 = _M_X1->dof()->getIndices( elem.id() );
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-        _M_X2->dof()->getIndicesSet( elem.id(), element_dof2 );
+        _M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
 #else // MPI
-        _M_X2->dof()->getIndicesSetOnGlobalCluster( elem.id(), element_dof2 );
+        _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
 #endif
         // We can be more efficient if we sort the element DOFs
         // into increasing order

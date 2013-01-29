@@ -252,9 +252,9 @@ public:
 
     InterpType const& interpolationType() const { return _M_interptype; }
 
-    bool isDomainMeshRelatedToImageMesh() const { return this->domainSpace()->mesh()->isRelatedTo( this->dualImageSpace()->mesh() ); }
+    bool isDomainMeshRelatedToImageMesh() const { return this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() ); }
 
-    bool isImageMeshRelatedToDomainMesh() const { return this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ); }
+    bool isImageMeshRelatedToDomainMesh() const { return this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() ); }
 
     //@}
 
@@ -383,8 +383,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // each other through an extraction (one of them is the sub mesh of the
     // other)
     if ( ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() ) ||
-         ( this->domainSpace()->mesh()->isRelatedTo( this->dualImageSpace()->mesh() ) ) ||
-         ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) ) )
+         ( this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() ) ) ||
+         ( this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() ) ) )
     {
         VLOG(2) << "OperatorInterpolation: use same mesh\n";
         VLOG(2) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
@@ -462,8 +462,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
 
-    const bool image_related_to_domain = this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() );
-    const bool domain_related_to_image = this->domainSpace()->mesh()->isRelatedTo( this->dualImageSpace()->mesh() );
+    const bool image_related_to_domain = this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() );
+    const bool domain_related_to_image = this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() );
 
     for ( ; it != en; ++ it )
     {
