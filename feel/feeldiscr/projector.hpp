@@ -147,8 +147,8 @@ public :
                                        ( expr,   * )
                                      )
                                      ( optional
-                                       ( range,   *, elements( this->domainSpace()->mesh() )  )
-                                       ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->domainSpace()->mesh() ) )>::_quad_type() ) )
+                                       ( range,   *, elements( this->dualImageSpace()->mesh() )  )
+                                       ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type() ) )
                                        ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad1_type() ) )
                                        ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
                                      )
@@ -181,7 +181,7 @@ public :
         if ( M_proj_type == DIFF )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
-                integrate( _range=boundaryfaces( this->domainSpace()->mesh() ),
+                integrate( _range=boundaryfaces( this->dualImageSpace()->mesh() ),
                            _expr=expr*M_epsilon*( -grad( this->domainSpace()->element() )*vf::N() +
                                                   M_gamma / vf::hFace() *id( this->dualImageSpace()->element() ) ),
                            _quad=quad, _quad1=quad1, _geomap=geomap );
@@ -274,11 +274,11 @@ public :
         form1( _test=this->dualImageSpace(), _vector=ie, _init=true );
 
         form1( _test=this->dualImageSpace(), _vector=ie ) +=
-            integrate(_range = elements( this->domainSpace()->mesh() ),
+            integrate(_range = elements( this->dualImageSpace()->mesh() ),
                       _expr = - trace( expr * trans( grad( this->dualImageSpace()->element() ) ) ) );
 
         form1(_test=this->dualImageSpace(), _vector=ie) +=
-            integrate(_range = boundaryfaces( this->domainSpace()->mesh() ),
+            integrate(_range = boundaryfaces( this->dualImageSpace()->mesh() ),
                       _expr =  trans( id( this->dualImageSpace()->element() ) ) * expr * vf::N() );
 
         ie->close();
@@ -305,7 +305,7 @@ private :
         {
         case L2:
         {
-            a = integrate( elements( this->domainSpace()->mesh() ),
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
                            *id( this->dualImageSpace()->element() ) /*test*/
                          );
@@ -314,7 +314,7 @@ private :
 
         case H1:
         {
-            a = integrate( elements( this->domainSpace()->mesh() ),
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
                            *id( this->dualImageSpace()->element() ) /*test*/
                            +
@@ -326,7 +326,7 @@ private :
 
         case DIFF:
         {
-            a = integrate( elements( this->domainSpace()->mesh() ),
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
                            *id( this->dualImageSpace()->element() ) /*test*/
                            +
@@ -335,11 +335,11 @@ private :
                                   * trans( grad( this->dualImageSpace()->element() ) ) )
                            );
             //weak boundary conditions
-            a += integrate( boundaryfaces( this->domainSpace()->mesh() ),
+            a += integrate( boundaryfaces( this->dualImageSpace()->mesh() ),
                             M_epsilon*( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N() ) );
-            a += integrate( boundaryfaces( this->domainSpace()->mesh() ),
+            a += integrate( boundaryfaces( this->dualImageSpace()->mesh() ),
                             M_epsilon*( -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N() ) );
-            a += integrate( boundaryfaces( this->domainSpace()->mesh() ),
+            a += integrate( boundaryfaces( this->dualImageSpace()->mesh() ),
                             M_epsilon*( M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
                                         *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
                                         ) );
@@ -348,7 +348,7 @@ private :
 
         case HDIV:
         {
-            a = integrate( elements( this->domainSpace()->mesh() ),
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
                            *id( this->dualImageSpace()->element() ) /*test*/
                            +
@@ -360,7 +360,7 @@ private :
 
         case HCURL:
         {
-            a = integrate( elements( this->domainSpace()->mesh() ),
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
                            *id( this->dualImageSpace()->element() ) /*test*/
                            +
@@ -373,7 +373,7 @@ private :
 
         case LIFT:
         {
-            a = integrate( elements( this->domainSpace()->mesh() ),
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
                            trace( gradt( this->domainSpace()->element() )
                                   * trans( grad( this->dualImageSpace()->element() ) ) )
                            );

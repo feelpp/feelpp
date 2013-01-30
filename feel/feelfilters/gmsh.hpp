@@ -1256,6 +1256,18 @@ unitCube()
                                         _h=Environment::vm(_name="mesh3d.hsize").as<double>() ) );
 }
 
+template<int Dim>
+inline
+boost::shared_ptr<Mesh<Simplex<Dim> > >
+unitHypercube()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<Dim> >,
+                          _desc=domain( _name="hypercube",
+                                        _shape="hypercube",
+                                        _dim=Dim,
+                                        _h=Environment::vm(_name=(boost::format("mesh%1%d.hsize")%Dim).str()).template as<double>() ) );
+}
+
 
 } // Feel
 

@@ -456,7 +456,7 @@ public:
         }
 
         void
-        addRegions()
+        addRegions( std::string prefix = "" )
         {
             VLOG(1) << "[timeset] Adding regions...\n";
             if ( !M_ts->_M_scalar_p0 )
@@ -475,7 +475,10 @@ public:
                 _M_scalar_p0 = M_ts->_M_scalar_p0;
             }
             VLOG(1) << "[timeset] adding pid...\n";
-            add( "pid", regionProcess( _M_scalar_p0 ) );
+            if ( prefix.empty() )
+                add( "pid", regionProcess( _M_scalar_p0 ) );
+            else
+                add( prefix + "." + "pid", regionProcess( _M_scalar_p0 ) );
             //add( "marker", regionMarker( _M_scalar_p0 ) );
             //add( "marker2", regionMarker2( _M_scalar_p0 ) );
             //add( "marker3", regionMarker3( _M_scalar_p0 ) );
