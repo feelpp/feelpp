@@ -7,7 +7,7 @@ Feel++ is a C++ library for arbitrary order Galerkin methods (e.g. finite and sp
  - build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE)
  - the creation of a library entirely in C++ allowing to create C++ complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic
 
-SOme basic installation procedure are available [[file:INSTALL.org][here]].
+SOme basic installation procedure are available in the INSTALL.org file.
 
 * Features
  - 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
