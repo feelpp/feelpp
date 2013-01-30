@@ -505,7 +505,7 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
-        size_type trialElementId( size_type trial_eid )
+        size_type trialElementId( size_type trial_eid ) const
             {
                 size_type idElem = trial_eid;
                 size_type domain_eid = idElem;
@@ -523,26 +523,26 @@ public:
                 }
                 return domain_eid;
             }
-        size_type trialElementId( typename mesh_1_type::element_iterator it )
+        size_type trialElementId( typename mesh_1_type::element_iterator it ) const
             {
                 return trialElementId( it->id() );
             }
-        size_type trialElementId( typename mesh_1_type::element_type const& e )
+        size_type trialElementId( typename mesh_1_type::element_type const& e ) const
             {
                 return trialElementId( e.id() );
             }
-        bool isZero( size_type i )
+        bool isZero( size_type i ) const
             {
                 size_type domain_eid = trialElementId( i );
                 if ( domain_eid == invalid_size_type_value )
                     return true;
                 return false;
             }
-        bool isZero( typename mesh_1_type::element_iterator it )
+        bool isZero( typename mesh_1_type::element_iterator it ) const
             {
                 return this->isZero( it->id() );
             }
-        bool isZero( typename mesh_1_type::element_type const& e )
+        bool isZero( typename mesh_1_type::element_type const& e ) const
             {
                 return this->isZero( e.id() );
             }

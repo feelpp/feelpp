@@ -278,15 +278,15 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
-        bool isZero( size_type i )
+        bool isZero( size_type i ) const
             {
                 return false;
             }
-        bool isZero( typename mesh_type::element_iterator it )
+        bool isZero( typename mesh_type::element_iterator it ) const
             {
                 return this->isZero( it->id() );
             }
-        bool isZero( typename mesh_type::element_type const& e )
+        bool isZero( typename mesh_type::element_type const& e ) const
             {
                 return this->isZero( e.id() );
             }
