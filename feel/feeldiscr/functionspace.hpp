@@ -4637,6 +4637,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
     const uint16_type nq = context.xRefs().size2();
 
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
@@ -4647,7 +4655,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
         for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
         {
             typename array_type::index ldof = basis_type::nDof*c1+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             //std::cout << "ldof = " << ldof << "\n";
             //std::cout << "gdof = " << gdof << "\n";
 
@@ -4888,6 +4896,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
     //std::cout << "coeff=" << coeff << "\n";
     //array_type v( boost::extents[nComponents1][nRealDim][context.xRefs().size2()] );
     //std::fill( v.data(), v.data()+v.num_elements(), value_type( 0 ) );
@@ -4898,7 +4914,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5055,6 +5071,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
     const size_type Q = context.xRefs().size2();
 
     for ( int l = 0; l < basis_type::nDof; ++l )
@@ -5064,7 +5088,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5215,6 +5239,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -5222,7 +5254,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5266,6 +5298,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
+
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -5273,7 +5314,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )

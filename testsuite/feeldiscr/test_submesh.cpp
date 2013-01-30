@@ -346,6 +346,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     BOOST_CHECK_CLOSE( mass2, .25, 1e-13 );
     BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
     //BOOST_CHECK_CLOSE( mass1, mass2, 1e-14 );
+
+    t.restart();
+    auto c = form1( _test=Xh );
+    c = integrate( _range=elements(mesh), _expr=idv(u)*id(v) );
+    double mass3 = c( v );
+    BOOST_CHECK_CLOSE( mass3, .25, 1e-13 );
+    BOOST_TEST_MESSAGE( "time linear form (opt) : " << t.elapsed() << "s\n" );
+
+    t.restart();
+    auto d = form1( _test=Xh );
+    d = integrate( _range=elements(mesh), _expr=idv(w)*id(v) );
+    double mass4 = d( v );
+    BOOST_CHECK_CLOSE( mass4, .25, 1e-13 );
+    BOOST_TEST_MESSAGE( "time linear form (non opt) : " << t.elapsed() << "s\n" );
     BOOST_TEST_MESSAGE( "Test submesh3 "  << T::value << "D done" );
 }
 BOOST_AUTO_TEST_SUITE_END()

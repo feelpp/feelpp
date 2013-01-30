@@ -558,6 +558,29 @@ public:
         return _M_F( i );
     }
 
+    /**
+     * Computes the application of the form on an element of the function space
+     *
+     * @param __v element of Space 1 (test space)
+     * @return f(v)
+     */
+    value_type operator()( element_type const& __v ) const
+    {
+        return _M_F->dot( __v );
+    }
+
+    /**
+     * Computes the application of the form on an element of the function space
+     *
+     * @param __v element of Space 1 (test space)
+     * @return f(v)
+     */
+    value_type operator()( typename space_type::element_type const& __v ) const
+    {
+        return _M_F->dot( __v );
+    }
+
+
     //@}
 
     /** @name Accessors

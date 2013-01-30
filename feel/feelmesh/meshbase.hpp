@@ -357,14 +357,14 @@ public:
         }
 
     //! \return id in parent mesh given the id in the sub mesh
-    size_type subMeshToMesh( size_type id )
+    size_type subMeshToMesh( size_type id ) const
         {
             CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
             return M_smd->bm.left.find( id )->second;
         }
 
     //! \return id in sub mesh given the id in the parent mesh
-    size_type meshToSubMesh( size_type id )
+    size_type meshToSubMesh( size_type id ) const
         {
             CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
             if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
@@ -374,7 +374,7 @@ public:
         }
 
     //! \return id in parent mesh given the id in the sub mesh
-    size_type subMeshToMesh( boost::shared_ptr<MeshBase> m, size_type id )
+    size_type subMeshToMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
         {
             if ( this == m.get() )
                 return id;
@@ -387,7 +387,7 @@ public:
         }
 
     //! \return id in sub mesh given the id in the parent mesh
-    size_type meshToSubMesh( boost::shared_ptr<MeshBase> m, size_type id )
+    size_type meshToSubMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
         {
             if ( this == m.get() )
                 return id;
