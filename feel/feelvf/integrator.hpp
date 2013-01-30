@@ -882,7 +882,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 //
                 for ( ; it != en; ++it )
                 {
-                    if ( formc->isZero( it ) )
+                    if ( formc->isZero( it->id() ) )
                         continue;
 
                     switch ( M_gt )
