@@ -156,7 +156,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = M_range;
 
-    std::vector<size_type> new_element_id ( std::distance(it,en) );
+    std::map<size_type,size_type> new_element_id;
 
     for ( ; it != en; ++ it )
     {
