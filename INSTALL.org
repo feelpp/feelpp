@@ -1,0 +1,28 @@
+#+TITLE: Basic Installation Procedures
+#+NAME: Christophe Prud'homme
+#+EMAIL: christophe.prudhomme@feelpp.org
+#+OPTIONS: LaTeX:t
+
+* Installation
+** Requirements
+
+ - G++ (>=4.5)
+ - Boost (>=1.46)
+ - PETSc (>=3.1)
+ - Gmsh
+
+** Building Feel++
+
+Note that in-source builds of Feel++ are not possible.
+
+*** Out source build
+
+#+BEGIN_SRC shell
+mkdir opt
+cd opt
+cmake <top level feel directory>
+make
+ctest
+#+END_SRC
+
+More details in Feel++ manual and Feel++ website (http://www.feelpp.org)
