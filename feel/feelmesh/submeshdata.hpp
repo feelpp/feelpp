@@ -33,6 +33,8 @@
 
 namespace Feel
 {
+class MeshBase;
+
 /**
  * \class SubMeshData
  * \brief data structure storing sub mesh data
@@ -40,28 +42,31 @@ namespace Feel
  * \author Christophe Prud'homme
  * \see Mesh
  */
-template<typename MeshType>
 class SubMeshData
 {
 public:
     /** @name Typedefs
      */
     //@{
-    typedef MeshType mesh_type;
-    typedef boost::shared_ptr<MeshType> mesh_ptrtype;
+    typedef MeshBase mesh_type;
+    typedef boost::shared_ptr<MeshBase> mesh_ptrtype;
     typedef boost::bimap< size_type, size_type > bm_type;
     //@}
 
     /** @name Constructors, destructor
      */
     //@{
-    SubMeshData( mesh_ptrtype m ) : mesh( m )
+    template<typename MeshType>
+    SubMeshData( boost::shared_ptr<MeshType> m ) : mesh( m )
         {}
 
     ~SubMeshData()
         {
             VLOG(2) << "delete sub mesh data\n";
         }
+
+    //MeshBase* meshBase() { return dynamic_cast<MeshBase *>( mesh.get() ); }
+    //MeshBase const* meshBase() const { return dynamic_cast<MeshBase const*>( mesh.get() ); }
 
     //@}
 
