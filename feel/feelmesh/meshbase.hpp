@@ -331,13 +331,14 @@ public:
             VLOG(2) << "this isParentMeshOf m: " << res << "\n";
             return res;
         }
+#if 0
     template<typename M>
     bool isSubMeshFrom( boost::shared_ptr<M> m ) const
         {
             VLOG(2) << "isSubMeshFrom<M> called\n";
             return false;
         }
-
+#endif
     template<typename M>
     bool isSameMesh( boost::shared_ptr<M> m ) const
         {
