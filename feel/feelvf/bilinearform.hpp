@@ -544,7 +544,7 @@ public:
             }
         bool isZero( typename mesh_1_type::element_type const& e )
             {
-                return this->isZero( eid() );
+                return this->isZero( e.id() );
             }
 
         void update( map_test_geometric_mapping_context_type const& gmcTest,
