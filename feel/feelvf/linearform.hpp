@@ -278,6 +278,19 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
+        bool isZero( size_type i ) const
+            {
+                return false;
+            }
+        bool isZero( typename mesh_type::element_iterator it ) const
+            {
+                return this->isZero( it->id() );
+            }
+        bool isZero( typename mesh_type::element_type const& e ) const
+            {
+                return this->isZero( e.id() );
+            }
+
         void update( map_test_geometric_mapping_context_type const& _gmcTest,
                      map_trial_geometric_mapping_context_type const & gmcTrial,
                      map_geometric_mapping_expr_context_type const& _gmcExpr );
@@ -544,6 +557,29 @@ public:
     {
         return _M_F( i );
     }
+
+    /**
+     * Computes the application of the form on an element of the function space
+     *
+     * @param __v element of Space 1 (test space)
+     * @return f(v)
+     */
+    value_type operator()( element_type const& __v ) const
+    {
+        return _M_F->dot( __v );
+    }
+
+    /**
+     * Computes the application of the form on an element of the function space
+     *
+     * @param __v element of Space 1 (test space)
+     * @return f(v)
+     */
+    value_type operator()( typename space_type::element_type const& __v ) const
+    {
+        return _M_F->dot( __v );
+    }
+
 
     //@}
 
