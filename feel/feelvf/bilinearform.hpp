@@ -505,6 +505,48 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
+        size_type trialElementId( size_type trial_eid ) const
+            {
+                size_type idElem = trial_eid;
+                size_type domain_eid = idElem;
+                const bool test_related_to_trial = _M_form.testSpace()->mesh()->isSubMeshFrom( _M_form.trialSpace()->mesh() );
+                const bool trial_related_to_test = _M_form.trialSpace()->mesh()->isSubMeshFrom( _M_form.testSpace()->mesh() );
+                if ( test_related_to_trial )
+                {
+                    domain_eid = _M_form.testSpace()->mesh()->subMeshToMesh( idElem );
+                    LOG(INFO) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                if( trial_related_to_test )
+                {
+                    domain_eid = _M_form.trialSpace()->mesh()->meshToSubMesh( idElem );
+                    LOG(INFO) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                return domain_eid;
+            }
+        size_type trialElementId( typename mesh_1_type::element_iterator it ) const
+            {
+                return trialElementId( it->id() );
+            }
+        size_type trialElementId( typename mesh_1_type::element_type const& e ) const
+            {
+                return trialElementId( e.id() );
+            }
+        bool isZero( size_type i ) const
+            {
+                size_type domain_eid = trialElementId( i );
+                if ( domain_eid == invalid_size_type_value )
+                    return true;
+                return false;
+            }
+        bool isZero( typename mesh_1_type::element_iterator it ) const
+            {
+                return this->isZero( it->id() );
+            }
+        bool isZero( typename mesh_1_type::element_type const& e ) const
+            {
+                return this->isZero( e.id() );
+            }
+
         void update( map_test_geometric_mapping_context_type const& gmcTest,
                      map_trial_geometric_mapping_context_type const& _gmcTrial,
                      map_geometric_mapping_expr_context_type const& gmcExpr );
@@ -1100,7 +1142,8 @@ public:
     //@{
 
 
-
+    // close matrix
+    void close() { _M_matrix->close(); }
 
 
     /**
