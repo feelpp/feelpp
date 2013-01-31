@@ -805,10 +805,10 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     _M_threshold( __vf._M_threshold )
 
 {
-    Debug( 5060 ) << "LinearForm copy constructor\n";
-    Debug( 5060 ) << "     n Dof : " << _M_X->nDof() << "\n";
-    Debug( 5060 ) << "    F size : " << _M_F->size() << "\n";
-    Debug( 5060 ) << "block size : " << _M_lb.size() << "\n";
+    DVLOG(2) << "LinearForm copy constructor\n";
+    DVLOG(2) << "     n Dof : " << _M_X->nDof() << "\n";
+    DVLOG(2) << "    F size : " << _M_F->size() << "\n";
+    DVLOG(2) << "block size : " << _M_lb.size() << "\n";
 }
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -832,7 +832,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
         _M_lb.push_back( Block( __i, 0,
                                 __i*_M_X->nDofPerComponent(),
                                 0 ) );
-        Debug( 5050 ) << "[linearform::linearform] block: "
+        DVLOG(2) << "[linearform::linearform] block: "
                       << Block( __i, 0, __i*_M_X->nDofPerComponent(), 0 )  << "\n";
     }
 
@@ -884,7 +884,7 @@ struct LFAssign
     {
         if ( _M_lf.testSpace()->worldsComm()[_M_index].isActive() )
         {
-            Debug( 5050 ) << "expression has test functions ? :"
+            DVLOG(2) << "expression has test functions ? :"
                           << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result
                     << "\n";
 
@@ -983,9 +983,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __ex
 
         for ( ; __bit != __ben; ++__bit )
         {
-            Debug( 5050 ) << "LinearForm:: block: " << *__bit << "\n";
+            DVLOG(2) << "LinearForm:: block: " << *__bit << "\n";
             size_type g_ic_start = __bit->globalRowStart();
-            Debug( 5050 ) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
+            DVLOG(2) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
 
             _M_F->zero( g_ic_start,g_ic_start + _M_X->nDof() );
         }

@@ -192,8 +192,6 @@ class GeoMap
                _M_g_linear( nNodes, nDim ),
                M_refconvex()
 {
-    FEELPP_CONSTRUCTOR_END( 5046, "GeoMap" );
-
     if ( trans == fem::LINEAR )
     {
         //_M_g_linear.resize( nNodes, nDim );
@@ -233,7 +231,6 @@ class GeoMap
 #endif // 0
     }
 
-    FEELPP_CONSTRUCTOR_END( 5046, "GeoMap" );
 }
 /** default constructor */
 GeoMap( element_gm_ptrtype const& e,  face_gm_ptrtype const& f )
@@ -245,8 +242,6 @@ GeoMap( element_gm_ptrtype const& e,  face_gm_ptrtype const& f )
     _M_g_linear( nNodes, nDim ),
     M_refconvex()
 {
-    FEELPP_CONSTRUCTOR_END( 5046, "GeoMap" );
-
     if ( trans == fem::LINEAR )
     {
         //_M_g_linear.resize( nNodes, nDim );
@@ -284,7 +279,6 @@ GeoMap( element_gm_ptrtype const& e,  face_gm_ptrtype const& f )
 #endif // 0
     }
 
-    FEELPP_CONSTRUCTOR_END( 5046, "GeoMap" );
 }
 /**
    destructor
@@ -2315,12 +2309,12 @@ void update()
     // in the case of linear inversion (__g is a constant matrix in this case)
     // in the non linear case , xRef() is update in the newton iterations
     _M_gm->gradient( xRef(), _M_g );
-    Debug( 5046 ) << "[update] g = " << _M_g << "\n";
+    DVLOG(2) << "[update] g = " << _M_g << "\n";
 
     checkInvariant();
 
     ublas::axpy_prod( _M_G, _M_g, _M_K );
-    Debug( 5046 ) << "[update] K(0) = " << _M_K << "\n";
+    DVLOG(2) << "[update] K(0) = " << _M_K << "\n";
 
     // compute B
     if ( _M_gm->dim() != N() )
@@ -2338,7 +2332,7 @@ void update()
         _M_B = ublas::trans( _M_CS );
     }
 
-    Debug( 5046 ) << "[update] B(0) = " << _M_B << "\n";
+    DVLOG(2) << "[update] B(0) = " << _M_B << "\n";
 }
 
 void
@@ -2360,23 +2354,23 @@ bool linearInverse()
 
     node_type y( _M_xreal );
 
-    Debug( 5046 ) << "y = xreal = " << y << "\n";
-    //Debug( 5046 ) << "G(0)  = " << node_type( _M_x0 << "\n";
+    DVLOG(2) << "y = xreal = " << y << "\n";
+    //DVLOG(2) << "G(0)  = " << node_type( _M_x0 << "\n";
     y.minus_assign(  ublas::column( _M_G, 0 ) );
-    Debug( 5046 ) << "y - G(0) = " << y << "\n";
+    DVLOG(2) << "y - G(0) = " << y << "\n";
 
-    Debug( 5046 ) << "B(0) = " << _M_B << "\n";
-    Debug( 5046 ) << "xref = " << ublas::prod( ublas::trans( _M_B ), y ) << "\n";
+    DVLOG(2) << "B(0) = " << _M_B << "\n";
+    DVLOG(2) << "xref = " << ublas::prod( ublas::trans( _M_B ), y ) << "\n";
 
     // xref = B^T * y = B^T * ( x_real - x_0)
     _M_xref.assign( ublas::prod( ublas::trans( _M_B ), y )-ublas::scalar_vector<value_type>( P, 1.0 ) );
 
-    Debug( 5046 ) << "[GeoMap::Inverse::linearInverse] xref : " << _M_xref << "\n";
+    DVLOG(2) << "[GeoMap::Inverse::linearInverse] xref : " << _M_xref << "\n";
 
     bool __isin;
     double vmin;
     boost::tie( __isin, vmin ) = _M_gm->isIn( _M_xref );
-    Debug( 5046 ) << "[GeoMap::Inverse::linearInverse] isIn : " << __isin << "\n";
+    DVLOG(2) << "[GeoMap::Inverse::linearInverse] isIn : " << __isin << "\n";
 
     ///if ( __isin < 1e-10 )
     if ( __isin )

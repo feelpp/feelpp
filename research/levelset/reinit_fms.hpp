@@ -74,7 +74,7 @@ public:
         _M_neighbors(),
         _M_coords( __functionspace->dof()->nDof() )
     {
-        Debug( 5065 ) << "ReinitializerFMS constructor from space and iterator range\n";
+        DVLOG(2) << "ReinitializerFMS constructor from space and iterator range\n";
 
         fe_type* __fe = __functionspace->fe().get();
 
@@ -125,7 +125,7 @@ public:
         _M_neighbors( __vfi._M_neighbors ),
         _M_coords( __vfi._M_coords )
     {
-        Debug( 5065 ) << "ReinitializerFMS copy constructor\n";
+        DVLOG(2) << "ReinitializerFMS copy constructor\n";
     }
 
     virtual ~ReinitializerFMS() {}

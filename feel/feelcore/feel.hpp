@@ -510,8 +510,6 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 #endif // FEELPP_HAS_MPFR
 
 
-#include <feel/feelcore/debug.hpp>
-
 #include <boost/shared_ptr.hpp>
 #include <boost/detail/is_xxx.hpp>
 

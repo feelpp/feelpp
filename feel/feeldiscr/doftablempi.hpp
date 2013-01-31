@@ -38,17 +38,17 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
 
     if (is_continuous)
     {
-        Debug( 5015 ) << "[buildGhostDofMap] call buildGhostInterProcessDofMap() with god rank "<<  this->worldComm().godRank() << "\n";
+        DVLOG(2) << "[buildGhostDofMap] call buildGhostInterProcessDofMap() with god rank "<<  this->worldComm().godRank() << "\n";
         buildGhostInterProcessDofMap( mesh,mapInterProcessDof );
 
-        Debug( 5015 ) << "[buildGhostDofMap] call buildDofNotPresent() with rank "<<  this->worldComm().rank() << "\n";
+        DVLOG(2) << "[buildGhostDofMap] call buildDofNotPresent() with rank "<<  this->worldComm().rank() << "\n";
         buildDofNotPresent( mapInterProcessDof,setInterProcessDofNotPresent );
     }
 
-    Debug( 5015 ) << "[buildGhostDofMap] call buildGlobalProcessToGlobalClusterDofMap() with rank "<<  this->worldComm().rank() << "\n";
+    DVLOG(2) << "[buildGhostDofMap] call buildGlobalProcessToGlobalClusterDofMap() with rank "<<  this->worldComm().rank() << "\n";
     buildGlobalProcessToGlobalClusterDofMap( mesh,mapInterProcessDof,setInterProcessDofNotPresent );
 
-    Debug( 5015 ) << "[buildGhostDofMap] call localtoglobalOnCluster() with rank "<<  this->worldComm().rank() << "\n";
+    DVLOG(2) << "[buildGhostDofMap] call localtoglobalOnCluster() with rank "<<  this->worldComm().rank() << "\n";
     auto it_elt = mesh.beginElementWithProcessId( this->comm().rank() );
     auto en_elt = mesh.endElementWithProcessId( this->comm().rank() );
 
@@ -70,7 +70,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
         }
     }
 
-    Debug( 5015 ) << "[buildGhostDofMap] finish () with god rank "<< this->worldComm().godRank() << "\n";
+    DVLOG(2) << "[buildGhostDofMap] finish () with god rank "<< this->worldComm().godRank() << "\n";
 
 }
 
@@ -105,10 +105,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapInit( m
     // iteration on all interprocessfaces in order to send requests to the near proc
     auto face_it = mesh.interProcessFaces().first;
     auto face_en = mesh.interProcessFaces().second;
-    Debug( 5015 ) << "[buildGhostInterProcessDofMap] nb interprocess faces: " << std::distance( face_it, face_en ) << "\n";
+    DVLOG(2) << "[buildGhostInterProcessDofMap] nb interprocess faces: " << std::distance( face_it, face_en ) << "\n";
     for ( ; face_it != face_en ; ++face_it )
     {
-        Debug( 5015 ) << "[buildGhostInterProcessDofMap] face id: " << face_it->id() << "\n";
+        DVLOG(2) << "[buildGhostInterProcessDofMap] face id: " << face_it->id() << "\n";
         element_type eltOnProc,eltOffProc;
         auto const& elt0 = face_it->element0();
         auto const& elt1 = face_it->element1();

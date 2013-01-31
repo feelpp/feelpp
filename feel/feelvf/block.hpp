@@ -170,28 +170,6 @@ private:
 typedef std::list<Block> list_block_type;
 
 inline
-DebugStream&
-operator<<( DebugStream& __os, Block const& __b )
-{
-    std::ostringstream __str;
-    __str << "Block [ "
-          << __b.localRow() << ","
-          << __b.localColumn() << ","
-          << __b.globalRowStart() << ","
-          << __b.globalColumnStart() << "]";
-
-    __os << __str.str() << "\n";
-    return __os;
-}
-
-inline
-NdebugStream&
-operator<<( NdebugStream& __os, Block const& /*__b*/ )
-{
-    return __os;
-}
-
-inline
 std::ostream&
 operator<<( std::ostream& __os, Block const& __b )
 {

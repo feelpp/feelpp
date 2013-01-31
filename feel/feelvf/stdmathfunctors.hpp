@@ -193,7 +193,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
             _M_expr_1( __expr1 )                                        \
             {                                                           \
-                Debug( 5051 ) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) default constructor\n"; \
+                DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) default constructor\n"; \
             }                                                           \
                                                                         \
         VF_FUNC_NAME(O)( VF_FUNC_NAME(O) const& __vfp  )                \
@@ -201,7 +201,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
             _M_expr_1( __vfp._M_expr_1 )                                \
                 {                                                       \
-                    Debug( 5051 ) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) copy constructor\n"; \
+                    DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) copy constructor\n"; \
                 }                                                       \
                                                                         \
         bool isSymetric() const { return false; }                       \

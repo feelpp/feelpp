@@ -287,9 +287,6 @@ Environment::processGenericOptions()
               << "string = " << S_vm["debug"].as<std::string>() << "\n";
 #endif
 
-    if ( S_vm.count( "debug" ) && !S_vm["debug"].as<std::string>().empty() )
-        DebugStream::showDebugAreas( S_vm["debug"].as<std::string>() );
-
     VLOG(2) << "[processGenericOptions] done\n";
 }
 

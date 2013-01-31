@@ -372,8 +372,8 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
     auto res = M_solver_petsc.solve( *A, *B, *x, *b, this->rTolerance(), this->maxIterations(), this->transpose() );
-    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
-    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
+    DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
+    DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
     if ( !res.template get<0>() )
         LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;
@@ -405,8 +405,8 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     M_solver_petsc.setShowKSPConvergedReason( this->showKSPConvergedReason() );
 
     auto res = M_solver_petsc.solve( A, x, b, this->rTolerance(), this->maxIterations() );
-    Debug( 7005 ) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
-    Debug( 7005 ) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
+    DVLOG(2) << "[BackendPetsc::solve] number of iterations : " << res.template get<1>() << "\n";
+    DVLOG(2) << "[BackendPetsc::solve]             residual : " << res.template get<2>() << "\n";
 
     if ( !res.template get<0>() )
         LOG(ERROR) << "Backend " << this->prefix() << " : linear solver failed to converge" << std::endl;

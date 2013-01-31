@@ -249,7 +249,7 @@ public:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-        Debug( 5017 ) << "[BDF::serialize] serialize BDFBase\n";
+        DVLOG(2) << "[BDF::serialize] serialize BDFBase\n";
 #if 0
         ar & M_order;
         ar & M_name;
@@ -262,17 +262,17 @@ public:
         //ar & M_time_orders;
         ar & boost::serialization::make_nvp( "time_values", M_time_values_map );
 
-        Debug( 5017 ) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
-        Debug( 5017 ) << "[BDF::serialize] time values size: " << M_time_values_map.size() << "\n";
+        DVLOG(2) << "[BDF::serialize] time orders size: " << M_time_orders.size() << "\n";
+        DVLOG(2) << "[BDF::serialize] time values size: " << M_time_values_map.size() << "\n";
 
         for ( auto it = M_time_values_map.begin(), en = M_time_values_map.end(); it!=en; ++it )
         {
             //LOG(INFO) << "[Bdf] order " << i << "=" << M_time_orders[i] << "\n";
-            Debug( 5017 ) << "[Bdf::serialize] value " << *it << "\n";
+            DVLOG(2) << "[Bdf::serialize] value " << *it << "\n";
 
         }
 
-        Debug( 5017 ) << "[BDF::serialize] serialize BDFBase done\n";
+        DVLOG(2) << "[BDF::serialize] serialize BDFBase done\n";
     }
 
     //! return the order in time
@@ -453,7 +453,7 @@ public:
         // create and open a character archive for output
         std::ostringstream ostr;
         ostr << M_name << "-" << M_iteration;
-        Debug( 5017 ) << "[BdfBase::shiftRight] solution name " << ostr.str() << "\n";
+        DVLOG(2) << "[BdfBase::shiftRight] solution name " << ostr.str() << "\n";
 
         //M_time_values_map.insert( std::make_pair( M_iteration, this->time() ) );
         M_time_values_map.push_back( this->time() );
@@ -718,7 +718,7 @@ protected:
             // read the saved bdf data
             if ( fs::exists( thepath/* this->restartPath() / this->path() / "metadata" )*/ ) )
             {
-                Debug( 5017 ) << "[Bdf] loading metadata from " << M_path_save.string() << "\n";
+                DVLOG(2) << "[Bdf] loading metadata from " << M_path_save.string() << "\n";
 
                 //fs::ifstream ifs( this->restartPath() / this->path() / "metadata")
                 fs::ifstream ifs( thepath );
@@ -726,7 +726,7 @@ protected:
 
                 boost::archive::text_iarchive ia( ifs );
                 ia >> BOOST_SERIALIZATION_NVP( *this );
-                Debug( 5017 ) << "[Bdf::init()] metadata loaded\n";
+                DVLOG(2) << "[Bdf::init()] metadata loaded\n";
                 //BdfBaseMetadata bdfloader( *this );
                 //bdfloader.load();
 
@@ -752,7 +752,7 @@ protected:
 
                 if ( !found )
                 {
-                    Debug( 5017 ) << "[Bdf] intial time " << M_Ti << " not found\n";
+                    DVLOG(2) << "[Bdf] intial time " << M_Ti << " not found\n";
                     M_Ti = 0.0;
                     M_iteration = 0;
                     M_time_values_map.clear();
@@ -764,9 +764,9 @@ protected:
                     M_time_values_map.resize( M_iteration+1 );
                 }
 
-                Debug( 5017 ) << "[Bdf] initial time is Ti=" << M_Ti << "\n";
+                DVLOG(2) << "[Bdf] initial time is Ti=" << M_Ti << "\n";
 
-                Debug( 5017 ) << "[Bdf::init()] file index: " << M_iteration << "\n";
+                DVLOG(2) << "[Bdf::init()] file index: " << M_iteration << "\n";
             }
 
             else
@@ -799,7 +799,7 @@ public:
 
         boost::archive::text_iarchive ia( ifs );
         ia >> BOOST_SERIALIZATION_NVP( M_bdf );
-        Debug( 5017 ) << "[Bdf::init()] metadata loaded\n";
+        DVLOG(2) << "[Bdf::init()] metadata loaded\n";
     }
 
     void save()
@@ -811,7 +811,7 @@ public:
 
         boost::archive::text_oarchive oa( ofs );
         oa << BOOST_SERIALIZATION_NVP( ( BdfBase const& )M_bdf );
-        Debug( 5017 ) << "[Bdf::init()] metadata saved\n";
+        DVLOG(2) << "[Bdf::init()] metadata saved\n";
     }
 
 private:
@@ -986,7 +986,7 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
     {
-        Debug( 5017 ) << "[BDF::serialize] saving/loading archive\n";
+        DVLOG(2) << "[BDF::serialize] saving/loading archive\n";
         ar & boost::serialization::base_object<BdfBase>( *this );
     }
 
@@ -1049,7 +1049,7 @@ Bdf<SpaceType>::init()
             std::ostringstream ostr;
             ostr << M_name << "-" << M_iteration-p;
 
-            Debug( 5017 ) << "[Bdf::init()] load file: " << ostr.str() << "\n";
+            DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
             fs::ifstream ifs;
 
@@ -1151,7 +1151,7 @@ template <typename SpaceType>
 typename Bdf<SpaceType>::element_type&
 Bdf<SpaceType>::unknown( int i )
 {
-    Debug( 5017 ) << "[Bdf::unknown] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
+    DVLOG(2) << "[Bdf::unknown] id: " << i << " l2norm = " << M_unknowns[i]->l2Norm() << "\n";
     return *M_unknowns[i];
 }
 
@@ -1200,7 +1200,7 @@ template<typename container_type>
 void
 Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, container_type> const& __new_unk )
 {
-    Debug( 5017 ) << "shiftRight: inserting time " << this->time() << "s\n";
+    DVLOG(2) << "shiftRight: inserting time " << this->time() << "s\n";
     super::shiftRight();
 
     // shift all previously stored bdf data
@@ -1213,7 +1213,7 @@ Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, co
     int i = 0;
     BOOST_FOREACH( boost::shared_ptr<element_type>& t, M_unknowns  )
     {
-        Debug( 5017 ) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
+        DVLOG(2) << "[Bdf::shiftright] id: " << i << " l2norm = " << t->l2Norm() << "\n";
         ++i;
     }
 

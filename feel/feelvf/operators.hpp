@@ -240,12 +240,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             {                                                           \
                 if ( VF_OP_TYPE_IS_VALUE( T ) )                         \
                     v.updateGlobalValues();                             \
-                Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
+                DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
             }                                                           \
             VF_OPERATOR_NAME( O )( VF_OPERATOR_NAME( O ) const& op )    \
                 : M_v ( op.M_v )                                      \
             {                                                           \
-                Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
+                DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
             }                                                           \
             template<typename TheExpr>                                  \
             struct Lambda                                               \

@@ -323,14 +323,14 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh )
 
             // local id of the face in the element
             uint16_type numface = __elements[__i].get<3>().get<0>();
-            Debug( 8012 ) << "adding face " << numface
+            DVLOG(2) << "adding face " << numface
                           << " on boundary : " << __elements[__i].get<3>().get<1>() << "\n";
 
             pf.marker().assign( ( __elements[__i].get<3>().get<1>() ) );
 
             if ( mesh_type::nDim == 2 && __elements[__i].get<2>().size() == 3 ) // linear triangle 3-node
             {
-                Debug( 8012 ) << "setting for edge from triangle  : " << __i << " face : " << numface << "\n";
+                DVLOG(2) << "setting for edge from triangle  : " << __i << " face : " << numface << "\n";
 
                 for ( int n = 0; n < 3; ++n )
                 {
@@ -339,7 +339,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh )
                     __n_b_vertices[boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][n]] ] = 1;
                 }
 
-                Debug( 8012 ) << "added face on boundary ("
+                DVLOG(2) << "added face on boundary ("
                               << pf.isOnBoundary() << ") with id :" << pf.id()
                               << " n1: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][0]]   ).node()
                               << " n2: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tria3::face[numface][1]]  ).node() << "\n";
@@ -369,7 +369,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh )
                     __n_b_vertices[index] = 1;
                 }
 
-                Debug( 8012 ) << "added face on boundary ("
+                DVLOG(2) << "added face on boundary ("
                               << pf.isOnBoundary() << ") with id :" << pf.id()
                               << " n1: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra4::face[numface][0]]   ).node()
                               << " n2: " << mesh->point( boost::get<2>( __elements[__i] )[gambit::tetra4::face[numface][1]]  ).node() << "\n";
@@ -401,7 +401,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
     // read the file and store the info
     gambit::read( this->filename(), nodes, boundary, __elements );
 
-    Debug( 8012 ) << " o- inserting " << nodes.size()/3 << " points to mesh" << "\n";
+    DVLOG(2) << " o- inserting " << nodes.size()/3 << " points to mesh" << "\n";
 
     // add the points to the mesh
     for ( uint __i = 0; __i < nodes.size()/3; ++__i )
@@ -421,7 +421,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
     std::vector<int> __n_b_vertices(  nodes.size()/3  );
     __n_b_vertices.assign(  nodes.size()/3 , 0 );
 
-    Debug( 8012 ) << " o- inserting " << __elements.size() << " elements to mesh" << "\n";
+    DVLOG(2) << " o- inserting " << __elements.size() << " elements to mesh" << "\n";
 
     // add the element to the mesh
     for ( uint __i = 0; __i < __elements.size(); ++__i )
@@ -438,14 +438,14 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
             __n_vertices[ boost::get<2>( __elements[__i] )[n] ] = 1;
         }
 
-        Debug( 8013 ) << " o- inserted element " << pv.id() << " in mesh ("  << pv.marker() << ")\n";
+        DVLOG(2) << " o- inserted element " << pv.id() << " in mesh ("  << pv.marker() << ")\n";
 
         mesh->addElement( pv );
 
 
         if ( __elements[__i].get<3>().get<0>() != -1 )
         {
-            Debug( 8013 ) << "adding face on boundary : " << __elements[__i].get<3>().get<1>() << "\n";
+            DVLOG(2) << "adding face on boundary : " << __elements[__i].get<3>().get<1>() << "\n";
             face_type pf;
 
             // local id of the face in the element
@@ -475,7 +475,7 @@ ImporterGambit<MeshType>::visit( mesh_type* mesh,
     }
 
     mesh->setNumVertices( std::accumulate( __n_vertices.begin(), __n_vertices.end(), 0 ) );
-    Debug( 8012 ) << " o- number of vertices : " << mesh->numVertices() << "\n";
+    DVLOG(2) << " o- number of vertices : " << mesh->numVertices() << "\n";
 }
 #endif
 
