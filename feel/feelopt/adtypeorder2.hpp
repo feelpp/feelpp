@@ -436,40 +436,6 @@ ADType<T,Nvar, 2, Var>::operator=( const ADExpr<ExprT>& expr )
 
 } // Feel
 
-
-template <
-class T,
-      int Nvar,
-      int Var
-      >
-Feel::DebugStream&
-operator << ( Feel::DebugStream& __os, const Feel::ADType<T, Nvar, 2, Var>& a )
-{
-    std::ostringstream __o;
-    __o.setf( std::ios::fixed,std::ios::floatfield );
-    __o.width( 12 );
-    __o << "value    = " << a.value() << "  \n"
-        << "gradient = " << a.grad() << "\n"
-        << "hessian  = " << a.hessian() << "\n";
-#if 0
-
-    for ( int __i = 0 ; __i < Nvar; ++__i )
-    {
-        for ( int __j = 0 ; __j < Nvar; ++__j )
-            __o << a.hessian( __i, __j ) << " ";
-
-        __o << "\n";
-    }
-
-    __o << "]" << std::endl;
-#endif
-    __os << __o.str();
-    return __os;
-}
-
-
-
-
 //------------------------------- AD ostream operator ------------------------------------------
 
 template <class T, int Nvar, int Var>
