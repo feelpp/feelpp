@@ -118,7 +118,7 @@ read( std::string const& filename,
       nodes_boundary_type& boundary,
       elements_type& elements )
 {
-    Debug( 8012 ) << "Reading Gambit mesh file   (" << filename << ")"
+    DVLOG(2) << "Reading Gambit mesh file   (" << filename << ")"
                   << ":" << "\n";
 
 
@@ -126,7 +126,7 @@ read( std::string const& filename,
 
     if ( file.fail() )
     {
-        Debug( 8012 ) << "Reading mesh file " << filename
+        DVLOG(2) << "Reading mesh file " << filename
                       << " impossible" << "\n";
         throw std::logic_error( std::string( "cannot open gambit mesh file: " ) + filename );
     }
@@ -150,18 +150,18 @@ read( std::string const& filename,
         {
             // Reading header file
             file >> sdummy;
-            Debug( 8012 ) << "Mesh name        : " << sdummy << "\n";
+            DVLOG(2) << "Mesh name        : " << sdummy << "\n";
             file >> sdummy >> sdummy >> sdummy >> sdummy;
-            Debug( 8012 ) << "Version          : " << sdummy << "\n";
+            DVLOG(2) << "Version          : " << sdummy << "\n";
             file >> sdummy >> sdummy >> sdummy >> sdummy >> sdummy;
             file >> sdummy >> sdummy >> sdummy >> sdummy >> sdummy;
             file >> numnp >> nelem >> ngrps >> nbsets >> ndfcd >> ndfvl;
-            Debug( 8012 ) << "  Number of nodes         : " << numnp << "\n";
-            Debug( 8012 ) << "  Number of elements      : " << nelem << "\n";
-            Debug( 8012 ) << "  Number of elem groups   : " << ngrps << "\n";
-            Debug( 8012 ) << "  Number of BC sets       : " << nbsets << "\n";
-            Debug( 8012 ) << "  Number of directions    : " << ndfcd << "\n";
-            Debug( 8012 ) << "  Number of velocity comp : " << ndfvl<< "\n";
+            DVLOG(2) << "  Number of nodes         : " << numnp << "\n";
+            DVLOG(2) << "  Number of elements      : " << nelem << "\n";
+            DVLOG(2) << "  Number of elem groups   : " << ngrps << "\n";
+            DVLOG(2) << "  Number of BC sets       : " << nbsets << "\n";
+            DVLOG(2) << "  Number of directions    : " << ndfcd << "\n";
+            DVLOG(2) << "  Number of velocity comp : " << ndfvl<< "\n";
 
             if ( ndfcd == 3 )
                 nodes.resize( 3*numnp );
@@ -177,8 +177,8 @@ read( std::string const& filename,
 
         if ( line.find( "NODAL" ) != std::string::npos )
         {
-            //            Debug( 8012 ) << sdummy << "\n";
-            Debug( 8012 ) << "Reading nodes coordinates ... " << "\n";
+            //            DVLOG(2) << sdummy << "\n";
+            DVLOG(2) << "Reading nodes coordinates ... " << "\n";
 
             int k = 0;
 
@@ -198,7 +198,7 @@ read( std::string const& filename,
                 boundary[k].get<1>() = 0;
             }
 
-            Debug( 8012 ) << "done." << "\n";
+            DVLOG(2) << "done." << "\n";
         }
 
         if ( line.find( "ELEMENTS/CELLS" ) != std::string::npos )
@@ -216,7 +216,7 @@ read( std::string const& filename,
                NDP   Number of nodes that define the element
                NODE  List of nodes that define the element
             */
-            Debug( 8012 ) << "Reading connectivity      ... " << "\n";
+            DVLOG(2) << "Reading connectivity      ... " << "\n";
 
             for ( int ielem = 0; ielem < nelem; ++ielem )
             {
@@ -247,12 +247,12 @@ read( std::string const& filename,
                 elements[k].get<3>() = boost::make_tuple( -1, -1 );
             }
 
-            Debug( 8012 ) << "Reading connectivity done." << "\n";
+            DVLOG(2) << "Reading connectivity done." << "\n";
         }
 
         if ( line.find( "ELEMENT GROUP" ) != std::string::npos )
         {
-            Debug( 8012 ) << "Reading ELEMENT GROUP...." << "\n";
+            DVLOG(2) << "Reading ELEMENT GROUP...." << "\n";
 
             /*
               NGP    Element group number
@@ -276,7 +276,7 @@ read( std::string const& filename,
                  >> dummy >> nflags;
             file >> thegroup >> nflags;
             //groups[thegroup] = thegroupid++;
-            Debug( 8012 ) << "group : " << ngroup
+            DVLOG(2) << "group : " << ngroup
                           << " with id " << thegroupid
                           << " and  " << nelgp << " elements\n";
 
@@ -288,7 +288,7 @@ read( std::string const& filename,
                 elements[nel].get<1>() = thegroupid;
             }
 
-            Debug( 8012 ) << "Reading ELEMENT GROUP done" << "\n";
+            DVLOG(2) << "Reading ELEMENT GROUP done" << "\n";
             thegroupid++;
         }
 
@@ -307,7 +307,7 @@ read( std::string const& filename,
             */
             std::string frname;
             file >> frname;
-            Debug( 8012 ) << "Reading " << frname << " BC(with id=" << thegroupid << ") ... " << "\n";
+            DVLOG(2) << "Reading " << frname << " BC(with id=" << thegroupid << ") ... " << "\n";
 
             int itype;
 
@@ -354,7 +354,7 @@ read( std::string const& filename,
 
                         for ( int n = 0; n < 2; ++n )
                         {
-                            Debug( 8013 )  << "node " << tria3::face[face][n] << " in element " << nfr
+                            DVLOG(2)  << "node " << tria3::face[face][n] << " in element " << nfr
                                            << " has  condition " << thegroupid << "\n";
                             boundary[boost::get<2>( elements[nfr] )[tria3::face[face][n]]].get<0>() = true;
                             boundary[boost::get<2>( elements[nfr] )[tria3::face[face][n]]].get<1>() = thegroupid;
@@ -369,7 +369,7 @@ read( std::string const& filename,
                             elements[nfr].get<3>() = boost::make_tuple( g2l[face], thegroupid );
 
                             int local_index = Feel::details::tetra<1>::f2p( g2l[face], n );
-                            Debug( 8013 )  << "node " << local_index << " in element " << nfr
+                            DVLOG(2)  << "node " << local_index << " in element " << nfr
                                            << " has  condition " << thegroupid << "\n";
                             boundary[boost::get<2>( elements[nfr] )[local_index]].get<0>() = true;
                             boundary[boost::get<2>( elements[nfr] )[local_index]].get<1>() = thegroupid;
@@ -384,7 +384,7 @@ read( std::string const& filename,
 
             }
 
-            Debug( 8012 )  << "Reading " << frname << " BC(with id=" << thegroupid << ")   done." << "\n";
+            DVLOG(2)  << "Reading " << frname << " BC(with id=" << thegroupid << ")   done." << "\n";
             ++thegroupid;
 
         }
@@ -392,7 +392,7 @@ read( std::string const& filename,
     }
 
 
-    Debug( 8012 ) << "completed." << "\n";
+    DVLOG(2) << "completed." << "\n";
 
     return true;
 }

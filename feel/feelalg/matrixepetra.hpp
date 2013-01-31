@@ -800,7 +800,7 @@ void MatrixEpetra::close () const
 
     if ( ierr != 0 )
     {
-        Debug( 10010 ) << "ERRCODE GlobalAssemble: " << ierr << "\n";
+        DVLOG(2) << "ERRCODE GlobalAssemble: " << ierr << "\n";
     }
 }
 
@@ -837,7 +837,7 @@ size_type MatrixEpetra::size1 () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );;
 
-    Debug( 10010 ) << "Size in size1(): " << _M_mat->NumGlobalRows() << "\n";
+    DVLOG(2) << "Size in size1(): " << _M_mat->NumGlobalRows() << "\n";
 
     int epetra_m = _M_mat->NumGlobalRows();
 
@@ -904,7 +904,7 @@ void MatrixEpetra::set ( const size_type i,
 
         if ( ierr != 0 )
         {
-            Debug( 10010 ) << "ERRORCODE InsertGlobalValues: " << ierr <<  " in M(" << i_val << "," << j_val << ") for value "<< epetra_value << "." << "\n";
+            DVLOG(2) << "ERRORCODE InsertGlobalValues: " << ierr <<  " in M(" << i_val << "," << j_val << ") for value "<< epetra_value << "." << "\n";
         }
     }
 

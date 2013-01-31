@@ -733,8 +733,8 @@ private:
             ublas::vector<node_type> h ( 2 );
             h( 0 ) = vertex( 1 ) - vertex( 0 );
             h( 1 ) = vertex( 3 ) - vertex( 0 );
-            //Debug( 4005 ) << "h = " << h << "\n";
-            //Debug( 4005 ) << "n quad pts = " << n_quad_points( interior ) << "\n";
+            //DVLOG(2) << "h = " << h << "\n";
+            //DVLOG(2) << "n quad pts = " << n_quad_points( interior ) << "\n";
             points_type G( 2, n_quad_points( interior ) );
 
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
@@ -764,7 +764,7 @@ private:
             h( 2 ) = vertex( 4 ) - vertex( 0 );
             points_type G( 3, n_hexa_points( interior ) );
 
-            //Debug( 4005 ) << "n hexa pts = " << n_hexa_points( interior ) << "\n";
+            //DVLOG(2) << "n hexa pts = " << n_hexa_points( interior ) << "\n";
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {
                 for ( int j = interior; j < int( Order ) + 1 - interior; ++j )

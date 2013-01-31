@@ -214,8 +214,8 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas const & m )
     M_global_values_updated( m.M_global_values_updated ),
     M_global_values( m.M_global_values )
 {
-    Debug( 5600 ) << "[VectorUblas] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
-    Debug( 5600 ) << "[VectorUblas] copy constructor with range: size:" << this->vec().size() << "\n";
+    DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
+    DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->vec().size() << "\n";
 }
 
 template <typename T, typename Storage>
@@ -226,8 +226,8 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type cons
     M_global_values_updated( false ),
     M_global_values( range.size() )
 {
-    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
-    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
 }
 
 template <typename T, typename Storage>
@@ -248,8 +248,8 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type cons
     M_global_values_updated( false ),
     M_global_values( range.size() )
 {
-    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
-    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
     this->init( invalid_size_type_value, _M_vec.size(), true );
 
 }
@@ -334,12 +334,12 @@ VectorUblas<T,Storage>::init ( const size_type n,
     // Set the initialized flag
     this->M_is_initialized = true;
 
-    Debug( 5600 ) << "        global size = " << n << "\n";
-    Debug( 5600 ) << "        global size = " << n_local << "\n";
-    Debug( 5600 ) << "        global size = " << this->size() << "\n";
-    Debug( 5600 ) << "        local  size = " << this->localSize() << "\n";
-    Debug( 5600 ) << "  first local index = " << this->firstLocalIndex() << "\n";
-    Debug( 5600 ) << "   last local index = " << this->lastLocalIndex() << "\n";
+    DVLOG(2) << "        global size = " << n << "\n";
+    DVLOG(2) << "        global size = " << n_local << "\n";
+    DVLOG(2) << "        global size = " << this->size() << "\n";
+    DVLOG(2) << "        local  size = " << this->localSize() << "\n";
+    DVLOG(2) << "  first local index = " << this->firstLocalIndex() << "\n";
+    DVLOG(2) << "   last local index = " << this->lastLocalIndex() << "\n";
 
 
     // Zero the components unless directed otherwise
@@ -396,7 +396,7 @@ VectorUblas<T,Storage>::printMatlab( const std::string filename ) const
         if ( ( unsigned int ) i != filename.size() - 2 ||
                 filename[ i + 1 ] != 'm' )
         {
-            Debug( 5600 ) << "[VectorUblas::printMatlab] adding .m extension to given file name '"
+            DVLOG(2) << "[VectorUblas::printMatlab] adding .m extension to given file name '"
                           << filename << "'\n";
             name = filename + ".m";
         }
@@ -550,7 +550,7 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local ) const
 
         MPI_Allreduce ( &v_local_in[0], &v_local[0], v_local.size(),
                         MPI_DOUBLE, MPI_SUM, this->comm() );
-        Debug( 5600 ) << "[VectorUblas::localize] Allreduce size = " << v_local.size() << "\n";
+        DVLOG(2) << "[VectorUblas::localize] Allreduce size = " << v_local.size() << "\n";
 
     }
 

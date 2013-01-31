@@ -759,7 +759,7 @@ private:
             h( 0 ) = vertex( 1 ) - vertex( 0 );
             h( 1 ) = vertex( 2 ) - vertex( 0 );
             //std::cout << "h = " << h << "\n";
-            //Debug( 4005 ) << "n triangle pts = " << n_triangle_points( interior ) << "\n";
+            //DVLOG(2) << "n triangle pts = " << n_triangle_points( interior ) << "\n";
             points_type G( nRealDim, n_triangle_points( interior ) );
 
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
@@ -789,7 +789,7 @@ private:
             h( 2 ) = vertex( 3 ) - vertex( 0 );
             points_type G( 3, n_tetrahedron_points( interior ) );
 
-            //Debug( 4005 ) << "n tetra pts = " << n_tetrahedron_points( interior ) << "\n";
+            //DVLOG(2) << "n tetra pts = " << n_tetrahedron_points( interior ) << "\n";
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {
                 for ( int j = interior; j < int( Order ) + 1 - i - interior; ++j )
@@ -958,7 +958,7 @@ private:
                 M_normals[ind_normal] = ublas::scalar_vector<value_type>( nDim, math::sqrt( value_type( 1.0 )/value_type( denom::value ) ) );
             }
 
-            //Debug( 4005 ) << "normal[" << ind_normal << "]=" << M_normals[ind_normal] << "\n";
+            //DVLOG(2) << "normal[" << ind_normal << "]=" << M_normals[ind_normal] << "\n";
         }
     }
 

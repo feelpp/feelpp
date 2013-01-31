@@ -279,7 +279,7 @@ public:
         IM<reference_convex_type::nDim-1,2*space_type::nOrder-1> __qr_face;
         face_pc_ptrtype __geopc( new face_pc_type( __gm->boundaryMap(),__qr_face.points() ) );
 
-        Debug( 5050 ) << "[nc] ref_convex_face "  << face << "=" << ref_convex_face.points() << "\n";
+        DVLOG(2) << "[nc] ref_convex_face "  << face << "=" << ref_convex_face.points() << "\n";
 
 
         typename gm_type::template Context<vm::POINT,element_type> __c( __gm->boundaryMap(),
@@ -287,8 +287,8 @@ public:
                 __geopc );
 
         __c.update( ref_convex_face, __geopc );
-        Debug( 5050 ) << "[nc] ref_convex_face "  << face << " xref" << __c.xRefs() << "\n";
-        Debug( 5050 ) << "[nc] ref_convex_face "  << face << " xreal" << __c.xReal() << "\n";
+        DVLOG(2) << "[nc] ref_convex_face "  << face << " xref" << __c.xRefs() << "\n";
+        DVLOG(2) << "[nc] ref_convex_face "  << face << " xreal" << __c.xReal() << "\n";
 
         for ( uint16_type k = 0; k < l.polynomialDimensionPerComponent(); ++k )
         {
@@ -308,8 +308,8 @@ public:
 
                         __len += __qr_face.weight( __ip );
                     }
-                          Debug( 5050 ) << "[nc] length = " << __len << "\n";
-                      Debug( 5050 ) << "[nc] res = " << __res << "\n";
+                          DVLOG(2) << "[nc] length = " << __len << "\n";
+                      DVLOG(2) << "[nc] res = " << __res << "\n";
                       ublas::column( __rep, i ) = __res/__len;
                       }
                 this->push_back( functional_type( p,  __rep ) );

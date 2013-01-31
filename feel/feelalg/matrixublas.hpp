@@ -388,9 +388,9 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
 
     FEELPP_ASSERT( __nnz >= _M_mat.nnz() )( __nnz )( _M_mat.nnz() ).error( "incompatible sizes" );
 
-    Debug( 5010 ) << "number of nnz in old M : " << _M_mat.nnz() << ", " << _M_mat.nnz_capacity() <<"\n";
-    Debug( 5010 ) << "size M.value_data() :  " << _M_mat.value_data().size() << "\n";
-    //     Debug( 5010 ) << "           size val :  " << __val.size() << "\n";
+    DVLOG(2) << "number of nnz in old M : " << _M_mat.nnz() << ", " << _M_mat.nnz_capacity() <<"\n";
+    DVLOG(2) << "size M.value_data() :  " << _M_mat.value_data().size() << "\n";
+    //     DVLOG(2) << "           size val :  " << __val.size() << "\n";
     // save current nonzero entrie of M in the vector val
     // std::copy( _M_mat.value_data().begin(), _M_mat.value_data().begin()+_M_mat.nnz(), __val.begin() );
 
@@ -400,18 +400,18 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
 
     matrix_type _M_mat_backup( _M_mat );
 
-    Debug( 5010 ) << "resizing M old : " << _M_mat_backup.size1() << "," << _M_mat_backup.size2() << " nnz = " << _M_mat_backup.nnz() <<"\n";
+    DVLOG(2) << "resizing M old : " << _M_mat_backup.size1() << "," << _M_mat_backup.size2() << " nnz = " << _M_mat_backup.nnz() <<"\n";
 
     _M_mat.reserve( __nnz, false );
 
-    Debug( 5010 ) << "resizing M new : " << _M_mat.size1() << "," << _M_mat.size2() << " nnz = " << _M_mat.nnz() <<"\n";
+    DVLOG(2) << "resizing M new : " << _M_mat.size1() << "," << _M_mat.size2() << " nnz = " << _M_mat.nnz() <<"\n";
 
     std::set<size_type>::const_iterator __it;
     std::set<size_type>::const_iterator __en;
 
-    Debug( 5010 ) << "*** counting Nnz  : " << chrono.elapsed() <<"\n";
-    //Debug( 5010 ) << "*** l size  : " << __pattern.size() <<"\n";
-    Debug( 5010 ) << "*** nnz size  : " << __nnz <<"\n";
+    DVLOG(2) << "*** counting Nnz  : " << chrono.elapsed() <<"\n";
+    //DVLOG(2) << "*** l size  : " << __pattern.size() <<"\n";
+    DVLOG(2) << "*** nnz size  : " << __nnz <<"\n";
     chrono.restart();
 
     uint32_type __max_nnz_per_line = 0;
@@ -488,10 +488,10 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
     _M_mat.set_filled( __filled1, __filled2 );
     FEELPP_ASSERT( _M_mat.nnz() == __filled2 )( _M_mat.nnz() )( __filled2 ).error( "inconsistent matrix storage" );
 
-    Debug( 5010 ) << "***  value data size  : " << _M_mat.value_data().size() << "\n";
-    Debug( 5010 ) << "***              nnz  : " << _M_mat.nnz() << "\n";
-    Debug( 5010 ) << "*** max nnz per line  : " << __max_nnz_per_line << "\n";
-    Debug( 5010 ) << "*** fillMatrixFromPattern() done in " << chrono.elapsed() <<"s\n";
+    DVLOG(2) << "***  value data size  : " << _M_mat.value_data().size() << "\n";
+    DVLOG(2) << "***              nnz  : " << _M_mat.nnz() << "\n";
+    DVLOG(2) << "*** max nnz per line  : " << __max_nnz_per_line << "\n";
+    DVLOG(2) << "*** fillMatrixFromPattern() done in " << chrono.elapsed() <<"s\n";
 }
 
 template<typename T, typename LayoutType>

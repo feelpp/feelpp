@@ -323,11 +323,11 @@ private:
     void serialize( Archive & ar, const unsigned int version )
         {
             ar & boost::serialization::base_object<super>( *this );
-            Debug(4015) << "Serializing points\n";
+            DVLOG(2) << "Serializing points\n";
             ar & boost::serialization::base_object<super_points>( *this );
-            Debug(4015) << "Serializing faces\n";
+            DVLOG(2) << "Serializing faces\n";
             ar & boost::serialization::base_object<super_faces>( *this );
-            Debug(4015) << "Serializing elements\n";
+            DVLOG(2) << "Serializing elements\n";
             ar & boost::serialization::base_object<super_elements>( *this );
         }
 

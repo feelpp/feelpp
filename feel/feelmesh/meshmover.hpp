@@ -137,7 +137,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     // check that the displacement function is vectorial
     //BOOST_MPL_ASSERT_MSG( DisplType::is_vectorial, INVALID_DISPLACEMENT_TYPE, DisplType );
 
-    Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates\n";
+    DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename mesh_type::element_type element_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;

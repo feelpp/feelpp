@@ -4,6 +4,7 @@
   Author: Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
   Copyright (C) 2004 EPFL
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,27 +23,11 @@
 #include <iostream>
 #include <feel/feelcore/feel.hpp>
 
-template<typename streamT>
-void
-showMe( streamT out )
-{
-    out << "showMe:: Hello World\n";
-    out.flush();
-}
 int
 main()
 {
+    VLOG(1) << "Glog verbosity level 1 is now enabled\n";
 
-    VLOG(1) << "Hello\n";
-
-
-    //
-    // To see this message setup the DEBUG variable to 2000
-    // export DEBUG=2000
-    // then execute test_debug
-    //
-    Feel::Debug( 2000 ) << "AREA 2000 is now enabled\n";
-
-    showMe( Feel::Debug( 2000 ) );
+    VLOG(2) << "Glog verbosity level 2 is now enabled\n";
 }
 

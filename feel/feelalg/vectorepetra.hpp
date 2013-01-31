@@ -274,7 +274,7 @@ public:
 
         int epetra_size=0;
         epetra_size = _M_vec.MyLength();
-        Debug( 10010 ) << "[VectorEpetra::localSize] localSize= " << epetra_size  << "\n";
+        DVLOG(2) << "[VectorEpetra::localSize] localSize= " << epetra_size  << "\n";
         return static_cast<size_type>( epetra_size );
     }
 
@@ -736,7 +736,7 @@ public:
         assert ( this->isInitialized() );
         //epetra_first = _M_vec.Map().MinMyGID();
         epetra_first = _M_vec.Map().MinLID();
-        Debug( 10010 ) << "[VectorEpetra::firstLocalIndex] firstLocalIndex= " << epetra_first  << "\n";
+        DVLOG(2) << "[VectorEpetra::firstLocalIndex] firstLocalIndex= " << epetra_first  << "\n";
         return static_cast<size_type>( epetra_first );
     }
 
@@ -754,7 +754,7 @@ public:
         assert ( this->isInitialized() );
         //epetra_last = _M_vec.Map().MaxMyGID();
         epetra_last = _M_vec.Map().MaxLID();
-        Debug( 10010 ) << "[VectorEpetra::lastLocalIndex] lastLocalIndex= " << epetra_last+1  << "\n";
+        DVLOG(2) << "[VectorEpetra::lastLocalIndex] lastLocalIndex= " << epetra_last+1  << "\n";
         return static_cast<size_type>( epetra_last )+1;
     }
 

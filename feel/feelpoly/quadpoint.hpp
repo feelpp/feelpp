@@ -293,7 +293,7 @@ public :
     value_type integrateAtPoints( IntegrationFaceEnum __face,
                                   Expression const& f ) const
     {
-        Debug( 5048 ) << "[PointSetQuadrature] face " << int( __face )<< " integration\n";
+        DVLOG(2) << "[PointSetQuadrature] face " << int( __face )<< " integration\n";
         //std::cout << "integrating using " << nNodes << "\n";
         FEELPP_ASSERT(  int( __face ) == int( ALL_FACES ) ||
                         ( int( __face ) >= 0 &&
@@ -583,20 +583,20 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
     {
         typedef typename Elem::topological_face_type  element_type;
         element_type ref_convex_face = ref_convex.topologicalFace( __f );
-        Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << "=" << ref_convex_face.points() << "\n";
+        DVLOG(2) << "[quadpt] ref_convex_face "  << __f << "=" << ref_convex_face.points() << "\n";
         //toPython( ref_convex_face );
 
         typename GM::template Context<vm::JACOBIAN|vm::POINT|vm::KB,element_type> __c( __gm->boundaryMap(),
                 ref_convex_face,
                 __geopc );
         __c.update( ref_convex_face );
-        Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << " xref" << __c.xRefs() << "\n";
-        Debug( 5048 ) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
+        DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xref" << __c.xRefs() << "\n";
+        DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
 
         value_type __len = 0.0;
         _M_n_face[__f].resize( Elem::nDim, __qr_face->nPoints() );
         _M_w_face[__f].resize( __qr_face->nPoints() );
-        Debug( 5048 ) << "[PointSetQuadrature::constructQROnFace] npoints on face "
+        DVLOG(2) << "[PointSetQuadrature::constructQROnFace] npoints on face "
                       << __f << " : "
                       << __qr_face->nPoints() << "\n";
         // transform the quad nodes on the boundary _reference_
@@ -610,14 +610,14 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
             _M_w_face[ __f]( __ip ) = __qr_face->weight( __ip )*__c.J( __ip );
 
             __len += _M_w_face[ __f]( __ip );
-            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "       J =" << __c.J( __ip ) << "\n";
-            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  weight =" << __qr_face->weight( __ip ) << "\n";
-            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  weight =" << _M_w_face[ __f]( __ip ) << "\n";
-            //            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
-            //            Debug( 5048 ) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
+            DVLOG(2) << "face " << __f << " ip = " << __ip << "       J =" << __c.J( __ip ) << "\n";
+            DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << __qr_face->weight( __ip ) << "\n";
+            DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << _M_w_face[ __f]( __ip ) << "\n";
+            //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
+            //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
         }
 
-        Debug( 5048 ) << "length = " << __len << "\n";
+        DVLOG(2) << "length = " << __len << "\n";
     }
 }
 
