@@ -123,8 +123,8 @@ public:
         _M_dual( pdual ),
         _M_primal( _M_dual.primalSpace() )
     {
-        Debug( 5030 ) << "============================================================\n";
-        Debug( 5030 ) << "New FE \n";
+        DVLOG(2) << "============================================================\n";
+        DVLOG(2) << "New FE \n";
         ublas::matrix<value_type> A( _M_dual( _M_primal ) );
         //std::cout << "[FiniteElement] A = " << A << "\n";
 
@@ -133,7 +133,7 @@ public:
         ublas::matrix<value_type> C = lu.solve( D );
         //std::cout << "[FiniteElement] D = " << D << "\n";
         //std::cout << "[FiniteElement] C = " << C << "\n";
-        Debug( 5030 ) << "is singular : " << lu.isNonsingular() << "\n"
+        DVLOG(2) << "is singular : " << lu.isNonsingular() << "\n"
                       << "det(A) =  " << lu.det() << "\n";
 #if 0
 
@@ -155,7 +155,7 @@ public:
         //std::cout << "d_x = " << _M_pset.derivate(0).coeff() << "\n";
         //std::cout << "d_x = " << _M_pset.derivate(0).coeff() << "\n";
         //std::cout << "d_x = " << _M_pset.derivate(0).coeff() << "\n";
-        Debug( 5030 ) << "============================================================\n";
+        DVLOG(2) << "============================================================\n";
     }
     FiniteElement( FiniteElement const & fe )
         :

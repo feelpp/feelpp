@@ -457,7 +457,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //typename matrix_node<value_type>::type Mloc(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     auto const& Mloc = domainbasis->evaluate( imagebasis->dual().points() );
 
-    Debug( 5034 ) << "[interpolate] Same mesh but not same space\n";
+    DVLOG(2) << "[interpolate] Same mesh but not same space\n";
 
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
@@ -559,7 +559,7 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMesh()
 {
-    Debug( 5034 ) << "[interpolate] different meshes\n";
+    DVLOG(2) << "[interpolate] different meshes\n";
     //std::cout << "OperatorInterpolation::updateNoRelationMesh start " << std::endl;
 
     const size_type proc_id = this->dualImageSpace()->mesh()->worldComm().localRank();

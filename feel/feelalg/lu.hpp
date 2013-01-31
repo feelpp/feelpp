@@ -242,8 +242,8 @@ public :
     {
         __LU.assign(  A );
 
-        Feel::Debug( 5620 ) << "LU m = "<< m << "\n";
-        Feel::Debug( 5620 ) << "LU n = "<< n << "\n";
+        DVLOG(2) << "LU m = "<< m << "\n";
+        DVLOG(2) << "LU n = "<< n << "\n";
 
 
         // Use a "left-looking", dot-product, Crout/Doolittle algorithm.
@@ -426,7 +426,7 @@ public :
 
         value_type d = value_type( pivsign );
 
-        //Debug( 5620 ) << "LU::det() d= " << pivsign << "\n";
+        //DVLOG(2) << "LU::det() d= " << pivsign << "\n";
         for ( uint j = 0; j < n; j++ )
         {
             d *= __LU( j,j );

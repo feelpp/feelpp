@@ -120,14 +120,14 @@ public:
 
             // add vertices to mesh
 #if !defined ( NDEBUG )
-            Debug( 1000 ) << "Add vertices...\n";
+            DVLOG(2) << "Add vertices...\n";
 #endif
             this->addVertices( *elt, new_element, new_mesh, vertexAdd );
 
 
             // add edges and nodes in edges to mesh
 #if !defined ( NDEBUG )
-            Debug( 1001 ) << "Add edges...\n";
+            DVLOG(2) << "Add edges...\n";
 #endif
 
             for ( uint16_type i = 0; i< element_type::numEdges; ++i )
@@ -159,7 +159,7 @@ public:
                         }
 
 #if !defined ( NDEBUG )
-                        Debug( 1001 ) << "[AddPointToEdge] Point localId=" << j
+                        DVLOG(2) << "[AddPointToEdge] Point localId=" << j
                                       << ": globalToMeshId=" << new_mesh->point( old_edge.point( localId ).id() ).id()
                                       << "; " << new_mesh->point( old_edge.point( localId ).id() ).node();
 #endif
@@ -199,7 +199,7 @@ public:
                         new_edge.setPoint( j, new_mesh->point( nodesCount ) );
 
 #if !defined ( NDEBUG )
-                        Debug( 1001 ) << "[AddPointToMesh] Point " << j
+                        DVLOG(2) << "[AddPointToMesh] Point " << j
                                       << ": id=" << new_mesh->point( nodesCount ).id()
                                       << "; " << new_mesh->point( nodesCount ).node();
 #endif
@@ -218,7 +218,7 @@ public:
                     new_element.setPoint( element_type::numVertices +  ( Order-1 )*i +j-2, new_mesh->point( new_point.id() ) );
 
 #if !defined ( NDEBUG )
-                    Debug( 1002 ) << "[AddPointToElement] Add point with local id "
+                    DVLOG(2) << "[AddPointToElement] Add point with local id "
                                   << element_type::numVertices + ( Order-1 )*i +j-2
                                   << " with global id " << new_mesh->point( new_point.id() ).id()
                                   << " to element " << new_element.id() << "\n";
@@ -233,8 +233,8 @@ public:
                 }
 
 #if !defined ( NDEBUG )
-                Debug( 1001 ) << "[AddToMesh] Edge of id " << new_edge.id() << " has been added\n";
-                Debug( 1001 ) << "\n";
+                DVLOG(2) << "[AddToMesh] Edge of id " << new_edge.id() << " has been added\n";
+                DVLOG(2) << "\n";
 #endif
             } // end for in edges
 
@@ -264,7 +264,7 @@ public:
                                           new_mesh->point( new_point.id() ) );
 
 #if !defined ( NDEBUG )
-                    Debug( 1002 ) << "Added Point "
+                    DVLOG(2) << "Added Point "
                                   << element_type::numVertices + ( Order-1 )*element_type::numEdges +i
                                   << ": id=" << new_mesh->point( new_point.id() ).id() << "; "
                                   << new_mesh->point( new_point.id() ).node() << "\n";
@@ -278,8 +278,8 @@ public:
             new_mesh->addElement( new_element );
 
 #if !defined ( NDEBUG )
-            Debug( 1003 ) << "[AddToMesh] Element of id " << new_element.id() << " has been added\n";
-            Debug( 1003 ) << "-------------------------------------------------------\n\n";
+            DVLOG(2) << "[AddToMesh] Element of id " << new_element.id() << " has been added\n";
+            DVLOG(2) << "-------------------------------------------------------\n\n";
 #endif
 
         } // end for in elements
@@ -287,7 +287,7 @@ public:
         new_mesh->setNumVertices( old_mesh->numVertices() );
 
 #if !defined ( NDEBUG )
-        Debug( 1000 ) << "Number of elements in the new mesh: " << new_mesh->numElements() << "\n";
+        DVLOG(2) << "Number of elements in the new mesh: " << new_mesh->numElements() << "\n";
 #endif
 
         new_mesh->components().set( MESH_CHECK | MESH_RENUMBER | MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
@@ -448,7 +448,7 @@ private:
             {
 
 #if !defined ( NDEBUG )
-                Debug( 1001 ) << "Point (" << node[0] << "," << node[1]
+                DVLOG(2) << "Point (" << node[0] << "," << node[1]
                               << ") moves to (" << node[0] << "," << p( pt )( 0,0,0 )
                               << ")" << "\n";
 #endif
@@ -478,11 +478,11 @@ private:
                     if ( n0 > n1 )
                         std::swap( n0,n1 );
 
-                    Debug( 1005 ) << "Initial interval: [" << n0 << "," << n1 << "]\n";
+                    DVLOG(2) << "Initial interval: [" << n0 << "," << n1 << "]\n";
                     std::pair<double, double> interval = std::make_pair( n0,n1 );
 
                     double m = ( node1[1] - node0[1] )/( node1[0] - node0[0] );
-                    Debug( 1005 ) << "Slope: " << m << "\n";
+                    DVLOG(2) << "Slope: " << m << "\n";
 
                     double error = 1;
                     uint16_type iter = 0;
@@ -505,14 +505,14 @@ private:
 
                         error = math::abs( feval );
 
-                        Debug( 1005 ) << "Abs(residual) = " << error << "\n";
+                        DVLOG(2) << "Abs(residual) = " << error << "\n";
 
                         ++iter;
                     }
 
-                    Debug( 1005 ) << "Finished in " << iter << " iterations...\n";
+                    DVLOG(2) << "Finished in " << iter << " iterations...\n";
 
-                    Debug( 1006 ) << "Point (" << node[0] << "," << node[1]
+                    DVLOG(2) << "Point (" << node[0] << "," << node[1]
                                   << ") moves to (" << pt[0] << "," << p( pt )( 0,0,0 )
                                   << ")" << "\n";
 

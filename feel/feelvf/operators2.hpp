@@ -6,7 +6,7 @@
        Date: 2005-01-17
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006,2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ public:
         _M_u ( u ),
         _M_exact_mass( _M_v.functionSpace()->basis()->coeff() )
     {
-        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpMass ) "] default constructorn";
+        DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpMass ) "] default constructorn";
 
         _M_exact_mass = ublas::prod( return_value_type::toMatrix( _M_v.functionSpace()->basis()->coeff() ),
                                      ublas::trans( return_value_type::toMatrix( _M_v.functionSpace()->basis()->coeff() ) ) );
@@ -78,7 +78,7 @@ public:
         _M_exact_mass( op._M_exact_mass )
         //_M_quad_mass() TO BE USED IF QUADRATURE IS NEEDED (transformation order >= 2)
     {
-        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpMass ) "] copy constructorn";
+        DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpMass ) "] copy constructorn";
 
     }
 

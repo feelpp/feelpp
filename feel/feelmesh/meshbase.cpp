@@ -40,7 +40,7 @@ MeshBase::MeshBase( WorldComm const& worldComm )
     M_n_parts( 1 ),
     M_worldComm( worldComm )
 {
-    Debug( 4015 ) << "[MeshBase] constructor...\n";
+    DVLOG(2) << "[MeshBase] constructor...\n";
 }
 
 MeshBase::MeshBase( MeshBase const& m )

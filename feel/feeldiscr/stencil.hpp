@@ -527,15 +527,15 @@ void
 Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
 {
     boost::timer tim;
-    Debug( 5050 ) << "[merge graph] for composite bilinear form\n";
-    Debug( 5050 ) << "[mergeGraph] row = " << row << "\n";
-    Debug( 5050 ) << "[mergeGraph] col = " << col << "\n";
+    DVLOG(2) << "[merge graph] for composite bilinear form\n";
+    DVLOG(2) << "[mergeGraph] row = " << row << "\n";
+    DVLOG(2) << "[mergeGraph] col = " << col << "\n";
 
     // nothing yet in store
     //if ( !M_graph || M_graph->empty() )
     if ( 0 )
     {
-        Debug( 5050 ) << "[merge graph] nothing yet in store, copy graph\n";
+        DVLOG(2) << "[merge graph] nothing yet in store, copy graph\n";
         M_graph = g;
 
 #if 0
@@ -548,7 +548,7 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
 
             for ( int i = 0; i < ivec.size(); ++i )
             {
-                Debug( 5050 ) << "[mergeGraph] ivec[" << i << "] = " << ivec[i] << "\n";
+                DVLOG(2) << "[mergeGraph] ivec[" << i << "] = " << ivec[i] << "\n";
             }
         }
 
@@ -558,7 +558,7 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
     else
     {
         //std::cout << "\n row " << row << " col " << col << " with god rank" <<  this->testSpace()->worldComm().godRank() << std::endl;
-        Debug( 5050 ) << "[merge graph] already something in store\n";
+        DVLOG(2) << "[merge graph] already something in store\n";
         typename graph_type::const_iterator it = g->begin();
         typename graph_type::const_iterator en = g->end();
 
@@ -577,7 +577,7 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
             std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
             std::set<size_type> const& row2_entries = boost::get<2>( it->second );
 
-            Debug( 5050 ) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
+            DVLOG(2) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
             M_graph->row( theglobalrow ).template get<1>() = thelocalrow;
             M_graph->row( theglobalrow ).template get<0>() = this->testSpace()->worldComm().mapLocalRankToGlobalRank()[it->second.get<0>()];
 
@@ -612,8 +612,8 @@ Stencil<X1,X2>::mergeGraph( int row, int col, graph_ptrtype g )
         } // for( ; it != en; ++it )
     }
 
-    Debug( 5050 ) << " -- merge_graph (" << row << "," << col << ") in " << tim.elapsed() << "\n";
-    Debug( 5050 ) << "merge graph for composite bilinear form done\n";
+    DVLOG(2) << " -- merge_graph (" << row << "," << col << ") in " << tim.elapsed() << "\n";
+    DVLOG(2) << "merge graph for composite bilinear form done\n";
 }
 
 template<typename X1,  typename X2>
@@ -646,7 +646,7 @@ Stencil<X1,X2>::mergeGraphMPI( size_type test_index, size_type trial_index,
             std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
             std::set<size_type> const& row2_entries = boost::get<2>( it->second );
 
-            Debug( 5050 ) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
+            DVLOG(2) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
             M_graph->row( theglobalrow ).template get<1>() = thelocalrow;
             M_graph->row( theglobalrow ).template get<0>() = this->testSpace()->worldComm().mapLocalRankToGlobalRank()[it->second.get<0>()];
 
@@ -701,14 +701,14 @@ typename Stencil<X1,X2>::graph_ptrtype
 Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<false> )
 {
     boost::timer t;
-    Debug( 5050 ) << "compute graph for composite bilinear form with interpolation\n";
+    DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
 
     auto graph = computeGraph( hints, mpl::bool_< ( test_space_type::nSpaces > 1 )>(), mpl::bool_< ( trial_space_type::nSpaces > 1 )>() );
 
-    Debug( 5050 ) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
+    DVLOG(2) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
     t.restart();
     //graph->close();
-    Debug( 5050 ) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
+    DVLOG(2) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
 
     return graph;
 }
@@ -745,12 +745,12 @@ typename Stencil<X1,X2>::graph_ptrtype
 Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
 {
     boost::timer t;
-    Debug( 5050 ) << "compute graph for composite bilinear form with interpolation\n";
+    DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
     auto graph = computeGraphInCaseOfInterpolate( hints,
                                                   mpl::bool_< ( test_space_type::nSpaces > 1 )>(),
                                                   mpl::bool_< ( trial_space_type::nSpaces > 1 )>() );
 
-    Debug( 5050 ) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
+    DVLOG(2) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
     return graph;
 }
 
@@ -815,9 +815,9 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     // then all the DOFS are coupled to each other.  Furthermore,
     // we can take a shortcut and do this more quickly here.  So
     // we use an if-test.
-    Debug( 5050 ) << "[computeGraph] test : " << ( graph.test ( Pattern::COUPLED ) || graph.test ( Pattern::EXTENDED ) ) << "\n";
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
+    DVLOG(2) << "[computeGraph] test : " << ( graph.test ( Pattern::COUPLED ) || graph.test ( Pattern::EXTENDED ) ) << "\n";
+    DVLOG(2) << "[computeGraph]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
+    DVLOG(2) << "[computeGraph]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
 #if 0
 
     if ( graph.test ( Pattern::COUPLED ) ||
@@ -826,7 +826,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     if ( 1 )
 #endif
     {
-        Debug( 5050 ) << "[computeGraph] test (Pattern::COUPLED || Pattern::EXTENDED) ok\n";
+        DVLOG(2) << "[computeGraph] test (Pattern::COUPLED || Pattern::EXTENDED) ok\n";
         std::vector<size_type>
         element_dof1,
         element_dof2,
@@ -836,7 +836,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
         for ( ; elem_it != elem_en; ++elem_it )
         {
 #if !defined(NDEBUG)
-            Debug( 5050 ) << "[Stencil::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+            DVLOG(2) << "[Stencil::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
 #endif /* NDEBUG */
             mesh_element_type const& elem = *elem_it;
 
@@ -874,7 +874,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                     bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
                     row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
                     row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
-                    Debug( 5051 ) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                    DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
                     // If the row is empty we will add *all* the element DOFs,
                     // so just do that.
@@ -976,10 +976,10 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
 
                                 for ( size_type j=0; j<n_dof_on_neighbor; j++ )
                                 {
-                                    Debug( 5051 ) << "neighbor elem id: " << neighbor->id() << " dof " << neighbor_dof[j] << "\n";
+                                    DVLOG(2) << "neighbor elem id: " << neighbor->id() << " dof " << neighbor_dof[j] << "\n";
                                 }
 
-                                Debug( 5051 ) << "looking for dof " << ig1  << "\n";
+                                DVLOG(2) << "looking for dof " << ig1  << "\n";
 #endif
 #if 0
                                 std::pair<std::vector<size_type>::iterator,
@@ -1040,10 +1040,10 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     else
     {}
 
-    Debug( 5050 ) << "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
+    DVLOG(2) << "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
     //sparsity_graph->close();
-    Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
-    Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
+    DVLOG(2) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
+    DVLOG(2) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     return sparsity_graph;
 }
 #else
@@ -1089,9 +1089,9 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     // then all the DOFS are coupled to each other.  Furthermore,
     // we can take a shortcut and do this more quickly here.  So
     // we use an if-test.
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::DEFAULT )=" <<  graph.test ( Pattern::DEFAULT ) << "\n";
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
-    Debug( 5050 ) << "[computeGraph]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
+    DVLOG(2) << "[computeGraph]  : graph.test ( Pattern::DEFAULT )=" <<  graph.test ( Pattern::DEFAULT ) << "\n";
+    DVLOG(2) << "[computeGraph]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
+    DVLOG(2) << "[computeGraph]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
     bool do_less =  ( ( graph.test( Pattern::DEFAULT ) &&
                         ( _M_X1->dof()->nComponents ==
                           _M_X2->dof()->nComponents ) ) &&
@@ -1103,7 +1103,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
     for ( ; elem_it != elem_en; ++elem_it )
     {
 #if !defined(NDEBUG)
-        Debug( 5050 ) << "[Stencil::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+        DVLOG(2) << "[Stencil::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
 #endif /* NDEBUG */
         const auto & elem = *elem_it;
 
@@ -1162,7 +1162,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                 row.get<0>() = theproc ;
                 row.get<1>() = il1;
 #endif
-                Debug( 5051 ) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
                 if ( do_less )
                 {
@@ -1227,10 +1227,10 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
         }// dof loop
     } // element iterator loop
 
-    Debug( 5050 )<< "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
+    DVLOG(2)<< "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
     //sparsity_graph->close();
-    Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
-    Debug( 5050 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
+    DVLOG(2) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
+    DVLOG(2) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     return sparsity_graph;
 }
 #endif

@@ -86,7 +86,7 @@ ApplicationXML::operator=( ApplicationXML const& app )
 ApplicationXML::RunStatus
 ApplicationXML::preProcessing()
 {
-    Debug( 1000 ) << "start preprocessing\n";
+    DVLOG(2) << "start preprocessing\n";
 
     if ( this->vm().count( "help" ) )
     {
@@ -96,7 +96,7 @@ ApplicationXML::preProcessing()
 
     if ( this->vm().count( "capabilities" ) )
     {
-        Debug( 1000 ) << "Writing capabilities..." << "\n";
+        DVLOG(2) << "Writing capabilities..." << "\n";
         std::cerr << "Writing capabilities..." << "\n";
         fs::path rep_path;
         std::string fmtstr = ( boost::format( "%1%/" ) % "xml" ).str();
@@ -117,7 +117,7 @@ ApplicationXML::preProcessing()
 
         for ( unsigned int i=0; i<M_params.size(); i++ )
         {
-            Debug( 1000 ) << "rep = " << rep << "\n";
+            DVLOG(2) << "rep = " << rep << "\n";
             rep+=M_params[i].getName();
             rep+="_";
             rep+=M_parameter_values[i];
@@ -129,7 +129,7 @@ ApplicationXML::preProcessing()
                                 % this->about().appName()
                                 % rep
                               );
-        Debug( 1000 ) << "Capabilities written..." << "\n";
+        DVLOG(2) << "Capabilities written..." << "\n";
         std::cerr << "Capabilities written..." << "\n";
         return RUN_EXIT;
     }
@@ -138,7 +138,7 @@ ApplicationXML::preProcessing()
 
     for ( unsigned int i=0; i<M_params.size(); i++ )
     {
-        Debug( 1000 ) << "rep = " << rep << "\n";
+        DVLOG(2) << "rep = " << rep << "\n";
         rep+=M_params[i].getName();
         rep+="_";
         rep+=M_parameter_values[i];
@@ -172,7 +172,7 @@ ApplicationXML::postProcessing()
                             M_output_values );
     /*string rep="";
     for (unsigned int i=0; i<M_params.size(); i++) {
-        Debug( 1000 ) << "rep = " << rep << "\n";
+        DVLOG(2) << "rep = " << rep << "\n";
         rep+=M_params[i].getName();
         rep+="_";
         rep+=M_parameter_values[i];
