@@ -131,22 +131,22 @@ public:
         _M_points_face( nFacesInConvex ),
         _M_fset( primal )
     {
-        Debug( 5045 ) << "Hermite finite element: \n";
-        Debug( 5045 ) << " o- dim   = " << nDim << "\n";
-        Debug( 5045 ) << " o- order = " << nOrder << "\n";
-        Debug( 5045 ) << " o- nVertices      = " << nVertices << "\n";
-        Debug( 5045 ) << " o- nGeometricFaces= " << nGeometricFaces << "\n";
-        Debug( 5045 ) << " o- numPoints      = " << numPoints << "\n";
-        Debug( 5045 ) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        Debug( 5045 ) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        Debug( 5045 ) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        Debug( 5045 ) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
+        DVLOG(2) << "Hermite finite element: \n";
+        DVLOG(2) << " o- dim   = " << nDim << "\n";
+        DVLOG(2) << " o- order = " << nOrder << "\n";
+        DVLOG(2) << " o- nVertices      = " << nVertices << "\n";
+        DVLOG(2) << " o- nGeometricFaces= " << nGeometricFaces << "\n";
+        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
+        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
+        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
+        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
+        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
-        Debug( 5045 ) << " o- nbDofPerVertex = " << nDofPerVertex << "\n";
-        Debug( 5045 ) << " o- nbDofPerEdge   = " << nDofPerEdge << "\n";
-        Debug( 5045 ) << " o- nbDofPerFace   = " << nDofPerFace << "\n";
-        Debug( 5045 ) << " o- nbDofPerVolume = " << nDofPerVolume << "\n";
-        Debug( 5045 ) << " o- nLocalDof = " << nLocalDof << "\n";
+        DVLOG(2) << " o- nbDofPerVertex = " << nDofPerVertex << "\n";
+        DVLOG(2) << " o- nbDofPerEdge   = " << nDofPerEdge << "\n";
+        DVLOG(2) << " o- nbDofPerFace   = " << nDofPerFace << "\n";
+        DVLOG(2) << " o- nbDofPerVolume = " << nDofPerVolume << "\n";
+        DVLOG(2) << " o- nLocalDof = " << nLocalDof << "\n";
 
         pointset_type pts;
 
@@ -164,7 +164,7 @@ public:
             for ( int j = 0; j < _pts.size2(); ++j, ++i )
             {
                 ublas::column( _M_pts, i ) = ublas::column( _pts, j );
-                Debug( 5045 ) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
+                DVLOG(2) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
             }
         }
 
@@ -178,7 +178,7 @@ public:
         {
             points_type _pts = pts.pointsBySubEntity( 2, 0, 0 );
             ublas::column( _M_pts, i ) = ublas::column( _pts, 0 );
-            Debug( 5045 ) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
+            DVLOG(2) << "pts " << i << " = " <<  ublas::column( _M_pts, i ) << "\n";
         }
 
         //std::cout << "pts = " << _M_pts << "\n";

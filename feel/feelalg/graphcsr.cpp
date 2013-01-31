@@ -237,14 +237,14 @@ GraphCSR::close()
 
     //std::cout << "closing graph " << this << "...\n";
     boost::timer ti;
-    Debug( 5050 ) << "[close] nrows=" << this->size() << "\n";
-    Debug( 5050 ) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
-    Debug( 5050 ) << "[close] lastRowEntryOnProc()=" << this->lastRowEntryOnProc() << "\n";
-    Debug( 5050 ) << "[close] firstColEntryOnProc()=" << this->firstColEntryOnProc() << "\n";
-    Debug( 5050 ) << "[close] lastColEntryOnProc()=" << this->lastColEntryOnProc() << "\n";
-    Debug( 5050 ) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
-    Debug( 5050 ) << "[close] M_storage size=" << M_storage.size() << "\n";
-    Debug( 5050 ) << "[close] nrows=" << this->size() << "\n";
+    DVLOG(2) << "[close] nrows=" << this->size() << "\n";
+    DVLOG(2) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
+    DVLOG(2) << "[close] lastRowEntryOnProc()=" << this->lastRowEntryOnProc() << "\n";
+    DVLOG(2) << "[close] firstColEntryOnProc()=" << this->firstColEntryOnProc() << "\n";
+    DVLOG(2) << "[close] lastColEntryOnProc()=" << this->lastColEntryOnProc() << "\n";
+    DVLOG(2) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
+    DVLOG(2) << "[close] M_storage size=" << M_storage.size() << "\n";
+    DVLOG(2) << "[close] nrows=" << this->size() << "\n";
 #if !defined(FEELPP_ENABLE_MPI_MODE)
     M_n_total_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
     M_n_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
@@ -328,10 +328,10 @@ GraphCSR::close()
 
 
 #if !defined( NDEBUG )
-            Debug( 5050 ) << "M_total_nz [  " << localindex << "]=" << M_n_total_nz[localindex] << "\n";
+            DVLOG(2) << "M_total_nz [  " << localindex << "]=" << M_n_total_nz[localindex] << "\n";
 
-            Debug( 5050 ) << "M_nz [  " << localindex << "]=" << M_n_nz[localindex] << "\n";
-            Debug( 5050 ) << "M_oz [  " << localindex << "]=" << M_n_oz[localindex] << "\n";
+            DVLOG(2) << "M_nz [  " << localindex << "]=" << M_n_nz[localindex] << "\n";
+            DVLOG(2) << "M_oz [  " << localindex << "]=" << M_n_oz[localindex] << "\n";
 #endif // NDEBUG
 
             M_max_nnz = std::max( M_n_total_nz[localindex], M_max_nnz );

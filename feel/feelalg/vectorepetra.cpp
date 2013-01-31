@@ -182,7 +182,7 @@ VectorEpetra<T>::set ( size_type i, const value_type& value )
     //_M_vec[i_val] = epetra_value;
     _M_vec.ReplaceGlobalValues( 1, &i_val, &epetra_value );
 
-    Debug( 10010 ) << "[Vector] Replacing value in row " << i << " for " << value << "\n";
+    DVLOG(2) << "[Vector] Replacing value in row " << i << " for " << value << "\n";
 
 }
 

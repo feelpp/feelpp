@@ -446,8 +446,10 @@ inline ::Feel::Assert make_assert( const char * expr )
 #define SMART_ASSERT_A(x) FEELPP_SMART_ASSERT_OP(x, B)
 #define SMART_ASSERT_B(x) FEELPP_SMART_ASSERT_OP(x, A)
 
-#define FEELPP_SMART_ASSERT_OP(x, next) \
+#define FEELPP_SMART_ASSERT_OP(x, next)         \
     SMART_ASSERT_A.printCurrentValue((x), #x).SMART_ASSERT_ ## next \
     /**/
+
+
 
 #endif

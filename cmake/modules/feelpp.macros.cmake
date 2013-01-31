@@ -6,7 +6,7 @@ macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS;TEST"
-    "NO_TEST;EXCLUDE_FROM_ALL;ADD_OT"
+    "NO_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -24,13 +24,16 @@ macro(feelpp_add_application)
     MESSAGE("       Mesh file: ${FEELPP_APP_MESH}")
     MESSAGE("       Exec file: ${execname}")
     MESSAGE("exclude from all: ${FEELPP_APP_EXCLUDE_FROM_ALL}")
+    MESSAGE("include from all: ${FEELPP_APP_INCLUDE_IN_ALL}")
   endif()
 
 
   if ( FEELPP_APP_EXCLUDE_FROM_ALL)
     add_executable(${execname}  EXCLUDE_FROM_ALL  ${FEELPP_APP_SRCS}  )
-  else()
+  elseif( FEELPP_APP_INCLUDE_IN_ALL)
     add_executable(${execname}  ${FEELPP_APP_SRCS}  )
+  else()
+    add_executable(${execname}  EXCLUDE_FROM_ALL  ${FEELPP_APP_SRCS}  )
   endif()
   if ( FEELPP_APP_DEPS )
     add_dependencies(${execname} ${FEELPP_APP_DEPS})
