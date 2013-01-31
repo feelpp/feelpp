@@ -65,7 +65,7 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::save() const
 {
-    Debug( 8007 ) << "[ExporterGmsh] checking if frequency is ok\n";
+    DVLOG(2) << "[ExporterGmsh] checking if frequency is ok\n";
 
     if ( this->cptOfSave() % this->freq()  )
     {
@@ -73,13 +73,13 @@ ExporterGmsh<MeshType,N>::save() const
         return;
     }
 
-    Debug( 8007 ) << "[ExporterGmsh] frequency is ok\n";
+    DVLOG(2) << "[ExporterGmsh] frequency is ok\n";
 
-    Debug( 8007 ) << "[ExporterGmsh] save()...\n";
+    DVLOG(2) << "[ExporterGmsh] save()...\n";
 
     gmshSaveAscii();
 
-    Debug( 8007 ) << "[ExporterGmsh] saving done\n";
+    DVLOG(2) << "[ExporterGmsh] saving done\n";
 
     this->saveTimeSet();
 }
@@ -94,7 +94,7 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 {
-    Debug( 8007 ) << "[gmshSaveascii] saving in gmsh ascii file format\n";
+    DVLOG(2) << "[gmshSaveascii] saving in gmsh ascii file format\n";
 
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
@@ -138,11 +138,11 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 
                 if ( out.fail() )
                 {
-                    Debug( 8007 ) << "cannot open " << __fname.str().c_str() << "\n";
+                    DVLOG(2) << "cannot open " << __fname.str().c_str() << "\n";
                     exit( 0 );
                 }
 
-                Debug( 8007 ) << "[ExporterGmsh] saving model "
+                DVLOG(2) << "[ExporterGmsh] saving model "
                               << __ts->name() << " at time step "
                               << __ts->index() << " in "
                               << __fname.str() << "\n";

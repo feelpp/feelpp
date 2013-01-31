@@ -77,18 +77,18 @@ void test_csr_boost()
     vector<double> b( n );
 
     b = prod( m, x );
-    Feel::Debug( 10000 ) << "b = A * x\n";
+    DVLOG(2) << "b = A * x\n";
 
     status = umfpack_dl_solve ( UMFPACK_A, ( const long int* )&m.index1_data()[0], ( const long int* )&m.index2_data()[0], &m.value_data()[0],
                                 &x[0], &b[0], Numeric, Control, Info ) ;
 
 
-    Feel::Debug( 10000 ) << "solver A x = b\n";
+    DVLOG(2) << "solver A x = b\n";
 
     std::cout << "B = " << b << "\n";
     std::cout << "AX = " << prod( m, x ) << "\n";
     std::cout << "x = " << x << "\n";
-    Feel::Debug( 10000 ) << "norm_2( Ax - b ) = " << norm_2( prod( m, x ) - b ) << "\n";
+    DVLOG(2) << "norm_2( Ax - b ) = " << norm_2( prod( m, x ) - b ) << "\n";
 
 }
 void test_convdiff()
@@ -126,7 +126,7 @@ void test_convdiff()
     std::vector<double> __ax( 12 );
     std::copy( Ax, Ax+12,  __ax.begin() );
 
-    Debug( 10000 ) << "copying done\n";
+    DVLOG(2) << "copying done\n";
     ublas::compressed_matrix<double, ublas::column_major> __matrix( n, n );
 
     for ( int i = 0; i < n; ++i )
@@ -153,14 +153,14 @@ void test_convdiff()
     umfpack_di_defaults ( Control ) ;
 #endif
 
-    Debug( 10000 ) << "UMFPACK solver created\n";
+    DVLOG(2) << "UMFPACK solver created\n";
 
     ublas::vector<double> x( n );
     x = ublas::scalar_vector<double>( n, 1 );
     ublas::vector<double> b( n );
 
     b = ublas::prod( __matrix, x );
-    //Debug( 10000 ) << "b = A * x\n";
+    //DVLOG(2) << "b = A * x\n";
 
     // solution should be x=[1 1 1 1 1]^T
 
@@ -168,21 +168,21 @@ void test_convdiff()
     status = umfpack_dl_solve ( UMFPACK_A, Ap, Ai, Ax, &x[0], &b[0], Numeric, Control, Info ) ;
 
 
-    Debug( 10000 ) << "solver A x = b\n";
+    DVLOG(2) << "solver A x = b\n";
 
     ublas::vector<double> AX( n );
     AX = ublas::prod( __matrix, x );
     std::cout << "B = " << b << "\n";
     std::cout << "AX = " << AX << "\n";
     std::cout << "x = " << x << "\n";
-    Debug( 10000 ) << "norm_2( Ax - b ) = " << norm_2( AX - b ) << "\n";
+    DVLOG(2) << "norm_2( Ax - b ) = " << norm_2( AX - b ) << "\n";
 
     ublas::vector<double> sol( n );
     sol[0]=1;
     sol[1]=1;
     sol[2]=1;
     sol[3]=1;
-    Debug( 10000 ) << "norm_2( sol - x ) = " << norm_2( sol - x ) << "\n";
+    DVLOG(2) << "norm_2( sol - x ) = " << norm_2( sol - x ) << "\n";
     BOOST_REQUIRE( norm_2( sol - x ) < 1e-10 );
 }
 void test_umfpack()
@@ -236,7 +236,7 @@ void test_umfpack()
     sol[2]=3;
     sol[3]=4;
     sol[4]=5;
-    Debug( 10000 ) << "norm_2( sol - x ) = " << norm_2( sol - x ) << "\n";
+    DVLOG(2) << "norm_2( sol - x ) = " << norm_2( sol - x ) << "\n";
     BOOST_REQUIRE( norm_2( sol - x ) < 1e-10 );
 }
 

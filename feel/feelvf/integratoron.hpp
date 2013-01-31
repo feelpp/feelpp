@@ -249,7 +249,7 @@ public:
                    FormType& __f ) const
     {
         typedef typename Elem::functionspace_type functionspace_type;
-        Debug( 5066 ) << "[IntegratorOn::assemble()] is_same: "
+        DVLOG(2) << "[IntegratorOn::assemble()] is_same: "
                       << mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>::value << "\n";
         assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>() );
     }
@@ -292,7 +292,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         return;
 
 #endif
-    Debug( 5066 ) << "call on::assemble() " << "\n";
+    DVLOG(2) << "call on::assemble() " << "\n";
     //
     // a few typedefs
     //
@@ -331,7 +331,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     //
     // start
     //
-    Debug( 5066 )  << "assembling Dirichlet conditions\n";
+    DVLOG(2)  << "assembling Dirichlet conditions\n";
     boost::timer __timer;
 
     std::vector<int> dofs;
@@ -356,7 +356,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename geoelement_type::permutation_type permutation_type;
     typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
     typedef typename gm_type::precompute_type geopc_type;
-    Debug( 5066 )  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+    DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
     std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
 
     for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
@@ -365,7 +365,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                 __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
             __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-            //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+            //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
             FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
         }
     }
@@ -377,7 +377,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     //t_expr_type expr( _M_expr, mapgmc );
 
 
-    Debug( 5066 )  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
+    DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
                    << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
                    << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
 
@@ -391,7 +391,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     else
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
-    Debug( 5066 )  << "nbFaceDof = " << nbFaceDof << "\n";
+    DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
     //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
 
     for ( ;
@@ -406,17 +406,17 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         ( __face_it->ad_second() )
         ( __face_it->pos_second() )
         ( __face_it->id() ).warn( "inconsistent data face" );
-        Debug( 5066 ) << "FACE_ID = " << __face_it->id()
+        DVLOG(2) << "FACE_ID = " << __face_it->id()
                       << " element id= " << __face_it->ad_first()
                       << " pos in elt= " << __face_it->pos_first()
                       << " marker: " << __face_it->marker() << "\n";
-        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
+        DVLOG(2) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
 
         uint16_type __face_id = __face_it->pos_first();
         __c->update( __face_it->element( 0 ), __face_id );
 
-        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+        DVLOG(2) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
+        DVLOG(2) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
@@ -425,18 +425,18 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
         std::pair<size_type,size_type> range_dof( std::make_pair( _M_u.start(),
                 _M_u.functionSpace()->nDof() ) );
-        Debug( 5066 )  << "[integratoron] dof start = " << range_dof.first << "\n";
-        Debug( 5066 )  << "[integratoron] dof range = " << range_dof.second << "\n";
+        DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
+        DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
 
         for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
             for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
             {
                 for ( uint16_type l = 0; l < nbFaceDof; ++l )
                 {
-                    Debug( 5066 ) << "[integratoronexpr] local dof=" << l
+                    DVLOG(2) << "[integratoronexpr] local dof=" << l
                                   << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
                     typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-                    Debug( 5066 ) << "[integratoronexpr] value=" << __value << "\n";
+                    DVLOG(2) << "[integratoronexpr] value=" << __value << "\n";
 
                     // global Dof
                     size_type thedof =  _M_u.start() +
@@ -450,7 +450,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
                     if ( _M_on_strategy.test( ON_ELIMINATION ) )
                     {
-                        Debug( 5066 ) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+                        DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
                         // this can be quite expensive depending on the
                         // matrix storage format.

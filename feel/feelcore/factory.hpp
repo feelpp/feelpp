@@ -147,7 +147,7 @@ public:
      */
     bool registerProduct( const identifier_type& id, creator_type creator )
     {
-        Feel::Debug( 2200 ) << "Registered type with id : " << id << "\n";
+        DVLOG(2) << "Registered type with id : " << id << "\n";
         return _M_associations.insert( typename id_to_product_type::value_type( id, creator ) ).second;
     }
 
@@ -160,7 +160,7 @@ public:
      */
     bool unregisterProduct( const identifier_type& id )
     {
-        Feel::Debug( 2200 ) << "Unregistered type with id : " << id << "\n";
+        DVLOG(2) << "Unregistered type with id : " << id << "\n";
         return _M_associations.erase( id ) == 1;
     }
 
@@ -178,11 +178,11 @@ public:
 
         if ( i != _M_associations.end() )
         {
-            Feel::Debug ( 2200 ) << "Creating type with id : " << id << "\n";
+            DVLOG(2) << "Creating type with id : " << id << "\n";
             return ( i->second )();
         }
 
-        Feel::Debug( 2200 ) << "Unknown type with id : " << id << "\n";
+        DVLOG(2) << "Unknown type with id : " << id << "\n";
         return super::onUnknownType( id );
     }
 
