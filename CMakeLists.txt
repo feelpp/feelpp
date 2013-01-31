@@ -80,7 +80,7 @@ if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
     message(STATUS "updating submodules...")
     execute_process(COMMAND git submodule update WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} )
   endif()
-  
+
   execute_process(
     COMMAND git rev-parse --verify -q --short HEAD
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -332,8 +332,7 @@ ADD_SUBDIRECTORY ( feel )
 SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
 
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ON)
-OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" OFF)
-OPTION(FEELPP_ENABLE_EXAMPLES "enable Feel++ examples" ON)
+OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ON)
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ON)
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ON)
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
@@ -341,7 +340,6 @@ OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 IF( FEELPP_MINIMAL_CONFIGURATION )
   set( BUILD_TESTING OFF )
-  set( FEELPP_ENABLE_EXAMPLES OFF )
   set( FEELPP_ENABLE_BENCHMARKS OFF )
   set( FEELPP_ENABLE_TESTS OFF )
   set( FEELPP_ENABLE_RESEARCH OFF )
@@ -391,7 +389,7 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
 endif()
 
 
-ADD_SUBDIRECTORY ( mycode )
+ADD_SUBDIRECTORY ( quickstart )
 
 
 IF(FEELPP_ENABLE_TESTS )
@@ -550,7 +548,6 @@ MESSAGE(STATUS "Feel++ Modules :")
 MESSAGE(STATUS "  Documentation: ${FEELPP_ENABLE_DOCUMENTATION}")
 MESSAGE(STATUS "      Testsuite: ${FEELPP_ENABLE_TESTS}")
 MESSAGE(STATUS "   Applications: ${FEELPP_ENABLE_APPLICATIONS}")
-MESSAGE(STATUS "       Examples: ${FEELPP_ENABLE_EXAMPLES}")
 MESSAGE(STATUS "     Benchmarks: ${FEELPP_ENABLE_BENCHMARKS}")
 MESSAGE(STATUS "       Research: ${FEELPP_ENABLE_RESEARCH}")
 MESSAGE(STATUS "")
