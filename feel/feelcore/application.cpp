@@ -154,7 +154,7 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
 #else
     int n = 1 ;
 #endif
-    Debug( 1000 ) << "[Feel++] TBB running with " << n << " threads\n";
+    DVLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(1);
 
 #if defined( FEELPP_HAS_MPI_H )
@@ -548,7 +548,7 @@ Application::doOptions( int argc, char** argv )
          */
         if ( _M_vm.count( "config-file" ) )
         {
-            Debug( 1000 ) << "[Application] parsing " << _M_vm["config-file"].as<std::string>() << "\n";
+            DVLOG(2) << "[Application] parsing " << _M_vm["config-file"].as<std::string>() << "\n";
 
             if ( fs::exists(  _M_vm["config-file"].as<std::string>() ) )
             {
@@ -569,12 +569,12 @@ Application::doOptions( int argc, char** argv )
         BOOST_FOREACH( auto prefix, prefixes )
         {
             std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % this->about().appName() ).str();
-            Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
-            Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
+            DVLOG(2) << "[Application] Looking for " << config_name << "\n";
+            DVLOG(2) << "[Application] Looking for " << config_name << "\n";
 
             if ( fs::exists( config_name ) )
             {
-                Debug( 1000 ) << "[Application] parsing " << config_name << "\n";
+                DVLOG(2) << "[Application] parsing " << config_name << "\n";
                 std::ifstream ifs( config_name.c_str() );
                 store( parse_config_file( ifs, _M_desc, true ), _M_vm );
                 break;
@@ -584,11 +584,11 @@ Application::doOptions( int argc, char** argv )
             {
                 // try with a prefix feel_
                 std::string config_name = ( boost::format( "%1%/feel_%2%.cfg" ) % prefix.string() % this->about().appName() ).str();
-                Debug( 1000 ) << "[Application] Looking for " << config_name << "\n";
+                DVLOG(2) << "[Application] Looking for " << config_name << "\n";
 
                 if ( fs::exists( config_name ) )
                 {
-                    Debug( 1000 ) << "[Application] loading configuration file " << config_name << "...\n";
+                    DVLOG(2) << "[Application] loading configuration file " << config_name << "...\n";
                     std::ifstream ifs( config_name.c_str() );
                     store( parse_config_file( ifs, _M_desc, true ), _M_vm );
                     break;
@@ -640,18 +640,18 @@ Application::unknownArgv() const
     strcpy( argv[0], this->about().appName().c_str() );
     argv[0][std::strlen( this->about().appName().c_str() )] = '\0';
     int n_a = 0;
-    Debug( 1000 ) << "argv[ " << n_a << " ]=" << argv[0] << "\n";
+    DVLOG(2) << "argv[ " << n_a << " ]=" << argv[0] << "\n";
     ++n_a;
     BOOST_FOREACH( std::string const& s, _M_to_pass_further )
     {
         size_type ssize=s.size();
-        Debug( 1000 ) << "new arg " << s << " size = " << ssize << "\n";
+        DVLOG(2) << "new arg " << s << " size = " << ssize << "\n";
         argv[n_a] = new char[ s.size()+1 ];
         strncpy( argv[n_a], s.c_str(), s.size() );
         argv[n_a][s.size()] = '\0';
         ++n_a;
 
-        Debug( 1000 ) << "argv[ " << n_a-1 << " ]=" << argv[n_a-1] << "\n";
+        DVLOG(2) << "argv[ " << n_a-1 << " ]=" << argv[n_a-1] << "\n";
     }
     return argv;
 }
@@ -686,14 +686,6 @@ Application::resultFileName() const
 void
 Application::setLogs()
 {
-    Debug( 1000 ).detachAll();
-    std::ostringstream ostr;
-    ostr << this->about().appName() << "-" << nProcess()  << "." << processId();
-    Debug( 1000 ).attach( ostr.str() );
-
-    std::ostringstream ostr_assert;
-    ostr_assert << this->about().appName() << "_assertions" << "-" << nProcess()  << "." << processId();
-    Assert::setLog( ostr_assert.str().c_str() );
 }
 void
 Application::processGenericOptions()
@@ -814,10 +806,7 @@ Application::processGenericOptions()
               << "string = " << _M_vm["debug"].as<std::string>() << "\n";
 #endif
 
-    if ( _M_vm.count( "debug" ) && !_M_vm["debug"].as<std::string>().empty() )
-        DebugStream::showDebugAreas( _M_vm["debug"].as<std::string>() );
-
-    Debug( 1000 ) << "[Application::processGenericOptions] done\n";
+    DVLOG(2) << "[Application::processGenericOptions] done\n";
 }
 std::string
 Application::rootRepository() const
@@ -841,7 +830,7 @@ Application::changeRepository( boost::format fmt )
 void
 Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_parser )
 {
-    Debug( 1000 ) << "[Application::Application] parsing options...\n";
+    DVLOG(2) << "[Application::Application] parsing options...\n";
 
     boost::shared_ptr<po::parsed_options> parsed;
 
@@ -862,14 +851,14 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
                  .run() ) );
     }
 
-    Debug( 1000 ) << "[Application::Application] parsing options done\n";
+    DVLOG(2) << "[Application::Application] parsing options done\n";
 
     _M_to_pass_further = po::collect_unrecognized( parsed->options, po::include_positional );
-    Debug( 1000 ) << "[Application::Application] number of unrecognized options: " << ( _M_to_pass_further.size() ) << "\n";
+    DVLOG(2) << "[Application::Application] number of unrecognized options: " << ( _M_to_pass_further.size() ) << "\n";
 
     BOOST_FOREACH( std::string const& s, _M_to_pass_further )
     {
-        Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
+        DVLOG(2) << "[Application::Application] option: " << s << "\n";
     }
     std::vector<po::basic_option<char> >::iterator it = parsed->options.begin();
     std::vector<po::basic_option<char> >::iterator en  = parsed->options.end();
@@ -877,7 +866,7 @@ Application::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
     for ( ; it != en ; ++it )
         if ( it->unregistered )
         {
-            Debug( 1000 ) << "[Application::Application] remove from vector " << it->string_key << "\n";
+            DVLOG(2) << "[Application::Application] remove from vector " << it->string_key << "\n";
             parsed->options.erase( it );
         }
 

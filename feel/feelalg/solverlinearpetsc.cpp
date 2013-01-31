@@ -615,7 +615,7 @@ void
 SolverLinearPetsc<T>::setPetscSolverType()
 {
     int ierr = 0;
-    Debug( 7010 ) << "[SolverLinearPetsc] solver type:  " << this->solverType() << "\n";
+    DVLOG(2) << "[SolverLinearPetsc] solver type:  " << this->solverType() << "\n";
 
     switch ( this->solverType() )
     {
@@ -732,7 +732,7 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
     }
 
 #endif
-    Debug( 7010 ) << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
+    DVLOG(2) << "[SolverLinearPetsc] preconditioner type:  " << this->preconditionerType() << "\n";
 
     switch ( this->preconditionerType() )
     {

@@ -299,7 +299,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
 #if !defined(NDEBUG)
     test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_test_gmc );
-    Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
+    DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
     if ( _M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
@@ -410,7 +410,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
 #if !defined(NDEBUG)
     test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_test_gmc );
-    Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
+    DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
     if ( isFirstExperience )
@@ -436,9 +436,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     size_type col_start = _M_lb.front().globalColumnStart();
 
 #if !defined(NDEBUG)
-    Debug( 5050 ) << "[BilinearForm::assemble] global assembly in element " << elt_0 << "\n";
-    Debug( 5050 ) << "[BilinearForm::assemble] row start " << row_start << "\n";
-    Debug( 5050 ) << "[BilinearForm::assemble] col start " << col_start << "\n";
+    DVLOG(2) << "[BilinearForm::assemble] global assembly in element " << elt_0 << "\n";
+    DVLOG(2) << "[BilinearForm::assemble] row start " << row_start << "\n";
+    DVLOG(2) << "[BilinearForm::assemble] col start " << col_start << "\n";
 #endif /* NDEBUG */
     bool do_less = ( ( _M_form.isPatternDefault() &&
                        ( _M_test_dof->nComponents == _M_trial_dof->nComponents ) ) &&

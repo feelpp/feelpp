@@ -214,7 +214,7 @@ public:
 
         // only the points associated with the vertices
         _M_pts = pts.pointsByEntity( 0 );
-        Debug( 5045 ) << "[boundaryadapted] pts= " <<  _M_pts << "\n";
+        DVLOG(2) << "[boundaryadapted] pts= " <<  _M_pts << "\n";
 
         // get the points for each faces
         for ( uint16_type e = _M_refconvex.entityRange( nDim-1 ).begin();
@@ -222,7 +222,7 @@ public:
                 ++e )
         {
             _M_pts_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
-            Debug( 5045 ) << "[boundaryadapted] face " << e << " pts " <<  _M_pts_face[e] << "\n";
+            DVLOG(2) << "[boundaryadapted] face " << e << " pts " <<  _M_pts_face[e] << "\n";
         }
     }
 

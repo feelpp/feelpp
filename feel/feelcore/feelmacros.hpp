@@ -58,32 +58,32 @@
 #endif
 
 /**
-   \def FEELPP_CONSTRUCTOR_BEGIN(Area,x)
+   \def FEELPP_CONSTRUCTOR_BEGIN(x)
    Inform that the constructor of the class x has started
  */
-#define FEELPP_CONSTRUCTOR_BEGIN(Area, A) Debug( Area ) << "Constructor of " << A << " begins\n";
-#define FEELPP_CONSTRUCTOR(Area,A) FEELPP_CONSTRUCTOR_BEGIN(Area,A)
-#define CONSTRUCTOR(A) FEELPP_CONSTRUCTOR_BEGIN(20000,A)
+#define FEELPP_CONSTRUCTOR_BEGIN(A) DVLOG(3) << "Constructor of " << A << " begins\n";
+#define FEELPP_CONSTRUCTOR(A) FEELPP_CONSTRUCTOR_BEGIN(A)
+#define CONSTRUCTOR(A) FEELPP_CONSTRUCTOR_BEGIN(A)
 
 /**
-   \def FEELPP_CONSTRUCTOR_END(Area,x)
+   \def FEELPP_CONSTRUCTOR_END(x)
    Inform that the constructor of the class x has ended
  */
-#define FEELPP_CONSTRUCTOR_END(Area,A) Debug( Area ) << "Constructor of " << A << " ends\n";
+#define FEELPP_CONSTRUCTOR_END(A) DVLOG(3) << "Constructor of " << A << " ends\n";
 
 /**
-   \def FEELPP_DESTRUCTOR_BEGIN(Area,x)
+   \def FEELPP_DESTRUCTOR_BEGIN(x)
    Inform that the destructor of the class x has started
  */
-#define FEELPP_DESTRUCTOR_BEGIN(Area,A) Debug( Area ) << "Destructor of " << A << " begins\n";
-#define FEELPP_DESTRUCTOR(Area,A) FEELPP_DESTRUCTOR_END(Area,A)
-#define DESTRUCTOR(A) FEELPP_DESTRUCTOR_BEGIN(20000,A)
+#define FEELPP_DESTRUCTOR_BEGIN(A) DVLOG(3) << "Destructor of " << A << " begins\n";
+#define FEELPP_DESTRUCTOR(A) FEELPP_DESTRUCTOR_END(A)
+#define DESTRUCTOR(A) FEELPP_DESTRUCTOR_BEGIN(A)
 
 /**
-   \def FEELPP_DESTRUCTOR_END(Area,x)
+   \def FEELPP_DESTRUCTOR_END(x)
    Inform that the destructor of the class x has started
  */
-#define FEELPP_DESTRUCTOR_END(Area,A) Debug( Area ) << "Destructor of " << A << " ends\n";
+#define FEELPP_DESTRUCTOR_END(A) DVLOG(3) << "Destructor of " << A << " ends\n";
 
 
 /**

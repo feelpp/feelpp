@@ -1189,10 +1189,10 @@ CRBTrilinear<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
     if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for WN="
+    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
+    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN="
                     << wn.size() << "\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] starting ...\n";
+    DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
 
     for ( size_type i = 0; i < N; ++i )
     {
@@ -1210,8 +1210,8 @@ CRBTrilinear<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
         wn[i].scale( 1./__rii_pr );
     }
 
-    Debug ( 12000 ) << "[CRB::orthonormalize] finished ...\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] copying back results in basis\n";
+    DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
+    DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
     if ( this->vm()["crb.check.gs"].template as<int>() )
         checkOrthonormality( N , wn );
@@ -1248,7 +1248,7 @@ CRBTrilinear<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) c
     }
 
     A -= I;
-    Debug( 12000 ) << "orthonormalization: " << A.norm() << "\n";
+    DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
     if( this->worldComm().globalRank() == this->worldComm().masterRank() )
         std::cout << "    o check : " << A.norm() << " (should be 0)\n";
     //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
