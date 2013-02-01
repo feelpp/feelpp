@@ -51,45 +51,6 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
   feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
 
-
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_lm SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS FEELPP_USE_LM NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_cylinder SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_hypercube SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1 NO_TEST )
-
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-  foreach(PORDER 1 2 3)
-    foreach(GORDER 1 2 3)
-      file(WRITE stokesdd_P${PORDER}G${GORDER}.cpp "#include <stokes.hpp>
-int
-main( int argc, char** argv )
-{
-
-    using namespace Feel;
-
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name=\"stokes_Dirichlet_Dirichlet\",
-                                  _author=\"Christophe Prud'homme\",
-                                  _email=\"christophe.prudhomme@feelpp.org\") );
-    Feel::Stokes_Dirichlet_Dirichlet<${PORDER},${GORDER}> stokesDD;
-    stokesDD.run();
-}
-" )
-      feelpp_add_application( stokesdd_P${PORDER}G${GORDER} SRCS stokesdd_P${PORDER}G${GORDER}.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
-    endforeach()
-  endforeach()
-
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann SRCS stokes_Dirichlet_Neumann.cpp LABEL doc NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_lm SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS FEELPP_USE_LM NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_cylinder SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST)
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_hypercube SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1 NO_TEST)
-
-  feelpp_add_application( doc_stokes_Neumann_Neumann SRCS stokes_Neumann_Neumann.cpp LABEL doc NO_TEST )
-  #feelpp_add_application( doc_stokes_Neumann_Neumann_aorta SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=3 NO_TEST )
-  feelpp_add_application( doc_stokes_Neumann_Neumann_cylinder SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
-  feelpp_add_application( doc_stokes_Neumann_Neumann_hypercube SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1 NO_TEST)
-
   feelpp_add_application( doc_stokes_laplacian_inlet SRCS stokes_laplacian_inlet.cpp LABEL doc NO_TEST )
 endif()
 
