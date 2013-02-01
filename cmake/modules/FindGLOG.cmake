@@ -65,6 +65,7 @@ endif()
 FIND_LIBRARY(GLOG_LIBRARY
   NAMES glog
   PATHS
+  ${CMAKE_BINARY_DIR}/contrib/glog/lib64/
   ${CMAKE_BINARY_DIR}/contrib/glog/lib/
   NO_DEFAULT_PATH
 #  /opt/local/lib
