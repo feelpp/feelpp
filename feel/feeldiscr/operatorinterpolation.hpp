@@ -252,6 +252,9 @@ public:
 
     InterpType const& interpolationType() const { return _M_interptype; }
 
+    bool isDomainMeshRelatedToImageMesh() const { return this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() ); }
+
+    bool isImageMeshRelatedToDomainMesh() const { return this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() ); }
 
     //@}
 
@@ -375,9 +378,17 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             return;
         }
 
-    // if same mesh but not same function space (e.g. different polynomial order, different basis)
-    if ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() )
+    // if same mesh but not same function space (e.g. different polynomial
+    // order, different basis) or if the image of domain mesh are related to
+    // each other through an extraction (one of them is the sub mesh of the
+    // other)
+    if ( ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() ) ||
+         ( this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() ) ) ||
+         ( this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() ) ) )
     {
+        VLOG(2) << "OperatorInterpolation: use same mesh\n";
+        VLOG(2) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
+        VLOG(2) << "isImageMeshRelatedToDomainMesh: "  << isImageMeshRelatedToDomainMesh() << "\n";
         this->updateSameMesh();
     }
     else // no relation between meshes
@@ -446,15 +457,31 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //typename matrix_node<value_type>::type Mloc(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     auto const& Mloc = domainbasis->evaluate( imagebasis->dual().points() );
 
-    Debug( 5034 ) << "[interpolate] Same mesh but not same space\n";
+    DVLOG(2) << "[interpolate] Same mesh but not same space\n";
 
     iterator_type it, en;
     boost::tie( boost::tuples::ignore, it, en ) = _M_range;
 
+    const bool image_related_to_domain = this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() );
+    const bool domain_related_to_image = this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() );
+
     for ( ; it != en; ++ it )
     {
         auto idElem = detailsup::idElt( *it,idim_type() );
+        auto domain_eid = idElem;
+        if ( image_related_to_domain )
+        {
+            domain_eid = this->dualImageSpace()->mesh()->subMeshToMesh( idElem );
+            LOG(INFO) << "[image_related_to_domain] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
+        }
+        if( domain_related_to_image )
+        {
+            domain_eid = this->domainSpace()->mesh()->meshToSubMesh( idElem );
+            LOG(INFO) << "[domain_related_to_image] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
+        }
 
+        if ( domain_eid == invalid_size_type_value )
+            continue;
         // Global assembly
         for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
         {
@@ -482,7 +509,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                     for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                     {
                         // get column
-                        const size_type j =  boost::get<0>( domaindof->localToGlobal( idElem, jloc, comp ) );
+                        const size_type j =  boost::get<0>( domaindof->localToGlobal( domain_eid, jloc, comp ) );
                         //up the pattern graph
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
                         row.template get<2>().insert( j );
@@ -532,7 +559,7 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::updateNoRelationMesh()
 {
-    Debug( 5034 ) << "[interpolate] different meshes\n";
+    DVLOG(2) << "[interpolate] different meshes\n";
     //std::cout << "OperatorInterpolation::updateNoRelationMesh start " << std::endl;
 
     const size_type proc_id = this->dualImageSpace()->mesh()->worldComm().localRank();
@@ -566,7 +593,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------
     // usefull data
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
-    matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
+    matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
     typename domain_mesh_type::Localization::container_search_iterator_type itanal,itanal_end;
     typename domain_mesh_type::Localization::container_output_iterator_type itL,itL_end;
     matrix_node_type MlocEval( domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1 );

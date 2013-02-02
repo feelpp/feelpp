@@ -8,7 +8,7 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        14186
+svn.revision        14560
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
@@ -30,9 +30,7 @@ worksrcdir          trunk
 conflicts           gmsh
 
 # https://trac.macports.org/ticket/33925
-if {${configure.compiler} == "clang"} {
-    configure.compiler llvm-gcc-4.2
-}
+compiler.blacklist  clang
 configure.compiler macports-gcc-4.6
 
 worksrcdir	build
@@ -68,9 +66,10 @@ depends_lib  \
     port:libpng \
     port:python27 \
     port:petsc \
+    path:lib/libpoppler.dylib:poppler \
     port:swig \
     port:swig-python \
-    port:fltk-devel\
+    path:lib/libfltk.dylib:fltk \
     port:jpeg \
     port:zlib \
     port:texinfo

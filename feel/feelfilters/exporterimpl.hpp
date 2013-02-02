@@ -192,7 +192,7 @@ Exporter<MeshType, N>::addPath( boost::format fmt )
 
     BOOST_FOREACH( std::string const& dir, dirs )
     {
-        //Debug( 1000 ) << "[Application::Application] option: " << s << "\n";
+        //DVLOG(2) << "[Application::Application] option: " << s << "\n";
         rep_path = rep_path / dir;
 
         if ( !fs::exists( rep_path ) )

@@ -100,8 +100,8 @@ Convection::createMesh()
          << "Line(3) = {3,5};\n"
          << "Line(4) = {5,4};\n"
          << "Line(5) = {4,1};\n"
-         << "Line(6) = {5,6};\n"
-         << "Line Loop(7) = {1,2,3,4,5,6};\n"
+         << "//Line(6) = {5,6};\n"
+         << "Line Loop(7) = {1,2,3,4,5};\n"
          //<< "Line Loop(7) = {1,2,3,4,5};\n"
          << "Plane Surface(8) = {7};\n";
 #if CONVECTION_DIM == 2
@@ -115,11 +115,20 @@ Convection::createMesh()
     ostr << "Extrude {0, 0, 1} {\n"
          << "   Surface{8};\n"
          << "}\n"
+#if 0
          << "Physical Surface(\"Tfixed\") = {35};\n"
          << "Physical Surface(\"Tflux\") = {23};\n"
          << "Physical Surface(\"Tinsulated\") = {19, 40, 8, 31, 27};\n"
         //<< "Physical Surface(\"Fflux\") = {39};\n"
          << "Physical Surface(\"F.wall\") = {31, 27, 23, 19, 35, 40, 8};\n"
+
+#else
+         << "Physical Surface(\"Tfixed\") = {34}\n;"
+         << "Physical Surface(\"Tflux\") = {22};\n"
+         << "Physical Surface(\"Tinsulated\") = {30, 26, 8, 35, 18};\n"
+         << "Physical Surface(\"F.wall\") = {30, 26, 8, 34, 18, 35, 22};\n"
+
+#endif
          << "Physical Volume(\"domain\") = {1};\n";
 #endif
     std::ostringstream fname;
@@ -146,7 +155,7 @@ void Convection ::solve( sparse_matrix_ptrtype & J ,
 void Convection ::exportResults( boost::format fmt, element_type& U, double t )
 {
     exporter->addPath( fmt );
-    exporter->step( t )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( t )->setMesh( P1h->mesh() );
     exporter->step( t )->add( "u", U. element<0>() );
     exporter->step( t )->add( "p", U. element<1>() );
     exporter->step( t )->add( "T", U. element<2>() );
@@ -156,7 +165,7 @@ void Convection ::exportResults( boost::format fmt, element_type& U, double t )
 // <int Order_s, int Order_p, int Order_t>
 void Convection ::exportResults( element_type& U, int i )
 {
-    exporter->step( i )->setMesh( U.functionSpace()->mesh() );
+    exporter->step( i )->setMesh( P1h->mesh() );
     exporter->step( i )->add( "u", U. element<0>() );
     exporter->step( i )->add( "p", U. element<1>() );
     exporter->step( i )->add( "T", U. element<2>() );

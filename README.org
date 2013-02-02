@@ -1,22 +1,66 @@
-* Requirements
+#+OPTIONS: LaTeX:t
 
- - G++ (>=4.4)
- - Boost (>=1.46)
- - PETSc (>=3.1)
- - Gmsh
+* Introduction
+Feel++ is a C++ library for arbitrary order Galerkin methods (e.g. finite and spectral element methods ) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
+ - the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
+ - the creation of a small and manageable library which shall nevertheless encompass a wide range of numerical methods and techniques,
+ - build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE)
+ - the creation of a library entirely in C++ allowing to create C++ complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic
 
-* Building Feel++
+SOme basic installation procedure are available in the INSTALL.org file.
 
-Note that in-source builds of Feel++ are not possible.
+* Features
+ - 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
+ - continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
+ - domain specific embedded language in C++ for variational formulations
+ - interfaced with [http://www.mcs.anl.gov/petsc/ PETSc] for linear and non-linear solvers
+ - seamless parallel computations using PETSc
+ - interfaced with [http://www.grycap.upv.es/slepc/ SLEPc] for large-scale sparse standard and generalized eigenvalue  solvers
+ - supports [http://www.geuz.org/gmsh Gmsh] for mesh generation
+ - supports [http://www.geuz.org/gmsh Gmsh] for post-processing (including on high order geometries)
+ - supports [http://www.paraview.org Paraview] for post-processing
 
-** Out source build
+* Documentation
 
-#+begin_src:
-mkdir opt
-cd opt
-cmake <top level feel directory>
-make
-ctest
-#+end_src:
+ - [http://feelpp.googlecode.com/files/feel-manual.pdf Feel++ PDF Manual]
+ - [http://docs.feelpp.googlecode.com/git/html/index.html Feel++ Online Reference Manual]
+ - [http://code.google.com/p/feelpp/w/list Feel++ Wiki]
 
-More details in Feel++ manual and Feel++ website (http://www.feelpp.org)
+* Examples
+
+** Laplacian in 2D using P3 Lagrange basis functions
+
+Here is a full example to solve $-\Delta u = f in \Omega,\quad u=g on \partial \Omega$
+#+BEGIN_SRC C++
+#include <feel/feel.hpp>
+
+int main(int argc, char**argv )
+{
+ using namespace Feel;
+	Environment env( _argc=argc, _argv=argv,
+                     _desc=feel_options(),
+                     _about=about(_name="mymesh",
+                                  _author="Christophe Prud'homme",
+                                  _email="christophe.prudhomme@feelpp.org"));
+    auto mesh = unitSquare();
+    auto Vh = Pch<3>( mesh );
+    auto u = Vh->element();
+    auto v = Vh->element();
+
+    auto a = form2( _trial=Vh, _test=Vh );
+    a = integrate(_range=elements(mesh),
+                  _expr=gradt(u)*trans(grad(v)) );
+    auto l = form1( _test=Vh );
+    l = integrate(_range=elements(mesh),
+                  _expr=id(v));
+    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
+          _expr=constant(0.) );
+    a.solve(_rhs=l,_solution=u);
+
+    auto e = exporter( _mesh=mesh, _name="dirichlet_homogene" );
+    e->add( "u", u );
+    e->save();
+}
+#+END_SRC
+
+

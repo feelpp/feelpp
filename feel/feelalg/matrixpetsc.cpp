@@ -100,10 +100,17 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     for (int i=0; i<nrow; i++) rowMap[i] = rowIndex[i];
     for (int i=0; i<ncol; i++) colMap[i] = colIndex[i];
 
+#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
     CHKERRABORT( this->comm(),ierr );
     ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
     CHKERRABORT( this->comm(),ierr );
+#else
+    ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,&isrow);
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,&iscol);
+    CHKERRABORT( this->comm(),ierr );
+#endif
     PetscFree(rowMap);
     PetscFree(colMap);
 
@@ -273,16 +280,16 @@ void MatrixPetsc<T>::init ( const size_type m,
 
     MPI_Comm_rank ( this->comm(), &proc_id );
 
-    Debug( 7013 ) << "[MatrixPETSc::init()] m   = " << m << "\n";
-    Debug( 7013 ) << "[MatrixPETSc::init()] n   = " << n << "\n";
-    Debug( 7013 ) << "[MatrixPETSc::init()] m_l = " << m_l << "\n";
-    Debug( 7013 ) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
+    DVLOG(2) << "[MatrixPETSc::init()] m   = " << m << "\n";
+    DVLOG(2) << "[MatrixPETSc::init()] n   = " << n << "\n";
+    DVLOG(2) << "[MatrixPETSc::init()] m_l = " << m_l << "\n";
+    DVLOG(2) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
 
     // Make sure the sparsity pattern isn't empty
     //FEELPP_ASSERT ( this->graph()->size() == n_l )( this->graph()->size() )( n_l ).warn( "incompatible diagonal non zero pattern" );
-    Debug( 7013 ) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
-    Debug( 7013 ) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
-    Debug( 7013 ) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
+    DVLOG(2) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
+    DVLOG(2) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
+    DVLOG(2) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
 
     if ( m==0 )
         return;
@@ -751,7 +758,7 @@ void MatrixPetsc<T>::add ( const size_type i,
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );
 
     int ierr=0, i_val=i, j_val=j;
-    //Debug( 7013 ) << "[MatrixPetsc<>::add] adding value " << value << " at (" << i << "," << j << ")\n";
+    //DVLOG(2) << "[MatrixPetsc<>::add] adding value " << value << " at (" << i << "," << j << ")\n";
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
 
 
@@ -1305,7 +1312,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 
         else
         {
-            Debug( 7013 ) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
+            DVLOG(2) << "[MatrixPETSc::transpose] Petsc matrix is non-symmetric \n";
         }
     }
 
@@ -1994,7 +2001,7 @@ void MatrixPetscMPI<T>::add ( const size_type i,
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );
 
     int ierr=0, i_val=i, j_val=j;
-    //Debug( 7013 ) << "[MatrixPetsc<>::add] adding value " << value << " at (" << i << "," << j << ")\n";
+    //DVLOG(2) << "[MatrixPetsc<>::add] adding value " << value << " at (" << i << "," << j << ")\n";
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
 
     ierr = MatSetValuesLocal( this->mat(), 1, &i_val, 1, &j_val,

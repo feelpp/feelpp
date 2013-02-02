@@ -298,7 +298,7 @@ Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
     element_u_type& v = u;
     element_p_type& q = p;
 
-    Debug( 10000 ) << "[Oseen::Oseen] -(p,div v) + (q,div u)\n";
+    DVLOG(2) << "[Oseen::Oseen] -(p,div v) + (q,div u)\n";
     form2( _test=M_space, _trial=M_space, _matrix=M_matrixAu, _init=true ) =
         integrate( elements( M_mesh ),
                    - div( v ) * idt( p )
@@ -368,7 +368,7 @@ Oseen<Space, imOrder, Entity>::Oseen( const space_ptrtype& space,
     element_u_type& v = u;
     element_p_type& q = p;
 
-    Debug( 10000 ) << "[Oseen::Oseen] -(p,div v) + (q,div u)\n";
+    DVLOG(2) << "[Oseen::Oseen] -(p,div v) + (q,div u)\n";
     form2( _test=M_space, _trial=M_space, _matrix=M_matrixAu, _init=true ) =
         integrate( elements( M_mesh ),
                    - div( v ) * idt( p )
@@ -397,7 +397,7 @@ Oseen<Space, imOrder, Entity>::setDivDivCoeff( value_type divdivcoeff )
 
     if ( delta != 0.0 )
     {
-        Debug( 10000 ) << "[Oseen::set_divdivcoeff] (h gamma div u,div v)\n";
+        DVLOG(2) << "[Oseen::set_divdivcoeff] (h gamma div u,div v)\n";
         form2( _test=M_space, _trial=M_space, _matrix=M_matrixAu ) +=
             integrate( elements( M_mesh ),
                        h()*delta*div( v )*divt( u )
@@ -447,10 +447,10 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
     // --- right hand side rhs
 
     // rhs volume terms
-    Debug( 10000 ) << "[Oseen::update] (f,v)+(c,q)\n";
+    DVLOG(2) << "[Oseen::update] (f,v)+(c,q)\n";
     form1( M_space, M_vectorRhsFull, _init=true ) =
         integrate( elements( M_mesh ), val( trans( f ) )*id( v ) + val( c )*id( q ) );
-    Debug( 10000 ) << "[Oseen::update] (f,v)+(c,q) done\n";
+    DVLOG(2) << "[Oseen::update] (f,v)+(c,q) done\n";
 
     if ( M_weak_dirichlet )
     {
@@ -459,7 +459,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
                 diriEnd = M_dirichletFlags.end();
                 diriIter != diriEnd; ++diriIter )
         {
-            Debug( 10000 ) << "[Oseen::update] <bc(g),v>_Gamma_"
+            DVLOG(2) << "[Oseen::update] <bc(g),v>_Gamma_"
                            << *diriIter << "\n";
             form1( M_space, M_vectorRhsFull ) +=
                 integrate( markedfaces( M_mesh, *diriIter ),
@@ -470,7 +470,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
                              + val( bcCoeffVeloNorm )*( trans( id( v ) )*N() )*trans( N() ) )
                            * val( g )
                          );
-            Debug( 10000 ) << "[Oseen::update] <bc(g),v>_Gamma_"
+            DVLOG(2) << "[Oseen::update] <bc(g),v>_Gamma_"
                            << *diriIter << " done\n";
         }
     } // M_weak_dirichlet
@@ -478,19 +478,19 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
     // --- full matrix
 
     // incremental volume terms
-    Debug( 10000 ) << "[Oseen::update] adding (nu D(u),D(v)) + (sigma u,v)\n";
+    DVLOG(2) << "[Oseen::update] adding (nu D(u),D(v)) + (sigma u,v)\n";
     form2( M_space, M_space, _matrix=M_matrixAu ) +=
         integrate( itRange,
                    val( nuInc )*trace( grad( v )*( gradt( u )+trans( gradt( u ) ) ) )
                    + val( sigmaInc )*trans( id( v ) )*idt( u )
                  );
-    Debug( 10000 ) << "[Oseen::update] adding (nu D(u),D(v)) + (sigma u,v) done\n";
+    DVLOG(2) << "[Oseen::update] adding (nu D(u),D(v)) + (sigma u,v) done\n";
 
     //M_matrixFull = M_matrixAu;
     //M_matrixFull->addMatrix( 1.0, M_matrixAu );
 
     // convective terms
-    Debug( 10000 ) << "[Oseen::update] ((beta*grad)u,v)\n";
+    DVLOG(2) << "[Oseen::update] ((beta*grad)u,v)\n";
     form2( M_space, M_space, M_matrixFull, _init=true ) =
         integrate( elements( M_mesh ),
                    trans( id( v ) ) * ( gradt( u )*val( beta ) )
@@ -509,7 +509,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
 
             if ( M_stabCoeffDiv != 0.0 )
             {
-                Debug( 10000 ) << "[Oseen::update] <gamma_div [div u],[div v]>_Gamma_int\n";
+                DVLOG(2) << "[Oseen::update] <gamma_div [div u],[div v]>_Gamma_int\n";
                 form( M_space, M_space, M_matrixStab ) +=
                     integrate( internalfaces( M_mesh ), typename im<imOrder-1>::type(),
                                val( M_stabCoeffDiv * vf::pow( hFace(),2.0 ) *
@@ -520,7 +520,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
 
             if ( M_stabCoeffP != 0.0 )
             {
-                Debug( 10000 ) << "[Oseen::update] <gamma_p [grad p],[grad q]>_Gamma_int\n";
+                DVLOG(2) << "[Oseen::update] <gamma_p [grad p],[grad q]>_Gamma_int\n";
                 M_stabWeightP =
                     vf::project( M_space_i, elements( M_mesh ),
                                  M_stabCoeffP * vf::pow( h(),3.0 ) /
@@ -576,7 +576,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
 
     if ( M_pStab && ( M_stabCoeffP != 0.0 ) )
     {
-        Debug( 10000 ) << "[Oseen::update] added rhs stab\n";
+        DVLOG(2) << "[Oseen::update] added rhs stab\n";
         const int staborder = 2*pOrder-2;
         form( M_space, *M_vectorRhsFull ) +=
             integrate( internalfaces( M_mesh ), typename im<staborder>::type(),
@@ -593,7 +593,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
                              )
                          )
                      );
-        Debug( 10000 ) << "[Oseen::update] added rhs stab done\n";
+        DVLOG(2) << "[Oseen::update] added rhs stab done\n";
     }
 
 #endif
@@ -605,7 +605,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
     {
         if ( M_weak_dirichlet )
         {
-            Debug( 10000 ) << "[Oseen::update] <bc(u),v>_Gamma_"
+            DVLOG(2) << "[Oseen::update] <bc(u),v>_Gamma_"
                            << *diriIter << "\n";
             form2( M_space, M_space, M_matrixFull ) +=
                 integrate( markedfaces( M_mesh, *diriIter ),
@@ -618,7 +618,7 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
                            + val( bcCoeffVeloNorm )
                            * ( trans( id( v ) )*N() ) * ( trans( N() )*idt( u ) )
                          );
-            Debug( 10000 ) << "[Oseen::update] <bc(u),v>_Gamma_"
+            DVLOG(2) << "[Oseen::update] <bc(u),v>_Gamma_"
                            << *diriIter << " done\n";
         }
 
@@ -626,12 +626,12 @@ void Oseen<Space, imOrder, Entity>::update( const ItRange& itRange,
         {
             M_matrixFull->close();
             M_vectorRhsFull->close();
-            Debug( 10000 ) << "[Oseen::update] on(u)_Gamma_"
+            DVLOG(2) << "[Oseen::update] on(u)_Gamma_"
                            << *diriIter << "\n";
             form2( M_space, M_space, M_matrixFull ) +=
                 on( markedfaces( *M_mesh, *diriIter ),
                     u, *M_vectorRhsFull, g );
-            Debug( 10000 ) << "[Oseen::update] on(u)_Gamma_"
+            DVLOG(2) << "[Oseen::update] on(u)_Gamma_"
                            << *diriIter << "done \n";
         }
     }

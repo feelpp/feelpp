@@ -589,7 +589,7 @@ private:
             h( 0 ) = RefConv.vertex( 1 ) - RefConv.vertex( 0 );
             h( 1 ) = RefConv.vertex( 3 ) - RefConv.vertex( 0 );
 
-            Debug( 4005 ) << "n quad pts = " << n_quad_points( interior ) << "\n";
+            DVLOG(2) << "n quad pts = " << n_quad_points( interior ) << "\n";
             points_type G( Dim, n_quad_points( interior ) );
 
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
@@ -619,7 +619,7 @@ private:
             h( 2 ) = RefConv.vertex( 4 ) - RefConv.vertex( 0 );
 
             points_type G( Dim, n_hexa_points( interior ) );
-            Debug( 4005 ) << "n hexa pts = " << n_hexa_points( interior ) << "\n";
+            DVLOG(2) << "n hexa pts = " << n_hexa_points( interior ) << "\n";
 
             for ( int i = interior, p = 0; i < int( Order )+1-interior; ++i )
             {

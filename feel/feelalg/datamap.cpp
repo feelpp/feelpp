@@ -109,11 +109,11 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
         {
             // size of data per processor
             M_recvcounts[p] = local_sizes[p];
-            Debug( 5600 ) << "VectorUblas::init M_recvcounts[" <<p<< "]=" << M_recvcounts[p] << "\n";
+            DVLOG(2) << "VectorUblas::init M_recvcounts[" <<p<< "]=" << M_recvcounts[p] << "\n";
 
             // first index on the p-th processor
             M_displs[p] = _local_index;
-            Debug( 5600 ) << "VectorUblas::init M_displs[" <<p<< "]=" << M_displs[p] << "\n";
+            DVLOG(2) << "VectorUblas::init M_displs[" <<p<< "]=" << M_displs[p] << "\n";
 
             _local_index += local_sizes[p];
 
@@ -177,10 +177,10 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 #endif
 
     /*
-    Debug( 5600 ) << "        global size = " << this->size() << "\n";
-    Debug( 5600 ) << "        local  size = " << this->localSize() << "\n";
-    Debug( 5600 ) << "  first local index = " << this->firstLocalIndex() << "\n";
-    Debug( 5600 ) << "   last local index = " << this->lastLocalIndex() << "\n";
+    DVLOG(2) << "        global size = " << this->size() << "\n";
+    DVLOG(2) << "        local  size = " << this->localSize() << "\n";
+    DVLOG(2) << "  first local index = " << this->firstLocalIndex() << "\n";
+    DVLOG(2) << "   last local index = " << this->lastLocalIndex() << "\n";
     */
 
 }

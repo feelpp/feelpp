@@ -47,6 +47,7 @@
 
 // linear operators
 #include <feel/feeldiscr/operatorlinear.hpp>
+#include <feel/feeldiscr/operatorlagrangep1.hpp>
 
 // exporter
 #include <feel/feelfilters/exporter.hpp>
@@ -119,6 +120,7 @@ public:
     //! numerical type is double
     typedef double value_type;
 
+    typedef FunctionSpace<mesh_type, basis_t_type> t_space_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
@@ -157,17 +159,18 @@ public:
     // Definition de la procedure pour exporter les solutions
     void exportResults( boost::format, element_type& U, double t );
     void exportResults( element_type& U, int i );
-    
+
 private:
     void initLinearOperator( sparse_matrix_ptrtype& L );
     void initLinearOperator2( sparse_matrix_ptrtype& L );
     void updateJacobian1( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
     void updateJacobian2( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
 private:
-    
+
     backend_ptrtype M_backend;
 
     space_ptrtype Xh;
+    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::value_type> > P1h;
 
     oplin_ptrtype M_oplin;
     funlin_ptrtype M_lf;

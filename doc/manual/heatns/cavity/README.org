@@ -1,0 +1,101 @@
+#+TITLE: README
+
+* Natural convection in 3D
+
+** Finite element code
+
+The command line to execute the 3D finite element code to solve the natural
+convection problem in a cavity
+#+begin_src shell
+mpirun -np 24 ./feelpp_P3P2P3_heatns_natural_convection_cavity_3d \
+  --ksp-monitor=true \
+  --snes-monitor=true \
+  --hsize=0.075 \
+  --use_continuity=false \
+  --gr=1e7
+  --pr=0.1
+#+end_src
+
+ - =hsize= (numerical value, e.g. 0.1) set the characteristic mesh size
+
+ - =use_continuity= (boolean value, true|false) use continuation to help the non-linear solver to converge
+
+ - =gr= (numerical value: $[1e-2,1e7]$) set the Grashof number
+
+ - =pr= (numerical value: $[1e-2,1e7]$) set the Prandtl number
+
+** Reduced basis code
+
+*** Construction of the sampling WNmu which will be used to build the reduced basis
+
+The best way is to edit a file named "SamplingWN" and write :
+ mu_0= [ 1 , 1 ]
+ mu_1= [ 111112 , 1 ]
+ mu_2= [ 222223 , 1 ]
+ mu_3= [ 333334 , 1 ]
+ mu_4= [ 444445 , 1 ]
+ mu_5= [ 555556 , 1 ]
+ mu_6= [ 666667 , 1 ]
+ mu_7= [ 777778 , 1 ]
+ mu_8= [ 888889 , 1 ]
+ mu_9= [ 1e+06 , 1 ]
+mu_10= [ 8123 , 1 ]
+mu_11= [ 9123 , 1 ]
+mu_12= [ 1.123e4 , 1 ]
+mu_13= [ 2.123e4 , 1 ]
+mu_14= [ 4.123e4 , 1 ]
+mu_15= [ 912 , 1 ]
+mu_16= [ 1.123e3 , 1 ]
+mu_17= [ 4.123e3 , 1 ]
+mu_18= [ 7.123e4 , 1 ]
+mu_19= [ 2123 , 1 ]
+mu_20= [ 6.123e3 , 1 ]
+mu_21= [ 3.123e3 , 1 ]
+mu_22= [ 3.123e4 , 1 ]
+mu_23= [ 5.123e4 , 1 ]
+mu_24= [ 9.123e4 , 1 ]
+mu_25= [ 812 , 1 ]
+mu_26= [ 5.111e3 , 1 ]
+mu_27= [ 5.124e2 , 1 ]
+
+Then place this file where results will be. For example if use a mesh of size 0.025 on 10 procs, the track will be :
+feel/Convection/h_0.025/np_10/SamplingWNmu (note that the file SamplingWNmu has no extension, just "SamplingWNmu")
+
+*** Options
+
+In a parallel context it is important to load a mesh. you can then create a repository Mesh where you want (for example where the executable is) and put your mesh inside.
+which leads to :
+
+readMesh = 1
+mesh_name = /opt/doc/manual/heatns/cavity/Mesh/mymesh.msh
+
+then make sure that  :
+Convection.run.mode=2
+
+and then important crb options are :
+
+crb.cvg-study=false
+crb.rebuild-database=true
+crb.use-continuity=false
+crb.orthonormalize-primal=false
+crb.use-predefined-WNmu=true  #( will be read in file SamplingWNmu )
+
+Finally to specify on which parameters you want to evaluate your output, edit the file feelpp/feel/feelcrb/opusapp.hpp
+and search the example of use setElements function ( it is commented )
+use this function to specify parameters, for example 
+  for(int i=1; i<10; i++)        { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+  for(int i=10; i<100; i+=10)    { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+  for(int i=1e2; i<1e3; i+=1e2)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+  for(int i=1e3; i<1e4; i+=1e3)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+  for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+  for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+  UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
+
+After the run, a table will summary results.
+Note that in order to know if solvers have converged, the best thing is to redirect the print into a file (named my_run for example)
+
+
+*** Comande line to run a 2D simulation :
+
+mpirun -np 10 ./feelpp_P3P2P3_heatns_natural_convection_cavity_2d_crb --config-file=convection.cfg -ksp_monitor -snes_monitor -ksp_type gmres -pc_type gasm -sub_pc_type lu -sub_pc_factor_mat_solver_package mumps -pc_gasm_overlap 2 -snes_\
+rtol 1e-10 -snes_CONVERGED_REASON -ksp_CONVERGED_REASON

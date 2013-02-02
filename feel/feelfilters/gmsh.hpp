@@ -64,6 +64,10 @@ enum GMSH_PARTITIONER
     GMSH_PARTITIONER_METIS = 2
 
 };
+
+extern const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT;
+
+
 enum GMSH_ORDER
 {
     GMSH_ORDER_ONE = 1,
@@ -731,7 +735,7 @@ BOOST_PARAMETER_FUNCTION(
       ( rebuild_partitions,	(bool), false )
       ( rebuild_partitions_filename,	*, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_DEFAULT )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
         )
     )
@@ -1049,7 +1053,8 @@ BOOST_PARAMETER_FUNCTION(
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
         std::vector<std::string> depends_on_files;
-        algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
+        if ( !depends.empty() )
+            algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
         // copy include/merged files needed by geometry file
         boost::for_each( depends_on_files,
                          [&cp, &files_path]( std::string const& _filename )
@@ -1202,6 +1207,42 @@ unitSquare()
 }
 
 /**
+ * build a mesh of the unit circle using triangles
+ */
+template<int Ngeo=1>
+inline
+boost::shared_ptr<Mesh<Simplex<2,Ngeo> > >
+unitCircle()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<2,Ngeo> >,
+                          _desc=domain( _name="square",
+                                        _shape="ellipsoid",
+                                        _dim=2,
+                                        _xmin=-1,
+                                        _ymin=-1,
+                                        _h=Environment::vm(_name="mesh2d.hsize").template as<double>() ) );
+}
+
+/**
+ * build a mesh of the unit circle using triangles
+ */
+template<int Ngeo=1>
+inline
+boost::shared_ptr<Mesh<Simplex<3,Ngeo> > >
+unitSphere()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<3,Ngeo> >,
+                          _desc=domain( _name="sphere",
+                                        _shape="ellipsoid",
+                                        _dim=3,
+                                        _xmin=-1,
+                                        _ymin=-1,
+                                        _zmin=-1,
+                                        _h=Environment::vm(_name="mesh2d.hsize").template as<double>() ) );
+}
+
+
+/**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons
  */
 inline
@@ -1213,6 +1254,18 @@ unitCube()
                                         _shape="hypercube",
                                         _dim=3,
                                         _h=Environment::vm(_name="mesh3d.hsize").as<double>() ) );
+}
+
+template<int Dim>
+inline
+boost::shared_ptr<Mesh<Simplex<Dim> > >
+unitHypercube()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<Dim> >,
+                          _desc=domain( _name="hypercube",
+                                        _shape="hypercube",
+                                        _dim=Dim,
+                                        _h=Environment::vm(_name=(boost::format("mesh%1%d.hsize")%Dim).str()).template as<double>() ) );
 }
 
 

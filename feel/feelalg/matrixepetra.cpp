@@ -154,7 +154,7 @@ MatrixEpetra::init ( const size_type m,
 
         for ( ; it != en; ++it )
         {
-            Debug( 10010 ) << "[MatrixEpetra::init] row with gid/lid=("
+            DVLOG(2) << "[MatrixEpetra::init] row with gid/lid=("
                            << it->first << "/" << it->second.get<1>() << ")"
                            << " on proc : " << it->second.get<0>()
                            << " with nnz: " << it->second.get<2>().size() << "\n";
@@ -179,7 +179,7 @@ MatrixEpetra::init ( const size_type m,
             Feel::detail::ignore_unused_variable_warning( ierr );
 
             FEELPP_ASSERT( ierr == 0 )( ierr )( it->first )( it->second.get<0>() )( it->second.get<1>() )( it->second.get<2>().size() ).warn( "problem with Epetra_FECrsGraph::InsertGlobalIndices" );
-            //                 Debug( 10010 ) << "row = " << ii << " irow.size " << irow.size() <<  " ierr = " << ierr << "\n";
+            //                 DVLOG(2) << "row = " << ii << " irow.size " << irow.size() <<  " ierr = " << ierr << "\n";
         }
 
         //std::cout << "------------------------------------------------------------\n";
@@ -198,7 +198,7 @@ MatrixEpetra::init ( const size_type m,
         //std::cout << "Epetra graph: " << epetra_graph << "\n";
         Feel::detail::ignore_unused_variable_warning( ierr );
         FEELPP_ASSERT( ierr == 0 )( ierr ).warn ( "[MatrixEpetra::init] GlobalAssemble failed" );
-        Debug( 10010 ) << "Global assemble  ierr = " << ierr << "\n";
+        DVLOG(2) << "Global assemble  ierr = " << ierr << "\n";
         //epetra_graph.Print( std::cout );
         _M_mat = boost::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, epetra_graph ) );
 
@@ -231,7 +231,7 @@ MatrixEpetra::add ( const size_type i,
     {
         ierr=_M_mat->InsertGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
 
-        Debug( 10010 ) << "ERRORCODE SumIntoGlobalValues: " << ierr
+        DVLOG(2) << "ERRORCODE SumIntoGlobalValues: " << ierr
                        <<  " in M(" << i_val << "," << j_val << ") for value "
                        << epetra_value << ".\n";
     }
@@ -241,7 +241,7 @@ MatrixEpetra::add ( const size_type i,
     ierr = _M_mat->SumIntoGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
 
 #if 0
-    Debug( 10010 ) << "ERRORCODE SumIntoGlobalValues: " << ierr
+    DVLOG(2) << "ERRORCODE SumIntoGlobalValues: " << ierr
                    <<  " in M(" << i_val << "," << j_val << ") for value "
                    << epetra_value << ".\n";
 #endif
@@ -298,7 +298,7 @@ MatrixEpetra::printMatlab ( const std::string name ) const
     if ( !this->closed() )
         const_cast<MatrixEpetra*>( this )->close();
 
-    Debug( 10010 ) << "[printMatlab] print matrix in matlab file " << name << "\n";
+    DVLOG(2) << "[printMatlab] print matrix in matlab file " << name << "\n";
     //std::cout << "[printMatlab] print matrix in matlab file " << name << "\n";
 
     //this->printKonsole();
@@ -344,11 +344,11 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
     int start = rowMap.MinMyGID();
     int stop = rowMap.MaxMyGID()+1;
 
-    Debug( 10010 ) << "[MatrixEpetra::zeroRows] Number of rows to zero out (except diagonal) : " << rows.size() << "\n";
-    Debug( 10010 ) << "[MatrixEpetra::zeroRows] start : " << start << " stop  : " << stop << "\n";
+    DVLOG(2) << "[MatrixEpetra::zeroRows] Number of rows to zero out (except diagonal) : " << rows.size() << "\n";
+    DVLOG(2) << "[MatrixEpetra::zeroRows] start : " << start << " stop  : " << stop << "\n";
 
-    Debug( 10010 ) << "[MatrixEpetra::zeroRows] keep diag ? " << on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) << "\n";
-    Debug( 10010 ) << "[MatrixEpetra::zeroRows] on symmetric ? " << on_context.test( ON_ELIMINATION_SYMMETRIC ) << "\n";
+    DVLOG(2) << "[MatrixEpetra::zeroRows] keep diag ? " << on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) << "\n";
+    DVLOG(2) << "[MatrixEpetra::zeroRows] on symmetric ? " << on_context.test( ON_ELIMINATION_SYMMETRIC ) << "\n";
 
     Epetra_Vector Diagonal( rowMap );
     _M_mat->ExtractDiagonalCopy( Diagonal );
@@ -364,10 +364,10 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
             double* Values;
             int* Indices;
 
-            Debug( 10010 ) << "extract row gid: " << *rit << "( " << i << ") lid: " << myRow  << "\n";
+            DVLOG(2) << "extract row gid: " << *rit << "( " << i << ") lid: " << myRow  << "\n";
             //When doing ExtractMyRowView, Indices contain the local indices
             int ierr = _M_mat->ExtractMyRowView( myRow, NumEntries, Values, Indices );
-            Debug( 10010 ) << "ExtractGlobalRowView1  ierr = " << ierr << "\n";
+            DVLOG(2) << "ExtractGlobalRowView1  ierr = " << ierr << "\n";
             FEELPP_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ( "error in ExtractGlobalRowView" );
 
             if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
@@ -386,7 +386,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                     int NumRowEntries;
                     double *RowValues;
                     int *RowIndices;
-                    Debug( 10010 ) << "[zeroRows] working with row lid: " << Indices[j]
+                    DVLOG(2) << "[zeroRows] working with row lid: " << Indices[j]
                                    << " (" << *rit << ", " << i << ")"
                                    << " gid: " << rowMap.LID( Indices[j] )
                                    << " is_local: " << rowMap.MyLID( Indices[j] ) << "\n";
@@ -394,9 +394,9 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                     if ( rowMap.MyLID( Indices[j] ) )
                     {
                         int gid = Indices[j];
-                        Debug( 10010 ) << "[zeroRows] local, gid =" << gid << " lid = " << Indices[j] << "\n";
+                        DVLOG(2) << "[zeroRows] local, gid =" << gid << " lid = " << Indices[j] << "\n";
                         ierr = _M_mat->ExtractMyRowView( Indices[j], NumRowEntries, RowValues, RowIndices );
-                        Debug( 10010 ) << "ExtractMyRowView ierr = " << ierr << "\n";
+                        DVLOG(2) << "ExtractMyRowView ierr = " << ierr << "\n";
                         FEELPP_ASSERT( ierr == 0 )( ierr )( Indices[j] )( NumRowEntries ).warn ( "error in ExtractMyRowView/symm" );
                         bool found = false;
 

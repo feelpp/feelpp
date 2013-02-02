@@ -74,6 +74,19 @@
 #include <boost/preprocessor/facilities/identity.hpp>
 
 #include <boost/enable_shared_from_this.hpp>
+
+namespace Feel
+{
+const size_type EXTRACTION_KEEP_POINTS_IDS                = ( 1<<0 );
+const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
+const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
+const size_type EXTRACTION_KEEP_VOLUMES_IDS               = ( 1<<3 );
+const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_POINTS_IDS |
+                                                              EXTRACTION_KEEP_EDGES_IDS |
+                                                              EXTRACTION_KEEP_FACES_IDS |
+                                                              EXTRACTION_KEEP_VOLUMES_IDS );
+const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
+}
 #include <feel/feeldiscr/createsubmesh.hpp>
 
 namespace Feel
@@ -89,14 +102,6 @@ struct MeshMarkerName
 std::vector<MeshMarkerName> markerMap( int Dim );
 po::options_description mesh_options( int Dim, std::string const& prefix = "" );
 
-const size_type EXTRACTION_KEEP_POINTS_IDS                = ( 1<<0 );
-const size_type EXTRACTION_KEEP_EDGES_IDS                 = ( 1<<1 );
-const size_type EXTRACTION_KEEP_FACES_IDS                 = ( 1<<2 );
-const size_type EXTRACTION_KEEP_VOLUMES_IDS               = ( 1<<3 );
-const size_type EXTRACTION_KEEP_ALL_IDS                   = ( EXTRACTION_KEEP_POINTS_IDS |
-        EXTRACTION_KEEP_EDGES_IDS |
-        EXTRACTION_KEEP_FACES_IDS |
-        EXTRACTION_KEEP_VOLUMES_IDS );
 
 /**
  * partitioner base class
@@ -205,10 +210,19 @@ public:
 
     typedef boost::shared_ptr<P1_mesh_type> P1_mesh_ptrtype;
 
-    typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                              mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type, Tag > >,
-                              mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type, Tag > > >::type::type trace_mesh_type;
-    typedef typename boost::shared_ptr<trace_mesh_type> trace_mesh_ptrtype;
+    template<int TheTag>
+    struct trace_mesh
+    {
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                                  mpl::identity< Mesh< Simplex< GeoShape::nDim-1,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
+                                  mpl::identity< Mesh< Hypercube<GeoShape::nDim-1,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+        typedef boost::shared_ptr<type> ptrtype;
+        typedef boost::shared_ptr<const type> const_ptrtype;
+    };
+    typedef typename trace_mesh<Tag>::type trace_mesh_type;
+    typedef typename trace_mesh<Tag>::ptrtype trace_mesh_ptrtype;
+
+
     //@}
 
     /**
@@ -480,16 +494,20 @@ public:
      *
      * \todo make use of \c extraction_policies
      */
-    trace_mesh_ptrtype
+    template<int TheTag=Tag>
+    typename trace_mesh<TheTag>::ptrtype
     trace() const
     {
-        return trace(boundaryfaces(this->shared_from_this()));
+        return trace<TheTag>(boundaryfaces(this->shared_from_this()));
     }
 
     template<typename RangeT>
-    trace_mesh_ptrtype
+    typename trace_mesh<Tag>::ptrtype
     trace( RangeT const& range ) const;
 
+    template<typename RangeT, int TheTag>
+    typename trace_mesh<TheTag>::ptrtype
+    trace( RangeT const& range, mpl::int_<TheTag> ) const;
 
     template<typename Iterator>
     void createSubmesh( self_type& mesh,
@@ -816,28 +834,28 @@ private:
         {
             if ( Archive::is_saving::value )
             {
-                Debug( 4015 ) << "Serializing mesh(saving) ...\n";
-                Debug( 4015 ) << "encoding...\n";
+                DVLOG(2) << "Serializing mesh(saving) ...\n";
+                DVLOG(2) << "encoding...\n";
                 encode();
-                Debug( 4015 ) << "loading markers...\n";
+                DVLOG(2) << "loading markers...\n";
                 ar & M_markername;
-                Debug( 4015 ) << "loading pts...\n";
+                DVLOG(2) << "loading pts...\n";
                 ar & M_enc_pts;
-                Debug( 4015 ) << "loading faces...\n";
+                DVLOG(2) << "loading faces...\n";
                 ar & M_enc_faces;
-                Debug( 4015 ) << "loading elts...\n";
+                DVLOG(2) << "loading elts...\n";
                 ar & M_enc_elts;
             }
             if ( Archive::is_loading::value )
             {
-                Debug( 4015 ) << "Serializing mesh(loading) ...\n";
-                Debug( 4015 ) << "loading markers...\n";
+                DVLOG(2) << "Serializing mesh(loading) ...\n";
+                DVLOG(2) << "loading markers...\n";
                 ar & M_markername;
-                Debug( 4015 ) << "loading pts...\n";
+                DVLOG(2) << "loading pts...\n";
                 ar & M_enc_pts;
-                Debug( 4015 ) << "loading faces...\n";
+                DVLOG(2) << "loading faces...\n";
                 ar & M_enc_faces;
-                Debug( 4015 ) << "loading elts...\n";
+                DVLOG(2) << "loading elts...\n";
                 ar & M_enc_elts;
                 decode();
 
@@ -958,10 +976,10 @@ public:
             IsInitBoundaryFaces( false ),
             M_doExtrapolation( true )
         {
-            Debug(4015) << "[Mesh::Localization] create Localization tool\n";
+            DVLOG(2) << "[Mesh::Localization] create Localization tool\n";
             M_kd_tree->nbNearNeighbor( 15 );
             M_resultAnalysis.clear();
-            Debug(4015) << "[Mesh::Localization] create Localization tool done\n";
+            DVLOG(2) << "[Mesh::Localization] create Localization tool done\n";
         }
 
         Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
@@ -1211,6 +1229,8 @@ public:
 
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
+
+
     //@}
 
 protected:
@@ -1307,6 +1327,7 @@ private:
      * tool for localize point in the mesh
      */
     boost::shared_ptr<Localization> M_tool_localization;
+
 };
 
 template<typename Shape, typename T, int Tag>
@@ -1316,12 +1337,25 @@ const uint16_type Mesh<Shape, T, Tag>::nOrder;
 
 template<typename Shape, typename T, int Tag>
 template<typename RangeT>
-typename Mesh<Shape, T, Tag>::trace_mesh_ptrtype
+typename Mesh<Shape, T, Tag>::template trace_mesh<Tag>::ptrtype
 Mesh<Shape, T, Tag>::trace( RangeT const& range ) const
 {
-    Debug( 4015 ) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+    DVLOG(2) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                   << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
-    return Feel::createSubmesh( this->shared_from_this(), range );
+    return Feel::createSubmesh<const mesh_type,RangeT,Tag>( this->shared_from_this(), range );
+
+}
+
+template<int TheTag> struct Tag : public mpl::int_<TheTag>  {};
+
+template<typename Shape, typename T, int Tag>
+template<typename RangeT,int TheTag>
+typename Mesh<Shape, T, Tag>::template trace_mesh<TheTag>::ptrtype
+Mesh<Shape, T, Tag>::trace( RangeT const& range, mpl::int_<TheTag> ) const
+{
+    DVLOG(2) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
+    return Feel::createSubmesh<const mesh_type,RangeT,TheTag>( this->shared_from_this(), range );
 
 }
 
@@ -1335,7 +1369,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
 {
     Context policies( extraction_policies );
 
-    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] start\n";
+    DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] start\n";
     // make sure it is all empty
     new_mesh.clear();
     // inherit all the markers
@@ -1384,7 +1418,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
             {
                 new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
 
-                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] insert point " << old_elem.point( n ) << "\n";
+                DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] insert point " << old_elem.point( n ) << "\n";
 
                 point_type pt( old_elem.point( n ) );
                 pt.setId( n_new_nodes );
@@ -1392,7 +1426,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                 // Add this node to the new mesh
                 new_mesh.addPoint ( pt );
 
-                Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh.numPoints() << "\n";
+                DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh.numPoints() << "\n";
 
                 // Increment the new node counter
                 n_new_nodes++;
@@ -1407,7 +1441,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
             // Define this element's connectivity on the new mesh
             FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh.numPoints() ).error( "invalid connectivity" );
 
-            Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
+            DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
                           << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
                           << ") in element " << new_elem.id() << "\n";
 
@@ -1481,12 +1515,12 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
 
     new_mesh.setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 
-    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
+    DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
     new_mesh.components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     new_mesh.updateForUse();
 
-    Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] stop\n";
+    DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] stop\n";
 }
 
 
@@ -1565,12 +1599,12 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 if ( new_node_numbers[old_elem.point( n ).id()] == invalid_size_type_value )
                     {
                         new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
-                        Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point( n ) << "\n";
+                        DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point( n ) << "\n";
                         typename P1_mesh_type::point_type pt( old_elem.point( n ) );
                         pt.setId( n_new_nodes );
                         // Add this node to the new mesh
                         new_mesh->addPoint( pt );
-                        Debug( 4015 ) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
+                        DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
                         // Increment the new node counter
                         n_new_nodes++;
                         FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
@@ -1578,7 +1612,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                     }
             // Define this element's connectivity on the new mesh
             FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh->numPoints() ).error( "invalid connectivity" );
-            Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_elem.point( n ).id()
+            DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_elem.point( n ).id()
                           << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
                           << ") in element " << new_elem.id() << "\n";
             // add point in element
@@ -1754,7 +1788,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
     new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 
-    Debug( 4015 ) << "[Mesh<Shape,T>::createP1mesh] update face/edge info if necessary\n";
+    DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
     new_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     // run intensive job
