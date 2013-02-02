@@ -421,7 +421,7 @@
                 _M_left( expr.left(), geom, fev, feu ),                 \
                 _M_right( expr.right(), geom, fev, feu )                \
                     {                                                  \
-                        Debug( 5051 ) << "Operation " BOOST_PP_STRINGIZE( VF_OP_SYMBOL( O ) ) " is_zero " << is_zero::value << " " \
+                        DVLOG(2) << "Operation " BOOST_PP_STRINGIZE( VF_OP_SYMBOL( O ) ) " is_zero " << is_zero::value << " " \
                                       << "update_and_eval_left " << is_zero::update_and_eval_left << " " \
                                       << " update_and_eval_right " << is_zero::update_and_eval_right << " " \
                                       << " left_is_zero " << l_type::is_zero::value << " " \

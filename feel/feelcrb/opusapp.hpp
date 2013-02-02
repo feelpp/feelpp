@@ -58,7 +58,7 @@ std::string _o( std::string const& prefix, std::string const& opt )
 
 enum class SamplingMode
 {
-    RANDOM = 0, EQUIDISTRIBUTED = 1
+    RANDOM = 0, EQUIDISTRIBUTED = 1, LOGEQUIDISTRIBUTED = 2
 };
 
 #define prec 4
@@ -112,6 +112,8 @@ public:
 
     typedef CRBModel<ModelType> crbmodelbilinear_type;
 
+    typedef typename ModelType::parameter_type parameter_type;
+    typedef std::vector< parameter_type > vector_parameter_type;
     OpusApp()
         :
         super(),
@@ -220,6 +222,20 @@ public:
 
     void loadDB()
         {
+            bool use_predefined = this->vm()["crb.use-predefined-WNmu"].template as<bool>();
+            std::string file_name = ( boost::format("SamplingWNmu") ).str();
+            int NlogEquidistributed = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>();
+            int Nequidistributed = this->vm()["crb.use-equidistributed-WNmu"].template as<int>();
+            typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
+            if( NlogEquidistributed+Nequidistributed > 0 )
+            {
+                if( NlogEquidistributed > 0 )
+                    Sampling->logEquidistribute( NlogEquidistributed  );
+                if( Nequidistributed > 0 )
+                    Sampling->equidistribute( Nequidistributed  );
+                Sampling->writeOnFile(file_name);
+            }
+
             if ( M_mode == CRBModelMode::PFEM )
                 return;
 
@@ -252,9 +268,20 @@ public:
 
             if( crb->isDBLoaded() )
             {
+                bool do_offline = false;
                 int current_dimension = crb->dimension();
                 int dimension_max = this->vm()["crb.dimension-max"].template as<int>();
-                if( current_dimension < dimension_max )
+                int sampling_size = 0;
+                if( use_predefined )
+                    sampling_size = Sampling->readFromFile(file_name);
+
+                if( sampling_size > current_dimension )
+                    do_offline = true;
+
+                if( current_dimension < dimension_max && !use_predefined )
+                    do_offline=true;
+
+                if( do_offline )
                     crb->offline();
             }
         }
@@ -287,6 +314,10 @@ public:
 
             case SamplingMode::EQUIDISTRIBUTED:
                 Sampling->equidistribute( run_sampling_size  );
+                break;
+
+            case SamplingMode::LOGEQUIDISTRIBUTED:
+                Sampling->logEquidistribute( run_sampling_size  );
                 break;
             }
 
@@ -324,6 +355,40 @@ public:
             if( crb->useWNmu() )
                 Sampling = crb->wnmu();
 
+            /* Example of use of the setElements
+            vector_parameter_type V;
+            parameter_type UserMu( model->parameterSpace() );
+            //for(int i=1; i<10; i++)        { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=10; i<100; i+=10)    { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            for(int i=1e2; i<1e3; i+=1e2)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            for(int i=1e3; i<1e4; i+=1e3)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //UserMu(0)=1e4;  UserMu(1)=1; V.push_back(UserMu );
+            for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //UserMu(0)=1e5;  UserMu(1)=1; V.push_back(UserMu );
+            for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
+            //for(int i=1e6; i<1e7; i+=1e6)
+            //    UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );
+            //UserMu(0)=1e7;  UserMu(1)=1; V.push_back(UserMu );
+            //UserMu(0)=1e3;  UserMu(1)=1; V.push_back(UserMu );
+            Sampling->setElements( V );
+*/
+#if 0 //need more tests ...
+            if( this->vm()["crb.use-predefined-test-sampling"].template as<bool>() )
+            {
+                std::string file_name = ( boost::format("SamplingForTest") ).str();
+                std::ifstream file ( file_name );
+                if( file  )
+                {
+                    Sampling->readFromFile( file_name ) ;
+                }
+                else
+                    throw std::logic_error( "[OpusApp] file SamplingForTest was not found" );
+
+            }
+#endif
+
+
             //Statistics
             vectorN_type l2_error_vector( Sampling->size() );
             vectorN_type h1_error_vector( Sampling->size() );
@@ -333,6 +398,7 @@ public:
             vectorN_type relative_estimated_error_vector;
             if( crb->errorType()!=2 )
                 relative_estimated_error_vector.resize( Sampling->size() );
+
 
             BOOST_FOREACH( auto mu, *Sampling )
             {

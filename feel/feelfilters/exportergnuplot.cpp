@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-07-25
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -74,14 +74,14 @@ ExporterGnuplot<MeshType>::save() const
 {
     static int freq = 0;
 
-    Debug( 8007 ) << "[ExporterGnuplot] checking if frequency is ok\n";
+    DVLOG(2) << "[ExporterGnuplot] checking if frequency is ok\n";
 
     if ( freq++ % this->freq()  )
         return;
 
-    Debug( 8007 ) << "[ExporterGnuplot] frequency is ok\n";
+    DVLOG(2) << "[ExporterGnuplot] frequency is ok\n";
 
-    Debug( 8007 ) << "[ExporterGnuplot] save()...\n";
+    DVLOG(2) << "[ExporterGnuplot] save()...\n";
 
     std::stringstream data_stream_name;
     data_stream_name << this->prefix() << "_data";
@@ -166,7 +166,7 @@ ExporterGnuplot<MeshType>::save() const
 
     out.close();
 
-    Debug( 8007 ) << "[ExporterGnuplot] saving done\n";
+    DVLOG(2) << "[ExporterGnuplot] saving done\n";
 }
 
 

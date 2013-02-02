@@ -88,8 +88,8 @@ VectorEigen<T>::VectorEigen( VectorEigen const & m )
     super1( m ),
     _M_vec( m._M_vec )
 {
-    Debug( 5600 ) << "[VectorEigen] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
-    Debug( 5600 ) << "[VectorEigen] copy constructor with range: size:" << this->vec().size() << "\n";
+    DVLOG(2) << "[VectorEigen] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
+    DVLOG(2) << "[VectorEigen] copy constructor with range: size:" << this->vec().size() << "\n";
 }
 
 template <typename T>
@@ -164,12 +164,12 @@ VectorEigen<T>::init ( const size_type n,
     // Set the initialized flag
     this->M_is_initialized = true;
 
-    Debug( 5600 ) << "        global size = " << n << "\n";
-    Debug( 5600 ) << "        global size = " << n_local << "\n";
-    Debug( 5600 ) << "        global size = " << this->size() << "\n";
-    Debug( 5600 ) << "        local  size = " << this->localSize() << "\n";
-    Debug( 5600 ) << "  first local index = " << this->firstLocalIndex() << "\n";
-    Debug( 5600 ) << "   last local index = " << this->lastLocalIndex() << "\n";
+    DVLOG(2) << "        global size = " << n << "\n";
+    DVLOG(2) << "        global size = " << n_local << "\n";
+    DVLOG(2) << "        global size = " << this->size() << "\n";
+    DVLOG(2) << "        local  size = " << this->localSize() << "\n";
+    DVLOG(2) << "  first local index = " << this->firstLocalIndex() << "\n";
+    DVLOG(2) << "   last local index = " << this->lastLocalIndex() << "\n";
 
 
     // Zero the components unless directed otherwise
@@ -226,7 +226,7 @@ VectorEigen<T>::printMatlab( const std::string filename ) const
         if ( ( unsigned int ) i != filename.size() - 2 ||
                 filename[ i + 1 ] != 'm' )
         {
-            Debug( 5600 ) << "[VectorEigen::printMatlab] adding .m extension to given file name '"
+            DVLOG(2) << "[VectorEigen::printMatlab] adding .m extension to given file name '"
                           << filename << "'\n";
             name = filename + ".m";
         }
@@ -380,7 +380,7 @@ VectorEigen<T>::localize ( vector_type& v_local ) const
 
         MPI_Allreduce ( &v_local_in[0], &v_local[0], v_local.size(),
                         MPI_DOUBLE, MPI_SUM, this->comm() );
-        Debug( 5600 ) << "[VectorEigen::localize] Allreduce size = " << v_local.size() << "\n";
+        DVLOG(2) << "[VectorEigen::localize] Allreduce size = " << v_local.size() << "\n";
 
     }
 

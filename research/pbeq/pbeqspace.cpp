@@ -476,7 +476,7 @@ PbeqSpace::intvrho( molecule_type const& molecule,
                             //std::cout << "interpfunc :  " << interpfunc << "\n";
 
                             rhs->add( globaldof, atomcharges[dof] * interpfunc( comp, 0, 0 ) );
-                            // Debug(  ) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
+                            // DVLOG(2) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
                             //           << " (just added " << atomcharges[dof] * interpfunc( comp, 0, 0 ) << " )" << "\n";
                             v.setGlobalValue( globaldof, 0 );
 

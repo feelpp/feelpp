@@ -6,7 +6,7 @@
        Date: 2005-01-17
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006,2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -62,7 +62,7 @@ public:
         _M_left ( left ),
         _M_right ( right )
     {
-        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpDot ) "] default constructor\n";
+        DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpDot ) "] default constructor\n";
 
     }
     OpDot( OpDot const& op )
@@ -70,7 +70,7 @@ public:
         _M_left ( op._M_left ),
         _M_right ( op._M_right )
     {
-        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpDot ) "] copy constructor\n";
+        DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpDot ) "] copy constructor\n";
 
     }
 

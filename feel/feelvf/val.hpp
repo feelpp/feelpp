@@ -125,7 +125,7 @@ public:
         super( "value", functordomain_ptrtype( new UnboundedDomain<value_type>() ) ),
         _M_expr_1( __expr1 )
     {
-        Debug( 5051 ) << "Val::Val default constructorn";
+        DVLOG(2) << "Val::Val default constructorn";
     }
 
     Val( Val const& __vfp  )
@@ -133,7 +133,7 @@ public:
         super( "value", functordomain_ptrtype( new UnboundedDomain<value_type>() ) ),
         _M_expr_1( __vfp._M_expr_1 )
     {
-        Debug( 5051 ) << "Val::Val copy constructorn";
+        DVLOG(2) << "Val::Val copy constructorn";
     }
 
     bool isSymetric() const

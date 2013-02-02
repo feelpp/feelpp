@@ -67,7 +67,7 @@ void
 PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
 {
     int ierr = 0;
-    LOG(INFO) << "mat solver package before " << mspackt << "\n";
+    LOG_FIRST_N(INFO,10) << "mat solver package before " << mspackt << "\n";
 
     switch ( mspackt )
     {
@@ -212,7 +212,7 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
     }
     const MatSolverPackage t;
     ierr = PCFactorGetMatSolverPackage( pc, &t );
-    LOG(INFO) << "mat solver package is "  << t << "\n";
+    LOG_FIRST_N(INFO,10) << "mat solver package is "  << t << "\n";
 } // PetscPCFactorSetMatSolverPackage
 
 std::string

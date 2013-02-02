@@ -1,9 +1,11 @@
 # $Id$
 
 PortSystem	1.0
+PortGroup   conflicts_build 1.0
+PortGroup   active_variants 1.1
 
 name		petsc
-version     3.3-p1
+version     3.3-p5
 categories  math science
 maintainers	mmoll
 description	Portable, Extensible Toolkit for Scientific Computation
@@ -24,68 +26,86 @@ distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
 
-checksums           md5     712dce5c6e6669f2dfe628d48a92de62 \
-                    sha1    4c9a41c4cd930889314e698fdfdb26480b548f03 \
-                    rmd160  8ec915871f8d5463428c321d2af0a51b42ea730f
+checksums           rmd160  f11f9e7f8e60ad017f8b10ec26ad237b0be97a74 \
+                    sha256  8dc3bf5b8add6481a3d946b284838877b4402f7d0983c9cab5dc018a2793c83e
 
 depends_build-append  port:cmake
-depends_lib-append  port:openmpi port:scotch port:suitesparse
+depends_lib-append  port:hdf5-18 \
+                    port:libyaml\
+		    port:scotch\
+		    port:suitesparse
 
-configure.args  --with-python --with-debugging=0 \
-		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
-		--with-shared-libraries=0 --with-mpi=1 --PETSC_ARCH=darwin \
-		--prefix=${destroot}${prefix}/lib/petsc \
-		--with-cc=${prefix}/bin/openmpicc \
-		--with-cxx=${prefix}/bin/openmpicxx \
-		--with-mpiexec=${prefix}/bin/openmpiexec \
-        --with-lapack-lib=/usr/lib/liblapack.dylib \
-        --with-blas-lib=/usr/lib/libblas.dylib \
+require_active_variants hdf5-18 fortran
+
+configure.args      --prefix=${prefix}/lib/petsc \
+                    --with-mpi=1 \
+   		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
+		--with-shared-libraries=0 --PETSC_ARCH=darwin \
         --with-cholmod=1 --with-cholmod-include=${prefix}/include/ \
         --with-cholmod-lib=\[${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a\] \
         --with-umfpack=1 --with-umfpack-include=${prefix}/include/ \
         --with-umfpack-lib=\[${prefix}/lib/libumfpack.a,${prefix}/lib/libcholmod.a,${prefix}/lib/libcolamd.a,${prefix}/lib/libamd.a,${prefix}/lib/libsuitesparseconfig.a\] \
-        --download-ml \
-        --download-metis \
-        --download-parmetis \
-        --download-blacs \
-        --download-scalapack \
-        --download-mumps \
-        --with-ptscotch=1 --with-ptscotch-include=${prefix}/include/ \
-        --with-ptscotch-lib=\[${prefix}/lib/libptesmumps.a,${prefix}/lib/libptscotch.a,${prefix}/lib/libptscotcherr.a\] \
-		--with-fc=${prefix}/bin/openmpif90 \
-		--LIBS=-lstdc++
+                    --download-metis \
+                    --download-parmetis \
+                    --download-blacs \
+                    --download-scalapack \
+                    --download-mumps \
+                    --download-ptscotch \
+                    --with-hdf5-dir=${prefix} \
+                    --with-yaml-dir=${prefix}
+
+pre-configure {
+    if {![file exists ${prefix}/lib/libhdf5_fortran.a]} {
+        return -code error "Please install hdf5-18 with the +fortran variant enabled first."
+    }
+    configure.args-append \
+        --COPTFLAGS="${configure.optflags}" \
+        --CXXOPTFLAGS="${configure.optflags}" \
+        --FOPTFLAGS="${configure.optflags}" \
+        --LDFLAGS="${configure.ldflags}" \
+        --CFLAGS="${configure.cflags}" \
+        --CXXFLAGS="${configure.cxxflags}"
+}
+
+conflicts_build     petsc
+
+variant openmpi description {Build using the OpenMPI compiler} conflicts mpich2 {
+    depends_lib-append port:openmpi
+    configure.args-append \
+        --with-cc=${prefix}/bin/openmpicc \
+        --with-cxx=${prefix}/bin/openmpicxx \
+        --with-fc=${prefix}/bin/openmpif90 \
+        --with-mpiexec=${prefix}/bin/openmpiexec
+}
+
+variant mpich2 description {Build using the MPICH2 compiler} conflicts openmpi {
+    depends_lib-append port:mpich2
+    configure.args-append \
+        --with-cc=${prefix}/bin/mpicc \
+        --with-cxx=${prefix}/bin/picxx \
+        --with-fc=${prefix}/bin/mpif90 \
+        --with-mpiexec=${prefix}/bin/mpiexec
+}
+
+variant accelerate description {Use Accelerate framework for LAPACK} conflicts atlas {
+    configure.args-append \
+        --with-blas-lib=/usr/lib/libblas.dylib \
+        --with-lapack-lib=/usr/lib/liblapack.dylib
+}
+
+variant atlas description {Use Atlas for LAPACK} conflicts accelerate {
+    configure.args-append \
+        --with-blas-lapack-lib=${prefix}/lib/libtatlas.dylib
+}
+
+if {![variant_isset mpich2]} {
+    default_variants +openmpi
+}
+if {![variant_isset atlas]} {
+    default_variants +accelerate
+}
 
 destroot.destdir DESTDIR=${destroot}${prefix}/lib/petsc
-post-destroot {
-   reinplace "s|${destroot}${prefix}|${prefix}|g" ${destroot}${prefix}/lib/petsc/conf/RDict.db \
-                                                  ${destroot}${prefix}/lib/petsc/conf/petscrules \
-                                                  ${destroot}${prefix}/lib/petsc/conf/petscvariables \
-                                                  ${destroot}${prefix}/lib/petsc/conf/reconfigure-darwin.py \
-                                                  ${destroot}${prefix}/lib/petsc/conf/rules \
-                                                  ${destroot}${prefix}/lib/petsc/conf/test \
-                                                  ${destroot}${prefix}/lib/petsc/conf/variables \
-                                                  ${destroot}${prefix}/lib/petsc/include/petscconf.h
-   reinplace "s|${worksrcpath}|${prefix}/petsc|g" ${destroot}${prefix}/lib/petsc/include/petscconf.h \
-                                                  ${destroot}${prefix}/lib/petsc/include/petscmachineinfo.h \
-                                                  ${destroot}${prefix}/lib/petsc/conf/petscvariables \
-                                                  ${destroot}${prefix}/lib/petsc/conf/RDict.db
-}
-
-# disabled for now; no mpi support in fftw port yet
-# variant fftw description {build with fftw support} {
-#   configure.args-append   --with-fftw=1 --with-fftw-dir=${prefix}
-#   depends_lib-append  port:fftw-3
-# }
-
-variant hdf5 description {build with support for HDF5 file format} {
-    configure.args-append   --with-hdf5=1 --with-hdf5-dir=${prefix}
-    depends_lib-append	port:hdf5-18
-}
-
-variant debug description {build with debug support} {
-    configure.args-delete   --with-debugging=0
-    configure.args-append   --with-debugging=1
-}
 
 livecheck.type  regex
 livecheck.url   http://www.mcs.anl.gov/petsc/petsc-2/download/index.html

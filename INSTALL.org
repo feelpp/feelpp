@@ -1,0 +1,39 @@
+#+NAME: Feel++ Consortium
+#+EMAIL: feelpp-users@feelpp.org
+#+OPTIONS: LaTeX:t
+
+* Installation
+** Requirements
+
+ - G++ (>=4.5)
+ - Boost (>=1.46)
+ - PETSc (>=3.1)
+ - Gmsh
+
+** Options
+
+ - SLEPc (>=3.1), Library to solve standard and generalized eigenvalue problems.  
+   Note that the version of SLEPc installed depends on the version of PETSc 
+   (they have should the same release number), 
+ - ANN (>=1.1.2) Approximate Nearest Neighbor
+ - GLPK (>= 4.45) GNU Linear Programming ToolKit
+
+** Building Feel++
+
+Note that in-source builds of Feel++ are not possible.
+
+*** Out source build
+
+#+BEGIN_SRC shell
+mkdir opt
+cd opt
+cmake <top level feel directory>
+make
+#+END_SRC
+
+At the end of the process, you have
+ - the Feel++ libraries and its dependencies compiled
+ - a quickstart example solving $- \Delta u = f$ in $[0,1]^2$ with $u=g$ on $\partial \Omega$ 
+   located in the quickstart/ directory
+
+More details are available in Feel++ manual and Feel++ website (http://www.feelpp.org)

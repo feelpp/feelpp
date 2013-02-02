@@ -905,7 +905,7 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            Debug( 4015 ) << "Serializing Geoelement1D id: " << this->id() << "...\n";
+            DVLOG(2) << "Serializing Geoelement1D id: " << this->id() << "...\n";
             ar & boost::serialization::base_object<super>( *this );
             ar & boost::serialization::base_object<super2>( *this );
         }
@@ -1233,7 +1233,7 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            Debug( 4015 ) << "Serializing Geoelement2D id: " << this->id() << "...\n";
+            DVLOG(2) << "Serializing Geoelement2D id: " << this->id() << "...\n";
             ar & boost::serialization::base_object<super>( *this );
             ar & boost::serialization::base_object<super2>( *this );
             ar & M_edges;

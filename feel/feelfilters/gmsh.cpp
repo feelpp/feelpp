@@ -69,6 +69,11 @@ namespace Feel
 namespace fs = boost::filesystem;
 
 const char* FEELPP_GMSH_FORMAT_VERSION = "2.2";
+#if defined(HAVE_METIS)
+const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_METIS;
+#else
+const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT = GMSH_PARTITIONER_CHACO;
+#endif
 
 Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     :
@@ -80,7 +85,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_h( 0.1 ),
     M_addmidpoint( true ),
     M_usePhysicalNames( false ),
-    M_partitioner( GMSH_PARTITIONER_CHACO ),
+    M_partitioner( (GMSH_PARTITIONER)GMSH_PARTITIONER_DEFAULT ),
     M_partitions( worldComm.size() ),
     M_partition_file( 0 ),
     M_shear( 0 ),
@@ -176,8 +181,8 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
         boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
-        Debug( 10000 ) << "found hsize: " << regex_search(__geo, regex, boost::match_default) << "\n";
-        Debug( 10000 ) << "hstr: " << hstr.str() << "\n";
+        DVLOG(2) << "found hsize: " << regex_search(__geo, regex, boost::match_default) << "\n";
+        DVLOG(2) << "hstr: " << hstr.str() << "\n";
 
         _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all );
     }
@@ -195,7 +200,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
 
     if ( !fs::exists( __path ) )
     {
-        Debug( 10000 ) << "generating: " << __geoname.str() << "\n";
+        DVLOG(2) << "generating: " << __geoname.str() << "\n";
         std::ofstream __geofile( __geoname.str().c_str() );
         __geofile << _geo;
         __geofile.close();
@@ -239,13 +244,13 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         // generate mesh
         std::ostringstream __meshname;
         __meshname << __name << ".msh";
-        Debug( 10000 ) << "mesh file name: " << __meshname.str() << "\n";
-        Debug( 10000 ) << "does mesh file name exists ?: " << fs::exists( __meshname.str() ) << "\n";
+        LOG( INFO ) << "mesh file name: " << __meshname.str() << "\n";
+        LOG( INFO ) << "does mesh file name exists ?: " << fs::exists( __meshname.str() ) << "\n";
         fs::path __meshpath( __meshname.str() );
 
         if ( geochanged || __forceRebuild || !fs::exists( __meshpath ) )
         {
-            Debug( 10000 ) << "generating: " << __meshname.str() << "\n";
+            LOG( INFO ) << "generating: " << __meshname.str() << "\n";
 #if 0
 
             if ( __geo.find( "Volume" ) != std::string::npos )
@@ -267,7 +272,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         LOG(INFO) << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
         fname=__meshname.str();
     }
-
+    google::FlushLogFiles(INFO);
     if ( mpi::environment::initialized() )
     {
         mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
@@ -350,7 +355,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     LOG(INFO) << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
     CTX::instance()->partitionOptions.num_partitions =  M_partitions;
     CTX::instance()->partitionOptions.partitioner =  M_partitioner;
-
+    CTX::instance()->partitionOptions.mesh_dims[0] = M_partitions;
 
     CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
     CTX::instance()->mesh.lcExtendFromBoundary = 1;
@@ -384,9 +389,12 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
     for( int l = 0; l < M_refine_levels-1; ++l )
-        GModel::current()->refineMesh( M_order==1 );
+    {
+        LOG(INFO) << "refine mesh level : " << l << "\n";
+        GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+    }
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-    //std::cout << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
+    LOG(INFO) << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
     GModel::current()->writeMSH( _name+".msh" );
     //GModel::current()->destroy();
 #endif

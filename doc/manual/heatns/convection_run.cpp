@@ -58,10 +58,10 @@ Convection::run()
         std::string file_mesh = this->vm()["mesh_name"]. as<std::string>() ;;
         std::string complete_name = repository + file_mesh;
         std::cout << "Meshes read in file : " << complete_name <<std::endl;
-        
+
         mesh  =  loadGMSHMesh( _mesh=new mesh_type,
                               _filename=complete_name,
-                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );        
+                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
     }
     else{
         mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -85,6 +85,7 @@ Convection::run()
     timers["fspace"].first.restart();
     // Espace des fonctions et elements
     Xh = space_type::New( mesh );
+    P1h = lagrangeP1( _space=Xh->functionSpace<2>() );
 
     element_type U( Xh, "U" );
     element_type Un( Xh, "un" );
@@ -207,13 +208,24 @@ Convection::run()
     std::cout << "Grashof = " << M_current_Grashofs << "\n";
     std::cout << "Prandtl = " << M_current_Prandtl << "\n";
 
-    int N=std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1e-2 ) ) ) );
+    int N=1;
+
+    if ( option(_name="use_continuity").as<bool>() )
+        N = std::max( 1.0,std::max( std::ceil( std::log( gr ) ),std::ceil( std::log( pr )-std::log( 1e-2 ) ) ) );
 
     for ( int i = 0; i < N; ++i )
     {
-        int denom = ( N==1 )?1:N-1;
-        M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
-        M_current_Prandtl = math::exp( math::log( 1e-2 )+i*( math::log( pr )-math::log( 1e-2 ) )/denom );
+        if ( option(_name="use_continuity").as<bool>() )
+        {
+            int denom = ( N==1 )?1:N-1;
+            M_current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
+            M_current_Prandtl = math::exp( math::log( 1e-2 )+i*( math::log( pr )-math::log( 1e-2 ) )/denom );
+        }
+        else
+        {
+            M_current_Grashofs = gr;
+            M_current_Prandtl = pr;
+        }
 
         std::cout << "i/N = " << i << "/" << N <<std::endl;
         std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;

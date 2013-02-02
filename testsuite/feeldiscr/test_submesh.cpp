@@ -35,20 +35,7 @@
 #define BOOST_TEST_MODULE submesh testsuite
 #include <testsuite/testsuite.hpp>
 
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/options.hpp>
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelmesh/geoentity.hpp>
-#include <feel/feelmesh/refentity.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelmesh/filters.hpp>
-#include <feel/feelpoly/im.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-
-#include <feel/feelvf/vf.hpp>
+#include <feel/feel.hpp>
 
 const double DEFAULT_MESH_SIZE=0.1;
 
@@ -212,14 +199,169 @@ typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int
 //typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
+#if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
 {
+    if ( ( T::value == 1 ) &&
+         Feel::Environment::numberOfProcessors() > 1 )
+        return;
+
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D)" );
     Feel::test_submesh<double,T::value> t;
     t();
     BOOST_TEST_MESSAGE( "Test submesh (" << T::value << "D) done." );
 }
 
+typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim2_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
+{
+    using namespace Feel;
+    BOOST_TEST_MESSAGE( "Test submesh2 " << T::value << "D" );
+    auto mesh = unitHypercube<T::value>();
+    auto Xh = Pch<1>( mesh );
+
+    boost::mpi::timer t;
+    // with optimization
+    auto mesh2 = createSubmesh( mesh, boundaryelements( mesh ) );
+    auto Yh = Pch<1>( mesh2 );
+
+    auto opI=opInterpolation( _domainSpace=Xh,
+                              _imageSpace=Yh,
+                              _range=elements( mesh2 ) );
+    auto u1 = project( _space=Xh, _range=elements(mesh), _expr=sin(pi*Px()*Py()) );
+    auto u2 = Yh->element();
+    opI->apply( u1, u2 );
+
+    auto l2error = normL2( boundaryelements(mesh), idv(u1)-idv(u2) );
+    BOOST_CHECK_SMALL( l2error, 1e-14 );
+    auto t1 = t.elapsed();t.restart();
+    BOOST_TEST_MESSAGE( "Test submesh : elapsed time for optimized version : " << t1 << "s\n" );
+
+    // without optimization
+    t.restart();
+    auto mesh3 = createSubmesh( mesh, boundaryelements( mesh ), 0 );
+    auto Zh = Pch<1>( mesh3 );
+
+    auto opI2=opInterpolation( _domainSpace=Xh,
+                               _imageSpace=Zh,
+                               _range=elements( mesh3 ) );
+    auto u3 = Yh->element();
+    opI2->apply( u1, u3 );
+
+    auto l2error2 = normL2( boundaryelements(mesh), idv(u1)-idv(u3) );
+    BOOST_CHECK_SMALL( l2error2, 1e-14 );
+
+    auto t2 = t.elapsed();t.restart();
+    BOOST_TEST_MESSAGE( "Test submesh : elapsed time for non-optimized version : " << t2 << "s\n" );
+
+    BOOST_CHECK_GT( t2, t1 );
+
+    // with optimization
+    auto opI3=opInterpolation( _domainSpace=Yh,
+                               _imageSpace=Xh,
+                              _range=elements( mesh ) );
+    auto u4 = Xh->element();
+    opI3->apply( u2, u4 );
+
+    t1 = t.elapsed();t.restart();
+    l2error = normL2( boundaryelements(mesh), idv(u4)-idv(u2) );
+    BOOST_CHECK_SMALL( l2error, 1e-14 );
+    BOOST_TEST_MESSAGE( "Test submesh : elapsed time for optimized version (transpose) : " << t1 << "s\n" );
+
+    // without optimization
+    t.restart();
+    auto opI4=opInterpolation( _domainSpace=Zh,
+                               _imageSpace=Xh,
+                               _range=elements( mesh ) );
+    auto u5 = Xh->element();
+    opI4->apply( u3, u5 );
+
+    t2 = t.elapsed();t.restart();
+    l2error2 = normL2( boundaryelements(mesh), idv(u5)-idv(u3) );
+    BOOST_CHECK_SMALL( l2error2, 1e-14 );
+    BOOST_TEST_MESSAGE( "Test submesh : elapsed time for non-optimized version (transpose) : " << t2 << "s\n" );
+
+    BOOST_CHECK_GT( t2, t1 );
+
+    // exporter
+    auto e1 = exporter( _mesh=mesh, _name=(boost::format("mesh1-%1%d")%T::value).str() );
+    e1->add( "u1", u1 );
+    e1->add( "u4", u4 );
+    e1->add( "u5", u5 );
+    e1->save();
+    auto e2 = exporter( _mesh=mesh2, _name=(boost::format("mesh2-%1%d")%T::value).str() );
+    e2->add( "u2", u2 );
+    e2->add( "u3", u3 );
+    e2->save();
+
+
+    BOOST_TEST_MESSAGE( "Test submesh2 "  << T::value << "D done" );
+}
+#endif
+//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim2_types;
+typedef boost::mpl::list<boost::mpl::int_<2> > dim2_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
+{
+    using namespace Feel;
+    BOOST_TEST_MESSAGE( "Test submesh3 " << T::value << "D" );
+    auto mesh = unitHypercube<T::value>();
+    auto Xh = Pch<1>( mesh );
+    auto v = Xh->element();
+    v = project( _space=Xh, _range=elements(mesh), _expr=cst(1.) );
+
+    LOG(INFO) << "optimized version\n";
+    // with optimization
+    auto mesh2 = createSubmesh( mesh, elements( mesh ) );
+    auto Yh = Pch<2>( mesh2 );
+    auto u = Yh->element();
+
+    boost::mpi::timer t;
+
+    auto a = form2( _test=Xh, _trial=Yh );
+    a = integrate( _range=elements(mesh2), _expr=idt(u)*id(v) );
+    u = project( _space=Yh, _range=elements(mesh2), _expr=Px()*Py() );
+    double mass1 = a( v, u );
+    BOOST_CHECK_CLOSE( mass1, .25, 1e-13 );
+    BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
+
+    LOG(INFO) << "non optimized version\n";     google::FlushLogFiles(google::GLOG_INFO);
+    // with optimization
+    auto mesh3 = createSubmesh( mesh, allelements( mesh ), 0 );
+    LOG(INFO) << "mesh generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+    BOOST_CHECK_EQUAL( mesh->numElements(), mesh3->numElements() );
+    auto Zh = Pch<2>( mesh3 );
+    LOG(INFO) << "space generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+    auto w = Zh->element();
+    LOG(INFO) << "element generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+
+    t.restart();
+    auto b = form2( _test=Xh, _trial=Zh );
+    LOG(INFO) << "form generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+    b = integrate( _range=elements(mesh3), _expr=idt(w)*id(v) );
+    LOG(INFO) << "b computed\n";     google::FlushLogFiles(google::GLOG_INFO);
+    w = project( _space=Zh, _range=elements(mesh3), _expr=Px()*Py() );
+    LOG(INFO) << "w computed\n";     google::FlushLogFiles(google::GLOG_INFO);
+    double mass2 = b( v, w );
+    LOG(INFO) << "energy computed\n";     google::FlushLogFiles(google::GLOG_INFO);
+    BOOST_CHECK_CLOSE( mass2, .25, 1e-13 );
+    BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
+    //BOOST_CHECK_CLOSE( mass1, mass2, 1e-14 );
+
+    t.restart();
+    auto c = form1( _test=Xh );
+    c = integrate( _range=elements(mesh), _expr=idv(u)*id(v) );
+    double mass3 = c( v );
+    BOOST_CHECK_CLOSE( mass3, .25, 1e-13 );
+    BOOST_TEST_MESSAGE( "time linear form (opt) : " << t.elapsed() << "s\n" );
+
+    t.restart();
+    auto d = form1( _test=Xh );
+    d = integrate( _range=elements(mesh), _expr=idv(w)*id(v) );
+    double mass4 = d( v );
+    BOOST_CHECK_CLOSE( mass4, .25, 1e-13 );
+    BOOST_TEST_MESSAGE( "time linear form (non opt) : " << t.elapsed() << "s\n" );
+    BOOST_TEST_MESSAGE( "Test submesh3 "  << T::value << "D done" );
+}
 BOOST_AUTO_TEST_SUITE_END()
 
 #if 0
