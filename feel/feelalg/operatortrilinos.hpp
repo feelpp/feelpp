@@ -100,7 +100,7 @@ public:
         M_maxiter( 1000 ),
         M_tol( 1e-10 )
     {
-        Debug( 10100 ) << "Create operator " << Label() << " ...\n";
+        DVLOG(2) << "Create operator " << Label() << " ...\n";
     }
 
     OperatorMatrix( sparse_matrix_ptrtype const& F,
@@ -121,7 +121,7 @@ public:
         M_maxiter( 1000 ),
         M_tol( 1e-10 )
     {
-        Debug( 10100 ) << "Create operator " << Label() << " ...\n";
+        DVLOG(2) << "Create operator " << Label() << " ...\n";
 
         M_Solver->setOptions( options );
 
@@ -146,7 +146,7 @@ public:
         M_maxiter( tc.M_maxiter ),
         M_tol( tc.M_tol )
     {
-        Debug( 10100 ) << "Copy operator " << Label() << " ...\n";
+        DVLOG(2) << "Copy operator " << Label() << " ...\n";
     }
 
     bool hasInverse() const
@@ -170,11 +170,11 @@ public:
 
     int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
     {
-        Debug( 10100 ) << "Apply Operator " << Label() << "\n";
+        DVLOG(2) << "Apply Operator " << Label() << "\n";
 
         M_Matrix->multiply( false,X,Y );
 
-        Debug( 10100 ) << "Apply Operator " << Label() << " successfully\n";
+        DVLOG(2) << "Apply Operator " << Label() << " successfully\n";
         return !hasApply();
     }
 
@@ -194,7 +194,7 @@ public:
 
         std::pair<unsigned int, real_type> result;
 
-        Debug( 10100 ) << "Apply Inverse Operator " << Label() << "\n";
+        DVLOG(2) << "Apply Inverse Operator " << Label() << "\n";
 
         if ( M_Prec.get() != 0 )
             result = M_Solver->solve( *M_Matrix, M_Prec, Y, X, M_tol, M_maxiter );
@@ -202,7 +202,7 @@ public:
         else
             result = M_Solver->solve( *M_Matrix, Y, X, M_tol, M_maxiter );
 
-        Debug( 10100 ) << "Apply Inverse Operator " << Label() << " successfully\n";
+        DVLOG(2) << "Apply Inverse Operator " << Label() << " successfully\n";
 
         int result_integer = result.first;
 
@@ -254,7 +254,7 @@ public:
 
     ~OperatorMatrix()
     {
-        Debug( 10100 ) << "Destroyed matrix operator: " << this->Label() << " ...\n";
+        DVLOG(2) << "Destroyed matrix operator: " << this->Label() << " ...\n";
     };
 
 private:
@@ -298,7 +298,7 @@ public:
         M_F( F )
     {
         this->setName();
-        Debug( 10100 ) << "Create inverse operator " << this->Label() << "...\n";
+        DVLOG(2) << "Create inverse operator " << this->Label() << "...\n";
     }
 
     OperatorInverse( const OperatorInverse& tc )
@@ -306,7 +306,7 @@ public:
         M_F( tc.M_F ),
         M_Label( tc.M_Label )
     {
-        Debug( 10100 ) << "Copy inverse operator " << this->Label() << "...\n";
+        DVLOG(2) << "Copy inverse operator " << this->Label() << "...\n";
     }
 
     bool hasInverse() const
@@ -321,7 +321,7 @@ public:
 
     int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
     {
-        Debug( 10100 ) << "Apply matrix " << Label() << "\n";
+        DVLOG(2) << "Apply matrix " << Label() << "\n";
 
         FEELPP_ASSERT( hasApply() ).error( "This operator cannot be applied." );
         M_F->ApplyInverse( X,Y );
@@ -331,7 +331,7 @@ public:
 
     int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        Debug( 10100 ) << "ApplyInverse matrix " << Label() << "\n";
+        DVLOG(2) << "ApplyInverse matrix " << Label() << "\n";
 
         FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
@@ -384,7 +384,7 @@ public:
 
     ~OperatorInverse()
     {
-        Debug( 10100 ) << "Destroyed inverse operator: " << this->Label() << " ...\n";
+        DVLOG(2) << "Destroyed inverse operator: " << this->Label() << " ...\n";
     };
 
 private:
@@ -443,7 +443,7 @@ public:
         t.append( "*" );
         t.append( u );
         M_Label = t;
-        Debug( 10100 ) << "Create operator " << Label() << " ...\n";
+        DVLOG(2) << "Create operator " << Label() << " ...\n";
     }
 
     OperatorCompose( const OperatorCompose& tc )
@@ -452,7 +452,7 @@ public:
         M_G( tc.M_G ),
         M_Label( tc.M_Label )
     {
-        Debug( 10100 ) << "Copy operator " << Label() << " ...\n";
+        DVLOG(2) << "Copy operator " << Label() << " ...\n";
     }
 
     bool hasInverse() const
@@ -469,7 +469,7 @@ public:
     {
         FEELPP_ASSERT( hasApply() ).error( "This operator cannot be applied." );
 
-        Debug( 10100 ) << "Apply operator " << Label() << " ...\n";
+        DVLOG(2) << "Apply operator " << Label() << " ...\n";
 
         Epetra_MultiVector Z( M_G->OperatorRangeMap(), 1 );
 
@@ -483,7 +483,7 @@ public:
     {
         FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
-        Debug( 10100 ) << "Apply Inverse operator " << Label() << " ...\n";
+        DVLOG(2) << "Apply Inverse operator " << Label() << " ...\n";
 
         Epetra_MultiVector Z( X );
 
@@ -538,7 +538,7 @@ public:
 
     ~OperatorCompose()
     {
-        Debug( 10100 ) << "Destroyed compose operator: " << this->Label() << " ...\n";
+        DVLOG(2) << "Destroyed compose operator: " << this->Label() << " ...\n";
     };
 
 private:
@@ -589,7 +589,7 @@ public:
 
         M_Label = temp;
 
-        Debug( 10100 ) << "Create scale operator " << Label() << " ...\n";
+        DVLOG(2) << "Create scale operator " << Label() << " ...\n";
     }
 
     OperatorScale( op1_ptrtype& F, double alpha )
@@ -605,7 +605,7 @@ public:
 
         M_Label = temp;
 
-        Debug( 10100 ) << "Create scale operator " << Label() << " ...\n";
+        DVLOG(2) << "Create scale operator " << Label() << " ...\n";
     }
 
     OperatorScale( const OperatorScale& tc )
@@ -614,7 +614,7 @@ public:
         M_alpha( tc.M_alpha ),
         M_Label( tc.M_Label )
     {
-        Debug( 10100 ) << "Copy scale operator " << Label() << " ...\n";
+        DVLOG(2) << "Copy scale operator " << Label() << " ...\n";
     }
 
     bool hasInverse() const
@@ -631,7 +631,7 @@ public:
 
     int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
     {
-        Debug( 10100 ) << "Apply scale operator " << Label() << "\n";
+        DVLOG(2) << "Apply scale operator " << Label() << "\n";
 
         M_F->Apply( X,Y );
 
@@ -642,7 +642,7 @@ public:
 
     int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        Debug( 10100 ) << "ApplyInverse scale operator " << Label() << "\n";
+        DVLOG(2) << "ApplyInverse scale operator " << Label() << "\n";
 
         FEELPP_ASSERT( hasInverse() && ( M_alpha != 0 ) ).error( "This operator cannot be inverted." );
 
@@ -698,7 +698,7 @@ public:
 
     ~OperatorScale()
     {
-        //Debug(10100) << "Destroyed scale operator: " << Label() << " ...\n";
+        //DVLOG(2) << "Destroyed scale operator: " << Label() << " ...\n";
     };
 
 private:
@@ -741,7 +741,7 @@ public:
         M_useTranspose( F->UseTranspose() ),
         M_label( F->Label() )
     {
-        Debug( 10100 ) << "Create operator " << Label() << " ...\n";
+        DVLOG(2) << "Create operator " << Label() << " ...\n";
     }
 
     OperatorFree( operator_ptrtype F, prec_ptrtype Prec, list_type options )
@@ -754,7 +754,7 @@ public:
         M_label( F->Label() ),
         M_Prec( Prec )
     {
-        Debug( 10100 ) << "Create operator " << Label() << " ...\n";
+        DVLOG(2) << "Create operator " << Label() << " ...\n";
         M_tol = options.get( "tol", 1e-7 );
         M_maxiter = options.get( "max_iter", 100 );
 
@@ -772,7 +772,7 @@ public:
         M_label( tc.M_label ),
         M_Prec( tc.M_Prec )
     {
-        Debug( 10100 ) << "Copy operator " << Label() << " ...\n";
+        DVLOG(2) << "Copy operator " << Label() << " ...\n";
     }
 
 
@@ -789,22 +789,22 @@ public:
 
     int Apply( const Epetra_MultiVector & X, Epetra_MultiVector & Y ) const
     {
-        Debug( 10100 ) << "Apply operator " << Label() << "\n";
+        DVLOG(2) << "Apply operator " << Label() << "\n";
         M_op->Apply( X,Y );
-        Debug( 10100 ) << "Finished Apply operator " << Label() << "\n";
+        DVLOG(2) << "Finished Apply operator " << Label() << "\n";
 
         return !hasApply();
     }
 
     int ApplyInverse ( const Epetra_MultiVector& X, Epetra_MultiVector& Y ) const
     {
-        Debug( 10100 ) << "ApplyInverse operator " << Label() << "\n";
+        DVLOG(2) << "ApplyInverse operator " << Label() << "\n";
 
         FEELPP_ASSERT( hasInverse() ).error( "This operator cannot be inverted." );
 
         std::pair<unsigned int, real_type> result = M_Solver->solve( M_op, M_Prec, Y, X, M_tol, M_maxiter );
 
-        Debug( 10100 ) << "Finished ApplyInverse operator " << Label() << "\n";
+        DVLOG(2) << "Finished ApplyInverse operator " << Label() << "\n";
         return !hasInverse();
     }
 
@@ -853,7 +853,7 @@ public:
 
     ~OperatorFree()
     {
-        Debug( 10100 ) << "Destroyed operator: " << Label() << " ...\n";
+        DVLOG(2) << "Destroyed operator: " << Label() << " ...\n";
     };
 
 private:

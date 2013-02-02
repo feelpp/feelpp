@@ -258,6 +258,12 @@ public:
     //@{
 
     /**
+     * find the nearest neighbor of mu in the sampling WNmu
+     * return th neighbor and the index of this neighbor in WNmu
+     */
+    void findNearestNeighborInWNmu( parameter_type const& mu, parameter_type & neighbor, int & index ) const;
+
+    /**
      * Returns the lower bound of the output
      *
      * \param mu \f$ \mu\f$ the parameter at which to evaluate the output
@@ -518,7 +524,6 @@ CRBTrilinear<TruthModelType>::offline()
     double delta_pr;
     double delta_du;
     size_type index;
-    int no_residual_index;
     //if M_N == 0 then there is not an already existing database
     if ( rebuild_database || M_N == 0)
     {
@@ -576,7 +581,6 @@ CRBTrilinear<TruthModelType>::offline()
         M_maxerror = 1e10;
         delta_pr = 0;
         delta_du = 0;
-        no_residual_index = 0;
         //boost::tie( M_maxerror, mu, index ) = maxErrorBounds( N );
 
         LOG(INFO) << "[CRB::offline] allocate reduced basis data structures\n";
@@ -605,7 +609,6 @@ CRBTrilinear<TruthModelType>::offline()
     else
     {
         mu = M_current_mu;
-        no_residual_index=M_no_residual_index;
         if( proc_number == 0 )
         {
             std::cout<<"we are going to enrich the reduced basis"<<std::endl;
@@ -619,7 +622,6 @@ CRBTrilinear<TruthModelType>::offline()
     LOG(INFO) << "[CRBTrilinear::offline] compute affine decomposition\n";
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm_tril;
-    std::vector< std::vector<sparse_matrix_ptrtype> > trilinear_form;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
 
     boost::tie( boost::tuples::ignore, Aqm, Fqm , boost::tuples::ignore ) = M_model->computeAffineDecomposition();
@@ -630,11 +632,36 @@ CRBTrilinear<TruthModelType>::offline()
 
     bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
 
-    sampling_ptrtype Sampling;
-    int sampling_size=no_residual_index+1;
+    bool use_predefined_WNmu = this->vm()["crb.use-predefined-WNmu"].template as<bool>() ;
+    int N_log_equi = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>() ;
+    int N_equi = this->vm()["crb.use-equidistributed-WNmu"].template as<int>() ;
 
+    if( N_log_equi > 0 || N_equi > 0 )
+        use_predefined_WNmu = true;
 
-    if( M_error_type == CRB_NO_RESIDUAL )
+    if ( use_predefined_WNmu )
+    {
+        std::string file_name = ( boost::format("SamplingWNmu") ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+        {
+            throw std::logic_error( "[CRBTrilinear::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
+        }
+        else
+        {
+            M_WNmu->clear();
+            int sampling_size = M_WNmu->readFromFile(file_name);
+            M_iter_max = sampling_size;
+        }
+        mu = M_WNmu->at( M_N ); // first element
+        //std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
+
+        if( proc_number == this->worldComm().masterRank() )
+            std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
+
+    }
+
+    if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
         //in this case it makes no sens to check the estimated error
         M_maxerror = 1e10;
@@ -644,7 +671,7 @@ CRBTrilinear<TruthModelType>::offline()
     LOG(INFO) << "[CRBTrilinear::offline] strategy "<< M_error_type <<"\n";
     if( proc_number == 0 ) std::cout << "[CRBTrilinear::offline] strategy "<< M_error_type <<"\n";
 
-    while ( M_maxerror > M_tolerance && M_N < M_iter_max && no_residual_index<sampling_size )
+    while ( M_maxerror > M_tolerance && M_N < M_iter_max )
     {
 
         boost::timer timer, timer2;
@@ -671,7 +698,10 @@ CRBTrilinear<TruthModelType>::offline()
         if( proc_number == this->worldComm().masterRank() ) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
         timer2.restart();
 
-        M_WNmu->push_back( mu, index );
+
+        if( ! use_predefined_WNmu )
+            M_WNmu->push_back( mu, index );
+
         M_WNmu_complement = M_WNmu->complement();
 
         M_WN.push_back( *u );
@@ -744,6 +774,7 @@ CRBTrilinear<TruthModelType>::offline()
                 //bring back the matrix associated to the trilinear form for a given basis function
                 //we do this here to use only one matrix
                 trilinear_form  = M_model->computeTrilinearForm( M_WN[k] );
+
                 M_Aqm_tril_pr[q][k].conservativeResize( M_N, M_N );
                 for ( int i = 0; i < M_N; ++i )
                 {
@@ -757,23 +788,34 @@ CRBTrilinear<TruthModelType>::offline()
 
         timer2.restart();
 
-        bool already_exist;
-        do
+        if ( ! use_predefined_WNmu )
         {
-            //initialization
-            already_exist=false;
-            //pick randomly an element
-            mu = M_Dmu->element();
-            //make sure that the new mu is not already is M_WNmu
-            BOOST_FOREACH( auto _mu, *M_WNmu )
+            bool already_exist;
+            do
             {
-                if( mu == _mu )
-                    already_exist=true;
+                //initialization
+                already_exist=false;
+                //pick randomly an element
+                mu = M_Dmu->element();
+                //make sure that the new mu is not already is M_WNmu
+                BOOST_FOREACH( auto _mu, *M_WNmu )
+                {
+                    if( mu == _mu )
+                        already_exist=true;
+                }
+            }
+            while( already_exist );
+            M_current_mu = mu;
+        }
+        else
+        {
+            //remmber that in this case M_iter_max = sampling size
+            if( M_N < M_iter_max )
+            {
+                mu = M_WNmu->at( M_N );
+                M_current_mu = mu;
             }
         }
-        while( already_exist );
-
-        M_current_mu = mu;
 
         M_rbconv.insert( convergence( M_N, boost::make_tuple(M_maxerror,delta_pr,delta_du) ) );
 
@@ -817,9 +859,22 @@ CRBTrilinear<TruthModelType>::offline()
 
 
 template<typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::findNearestNeighborInWNmu( parameter_type const& mu, parameter_type & neighbor, int & index ) const
+{
+    std::vector<int> index_vector;
+    sampling_ptrtype S =  M_WNmu->searchNearestNeighbors( mu, 1 , index_vector);
+    neighbor = S->at( 0 );
+    index = index_vector[0];
+    //std::cout<<"[CRBTrilinear::findNearestNeighborInWNmu] for Gr = "<<mu(0)<<" th nearest neighbor in WNmu is "<<neighbor(0)<<" at index "<<index<<std::endl;
+}
+
+template<typename TruthModelType>
 boost::tuple<double,double>
 CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN ) const
 {
+
+    std::cout<<"\nCRBTrilinear::lb starts with N = "<<N<<std::endl;
     google::FlushLogFiles(google::GLOG_INFO);
 
     if ( N > M_N ) N = M_N;
@@ -846,7 +901,21 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 
     vectorN_type R( (int) N );
     matrixN_type J( (int) N , (int) N );
+
+    //initialization of uN
+    //we look for the nearest neighbor of mu in the sampling WNmu
+    //let i the index of this neighbor in WNmu, we will set zeros in uN except at the i^th component where we will set 1
     uN.setZero( (int) N );
+    parameter_type neighbor( M_Dmu );
+    int index;
+    findNearestNeighborInWNmu(  mu,  neighbor, index );
+    if( this->vm()["crb.cvg-study"].template as<bool>() == true )
+    {
+        //in this case, index may be smaller than uN.size
+        //so we do nothing
+    }
+    else
+        uN( index ) = 1;
 
     double *r_data = R.data();
     double *j_data = J.data();
@@ -875,25 +944,24 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
             int denom = ( Nmax==1 )?1:Nmax-1;
             current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
             current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
+            std::cout << "[CRBTrilinear::lb] i/N = " << i+1 << "/" << Nmax <<std::endl;
+            std::cout << "[CRBTrilinear::lb] intermediary Grashof = " << current_Grashofs<<std::endl;
+            std::cout << "[CRBTrilinear::lb] and Prandtl = " << current_Prandtl <<" \n" <<std::endl;
         }
         else
         {
             current_Grashofs = gr;
             current_Prandtl = pr;
         }
-        //std::cout << "[CRBTrilinear::lb] i/N = " << i+1 << "/" << Nmax <<std::endl;
-        //std::cout << "[CRBTrilinear::lb] intermediary Grashof = " << current_Grashofs<<std::endl;
-        //std::cout << "[CRBTrilinear::lb] and Prandtl = " << current_Prandtl <<" \n" <<std::endl;
 
         current_mu << current_Grashofs, current_Prandtl;
 
-        M_model->computeBetaQm( current_mu );
         this->updateLinearTerms( current_mu , N );
 
         //M_nlsolver->setRelativeResidualTol( 1e-12 );
         M_nlsolver->map_dense_jacobian = boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2  , current_mu , N );
         M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , current_mu , N );
-
+        M_nlsolver->setType( TRUST_REGION );
         M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
     }
 
@@ -934,6 +1002,8 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 
     google::FlushLogFiles(google::GLOG_INFO);
 
+    //std::cout<<"[CRBTrilinear uN] : \n"<<uN<<std::endl;
+
     return boost::make_tuple( output, condition_number );
 
 }
@@ -973,14 +1043,18 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
     LOG(INFO) << "updateJacobian \n";
     map_J = M_bilinear_terms;
 
-    for ( size_type q = 0; q < M_model->QaTri(); ++q )
+    bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
+    if( enable )
     {
-        for (int k = 0 ; k < N; ++k)
+        for ( size_type q = 0; q < M_model->QaTri(); ++q )
         {
-            for ( int i = 0; i < N; ++i )
+            for (int k = 0 ; k < N; ++k)
             {
-                map_J( i, k ) += ( M_Aqm_tril_pr[q][k].row( i ).head( N ) ).dot(map_X);
-                //map_J( i, k ) += ( (M_Aqm_tril_pr[q][k].col( i ).head( N ) ).transpose() ).dot(map_X);
+                for ( int i = 0; i < N; ++i )
+                {
+                    map_J( i, k ) += ( M_Aqm_tril_pr[q][k].row( i ).head( N ) ).dot(map_X);
+                    map_J( i, k ) += ( M_Aqm_tril_pr[q][k].col( i ).head( N ) ).dot(map_X);
+                }
             }
         }
     }
@@ -1023,17 +1097,21 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     map_R = M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
-    for ( size_type q = 0; q < M_model->QaTri(); ++q )
+    bool enable = this->vm()["crb.enable-convection-terms"].template as<bool>();
+    if( enable )
     {
-        for (int k = 0 ; k < N; ++k)
+        for ( size_type q = 0; q < M_model->QaTri(); ++q )
         {
-            for ( int i = 0; i < N; ++i )
+            for (int k = 0 ; k < N; ++k)
             {
-                temp( k, i ) += 0.5*map_X.dot( M_Aqm_tril_pr[0][k].row( i ).head( N ) ) ;
+                for ( int i = 0; i < N; ++i )
+                {
+                    temp( k, i ) = map_X.dot( M_Aqm_tril_pr[q][k].row( i ).head( N ) ) ;
+                }
             }
+            map_R += temp * map_X ;
         }
     }
-    map_R += temp * map_X ;
 
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
@@ -1111,10 +1189,10 @@ CRBTrilinear<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
     if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for WN="
+    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
+    DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN="
                     << wn.size() << "\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] starting ...\n";
+    DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
 
     for ( size_type i = 0; i < N; ++i )
     {
@@ -1132,8 +1210,8 @@ CRBTrilinear<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
         wn[i].scale( 1./__rii_pr );
     }
 
-    Debug ( 12000 ) << "[CRB::orthonormalize] finished ...\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] copying back results in basis\n";
+    DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
+    DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
     if ( this->vm()["crb.check.gs"].template as<int>() )
         checkOrthonormality( N , wn );
@@ -1170,7 +1248,7 @@ CRBTrilinear<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) c
     }
 
     A -= I;
-    Debug( 12000 ) << "orthonormalization: " << A.norm() << "\n";
+    DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
     if( this->worldComm().globalRank() == this->worldComm().masterRank() )
         std::cout << "    o check : " << A.norm() << " (should be 0)\n";
     //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");

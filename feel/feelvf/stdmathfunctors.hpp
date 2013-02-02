@@ -193,7 +193,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
             _M_expr_1( __expr1 )                                        \
             {                                                           \
-                Debug( 5051 ) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) default constructor\n"; \
+                DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) default constructor\n"; \
             }                                                           \
                                                                         \
         VF_FUNC_NAME(O)( VF_FUNC_NAME(O) const& __vfp  )                \
@@ -201,7 +201,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
             _M_expr_1( __vfp._M_expr_1 )                                \
                 {                                                       \
-                    Debug( 5051 ) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) copy constructor\n"; \
+                    DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) copy constructor\n"; \
                 }                                                       \
                                                                         \
         bool isSymetric() const { return false; }                       \
@@ -211,6 +211,16 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             for( int i = 0; i < nx; ++i )                               \
                 f[i] = VF_FUNC_IMPL(O)( x[i] );                         \
         }                                                               \
+        template<typename TheExpr>                                      \
+        struct Lambda                                                   \
+        {                                                               \
+            typedef VF_FUNC_NAME( O )<TheExpr> type;                    \
+        };                                                              \
+                                                                        \
+        template<typename TheExpr>                                        \
+            typename Lambda<TheExpr>::type                               \
+        operator()( TheExpr const& e ) { return VF_FUNC_NAME(O)<TheExpr>( e ); } \
+                                                                        \
                                                                         \
         expression_1_type const& expression() const { return _M_expr_1; } \
                                                                         \

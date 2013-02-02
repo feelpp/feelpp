@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -378,9 +378,9 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
                 n_crosses_def, n_crosses_indef, n_truss_exit_def, n_truss_exit_indef;
             value_type _s_til_x_G_til_x_s_til, phi_til, rho, Delta_used = Delta;
 
-            Debug( 8700 ) << "\n===================== iter = " << iter << " ===========================";
-            //Debug( 8700 ) << "\nx = " << x << "\n";
-            Debug( 8700 ) << "\n -> norm_Tgrad_fx = " << norm_Tgrad_fx;
+            DVLOG(2) << "\n===================== iter = " << iter << " ===========================";
+            //DVLOG(2) << "\nx = " << x << "\n";
+            DVLOG(2) << "\n -> norm_Tgrad_fx = " << norm_Tgrad_fx;
 
 
 
@@ -449,7 +449,7 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
             if (  norm_Tgrad_fx > 1e-5 )
                 _M_prob.setAccuracy( std::min( 1e-1, norm_Tgrad_fx ) );
 
-            Debug( 8700 ) << "norm_Tgrad_fx = " << norm_Tgrad_fx  << "\n";
+            DVLOG(2) << "norm_Tgrad_fx = " << norm_Tgrad_fx  << "\n";
         }
     }
 
@@ -668,12 +668,12 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
     symmetric_matrix_type _Thess_fxT ( _E_nA, _E_nA ); // Btil
     symmetric_matrix_type _Htil ( _E_nA, _E_nA );  // Htil
 
-    Debug( 8700 ) << "\n\n[value_type SolverUnconstrained<Data,Problem>::CGstep]...\n";
+    DVLOG(2) << "\n\n[value_type SolverUnconstrained<Data,Problem>::CGstep]...\n";
 
     // INITIALIZE:
     this->makeCauchyStep( _x, _Delta, __fx, _Tgrad_fx, _Hg, _Thess_fxT, _Htil, _neg_grad_fx );
 
-    Debug( 8700 ) << "Trust region active (C) : " << _M_theta.isTrustRegionActive() << "\n";
+    DVLOG(2) << "Trust region active (C) : " << _M_theta.isTrustRegionActive() << "\n";
 
     value_type _norm_gtil = norm_2( _Tgrad_fx );
     _s_til = zero_vector<value_type>( _s_til.size() );
@@ -808,7 +808,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
         {
             _sCG = _s_til;
 
-            Debug( 8700 ) << "\n\nNormal CG exit 1: ||rCG||/||g_til|| = " << norm_2( _rCG ) / _norm_gtil << "\n";
+            DVLOG(2) << "\n\nNormal CG exit 1: ||rCG||/||g_til|| = " << norm_2( _rCG ) / _norm_gtil << "\n";
 
             _done = true;
         }
@@ -817,7 +817,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
         {
             _sCG = _s_til;
 
-            Debug( 8700 ) << "\n\nNormal CG exit 2: _CGiter = " << _CGiter << "\n";
+            DVLOG(2) << "\n\nNormal CG exit 2: _CGiter = " << _CGiter << "\n";
 
             _done = true;
         }
@@ -829,7 +829,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
         {
             _beta = inner_prod( _rCG, _rCG ) / inner_prod( _rCG_old, _rCG_old );
 
-            Debug( 8700 ) << "\nbeta = " << _beta << "\n";
+            DVLOG(2) << "\nbeta = " << _beta << "\n";
 
             _dCG = _rCG + _beta * _dCG;
 

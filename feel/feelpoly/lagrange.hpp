@@ -137,14 +137,14 @@ public:
         _M_points_face( nFacesInConvex ),
         _M_fset( primal )
     {
-        Debug( 5045 ) << "Lagrange finite element: \n";
-        Debug( 5045 ) << " o- dim   = " << nDim << "\n";
-        Debug( 5045 ) << " o- order = " << nOrder << "\n";
-        Debug( 5045 ) << " o- numPoints      = " << numPoints << "\n";
-        Debug( 5045 ) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        Debug( 5045 ) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        Debug( 5045 ) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        Debug( 5045 ) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
+        DVLOG(2) << "Lagrange finite element: \n";
+        DVLOG(2) << " o- dim   = " << nDim << "\n";
+        DVLOG(2) << " o- order = " << nOrder << "\n";
+        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
+        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
+        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
+        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
+        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
         pointset_type pts;
 
@@ -157,7 +157,7 @@ public:
                     ++e )
             {
                 _M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
-                Debug( 5045 ) << "face " << e << " pts " <<  _M_points_face[e] << "\n";
+                DVLOG(2) << "face " << e << " pts " <<  _M_points_face[e] << "\n";
             }
         }
 

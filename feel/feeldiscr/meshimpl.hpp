@@ -114,7 +114,7 @@ Mesh<Shape, T, Tag>::updateForUse()
         if ( this->components().test( MESH_RENUMBER ) )
         {
 
-            this->renumber();
+            //this->renumber();
             VLOG(2) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
         }
 
@@ -1390,7 +1390,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                     }
                 }
 
-                if ( !hasFind ) std::cout << "[mesh::updateEntitiesCoDimensionOneGhostCell] : PROBLEM NOT FIND" << std::endl;
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost cells are not available\n";
 
                 // get the good face
                 //auto face_it = faceIterator(theelt.face(j).id());
@@ -1876,6 +1876,90 @@ Mesh<Shape, T, Tag>::decode()
     //this->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     //this->updateForUse();
     //std::cout<<"decode=   " << this->worldComm().localSize() << std::endl;
+}
+
+template<typename Shape, typename T, int Tag1, int Tag2=Tag1, int TheTag=Tag1>
+boost::shared_ptr<Mesh<Shape, T, TheTag> >
+merge( boost::shared_ptr<Mesh<Shape, T, Tag1> > m1,
+       boost::shared_ptr<Mesh<Shape, T, Tag2> > m2 )
+{
+    boost::shared_ptr<Mesh<Shape, T, TheTag> > m( new Mesh<Shape, T, TheTag> );
+
+    // add the points
+
+    size_type shift_p = std::distance( m1->beginPoint(),  m1->endPoint() );
+    for( auto it = m1->beginPoint(),  en = m1->endPoint(); it != en; ++it  )
+    {
+        m->addPoint( *it );
+    }
+    for( auto it = m2->beginPoint(),  en = m2->endPoint(); it != en; ++it )
+    {
+        auto p = *it;
+        // shift id
+        p.setId( shift_p+p.id() );
+        m->addPoint( p );
+    }
+    typedef typename Mesh<Shape, T, TheTag>::face_iterator face_iterator;
+    typedef typename Mesh<Shape, T, TheTag>::element_iterator element_iterator;
+    typedef typename Mesh<Shape, T, TheTag>::face_type face_type;
+    typedef typename Mesh<Shape, T, TheTag>::element_type element_type;
+
+    auto addface = [&]( boost::shared_ptr<Mesh<Shape, T, TheTag> > m, face_iterator it, size_type shift )
+        {
+            face_type pf = *it;
+            pf.disconnect();
+            pf.setOnBoundary( true );
+            const uint16_type npoints_per_face = ( face_type::numVertices*face_type::nbPtsPerVertex+
+                                                   face_type::numEdges*face_type::nbPtsPerEdge+
+                                                   face_type::numFaces*face_type::nbPtsPerFace );
+            for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
+            {
+                pf.setPoint( jj, m->point( shift+it->point(jj).id() ) );
+            }
+            m->addFace( pf );
+        };
+    // add the faces
+    size_type shift_f = std::distance( m1->beginFace(),  m1->endFace() );
+    for( auto it = m1->beginFace(),  en = m1->endFace(); it != en; ++it )
+    {
+        addface( m, it, 0 );
+    }
+    for( auto it = m2->beginFace(),  en = m2->endFace(); it != en; ++it )
+    {
+        // don't forget to shift the point id in the face
+        addface( m, it, shift_p );
+    }
+    // add the elements
+    auto addelement = [&]( boost::shared_ptr<Mesh<Shape, T, TheTag> > m, element_iterator it, size_type shift_f, size_type shift_p )
+        {
+            element_type pf = *it;
+
+            static const uint16_type npoints_per_element = element_type::numPoints;
+
+#if 0
+            for ( uint16_type jj = 0; jj < pf.numLocalFaces; ++jj )
+            {
+                pf.setFace( jj, m->face( shift_f+it->face(jj).id() ) );
+            }
+#endif
+            for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
+            {
+                pf.setPoint( jj, m->point( shift_p+it->point(jj).id() ) );
+            }
+            m->addElement( pf );
+        };
+    for( auto it = m1->beginElement(),  en = m1->endElement(); it != en; ++it )
+    {
+        addelement( m, it, 0, 0 );
+    }
+    for( auto it = m2->beginElement(),  en = m2->endElement(); it != en; ++it )
+    {
+        // don't forget to shift the point id in the face
+        addelement( m, it, shift_f, shift_p );
+    }
+    m->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    m->updateForUse();
+    return m;
 }
 
 template<typename Shape, typename T, int Tag>
