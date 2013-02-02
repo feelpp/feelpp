@@ -649,10 +649,10 @@ DEFINE_CHECK_OP_IMPL(_GT, > )
 // to reduce the overhead of CHECK statments by 2x.
 // Real DCHECK-heavy tests have seen 1.5x speedups.
 
-// The meaning of "string" might be different between now and 
+// The meaning of "string" might be different between now and
 // when this macro gets invoked (e.g., if someone is experimenting
 // with other string implementations that get defined after this
-// file is included).  Save the current meaning now and use it 
+// file is included).  Save the current meaning now and use it
 // in the macro.
 typedef std::string _Check_string;
 #define CHECK_OP_LOG(name, op, val1, val2, log)                         \
@@ -899,6 +899,7 @@ const LogSeverity GLOG_0 = GLOG_ERROR;
 
 #define DLOG(severity) LOG(severity)
 #define DVLOG(verboselevel) VLOG(verboselevel)
+#define DVLOG_IF(verboselevel, condition) VLOG(verboselevel)
 #define DLOG_IF(severity, condition) LOG_IF(severity, condition)
 #define DLOG_EVERY_N(severity, n) LOG_EVERY_N(severity, n)
 #define DLOG_IF_EVERY_N(severity, condition, n) \
@@ -926,6 +927,10 @@ const LogSeverity GLOG_0 = GLOG_ERROR;
 
 #define DVLOG(verboselevel) \
   (true || !VLOG_IS_ON(verboselevel)) ?\
+    (void) 0 : @ac_google_namespace@::LogMessageVoidify() & LOG(INFO)
+
+#define DVLOG_IF(verboselevel,condition)                 \
+    (true || ( !VLOG_IS_ON(verboselevel) && !(condition))) ?            \
     (void) 0 : @ac_google_namespace@::LogMessageVoidify() & LOG(INFO)
 
 #define DLOG_IF(severity, condition) \
