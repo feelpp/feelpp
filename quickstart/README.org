@@ -1,13 +1,20 @@
-#+MATHJAX: align:"left" mathml:t
+#+OPTIONS: LaTeX:nil
+#+STYLE: <script type="text/x-mathjax-config">  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script><script type="text/javascript"  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
-* QuickStart : Laplacian in 2D using P3 Lagrange basis functions
+* QuickStart
+
+This directory contains a quickstart example that solves a Laplacian in 2D using
+P1 Lagrange basis functions.
 
 *Note*: you need to have [[http://www.paraview.org][Paraview]] installed to visualize the results of this example.
 
 ** Code
 
-Here is a full example to solve -\Delta u = f in \Omega, u=g on \partial \Omega,
-where \Omega=[0,1]^2
+Denote $\Omega=[0,1]^{2}$, we consider the following problem, find $u$ such that
+
+$$-\Delta u = f \mbox{ in } \Omega, \quad u=g \mbox{ on } \partial \Omega$$,
+
+Here is the Feel++ code to solve this problem
 #+BEGIN_SRC C++
 #include <feel/feel.hpp>
 
@@ -43,9 +50,12 @@ int main(int argc, char**argv )
 }
 #+END_SRC
 
-*Note:* =Pch<N>( mesh )= generates the function space 
-=Vh= = V_h = P_{c,h} = { v \in C^0(\Omega) such that v_{|K} \in P_N(K), \forall
-K \in mesh }. K is a cell of the mesh.
+*Note:* =Pch<N>( mesh )= generates the function space
+
+$$V_h = P_{c,h} = { v \in C^0(\Omega) such that v_{|K} \in P_N(K), \forall K \in
+\mathcal{T}_h }.$$
+
+where $\mathcal{T}_h=\{K\}$ is the mesh (a set of cells).
 
 ** Compilation
 
