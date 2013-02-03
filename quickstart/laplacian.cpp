@@ -7,11 +7,11 @@ int main(int argc, char**argv )
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                     _about=about(_name="laplacian_dirichlet_homogene",
-                                  _author="Christophe Prud'homme",
-                                  _email="christophe.prudhomme@feelpp.org"));
+                     _about=about(_name="qs_laplacian",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
     //# endmarker1 #
-    
+
     //# marker2 #
     auto mesh = unitSquare();
     auto Vh = Pch<1>( mesh );
@@ -23,7 +23,7 @@ int main(int argc, char**argv )
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
-    
+
     auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
@@ -33,7 +33,7 @@ int main(int argc, char**argv )
     //# endmarker3 #
 
     //# marker4 #
-    auto e = exporter( _mesh=mesh, _name="dirichlet_homogene" );
+    auto e = exporter( _mesh=mesh, _name="qs_laplacian" );
     e->add( "u", u );
     e->save();
     return 0;
