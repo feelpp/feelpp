@@ -22,5 +22,5 @@
 #
 #
 
-feelpp_add_application( qs_laplacian SRCS laplacian.cpp LABEL doc INCLUDE_IN_ALL)
+feelpp_add_application( qs_laplacian SRCS laplacian.cpp INCLUDE_IN_ALL)
 
