@@ -265,13 +265,13 @@ public:
     {
         if(boost::get<0>( M_element0 ) == boost::addressof(elem))
         {
-            Debug( 4015 ) << "connecting 1 to 0 and disconnecting 1..\n";
+            DVLOG(2) << "connecting 1 to 0 and disconnecting 1..\n";
             M_element0 = M_element1;
             disconnect1();
         }
         else
         {
-            Debug( 4015 ) << "disconnecting 1..\n";
+            DVLOG(2) << "disconnecting 1..\n";
             disconnect1();
         }
     }

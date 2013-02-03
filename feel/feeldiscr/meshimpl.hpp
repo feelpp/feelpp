@@ -984,7 +984,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 }
                 if ( __fit->isConnectedTo0() && __fit->isConnectedTo1() )
                 {
-                    Debug( 4015 ) << "internal face, fixing process id if necessary\n";
+                    DVLOG(2) << "internal face, fixing process id if necessary\n";
                     if ( !iv->facePtr( j ) )
                         this->elements().modify( iv, detail::UpdateFace<face_type>( boost::cref( *__fit ) ) );
                     FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face error" );
