@@ -6141,29 +6141,6 @@ operator<<( std::ostream& os, detail::ID<T,M,N> const& id )
 
     return os;
 }
-template<typename T,int M, int N>
-inline
-DebugStream&
-operator<<( DebugStream& __os, detail::ID<T,M,N> const& id )
-{
-    if ( __os.doPrint() )
-    {
-        std::ostringstream __str;
-
-        __str << id;
-
-        __os << __str.str() << "\n";
-    }
-
-    return __os;
-}
-template<typename T, int M, int N>
-inline
-NdebugStream&
-operator<<( NdebugStream& os, detail::ID<T,M,N> const& )
-{
-    return os;
-}
 
 /**
  * Computes the element wise product of two vectors and eventually in parallel
