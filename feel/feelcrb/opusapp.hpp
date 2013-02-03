@@ -162,20 +162,19 @@ public:
                 std::cout << this->about().appName() << std::endl;
                 LOG(INFO) << "[OpusApp] constructor " << this->about().appName()  << "\n";
 
-                if( this->vm().count("hsize") && !this->vm().count("geofile") )
-                    {
-                        this->changeRepository( boost::format( "%1%/h_%2%/" )
-                                                % this->about().appName()
-                                                % this->vm()["hsize"].template as<double>()
-                                                );
-                    }
-                if( this->vm().count("geofile") )
-                    {
-                        this->changeRepository( boost::format( "%1%/%2%/" )
-                                                % this->about().appName()
-                                                % this->vm()["geofile"].template as<std::string>()
-                                                );
-                    }
+                // Check if user have given a name for result files repo
+                // Note : this name is also use for database storage
+                std::string results_repo_name;
+                if( this->vm().count("crb.results-repo-name") )
+                    results_repo_name = this->vm()["crb.results-repo-name"].template as<std::string>();
+                else
+                    results_repo_name = "default_repo";
+
+                LOG(INFO) << "Name for results repo : " << results_repo_name << "\n";
+                this->changeRepository( boost::format( "%1%/%2%/" )
+                                        % this->about().appName()
+                                        % results_repo_name
+                                        );
 
                 LOG(INFO) << "[OpusApp] ch repo" << "\n";
                 this->setLogs();
@@ -355,38 +354,39 @@ public:
             if( crb->useWNmu() )
                 Sampling = crb->wnmu();
 
-            /* Example of use of the setElements
+            /* Example of use of the setElements (but can use write in the file SamplingForTest)
             vector_parameter_type V;
             parameter_type UserMu( model->parameterSpace() );
-            //for(int i=1; i<10; i++)        { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            double j=0.1;
+            //for(int i=1; i<101; i++)  { UserMu(0)=j;  UserMu(1)=1; UserMu(2)=1.5; UserMu(3)=2; UserMu(4)=3; UserMu(5)=4; UserMu(6)=4.5; UserMu(7)=5; UserMu(8)=6; V.push_back(UserMu ); j+=0.1;}
             //for(int i=10; i<100; i+=10)    { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            for(int i=1e2; i<1e3; i+=1e2)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            for(int i=1e3; i<1e4; i+=1e3)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            //UserMu(0)=1e4;  UserMu(1)=1; V.push_back(UserMu );
-            for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            //UserMu(0)=1e5;  UserMu(1)=1; V.push_back(UserMu );
-            for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
-            UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
-            //for(int i=1e6; i<1e7; i+=1e6)
-            //    UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );
-            //UserMu(0)=1e7;  UserMu(1)=1; V.push_back(UserMu );
-            //UserMu(0)=1e3;  UserMu(1)=1; V.push_back(UserMu );
-            Sampling->setElements( V );
-*/
-#if 0 //need more tests ...
+            //for(int i=1e2; i<1e3; i+=1e2)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=1e3; i<1e4; i+=1e3)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=1e4; i<1e5; i+=1e4)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //for(int i=1e5; i<1e6; i+=1e5)  { UserMu(0)=i;  UserMu(1)=1; V.push_back(UserMu );}
+            //UserMu(0)=1e6;  UserMu(1)=1; V.push_back(UserMu );
+            //Sampling->setElements( V );
+            */
+
+            /**
+             * note that in the file SamplingForTest we expect :
+             * mu_0= [ value0 , value1 , ... ]
+             * mu_1= [ value0 , value1 , ... ]
+             **/
             if( this->vm()["crb.use-predefined-test-sampling"].template as<bool>() )
             {
                 std::string file_name = ( boost::format("SamplingForTest") ).str();
                 std::ifstream file ( file_name );
                 if( file  )
                 {
+                    Sampling->clear();
                     Sampling->readFromFile( file_name ) ;
                 }
                 else
                     throw std::logic_error( "[OpusApp] file SamplingForTest was not found" );
 
             }
-#endif
+
 
 
             //Statistics
@@ -493,32 +493,12 @@ public:
                                 LOG(INFO) << "CRB mode\n";
                                 if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                                     std::cout << "CRB mode\n";
-                                LOG(INFO) << "solve u_fem\n";
-                                google::FlushLogFiles(google::GLOG_INFO);
-                                boost::mpi::timer ti;
 
+
+                                boost::mpi::timer ti;
                                 //in the case we don't do the offline step, we need the affine decomposition
                                 model->computeAffineDecomposition();
 
-                                //auto u_fem = model->solveRB( mu );
-                                //auto u_fem = model->solveFemUsingOfflineEim( mu );
-                                element_type u_fem;
-                                if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
-                                    u_fem = model->solveFemUsingOnlineEimPicard( mu );
-                                else
-                                    u_fem = model->solve( mu );
-
-                                std::ostringstream u_fem_str;
-                                u_fem_str << "u_fem(" << mu_str.str() << ")";
-                                u_fem.setName( u_fem_str.str()  );
-
-                                LOG(INFO) << "compute output\n";
-                                google::FlushLogFiles(google::GLOG_INFO);
-
-                                LOG(INFO) << "export u_fem \n";
-                                exporter->step(0)->add( u_fem.name(), u_fem );
-
-                                std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
                                 ti.restart();
                                 LOG(INFO) << "solve crb\n";
                                 google::FlushLogFiles(google::GLOG_INFO);
@@ -543,118 +523,150 @@ public:
                                 LOG(INFO) << "export u_crb \n";
                                 exporter->step(0)->add( u_crb.name(), u_crb );
 
-                                double relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
-                                double relative_estimated_error = o.template get<1>() / ofem[0];
+                                double relative_error = -1;
+                                double relative_estimated_error = -1;
                                 double condition_number = o.template get<3>();
+                                double l2_error = -1;
+                                double h1_error = -1;
+                                double output_fem = -1;
+                                double time_fem = -1;
+
+                                bool compute_fem = this->vm()["crb.compute-fem-during-online"].template as<bool>();
+                                element_type u_fem;
+
+                                if ( compute_fem )
+                                {
+                                    ti.restart();
+                                    LOG(INFO) << "solve u_fem\n";
+                                    google::FlushLogFiles(google::GLOG_INFO);
+
+                                    //auto u_fem = model->solveRB( mu );
+                                    //auto u_fem = model->solveFemUsingOfflineEim( mu );
+                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                                        u_fem = model->solveFemUsingOnlineEimPicard( mu );
+                                    else
+                                        u_fem = model->solve( mu );
+
+                                    std::ostringstream u_fem_str;
+                                    u_fem_str << "u_fem(" << mu_str.str() << ")";
+                                    u_fem.setName( u_fem_str.str()  );
+
+                                    LOG(INFO) << "compute output\n";
+                                    google::FlushLogFiles(google::GLOG_INFO);
+
+                                    LOG(INFO) << "export u_fem \n";
+                                    exporter->step(0)->add( u_fem.name(), u_fem );
+
+                                    std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
 
 
-                                //compute || u_fem - u_crb||_L2
-                                LOG(INFO) << "compute error \n";
-                                auto u_error = model->functionSpace()->element();
-                                std::ostringstream u_error_str;
-                                u_error = u_fem - u_crb;
-                                u_error_str << "u_error(" << mu_str.str() << ")";
-                                u_error.setName( u_error_str.str()  );
-                                exporter->step(0)->add( u_error.name(), u_error );
-                                LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
-                                LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
-                                double l2_error = l2Norm( u_error )/l2Norm( u_fem );
-                                double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                                    relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
+                                    relative_estimated_error = o.template get<1>() / ofem[0];
+
+                                    //compute || u_fem - u_crb||_L2
+                                    LOG(INFO) << "compute error \n";
+                                    auto u_error = model->functionSpace()->element();
+                                    std::ostringstream u_error_str;
+                                    u_error = (( u_fem - u_crb ).pow(2)).sqrt()  ;
+                                    u_error_str << "u_error(" << mu_str.str() << ")";
+                                    u_error.setName( u_error_str.str()  );
+                                    exporter->step(0)->add( u_error.name(), u_error );
+                                    LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
+                                    LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
+                                    l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                                    h1_error = h1Norm( u_error )/h1Norm( u_fem );
+
+                                    output_fem = ofem[0];
+                                    time_fem = ofem[1];
+
+                                }//compute-fem-during-online
 
                                 if ( crb->errorType()==2 )
+                                {
+                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( o.template get<0>() )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
+                                    if( proc_number == Environment::worldComm().masterRank() )
                                     {
-                                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( time_crb )( relative_error )( condition_number )( l2_error )( h1_error );
-                                        if( proc_number == Environment::worldComm().masterRank() )
-                                            {
-                                                std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
-                                                printEntry( file_summary_of_simulations, mu, v );
-                                                printEntry( ostr, mu, v );
-                                                //file_summary_of_simulations.close();
+                                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions\n";
+                                        printEntry( file_summary_of_simulations, mu, v );
+                                        printEntry( ostr, mu, v );
+                                        //file_summary_of_simulations.close();
 
-                                                if ( this->vm()["crb.compute-stat"].template as<bool>() )
-                                                    {
-                                                        relative_error_vector[curpar-1] = relative_error;
-                                                        l2_error_vector[curpar-1] = l2_error;
-                                                        h1_error_vector[curpar-1] = h1_error;
-                                                        time_fem_vector[curpar-1] = ofem[1];
-                                                        time_crb_vector[curpar-1] = time_crb;
-                                                    }
+                                        if ( this->vm()["crb.compute-stat"].template as<bool>() && compute_fem )
+                                        {
+                                            relative_error_vector[curpar-1] = relative_error;
+                                            l2_error_vector[curpar-1] = l2_error;
+                                            h1_error_vector[curpar-1] = h1_error;
+                                            time_fem_vector[curpar-1] = time_fem;
+                                            time_crb_vector[curpar-1] = time_crb;
+                                        }
 
-                                                std::ofstream res(this->vm()["result-file"].template as<std::string>() );
-                                                res << "output="<< o.template get<0>() << "\n";
-
-                                            }
+                                        std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                                        res << "output="<< o.template get<0>() << "\n";
 
                                     }
 
+                                }//end of crb->errorType==2
                                 else
+                                {
+                                    //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+                                    //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
+                                    std::vector<double> v = boost::assign::list_of( output_fem )( time_fem )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
+                                    if( proc_number == Environment::worldComm().masterRank() )
                                     {
-                                        //if( ! boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
-                                        //    throw std::logic_error( "ERROR TYPE must be 2 when using CRBTrilinear (no error estimation)" );
+                                        std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
+                                        //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
+                                        printEntry( file_summary_of_simulations, mu, v );
+                                        printEntry( ostr, mu, v );
+                                        //file_summary_of_simulations.close();
 
-                                        std::vector<double> v = boost::assign::list_of( ofem[0] )( ofem[1] )( o.template get<0>() )( relative_estimated_error )( ti.elapsed() ) ( relative_error )( condition_number )( l2_error )( h1_error ) ;
-                                        if( proc_number == Environment::worldComm().masterRank() )
-                                            {
-                                                std::cout << "output=" << o.template get<0>() << " with " << o.template get<2>() << " basis functions  (relative error estimation on this output : " << relative_estimated_error<<") \n";
-                                                //std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) % o.template get<2>() ).str().c_str() ,std::ios::out | std::ios::app );
-                                                printEntry( file_summary_of_simulations, mu, v );
-                                                printEntry( ostr, mu, v );
-                                                //file_summary_of_simulations.close();
-
-                                                if ( this->vm()["crb.compute-stat"].template as<bool>() )
-                                                    {
-                                                        relative_error_vector[curpar-1] = relative_error;
-                                                        l2_error_vector[curpar-1] = l2_error;
-                                                        h1_error_vector[curpar-1] = h1_error;
-                                                        time_fem_vector[curpar-1] = ofem[1];
-                                                        time_crb_vector[curpar-1] = time_crb;
-                                                        relative_estimated_error_vector[curpar-1] = relative_estimated_error;
-                                                    }
-                                                std::ofstream res(this->vm()["result-file"].template as<std::string>() );
-                                                res << "output="<< o.template get<0>() << "\n";
-                                            }
-                                    }
-
-                                if (this->vm()["crb.cvg-study"].template as<bool>())
+                                        if ( this->vm()["crb.compute-stat"].template as<bool>() && compute_fem )
+                                        {
+                                            relative_error_vector[curpar-1] = relative_error;
+                                            l2_error_vector[curpar-1] = l2_error;
+                                            h1_error_vector[curpar-1] = h1_error;
+                                            time_fem_vector[curpar-1] = time_fem;
+                                            time_crb_vector[curpar-1] = time_crb;
+                                            relative_estimated_error_vector[curpar-1] = relative_estimated_error;
+                                        }
+                                        std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                                        res << "output="<< o.template get<0>() << "\n";
+                                    }//end of proc==master
+                                }//end of else (errorType==2)
+                                if (this->vm()["crb.cvg-study"].template as<bool>() && compute_fem )
+                                {
+                                    LOG(INFO) << "start convergence study...\n";
+                                    std::map<int, boost::tuple<double,double,double,double> > conver;
+                                    for( int N = 1; N < crb->dimension(); N++ )
                                     {
-                                        LOG(INFO) << "start convergence study...\n";
-                                        std::map<int, boost::tuple<double,double,double,double> > conver;
-                                        for( int N = 1; N < crb->dimension(); N++ )
-                                            {
-                                                LOG(INFO) << "N=" << N << "...\n";
-                                                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
-                                                auto u_crb = crb->expansion( mu , N );
-                                                auto u_error = model->functionSpace()->element();
-                                                u_error = u_fem - u_crb;
-                                                double rel_err = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
-                                                double l2_error = l2Norm( u_error )/l2Norm( u_fem );
-                                                double h1_error = h1Norm( u_error )/h1Norm( u_fem );
-                                                double condition_number = o.template get<3>();
-                                                conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , condition_number );
-                                                LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
-                                                if ( proc_number == Environment::worldComm().masterRank() )
-                                                    std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<std::endl;
-                                                LOG(INFO) << "N=" << N << " done.\n";
-                                            }
-                                        if( proc_number == Environment::worldComm().masterRank() )
-                                            {
-                                                LOG(INFO) << "save in logfile\n";
-
-                                                std::string mu_str;
-                                                for ( int i=0; i<mu.size(); i++ )
-                                                    mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
-                                                std::string file_name = "convergence"+mu_str+".dat";
-                                                std::ofstream conv( file_name );
-                                                BOOST_FOREACH( auto en, conver )
-                                                    {
-                                                        conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() << "\t"<< en.second.get<3>() << "\n";
-                                                    }
-                                            }
+                                        LOG(INFO) << "N=" << N << "...\n";
+                                        auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                                        auto u_crb = crb->expansion( mu , N );
+                                        auto u_error = model->functionSpace()->element();
+                                        u_error = u_fem - u_crb;
+                                        double rel_err = std::abs( output_fem-o.template get<0>() ) /output_fem;
+                                        double l2_error = l2Norm( u_error )/l2Norm( u_fem );
+                                        double h1_error = h1Norm( u_error )/h1Norm( u_fem );
+                                        double condition_number = o.template get<3>();
+                                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , condition_number );
+                                        LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
+                                        if ( proc_number == Environment::worldComm().masterRank() )
+                                            std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<std::endl;
+                                        LOG(INFO) << "N=" << N << " done.\n";
                                     }
-
-                            }
+                                    if( proc_number == Environment::worldComm().masterRank() )
+                                    {
+                                        LOG(INFO) << "save in logfile\n";
+                                        std::string mu_str;
+                                        for ( int i=0; i<mu.size(); i++ )
+                                            mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                                        std::string file_name = "convergence"+mu_str+".dat";
+                                        std::ofstream conv( file_name );
+                                        BOOST_FOREACH( auto en, conver )
+                                            conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() << "\t"<< en.second.get<3>() << "\n";
+                                    }
+                                }//end of cvg-study
+                            }//case CRB
                             break;
-
                         case  CRBModelMode::CRB_ONLINE:
                             {
                                 std::cout << "CRB Online mode\n";
@@ -703,9 +715,9 @@ public:
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
-            if ( this->vm()["crb.compute-stat"].template as<bool>() )
+            bool compute_fem = this->vm()["crb.compute-fem-during-online"].template as<bool>();
+            if ( this->vm()["crb.compute-stat"].template as<bool>() && compute_fem )
             {
-
                 LOG( INFO ) << "compute statistics \n";
                 Eigen::MatrixXf::Index index_max_l2;
                 Eigen::MatrixXf::Index index_min_l2;

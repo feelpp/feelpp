@@ -354,7 +354,7 @@ namespace Feel
 
                 for (size_t k=0; k<eltPoints.size(); k++)
                     {
-                        auto dofIndex = P1h->dof()->localToGlobal( eltIt->id(), k).get<0>();
+                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( eltIt->id(), k) );
                         newPosFile << bbNewMap[ dofIndex ];
                         if ( k!= eltPoints.size() - 1)
                             newPosFile << ", ";
@@ -420,7 +420,7 @@ namespace Feel
 
                 for (size_t k=0; k<eltPoints.size(); k++)
                     {
-                        auto dofIndex = P1h->dof()->localToGlobal( eltIt->id(), k).get<0>();
+                        auto dofIndex = boost::get<0>( P1h->dof()->localToGlobal( eltIt->id(), k) );
 
                         int num = 0;
                         newPosFile << (bbNewMap[num++])[ dofIndex ];
@@ -901,8 +901,8 @@ namespace Feel
 
         for ( ; dofptItP1 != dofptEnP1; dofptItP1++)
             {
-                auto dofptCoordP1 = dofptItP1->get<0>();
-                auto dofptIdP1 = dofptItP1->get<1>();
+                auto dofptCoordP1 = boost::get<0>(*dofptItP1); //dofptItP1->get<0>();
+                auto dofptIdP1 = boost::get<1>(*dofptItP1); //dofptItP1->get<1>();
 
                 matrixN_type hessianMatrix;
                 Eigen::EigenSolver< matrixN_type > eigenSolver;
@@ -1056,8 +1056,8 @@ namespace Feel
 
         for ( ; dofptItP1 != dofptEnP1; dofptItP1++)
             {
-                auto dofptCoordP1 = dofptItP1->get<0>();
-                auto dofptIdP1 = dofptItP1->get<1>();
+                auto dofptCoordP1 = boost::get<0>(*dofptItP1); //dofptItP1->get<0>();
+                auto dofptIdP1 = boost::get<1>(*dofptItP1); //dofptItP1->get<1>();
 
                 matrixN_type hessianMatrix;
 
