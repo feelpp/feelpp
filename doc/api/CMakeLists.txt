@@ -2,8 +2,8 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 # Set to "ON" if you want the LaTeX documentation to be built.
-set(DOXYFILE_LATEX 0)
-include(UseDoxygen OPTIONAL)
+#set(DOXYFILE_LATEX 0)
+#include(UseDoxygen OPTIONAL)
 
 
 configure_file(
