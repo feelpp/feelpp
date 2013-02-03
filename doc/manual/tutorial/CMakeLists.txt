@@ -51,6 +51,5 @@ if( NOT FEELPP_MINIMAL_CONFIGURATION )
   feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
   feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
 
-  feelpp_add_application( doc_stokes_laplacian_inlet SRCS stokes_laplacian_inlet.cpp LABEL doc NO_TEST )
 endif()
 
