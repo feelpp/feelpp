@@ -517,7 +517,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     for ( uint __i = 0; __i < __nele; ++__i )
     {
-        int __ne, __t, __physical_region, __np, __elementary_region = 1;
+        int __ne = 0, __t = 0, __physical_region = 0, __np = 0, __elementary_region = 1;
         std::vector<int> partitions;
 
         if ( this->version() == "1.0" )

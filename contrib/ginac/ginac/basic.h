@@ -39,7 +39,7 @@
 namespace GiNaC {
 
 class ex;
-class ex_is_less;
+struct ex_is_less;
 class symbol;
 class numeric;
 class relational;
@@ -104,9 +104,9 @@ protected:
 class basic : public refcounted
 {
 	GINAC_DECLARE_REGISTERED_CLASS_NO_CTORS(basic, void)
-	
+
 	friend class ex;
-	
+
 	// default constructor, destructor, copy constructor and assignment operator
 protected:
 	basic() : flags(0) {}
@@ -225,7 +225,7 @@ protected:
 	virtual bool is_equal_same_type(const basic & other) const;
 
 	virtual unsigned calchash() const;
-	
+
 	// non-virtual functions in this class
 public:
 	/** Like print(), but dispatch to the specified class. Can be used by
@@ -291,7 +291,7 @@ protected:
 	void do_print(const print_context & c, unsigned level) const;
 	void do_print_tree(const print_tree & c, unsigned level) const;
 	void do_print_python_repr(const print_python_repr & c, unsigned level) const;
-	
+
 	// member variables
 protected:
 	mutable unsigned flags;             ///< of type status_flags
