@@ -552,6 +552,8 @@ protected:
     DataMap M_map;
 };
 
+typedef Vector<double> vector_type;
+typedef boost::shared_ptr<vector_type> vector_ptrtype;
 
 /*----------------------- Inline functions ----------------------------------*/
 
