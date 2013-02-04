@@ -678,7 +678,7 @@ public:
      * \param uN : reduced solution ( vectorN_type )
      * \param condition number of the reduced jacobian
      */
-    void newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number) const ;
+    void newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number, double& output) const ;
 
     /*
      * computation of the conditioning number of a given matrix
@@ -3286,7 +3286,7 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number) const
+CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number, double& output) const
 {
     matrixN_type J ( ( int )N, ( int )N ) ;
     vectorN_type R ( ( int )N );
@@ -3306,6 +3306,22 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
     M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
 
     condition_number = computeConditioning( J );
+
+    //compute output
+
+    vectorN_type L ( ( int )N );
+    std::vector<beta_vector_type> betaFqm;
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( uN , N ), mu , 0 );
+    L.setZero( N );
+    for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+    {
+        for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+            L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+    }
+
+    output = L.dot( uN );
+
+
 }
 
 template<typename TruthModelType>
@@ -3436,7 +3452,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     //in transient case, the model has a function initializationField
     //uNold[0].setOnes(M_N);
     if( M_use_newton )
-        newton( N , mu , uN[0] , condition_number );
+        newton( N , mu , uN[0] , condition_number , output_time_vector[0] );
     else
 	{
     	for ( double time=time_step; time<=time_for_output; time+=time_step )
@@ -3602,7 +3618,6 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     	time_index--;
 	}
 
-    //TODO : add calculation of output with newton
 
     if( ! M_use_newton )
         condition_number = computeConditioning( A );
@@ -4034,10 +4049,11 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
     if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
-    //DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
-    //DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN="
-    //                    << wn.size() << "\n";
-    //DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
+
+    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
+    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for WN="
+                    << wn.size() << "\n";
+    Debug ( 12000 ) << "[CRB::orthonormalize] starting ...\n";
 
     for ( size_type i = 0; i < N; ++i )
     {
@@ -4055,8 +4071,8 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
         wn[i].scale( 1./__rii_pr );
     }
 
-    //DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
-    //DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
+    Debug ( 12000 ) << "[CRB::orthonormalize] finished ...\n";
+    Debug ( 12000 ) << "[CRB::orthonormalize] copying back results in basis\n";
 
     if ( this->vm()["crb.check.gs"].template as<int>() )
         checkOrthonormality( N , wn );
@@ -4093,7 +4109,7 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
     }
 
     A -= I;
-    //DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
+    Debug( 12000 ) << "orthonormalization: " << A.norm() << "\n";
     std::cout << "    o check : " << A.norm() << " (should be 0)\n";
     //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
 }
