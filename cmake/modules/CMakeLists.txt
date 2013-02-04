@@ -23,6 +23,11 @@
 #
 
 set(modules 
+  feelpp.extra.astyle.cmake
+  feelpp.extra.warnings.cmake
+  feelpp.macros.cmake
+  feelpp.directive.cmake
+  
   FindFeel++.cmake  
   FindEigen2.cmake  
   FindMetis.cmake   
