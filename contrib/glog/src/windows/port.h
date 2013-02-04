@@ -45,7 +45,10 @@
 
 #ifdef _WIN32
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN  /* We always want minimal includes */
+#endif
+
 #include <windows.h>
 #include <winsock.h>         /* for gethostname */
 #include <io.h>              /* because we so often use open/close/etc */
@@ -94,7 +97,10 @@ enum { STDIN_FILENO = 0, STDOUT_FILENO = 1, STDERR_FILENO = 2 };
 #define strncasecmp  _strnicmp
 
 /* In windows-land, hash<> is called hash_compare<> (from xhash.h) */
+/* VC11 provides std::hash */
+#if defined(_MSC_VER) && (_MSC_VER < 1700)
 #define hash  hash_compare
+#endif
 
 /* Sleep is in ms, on windows */
 #define sleep(secs)  Sleep((secs) * 1000)
