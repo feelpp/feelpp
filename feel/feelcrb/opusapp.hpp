@@ -542,6 +542,8 @@ public:
 
                                     //auto u_fem = model->solveRB( mu );
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
+
+                                    //TODO : add use-newton condition
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
                                         u_fem = model->solveFemUsingOnlineEimPicard( mu );
                                     else

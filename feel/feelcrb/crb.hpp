@@ -1420,11 +1420,18 @@ CRB<TruthModelType>::offline()
         M_Aqm_pr.resize( M_model->Qa() );
         M_Aqm_du.resize( M_model->Qa() );
         M_Aqm_pr_du.resize( M_model->Qa() );
+
+        if( M_use_newton )
+            M_Jqm_pr.resize( M_model->Qa() );
+
         for(int q=0; q<M_model->Qa(); q++)
         {
             M_Aqm_pr[q].resize( M_model->mMaxA(q) );
             M_Aqm_du[q].resize( M_model->mMaxA(q) );
             M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
+
+            if(M_use_newton)
+                M_Jqm_pr[q].resize( M_model->mMaxA(q) );
         }
 
         M_Mqm_pr.resize( M_model->Qm() );
@@ -1448,10 +1455,16 @@ CRB<TruthModelType>::offline()
         M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
         M_Lqm_du.resize( M_model->Ql( M_output_index ) );
 
+        if(M_use_newton)
+            M_Rqm_pr.resize( M_model->Ql( 0 ) );
+
         for(int q=0; q<M_model->Ql( 0 ); q++)
         {
             M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
             M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
+
+            if(M_use_newton)
+                M_Rqm_pr[q].resize( M_model->mMaxF( 0 , q) );
         }
         for(int q=0; q<M_model->Ql( M_output_index ); q++)
         {
@@ -1704,7 +1717,8 @@ CRB<TruthModelType>::offline()
 
         }
 
-        if ( M_model->isSteady() && ! M_use_newton )
+        //if ( M_model->isSteady() && ! M_use_newton )
+		if ( M_model->isSteady() && M_use_newton )
         {
             mu.check();
             u->zero();
@@ -3424,8 +3438,9 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     if( M_use_newton )
         newton( N , mu , uN[0] , condition_number );
     else
-    for ( double time=time_step; time<=time_for_output; time+=time_step )
-    {
+	{
+    	for ( double time=time_step; time<=time_for_output; time+=time_step )
+    	{
 
         if( M_model->isSteady() )
             boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] , N ), mu ,time );
@@ -3583,14 +3598,17 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
             time_index++;
 
-    }
-    time_index--;
+		}
+    	time_index--;
+	}
+
+    //TODO : add calculation of output with newton
 
     if( ! M_use_newton )
         condition_number = computeConditioning( A );
 
-    double s_wo_correction = L.dot( uN [time_index] );
-    double s = s_wo_correction ;
+    //double s_wo_correction = L.dot( uN [time_index] );
+    //double s = s_wo_correction ;
 
     //now the dual problem
 
@@ -4016,10 +4034,10 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
     if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for WN="
-                    << wn.size() << "\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] starting ...\n";
+    //DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
+    //DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN="
+    //                    << wn.size() << "\n";
+    //DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
 
     for ( size_type i = 0; i < N; ++i )
     {
@@ -4037,8 +4055,8 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
         wn[i].scale( 1./__rii_pr );
     }
 
-    Debug ( 12000 ) << "[CRB::orthonormalize] finished ...\n";
-    Debug ( 12000 ) << "[CRB::orthonormalize] copying back results in basis\n";
+    //DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
+    //DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
     if ( this->vm()["crb.check.gs"].template as<int>() )
         checkOrthonormality( N , wn );
@@ -4075,7 +4093,7 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
     }
 
     A -= I;
-    Debug( 12000 ) << "orthonormalization: " << A.norm() << "\n";
+    //DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
     std::cout << "    o check : " << A.norm() << " (should be 0)\n";
     //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
 }
