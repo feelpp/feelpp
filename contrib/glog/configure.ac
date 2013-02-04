@@ -5,7 +5,7 @@
 # make sure we're interpreted by some minimal autoconf
 AC_PREREQ(2.57)
 
-AC_INIT(glog, 0.3.2, opensource@google.com)
+AC_INIT(glog, 0.3.3, opensource@google.com)
 # The argument here is just something that should be in the current directory
 # (for sanity checking)
 AC_CONFIG_SRCDIR(README)
@@ -44,6 +44,8 @@ AC_CHECK_HEADERS(pwd.h)
 AC_CHECK_HEADERS(syslog.h)
 AC_CHECK_HEADERS(sys/time.h)
 AC_CHECK_HEADERS(glob.h)
+# For backtrace with gcc.
+AC_CHECK_HEADERS(unwind.h)
 
 AC_CHECK_SIZEOF(void *)
 
@@ -67,9 +69,11 @@ AX_C___ATTRIBUTE__
 # We only care about these two attributes.
 if test x"$ac_cv___attribute__" = x"yes"; then
   ac_cv___attribute___noreturn="__attribute__ ((noreturn))"
+  ac_cv___attribute___noinline="__attribute__ ((noinline))"
   ac_cv___attribute___printf_4_5="__attribute__((__format__ (__printf__, 4, 5)))"
 else
   ac_cv___attribute___noreturn=
+  ac_cv___attribute___noinline=
   ac_cv___attribute___printf_4_5=
 fi
 
@@ -92,6 +96,14 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM(, [return __x86_64__ == 1 ? 0 : 1])],
                   [is_x86_64=yes], [is_x86_64=no])
 AM_CONDITIONAL(ENABLE_FRAME_POINTERS, test "$enable_frame_pointers" = yes)
 AM_CONDITIONAL(X86_64, test "$is_x86_64" = yes)
+
+AC_ARG_ENABLE(rtti,
+              AS_HELP_STRING([--disable-rtti],
+                             [Disable RTTI in glog]))
+AM_CONDITIONAL(DISABLE_RTTI, test x"$enable_rtti" = x"no")
+if test x"$enable_rtti" = x"no"; then
+  AC_DEFINE(DISABLE_RTTI, 1, [define if glog doesn't use RTTI])
+fi
 
 # Some of the code in this directory depends on pthreads
 ACX_PTHREAD
@@ -185,6 +197,7 @@ AC_SUBST(ac_google_end_namespace)
 AC_SUBST(ac_google_namespace)
 AC_SUBST(ac_cv_cxx_using_operator)
 AC_SUBST(ac_cv___attribute___noreturn)
+AC_SUBST(ac_cv___attribute___noinline)
 AC_SUBST(ac_cv___attribute___printf_4_5)
 AC_SUBST(ac_cv_have___builtin_expect)
 AC_SUBST(ac_cv_have_stdint_h)
