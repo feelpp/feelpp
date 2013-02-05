@@ -90,7 +90,9 @@ main( int argc, char** argv )
                                + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
         };
     u.zero();
-    //backend()->nlsolve( _jacobian=Jacobian, _residual=Residual, _solution=u );
+    backend()->nlSolver()->residual = Residual;
+    backend()->nlSolver()->jacobian = Jacobian;
+    backend()->nlSolve( _solution=u );
 
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
