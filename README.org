@@ -30,7 +30,7 @@ SOme basic installation procedure are available in the INSTALL.org file.
 
 Here is a full example to solve $-\Delta u = f in \Omega,\quad u=g on \partial \Omega$
 
-#+begin_src C++
+#+BEGIN_SRC C++
 #include <feel/feel.hpp>
 
 int main(int argc, char**argv )
@@ -63,7 +63,7 @@ int main(int argc, char**argv )
     e->save();
     return 0;
 }
-#+end_src
+#+END_SRC
 
 
 ** Bratu equation in 2D
@@ -71,7 +71,7 @@ int main(int argc, char**argv )
 Here is a full non-linear example - the Bratu equation - to solve $-\Delta u +
 e^u = 0 in \Omega,\quad u=0 on \partial \Omega$.
 
-#+begin_src C++
+#+BEGIN_SRC C++
 #include <feel/feel.hpp>
 
 inline
@@ -143,4 +143,5 @@ main( int argc, char** argv )
     e->add( "u", u );
     e->save();
 }
-#+end_src
+
+#+END_SRC
