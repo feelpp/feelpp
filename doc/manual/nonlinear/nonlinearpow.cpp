@@ -87,7 +87,7 @@ main( int argc, char** argv )
             u = *X;
             auto r = form1( _test=Vh, _vector=R );
             r = integrate( elements( mesh ), gradv( u )*trans( grad( v ) ) );
-            r +=  integrate( elements( mesh ),  pow( idv( u ), lambda )*id( v ) );
+            r +=  integrate( elements( mesh ),  pow( idv( u ), lambda )*id( v ) - id(v) );
             r +=  integrate( boundaryfaces( mesh ),
                              ( - trans( id( v ) )*( gradv( u )*N() )
                                - trans( idv( u ) )*( grad( v )*N() )

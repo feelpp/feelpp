@@ -26,7 +26,7 @@ This family of equation has applications in biology or radiative heat transfer
 and possibly other fields.
 
 The equation reads: given $\lambda > 0$, find $u$ such that
-$$-\Delta u + u^\lambda = 0 \mbox{ in } \Omega, \quad u = 0 \partial \Omega$$
+$$-\Delta u + u^\lambda = 1 \mbox{ in } \Omega, \quad u = 0 \partial \Omega$$
 
 A finite element implementation is available in [[file:nonlinearpow.cpp][nonlinearpow.cpp]].
 
