@@ -37,3 +37,6 @@ mpirun -np 4 feelpp_doc_nonlinearpow --snes-monitor=true
 
 The option =--snes-monitor=true= displays the Newton iteration residual. To
 visualize the results type =paraview nonlinearpow-4.sos=.
+
+
+
