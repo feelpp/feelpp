@@ -487,7 +487,7 @@ fs::path scratchdir()
         if (env != NULL && env[0] != '\0')
         {
             std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
-            std::cerr << "value=" << value << "\n";
+            //std::cerr << "value=" << value << "\n";
             setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
         }
         else
@@ -499,7 +499,7 @@ fs::path scratchdir()
     env = getenv("FEELPP_SCRATCHDIR");
     if (env != NULL && env[0] != '\0')
     {
-        std::cerr << "env=" << env << "\n";
+        //std::cerr << "env=" << env << "\n";
         return fs::path( env );
     }
     std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
