@@ -452,7 +452,7 @@ public:
     {
         // create and open a character archive for output
         std::ostringstream ostr;
-        ostr << M_name << "-" << M_iteration;
+        ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
         DVLOG(2) << "[BdfBase::shiftRight] solution name " << ostr.str() << "\n";
 
         //M_time_values_map.insert( std::make_pair( M_iteration, this->time() ) );
@@ -1047,7 +1047,7 @@ Bdf<SpaceType>::init()
         {
             // create and open a character archive for output
             std::ostringstream ostr;
-            ostr << M_name << "-" << M_iteration-p;
+            ostr << M_name << "-" << M_iteration-p<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
 
             DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
@@ -1078,7 +1078,7 @@ Bdf<SpaceType>::initialize( element_type const& u0 )
 {
     M_time_values_map.clear();
     std::ostringstream ostr;
-    ostr << M_name << "-" << 0;
+    ostr << M_name << "-" << 0<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
     //M_time_values_map.push_back( 0 );
     M_time_values_map.push_back( M_Ti );
@@ -1092,7 +1092,7 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
 {
     M_time_values_map.clear();
     std::ostringstream ostr;
-    ostr << M_name << "-" << 0;
+    ostr << M_name << "-" << 0<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
     //M_time_values_map.push_back( 0);
     M_time_values_map.push_back( M_Ti );
@@ -1167,7 +1167,7 @@ Bdf<SpaceType>::saveCurrent()
 
     {
         std::ostringstream ostr;
-        ostr << M_name << "-" << M_iteration;
+        ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
         fs::ofstream ofs( M_path_save / ostr.str() );
 
 
@@ -1186,7 +1186,7 @@ Bdf<SpaceType>::loadCurrent()
 
     {
         std::ostringstream ostr;
-        ostr << M_name << "-" << M_iteration;
+        ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
         fs::ifstream ifs( M_path_save / ostr.str() );
 
         // load data from archive
