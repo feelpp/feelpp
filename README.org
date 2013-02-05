@@ -30,7 +30,7 @@ SOme basic installation procedure are available in the INSTALL.org file.
 
 Here is a full example to solve $-\Delta u = f in \Omega,\quad u=g on \partial \Omega$
 
-#+begin_src C++
+#+BEGIN_SRC C++
 #include <feel/feel.hpp>
 
 int main(int argc, char**argv )
@@ -63,7 +63,7 @@ int main(int argc, char**argv )
     e->save();
     return 0;
 }
-#+end_src
+#+END_SRC
 
 
 ** Bratu equation in 2D
@@ -71,7 +71,7 @@ int main(int argc, char**argv )
 Here is a full non-linear example - the Bratu equation - to solve $-\Delta u +
 e^u = 0 in \Omega,\quad u=0 on \partial \Omega$.
 
-#+begin_src C++
+#+BEGIN_SRC C++
 #include <feel/feel.hpp>
 
 inline
@@ -80,11 +80,12 @@ makeOptions()
 {
     Feel::po::options_description bratuoptions( "Bratu problem options" );
     bratuoptions.add_options()
-    ( "lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem" )
-
-    ( "penalbc", Feel::po::value<double>()->default_value( 30 ), "penalisation parameter for the weak boundary conditions" )
-    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
-
+    ( "lambda", Feel::po::value<double>()->default_value( 1 ), 
+                "exp() coefficient value for the Bratu problem" )
+    ( "penalbc", Feel::po::value<double>()->default_value( 30 ), 
+                 "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), 
+               "first h value to start convergence" )
     ( "export-matlab", "export matrix and vectors in matlab" )
     ;
     return bratuoptions.add( Feel::feel_options() );
@@ -117,10 +118,8 @@ main( int argc, char** argv )
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
             a = integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
             a += integrate( elements( mesh ), lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
-            a += integrate( boundaryfaces( mesh ),
-                            ( - trans( id( v ) )*( gradt( u )*N() )
-                              - trans( idt( u ) )*( grad( v )*N() )
-                              + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
+            a += integrate( boundaryfaces( mesh ), 
+               ( - trans( id( v ) )*( gradt( u )*N() ) - trans( idt( u ) )*( grad( v )*N()  + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
         };
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
@@ -130,9 +129,7 @@ main( int argc, char** argv )
             r = integrate( elements( mesh ), gradv( u )*trans( grad( v ) ) );
             r +=  integrate( elements( mesh ),  lambda*exp( idv( u ) )*id( v ) );
             r +=  integrate( boundaryfaces( mesh ),
-                             ( - trans( id( v ) )*( gradv( u )*N() )
-                               - trans( idv( u ) )*( grad( v )*N() )
-                               + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
+               ( - trans( id( v ) )*( gradv( u )*N() ) - trans( idv( u ) )*( grad( v )*N() ) + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
         };
     u.zero();
     backend()->nlSolver()->residual = Residual;
@@ -143,4 +140,5 @@ main( int argc, char** argv )
     e->add( "u", u );
     e->save();
 }
-#+end_src
+
+#+END_SRC
