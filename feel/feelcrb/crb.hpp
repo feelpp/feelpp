@@ -678,7 +678,7 @@ public:
      * \param uN : reduced solution ( vectorN_type )
      * \param condition number of the reduced jacobian
      */
-    void newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number) const ;
+    void newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number, double& output) const ;
 
     /*
      * computation of the conditioning number of a given matrix
@@ -1420,11 +1420,18 @@ CRB<TruthModelType>::offline()
         M_Aqm_pr.resize( M_model->Qa() );
         M_Aqm_du.resize( M_model->Qa() );
         M_Aqm_pr_du.resize( M_model->Qa() );
+
+        if( M_use_newton )
+            M_Jqm_pr.resize( M_model->Qa() );
+
         for(int q=0; q<M_model->Qa(); q++)
         {
             M_Aqm_pr[q].resize( M_model->mMaxA(q) );
             M_Aqm_du[q].resize( M_model->mMaxA(q) );
             M_Aqm_pr_du[q].resize( M_model->mMaxA(q) );
+
+            if(M_use_newton)
+                M_Jqm_pr[q].resize( M_model->mMaxA(q) );
         }
 
         M_Mqm_pr.resize( M_model->Qm() );
@@ -1448,10 +1455,16 @@ CRB<TruthModelType>::offline()
         M_Lqm_pr.resize( M_model->Ql( M_output_index ) );
         M_Lqm_du.resize( M_model->Ql( M_output_index ) );
 
+        if(M_use_newton)
+            M_Rqm_pr.resize( M_model->Ql( 0 ) );
+
         for(int q=0; q<M_model->Ql( 0 ); q++)
         {
             M_Fqm_pr[q].resize( M_model->mMaxF( 0 , q) );
             M_Fqm_du[q].resize( M_model->mMaxF( 0 , q) );
+
+            if(M_use_newton)
+                M_Rqm_pr[q].resize( M_model->mMaxF( 0 , q) );
         }
         for(int q=0; q<M_model->Ql( M_output_index ); q++)
         {
@@ -1704,7 +1717,7 @@ CRB<TruthModelType>::offline()
 
         }
 
-        if ( M_model->isSteady() && ! M_use_newton )
+        if ( M_model->isSteady() && M_use_newton )
         {
             mu.check();
             u->zero();
@@ -3272,7 +3285,7 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number) const
+CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number, double& output) const
 {
     matrixN_type J ( ( int )N, ( int )N ) ;
     vectorN_type R ( ( int )N );
@@ -3292,6 +3305,22 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
     M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
 
     condition_number = computeConditioning( J );
+
+    //compute output
+
+    vectorN_type L ( ( int )N );
+    std::vector<beta_vector_type> betaFqm;
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( uN , N ), mu , 0 );
+    L.setZero( N );
+    for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+    {
+        for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+            L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+    }
+
+    output = L.dot( uN );
+
+
 }
 
 template<typename TruthModelType>
@@ -3422,175 +3451,177 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     //in transient case, the model has a function initializationField
     //uNold[0].setOnes(M_N);
     if( M_use_newton )
-        newton( N , mu , uN[0] , condition_number );
+        newton( N , mu , uN[0] , condition_number , output_time_vector[0] );
     else
-    for ( double time=time_step; time<=time_for_output; time+=time_step )
-    {
-
-        if( M_model->isSteady() )
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] , N ), mu ,time );
-        else
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N ), mu ,time );
-
-        //LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] <<"\n";//<< "," << betaMFqm[1][0] << "\n";
-        //LOG(INFO) << "betaMqm = " << betaMqm[0][0] << "\n";
-        //LOG(INFO) << "Qm = " << M_model->Qm() << "\n";
-        //LOG(INFO) << "mMaxM = " << M_model->mMaxM(0) << "\n";
-
-        google::FlushLogFiles(google::GLOG_INFO);
-        // compute initial guess for fixed point
-        A.setZero( N,N );
-
-        for ( size_type q = 0; q < M_model->Qm(); ++q )
-        {
-            for(int m=0; m<M_model->mMaxM(q); m++)
-                A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
-        }
-        LOG(INFO) << "Mass=" << A << "\n";
-        google::FlushLogFiles(google::GLOG_INFO);
-        F.setZero( N );
-        for ( size_type q = 0; q < M_model->Qmf(); ++q )
-        {
-            for(int m=0; m<M_model->mMaxMF(q); m++)
-                F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
-        }
-        LOG(INFO) << "F=" << F << "\n";
-
-        google::FlushLogFiles(google::GLOG_INFO);
-
-        uN[time_index] = A.lu().solve( F );
-
-        //vectorN_type error;
-        //const element_type expansion_uN = this->expansion( uN[time_index] , N );
-        //checkInitialGuess( expansion_uN , mu , error);
-        //std::cout<<"***************************************************************error.sum : "<<error.sum()<<std::endl;
-
-        LOG(INFO) << "lb: start fix point\n";
-
-        vectorN_type previous_uN( M_N );
-
-        google::FlushLogFiles(google::GLOG_INFO);
-        int fi=0;
-        //for(int fi = 0;fi < 10; ++fi )
-
-        double old_output;
-#if 0
-        //in the case were we want to control output error for fixed point
-        L.setZero( N );
-        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
-        {
-            for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
-            {
-                L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
-            }
-        }
-        old_output = L.dot( uN[time_index] );
-#endif
-        int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
-        double solution_fixedpoint_tol  = this->vm()["crb.solution-fixedpoint-tol"].template as<double>();
-        double output_fixedpoint_tol  = this->vm()["crb.output-fixedpoint-tol"].template as<double>();
-        bool fixedpoint_verbose  = this->vm()["crb.fixedpoint-verbose"].template as<bool>();
-        double fixedpoint_critical_value  = this->vm()["crb.fixedpoint-critical-value"].template as<double>();
-        do
-        {
-            LOG(INFO) << "compute eim expansions\n";
-            google::FlushLogFiles(google::GLOG_INFO);
-
-            if( 0 )
-                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+	{
+    	for ( double time=time_step; time<=time_for_output; time+=time_step )
+    	{
+            if( M_model->isSteady() )
+                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] , N ), mu ,time );
             else
-                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
-            //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N ), mu ,time );
 
-            LOG(INFO) << "compute reduce matrices\n";
+            //LOG(INFO) << "betaMFqm = " << betaMFqm[0][0] <<"\n";//<< "," << betaMFqm[1][0] << "\n";
+            //LOG(INFO) << "betaMqm = " << betaMqm[0][0] << "\n";
+            //LOG(INFO) << "Qm = " << M_model->Qm() << "\n";
+            //LOG(INFO) << "mMaxM = " << M_model->mMaxM(0) << "\n";
+
             google::FlushLogFiles(google::GLOG_INFO);
+            // compute initial guess for fixed point
             A.setZero( N,N );
 
-            for ( size_type q = 0; q < M_model->Qa(); ++q )
-            {
-                for(int m=0; m<M_model->mMaxA(q); m++)
-                    A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
-            }
-
-            F.setZero( N );
-
-            for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
-            {
-                for(int m=0; m<M_model->mMaxF(0,q); m++)
-                    F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
-            }
-
-            for ( size_type q = 0; q < Qm; ++q )
-            {
-                for(int m=0; m<M_model->mMaxM(q); m++)
+            for ( size_type q = 0; q < M_model->Qm(); ++q )
                 {
-                    A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
-                    F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
+                    for(int m=0; m<M_model->mMaxM(q); m++)
+                        A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
                 }
-            }
+            LOG(INFO) << "Mass=" << A << "\n";
+            google::FlushLogFiles(google::GLOG_INFO);
+            F.setZero( N );
+            for ( size_type q = 0; q < M_model->Qmf(); ++q )
+                {
+                    for(int m=0; m<M_model->mMaxMF(q); m++)
+                        F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
+                }
+            LOG(INFO) << "F=" << F << "\n";
 
-            LOG(INFO) << "solve reduced model\n";
             google::FlushLogFiles(google::GLOG_INFO);
 
-            // backup uN
-            //uNold[0] = uN[0];
-            previous_uN = uN[time_index];
-
-            // solve for new fix point iteration
             uN[time_index] = A.lu().solve( F );
 
-            LOG(INFO) << "uold = " << uNold[time_index] << "\n";
-            LOG(INFO) << "u = " << uN[time_index] << "\n";
+            //vectorN_type error;
+            //const element_type expansion_uN = this->expansion( uN[time_index] , N );
+            //checkInitialGuess( expansion_uN , mu , error);
+            //std::cout<<"***************************************************************error.sum : "<<error.sum()<<std::endl;
 
-            if ( time_index<model_K-1 )
-            {
-                uNold[time_index+1] = uN[time_index];
-            }
+            LOG(INFO) << "lb: start fix point\n";
 
+            vectorN_type previous_uN( M_N );
 
+            google::FlushLogFiles(google::GLOG_INFO);
+            int fi=0;
+            //for(int fi = 0;fi < 10; ++fi )
+
+            double old_output;
+#if 0
+            //in the case were we want to control output error for fixed point
             L.setZero( N );
-
             for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
-            {
-                for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
                 {
-                    L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                    for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+                        {
+                            L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                        }
                 }
+            old_output = L.dot( uN[time_index] );
+#endif
+            int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
+            double solution_fixedpoint_tol  = this->vm()["crb.solution-fixedpoint-tol"].template as<double>();
+            double output_fixedpoint_tol  = this->vm()["crb.output-fixedpoint-tol"].template as<double>();
+            bool fixedpoint_verbose  = this->vm()["crb.fixedpoint-verbose"].template as<bool>();
+            double fixedpoint_critical_value  = this->vm()["crb.fixedpoint-critical-value"].template as<double>();
+            do
+            {
+                LOG(INFO) << "compute eim expansions\n";
+                google::FlushLogFiles(google::GLOG_INFO);
+
+                if( 0 )
+                    boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+                else
+                    boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
+                //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
+
+                LOG(INFO) << "compute reduce matrices\n";
+                google::FlushLogFiles(google::GLOG_INFO);
+                A.setZero( N,N );
+
+                for ( size_type q = 0; q < M_model->Qa(); ++q )
+                    {
+                        for(int m=0; m<M_model->mMaxA(q); m++)
+                            A += betaAqm[q][m]*M_Aqm_pr[q][m].block( 0,0,N,N );
+                    }
+
+                F.setZero( N );
+
+                for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+                    {
+                        for(int m=0; m<M_model->mMaxF(0,q); m++)
+                            F += betaFqm[0][q][m]*M_Fqm_pr[q][m].head( N );
+                    }
+
+                for ( size_type q = 0; q < Qm; ++q )
+                    {
+                        for(int m=0; m<M_model->mMaxM(q); m++)
+                            {
+                                A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
+                                F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
+                            }
+                    }
+
+                LOG(INFO) << "solve reduced model\n";
+                google::FlushLogFiles(google::GLOG_INFO);
+
+                // backup uN
+                //uNold[0] = uN[0];
+                previous_uN = uN[time_index];
+
+                // solve for new fix point iteration
+                uN[time_index] = A.lu().solve( F );
+
+                LOG(INFO) << "uold = " << uNold[time_index] << "\n";
+                LOG(INFO) << "u = " << uN[time_index] << "\n";
+
+                if ( time_index<model_K-1 )
+                    {
+                        uNold[time_index+1] = uN[time_index];
+                    }
+
+
+                L.setZero( N );
+
+                for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+                    {
+                        for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+                            {
+                                L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
+                            }
+                    }
+
+                old_output = output;
+                output = L.dot( uN[time_index] );
+
+                //output_time_vector.push_back( output );
+                output_time_vector[time_index] = output;
+
+
+                LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";               google::FlushLogFiles(google::GLOG_INFO);
+                fi++;
+
+                if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
+                    std::cout<<"[CRB::lb] fixedpoint iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm()<<std::endl;
+
             }
+            while ( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol && fi<max_fixedpoint_iterations );
+            //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
 
-            old_output = output;
-            output = L.dot( uN[time_index] );
+            if( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol )
+                std::cout<<"[CRB::lb] fixed point, proc "<<this->worldComm().globalRank()<<" fixed point has no converged : norm(uN-uNold) = "<<(uN[time_index]-previous_uN).norm()<<" and tolerance : "<<solution_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done"<<std::endl;
 
-            //output_time_vector.push_back( output );
-            output_time_vector[time_index] = output;
-
-
-            LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";               google::FlushLogFiles(google::GLOG_INFO);
-            fi++;
-
-            if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
-                std::cout<<"[CRB::lb] fixedpoint iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm()<<std::endl;
-
-        }
-        while ( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol && fi<max_fixedpoint_iterations );
-        //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
-
-        if( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol )
-            std::cout<<"[CRB::lb] fixed point, proc "<<this->worldComm().globalRank()<<" fixed point has no converged : norm(uN-uNold) = "<<(uN[time_index]-previous_uN).norm()<<" and tolerance : "<<solution_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done"<<std::endl;
-
-        if( (uN[time_index]-previous_uN).norm() > fixedpoint_critical_value )
-            throw std::logic_error( "[CRB::lb] fixed point ERROR : norm(uN-uNold) > critical value " );
+            if( (uN[time_index]-previous_uN).norm() > fixedpoint_critical_value )
+                throw std::logic_error( "[CRB::lb] fixed point ERROR : norm(uN-uNold) > critical value " );
 
             time_index++;
 
-    }
-    time_index--;
+		}
+    	time_index--;
+	}
+
 
     if( ! M_use_newton )
         condition_number = computeConditioning( A );
 
-    double s_wo_correction = L.dot( uN [time_index] );
-    double s = s_wo_correction ;
+    //double s_wo_correction = L.dot( uN [time_index] );
+    //double s = s_wo_correction ;
 
     //now the dual problem
 
