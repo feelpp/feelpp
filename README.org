@@ -80,11 +80,12 @@ makeOptions()
 {
     Feel::po::options_description bratuoptions( "Bratu problem options" );
     bratuoptions.add_options()
-    ( "lambda", Feel::po::value<double>()->default_value( 1 ), "exp() coefficient value for the Bratu problem" )
-
-    ( "penalbc", Feel::po::value<double>()->default_value( 30 ), "penalisation parameter for the weak boundary conditions" )
-    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
-
+    ( "lambda", Feel::po::value<double>()->default_value( 1 ), 
+                "exp() coefficient value for the Bratu problem" )
+    ( "penalbc", Feel::po::value<double>()->default_value( 30 ), 
+                 "penalisation parameter for the weak boundary conditions" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), 
+               "first h value to start convergence" )
     ( "export-matlab", "export matrix and vectors in matlab" )
     ;
     return bratuoptions.add( Feel::feel_options() );
