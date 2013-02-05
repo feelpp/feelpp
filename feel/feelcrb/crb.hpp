@@ -1749,6 +1749,9 @@ CRB<TruthModelType>::offline()
             M_bdf_primal_save->setTimeFinal( M_model->timeFinal() );
             M_bdf_primal_save->setOrder( M_model->timeOrder() );
 
+            M_bdf_primal_save->setRankProcInNameOfFiles( true );
+            M_bdf_primal->setRankProcInNameOfFiles( true );
+
             //initialization of unknown
             M_model->initializationField( u, mu );
             //M_bdf_primal->initialize( *u );
@@ -1844,6 +1847,10 @@ CRB<TruthModelType>::offline()
                 M_bdf_dual_save->setTimeStep( -M_model->timeStep() );
                 M_bdf_dual_save->setTimeFinal( M_model->timeInitial()+M_model->timeStep() );
                 M_bdf_dual_save->setOrder( M_model->timeOrder() );
+
+                M_bdf_dual_save->setRankProcInNameOfFiles( true );
+                M_bdf_dual->setRankProcInNameOfFiles( true );
+
 
                 Adu = M_model->newMatrix();
 
