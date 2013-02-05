@@ -67,12 +67,10 @@ makeHeatShieldOptions()
     po::options_description heatshieldoptions( "HeatShield options" );
     heatshieldoptions.add_options()
     // mesh parameters
-    ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ),
-      "first h value to start convergence" )
-    ( "steady", Feel::po::value<bool>()->default_value( true ),
-      "if true : steady else unsteady" )
-    ( "do-export", Feel::po::value<bool>()->default_value( false ),
-      "export results if true" )
+    ( "hsize", Feel::po::value<double>()->default_value( 1e-1 ), "first h value to start convergence" )
+    ( "steady", Feel::po::value<bool>()->default_value( true ), "if true : steady else unsteady" )
+    ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
+    ( "do-export", Feel::po::value<bool>()->default_value( false ), "export results if true" )
     ;
     return heatshieldoptions.add( Feel::feel_options() ).add( bdf_options( "heatshield" ) );
 }
@@ -685,18 +683,32 @@ void HeatShield::init()
 
     using namespace Feel::vf;
 
+    std::string mshfile_name = M_vm["mshfile"].template as<std::string>();
+
     /*
-     * First we create the mesh
+     * First we create the mesh or load it if already exist
      */
-    mesh = createGMSHMesh ( _mesh = new mesh_type,
-                            _desc = createGeo( meshSize ),
-                            _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
+
+    if( mshfile_name=="" )
+    {
+        mesh = createGMSHMesh( _mesh=new mesh_type,
+                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
+                               _desc = createGeo( meshSize ) );
+    }
+    else
+    {
+        mesh = loadGMSHMesh( _mesh=new mesh_type,
+                             _filename=M_vm["mshfile"].template as<std::string>(),
+                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+    }
+
 
     /*
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
@@ -704,7 +716,7 @@ void HeatShield::init()
 
 
     surface = integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
-    std::cout<<"surface : "<<surface<<std::endl;
+    //std::cout<<"surface : "<<surface<<std::endl;
 
     M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatshield" , _prefix="heatshield" );
 
@@ -745,8 +757,9 @@ void HeatShield::init()
 
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
-    assemble();
 
+
+    assemble();
 
 } // HeatShield::init
 
@@ -804,7 +817,6 @@ void HeatShield::assemble()
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
-
 
 }
 
@@ -897,6 +909,7 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
             D->addMatrix( M_betaMqm[q][m]*bdf_coeff, M_Mqm[q][m] );
             //right hand side
             *vec_bdf_poly = bdf_poly;
+            vec_bdf_poly->close();
             vec_bdf_poly->scale( M_betaMqm[q][m] );
             F->addVector( *vec_bdf_poly, *M_Mqm[q][m] );
         }
@@ -919,8 +932,6 @@ HeatShield::solve( parameter_type const& mu )
 void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output_index )
 {
 
-
-
     using namespace Feel::vf;
 
     initializationField( T,mu );
@@ -941,6 +952,7 @@ void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output
         double bdf_coeff = M_bdf->polyDerivCoefficient( 0 );
 
         this->computeBetaQm( mu, M_bdf->time() );
+
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
 
@@ -955,7 +967,6 @@ void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output
         M_bdf->shiftRight( *T );
 
     }
-
 
 }
 
@@ -1021,7 +1032,6 @@ double HeatShield::output( int output_index, parameter_type const& mu, bool expo
 {
     using namespace vf;
 
-
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
@@ -1030,9 +1040,9 @@ double HeatShield::output( int output_index, parameter_type const& mu, bool expo
         this->solve( mu, pT );
     }
 
-    vector_ptrtype U( backend->newVector( Xh ) );
-    *U = *pT;
-
+    // vector_ptrtype U( backend->newVector( Xh ) );
+    //*U = *pT;
+    pT->close();
     double s=0;
 
     if ( output_index<2 )
@@ -1041,7 +1051,10 @@ double HeatShield::output( int output_index, parameter_type const& mu, bool expo
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                s += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+                element_ptrtype eltF( new element_type( Xh ) );
+                *eltF = *M_Fqm[output_index][q][m];
+                s += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
+                //s += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
             }
         }
     }
