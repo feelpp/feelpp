@@ -272,7 +272,7 @@ endif()
 macro(ei_add_target_property target prop value)
 
   get_target_property(previous ${target} ${prop})
-  # if the property wasn't previously set, ${previous} is now "previous-NOTFOUND" which cmake allows ca tching with plain if()
+  # if the property wasn't previously set, ${previous} is now "previous-NOTFOUND" which cmake allows catching with plain if()
   if(NOT previous)
     set(previous "")
   endif(NOT previous)
@@ -328,7 +328,7 @@ endif()
 
 add_subdirectory(unsupported)
 
-add_subdirectory(demos EXCLUDE_FROM_ALL)
+# add_subdirectory(demos EXCLUDE_FROM_ALL)
 
 # must be after test and unsupported, for configuring buildtests.in
 # add_subdirectory(scripts EXCLUDE_FROM_ALL)
@@ -344,9 +344,9 @@ add_subdirectory(demos EXCLUDE_FROM_ALL)
 
 # ei_testing_print_summary()
 
-# message(STATUS "")
-# message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
-# message(STATUS "")
+message(STATUS "")
+message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
+message(STATUS "")
 
 # option(EIGEN_FAILTEST "Enable failtests." OFF)
 # if(EIGEN_FAILTEST)
