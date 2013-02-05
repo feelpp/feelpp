@@ -119,8 +119,7 @@ main( int argc, char** argv )
             a = integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
             a += integrate( elements( mesh ), lambda*( exp( idv( u ) ) )*idt( u )*id( v ) );
             a += integrate( boundaryfaces( mesh ),
-                            ( - trans( id( v ) )*( gradt( u )*N() )
-                              - trans( idt( u ) )*( grad( v )*N() )
+                            ( - trans( id( v ) )*( gradt( u )*N() ) - trans( idt( u ) )*( grad( v )*N() )
                               + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
         };
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
@@ -131,8 +130,7 @@ main( int argc, char** argv )
             r = integrate( elements( mesh ), gradv( u )*trans( grad( v ) ) );
             r +=  integrate( elements( mesh ),  lambda*exp( idv( u ) )*id( v ) );
             r +=  integrate( boundaryfaces( mesh ),
-                             ( - trans( id( v ) )*( gradv( u )*N() )
-                               - trans( idv( u ) )*( grad( v )*N() )
+                             ( - trans( id( v ) )*( gradv( u )*N() ) - trans( idv( u ) )*( grad( v )*N() )
                                + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
         };
     u.zero();
