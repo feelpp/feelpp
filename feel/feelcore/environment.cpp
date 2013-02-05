@@ -620,14 +620,6 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-
-    if ( argc >= 1 )
-    {
-        std::ostringstream ostr;
-        ostr << argv[0] << ".assertions";
-        Assert::setLog( ostr.str().c_str() );
-    }
-
     S_worldcomm = worldcomm_type::New( world );
     CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
 
