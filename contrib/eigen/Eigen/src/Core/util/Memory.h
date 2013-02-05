@@ -7,24 +7,9 @@
 // Copyright (C) 2010 Hauke Heibel <hauke.heibel@gmail.com>
 // Copyright (C) 2010 Thomas Capricelli <orzel@freehackers.org>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
 /*****************************************************************************
@@ -198,7 +183,7 @@ inline void check_that_malloc_is_allowed()
 {
   eigen_assert(is_malloc_allowed() && "heap allocation is forbidden (EIGEN_RUNTIME_NO_MALLOC is defined and g_is_malloc_allowed is false)");
 }
-#else
+#else 
 inline void check_that_malloc_is_allowed()
 {}
 #endif
@@ -219,7 +204,7 @@ inline void* aligned_malloc(size_t size)
     if(posix_memalign(&result, 16, size)) result = 0;
   #elif EIGEN_HAS_MM_MALLOC
     result = _mm_malloc(size, 16);
-  #elif (defined _MSC_VER)
+#elif defined(_MSC_VER) && (!defined(_WIN32_WCE))
     result = _aligned_malloc(size, 16);
   #else
     result = handmade_aligned_malloc(size);
@@ -589,7 +574,7 @@ template<typename T> class aligned_stack_memory_handler
     Eigen::internal::check_size_for_overflow<TYPE>(SIZE); \
     TYPE* NAME = (BUFFER)!=0 ? BUFFER : reinterpret_cast<TYPE*>(Eigen::internal::aligned_malloc(sizeof(TYPE)*SIZE));    \
     Eigen::internal::aligned_stack_memory_handler<TYPE> EIGEN_CAT(NAME,_stack_memory_destructor)((BUFFER)==0 ? NAME : 0,SIZE,true)
-
+    
 #endif
 
 
@@ -650,7 +635,7 @@ template<typename T> class aligned_stack_memory_handler
 * Example:
 * \code
 * // Matrix4f requires 16 bytes alignment:
-* std::map< int, Matrix4f, std::less<int>,
+* std::map< int, Matrix4f, std::less<int>, 
 *           aligned_allocator<std::pair<const int, Matrix4f> > > my_map_mat4;
 * // Vector3f does not require 16 bytes alignment, no need to use Eigen's allocator:
 * std::map< int, Vector3f > my_map_vec3;
@@ -722,14 +707,11 @@ public:
 
     // Support for c++11
 #if (__cplusplus >= 201103L)
-//#warning std::forward disabled in eigen
-#if 0
     template<typename... Args>
     void  construct(pointer p, Args&&... args)
     {
       ::new(p) T(std::forward<Args>(args)...);
     }
-#endif // 0
 #endif
 
     void destroy( pointer p )
@@ -763,7 +745,7 @@ public:
          __asm__ __volatile__ ("cpuid": "=a" (abcd[0]), "=b" (abcd[1]), "=c" (abcd[2]), "=d" (abcd[3]) : "a" (func), "c" (id) );
 #    endif
 #  elif defined(_MSC_VER)
-#    if (_MSC_VER > 1500)
+#    if (_MSC_VER > 1500) && ( defined(_M_IX86) || defined(_M_X64) )
 #      define EIGEN_CPUID(abcd,func,id) __cpuidex((int*)abcd,func,id)
 #    endif
 #  endif
