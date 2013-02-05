@@ -24,42 +24,38 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 add_custom_target(gen_feel_perf_stokes_Poiseuille ALL )
 
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_lm SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS FEELPP_USE_LM NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_cylinder SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Dirichlet_hypercube SRCS stokes_Dirichlet_Dirichlet.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1 NO_TEST )
-
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-  foreach(PORDER 1 2 3)
-    foreach(GORDER 1 2 3)
-      file(WRITE stokesdd_P${PORDER}G${GORDER}.cpp "#include <stokes.hpp>
-int
-main( int argc, char** argv )
-{
-
-    using namespace Feel;
-
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name=\"stokes_Dirichlet_Dirichlet\",
-                                  _author=\"Christophe Prud'homme\",
-                                  _email=\"christophe.prudhomme@feelpp.org\") );
-    Feel::Stokes_Dirichlet_Dirichlet<${PORDER},${GORDER}> stokesDD;
-    stokesDD.run();
-}
-" )
-      feelpp_add_application( stokesdd_P${PORDER}G${GORDER} SRCS stokesdd_P${PORDER}G${GORDER}.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
-    endforeach()
-  endforeach()
-
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann SRCS stokes_Dirichlet_Neumann.cpp LABEL doc NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_lm SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS FEELPP_USE_LM NO_TEST )
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_cylinder SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST)
-  feelpp_add_application( doc_stokes_Dirichlet_Neumann_hypercube SRCS stokes_Dirichlet_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1 NO_TEST)
-
-  feelpp_add_application( doc_stokes_Neumann_Neumann SRCS stokes_Neumann_Neumann.cpp LABEL doc NO_TEST )
-  #feelpp_add_application( doc_stokes_Neumann_Neumann_aorta SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=3 NO_TEST )
-  feelpp_add_application( doc_stokes_Neumann_Neumann_cylinder SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
-  feelpp_add_application( doc_stokes_Neumann_Neumann_hypercube SRCS stokes_Neumann_Neumann.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DD_2D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DD STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DD_3D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DD STOKESPRESSMESHTYPE=2 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DD_2D_lm SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DD FEELPP_USE_LM STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DD_3D_lm SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DD FEELPP_USE_LM STOKESPRESSMESHTYPE=2 NO_TEST)
 
 
+  feelpp_add_application( perf_stokes_poiseuille_DN_2D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DN STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DN_3D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DN STOKESPRESSMESHTYPE=2 NO_TEST)
+
+  feelpp_add_application( perf_stokes_poiseuille_NN_2D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=NN STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_NN_3D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=NN STOKESPRESSMESHTYPE=2 NO_TEST)
+
+
+#  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+#  foreach(PORDER 1 2 3)
+#    foreach(GORDER 1 2 3)
+#      file(WRITE stokesdd_P${PORDER}G${GORDER}.cpp "#include <stokes.hpp>
+#int
+#main( int argc, char** argv )
+#{
+
+#    using namespace Feel;
+
+#    Environment env( _argc=argc, _argv=argv,
+#                     _desc=makeOptions(),
+#                     _about=about(_name=\"stokes_Dirichlet_Dirichlet\",
+#                                  _author=\"Christophe Prud'homme\",
+#                                  _email=\"christophe.prudhomme@feelpp.org\") );
+#    Feel::Stokes_Dirichlet_Dirichlet<${PORDER},${GORDER}> stokesDD;
+#    stokesDD.run();
+#}
+#" )
+#      feelpp_add_application( stokesdd_P${PORDER}G${GORDER} SRCS stokesdd_P${PORDER}G${GORDER}.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
+#    endforeach()
+#  endforeach()
