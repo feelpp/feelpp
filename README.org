@@ -31,36 +31,10 @@ SOme basic installation procedure are available in the INSTALL.org file.
 ** Laplacian in 2D using P3 Lagrange basis functions
 
 Here is a full example to solve $-\Delta u = f in \Omega,\quad u=g on \partial \Omega$
-#+BEGIN_SRC C++
-#include <feel/feel.hpp>
+#+include: "quickstart/laplacian.cpp" src C++ :lines "30-"
 
-int main(int argc, char**argv )
-{
- using namespace Feel;
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
-                     _about=about(_name="mymesh",
-                                  _author="Christophe Prud'homme",
-                                  _email="christophe.prudhomme@feelpp.org"));
-    auto mesh = unitSquare();
-    auto Vh = Pch<3>( mesh );
-    auto u = Vh->element();
-    auto v = Vh->element();
+** Bratu equation in 2D
 
-    auto a = form2( _trial=Vh, _test=Vh );
-    a = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) );
-    auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  _expr=id(v));
-    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=constant(0.) );
-    a.solve(_rhs=l,_solution=u);
-
-    auto e = exporter( _mesh=mesh, _name="dirichlet_homogene" );
-    e->add( "u", u );
-    e->save();
-}
-#+END_SRC
-
+Here is a full example to solve $-\Delta u + e^u = 0 in \Omega,\quad u=0 on \partial \Omega$
+#+include: "doc/manual/nonlinear/bratu.cpp" src C++ :lines "30-"
 
