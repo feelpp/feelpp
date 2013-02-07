@@ -30,6 +30,7 @@
 #include <feel/feelalg/solvereigen.hpp>
 #include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/crbscm.hpp>
+#include <feel/feelcrb/eim.hpp>
 
 namespace Feel
 {
@@ -91,7 +92,8 @@ crbOptions( std::string const& prefix )
 
 
     crboptions
-    .add( crbSCMOptions() );
+    .add( crbSCMOptions() )
+    .add( eimOptions() );
 
     return crboptions;
 }
