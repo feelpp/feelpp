@@ -1717,7 +1717,12 @@ CRB<TruthModelType>::offline()
 
         }
 
+<<<<<<< HEAD
         if ( M_model->isSteady() && M_use_newton )
+=======
+        //if ( M_model->isSteady() && ! M_use_newton )
+		if ( M_model->isSteady() && M_use_newton )
+>>>>>>> eb695d11ba3daa3a0f165b8fa43cf4066642cb57
         {
             mu.check();
             u->zero();
@@ -4047,8 +4052,14 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
     if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
+<<<<<<< HEAD
     DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
     DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN="
+=======
+
+    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
+    Debug ( 12000 ) << "[CRB::orthonormalize] orthonormalize basis for WN="
+>>>>>>> eb695d11ba3daa3a0f165b8fa43cf4066642cb57
                     << wn.size() << "\n";
     DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
 
