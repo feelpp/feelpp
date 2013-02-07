@@ -606,7 +606,7 @@ public:
      *
      * \return the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
      */
-    value_type h1( element_type const& xi_i, element_type const& xi_j  )
+    value_type h1( element_type const& xi_i, element_type const& xi_j  ) const
     {
         return M_B->energy( xi_j, xi_i );
     }
@@ -619,7 +619,7 @@ public:
      *
      * \return the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
      */
-    value_type h1( element_type const& xi_i  )
+    value_type h1( element_type const& xi_i  ) const
     {
         return M_B->energy( xi_i, xi_i );
     }
@@ -634,8 +634,24 @@ public:
      *
      * \return the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
      */
-    sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
+    const sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
+        if ( transpose )
+            return M_Aqm[q][m]->transpose();
+
+        return M_Aqm[q][m];
+    }
+
+    /**
+     * \brief Returns the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
+     *
+     * \param q and m are index of the component in the affine decomposition
+     * \param transpose transpose \c A_q
+     *
+     * \return the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
+     */
+    sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false )
+        {
         if ( transpose )
             return M_Aqm[q][m]->transpose();
 
@@ -651,7 +667,23 @@ public:
      *
      * \return the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (ime dependent)
      */
-    sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
+    const sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
+    {
+        if ( transpose )
+            return M_Mqm[q][m]->transpose();
+
+        return M_Mqm[q][m];
+    }
+
+    /**
+     * \brief Returns the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (time dependent)
+     *
+     * \param q and m are index of the component in the affine decomposition
+     * \param transpose transpose \c M_q
+     *
+     * \return the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (ime dependent)
+     */
+    sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false )
     {
         if ( transpose )
             return M_Mqm[q][m]->transpose();
@@ -660,7 +692,18 @@ public:
     }
 
 
-    vector_ptrtype MFqm( uint16_type q, uint16_type m ) const
+    /**
+     *
+     */
+    const vector_ptrtype MFqm( uint16_type q, uint16_type m ) const
+    {
+        return M_MFqm[q][m];
+    }
+
+    /**
+     *
+     */
+    vector_ptrtype MFqm( uint16_type q, uint16_type m )
     {
         return M_MFqm[q][m];
     }
@@ -676,7 +719,7 @@ public:
      *
      * \return the inner product \f$a_qm(\xi_i, \xi_j) = \xi_j^T A_{qm} \xi_i\f$
      */
-    value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
+    value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
         return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
     }
@@ -691,7 +734,7 @@ public:
      *
      * \return the inner product \f$m_{qm}(\xi_i, \xi_j) = \xi_j^T M_{qm} \xi_i\f$
      */
-    value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
+    value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
         return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
     }
@@ -718,8 +761,8 @@ public:
     }
     beta_vector_type const& betaMqm( mpl::bool_<false> ) const
     {
-        beta_vector_type vect;
-        return  vect;
+        LOG(WARNING) << "invalid call\n";
+        return  M_dummy_betaMqm;
     }
     beta_vector_type const& betaInitialGuessQm( mpl::bool_<true> ) const
     {
@@ -1099,6 +1142,7 @@ private:
     sparse_matrix_ptrtype M_B;
     sparse_matrix_ptrtype M_H1;
 
+    beta_vector_type M_dummy_betaMqm;
 
     //! initialize the matrix associated with the \f$H_1\f$ inner product
     void initB();
