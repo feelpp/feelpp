@@ -45,6 +45,7 @@
 #endif
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/debug.hpp>
 
 namespace Feel
 {
