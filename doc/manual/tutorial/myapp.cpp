@@ -29,8 +29,6 @@
    \date 2013-02-07
  */
 
-/** \code */
-
 #include <feel/feel.hpp>
 using namespace Feel;
 
@@ -38,37 +36,40 @@ using namespace Feel;
  * Program entry point 
  */
 //\code
+//# marker1 #
 int main( int argc, char* argv[] )
 {
 
-    // create custom options
+    // create custom command option
     po::options_description app_options( "App options" );
     app_options.add( feel_options() );
     app_options.add_options()
 	( "value", po::value<double>() -> default_value(4.2), "description" )
     ;
 
-    // initialize the feel++ application
+    // initialize feel++ environment
     Environment env( _argc = argc, _argv = argv,
 		     _desc = app_options,
 		     _about = about( _name = "myapp",
 			             _author = "your name",
 				     _email = "name@domain") );
     
-    // instanciate a feel++ application
+    // instantiate a feel++ application
     Application myapp;
 
     // change the default exec directory 
     Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/" )
                                        % myapp.about().appName() );
     
-    // add an entry in the log file
+    // create a log and write inside
     LOG(INFO) << "value = " << Environment::vm()["value"].as<double>()
 	      << std::endl;
+
+    LOG(INFO) << "proc " << Environment::worldComm().globalRank()+1
+	      <<" of "<< Environment::numberOfProcessors()
+	      << std::endl;
+
 } // main
+//# endmarker1 #
 //\endcode
-
-
-
-
 
