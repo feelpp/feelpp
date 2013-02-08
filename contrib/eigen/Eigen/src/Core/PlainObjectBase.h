@@ -4,24 +4,9 @@
 // Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_DENSESTORAGEBASE_H
 #define EIGEN_DENSESTORAGEBASE_H
@@ -617,11 +602,9 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     template<typename T0, typename T1>
     EIGEN_STRONG_INLINE void _init2(Index rows, Index cols, typename internal::enable_if<Base::SizeAtCompileTime!=2,T0>::type* = 0)
     {
-#if 0
       EIGEN_STATIC_ASSERT(bool(NumTraits<T0>::IsInteger) &&
                           bool(NumTraits<T1>::IsInteger),
                           FLOATING_POINT_ARGUMENT_PASSED__INTEGER_WAS_EXPECTED)
-#endif
       eigen_assert(rows >= 0 && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == rows)
              && cols >= 0 && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == cols));
       internal::check_rows_cols_for_overflow(rows, cols);

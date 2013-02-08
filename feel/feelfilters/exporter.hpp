@@ -481,7 +481,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                           ) // required
                           ( optional                                  // 4. one required parameter, and
                             ( order,*, mpl::int_<1>() )
-                            ( name,*, "exporter" )
+                            ( name,*, Environment::about().appName() )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;

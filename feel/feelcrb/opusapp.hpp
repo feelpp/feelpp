@@ -536,13 +536,15 @@ public:
 
                                 if ( compute_fem )
                                 {
+									bool use_newton = this->vm()["crb.use-newton"].template as<bool>();
                                     ti.restart();
                                     LOG(INFO) << "solve u_fem\n";
                                     google::FlushLogFiles(google::GLOG_INFO);
 
                                     //auto u_fem = model->solveRB( mu );
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
-                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value )
+
+                                    if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
                                         u_fem = model->solveFemUsingOnlineEimPicard( mu );
                                     else
                                         u_fem = model->solve( mu );

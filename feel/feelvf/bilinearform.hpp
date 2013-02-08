@@ -1304,6 +1304,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     boost::timer tim;
     DVLOG(2) << "begin constructor with default listblock\n";
 
+    if ( !_M_matrix ) _M_matrix = backend()->newMatrix( _test=_M_X1, _trial=_M_X2 );
     _M_lb.push_back( Block ( 0, 0, 0, 0 ) );
 
     DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
@@ -1332,7 +1333,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold )
 {
-
+    if ( !_M_matrix ) _M_matrix = backend()->newMatrix( _test=_M_X1, _trial=_M_X2 );
 }
 
 template<typename FE1,  typename FE2,  typename ElemContType>
