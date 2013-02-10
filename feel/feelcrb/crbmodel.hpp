@@ -64,7 +64,7 @@ enum class CRBModelMode
  * @see crb
  */
 template<typename ModelType>
-class CRBModel
+class CRBModel : public boost::enable_shared_from_this<CRBModel<ModelType> >
 {
 public:
 
@@ -319,7 +319,20 @@ public:
     /**
      * \brief Returns the matrix associated with the \f$H_1\f$ inner product
      */
+    sparse_matrix_ptrtype  innerProduct()
+    {
+        return M_B;
+    }
+
+    /**
+     * \brief Returns the matrix associated with the \f$H_1\f$ inner product
+     */
     sparse_matrix_ptrtype const& h1() const
+    {
+        return M_B;
+    }
+
+    sparse_matrix_ptrtype h1()
     {
         return M_B;
     }
@@ -1192,7 +1205,7 @@ struct AssembleMassMatrixInCompositeCase
 
     AssembleMassMatrixInCompositeCase( element_type const u ,
                                        element_type const v ,
-                                       CRBModel<ModelType> & crb_model)
+                                       boost::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_u ( u ),
         M_composite_v ( v ),
@@ -1211,14 +1224,14 @@ struct AssembleMassMatrixInCompositeCase
         auto Xh = M_composite_u.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
 
-        form2( _test=Xh, _trial=Xh, _matrix=M_crb_model.Mqm(0,0) ) +=
+        form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
             integrate( _range=elements( mesh ), _expr=trans( idt( u ) )*id( v ) );
 
     }
 
     element_type  M_composite_u;
     element_type  M_composite_v;
-    CRBModel<ModelType> & M_crb_model;
+    mutable boost::shared_ptr<CRBModel<ModelType>  > M_crb_model;
 };
 
 
@@ -1247,7 +1260,7 @@ struct AssembleMFInCompositeCase
 
     AssembleMFInCompositeCase( element_type  const v ,
                                initial_guess_type  const initial_guess ,
-                               CRBModel<ModelType> & crb_model)
+                               boost::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_v ( v ),
         M_composite_initial_guess ( initial_guess ),
@@ -1263,11 +1276,11 @@ struct AssembleMFInCompositeCase
         auto Xh = M_composite_v.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
 
-        for(int q = 0; q < M_crb_model.Qmf(); q++)
+        for(int q = 0; q < M_crb_model->Qmf(); q++)
         {
-            for( int m = 0; m < M_crb_model.mMaxMF(q); m++)
+            for( int m = 0; m < M_crb_model->mMaxMF(q); m++)
             {
-                auto vectFM = M_crb_model.MFqm(q,m);
+                auto vectFM = M_crb_model->MFqm(q,m);
                 auto ini = M_composite_initial_guess[q][m]->template element< T::value >();
                 form1( _test=Xh, _vector=vectFM ) +=
                     integrate ( _range=elements( mesh ), _expr=trans( Feel::vf::idv( ini ) )*Feel::vf::id( v ) );
@@ -1277,7 +1290,7 @@ struct AssembleMFInCompositeCase
 
     element_type  M_composite_v;
     initial_guess_type  M_composite_initial_guess;
-    CRBModel<ModelType> & M_crb_model;
+    mutable boost::shared_ptr<CRBModel<ModelType> > M_crb_model;
 };
 
 
@@ -1386,7 +1399,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
-    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , *this);
+    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this->shared_from_this());
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 
     M_Mqm[0][0]->close();
@@ -1422,7 +1435,7 @@ CRBModel<TruthModelType>::assembleMF( initial_guess_type & initial_guess, mpl::b
 
 
     index_vector_type index_vector;
-    AssembleMFInCompositeCase<TruthModelType> assemble_mf_in_composite_case ( v , initial_guess , *this);
+    AssembleMFInCompositeCase<TruthModelType> assemble_mf_in_composite_case ( v , initial_guess , this->shared_from_this());
     fusion::for_each( index_vector, assemble_mf_in_composite_case );
 
 
