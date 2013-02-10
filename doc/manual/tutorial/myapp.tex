@@ -1,9 +1,9 @@
 \marginpar{\lstinline!myapp.cpp!}
-    
+
 \subsection{Your first application}
 \label{sec:firstapp}
 
-You can get the sources of each tutorial in the directory 
+You can get the sources of each tutorial in the directory
 \textcolor{magenta}{"doc/manual/tutorial/"}.
 See section \ref{sec:building} for more information about \feel installation.
 
@@ -27,7 +27,7 @@ We use the C++ \lstinline!namespace! to avoid \lstinline!Feel::! prefix before
 \vspace{2mm}
 %
 \begin{itemize}
-\item 
+\item
 We pass command line options using the
 \href{http://www.boost.org/doc/libs/1_53_0/doc/html/program_options.html}
 {Boost Program Options}\footnotemark[1] \lstinline!po::! library.
@@ -43,7 +43,7 @@ value will be assigned if not specified by the user.
 Then we initialize the environment variables through the \feel
 \lstinline!Environment! class (Check the Constructor prototype on the online documentation).
 
-\item 
+\item
 we instantiate a new application. We specify the directory where to execute the
 program. That could be usefull for archiving your results.
 
@@ -54,35 +54,35 @@ Finally, we save the results in a log file using the
 %
 \footnotetext{\url{http://code.google.com/p/google-glog/}}
 %
-As you can see, we save in this example our custom option value and the 
+As you can see, we save in this example our custom option value and the
 current processor number.
 
 \end{itemize}
 
 
-\subsubsection{Advanced application}
+% \subsubsection{Advanced application}
 
-To integrate your application into the \feel framework, you will 
-have to inheritate the super \lstinline!Application! class and to overload
-the \lstinline!run()! method.
-%
-\vspace{2mm}
-\begin{lstlisting}
-class MyApp : public Application
-{
-    public :
-	void run();
-};
-\end{lstlisting}
-\vspace{2mm}
-%
+% To integrate your application into the \feel framework, you will
+% have to inheritate the super \lstinline!Application! class and to overload
+% the \lstinline!run()! method.
+% %
+% \vspace{2mm}
+% \begin{lstlisting}
+% class MyApp : public Application
+% {
+%     public :
+% 	void run();
+% };
+% \end{lstlisting}
+% \vspace{2mm}
+% %
 
 \subsubsection{Compilation, execution, logs}
 
 To compile a tutorial, just use the GNU make command.
 %
 \begin{unixcom}
-    make feelpp_doc_<appname>    
+    make feelpp_doc_<appname>
 \end{unixcom}
 %
 where \textit{appname} is the name of the application you wish to
@@ -97,7 +97,7 @@ and execute it. You can change your option value.
 Now if you check the log,
 %
 \begin{unixcom}
-    cat /tmp/feelpp_doc_myapp.INFO
+    cat /tmp/<your login>/feelpp_doc_myapp/feelpp_doc_myapp.INFO
 \end{unixcom}
 %
 you should see your value and the processor number used to compute.
@@ -129,5 +129,5 @@ For example, our \lstinline!myapp.cfg! would looks like,
 \end{lstlisting}
 \vspace{2mm}
 %
-Note that you can specify the config file through the option \lstinline!--config-file <path>!
+Note that you can specify the config file through the option \lstinline!--config-file=<path>!
 
