@@ -56,7 +56,7 @@ if ( (${CMAKE_SOURCE_DIR}/contrib/glog/src/glog/logging.h.in IS_NEWER_THAN ${CMA
     ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
   message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
   execute_process(
-    COMMAND make install
+    COMMAND make -k install
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
     OUTPUT_QUIET
     )
