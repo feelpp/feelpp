@@ -1,8 +1,8 @@
 #! /bin/bash
 
 . ~/.bash_profile
-module load c++/gnu/4.5.1   
-prefix=$WORKDIR/local-gcc45
+module load c++/gnu/4.6.3   
+prefix=$WORKDIR/local/gcc46
 cat > user-config.jam << EOF
 using mpi : $MPI_ROOT/bin/mpic++ : : $MPI_ROOT/bin/mpirun ;
 EOF
