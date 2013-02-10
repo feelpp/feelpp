@@ -1,10 +1,10 @@
- # -*- org -*-
+# -*- org -*-
 # This file is better edited using Emacs
 
 #+TITLE: Feel++ News
 #+AUTHOR: Christophe Prud'homme
-#+DATE: <2011-02-26 Sat>
-#+EMAIL: christophe.prudhomme@ujf-grenoble.fr
+#+DATE: <2013-02-10 Sun>
+#+EMAIL: christophe.prudhomme@feelpp.org
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
@@ -13,20 +13,19 @@
 
 ** Programming environment
 
- - support for Boost 1.49 and 1.50
+ - support for Boost 1.49, 1.50, 1.51 and 1.52
  - imported for Eigen 3.1 in contrib/eigen
- - port to gcc4.7, icc 12.1 and clang 3.1
+ - port to gcc4.7, clang 3.1 and clang 3.2
  - added cmake macro feelpp_add application, see http://code.google.com/p/feelpp/issues/detail?id=11&can=1
  - support Gmsh from both executable and library(preferred and more powerful)
-   (Fixes issue 43)
+   (Fixes issue #43)
  - support for PETSc 3.3
 
 *** Marseille Mesocenter
  - port to Marseille mesocenter supercomputer (thx to CEMRACS'12)
 
 *** TGCC/Curie
- - port on the TGCC
-   Fixes issue 35
+ - port on the TGCC, see issue #34
 
 *** Macport
  - added scotch Portfile from macport and use esmumps variant for mumps support
@@ -49,7 +48,7 @@
 
 *** feelalg
  - added eigen(3.1) backend with support for dense and sparse eigen matrices
-   Fixes issue 36
+   Fixes issue #36
 
 *** feelmesh
  - added 2D and 3D mesh adaptation using Gmsh
@@ -61,10 +60,31 @@
 
 *** feelfilters
  - support for mesh generation directly from Gmsh library
- - support for element splitting (Fixes issue 40)
+ - support for element splitting (Fixes issue #40)
+
+*** feelvf
+ - many new keywords
+   - mean value of a function: mean(_range=elements(mesh),_expr=sin(pi*Px()));
+   - norm L_2 of a function: normL2(_range=elements(mesh),_expr=sin(pi*Px()));
+   - norm L_2 of a function squared: normL2Squared(_range=elements(mesh),_expr=sin(pi*Px()));
+   - infinity norm of a function: normLinf(_range=elements(mesh),_expr=sin(pi*Px()));
+   - inner(a,b): a . b
+   - cross(a,b): a x b
+   - sym(a): .5 (a + aT )
+   - zero<m,n>(): matrix of zeros of size m x n
+   - ones<m,n>(): matrix of ones of size m x n
+   - constant<m,n>(a): matrix of constant value a of size m x n
+   - eye<m,n>(), Id<m,n>(): unit diagonal matrix of size m x n
+ - support for symbolic computing using Ginac
+ - support for meta-expression
+#+BEGIN_SRC C++
+auto I = integrate(_range=elements(mesh),_expr=_e1 );
+auto v1 = I( idv(v) ).evaluate();
+auto v2 = I( cst(1) ).evaluate();
+#+END_SRC
 
 ** Documentation
-
+ - update manual and tutorial, see #61 and #70
 
 
 * New in 0.91.1

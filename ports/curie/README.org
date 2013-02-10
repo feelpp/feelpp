@@ -1,0 +1,13 @@
+* Feel++@Curie
+
+Here is the list of modules that should be (un)loaded
+#+BEGIN_SRC shell
+module unload intel
+module load intel/13.0.0.079
+module load c++/gnu/4.6.3
+module load boost/1.51
+module load petsc/3.3-p4_gnu
+module load cmake/2.8.9
+module load gmsh/2.6.1
+#+END_SRC
+this can be added to $HOME/.profile
