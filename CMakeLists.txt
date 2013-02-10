@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 2.8.9)
 
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
@@ -175,7 +175,7 @@ include(ProcessorCount)
 ProcessorCount(NProcs)
 ##if(N GREATER 1)
 math (EXPR NProcs2 '${NProcs}/2')
-message(STATUS "using ${NProcs2} cores" )
+message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
