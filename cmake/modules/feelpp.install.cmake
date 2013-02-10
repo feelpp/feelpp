@@ -1,4 +1,4 @@
-###  coding: utf-8 --- 
+###  coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
 #       Date: 2013-02-08
@@ -68,8 +68,8 @@ ENDIF()
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/feel/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 
-message(STATUS "apps: ${FEELPP_INSTALL_APPS}")
-INSTALL(FILES ${FEELPP_INSTALL_APPS} DESTINATION bin/ COMPONENT Bin)
+#message(STATUS "apps: ${FEELPP_INSTALL_APPS}")
+#INSTALL(FILES ${FEELPP_INSTALL_APPS} DESTINATION bin/ COMPONENT Bin)
 
 # documentation and examples
 #  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)

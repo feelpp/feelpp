@@ -48,9 +48,9 @@ if (NOT GFLAGS_INCLUDE_DIR )
       OUTPUT_FILE "gflags-configure"
       )
   endif()
-  
+
   set(GFLAGS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/gflags/include)
-  
+
 endif()
 
 
@@ -68,7 +68,7 @@ string(REPLACE "include" "" GFLAGS_DIR ${GFLAGS_INCLUDE_DIR} )
 
 
 FIND_LIBRARY(GFLAGS_LIBRARY
-  NAMES gflags
+  NAMES feelpp_gflags gflags
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/gflags/lib64/
   ${CMAKE_BINARY_DIR}/contrib/gflags/lib/

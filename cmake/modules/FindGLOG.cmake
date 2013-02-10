@@ -63,7 +63,7 @@ if ( (${CMAKE_SOURCE_DIR}/contrib/glog/src/glog/logging.h.in IS_NEWER_THAN ${CMA
 endif()
 
 FIND_LIBRARY(GLOG_LIBRARY
-  NAMES glog
+  NAMES feelpp_glog glog
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/glog/lib64/
   ${CMAKE_BINARY_DIR}/contrib/glog/lib/
