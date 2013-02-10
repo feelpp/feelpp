@@ -100,6 +100,7 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( true ),
+        M_rankProcInNameOfFiles( false ),
         M_worldComm( Environment::worldComm() )
     {}
 
@@ -124,6 +125,7 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( true ),
+        M_rankProcInNameOfFiles( false ),
         M_worldComm( Environment::worldComm() )
     {
 
@@ -149,6 +151,7 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
+        M_rankProcInNameOfFiles( vm[prefixvm( prefix, "bdf.rank-proc-in-files-name" )].as<bool>() ),
         M_worldComm( worldComm )
     {
     }
@@ -197,6 +200,7 @@ public:
         M_alpha( b.M_alpha ),
         M_beta( b.M_beta ),
         M_saveInFile( true ),
+        M_rankProcInNameOfFiles( b.M_rankProcInNameOfFiles ),
         M_worldComm( b.M_worldComm )
     {}
 
@@ -237,6 +241,7 @@ public:
             M_alpha = b.M_alpha;
             M_beta = b.M_beta;
             M_saveInFile = b.M_saveInFile;
+            M_rankProcInNameOfFiles = b.M_rankProcInNameOfFiles;
 
             M_time_values_map = b.M_time_values_map;
             M_worldComm = b.M_worldComm;
@@ -452,7 +457,12 @@ public:
     {
         // create and open a character archive for output
         std::ostringstream ostr;
-        ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+
+        if( M_rankProcInNameOfFiles )
+            ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+        else
+            ostr << M_name << "-" << M_iteration;
+
         DVLOG(2) << "[BdfBase::shiftRight] solution name " << ostr.str() << "\n";
 
         //M_time_values_map.insert( std::make_pair( M_iteration, this->time() ) );
@@ -518,6 +528,11 @@ public:
         return M_saveInFile;
     }
 
+    bool rankProcInNameOfFiles() const
+    {
+        return  M_rankProcInNameOfFiles ;
+    }
+
     WorldComm const& worldComm() const
     {
         return M_worldComm;
@@ -566,6 +581,10 @@ public:
     void setSaveInFile( bool b )
     {
         M_saveInFile = b;
+    }
+    void setRankProcInNameOfFiles( bool b )
+    {
+        M_rankProcInNameOfFiles = b;
     }
 
     void print() const
@@ -640,6 +659,9 @@ protected:
 
     //! Save solutions in file after each step
     bool M_saveInFile;
+
+    //! put the rank of the processor in generated files
+    bool M_rankProcInNameOfFiles;
 
     //!  mpi communicator tool
     WorldComm M_worldComm;
@@ -1047,7 +1069,11 @@ Bdf<SpaceType>::init()
         {
             // create and open a character archive for output
             std::ostringstream ostr;
-            ostr << M_name << "-" << M_iteration-p<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+
+            if( M_rankProcInNameOfFiles )
+                ostr << M_name << "-" << M_iteration-p<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+            else
+                ostr << M_name << "-" << M_iteration-p;
 
             DVLOG(2) << "[Bdf::init()] load file: " << ostr.str() << "\n";
 
@@ -1078,7 +1104,11 @@ Bdf<SpaceType>::initialize( element_type const& u0 )
 {
     M_time_values_map.clear();
     std::ostringstream ostr;
-    ostr << M_name << "-" << 0<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+
+    if( M_rankProcInNameOfFiles )
+        ostr << M_name << "-" << 0<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+    else
+        ostr << M_name << "-" << 0;
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
     //M_time_values_map.push_back( 0 );
     M_time_values_map.push_back( M_Ti );
@@ -1092,7 +1122,11 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
 {
     M_time_values_map.clear();
     std::ostringstream ostr;
-    ostr << M_name << "-" << 0<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+
+    if( M_rankProcInNameOfFiles )
+        ostr << M_name << "-" << 0<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+    else
+        ostr << M_name << "-" << 0;
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
     //M_time_values_map.push_back( 0);
     M_time_values_map.push_back( M_Ti );
@@ -1167,7 +1201,12 @@ Bdf<SpaceType>::saveCurrent()
 
     {
         std::ostringstream ostr;
-        ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+
+        if( M_rankProcInNameOfFiles )
+            ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+        else
+            ostr << M_name << "-" << M_iteration;
+
         fs::ofstream ofs( M_path_save / ostr.str() );
 
 
@@ -1186,7 +1225,12 @@ Bdf<SpaceType>::loadCurrent()
 
     {
         std::ostringstream ostr;
-        ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+
+        if( M_rankProcInNameOfFiles )
+            ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+        else
+            ostr << M_name << "-" << M_iteration;
+
         fs::ifstream ifs( M_path_save / ostr.str() );
 
         // load data from archive
@@ -1275,6 +1319,7 @@ BOOST_PARAMETER_FUNCTION(
       ( restart_path,*,vm[prefixvm( prefix,"bdf.restart.path" )].template as<std::string>() )
       ( restart_at_last_save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.restart.at-last-save" )].template as<bool>() )
       ( save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.save" )].template as<bool>() )
+      ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.rank-proc-in-files-name" )].template as<bool>() )
     ) )
 {
     typedef typename meta::remove_all<space_type>::type::value_type _space_type;
@@ -1289,6 +1334,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setRestartPath( restart_path );
     thebdf->setRestartAtLastSave( restart_at_last_save );
     thebdf->setSaveInFile( save );
+    thebdf->setRankProcInNameOfFiles( rank_proc_in_files_name );
     return thebdf;
 }
 
