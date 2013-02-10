@@ -33,41 +33,39 @@
 using namespace Feel;
 
 /**
- * Program entry point 
+ * Program entry point
  */
 //\code
 //# marker1 #
 int main( int argc, char* argv[] )
 {
-
     // create custom command option
-    po::options_description app_options( "App options" );
+    po::options_description app_options( "MyApp options" );
     app_options.add( feel_options() );
     app_options.add_options()
-	( "value", po::value<double>() -> default_value(4.2), "description" )
+	( "value",
+      po::value<double>() -> default_value(4.2),
+      "a 'double' with default value" )
     ;
 
     // initialize feel++ environment
-    Environment env( _argc = argc, _argv = argv,
-		     _desc = app_options,
-		     _about = about( _name = "myapp",
-			             _author = "your name",
-				     _email = "name@domain") );
-    
-    // instantiate a feel++ application
-    Application myapp;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=app_options,
+                     _about=about( _name="myapp",
+                                   _author="Feel++ Consortium",
+                                   _email="feelpp-devel@feelpp.org") );
 
-    // change the default exec directory 
+    // change the default exec directory
     Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/" )
-                                       % myapp.about().appName() );
-    
-    // create a log and write inside
-    LOG(INFO) << "value = " << Environment::vm()["value"].as<double>()
-	      << std::endl;
+                                   % Environment::about().appName() );
 
-    LOG(INFO) << "proc " << Environment::worldComm().globalRank()+1
-	      <<" of "<< Environment::numberOfProcessors()
-	      << std::endl;
+    // create a log and write inside
+    LOG(INFO) << "value = " << option(_name="value").as<double>()
+              << std::endl;
+
+    LOG(INFO) << "proc " << Environment::worldComm().globalRank()
+              <<" of "<< Environment::numberOfProcessors()
+              << std::endl;
 
 } // main
 //# endmarker1 #
