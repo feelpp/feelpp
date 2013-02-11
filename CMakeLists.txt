@@ -407,136 +407,15 @@ foreach(OPT ${CONFIG_OPTIONS})
   set(FEELPP_CONFIG_OPTIONS "${FEELPP_CONFIG_OPTIONS} ${OPT}")
 endforeach(OPT)
 
+################################################################################
+# Installation procedure
+################################################################################
+include(feelpp.install)
 
-set(INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-set(FEELPP_PREFIX ${CMAKE_INSTALL_PREFIX})
-set(FEELPP_DATADIR ${CMAKE_INSTALL_PREFIX}/share/feel )
-CONFIGURE_FILE(feelconfig.h.in feel/feelconfig.h  @ONLY)
-CONFIGURE_FILE(feelinfo.h.in feel/feelinfo.h  @ONLY)
-
-#
-# Packaging
-#
-INCLUDE(InstallRequiredSystemLibraries)
-
-
-foreach(includedir feelcore feelalg feelmesh feelpoly feelfilters feeldiscr feelvf feelmaterial feelsystem )
-  FILE(GLOB files "feel/${includedir}/*.hpp")
-  FILE(GLOB cppfiles "feel/${includedir}/*.cpp")
-  INSTALL(FILES ${files} ${cppfiles} DESTINATION include/feel/${includedir} COMPONENT Devel)
-endforeach()
-FILE(GLOB files "feel/*.hpp")
-INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
-
-# install cln headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/include/cln/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/cln COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/lib/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
-
-# install gflags headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/include/gflags/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/gflags COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/lib/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
-
-# install glog headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/include/glog/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel/glog COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib/lib*")
-INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
-
-# gmm
-IF ( NOT GMM_FOUND )
-  FILE(GLOB files "contrib/gmm/include/*.h")
-  INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
-ENDIF()
-# feel++ config headers
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/feel/*.h")
-INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
-
-message(STATUS "apps: ${FEELPP_INSTALL_APPS}")
-INSTALL(FILES ${FEELPP_INSTALL_APPS} DESTINATION bin/ COMPONENT Bin)
-
-# documentation and examples
-#  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
-        PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
-FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/*.*pp")
-INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
-
-
-##
-## Archive generation using cpack
-##
-if (UNIX)
-  execute_process(
-    COMMAND uname -m
-    OUTPUT_VARIABLE FEELPP_SYSTEM_MACHINE
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_VARIABLE FEELPP_SYSTEM_MACHINE_error
-    RESULT_VARIABLE FEELPP_SYSTEM_MACHINE_result)
-endif()
-SET(CPACK_PACKAGE_NAME "feel++")
-SET(CPACK_GENERATOR "TGZ")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++")
-SET(CPACK_PACKAGE_VENDOR "Christophe Prud'homme")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.org")
-SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
-SET(CPACK_PACKAGE_VERSION_MAJOR "${FEELPP_VERSION_MAJOR}")
-SET(CPACK_PACKAGE_VERSION_MINOR "${FEELPP_VERSION_MINOR}")
-SET(CPACK_PACKAGE_VERSION_PATCH "${FEELPP_VERSION_MICRO}")
-SET(CPACK_PACKAGE_INSTALL_DIRECTORY "feel")
-SET(CPACK_SOURCE_GENERATOR "TGZ")
-SET(CPACK_SOURCE_OUTPUT_CONFIG_FILE "CPackSourceConfig.cmake")
-SET(CPACK_SYSTEM_NAME "${FEELPP_OS}-${FEELPP_SYSTEM_MACHINE}")
-
-OPTION(FEELPP_ENABLE_CPACK_OPUS "Enable OPUS packaging (if available) in CPack along with Feel++" ON )
-SET(CPACK_PACKAGE_NAME "feel++")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Feel++ (Finite Element method Embedded Library and language in C++)")
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_EXTRA}")
-
-
-SET(CPACK_SOURCE_STRIP_FILES "")
-# The following components are regex's to match anywhere (unless anchored)
-# in absolute path + filename to find files or directories to be excluded
-# from source tarball.
-set(CPACK_SOURCE_IGNORE_FILES
-  "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
-  "/admin/;/Templates/;"
-  "/auto/;"
-  "/TAGS;/#.*;/.*~$;/.cvsignore;/.bzrignore;/work/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/turek/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/stokes/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/ethiersteinman/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/kovasznay/"
-  "${PROJECT_SOURCE_DIR}/doc/poster/"
-  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
-  "${PROJECT_SOURCE_DIR}/doc/figures/backgrounds/"
-  "${PROJECT_SOURCE_DIR}/doc/figures/logos/"
-  "${PROJECT_SOURCE_DIR}/examples/fluid/"
-  "${PROJECT_SOURCE_DIR}/examples/levelset/"
-  "${PROJECT_SOURCE_DIR}/examples/pbeq/"
-  "${PROJECT_SOURCE_DIR}/research/"
-  "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;/opt/"
-  "*.aux;*.log;*.bbl;*.idx;*.ist;*.out;*.blg;OpusManualBenchmarkEADSUJF.pdf"
-  "${PROJECT_SOURCE_DIR}/applications/opus.old"
-  "${PROJECT_SOURCE_DIR}/applications/opus/"
-   "${PROJECT_SOURCE_DIR}/applications/opus/debian/opus/"
-  "${PROJECT_SOURCE_DIR}/applications/opus/debian/source/"
-  "${PROJECT_SOURCE_DIR}/applications/opus/doc/"
-  "${PROJECT_SOURCE_DIR}/applications/opus/scripts"
-  )
-
-#if ( NOT EXISTS ${FEELPP_SOURCE_DIR}/applications/opus/ )
-if ( EXISTS ${FEELPP_SOURCE_DIR}/applications/opus/ AND NOT FEELPP_ENABLE_CPACK_OPUS )
-#  set(CPACK_SOURCE_IGNORE_FILES "${PROJECT_SOURCE_DIR}/applications/opus/;${CPACK_SOURCE_IGNORE_FILES}" )
-endif()
-
-include( CPack )
-
-
+################################################################################
+# Packaging procedure
+################################################################################
+include(feelpp.package)
 
 ################################################################################
 # Post-config message
