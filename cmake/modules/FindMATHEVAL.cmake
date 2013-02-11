@@ -30,11 +30,14 @@ INCLUDE(CheckIncludeFileCXX)
 
 # try to find libmatheval headers, if not found then install glog from contrib into
 # build directory and set MATHEVAL_INCLUDE_DIR and MATHEVAL_LIBRARIES
-FIND_PATH(MATHEVAL_INCLUDE_DIR matheval.h
+FIND_PATH(MATHEVAL_INCLUDE_DIR matheval/matheval.h
   ${CMAKE_BINARY_DIR}/contrib/libmatheval/include
+  $ENV{FEELPP_DIR}/include/feel/
   /opt/local/include /opt/local/include/matheval
   /usr/local/include /usr/local/include/matheval
   /usr/include /usr/include/matheval
+  PATH_SUFFIXES
+  feel
   )
 message(STATUS "Libmatheval first pass: ${MATHEVAL_INCLUDE_DIR}")
 
@@ -72,8 +75,9 @@ if (NOT MATHEVAL_INCLUDE_DIR )
 endif ()
 
 
-FIND_LIBRARY( MATHEVAL_LIB matheval
+FIND_LIBRARY( MATHEVAL_LIB feelpp_matheval matheval
   PATHS
+  $ENV{FEELPP_DIR}/lib
   ${CMAKE_BINARY_DIR}/contrib/libmatheval/lib/
   /usr/lib /opt/local/lib  $ENV{MATHEVAL_DIR}/lib)
 SET(MATHEVAL_LIBRARIES ${MATHEVAL_LIB} )

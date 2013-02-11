@@ -59,6 +59,12 @@ INSTALL(FILES ${files} DESTINATION include/feel/glog COMPONENT Devel)
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib/lib*")
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
 
+# install matheval headers
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/include/*.h")
+INSTALL(FILES ${files} DESTINATION include/feel/matheval COMPONENT Devel)
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib/lib*")
+INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
+
 # gmm
 IF ( NOT GMM_FOUND )
   FILE(GLOB files "contrib/gmm/include/*.h")
