@@ -58,7 +58,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags/ )
   if(${CMAKE_SOURCE_DIR}/contrib/gflags/src/gflags/gflags.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/gflags/include/gflags/gflags.h)
     message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
     execute_process(
-      COMMAND make -k install
+      COMMAND make -k -j${NProcs2} install
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
       #  OUTPUT_QUIET
       OUTPUT_FILE "gflags-install"
