@@ -13,7 +13,7 @@ FIND_PATH(CLN_INCLUDE_DIR cln.h
   /opt/local/include/feel
   PATH_SUFFIXES
   cln
-#  NO_DEFAULT_PATH
+  NO_DEFAULT_PATH
 #  /opt/local/include
 #  /usr/local/include
 #  /usr/include
