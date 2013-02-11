@@ -1755,7 +1755,7 @@ CRB<TruthModelType>::offline()
 
         }
 
-        if ( M_model->isSteady() && M_use_newton )
+		if ( M_model->isSteady() && M_use_newton )
         {
             mu.check();
             u->zero();
@@ -4183,7 +4183,7 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
     if( proc_number == 0 ) std::cout << "  -- orthonormalization (Gram-Schmidt)\n";
     DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for N=" << N << "\n";
     DVLOG(2) << "[CRB::orthonormalize] orthonormalize basis for WN="
-                    << wn.size() << "\n";
+             << wn.size() << "\n";
     DVLOG(2) << "[CRB::orthonormalize] starting ...\n";
 
     for ( size_type i = 0; i < N; ++i )

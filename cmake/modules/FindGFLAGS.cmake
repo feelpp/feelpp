@@ -29,7 +29,8 @@
 # and set GFLAGS_INCLUDE_DIR and GFLAGS_LIBRARIES
 FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
   ${CMAKE_BINARY_DIR}/contrib/gflags/include
-  NO_DEFAULT_PATH
+  $ENV{FEELPP_DIR}/include/feel
+#  NO_DEFAULT_PATH
 #  /opt/local/include
 #  /usr/local/include
 # /usr/include
@@ -48,31 +49,32 @@ if (NOT GFLAGS_INCLUDE_DIR )
       OUTPUT_FILE "gflags-configure"
       )
   endif()
-  
+
   set(GFLAGS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/contrib/gflags/include)
-  
+
 endif()
 
-
-if(${CMAKE_SOURCE_DIR}/contrib/gflags/src/gflags/gflags.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/gflags/include/gflags/gflags.h)
-  message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
-  execute_process(
-    COMMAND make -k install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
-    #  OUTPUT_QUIET
-    OUTPUT_FILE "gflags-install"
-    )
+if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags/ )
+  if(${CMAKE_SOURCE_DIR}/contrib/gflags/src/gflags/gflags.h IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/gflags/include/gflags/gflags.h)
+    message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
+    execute_process(
+      COMMAND make -k install
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+      #  OUTPUT_QUIET
+      OUTPUT_FILE "gflags-install"
+      )
+  endif()
 endif()
 
 string(REPLACE "include" "" GFLAGS_DIR ${GFLAGS_INCLUDE_DIR} )
 
 
 FIND_LIBRARY(GFLAGS_LIBRARY
-  NAMES gflags
+  NAMES feelpp_gflags gflags
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/gflags/lib64/
   ${CMAKE_BINARY_DIR}/contrib/gflags/lib/
-  NO_DEFAULT_PATH
+  $ENV{FEELPP_DIR}/lib
 #  /opt/local/lib
 #  /usr/local/lib
 #  /usr/lib
