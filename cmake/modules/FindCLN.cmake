@@ -121,7 +121,9 @@ if (CLN_INCLUDE_DIR)
 	_cl_get_version(CLN_VERSION_MAJOR
 			CLN_VERSION_MINOR
 			CLN_VERSION_PATCHLEVEL
-			${CLN_INCLUDE_DIR}/cln/version.h)
+			${CLN_INCLUDE_DIR}/version.h
+			${CLN_INCLUDE_DIR}/cln/version.h
+      )
 	set(CLN_VERSION ${CLN_VERSION_MAJOR}.${CLN_VERSION_MINOR}.${CLN_VERSION_PATCHLEVEL})
 	# Check if the version reported by pkg-config is the same
 	# as the one read from the header. This prevents us from
