@@ -69,5 +69,7 @@ OpusModelFactory::New( Feel::po::variables_map const& vm )
 
 
     }
+    LOG(FATAL) << "model for temperature approximation order " << order_temp << " does not exist\n";
+    return opusmodel_ptrtype();
 }
 }

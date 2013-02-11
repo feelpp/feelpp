@@ -75,7 +75,7 @@ logging_unittest_SOURCES = $(gloginclude_HEADERS) \
 nodist_logging_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 logging_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 logging_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-logging_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+logging_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 
 check_SCRIPTS += logging_striplog_test_sh
 noinst_SCRIPTS += src/logging_striplog_test.sh
@@ -100,7 +100,7 @@ logging_striptest0_SOURCES = $(gloginclude_HEADERS) \
 nodist_logging_striptest0_SOURCES = $(nodist_gloginclude_HEADERS)
 logging_striptest0_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 logging_striptest0_LDFLAGS = $(PTHREAD_CFLAGS)
-logging_striptest0_LDADD = libglog.la $(COMMON_LIBS)
+logging_striptest0_LDADD = libfeelpp_glog.la $(COMMON_LIBS)
 
 TEST_BINARIES += logging_striptest2
 logging_striptest2_SOURCES = $(gloginclude_HEADERS) \
@@ -108,7 +108,7 @@ logging_striptest2_SOURCES = $(gloginclude_HEADERS) \
 nodist_logging_striptest2_SOURCES = $(nodist_gloginclude_HEADERS)
 logging_striptest2_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 logging_striptest2_LDFLAGS = $(PTHREAD_CFLAGS)
-logging_striptest2_LDADD = libglog.la $(COMMON_LIBS)
+logging_striptest2_LDADD = libfeelpp_glog.la $(COMMON_LIBS)
 
 TEST_BINARIES += logging_striptest10
 logging_striptest10_SOURCES = $(gloginclude_HEADERS) \
@@ -116,7 +116,7 @@ logging_striptest10_SOURCES = $(gloginclude_HEADERS) \
 nodist_logging_striptest10_SOURCES = $(nodist_gloginclude_HEADERS)
 logging_striptest10_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 logging_striptest10_LDFLAGS = $(PTHREAD_CFLAGS)
-logging_striptest10_LDADD = libglog.la $(COMMON_LIBS)
+logging_striptest10_LDADD = libfeelpp_glog.la $(COMMON_LIBS)
 
 TESTS += demangle_unittest
 demangle_unittest_SOURCES = $(gloginclude_HEADERS) \
@@ -124,7 +124,7 @@ demangle_unittest_SOURCES = $(gloginclude_HEADERS) \
 nodist_demangle_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 demangle_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 demangle_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-demangle_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+demangle_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 
 TESTS += stacktrace_unittest
 stacktrace_unittest_SOURCES = $(gloginclude_HEADERS) \
@@ -132,7 +132,7 @@ stacktrace_unittest_SOURCES = $(gloginclude_HEADERS) \
 nodist_stacktrace_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 stacktrace_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 stacktrace_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-stacktrace_unittest_LDADD = libglog.la $(COMMON_LIBS)
+stacktrace_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS)
 
 TESTS += symbolize_unittest
 symbolize_unittest_SOURCES = $(gloginclude_HEADERS) \
@@ -140,7 +140,7 @@ symbolize_unittest_SOURCES = $(gloginclude_HEADERS) \
 nodist_symbolize_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 symbolize_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 symbolize_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-symbolize_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+symbolize_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 
 TESTS += stl_logging_unittest
 stl_logging_unittest_SOURCES = $(gloginclude_HEADERS) \
@@ -148,7 +148,7 @@ stl_logging_unittest_SOURCES = $(gloginclude_HEADERS) \
 nodist_stl_logging_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 stl_logging_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 stl_logging_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-stl_logging_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+stl_logging_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 
 TEST_BINARIES += signalhandler_unittest
 signalhandler_unittest_SOURCES = $(gloginclude_HEADERS) \
@@ -156,7 +156,7 @@ signalhandler_unittest_SOURCES = $(gloginclude_HEADERS) \
 nodist_signalhandler_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 signalhandler_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 signalhandler_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-signalhandler_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+signalhandler_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 
 TESTS += utilities_unittest
 utilities_unittest_SOURCES = $(gloginclude_HEADERS) \
@@ -164,7 +164,7 @@ utilities_unittest_SOURCES = $(gloginclude_HEADERS) \
 nodist_utilities_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 utilities_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 utilities_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-utilities_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+utilities_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 
 if HAVE_GMOCK
 TESTS += mock_log_test
@@ -173,13 +173,13 @@ mock_log_test_SOURCES = $(gloginclude_HEADERS) \
 nodist_mock_log_test_SOURCES = $(nodist_gloginclude_HEADERS)
 mock_log_test_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 mock_log_test_LDFLAGS = $(PTHREAD_CFLAGS)
-mock_log_test_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+mock_log_test_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 endif
 
 ## vvvv RULES TO MAKE THE LIBRARIES, BINARIES, AND UNITTESTS
 
-lib_LTLIBRARIES += libglog.la
-libglog_la_SOURCES = $(gloginclude_HEADERS) \
+lib_LTLIBRARIES += libfeelpp_glog.la
+libfeelpp_glog_la_SOURCES = $(gloginclude_HEADERS) \
                        src/logging.cc src/raw_logging.cc src/vlog_is_on.cc \
                        src/utilities.cc src/utilities.h \
                        src/demangle.cc src/demangle.h \
@@ -193,11 +193,11 @@ libglog_la_SOURCES = $(gloginclude_HEADERS) \
                        src/signalhandler.cc \
                        src/base/mutex.h src/base/googleinit.h \
                        src/base/commandlineflags.h src/googletest.h
-nodist_libglog_la_SOURCES = $(nodist_gloginclude_HEADERS)
+nodist_libfeelpp_glog_la_SOURCES = $(nodist_gloginclude_HEADERS)
 
-libglog_la_CXXFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_CFLAGS) $(AM_CXXFLAGS) -DNDEBUG
-libglog_la_LDFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS)
-libglog_la_LIBADD = $(COMMON_LIBS)
+libfeelpp_glog_la_CXXFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_CFLAGS) $(AM_CXXFLAGS) -DNDEBUG
+libfeelpp_glog_la_LDFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS)
+libfeelpp_glog_la_LIBADD = $(COMMON_LIBS)
 
 ## The location of the windows project file for each binary we make
 WINDOWS_PROJECTS = google-glog.sln
