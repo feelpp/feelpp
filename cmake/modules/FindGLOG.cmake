@@ -59,7 +59,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog/ )
       ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
     message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
     execute_process(
-      COMMAND make -k install
+      COMMAND make -k -j${NProcs2} install
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
       OUTPUT_QUIET
       )
