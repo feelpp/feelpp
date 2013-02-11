@@ -33,29 +33,6 @@
 #include <feel/feel.hpp>
 using namespace Feel;
 
-
-/**
- * Custom Feel++ options
- */
-inline
-Feel::po::options_description
-makeOptions()
-{
-    po::options_description myoptions( "MyMesh options" );
-    myoptions.add( feel_options() );
-    myoptions.add_options()
-        ( "hsize",
-          po::value<double>()->default_value( 0.1 ),
-          "mesh size" )
-        ( "shape",
-          po::value<std::string>()->default_value( "hypercube" ),
-          "shape of the domain (either simplex or hypercube)" )
-        ;
-
-    return myoptions;
-}
-
-
 /**
  * Application description
  */
@@ -63,18 +40,9 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    AboutData about( "mymesh" ,
-	             "mymesh" ,
-                     "0.2",
-                     "Tutorial - Mesh creation",
-                      AboutData::License_GPL,
-                     "Copyright (c) 2008-2013 Universite Joseph Fourier, Universite de Strasbourg" );
-
-    about.addAuthor( "developers",
-                     "Feel++ Consortium",
-                     "feelpp-devel@feelpp.org", "" );
-    
-    return about;
+    return  about( _name="mymesh" ,
+                   _author="Feel++ Consortium",
+                   _email="feelpp-devel@feelpp.org" );
 }
 
 
@@ -87,31 +55,16 @@ int main( int argc, char** argv )
 {
     // initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
+                     _desc=feel_options(),
                      _about=makeAbout() );
                      
-    // get options
-    const int Dim = 2;
-    double meshSize = option( _name="hsize" ).as<double>();
-    std::string shape = option( _name="shape" ).as<std::string>();
-
     // choose exec directory
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/h_%4%" )
-                                   % Environment::about().appName()
-                                   % shape
-                                   % Dim
-                                   % meshSize );
+    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/" )
+                                   % Environment::about().appName() );
 
-
-    // create a mesh with GMSH using Feel++ geometry constructor
-    auto mesh = createGMSHMesh( _mesh = new Mesh< Simplex<Dim> > ,
-                                _desc = domain( _name=( boost::format( "%1%-%2%" ) 
-							    % shape % Dim
-						       ).str() ,
-                                                _shape=shape,
-                                                _dim=Dim,
-                                                _h=meshSize ) );
-
+    // create a mesh with GMSH using Feel++ geometry tool
+    auto mesh = unitSquare();
+    
     // export results for post processing
     auto e = exporter( _mesh=mesh );
     e->save();
