@@ -5,7 +5,7 @@
 # CLN_INCLUDE_DIR       the include directories
 # CLN_LIBRARIES         CLN library and its dependencies (if any)
 
-FIND_PATH(CLN_INCLUDE_DIR cln.h
+FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   ${CMAKE_BINARY_DIR}/contrib/cln/include
   $ENV{FEELPP_DIR}/include
   $ENV{FEELPP_DIR}/include/feel
@@ -121,7 +121,6 @@ if (CLN_INCLUDE_DIR)
 	_cl_get_version(CLN_VERSION_MAJOR
 			CLN_VERSION_MINOR
 			CLN_VERSION_PATCHLEVEL
-			${CLN_INCLUDE_DIR}/version.h
 			${CLN_INCLUDE_DIR}/cln/version.h
       )
 	set(CLN_VERSION ${CLN_VERSION_MAJOR}.${CLN_VERSION_MINOR}.${CLN_VERSION_PATCHLEVEL})
