@@ -4,11 +4,9 @@
             {cha:getting-started}
 
 
-\section{Creating applications}
-\label{sec:creat-appl}
-
-
+% first application
 \input{tutorial/myapp}
+
 
 \subsection{Initializing PETSc and Trilinos}
 
@@ -27,194 +25,12 @@ large-scale, complex multi-physics engineering and scientific problems.
 associated environments.
 
 
-\section{Mesh Manipulation}
-\marginpar{\lstinline!mymesh.cpp!}
-\label{sec:mesh-manipulation}
+% mesh manipulation
+\input{tutorial/mymesh}
 
-\index{mesh}\index{Class!Mesh}
+% compute integrals
+%\input{tutorial/myintegrals}
 
-In this section, we present some of the mesh definition and
-manipulation tools provided by \feel.
-
-\subsection{Mesh definition}
-
-We look at the definition of a mesh data structure. First, we define
-the type of geometric entities that we shall use to form our mesh. \feel supports several geometric entities
-\begin{itemize}
-\item simplices: segment, triangle, tetrahedron
-\item tensorized entities: segment, quadrangle, hexahedron
-\end{itemize}
-
-To create a mesh, use the following keywords \lstinline!Simplex<Dim,Order,RealDim>!  and \\
-\lstinline!SimplexProduct <Dim,Order,RealDim>!. They have the same template
-arguments:
-\begin{itemize}
-\item \lstinline!Dim!: the topological dimension of the entity (optional, default value = 1).
-\item \lstinline!Order!: the order of the entity(usually 1, higher order in development).
-\item \lstinline!RealDim!: the dimension of the real space (optional, default value = \lstinline!Dim!).
-\end{itemize}
-
-
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/mymesh.cpp}
-
-Now, you are able to define the mesh type, \lstinline!Mesh<Entity>! by passing as
-argument the type of entity it is formed with (at the moment hybrid
-meshes are not supported).
-
-\lstinputlisting[linerange=marker2-endmarker2]{tutorial/mymesh.cpp}
-
-\lstinline!boost::shared_ptr! allows to manipulate a pointer on a mesh. It is
-customary, and usually a very good practice, to define the
-\lstinline!boost::shared_ptr<>!  counterpart which is used actually in practice.
-
-%We can now instantiate a new mesh data structure.
-
-%\lstinputlisting[linerange=marker3-endmarker3]{tutorial/mymesh.cpp}
-
-\subsection{Mesh file format}
-The next step is to read some mesh files. \feel supports essentially the Gmsh
-mesh file format. It provides also some classes to manipulate Gmsh
-\lstinline!.geo! files and generate \lstinline!.msh! files. To begin, we use
-some helper classes and functions to generate a \lstinline!.geo! file.
-
-\begin{itemize}
-\item \lstinline!domain! is a function which allows to generate a \verb|.geo|
-  string description of simple domains such as simplex and hypercube.
-
-\item \lstinline!createGMSHMesh! is a function which allows to generate a mesh
-  file \verb|.msh| automatically from a description file ( \verb|.geo| for
-  example) by using the \verb|_desc| parameter and store the generated mesh into
-  the \verb|_mesh| parameter allocated when calling the function.
-
-\item \lstinline!GmshSimplexDomain! is a class which will enable you to create
-  simplex domains (e.g segment, triangle or tetrahedron). It allows to modify
-  	\begin{itemize}
-	 \item the characteristic size of the mesh (default $h=0.1$)
-  	\item the domain vertices (default is $(-1,-1,-1), (1,-1,-1), (-1,1,-1), (-1,-1,1)$)
-  	\end{itemize}
-
-\item \lstinline!GmshHypercubeDomain! is a class which will enable you to create hypercube domains (e.g cube) in 1,2 or 3D. It allows to modify
-  	\begin{itemize}
-  	\item the characteristic size of the mesh (default $h=0.1$)
-  	\item the domain (default is the cube $[0;1]\times[0;1]\times[0;1]$)
-  	\end{itemize}
-\end{itemize}
-
-%The call to \lstinline!setCharacteristicLength! allows to change the mesh size to \lstinline!M_meshSize! which was given for example on the command line using the \lstinline!Application! framework, see section~\ref{sec:creat-appl}. The call to \lstinline!generate! creates the \lstinline!.geo! file and generate the associated mesh. Note that \lstinline!fname! holds the name of the \lstinline!.msh! file, e.g. \lstinline!mymesh.msh!. \feel adds automatically the \lstinline!.msh!  extension. Also note the last argument of \lstinline!GmshTensorizedDomain!, it allows to change the type of geometric entities used to generate the mesh. Here we use \lstinline!Simplex!, we could have also used \lstinline!SimplexProduct! (quadrangle or hexahedron)
-
-%Next we import the mesh using the \lstinline!ImporterGmsh!\index{mesh!import}\index{Class!ImporterGmsh} class as follows:
-
-%lstinputlisting[linerange=marker5-endmarker5]{tutorial/mymesh.cpp}
-%At this stage we are ready to use the mesh instance: we can for example export the mesh to a postprocessing format. Two formats are supported at the moment
-%\begin{itemize}
-%\item \lstinline!Ensight! (case and sos) which is supported by the
-%  software Ensight\footnote{\url{http://www.ensight.com}} and
-%  Paraview\footnote{\url{http://www.paraview.org}}
-%\item \lstinline!Gmsh! which is post-processing format of Gmsh
-%\end{itemize}
-
-%The export stage reads as follows:
-
-%\lstinputlisting[linerange=marker6-endmarker6]{tutorial/mymesh.cpp}
-
-%In this example, we create a $\polyP{0}$ function space and save the
-%piecewise constant function that associates to each element the
-%process id it belongs to. In sequential, they all belong to processor
-%0.  In a parallel setting, the mesh is partitioned using Metis and
-%each element is associated with a corresponding processor. The figure
-%\ref{fig:1} displays a partitioned mesh in two regions and the
-%associated $\polyP{0}$ function.
-
-%\begin{figure}[htbp]
-% \centering
-% \includegraphics[width=.7\linewidth]{mymeshpartition}
-%\label{fig:1}
-%\caption{Screenshot of Paraview (3.2.1) of a 2D mesh partitioned and distributed on two processors}
-%\end{figure}
-\subsection{Examples}
-\label{mesh:examples}
-Here is an example of how to get a simplex or hypercube geometry :
-
-\lstinputlisting[linerange=marker4-endmarker4]{tutorial/mymesh.cpp}
-The parameter \lstinline!_h! in the function \lstinline!domain! allows to change the mesh characteristic size to \lstinline!M_meshsize! which is given for example on the command-line using the Application framework, please refer to ~\ref{sec:creat-appl} for more details. You can see the meshes, by executing with the followings ordering :
-
-\begin{unixcom}
-		./feelpp_doc_mymesh --shape=simplex
-		./feelpp_doc_mymesh --shape=hypercube
-\end{unixcom}
-we generate some of the following graphics (which are located in \verb|~/feel/doc/tutorial/mymesh/| \newline \verb|hypercube-x/h_y.z| or \verb|~/feel/doc/tutorial/mymesh/simplex-x/h_y.z|)
-
-
-To visualize the meshes, go to \lstinline!~/feel/doc/tutorial/mymesh/hypercube!
-(or \lstinline!simplex!) and find out the \verb|.msh| files. Last step is to
-launch gmsh with
-\begin{unixcom}
-  gmsh yourfile.msh
-\end{unixcom}
-
-
-\begin{figure}[!h]
-  \centering
-  \subfigure[Line in 1D]{\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_1.png}}
-  \subfigure[Cube in 2D]{\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_2.png}}
-  \newline
-  \centering
-  \subfigure[Tetrahedron]{\includegraphics[width=4.5cm]{pngs/mymesh/simplex_3.png}}
-  \subfigure[Unit cube in 3D]{\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_3.png}}
-  \caption{Sequential computation}
-\end{figure}
-\label{fig:2}
-
-Some examples of meshes generated in sequential and parallel computaion are shown in the following figures.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- \begin{figure}[!h]
-  \centering
-  \subfigure[Square]{\includegraphics[width=4.75cm]{pngs/mymesh/mesh3.png}}
-  \subfigure[Triangle]{\includegraphics[width=4.75cm]{pngs/mymesh/mesh_triangle.png}}
-  \subfigure[Cube in 3D]{\includegraphics[width=4.75cm]{pngs/mymesh/mesh_cube.png}}
-  \caption{Parallel computation for generating meshes}
-
-\end{figure}
-  \label{fig:2}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-\subsection{Exporting meshes for post-processing}
-
-We can export the mesh to two postprocessing formats supported at the moment :
-\begin{itemize}
-\item \textbf{Ensight} (sos and case)  which is supported by the software Ensight and Paraview;
-\item \textbf{Gmsh} which is post-processing format of Gmsh.
-\end{itemize}
-
-We define the exporter data structure type as follows :
-\lstinputlisting[linerange=marker61-endmarker61]{tutorial/mymesh.cpp}
-
-By default, the  export format is ensight. We can use the code \lstinline!Exporter::setMesh()! and \lstinline!Exporter::save()! to save the mesh to the format given to the command line --exporter= <format>
-
-\lstinputlisting[linerange=marker62-endmarker62]{tutorial/mymesh.cpp}
-
-To take into account the exporting format, you have to type thoses syntaxes
-\begin{unixcom}
-		./feelpp_doc_mymesh  --exporter= gmsh
-		./feelpp_doc_mymesh  --exporter= paraview
-\end{unixcom}
-
-
-\subsection{Iterating over the entities of a mesh}
-
-\feel mesh data structures provides powerful iterators that allows to
-walk though the mesh in various ways: iterate over element, faces ,
-points, marked\footnote{associated to an integer flag denoting a
-  region, material, processor} elements, marked faces, ...
-
-\subsection{Load meshes}
-\marginpar{\lstinline!loadmesh.cpp!}
-
-\feel supports gmsh meshes but not only, you can also wortk with medit (\lstinline!.mesh!) or STL (\lstinline!.stl!) files format. The full explaination is avaible in the HOW TO section you can find at \ref{howto:spec-meshes}. This is implemented in \lstinline!loadmesh.cpp! which is a simple application which loads a mesh and calculate its surface and volume.
 
 \section{Computing integrals}
 \label{sec:computing-integrals}
