@@ -1,6 +1,6 @@
 # File: UseLATEX.cmake
 # CMAKE commands to actually use the LaTeX compiler
-# Version: 1.9.5
+# Version: 1.9.6
 # Author: Kenneth Moreland <kmorel@sandia.gov>
 #
 # Copyright 2004 Sandia Corporation.
@@ -69,6 +69,10 @@
 #       with the \newcite command in the multibib package.
 #
 # History:
+#
+# 1.9.6 Fixed problem with LATEX_SMALL_IMAGES.
+#       Strengthened check to make sure the output directory does not contain
+#       the source files.
 #
 # 1.9.5 Add support for image types not directly supported by either latex
 #       or pdflatex.  (Thanks to Jorge Gerardo Pena Pastor for SVG support.)
@@ -429,7 +433,7 @@ FUNCTION(LATEX_MAKEGLOSSARIES)
           )
       ENDIF ("${xindy_output}" MATCHES "^Cannot locate xindy module for language (.+) in codepage (.+)\\.$")
       #ENDIF ("${xindy_output}" MATCHES "Cannot locate xindy module for language (.+) in codepage (.+)\\.")
-      
+
     ELSE (use_xindy)
       MESSAGE("${MAKEINDEX_COMPILER} ${MAKEGLOSSARIES_COMPILER_FLAGS} -s ${istfile} -t ${glossary_log} -o ${glossary_out} ${glossary_in}")
       EXEC_PROGRAM(${MAKEINDEX_COMPILER} ARGS ${MAKEGLOSSARIES_COMPILER_FLAGS}
@@ -635,11 +639,11 @@ FUNCTION(LATEX_SETUP_VARIABLES)
     "If on, the raster images will be converted to 1/6 the original size.  This is because papers usually require 600 dpi images whereas most monitors only require at most 96 dpi.  Thus, smaller images make smaller files for web distributation and can make it faster to read dvi files."
     OFF)
   IF (LATEX_SMALL_IMAGES)
-    SET(LATEX_RASTER_SCALE 16)
-    SET(LATEX_OPPOSITE_RASTER_SCALE 100)
+    SET(LATEX_RASTER_SCALE 16 PARENT_SCOPE)
+    SET(LATEX_OPPOSITE_RASTER_SCALE 100 PARENT_SCOPE)
   ELSE (LATEX_SMALL_IMAGES)
-    SET(LATEX_RASTER_SCALE 100)
-    SET(LATEX_OPPOSITE_RASTER_SCALE 16)
+    SET(LATEX_RASTER_SCALE 100 PARENT_SCOPE)
+    SET(LATEX_OPPOSITE_RASTER_SCALE 16 PARENT_SCOPE)
   ENDIF (LATEX_SMALL_IMAGES)
 
   # Just holds extensions for known image types.  They should all be lower case.
@@ -691,11 +695,14 @@ ENDFUNCTION(LATEX_SETUP_VARIABLES)
 FUNCTION(LATEX_GET_OUTPUT_PATH var)
   SET(latex_output_path)
   IF (LATEX_OUTPUT_PATH)
-    IF ("${LATEX_OUTPUT_PATH}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+    GET_FILENAME_COMPONENT(
+      LATEX_OUTPUT_PATH_FULL "${LATEX_OUTPUT_PATH}" ABSOLUTE
+      )
+    IF ("${LATEX_OUTPUT_PATH_FULL}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
       MESSAGE(SEND_ERROR "You cannot set LATEX_OUTPUT_PATH to the same directory that contains LaTeX input files.")
-    ELSE ("${LATEX_OUTPUT_PATH}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
-      SET(latex_output_path "${LATEX_OUTPUT_PATH}")
-    ENDIF ("${LATEX_OUTPUT_PATH}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+    ELSE ("${LATEX_OUTPUT_PATH_FULL}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+      SET(latex_output_path "${LATEX_OUTPUT_PATH_FULL}")
+    ENDIF ("${LATEX_OUTPUT_PATH_FULL}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
   ELSE (LATEX_OUTPUT_PATH)
     IF ("${CMAKE_CURRENT_BINARY_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
       MESSAGE(SEND_ERROR "LaTeX files must be built out of source or you must set LATEX_OUTPUT_PATH.")

@@ -23,13 +23,13 @@ EXTRA_DIST = parser.h
 
 INCLUDES = -I$(top_builddir) -I$(top_srcdir)
 
-lib_LTLIBRARIES = libmatheval.la
+lib_LTLIBRARIES = libfeelpp_matheval.la
 
-libmatheval_la_SOURCES = parser.y scanner.l error.c matheval.c	\
+libfeelpp_matheval_la_SOURCES = parser.y scanner.l error.c matheval.c	\
 g77_interface.c node.c symbol_table.c xmalloc.c xmath.c
 
-libmatheval_la_LDFLAGS = -version-info 1:0:0
-libmatheval_la_LIBADD = -lfl -lm
+libfeelpp_matheval_la_LDFLAGS = -version-info 1:0:0
+libfeelpp_matheval_la_LIBADD = -lfl -lm
 
 include_HEADERS = matheval.h
 noinst_HEADERS = common.h error.h node.h symbol_table.h xmalloc.h	\

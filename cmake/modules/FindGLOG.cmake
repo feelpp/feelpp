@@ -30,7 +30,9 @@
 FIND_PACKAGE(GFLAGS)
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   ${CMAKE_BINARY_DIR}/contrib/glog/include
-  NO_DEFAULT_PATH
+  $ENV{FEELPP_DIR}/include
+  $ENV{FEELPP_DIR}/include/feel
+#  NO_DEFAULT_PATH
 #  /opt/local/include
 #  /usr/local/include
 #  /usr/include
@@ -52,25 +54,28 @@ if (NOT GLOG_INCLUDE_DIR )
   endif()
 endif()
 
-if ( (${CMAKE_SOURCE_DIR}/contrib/glog/src/glog/logging.h.in IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h) OR
-    ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
-  message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
-  execute_process(
-    COMMAND make -k install
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
-    OUTPUT_QUIET
-    )
+if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog/ )
+  if ( (${CMAKE_SOURCE_DIR}/contrib/glog/src/glog/logging.h.in IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h) OR
+      ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
+    message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
+    execute_process(
+      COMMAND make -k -j${NProcs2} install
+      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+      OUTPUT_QUIET
+      )
+  endif()
 endif()
 
 FIND_LIBRARY(GLOG_LIBRARY
-  NAMES glog
+  NAMES feelpp_glog glog
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/glog/lib64/
   ${CMAKE_BINARY_DIR}/contrib/glog/lib/
-  NO_DEFAULT_PATH
+  $ENV{FEELPP_DIR}/lib
+#  NO_DEFAULT_PATH
 #  /opt/local/lib
 #  /usr/local/lib
-#  /usr/lib
+ # /usr/lib
   )
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )
