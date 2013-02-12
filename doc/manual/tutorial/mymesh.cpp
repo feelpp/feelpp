@@ -29,22 +29,10 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>,
                  Guillaume Dollé <guillaume.dolle@math.unistra.fr>
    \date 2013-02-11
+   This program show how to create a mesh and export results.
  */
 #include <feel/feel.hpp>
 using namespace Feel;
-
-/**
- * Application description
- */
-inline
-Feel::AboutData
-makeAbout()
-{
-    return  about( _name="mymesh" ,
-                   _author="Feel++ Consortium",
-                   _email="feelpp-devel@feelpp.org" );
-}
-
 
 /**
  * Entry point
@@ -56,7 +44,9 @@ int main( int argc, char** argv )
     // initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                     _about=makeAbout() );
+                     _about=about( _name="mymesh" ,
+                                   _author="Feel++ Consortium",
+                                   _email="feelpp-devel@feelpp.org" ) );
                      
     // create a mesh with GMSH using Feel++ geometry tool
     auto mesh = unitSquare();
