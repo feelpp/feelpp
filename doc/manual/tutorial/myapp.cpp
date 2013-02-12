@@ -55,10 +55,6 @@ int main( int argc, char* argv[] )
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org") );
 
-    // change the default exec directory
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/" )
-                                   % Environment::about().appName() );
-
     // create a log and write inside
     LOG(INFO) << "value = " << option(_name="value").as<double>()
               << std::endl;

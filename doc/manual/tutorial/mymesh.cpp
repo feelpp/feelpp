@@ -58,10 +58,6 @@ int main( int argc, char** argv )
                      _desc=feel_options(),
                      _about=makeAbout() );
                      
-    // choose exec directory
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/" )
-                                   % Environment::about().appName() );
-
     // create a mesh with GMSH using Feel++ geometry tool
     auto mesh = unitSquare();
     
