@@ -64,7 +64,7 @@ enum class CRBModelMode
  * @see crb
  */
 template<typename ModelType>
-class CRBModel
+class CRBModel : public boost::enable_shared_from_this<CRBModel<ModelType> >
 {
 public:
 
@@ -319,7 +319,20 @@ public:
     /**
      * \brief Returns the matrix associated with the \f$H_1\f$ inner product
      */
+    sparse_matrix_ptrtype  innerProduct()
+    {
+        return M_B;
+    }
+
+    /**
+     * \brief Returns the matrix associated with the \f$H_1\f$ inner product
+     */
     sparse_matrix_ptrtype const& h1() const
+    {
+        return M_B;
+    }
+
+    sparse_matrix_ptrtype h1()
     {
         return M_B;
     }
@@ -606,7 +619,7 @@ public:
      *
      * \return the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
      */
-    value_type h1( element_type const& xi_i, element_type const& xi_j  )
+    value_type h1( element_type const& xi_i, element_type const& xi_j  ) const
     {
         return M_B->energy( xi_j, xi_i );
     }
@@ -619,7 +632,7 @@ public:
      *
      * \return the inner product \f$h1(\xi_i, \xi_j) = \xi_j^T H_1 \xi_i\f$
      */
-    value_type h1( element_type const& xi_i  )
+    value_type h1( element_type const& xi_i  ) const
     {
         return M_B->energy( xi_i, xi_i );
     }
@@ -634,8 +647,24 @@ public:
      *
      * \return the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
      */
-    sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
+    const sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
+        if ( transpose )
+            return M_Aqm[q][m]->transpose();
+
+        return M_Aqm[q][m];
+    }
+
+    /**
+     * \brief Returns the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
+     *
+     * \param q and m are index of the component in the affine decomposition
+     * \param transpose transpose \c A_q
+     *
+     * \return the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
+     */
+    sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false )
+        {
         if ( transpose )
             return M_Aqm[q][m]->transpose();
 
@@ -651,7 +680,23 @@ public:
      *
      * \return the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (ime dependent)
      */
-    sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
+    const sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
+    {
+        if ( transpose )
+            return M_Mqm[q][m]->transpose();
+
+        return M_Mqm[q][m];
+    }
+
+    /**
+     * \brief Returns the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (time dependent)
+     *
+     * \param q and m are index of the component in the affine decomposition
+     * \param transpose transpose \c M_q
+     *
+     * \return the matrix \c Mq[q][m] of the affine decomposition of the bilinear form (ime dependent)
+     */
+    sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false )
     {
         if ( transpose )
             return M_Mqm[q][m]->transpose();
@@ -660,7 +705,18 @@ public:
     }
 
 
-    vector_ptrtype MFqm( uint16_type q, uint16_type m ) const
+    /**
+     *
+     */
+    const vector_ptrtype MFqm( uint16_type q, uint16_type m ) const
+    {
+        return M_MFqm[q][m];
+    }
+
+    /**
+     *
+     */
+    vector_ptrtype MFqm( uint16_type q, uint16_type m )
     {
         return M_MFqm[q][m];
     }
@@ -676,7 +732,7 @@ public:
      *
      * \return the inner product \f$a_qm(\xi_i, \xi_j) = \xi_j^T A_{qm} \xi_i\f$
      */
-    value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
+    value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
         return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
     }
@@ -691,7 +747,7 @@ public:
      *
      * \return the inner product \f$m_{qm}(\xi_i, \xi_j) = \xi_j^T M_{qm} \xi_i\f$
      */
-    value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false )
+    value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
         return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
     }
@@ -718,8 +774,8 @@ public:
     }
     beta_vector_type const& betaMqm( mpl::bool_<false> ) const
     {
-        beta_vector_type vect;
-        return  vect;
+        LOG(WARNING) << "invalid call\n";
+        return  M_dummy_betaMqm;
     }
     beta_vector_type const& betaInitialGuessQm( mpl::bool_<true> ) const
     {
@@ -1099,6 +1155,7 @@ private:
     sparse_matrix_ptrtype M_B;
     sparse_matrix_ptrtype M_H1;
 
+    beta_vector_type M_dummy_betaMqm;
 
     //! initialize the matrix associated with the \f$H_1\f$ inner product
     void initB();
@@ -1148,7 +1205,7 @@ struct AssembleMassMatrixInCompositeCase
 
     AssembleMassMatrixInCompositeCase( element_type const u ,
                                        element_type const v ,
-                                       CRBModel<ModelType> & crb_model)
+                                       boost::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_u ( u ),
         M_composite_v ( v ),
@@ -1167,14 +1224,14 @@ struct AssembleMassMatrixInCompositeCase
         auto Xh = M_composite_u.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
 
-        form2( _test=Xh, _trial=Xh, _matrix=M_crb_model.Mqm(0,0) ) +=
+        form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
             integrate( _range=elements( mesh ), _expr=trans( idt( u ) )*id( v ) );
 
     }
 
     element_type  M_composite_u;
     element_type  M_composite_v;
-    CRBModel<ModelType> & M_crb_model;
+    mutable boost::shared_ptr<CRBModel<ModelType>  > M_crb_model;
 };
 
 
@@ -1203,7 +1260,7 @@ struct AssembleMFInCompositeCase
 
     AssembleMFInCompositeCase( element_type  const v ,
                                initial_guess_type  const initial_guess ,
-                               CRBModel<ModelType> & crb_model)
+                               boost::shared_ptr<CRBModel<ModelType> > crb_model)
         :
         M_composite_v ( v ),
         M_composite_initial_guess ( initial_guess ),
@@ -1219,11 +1276,11 @@ struct AssembleMFInCompositeCase
         auto Xh = M_composite_v.functionSpace();
         mesh_ptrtype mesh = Xh->mesh();
 
-        for(int q = 0; q < M_crb_model.Qmf(); q++)
+        for(int q = 0; q < M_crb_model->Qmf(); q++)
         {
-            for( int m = 0; m < M_crb_model.mMaxMF(q); m++)
+            for( int m = 0; m < M_crb_model->mMaxMF(q); m++)
             {
-                auto vectFM = M_crb_model.MFqm(q,m);
+                auto vectFM = M_crb_model->MFqm(q,m);
                 auto ini = M_composite_initial_guess[q][m]->template element< T::value >();
                 form1( _test=Xh, _vector=vectFM ) +=
                     integrate ( _range=elements( mesh ), _expr=trans( Feel::vf::idv( ini ) )*Feel::vf::id( v ) );
@@ -1233,7 +1290,7 @@ struct AssembleMFInCompositeCase
 
     element_type  M_composite_v;
     initial_guess_type  M_composite_initial_guess;
-    CRBModel<ModelType> & M_crb_model;
+    mutable boost::shared_ptr<CRBModel<ModelType> > M_crb_model;
 };
 
 
@@ -1342,7 +1399,7 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
-    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , *this);
+    AssembleMassMatrixInCompositeCase<TruthModelType> assemble_mass_matrix_in_composite_case ( u , v , this->shared_from_this());
     fusion::for_each( index_vector, assemble_mass_matrix_in_composite_case );
 
     M_Mqm[0][0]->close();
@@ -1378,7 +1435,7 @@ CRBModel<TruthModelType>::assembleMF( initial_guess_type & initial_guess, mpl::b
 
 
     index_vector_type index_vector;
-    AssembleMFInCompositeCase<TruthModelType> assemble_mf_in_composite_case ( v , initial_guess , *this);
+    AssembleMFInCompositeCase<TruthModelType> assemble_mf_in_composite_case ( v , initial_guess , this->shared_from_this());
     fusion::for_each( index_vector, assemble_mf_in_composite_case );
 
 
