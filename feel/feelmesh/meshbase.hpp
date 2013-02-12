@@ -300,7 +300,7 @@ public:
         }
 
     //! \return true if mesh holds sub mesh data
-    bool hasSubMeshData() const { return M_smd->use_count() > 0; }
+    bool hasSubMeshData() const { return M_smd.use_count() > 0; }
 
     //! \return sub mesh
     boost::shared_ptr<MeshBase> subMesh() const

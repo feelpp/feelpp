@@ -1,7 +1,7 @@
 This is
-/home/u2/tarabay/Devel.git/feelpp/contrib/libmatheval/doc/libmatheval.info,
+/home/u2/chabannes/github-repository/feelpp/contrib/libmatheval/doc/libmatheval.info,
 produced by makeinfo version 4.13 from
-/home/u2/tarabay/Devel.git/feelpp/contrib/libmatheval/doc/libmatheval.texi.
+/home/u2/chabannes/github-repository/feelpp/contrib/libmatheval/doc/libmatheval.texi.
 
 INFO-DIR-SECTION GNU libraries
 START-INFO-DIR-ENTRY
@@ -28,7 +28,7 @@ GNU `libmatheval' manual
 
 GNU `libmatheval' is small library of procedures for evaluating
 mathematical functions.  This manual documents how to use the library;
-this is manual edition 1.1.8, last updated 7 December 2012,
+this is manual edition 1.1.8, last updated 12 February 2013,
 corresponding to library version 1.1.8.
 
 * Menu:
@@ -2137,51 +2137,51 @@ Index
 
 
 Tag Table:
-Node: Top876
-Node: License1753
-Node: Introduction2483
-Node: Reference10038
-Node: Main entry points10423
-Node: evaluator_create10955
-Node: evaluator_destroy13965
-Node: evaluator_evaluate14523
-Node: evaluator_get_string15682
-Node: evaluator_get_variables16523
-Node: evaluator_derivative17495
-Node: Convenience procedures18417
-Node: evaluator_evaluate_x18965
-Node: evaluator_evaluate_x_y19816
-Node: evaluator_evaluate_x_y_z20714
-Node: evaluator_derivative_x21660
-Node: evaluator_derivative_y22418
-Node: evaluator_derivative_z23174
-Node: Fortran interface23899
-Node: Fortran main entry points25256
-Node: Fortran evaluator_create26109
-Node: Fortran evaluator_destroy29334
-Node: Fortran evaluator_evaluate29970
-Node: Fortran evaluator_get_string_length31428
-Node: Fortran evaluator_get_string_chars32179
-Node: Fortran evaluator_get_variables_length33160
-Node: Fortran evaluator_get_variables_chars33948
-Node: Fortran evaluator_derivative34883
-Node: Fortran convenience procedures35960
-Node: Fortran evaluator_evaluate_x36627
-Node: Fortran evaluator_evaluate_x_y37501
-Node: Fortran evaluator_evaluate_x_y_z38417
-Node: Fortran evaluator_derivative_x39363
-Node: Fortran evaluator_derivative_y40227
-Node: Fortran evaluator_derivative_z41089
-Node: Fortran sample program41912
-Node: Fortran build process44436
-Node: Hacking45188
-Node: Design notes45479
-Node: Project structure49610
-Node: Intended improvements51787
-Node: Bugs54537
-Node: Rationale and history55245
-Ref: Rationale and history-Footnote-157373
-Node: Copying57537
-Node: Index77414
+Node: Top896
+Node: License1774
+Node: Introduction2504
+Node: Reference10059
+Node: Main entry points10444
+Node: evaluator_create10976
+Node: evaluator_destroy13986
+Node: evaluator_evaluate14544
+Node: evaluator_get_string15703
+Node: evaluator_get_variables16544
+Node: evaluator_derivative17516
+Node: Convenience procedures18438
+Node: evaluator_evaluate_x18986
+Node: evaluator_evaluate_x_y19837
+Node: evaluator_evaluate_x_y_z20735
+Node: evaluator_derivative_x21681
+Node: evaluator_derivative_y22439
+Node: evaluator_derivative_z23195
+Node: Fortran interface23920
+Node: Fortran main entry points25277
+Node: Fortran evaluator_create26130
+Node: Fortran evaluator_destroy29355
+Node: Fortran evaluator_evaluate29991
+Node: Fortran evaluator_get_string_length31449
+Node: Fortran evaluator_get_string_chars32200
+Node: Fortran evaluator_get_variables_length33181
+Node: Fortran evaluator_get_variables_chars33969
+Node: Fortran evaluator_derivative34904
+Node: Fortran convenience procedures35981
+Node: Fortran evaluator_evaluate_x36648
+Node: Fortran evaluator_evaluate_x_y37522
+Node: Fortran evaluator_evaluate_x_y_z38438
+Node: Fortran evaluator_derivative_x39384
+Node: Fortran evaluator_derivative_y40248
+Node: Fortran evaluator_derivative_z41110
+Node: Fortran sample program41933
+Node: Fortran build process44457
+Node: Hacking45209
+Node: Design notes45500
+Node: Project structure49631
+Node: Intended improvements51808
+Node: Bugs54558
+Node: Rationale and history55266
+Ref: Rationale and history-Footnote-157394
+Node: Copying57558
+Node: Index77435
 
 End Tag Table
