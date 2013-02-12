@@ -4614,7 +4614,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
                 mpi::broadcast( functionSpace()->mesh()->comm(), __id, i );
 
 #endif /* FEELPP_HAS_MPI */
-
         }
 
         else

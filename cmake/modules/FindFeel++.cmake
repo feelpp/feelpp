@@ -139,11 +139,15 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GINAC" )
 #ENDIF()
 
-add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
-SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
-set(DL_LIBS ${CMAKE_DL_LIBS})
-add_subdirectory(contrib/ginac)
+add_definitions(-DHAVE_LIBDL)
+# cln and ginac
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+  add_definitions(-DIN_GINAC -DHAVE_LIBDL)
+  include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
+  SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
+  set(DL_LIBS ${CMAKE_DL_LIBS})
+  add_subdirectory(contrib/ginac)
+endif()
 
 #
 # Eigen
@@ -626,11 +630,16 @@ endif()
 # if Feel++ has been installed on the system
 #
 if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib )
-  FIND_PATH(FEELPP_INCLUDE_DIR feelconfig.h  PATHS /usr/include/feel /usr/lib/feel/include /opt/feel/include /usr/ljk/include/feel /usr/local  )
+  include(feelpp.macros)
+  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS $ENV{FEELPP_DIR}/include/ /usr/include /opt/local/include PATH_SUFFIXES feel )
 
-  FIND_LIBRARY(FEELPP_LIBRARY feel++ PATHS /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+#  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+#  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+#  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_LIBRARY feel++ PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
 
-  INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} )
+  INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} ${FEELPP_INCLUDE_DIR}/feel )
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
     FEELPP_INCLUDE_DIR  FEELPP_LIBRARY
     )
@@ -646,6 +655,7 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   FEELPP_INCLUDE_DIR
   FEELPP_LIBRARY
   )
+SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY}  ${FEELPP_LIBRARIES})
 else()
   message(STATUS "we work within Feel++ sources")
   INCLUDE_DIRECTORIES (
@@ -653,9 +663,10 @@ else()
     ${FEELPP_SOURCE_DIR}/
     ${FEELPP_SOURCE_DIR}/contrib/gmm/include
     )
+  SET(FEELPP_LIBRARIES feel++  ${FEELPP_LIBRARIES})
 endif()
 
-SET(FEELPP_LIBRARIES feel++  ${FEELPP_LIBRARIES})
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}
