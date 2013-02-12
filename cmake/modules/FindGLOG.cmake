@@ -32,7 +32,10 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   ${CMAKE_BINARY_DIR}/contrib/glog/include
   $ENV{FEELPP_DIR}/include
   $ENV{FEELPP_DIR}/include/feel
-#  NO_DEFAULT_PATH
+  /usr/include/feel
+  /usr/local/include/feel
+  /opt/local/include/feel
+  NO_DEFAULT_PATH
 #  /opt/local/include
 #  /usr/local/include
 #  /usr/include
