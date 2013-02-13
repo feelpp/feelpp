@@ -10,6 +10,7 @@ FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   $ENV{FEELPP_DIR}/include
   $ENV{FEELPP_DIR}/include/feel
   /usr/include/feel
+  /usr/local/include/feel
   /opt/local/include/feel
   PATH_SUFFIXES
   cln
