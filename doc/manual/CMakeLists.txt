@@ -27,7 +27,7 @@ option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex
 if ( FEELPP_ENABLE_MANUAL )
 include(UseLATEX OPTIONAL)
 
-foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../mycode/laplacian_dirichlet_homogene.cpp")
+foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.cpp")
  FILE(GLOB CPPFILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${cppfile})
  SET(CPPFILES "${CPPFILES};${CPPFILE}")
 endforeach()
