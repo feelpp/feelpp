@@ -1,7 +1,3 @@
-# On clone GIT
-git clone https://github.com/feelpp/feelpp.git
-mkdir feelpp_build_dir
-
 # On "allume" les dépots
 sudo rm /etc/yum.repos.d/rpm*
 sudo rm /etc/yum.repos.d/slc6-cernonly*
@@ -10,68 +6,78 @@ sudo yum upgrade
 
 # Install cd cmake28
 sudo yum install cmake28
-sudo ln -s /usr/bin/cmake28 /usr/bin/cmake
+export cmake=cmake28
+#Installation d'ICU
+sudo yum install icu.x86_64
+sudo yum install libicu-devel.x86_64
+
+#Config général: tout est installé dans $home/work
+export workdir=$HOME/work
+mkdir $workdir
 
 # Installation de gcc 4.7
-mkdir /tmp/gcc
-cd /tmp/gcc
-#wget http://www.mpfr.org/mpfr-current/mpfr-3.1.1.tar.xz
-#wget ftp://ftp.gmplib.org/pub/gmp-5.1.0/gmp-5.1.0a.tar.bz2
-#wget http://www.multiprecision.org/mpc/download/mpc-1.0.1.tar.gz
+mkdir $workdir/_gcc
+cd $workdir/_gcc
 wget ftp://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-4.7.2/gcc-4.7.2.tar.bz2
 tar xjf gcc-4.7.2.tar.bz2
-#tar xjf gmp-5.1.0a.tar.bz2
-#mv gmp-5.1.0 gcc-4.7.2/gmp
-#tar xzf mpc-1.0.1.tar.gz
-#mv mpc-1.0.1 gcc-4.7.2/mpc 
-#unxz mpfr-3.1.1.tar.xz
-#tar xf mpfr-3.1.1.tar
-#mv mpfr-3.1.1 gcc-4.7.2/mpfr
 mkdir BUILD_DIR
 cd BUILD_DIR
-../gcc-4.7.2/configure
-make -j 
-sudo make install
-export LD_LIBRARY_PATH=/usr/local/lib64:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/usr/local/lib/openmpi:$LD_LIBRARY_PATH
+../gcc-4.7.2/configure --prefix=$workdir/gcc
+make -j install
+
+export LD_LIBRARY_PATH=$workdir/gcc
+
 #installation d'openmPI
+mkdir $workdir/_openmpi
+cd $workdir/_openmpi
 wget http://www.open-mpi.org/software/ompi/v1.6/downloads/openmpi-1.6.3.tar.bz2
 tar xjf openmpi-1.6.3.tar.bz2
 cd openmpi-1.6.3
-./configure
-./configure CFLAGS=-m64 CXXFLAGS=-m64 FFLAGS=-m64 FCFLAGS=-m64
-su -c "make -j all install"
+./configure CFLAGS=-m64 CXXFLAGS=-m64 FFLAGS=-m64 FCFLAGS=-m64 --prefix=$workdir/openmpi
+make -j all install
+export LD_LIBRARY_PATH=$workdir/openmpi:$LD_LIBRARY_PATH
 
-export  PETSC_ARCH="arch-linux2-c-opt"
-export  PETSC_DIR="$HOME/petsc-3.3-p5"
-export GMSH_DIR="$HOME/gmsh-2.6.2-svn-Linux/"
+#Installation de BOOST
+mkdir $workdir/_boost
+cd Boost_1_53_0
+rm user-config.jam
+echo "using mpi ;" >> user-config.jam
+echo "" >> user-config.jam
+./bootstrap.sh
+./bjam -j4 --layout=tagged \
+           --prefix=$workdir/boost\
+           --user-config=user-config.jam \
+           variant=release \
+           threading=single,multi \
+           link=static,shared
+export Boost_DIR=$workdir/boost
+
 
 #PETSC - Il y a des gags de droits, d'ou les sudo
+export  PETSC_ARCH="arch-linux2-c-opt"
+export  PETSC_DIR="$workdir/petsc-3.3-p5"
+cd $workdir
 wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.3-p5.tar.gz
 tar xzf petsc-3.3-p5.tar.gz
-cd petsc-3.3-p5
-./configure \
-  --with-shared-libraries=1 \
-  --with-fortran=0 \
-  --with-mpi-include=$MPI_INCLUDE \
-  --with-mpi-lib=[$MPI_LIB/libmpi_cxx.so,$MPI_LIB/libmpi.so] \
-  --with-blas-lib=$LIB_DIR/libblas.so \
-  --with-lapack-lib=$LIB_DIR/lib/liblapack.so \
-	--download-umfpack=1 \
-        --download-ml \
-        --download-metis \
-        --download-parmetis \
-        --download-blacs \
-        --download-scalapack \
-        --download-mumps \
-        --download-pastix \
-        --download-ptscotch \
-  #--with-debugging=0 COPTFLAGS='-O3 -march=p4 -mtune=p4' FOPTFLAGS='-O3 -qarch=p4 -qtune=p4'
+cd $PETSC_DIR
+./configure --with-shared-libraries=1 --with-debugging=0 COPTFLAGS='-O3 -march=p4 -mtune=p4' FOPTFLAGS='-O3 -qarch=p4 -qtune=p4'
 make all
 make test
 
-wget http://geuz.org/gmsh/bin/Linux/gmsh-svn-Linux64.tgz
-tar xzf gmsh-svn-Linux64.tgz
+#GMSH
+export GMSH_DIR=$workdir/gmsh
+mkdir $GMSH_DIR
+cd $workdir
+wget http://geuz.org/gmsh/src/gmsh-2.6.1-source.tgz
+tar xzf gmsh-2.6.1-source.tgz
+cd gmsh-2.6.1-source.tgz
+cmake -DCMAKE_INSTALL_PREFIX=$GMSH_DIR -DCMAKE_BUILD_TYPE=release ..
+make -j8 install
 
-
+# On clone le dépot GIT
+cd $workdir
+git clone https://github.com/feelpp/feelpp.git
+mkdir feelpp_build_dir
+cd feelpp_build_dir
+cmake $workdir/feelpp
+make -j 
