@@ -39,7 +39,9 @@ export LD_LIBRARY_PATH=$workdir/openmpi:$LD_LIBRARY_PATH
 
 #Installation de BOOST
 mkdir $workdir/_boost
-cd Boost_1_53_0
+wget http://ignum.dl.sourceforge.net/project/boost/boost/1.49.0/boost_1_49_0.tar.bz2
+tar xjf boost_1_49_0.tar.bz2
+cd Boost_1_49_0
 rm user-config.jam
 echo "using mpi ;" >> user-config.jam
 echo "" >> user-config.jam
@@ -77,6 +79,7 @@ make lib
 make shared
 make -j8 install
 export PATH=$PATH:$GMSH_DIR/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GMSH_DIR/lib
 
 # On clone le dépot GIT
 cd $workdir
