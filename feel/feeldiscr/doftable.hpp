@@ -540,12 +540,12 @@ public:
         {}
         global_dof_fromface_type operator()( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
         {
-            return _M_d._M_face_l2g[ __id][nDofF*c+__loc];
+            return _M_d._M_face_l2g.at( __id )[nDofF*c+__loc];
         }
 
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
         {
-            return boost::get<3>( _M_d._M_face_l2g[ __id][nDofF*c+__loc] );
+            return boost::get<3>( _M_d._M_face_l2g.at( __id )[nDofF*c+__loc] );
         }
 
         DofTable const& _M_d;
