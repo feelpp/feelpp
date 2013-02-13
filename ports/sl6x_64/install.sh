@@ -24,7 +24,7 @@ mkdir BUILD_DIR
 cd BUILD_DIR
 ../gcc-4.7.2/configure --prefix=$workdir/gcc
 make -j install
-
+export PATH=$PATH:$workdir/gcc
 export LD_LIBRARY_PATH=$workdir/gcc
 
 #installation d'openmPI
@@ -44,16 +44,17 @@ rm user-config.jam
 echo "using mpi ;" >> user-config.jam
 echo "" >> user-config.jam
 ./bootstrap.sh
-./bjam -j4 --layout=tagged \
-           --prefix=$workdir/boost\
-           --user-config=user-config.jam \
-           variant=release \
-           threading=single,multi \
-           link=static,shared
+./bjam -j4 install \
+      --layout=tagged \
+      --prefix=$workdir/boost\
+      --user-config=user-config.jam \
+      variant=release \
+      threading=single,multi \
+      link=static,shared
 export Boost_DIR=$workdir/boost
 
 
-#PETSC - Il y a des gags de droits, d'ou les sudo
+#PETSC
 export  PETSC_ARCH="arch-linux2-c-opt"
 export  PETSC_DIR="$workdir/petsc-3.3-p5"
 cd $workdir
@@ -72,7 +73,10 @@ wget http://geuz.org/gmsh/src/gmsh-2.6.1-source.tgz
 tar xzf gmsh-2.6.1-source.tgz
 cd gmsh-2.6.1-source.tgz
 cmake -DCMAKE_INSTALL_PREFIX=$GMSH_DIR -DCMAKE_BUILD_TYPE=release ..
+make lib
+make shared
 make -j8 install
+export PATH=$PATH:$GMSH_DIR/bin
 
 # On clone le dépot GIT
 cd $workdir
@@ -80,4 +84,4 @@ git clone https://github.com/feelpp/feelpp.git
 mkdir feelpp_build_dir
 cd feelpp_build_dir
 cmake $workdir/feelpp
-make -j 
+make -j4 
