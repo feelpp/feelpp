@@ -292,7 +292,7 @@ public:
     }
 
     virtual void meshModified() = 0;
-    
+
     //! set sub mesh data
     void setSubMeshData( smd_ptrtype smd )
         {
@@ -300,7 +300,7 @@ public:
         }
 
     //! \return true if mesh holds sub mesh data
-    bool hasSubMeshData() const { return M_smd; }
+    bool hasSubMeshData() const { return M_smd.use_count() > 0; }
 
     //! \return sub mesh
     boost::shared_ptr<MeshBase> subMesh() const

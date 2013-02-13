@@ -30,7 +30,10 @@
 FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
   ${CMAKE_BINARY_DIR}/contrib/gflags/include
   $ENV{FEELPP_DIR}/include/feel
-#  NO_DEFAULT_PATH
+  /usr/include/feel
+  /usr/local/include/feel
+  /opt/local/include/feel
+  NO_DEFAULT_PATH
 #  /opt/local/include
 #  /usr/local/include
 # /usr/include
