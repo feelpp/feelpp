@@ -49,6 +49,8 @@ ENDIF()
 add_latex_document(feel-manual.tex
   INPUTS
   tutorial/crash_course.tex
+  tutorial/mymesh.tex
+  tutorial/myapp.tex
   tutorial/building.tex
   tutorial/getting-started.tex
   tutorial/feel.tex
