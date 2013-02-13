@@ -21,7 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required (VERSION 2.8.9)
+#cmake_minimum_required (VERSION 2.8.9)
+cmake_minimum_required (VERSION 2.8.8)
 
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
