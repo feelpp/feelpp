@@ -470,6 +470,12 @@ public:
         M_factor = Factor;
     }
 
+    //! set boolean indicates if we are in offline_step or not
+    void setOfflineStep( bool b )
+    {
+        M_offline_step = b;
+    }
+
     struct ComputePhi
     {
 
@@ -1115,6 +1121,7 @@ private:
 
     bool M_use_newton;
 
+    bool M_offline_step;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -3408,7 +3415,6 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     double time_final;
     int number_of_time_step;
     size_type Qm;
-    int time_index=0;
 
     if ( M_model->isSteady() )
     {
@@ -3473,6 +3479,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
     else
     {
+        int time_index = number_of_time_step-1;
+
 #if 0
         double initial_dual_time = time_for_output+time_step;
         //std::cout<<"initial_dual_time = "<<initial_dual_time<<std::endl;
@@ -3505,8 +3513,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
         for ( time=time_for_output; time>=time_step; time-=time_step )
         {
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
 
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
             Adu.setZero( N,N );
 
             for ( size_type q = 0; q < M_model->Qa(); ++q )
@@ -3522,8 +3530,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
             {
                 for(int m=0; m < M_model->mMaxM(q); m++)
                 {
-                    Adu += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
-                    Fdu += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
+                    Adu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )/time_step;
+                    Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
                 }
             }
 
@@ -3610,7 +3618,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             for(int m=0; m<M_model->mMaxM(q); m++)
                 A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
         }
-        LOG(INFO) << "Mass=" << A << "\n";
+        //LOG(INFO) << "Mass=" << A << "\n";
         google::FlushLogFiles(google::GLOG_INFO);
         F.setZero( N );
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
@@ -3618,7 +3626,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             for(int m=0; m<M_model->mMaxMF(q); m++)
                 F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
         }
-        LOG(INFO) << "F=" << F << "\n";
+        //LOG(INFO) << "F=" << F << "\n";
 
         google::FlushLogFiles(google::GLOG_INFO);
         uN[time_index] = A.lu().solve( F );
@@ -3985,6 +3993,10 @@ CRB<TruthModelType>::delta( size_type N,
 
         //std::cout<<"dual_residual = "<<dual_residual<<std::endl;
 
+        bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+        if ( this->worldComm().globalSize() > 1 )
+            solve_dual_problem = false;
+
         if( solve_dual_problem )
         {
             for ( double time=Tf; time>=dt; time-=dt )
@@ -3996,6 +4008,41 @@ CRB<TruthModelType>::delta( size_type N,
                 time_index--;
             }//end of time loop for dual problem
         }
+
+
+        bool show_residual = this->vm()["crb.show-residual"].template as<bool>() ;
+        if( ! M_offline_step && show_residual )
+        {
+            double sum=0;
+            bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
+            LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
+            time_index=0;
+            for ( double time=dt; time<=Tf; time+=dt )
+            {
+                auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
+                LOG(INFO) << "primal residual at time "<<time<<" : "<<pr.template get<0>()<<"\n";
+                sum+=pr.template get<0>();
+                time_index++;
+            }
+            LOG(INFO) << "sum of primal residuals  "<<sum<<std::endl;
+
+            time_index--;
+            sum=0;
+
+            if (solve_dual_problem )
+            {
+                for ( double time=Tf; time>=dt; time-=dt )
+                {
+                    auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
+                    LOG(INFO) << "dual residual at time "<<time<<" : "<<du.template get<0>()<<"\n";
+                    sum += du.template get<0>();
+                    time_index--;
+                }
+            }
+            LOG(INFO) << "sum of dual residuals  "<<sum<<std::endl;
+            LOG( INFO ) <<" ================================= \n";
+
+        }//if show_residual_convergence
 
         double alphaA=1,alphaM=1;
 
