@@ -48,6 +48,7 @@ eimOptions( std::string const& prefix )
         ( "eim.check.residual"   , Feel::po::value<int>()->default_value( 0 ),  "check residual" )
         ( "eim.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
         ( "eim.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
+        ( "eim.study-cvg" , Feel::po::value<bool>()->default_value( 0 ), "for convergence study" )
         ;
 
     return eimoptions;
