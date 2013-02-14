@@ -160,6 +160,7 @@ public:
         M_name( "default" ),
         M_M( 1 ),
         M_M_max( 1 ),
+        M_WN(),
         M_offline_done( false ),
         M_tol( 1e-8 ),
         M_q(),
@@ -178,6 +179,7 @@ public:
         M_trainset( sampling ),
         M_M( 1 ),
         M_M_max( 1 ),
+        M_WN( M_vm["eim.dimension-max"].template as<int>() ),
         M_offline_done( false ),
         M_tol( __tol ),
         M_q(),
@@ -192,7 +194,24 @@ public:
                 M_offline_done = false;
             }
 
-            if (  !this->isOfflineDone() )
+            if( M_vm["eim.study-cvg"].template as<bool>() )
+                {
+                    M_WN=1;
+                    do{
+                        offline();
+                        study_convergence();
+
+                        M_offline_done = false;
+                        M_g.clear();
+                        M_t.clear();
+                        M_q.clear();
+                        M_B.resize(0,0);
+
+                        M_WN++;
+                    }while( M_WN <M_vm["eim.dimension-max"].template as<int>() );
+                }
+
+            if ( !this->isOfflineDone() )
                 offline();
         }
 
@@ -204,6 +223,7 @@ public:
         M_name( __bbf.M_name ),
         M_M( __bbf.M_M ),
         M_M_max (__bbf.M_M_max ),
+        M_WN(__bbf.M_WN ),
         M_offline_done( __bbf.M_offline_done ),
         M_tol( __bbf.M_tol ),
         M_q( __bbf.M_q ),
@@ -424,6 +444,8 @@ protected:
     size_type M_M;
     size_type M_M_max;
 
+    size_type M_WN;
+
     mutable bool M_offline_done;
 
     double M_tol;
@@ -481,6 +503,7 @@ private:
        \f$1 \leq i,j \leq M\f$.
     */
     void offline();
+    void study_convergence();
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -660,7 +683,8 @@ EIM<ModelType>::offline(  )
     double err = 1;
 
     LOG(INFO) << "start greedy algorithm...\n";
-    for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
+    //for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
+    for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
     {
         LOG(INFO) << "M=" << M_M << "...\n";
 
@@ -748,6 +772,52 @@ EIM<ModelType>::offline(  )
     LOG(INFO) << "[offline] saving DB...\n";
     saveDB();
     LOG(INFO) << "[offline] done with offline stage ...\n";
+}
+
+template<typename ModelType>
+void
+EIM<ModelType>::study_convergence()
+{
+    LOG(INFO) << "study convergence... \n";
+    LOG(INFO) << "nb eim basis = " << M_WN << "\n";
+
+    auto S = M_model->parameterSpace()->sampling();
+    S->logEquidistribute(5);
+    BOOST_FOREACH( auto mu, *S )
+        {
+            LOG(INFO) << "mu = " << mu << "\n";
+
+            // Compute expression
+            auto ana_expr = M_model->operator()(mu);
+
+            // Compute eim expansion
+            auto eim_expr = this->operator()(mu);
+
+            //Compute l2error
+            LOG(INFO) << "EIM name : " << M_model->name() << "\n";
+            double l2_ana = ana_expr.l2Norm();
+            LOG(INFO) << "normL2 w_ana = " << l2_ana << "\n";
+            double l2_eim = eim_expr.l2Norm();
+            LOG(INFO) << "normL2 w_eim = " << l2_eim << "\n";
+            auto l2_error = math::abs( l2_ana - l2_eim ) / l2_ana;
+            LOG(INFO) << "normL2 error = " << l2_error << "\n";
+
+            //write on file
+            std::string mu_str;
+            for ( int i=0; i<mu.size(); i++ )
+                mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
+
+            std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
+            std::ofstream conv;
+            conv.open(file_name, ios::app);
+            if( M_WN == 1 ) //the first run
+                {
+                    conv.close();
+                    conv.open(file_name, ios::app);
+                    conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
+                }
+            conv << M_WN << "\t" << l2_error << "\n";
+        }
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
