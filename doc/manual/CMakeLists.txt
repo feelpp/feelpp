@@ -45,15 +45,11 @@ IF(Subversion_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.svn" )
    FILE(APPEND version.tex "\\newcommand{\\feelsvndate}{${FEELPP_WC_LAST_CHANGED_DATE}}")
 ENDIF()
 
+FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
 add_latex_document(feel-manual.tex
   INPUTS
-  tutorial/crash_course.tex
-  tutorial/mymesh.tex
-  tutorial/myapp.tex
-  tutorial/building.tex
-  tutorial/getting-started.tex
-  tutorial/feel.tex
+  ${TUTO_DOC_FILES}
   nonlinear/nonlinear.tex
   heatns/natural-convection-2d.tex
   heat/heatsink.tex
