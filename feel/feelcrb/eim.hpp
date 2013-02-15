@@ -199,7 +199,7 @@ public:
                     M_WN=1;
                     do{
                         offline();
-                        study_convergence();
+                        studyConvergence();
 
                         M_offline_done = false;
                         M_g.clear();
@@ -503,7 +503,7 @@ private:
        \f$1 \leq i,j \leq M\f$.
     */
     void offline();
-    void study_convergence();
+    void studyConvergence();
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -776,7 +776,7 @@ EIM<ModelType>::offline(  )
 
 template<typename ModelType>
 void
-EIM<ModelType>::study_convergence()
+EIM<ModelType>::studyConvergence()
 {
     LOG(INFO) << "study convergence... \n";
     LOG(INFO) << "nb eim basis = " << M_WN << "\n";
