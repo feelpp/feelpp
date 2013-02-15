@@ -258,6 +258,7 @@ public:
                 {
                     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                         std::cout << "No CRB DB available, do crb offline computations...\n";
+                    crb->setOfflineStep( true );
                     crb->offline();
                 }
 
@@ -281,7 +282,10 @@ public:
                     do_offline=true;
 
                 if( do_offline )
+                {
+                    crb->setOfflineStep( true );
                     crb->offline();
+                }
             }
         }
 
@@ -399,6 +403,7 @@ public:
             if( crb->errorType()!=2 )
                 relative_estimated_error_vector.resize( Sampling->size() );
 
+            crb->setOfflineStep( false );
 
             BOOST_FOREACH( auto mu, *Sampling )
             {
