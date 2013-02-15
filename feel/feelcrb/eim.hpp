@@ -31,6 +31,8 @@
 
 #include <limits>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 #include <boost/ref.hpp>
 #include <boost/next_prior.hpp>
@@ -809,11 +811,11 @@ EIM<ModelType>::studyConvergence()
 
             std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
             std::ofstream conv;
-            conv.open(file_name, ios::app);
+            conv.open(file_name, std::ios::app);
             if( M_WN == 1 ) //the first run
                 {
                     conv.close();
-                    conv.open(file_name, ios::app);
+                    conv.open(file_name, std::ios::app);
                     conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
                 }
             conv << M_WN << "\t" << l2_error << "\n";
