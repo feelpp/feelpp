@@ -36,7 +36,6 @@
 #include <feel/feel.hpp>
 using namespace Feel;
 
-
 /**
  *  Entry point
  */
@@ -57,10 +56,10 @@ int main( int argc, char** argv )
     // create the mesh
     auto mesh = unitSquare();
 
-    // function space \f$ X_h \f$ using order 2 Lagrange basis functions
+    // function space $ X_h $ using order 2 Lagrange basis functions
     auto Xh = Pch<2>( mesh );
 
-    // elements of u,w \in X_h
+    // elements of $ u,w \in X_h $
     auto u = Xh->element( "u" );
     auto w = Xh->element( "w" );
 
@@ -81,5 +80,5 @@ int main( int argc, char** argv )
     e->save();
 
 }   // main
-//# endmaker_main #
+//# endmarker_main #
 //\endcode
