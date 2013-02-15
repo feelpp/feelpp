@@ -77,6 +77,7 @@ INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 #message(STATUS "apps: ${FEELPP_INSTALL_APPS}")
 #INSTALL(FILES ${FEELPP_INSTALL_APPS} DESTINATION bin/ COMPONENT Bin)
 
+IF(FEELPP_ENABLE_DOCUMENTATION)
 # documentation and examples
 #  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
@@ -84,3 +85,4 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html DESTINATION share/doc
         PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
 FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/*.*pp")
 INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
+ENDIF()
