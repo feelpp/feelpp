@@ -23,5 +23,7 @@ so openmpi.sh
 sh boost.sh
 #télécharge, compile et install gmsh dans $workdir/gmsh
 sh gmsh.sh
+#télécharge, compile et install petsc dans $workdir/petsc-version
+sh petsc.sh
 #télécharge, compile et install feelpp dans $workdir/feelppLib
 sh feelpp.sh
