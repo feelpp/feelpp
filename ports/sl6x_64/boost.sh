@@ -10,9 +10,9 @@ echo "" >> user-config.jam
 ./bootstrap.sh
 ./bjam -j4 install \
       --layout=tagged \
-      --prefix=$workdir/boost\
+      --prefix=$boostDir\
       --user-config=user-config.jam \
       variant=release \
       threading=single,multi \
       link=static,shared
-export Boost_DIR=$workdir/boost
+export Boost_DIR=$boostDir
