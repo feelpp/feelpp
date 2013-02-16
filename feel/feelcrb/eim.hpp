@@ -204,13 +204,8 @@ public:
                         studyConvergence();
 
                         M_offline_done = false;
-                        M_g.clear();
-                        M_t.clear();
-                        M_q.clear();
-                        M_B.resize(0,0);
-
                         M_WN++;
-                    }while( M_WN <M_vm["eim.dimension-max"].template as<int>() );
+                    }while( M_WN < M_vm["eim.dimension-max"].template as<int>() );
                 }
 
             if ( !this->isOfflineDone() )
@@ -651,10 +646,12 @@ EIM<ModelType>::offline(  )
     }
 
     // store residual
-    auto res = M_model->functionSpace()->element();
+    //auto res = M_model->functionSpace()->element();
 
-    LOG(INFO) << "compute finite element solution at mu_1...\n";
-    M_g.push_back( M_model->operator()( mu ) );
+    if( !M_vm["eim.study-cvg"].template as<bool>() || M_WN == 1 )
+    {
+        LOG(INFO) << "compute finite element solution at mu_1...\n";
+        M_g.push_back( M_model->operator()( mu ) );
 
     LOG(INFO) << "compute T^" << 0 << "...\n";
     // Build T^0
@@ -678,16 +675,26 @@ EIM<ModelType>::offline(  )
         << "q[0](t[0] != 1 " << "q[0] = " << M_q[0]( M_t[0] )( 0, 0, 0 )
         << "  t[0] = "<< M_t[0] << "\n";
 
-    ++M_M;
+        ++M_M;
+    }
+    else
+        M_M = M_WN - 1;
+
     /**
        \par build \f$W^g_M\f$
     */
     double err = 1;
 
+   //for residual storage
+    auto res = M_model->functionSpace()->element();
+
     LOG(INFO) << "start greedy algorithm...\n";
     //for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
     for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
     {
+        if( M_vm["eim.study-cvg"].template as<bool>() )
+            ++M_M;
+
         LOG(INFO) << "M=" << M_M << "...\n";
 
         LOG(INFO) << "compute best fit error...\n";
@@ -700,7 +707,7 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
                   << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
 
-        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() )
+        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() && !M_vm["eim.study-cvg"].template as<bool>() )
             break;
 
         /**
@@ -760,7 +767,7 @@ EIM<ModelType>::offline(  )
 
 
         LOG(INFO) << "================================================================================\n";
-        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() )
+        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() && !M_vm["eim.study-cvg"].template as<bool>() )
         {
             ++M_M;
             break;
