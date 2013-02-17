@@ -2731,6 +2731,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
 
     vector_ptrtype Rhs( backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Aun( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype AduUn( backend->newVector( M_model->functionSpace() ) );
 
     vector_ptrtype Mun( backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Munold( backend->newVector( M_model->functionSpace() ) );
@@ -2831,19 +2832,20 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
             auto bdf_poly = bdf_dual->polyDeriv();
 
             boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , bdf_dual->time() );
+            A->transpose( Adu );
             *undu = *Undu[time_index];
             *unduold = *Unduold[time_index];
-            A->multVector( undu, Aun );
+            Adu->multVector( undu, AduUn );
             M->multVector( undu, Mun );
             M->multVector( unduold, Munold );
-            Aun->scale( -1 );
+            AduUn->scale( -1 );
             Munold->scale( -1 );
             *Frhs = *F[0];
 
             vector_ptrtype __ea_du(  backend->newVector( M_model->functionSpace() ) );
             vector_ptrtype __emu_du(  backend->newVector( M_model->functionSpace() ) );
             vector_ptrtype __emuold_du(  backend->newVector( M_model->functionSpace() ) );
-            M_model->l2solve( __ea_du, Aun );
+            M_model->l2solve( __ea_du, AduUn );
             M_model->l2solve( __emu_du, Mun );
             M_model->l2solve( __emuold_du, Munold );
             double check_Caa_du = M_model->scalarProduct( __ea_du,__ea_du );
