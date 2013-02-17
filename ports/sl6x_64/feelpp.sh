@@ -1,11 +1,11 @@
 # On clone le dépot GIT
-cd $workdir
+mkdir $workdir/_feel
+cd $workdir/_feel
 git clone https://github.com/feelpp/feelpp.git
-mkdir feelppLib
 mkdir feelpp_build_dir 
 cd feelpp_build_dir
-cmake $workdir/feelpp \
+cmake ../feelpp \
       -DCMAKE_BUILD_TYPE=release \
       -DFEELPP_ENABLE_DOCUMENTATION=off \
-      -DCMAKE_INSTALL_PREFIX=$workdir/feelppLib
+      -DCMAKE_INSTALL_PREFIX=$feelppDir
 make -j4 install
