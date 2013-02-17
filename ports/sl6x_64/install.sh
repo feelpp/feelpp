@@ -15,6 +15,14 @@ export cmake=cmake28
 export workdir=$HOME/work
 mkdir $workdir
 
+export gccVersion=4.7.2
+export gccDir=$work/gcc-$gccVersion
+export openmpiDir=$work/openmpi/gcc-$gccVersion/
+export boostDir=$work/boost/gcc-$gccVersion/
+export gmshDir=$work/gmsh/gcc-$gccVersion/
+export petscDir=$work/petscDir/gcc-$gccVersion/
+export feelppDir=$work/feelppDir/gcc-$gccVersion/
+
 #télécharge, compile et install gcc dans $workdir/gcc
 sh gcc47.sh
 #télécharge, compile et install openmpi dans $workdir/openmpi
