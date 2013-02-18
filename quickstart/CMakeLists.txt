@@ -23,4 +23,4 @@
 #
 
 feelpp_add_application( qs_laplacian SRCS laplacian.cpp INCLUDE_IN_ALL)
-
+install(TARGETS feelpp_qs_laplacian DESTINATION bin/ COMPONENT Bin )
