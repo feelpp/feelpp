@@ -602,7 +602,7 @@ public:
     void compareResidualsForTransientProblems( parameter_type const& mu, std::vector<element_ptrtype> const & Un, std::vector<element_ptrtype> const & Unold, std::vector<element_ptrtype> const& Undu, std::vector<element_ptrtype> const & Unduold, std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector< std::vector<double> > const& dual_residual_coeffs  ) const ;
 
 
-    void buildFunctionFromRbCoefficients( std::vector< vectorN_type > const & RBcoeff, wn_type const & WN, std::vector<element_ptrtype> & FEMsolutions );
+    void buildFunctionFromRbCoefficients(int N, std::vector< vectorN_type > const & RBcoeff, wn_type const & WN, std::vector<element_ptrtype> & FEMsolutions );
 
     /*
      * check orthonormality
@@ -2692,7 +2692,7 @@ CRB<TruthModelType>::buildVarianceMatrixPhi( int const N , mpl::bool_<false> )
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::buildFunctionFromRbCoefficients( std::vector< vectorN_type > const & RBcoeff, wn_type const & WN, std::vector<element_ptrtype> & FEMsolutions )
+CRB<TruthModelType>::buildFunctionFromRbCoefficients(int N, std::vector< vectorN_type > const & RBcoeff, wn_type const & WN, std::vector<element_ptrtype> & FEMsolutions )
 {
 
     if( WN.size() == 0 )
@@ -2705,7 +2705,7 @@ CRB<TruthModelType>::buildFunctionFromRbCoefficients( std::vector< vectorN_type 
     {
         element_ptrtype FEMelement ( new element_type( M_model->functionSpace() ) );
         FEMelement->setZero();
-        for( int j = 0; j < WN.size(); j++ )
+        for( int j = 0; j < N; j++ )
             FEMelement->add( RBcoeff[i](j) , WN[j] );
         FEMsolutions.push_back( FEMelement );
     }
@@ -2806,7 +2806,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
     if( this->worldComm().globalSize() > 1 )
         solve_dual_problem=false;
-
+    double sum=0;
     if( solve_dual_problem )
     {
         LOG(INFO)<<"**********dual problem************* "<<std::endl;
@@ -2864,7 +2864,13 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
             LOG(INFO)<<"Cma : "<< check_Cma_du <<"  -  "<<Cma_du<<"  =>  "<<check_Cma_du-Cma_du<<std::endl;
             LOG(INFO)<<"Cmm : "<< check_Cmm_du <<"  -  "<<Cmm_du<<"  =>  "<<check_Cmm_du-Cmm_du<<std::endl;
             time_index--;
+            //std::cout<<"[CHECK] ------ time "<<bdf_dual->time()<<std::endl;
+            //std::cout<<"[CHECK] Caa_du : "<<check_Caa_du<<std::endl;
+            //std::cout<<"[CHECK] Cma_du : "<<check_Cma_du<<std::endl;
+            //std::cout<<"[CHECK] Cmm_du : "<<check_Cmm_du<<std::endl;
+            sum += math::abs( check_Caa_du + check_Cma_du + check_Cmm_du );
         }
+        //std::cout<<"[CHECK] dual_sum : "<<sum<<std::endl;
     }//solve-dual-problem
 }
 
@@ -4051,7 +4057,7 @@ CRB<TruthModelType>::delta( size_type N,
             }
             LOG(INFO) << "sum of dual residuals  "<<sum<<std::endl;
             LOG( INFO ) <<" ================================= \n";
-
+            //std::cout<<"[REAL ] duam_sum : "<<sum<<std::endl;
         }//if show_residual_convergence
 
         double alphaA=1,alphaM=1;
@@ -5776,10 +5782,10 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
         std::vector< std::vector<double> > primal_residual_coefficients = error_estimation.template get<1>();
         std::vector< std::vector<double> > dual_residual_coefficients = error_estimation.template get<2>();
         std::vector<element_ptrtype> Un,Unold,Undu,Unduold;
-        buildFunctionFromRbCoefficients( uN, M_WN, Un );
-        buildFunctionFromRbCoefficients( uNold, M_WN, Unold );
-        buildFunctionFromRbCoefficients( uNdu, M_WNdu, Undu );
-        buildFunctionFromRbCoefficients( uNduold, M_WNdu, Unduold );
+        buildFunctionFromRbCoefficients(Nwn, uN, M_WN, Un );
+        buildFunctionFromRbCoefficients(Nwn, uNold, M_WN, Unold );
+        buildFunctionFromRbCoefficients(Nwn, uNdu, M_WNdu, Undu );
+        buildFunctionFromRbCoefficients(Nwn, uNduold, M_WNdu, Unduold );
         compareResidualsForTransientProblems( mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
     return boost::make_tuple( output , e, Nwn , condition_number, uN[0] );
