@@ -223,15 +223,14 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
             __out << "model: " << __ts->index() << " " << __ts->name()
                   << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".geo***";
             if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
-                __out << " change_coords_only\n";
-            else
-                __out << "\n";
+                __out << " change_coords_only";
 
             ++__ts_it;
         }
     }
     break;
     }
+    __out << "\n";
 
     __out << "VARIABLES:" << "\n";
 
@@ -384,7 +383,7 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
                            << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
                            << ".geo";
                 // save only if index == 0
-                if ( __step->isInMemory() && __step->index() == 0 )
+                if ( __step->isInMemory() && ( __it  == __ts->beginStep() ) )
                 {
                     //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
                     //, __ts->name(), __geofname.str() );
