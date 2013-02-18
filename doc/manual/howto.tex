@@ -11,7 +11,7 @@ This section includes the FAQ avaible on \href{https://trac.feelpp.org/wiki/FAQ}
 \label{faq:meshes}
 
 \subsection{What are the main execution options of a \feel application ?}
-Let's consider that your application is named \lstinline!feelapp!, in that case you can modify the main execution options of your application with 
+Let's consider that your application is named \lstinline!feelapp!, in that case you can modify the main execution options of your application with
 \begin{unixcom}
 		./feelapp --shape="simplex" --nochdir --exporter-format=gmsh
 \end{unixcom}
@@ -26,7 +26,7 @@ These options are :
 Here is an example of how to create a mesh with GMSH generator :
 
 \begin{lstlisting}[language=sh]
- mesh_ptrtype mesh = 
+ mesh_ptrtype mesh =
 	createGMSHMesh( _mesh=new mesh_type,
          _update=MESH_CHECK!MESH_UPDATE_FACES!MESH_UPDATE_EDGES!MESH_RENUMBER,
          _desc=domain( _name= (boost::format( "%1%-%2%-%3%" ) %"hypercube" %Dim %1).str(),
@@ -41,7 +41,7 @@ Here is an example of how to create a mesh with GMSH generator :
 
 Here is an example of how to create a mesh with a .geo file :
 \begin{lstlisting}[language=sh]
- mesh_ptrtype mesh = 
+ mesh_ptrtype mesh =
 	createGMSHMesh( _mesh=new mesh_type,
          _update=MESH_CHECK!MESH_UPDATE_FACES!MESH_UPDATE_EDGES!MESH_RENUMBER,
          _desc="???" );
@@ -65,7 +65,7 @@ The function \lstinline!domain()! is located in \lstinline!feel/feel/feefilters/
 
 \subsection{How to loop on the degrees of freedom coordinates of a function ?}
 
-Take a look at the example which is in \lstinline!feel/examples/snippets/dofpoints.cpp! 
+Take a look at the example which is in \lstinline!feel/examples/snippets/dofpoints.cpp!
 
 %\lstinputlisting[linerange=marker1-endmarker1]{../../..examples/snippets/dofpoints.cpp}
 
@@ -81,12 +81,12 @@ There is a small difference between medit meshes and gmsh ones. The medit reader
 Please not that furthers \lstinline!medit! meshes are presented in example in the directory \lstinline!/feel/data/medit/!. The \lstinline!geo! scripts are those which are produced by \feel when reading those meshes.
 
 \item Stl (\lstinline!.stl!) \\
-You can also use \lstinline!stl! files, those files are native to the stereolithography CAD software created by 3D Systems. These files describe only the surface geometry of a three dimensional object without any representation of color, texture or other common attributes. You have further examples of such files in \lstinline!feel/data/stl!. 
+You can also use \lstinline!stl! files, those files are native to the stereolithography CAD software created by 3D Systems. These files describe only the surface geometry of a three dimensional object without any representation of color, texture or other common attributes. You have further examples of such files in \lstinline!feel/data/stl!.
 
 To use \feel with \lstinline!stl! files, you have to create a \lstinline!geo! script to enable gmsh to remesh the file. The \lstinline!stl! file you want to use has to be a volume mesh. The script is very small, you have all informations to make one at \href{https://geuz.org/trac/gmsh/wiki/STLRemeshing}{Gmsh/slt section} on their web site. Once it's done, you juste have to type
 \begin{unixcom}
 		gmsh stl_file_name.geo -3
-\end{unixcom} 
+\end{unixcom}
 with \lstinline!stl_file_name.stl! in the same directory. That command will produce you the correct \lstinline!.msh! mesh that you could now use as usual without any modification in your \feel application.
 
  Take a look above how the remesh has produced a complete mesh with the file \lstinline!pelvis.stl! and \lstinline!pelvis.geo!:
@@ -122,7 +122,7 @@ Vector_F=integrate(elements(mesh), idv(sigma) * id(v));
 \end{lstlisting}
 
 \item Use the project function \lstinline!vf::project! \newline
-This function does a nodal projection : at the dof point the projection will be \underline{exactly} equal to the projected function $\sigma$. It works as follow 
+This function does a nodal projection : at the dof point the projection will be \underline{exactly} equal to the projected function $\sigma$. It works as follow
 \begin{lstlisting}
 kappa=vf::project(P0_space, elements(mesh), idv(sigma));
 \end{lstlisting}
@@ -205,7 +205,7 @@ auto ab = l2p(idv(a)*idv(b));
 %%% TeX-parse-self: t
 %%% x-symbol-8bits: nil
 %%% TeX-auto-regexp-list: TeX-auto-full-regexp-list
-%%% TeX-master: "feel-manual"
+%%% TeX-master: "feelpp-manual"
 %%% ispell-local-dictionary: "american"
 %%% End:
 
