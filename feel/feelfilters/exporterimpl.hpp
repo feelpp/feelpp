@@ -55,7 +55,8 @@ Exporter<MeshType, N>::Exporter( WorldComm const& worldComm )
     M_freq( 1 ),
     M_cptOfSave( 0 ),
     M_ft( ASCII ),
-    M_path( "." )
+    M_path( "." ),
+    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
 {
     VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
 }
@@ -72,7 +73,8 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
     M_freq( __freq ),
     M_cptOfSave( 0 ),
     M_ft( ASCII ),
-    M_path( "." )
+    M_path( "." ),
+    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
 {
 
 }
@@ -89,7 +91,8 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     M_freq( 1 ),
     M_cptOfSave( 0 ),
     M_ft( ASCII ),
-    M_path( "." )
+    M_path( "." ),
+    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
 {
     VLOG(1) << "[exporter::exporter] do export = " << doExport() << "\n";
 }
@@ -106,7 +109,8 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     M_freq( __ex.M_freq ),
     M_cptOfSave( __ex.M_cptOfSave ),
     M_ft( __ex.M_ft ),
-    M_path( __ex.M_path )
+    M_path( __ex.M_path ),
+    M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
 {
 
 }
@@ -206,4 +210,3 @@ Exporter<MeshType, N>::addPath( boost::format fmt )
 
 
 }
-

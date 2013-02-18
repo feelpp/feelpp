@@ -27,7 +27,10 @@ option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex
 if ( FEELPP_ENABLE_MANUAL )
 include(UseLATEX OPTIONAL)
 
-foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.cpp")
+foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.cpp"
+    "laplacian/laplacian.cpp"
+    "stokes/stokes.cpp"
+    )
  FILE(GLOB CPPFILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${cppfile})
  SET(CPPFILES "${CPPFILES};${CPPFILE}")
 endforeach()
@@ -175,6 +178,10 @@ ENDIF( OCTAVE_FOUND )
 add_subdirectory(tutorial)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
+  add_subdirectory(laplacian)
+  add_subdirectory(stokes)
+  add_subdirectory(advection)
+  add_subdirectory(accoustic)
   add_subdirectory(dd)
   add_subdirectory(heat)
   add_subdirectory(solid)

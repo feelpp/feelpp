@@ -181,8 +181,12 @@ Laplacian<Dim,Order>::run()
     bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
-    std::string exact  = this->vm()[(boost::format("exact%1%D")%Dim).str()].template as<std::string>();
-    std::string rhs  = this->vm()[(boost::format("rhs%1%D")%Dim).str()].template as<std::string>();
+    std::string exact = 
+        this->vm()[(boost::format("exact%1%D")%Dim).str()].template 
+        as<std::string>();
+    std::string rhs  = 
+        this->vm()[(boost::format("rhs%1%D")%Dim).str()].template 
+        as<std::string>();
     LOG(INFO) << "exact = "  << exact << "\n";
 
     auto vars=symbols<Dim>();
@@ -230,7 +234,8 @@ Laplacian<Dim,Order>::run()
     {
         //# marker41 #
         l += integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                          _expr=nu*g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+                          _expr=nu*g*( -grad( v )*vf::N()
+                                      + penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
 
