@@ -1640,6 +1640,16 @@ private:
     void resetPreviousTime( Real __time );
 
 public:
+    void setMesh( mesh_ptrtype m ) { _M_mesh = m; }
+    bool hasMesh() const { return _M_mesh; }
+    mesh_ptrtype mesh() const
+        {
+            CHECK( hasMesh() ) << "Time Set has no mesh data structure associated\n";
+            return _M_mesh.get();
+        }
+
+
+public:
     boost::optional<mesh_ptrtype> _M_mesh;
 
 
