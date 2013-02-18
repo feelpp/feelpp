@@ -86,7 +86,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html DESTINATION share/doc
 ENDIF()
 
 
-INSTALL(FILES quickstart/qs_laplacian.cpp DESTINATION share/doc/feel/examples/quickstart/ COMPONENT Doc)
+INSTALL(FILES quickstart/laplacian.cpp DESTINATION share/doc/feel/examples/quickstart/ COMPONENT Doc)
 
 FILE(WRITE CMakeLists.txt.doc  "cmake_minimum_required(VERSION 2.8)
 set(CMAKE_MODULE_PATH \"${CMAKE_INSTALL_PREFIX}/share/feel/cmake/modules/\")
@@ -104,4 +104,4 @@ foreach(example ${examples} )
 feelpp_add_application( doc_${EXAMPLE_TARGET_NAME} SRCS tutorial/${EXAMPLE_SRCS_NAME} INCLUDE_IN_ALL)
 " )
 endforeach()
-INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/CMakeLists.txt COMPONENT Doc)
+INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/ COMPONENT Doc RENAME CMakeLists.txt)
