@@ -1,90 +1,37 @@
-# On "allume" les dépots
+# On "allume" les dépots (les deux premiers ne fonctionnent pas)
 sudo rm /etc/yum.repos.d/rpm*
 sudo rm /etc/yum.repos.d/slc6-cernonly*
 sudo sed -i "s/enabled=0/enabled=1/g" -e /etc/yum.repos.d
 sudo yum upgrade
 
-# Install cd cmake28
-sudo yum install cmake28
-export cmake=cmake28
-#Installation d'ICU
-sudo yum install icu.x86_64
-sudo yum install libicu-devel.x86_64
+# Install de quelques paquets nécessaires.
+sudo yum -y update
+sudo yum -y update yum
+sudo yum -y install cmake28 texinfo glibc-devel.i686 icu.x86_64 libicu-devel.x86_64 libmpc.x86_64 mpfr.x86_64 gmp-devel.x86_64 mpfr-devel.x86_64 libmpc-devel.x86_64
 
-#Config général: tout est installé dans $home/work
+#Pour installer ailleurs: changer la variable $workdir (s'assurer d'avoir les droits)
+#espace nécessaire: 10Go (possibilité de minimiser beaucoup en supprimant les repertoires de compilation)
+export cmake=cmake28
 export workdir=$HOME/work
 mkdir $workdir
 
-# Installation de gcc 4.7
-mkdir $workdir/_gcc
-cd $workdir/_gcc
-wget ftp://ftp.mpi-sb.mpg.de/pub/gnu/mirror/gcc.gnu.org/pub/gcc/releases/gcc-4.7.2/gcc-4.7.2.tar.bz2
-tar xjf gcc-4.7.2.tar.bz2
-mkdir BUILD_DIR
-cd BUILD_DIR
-../gcc-4.7.2/configure --prefix=$workdir/gcc
-make -j install
-export PATH=$PATH:$workdir/gcc
-export LD_LIBRARY_PATH=$workdir/gcc
+export gccVersion=4.7.2
+export gccDir=$work/gcc-$gccVersion
+export openmpiDir=$work/openmpi/gcc-$gccVersion/
+export boostDir=$work/boost/gcc-$gccVersion/
+export gmshDir=$work/gmsh/gcc-$gccVersion/
+export petscDir=$work/petscDir/gcc-$gccVersion/
+export feelppDir=$work/feelppDir/gcc-$gccVersion/
 
-#installation d'openmPI
-mkdir $workdir/_openmpi
-cd $workdir/_openmpi
-wget http://www.open-mpi.org/software/ompi/v1.6/downloads/openmpi-1.6.3.tar.bz2
-tar xjf openmpi-1.6.3.tar.bz2
-cd openmpi-1.6.3
-./configure CFLAGS=-m64 CXXFLAGS=-m64 FFLAGS=-m64 FCFLAGS=-m64 --prefix=$workdir/openmpi
-make -j all install
-export LD_LIBRARY_PATH=$workdir/openmpi:$LD_LIBRARY_PATH
-
-#Installation de BOOST
-mkdir $workdir/_boost
-wget http://ignum.dl.sourceforge.net/project/boost/boost/1.49.0/boost_1_49_0.tar.bz2
-tar xjf boost_1_49_0.tar.bz2
-cd Boost_1_49_0
-rm user-config.jam
-echo "using mpi ;" >> user-config.jam
-echo "" >> user-config.jam
-./bootstrap.sh
-./bjam -j4 install \
-      --layout=tagged \
-      --prefix=$workdir/boost\
-      --user-config=user-config.jam \
-      variant=release \
-      threading=single,multi \
-      link=static,shared
-export Boost_DIR=$workdir/boost
-
-
-#PETSC
-export  PETSC_ARCH="arch-linux2-c-opt"
-export  PETSC_DIR="$workdir/petsc-3.3-p5"
-cd $workdir
-wget http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.3-p5.tar.gz
-tar xzf petsc-3.3-p5.tar.gz
-cd $PETSC_DIR
-./configure --with-shared-libraries=1 --with-debugging=0 COPTFLAGS='-O3 -march=p4 -mtune=p4' FOPTFLAGS='-O3 -qarch=p4 -qtune=p4'
-make all
-make test
-
-#GMSH
-export GMSH_DIR=$workdir/gmsh
-mkdir $GMSH_DIR
-cd $workdir
-wget http://geuz.org/gmsh/src/gmsh-2.6.1-source.tgz
-tar xzf gmsh-2.6.1-source.tgz
-cd gmsh-2.6.1-source.tgz
-cmake -DCMAKE_INSTALL_PREFIX=$GMSH_DIR -DCMAKE_BUILD_TYPE=release ..
-make lib
-make shared
-make -j8 install
-export PATH=$PATH:$GMSH_DIR/bin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GMSH_DIR/lib
-
-# On clone le dépot GIT
-cd $workdir
-git clone https://github.com/feelpp/feelpp.git
-mkdir feelpp_build_dir
-cd feelpp_build_dir
-cmake $workdir/feelpp
-make -j4 
+#télécharge, compile et install gcc dans $workdir/gcc
+sh gcc47.sh
+#télécharge, compile et install openmpi dans $workdir/openmpi
+so openmpi.sh
+#télécharge, compile et install boost dans $workdir/boost
+sh boost.sh
+#télécharge, compile et install gmsh dans $workdir/gmsh
+sh gmsh.sh
+#télécharge, compile et install petsc dans $workdir/petsc-version
+sh petsc.sh
+#télécharge, compile et install feelpp dans $workdir/feelppLib
+sh feelpp.sh
