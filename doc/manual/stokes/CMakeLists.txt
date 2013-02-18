@@ -1,9 +1,8 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
-
-#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
-#       Date: 2012-12-16
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#       Date: 2013-02-18
 #
-#  Copyright (C) 2012 Feel++ Consortium
+#  Copyright (C) 2013 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,5 +21,6 @@
 #
 #
 
-feelpp_add_application( qs_laplacian SRCS laplacian.cpp INCLUDE_IN_ALL)
-install(TARGETS feelpp_qs_laplacian DESTINATION bin/ COMPONENT Bin )
+feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
+feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
+feelpp_add_application( doc_stokes_periodic SRCS stokes_periodic.cpp LABEL doc  )

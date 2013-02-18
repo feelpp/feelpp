@@ -11,6 +11,7 @@
 /.kdev4
 /CMakeCache.txt
 /CMakeFiles
+/CMakeLists.txt.doc
 /CMakeLists.txt~
 /CPackConfig.cmake
 /CPackSourceConfig.cmake
