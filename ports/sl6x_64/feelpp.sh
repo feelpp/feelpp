@@ -8,4 +8,4 @@ cmake ../feelpp \
       -DCMAKE_BUILD_TYPE=release \
       -DFEELPP_ENABLE_DOCUMENTATION=off \
       -DCMAKE_INSTALL_PREFIX=$feelppDir
-make -j4 install
+make -j$nbProc install
