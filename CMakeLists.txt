@@ -63,77 +63,24 @@ endmacro(set_config_option)
 
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 
-OPTION(FEELPP_ENABLE_GIT "enable Feel++ looking up for svn information" OFF)
-SET(FEELPP_SCM "git")
-# IF(FEELPP_ENABLE_GIT AND ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn ) )
-# #IF ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
-#   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Project)
-#   MESSAGE("Current revision is ${Project_WC_REVISION}")
-#   Subversion_WC_LOG(${PROJECT_SOURCE_DIR} Project)
-#   MESSAGE("Last changed log is ${Project_LAST_CHANGED_LOG}")
-# ELSE()
-FIND_PACKAGE(Git)
-if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
-  message(STATUS "Git found" )
-  if ( NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/ginac/ginac )
-    message(STATUS "initializing submodules...")
-    execute_process(COMMAND git submodule init WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} )
-    message(STATUS "updating submodules...")
-    execute_process(COMMAND git submodule update WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} )
-  endif()
-
-  execute_process(
-    COMMAND git rev-parse --verify -q --short HEAD
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE Project_WC_REVISION
-    ERROR_VARIABLE GIT_COMMIT_error
-    RESULT_VARIABLE GIT_COMMIT_result)
-  if ( NOT ${GIT_COMMIT_result} EQUAL 0 )
-    MESSAGE(SEND_ERROR "Command \"git rev-parse --verify -q --short git-svn\" failed with output:\n${GIT_COMMIT_error}")
-  else()
-    STRING(STRIP "${Project_WC_REVISION}" Project_WC_REVISION )
-    MESSAGE(STATUS "Git commit: ${Project_WC_REVISION}")
-  endif()
-else()
-  if(EXISTS ${PROJECT_SOURCE_DIR}/GITREVISION)
-    file(READ ${PROJECT_SOURCE_DIR}/GITREVISION Project_WC_REVISION)
-  endif()
-endif()
-
-
-set(FEELPP_VERSION_MAJOR "0")
-set(FEELPP_VERSION_MINOR "92")
-set(FEELPP_VERSION_MICRO "0")
-set(FEELPP_REVISION "0" )
-set(FEELPP_BUILDID "0" )
-if (FEELPP_ENABLE_GIT AND GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
-  set(FEELPP_VERSION_EXTRA "~${FEELPP_SCM}${Project_WC_REVISION}")
-  set(FEELPP_REVISION "${Project_WC_REVISION}")
-  set(FEELPP_BUILDID "${Project_WC_REVISION}")
-  file(WRITE "${CMAKE_SOURCE_DIR}/GITREVISION" "${Project_WC_REVISION}")
-else()
-  set(FEELPP_VERSION_EXTRA "")
-  if ( EXISTS "${CMAKE_SOURCE_DIR}/SVNREVISION" )
-    file(READ "${CMAKE_SOURCE_DIR}/SVNREVISION" FEELPP_REVISION)
-    file(READ "${CMAKE_SOURCE_DIR}/SVNREVISION" FEELPP_BUILDID)
-  endif()
-endif()
-set(FEELPP_VERSION "(((${FEELPP_VERSION_MAJOR}) << 16) | ((${FEELPP_VERSION_MINOR}) << 9) | (${FEELPP_VERSION_MICRO}))" )
-set(FEELPP_VERSION_STRING "${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_EXTRA}")
-set(FEELPP_SHARED_VERSION "1.0.0" )
-set(FEELPP_SHARED_SOVERSION "1" )
-
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 
+
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines )
 add_subdirectory(cmake/modules)
 add_subdirectory(cmake/machines)
+
+# set the Feel++ version
+include(feelpp.version)
+
+# possibly set the Feel++ configuration
 include(feelpp.machines.config)
 
+# RelWithDebInfo  is the default value for CMAKE_BUILD_TYPE
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
