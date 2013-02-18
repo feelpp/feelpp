@@ -391,13 +391,13 @@ LShape<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
         auto norm_U = math::sqrt( norm2_U );
 
         estimator_U = zz_estimator(u, mesh);
-        criterion_U = math::abs( estimator_U.get<0>() - norm_U  )/norm_U;
+        criterion_U = math::abs( estimator_U.template get<0>() - norm_U  )/norm_U;
 
         std::cout << "criterion = " << criterion_U << std::endl;
-        std::cout << "ZZ estimator = " << estimator_U.get<0>() << std::endl;
+        std::cout << "ZZ estimator = " << estimator_U.template get<0>() << std::endl;
 
         LOG(INFO) << "criterion = " << criterion_U;
-        LOG(INFO) << "ZZ estimator = " << estimator_U.get<0>();
+        LOG(INFO) << "ZZ estimator = " << estimator_U.template get<0>();
 
         criterion = criterion && (criterion_U > (1+tol) || criterion_U < (1-tol) );
 
