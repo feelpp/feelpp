@@ -33,7 +33,7 @@ int main(int argc, char**argv )
     //# endmarker3 #
 
     //# marker4 #
-    auto e = exporter( _mesh=mesh, _name="qs_laplacian" );
+    auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->save();
     return 0;
