@@ -112,4 +112,5 @@ foreach( example myapp mymesh myintegrals myfunctionspace laplacian)
   FILE(APPEND CMakeLists.txt.doc "
 add_dependencies(tutorial feelpp_doc_${example})
 ")
+endforeach()
 INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/ COMPONENT Doc RENAME CMakeLists.txt)
