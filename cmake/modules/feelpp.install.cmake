@@ -65,11 +65,12 @@ INSTALL(FILES ${files} DESTINATION include/feel/matheval COMPONENT Devel)
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib/lib*")
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
 
-# gmm
-IF ( NOT GMM_FOUND )
-  FILE(GLOB files "contrib/gmm/include/*.h")
-  INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
-ENDIF()
+# # gmm
+# IF ( NOT GMM_FOUND )
+#   FILE(GLOB files "contrib/gmm/include/*.h")
+#   INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
+# ENDIF()
+
 # feel++ config headers
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/feel/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
