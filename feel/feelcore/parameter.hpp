@@ -106,6 +106,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( solver )
     BOOST_PARAMETER_NAME( spectrum )
     BOOST_PARAMETER_NAME( transform )
+// parameter for exporter
+    BOOST_PARAMETER_NAME( geo )
 // parameter for description of geometries
     BOOST_PARAMETER_NAME( h )
     BOOST_PARAMETER_NAME( dim )
