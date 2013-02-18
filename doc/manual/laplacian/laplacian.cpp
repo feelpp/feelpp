@@ -234,7 +234,8 @@ Laplacian<Dim,Order>::run()
     {
         //# marker41 #
         l += integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                          _expr=nu*g*( -grad( v )*vf::N()+penaldir*id( v )/hFace() ) );
+                          _expr=nu*g*( -grad( v )*vf::N()
+                                      + penaldir*id( v )/hFace() ) );
         //# endmarker41 #
     }
 

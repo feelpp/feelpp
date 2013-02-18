@@ -42,12 +42,25 @@ format file \textit{.case}.
 \end{unixcom}
 %
 For advanced usage, there is the more generic \lstinline!createGMSHMesh()! function which is
-useful for creating or loading an existing mesh or geometry (see section \ref{howto:spec-meshes}
-for a load example).
+useful for creating a mesh from a geometry. For loading a mesh, there is the loadGMSHMesh() function
+(see section \ref{howto:spec-meshes} for a load example).
 Note that \lstinline!unitSquare()! is just a particular case of \lstinline!createGMSHMesh()!.
 \feel provide useful tools to iterate on the mesh or some faces that we will see later.
 %
 The process of the mesh creation is fully parallelized. You can as explained in section \ref{sec:myapp}
-run this example on several processors and visualise subregions with paraview.
+run this example on several processors and visualise subregions with paraview (see figures 
+\ref{fig:tuto-mesh-1} and
 
+\begin{figure}[!h]
+\centering
+\subfigure[Square]
+    {\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_2.png}}
+\subfigure[Square and subregions]
+    {\includegraphics[width=6cm]{pngs/mymesh/mesh3.png}}
+\subfigure[Cube ]
+    {\includegraphics[width=4.5cm]{pngs/mymesh/hypercube_3.png}}
+\subfigure[Cube and subregions]
+    {\includegraphics[width=6cm]{pngs/mymesh/mesh_cube.png}}
+\end{figure}
+\label{fig:tuto_mesh-1}
 
