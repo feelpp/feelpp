@@ -623,7 +623,7 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
 #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
 #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
   FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
-  FIND_LIBRARY(FEELPP_LIBRARY feel++ PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
 
   INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} ${FEELPP_INCLUDE_DIR}/feel )
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
@@ -649,7 +649,7 @@ else()
     ${FEELPP_SOURCE_DIR}/
     ${FEELPP_SOURCE_DIR}/contrib/gmm/include
     )
-  SET(FEELPP_LIBRARIES feel++  ${FEELPP_LIBRARIES})
+  SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
 endif()
 
 
