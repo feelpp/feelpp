@@ -432,7 +432,7 @@ First we define the $f$ and $g$. To do that we use the
 \lstinline!AUTO! keyword and associate to \lstinline!f! and
 \lstinline!g! their expressions
 
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{laplacian/laplacian.cpp}
 
 \noindent where \lstinline!M_PI! is defined in the header
 \lstinline!cmath!.  Using \lstinline!AUTO! allows to defined
@@ -447,7 +447,7 @@ algebraic representation will be stored in a
 algebra backend. The linear form is equated with an integral
 expression defining our right hand side.
 
-\lstinputlisting[linerange=marker2-endmarker2]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{laplacian/laplacian.cpp}
 
 \noindent \lstinline!form1! generates an instance of the object
 representing linear forms, that is to say it mimics the mathematical
@@ -477,7 +477,7 @@ associated matrix should initialized using
 \lstinline!_init!.
 
 
-\lstinputlisting[linerange=marker3-endmarker3]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{laplacian/laplacian.cpp}
 
 
 Finally, we deal with the boundary condition, we implement both
@@ -485,7 +485,7 @@ formulation described in appendix~\ref{sec:vari-form}. For a
 \emph{strong} treatment of the Dirichlet condition, we use the
 \lstinline!on()! keyword of \feel as follows
 
-\lstinputlisting[linerange=marker5-endmarker5]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker5-endmarker5]{laplacian/laplacian.cpp}
 
 Notice that we add, using \lstinline!+=!, the Dirichlet contribution
 for the bilinear form. The first argument is the set of boundary faces
@@ -495,8 +495,8 @@ marked using the flags $1$ and $3$ ($x=-1$ and $x=1$ respectively).
 To implement the weak Dirichlet boundary condition, we add the
 following contributions to the left and right hand side:
 
-\lstinputlisting[linerange=marker41-endmarker41]{tutorial/laplacian.cpp}
-\lstinputlisting[linerange=marker10-endmarker10]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker41-endmarker41]{laplacian/laplacian.cpp}
+\lstinputlisting[linerange=marker10-endmarker10]{laplacian/laplacian.cpp}
 
 Note that we use the command line option \lstinline!--weakdir! set to
 1 by default to decide between weak/strong Dirichlet handling.  Apart
@@ -511,7 +511,7 @@ Next we solve the linear system
 
 where the \lstinline!solve! function is implemented as follows
 
-\lstinputlisting[linerange=marker6-endmarker6]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker6-endmarker6]{laplacian/laplacian.cpp}
 
 Finally we check for the $L_2$ error in our approximation by computing
 \begin{equation}
@@ -524,7 +524,7 @@ $u_h$ in the $P_2$ Lagrange basis are given by solving (\ref{eq:6}).
 
 The code reads
 
-\lstinputlisting[linerange=marker7-endmarker7]{tutorial/laplacian.cpp}
+\lstinputlisting[linerange=marker7-endmarker7]{laplacian/laplacian.cpp}
 
 
 You can now verify that the $L_2$ error norm behaves like $h^{-(N+1)}$
@@ -686,23 +686,23 @@ We start by defining and building $\mathcal{X}_h$: first we define the
 basis functions that will span each subspaces $X_h$, $M_h$ and
 $\mathbb{P}_0(\Omega)$.
 
-\lstinputlisting[linerange=marker1-endmarker1]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker1-endmarker1]{stokes/stokes.cpp}
 
 note that on the \lstinline!typedef! we build a (MPL) vector of them. Now we are
 ready to define the functionspace $\mathcal{X}_h$, much like in the
 Laplacian case:
 
-\lstinputlisting[linerange=marker2-endmarker2]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker2-endmarker2]{stokes/stokes.cpp}
 
 Next we define a few types which are associated with $\mathcal{U}$,
 $u$, $p$ and $\lambda$ respectively.
 
-\lstinputlisting[linerange=marker3-endmarker3]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker3-endmarker3]{stokes/stokes.cpp}
 
 Using these types we can instantiate elements of $\mathcal{X}_h$,
 $X_h$, $M_h$ and $\mathbb{P}_0(\Omega_h)$ respectively:
 
-\lstinputlisting[linerange=marker4-endmarker4]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker4-endmarker4]{stokes/stokes.cpp}
 
 They will serve in the definition of the variational formulation. We
 can now start assemble the various terms of the variational
@@ -712,21 +712,21 @@ $\tau(\mathbf{u}) = \nabla \mathbf{u}$,
 associated with the trial and test functions
 respectively
 
-\lstinputlisting[linerange=marker5-endmarker5]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker5-endmarker5]{stokes/stokes.cpp}
 
 Then we define the total stress tensor times the normal,
 $\bar{\sigma}(\mathbf{u},p) \mathbf{n} = -p \mathbf{n} + 2 \mu \tau(\mathbf{u})
 \mathbf{n}$ where $\mathbf{n}$ is the normal and $\bar{\sigma}(\mathbf{u},p) =
 -p \mathbb{I} + 2 \mu \tau(\mathbf{u})$:
 
-\lstinputlisting[linerange=marker6-endmarker6]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker6-endmarker6]{stokes/stokes.cpp}
 
 
 We then form the matrix $\mathcal{A}$ starting with block $A$,  block $B$
 block $C$ and finally the boundary conditions.
 
 
-\lstinputlisting[linerange=marker7-endmarker7]{tutorial/stokes.cpp}
+\lstinputlisting[linerange=marker7-endmarker7]{stokes/stokes.cpp}
 
 The figure~\ref{fig:2} displays $p$ and $\mathbf{u}$ which are available in
 \begin{unixcom}
