@@ -47,7 +47,7 @@ ENDIF()
 
 FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
-add_latex_document(feel-manual.tex
+add_latex_document(feelpp-manual.tex
   INPUTS
   ${TUTO_DOC_FILES}
   nonlinear/nonlinear.tex
@@ -57,7 +57,7 @@ add_latex_document(feel-manual.tex
   maxwell/maxwell.tex
   randomnotes.tex gfdl.tex howto.tex version.tex ${CPPFILES} ${STYFILES}
   BIBFILES
-  ../biblio/feel-manual.bib
+  ../biblio/feelpp-manual.bib
   ../biblio/feelpp.bib
   ../biblio/feelpp-thesis.bib
   IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian
@@ -65,7 +65,7 @@ add_latex_document(feel-manual.tex
   DEFAULT_PDF
   MANGLE_TARGET_NAMES
   )
-SET_TARGET_PROPERTIES(feel-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
+SET_TARGET_PROPERTIES(feelpp-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
 endif()
 
 # this target allows to create all the required figures for the tutorial
