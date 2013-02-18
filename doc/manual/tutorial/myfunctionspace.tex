@@ -5,7 +5,21 @@
 %
 \section{Function Spaces}
 \label{sec:myfunctionspace}
+
+Now we are able to construct basic \feel applications and compute some integrals 
+(If it is not the case, get back to section \ref{sec:mymesh}).
+We interest now to solve partial differential equations, so we must define function spaces
+to work on. (source \textcolor{magenta}{"doc/manual/tutorial/myfunctionspace.cpp"}).
+
 \vspace{2mm}
 \lstinputlisting[linerange=marker_main-endmarker_main]{tutorial/myfunctionspace.cpp}
 \vspace{2mm}
+
+As you can see, we instanciate a new function space object $X_h$ using the \lstinline!Pch<int order>(mesh)!
+template. These functions are piecewise polynomial of an order precised and the basis functions are
+Lagrange polynomials. Then for $u,v\in X_h$, we build the Lagrange interpolant. We use for this
+\lstinline!project()! which returns the projection on the mesh node.
+
+test.
+
 
