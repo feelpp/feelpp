@@ -85,5 +85,23 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html DESTINATION share/doc
         PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
 ENDIF()
 
-FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/*.*pp")
-INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/ COMPONENT Doc)
+
+INSTALL(FILES quickstart/qs_laplacian.cpp DESTINATION share/doc/feel/examples/quickstart/ COMPONENT Doc)
+
+FILE(WRITE CMakeLists.txt.doc  "cmake_minimum_required(VERSION 2.8)
+set(CMAKE_MODULE_PATH \"${CMAKE_INSTALL_PREFIX}/share/feel/cmake/modules/\")
+Find_Package(Feel++)
+feelpp_add_application( qs_laplacian SRCS quickstart/laplacian.cpp INCLUDE_IN_ALL)")
+
+FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.*pp")
+
+INSTALL(FILES ${examples} DESTINATION share/doc/feel/examples/tutorial COMPONENT Doc)
+foreach(example ${examples} )
+  get_filename_component( EXAMPLE_TARGET_NAME ${example} NAME_WE )
+  get_filename_component( EXAMPLE_SRCS_NAME ${example} NAME )
+  FILE(APPEND CMakeLists.txt.doc "
+# target feelpp_doc_${EXAMPLE_TARGET_NAME}
+feelpp_add_application( doc_${EXAMPLE_TARGET_NAME} SRCS tutorial/${EXAMPLE_SRCS_NAME} INCLUDE_IN_ALL)
+" )
+endforeach()
+INSTALL(FILES CMakeLists.txt.doc DESTINATION share/doc/feel/examples/CMakeLists.txt COMPONENT Doc)
