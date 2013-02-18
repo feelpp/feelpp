@@ -470,6 +470,12 @@ public:
         M_factor = Factor;
     }
 
+    //! set boolean indicates if we are in offline_step or not
+    void setOfflineStep( bool b )
+    {
+        M_offline_step = b;
+    }
+
     struct ComputePhi
     {
 
@@ -1115,6 +1121,7 @@ private:
 
     bool M_use_newton;
 
+    bool M_offline_step;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -2709,6 +2716,10 @@ void
 CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const& mu, std::vector<element_ptrtype> const & Un, std::vector<element_ptrtype> const & Unold, std::vector<element_ptrtype> const& Undu, std::vector<element_ptrtype> const & Unduold, std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector < std::vector<double> > const& dual_residual_coeffs ) const
 {
 
+    LOG( INFO ) <<"\n compareResidualsForTransientProblems \n";
+
+    backend_ptrtype backend = backend_type::build( BACKEND_PETSC ) ;
+
     if ( M_model->isSteady() )
     {
         throw std::logic_error( "[CRB::compareResidualsForTransientProblems] ERROR : to check residual in a steady case, use checkResidual and not compareResidualsForTransientProblems" );
@@ -2718,135 +2729,143 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
-    vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Rhs( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Aun( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype AduUn( backend->newVector( M_model->functionSpace() ) );
 
-    vector_ptrtype Aun( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Mun( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Munold( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype Frhs( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype un( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype unold( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype undu( M_backend->newVector( M_model->functionSpace() ) );
-    vector_ptrtype unduold( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Mun( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Munold( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Frhs( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype un( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype unold( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype undu( backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype unduold( backend->newVector( M_model->functionSpace() ) );
 
     //set parameters for time discretization
-    M_bdf_primal->setTimeInitial( M_model->timeInitial() );
-    M_bdf_primal->setTimeStep( M_model->timeStep() );
-    M_bdf_primal->setTimeFinal( M_model->timeFinal() );
-    M_bdf_primal->setOrder( M_model->timeOrder() );
+    auto bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_check_residual_transient" );
+    bdf_primal->setTimeInitial( M_model->timeInitial() );
+    bdf_primal->setTimeStep( M_model->timeStep() );
+    bdf_primal->setTimeFinal( M_model->timeFinal() );
+    bdf_primal->setOrder( M_model->timeOrder() );
 
-    M_bdf_primal->start();
 
-    double time_step = M_bdf_primal->timeStep();
+    double time_step = bdf_primal->timeStep();
     int time_index=0;
-    for ( M_bdf_primal->start() ; !M_bdf_primal->isFinished(); M_bdf_primal->next() )
+    for ( bdf_primal->start() ; !bdf_primal->isFinished(); bdf_primal->next() )
     {
+        auto bdf_poly = bdf_primal->polyDeriv();
 
-        auto bdf_poly = M_bdf_primal->polyDeriv();
+        boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , bdf_primal->time() );
 
-        boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_primal->time() );
+        A->close();
 
-	A->close();
+        *un = *Un[time_index];
+        *unold = *Unold[time_index];
+        A->multVector( un, Aun );
+        M->multVector( un, Mun );
+        M->multVector( unold, Munold );
+        Aun->scale( -1 );
+        Mun->scale( -1 );
+        *Frhs = *F[0];
 
-	*un = *Un[time_index];
-	*unold = *Unold[time_index];
-	A->multVector( un, Aun );
-	M->multVector( un, Mun );
-	M->multVector( unold, Munold );
-	Aun->scale( -1 );
-	Mun->scale( -1 );
-	*Frhs = *F[0];
+        vector_ptrtype __ef_pr(  backend->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __ea_pr(  backend->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emu_pr(  backend->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emuold_pr(  backend->newVector( M_model->functionSpace() ) );
+        M_model->l2solve( __ef_pr, Frhs );
+        M_model->l2solve( __ea_pr, Aun );
+        M_model->l2solve( __emu_pr, Mun );
+        M_model->l2solve( __emuold_pr, Munold );
 
-	vector_ptrtype __ef_pr(  M_backend->newVector( M_model->functionSpace() ) );
-	vector_ptrtype __ea_pr(  M_backend->newVector( M_model->functionSpace() ) );
-	vector_ptrtype __emu_pr(  M_backend->newVector( M_model->functionSpace() ) );
-	vector_ptrtype __emuold_pr(  M_backend->newVector( M_model->functionSpace() ) );
-	M_model->l2solve( __ef_pr, Frhs );
-	M_model->l2solve( __ea_pr, Aun );
-	M_model->l2solve( __emu_pr, Mun );
-	M_model->l2solve( __emuold_pr, Munold );
+        double check_Cff_pr = M_model->scalarProduct( __ef_pr,__ef_pr );
+        double check_Caf_pr = 2*M_model->scalarProduct( __ef_pr,__ea_pr );
+        double check_Caa_pr = M_model->scalarProduct( __ea_pr,__ea_pr );
+        double check_Cmf_pr = 2./time_step*( M_model->scalarProduct( __emu_pr , __ef_pr )+M_model->scalarProduct( __emuold_pr , __ef_pr ) );
+        double check_Cma_pr = 2./time_step*( M_model->scalarProduct( __emu_pr , __ea_pr )+M_model->scalarProduct( __emuold_pr , __ea_pr ) );
+        double check_Cmm_pr = 1./(time_step*time_step)*( M_model->scalarProduct( __emu_pr , __emu_pr ) + 2*M_model->scalarProduct( __emu_pr , __emuold_pr ) + M_model->scalarProduct( __emuold_pr , __emuold_pr ) );
 
-	double check_Cff_pr = M_model->scalarProduct( __ef_pr,__ef_pr );
-	double check_Caf_pr = 2*M_model->scalarProduct( __ef_pr,__ea_pr );
-	double check_Caa_pr = M_model->scalarProduct( __ea_pr,__ea_pr );
-	double check_Cmf_pr = 2./time_step*( M_model->scalarProduct( __emu_pr , __ef_pr )+M_model->scalarProduct( __emuold_pr , __ef_pr ) );
-	double check_Cma_pr = 2./time_step*( M_model->scalarProduct( __emu_pr , __ea_pr )+M_model->scalarProduct( __emuold_pr , __ea_pr ) );
-	double check_Cmm_pr = 1./(time_step*time_step)*( M_model->scalarProduct( __emu_pr , __emu_pr ) + 2*M_model->scalarProduct( __emu_pr , __emuold_pr ) + M_model->scalarProduct( __emuold_pr , __emuold_pr ) );
+        double Cff_pr = primal_residual_coeffs[time_index][0];
+        double Caf_pr = primal_residual_coeffs[time_index][1];
+        double Caa_pr = primal_residual_coeffs[time_index][2];
+        double Cmf_pr = primal_residual_coeffs[time_index][3];
+        double Cma_pr = primal_residual_coeffs[time_index][4];
+        double Cmm_pr = primal_residual_coeffs[time_index][5];
 
-	double Cff_pr = primal_residual_coeffs[time_index][0];
-	double Caf_pr = primal_residual_coeffs[time_index][1];
-	double Caa_pr = primal_residual_coeffs[time_index][2];
-	double Cmf_pr = primal_residual_coeffs[time_index][3];
-	double Cma_pr = primal_residual_coeffs[time_index][4];
-	double Cmm_pr = primal_residual_coeffs[time_index][5];
-
-	std::cout<<" --- time : "<<M_bdf_primal->time()<<std::endl;
-	std::cout<<"Cff : "<< check_Cff_pr <<"  -  "<<Cff_pr<<"  =>  "<<check_Cff_pr-Cff_pr<<std::endl;
-	std::cout<<"Caf : "<< check_Caf_pr <<"  -  "<<Caf_pr<<"  =>  "<<check_Caf_pr-Caf_pr<<std::endl;
-	std::cout<<"Caa : "<< check_Caa_pr <<"  -  "<<Caa_pr<<"  =>  "<<check_Caa_pr-Caa_pr<<std::endl;
-	std::cout<<"Cmf : "<< check_Cmf_pr <<"  -  "<<Cmf_pr<<"  =>  "<<check_Cmf_pr-Cmf_pr<<std::endl;
-	std::cout<<"Cma : "<< check_Cma_pr <<"  -  "<<Cma_pr<<"  =>  "<<check_Cma_pr-Cma_pr<<std::endl;
-	std::cout<<"Cmm : "<< check_Cmm_pr <<"  -  "<<Cmm_pr<<"  =>  "<<check_Cmm_pr-Cmm_pr<<std::endl;
-	time_index++;
+        LOG(INFO)<<" --- time : "<<bdf_primal->time()<<std::endl;
+        LOG(INFO)<<"Cff : "<< check_Cff_pr <<"  -  "<<Cff_pr<<"  =>  "<<check_Cff_pr-Cff_pr<<std::endl;
+        LOG(INFO)<<"Caf : "<< check_Caf_pr <<"  -  "<<Caf_pr<<"  =>  "<<check_Caf_pr-Caf_pr<<std::endl;
+        LOG(INFO)<<"Caa : "<< check_Caa_pr <<"  -  "<<Caa_pr<<"  =>  "<<check_Caa_pr-Caa_pr<<std::endl;
+        LOG(INFO)<<"Cmf : "<< check_Cmf_pr <<"  -  "<<Cmf_pr<<"  =>  "<<check_Cmf_pr-Cmf_pr<<std::endl;
+        LOG(INFO)<<"Cma : "<< check_Cma_pr <<"  -  "<<Cma_pr<<"  =>  "<<check_Cma_pr-Cma_pr<<std::endl;
+        LOG(INFO)<<"Cmm : "<< check_Cmm_pr <<"  -  "<<Cmm_pr<<"  =>  "<<check_Cmm_pr-Cmm_pr<<std::endl;
+        time_index++;
     }
 
     time_index--;
 
-    std::cout<<"**********dual problem************* "<<std::endl;
-    element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
+    bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
+    if( this->worldComm().globalSize() > 1 )
+        solve_dual_problem=false;
 
-    Adu = M_model->newMatrix();
-
-    M_bdf_dual->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
-    M_bdf_dual->setTimeStep( -M_model->timeStep() );
-    M_bdf_dual->setTimeFinal( M_model->timeInitial()+M_model->timeStep() );
-    M_bdf_dual->setOrder( M_model->timeOrder() );
-
-    M_bdf_dual->start();
-
-    //initialization
-    time_step = M_bdf_dual->timeStep();
-
-    boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->timeInitial() );
-
-    for ( M_bdf_dual->start(); !M_bdf_dual->isFinished() ; M_bdf_dual->next() )
+    if( solve_dual_problem )
     {
-        auto bdf_poly = M_bdf_dual->polyDeriv();
+        LOG(INFO)<<"**********dual problem************* "<<std::endl;
+        element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
+        Adu = M_model->newMatrix();
 
-        boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , M_bdf_dual->time() );
+        auto bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual_check_residual_transient" );
 
-	*undu = *Undu[time_index];
-	*unduold = *Unduold[time_index];
-	A->multVector( undu, Aun );
-	M->multVector( undu, Mun );
-	M->multVector( unduold, Munold );
-	Aun->scale( -1 );
-	Munold->scale( -1 );
-	*Frhs = *F[0];
+        bdf_dual->setTimeInitial( M_model->timeFinal()+M_model->timeStep() );
+        bdf_dual->setTimeStep( -M_model->timeStep() );
+        bdf_dual->setTimeFinal( M_model->timeInitial()+M_model->timeStep() );
+        bdf_dual->setOrder( M_model->timeOrder() );
 
-	vector_ptrtype __ea_du(  M_backend->newVector( M_model->functionSpace() ) );
-	vector_ptrtype __emu_du(  M_backend->newVector( M_model->functionSpace() ) );
-	vector_ptrtype __emuold_du(  M_backend->newVector( M_model->functionSpace() ) );
-	M_model->l2solve( __ea_du, Aun );
-	M_model->l2solve( __emu_du, Mun );
-	M_model->l2solve( __emuold_du, Munold );
-	double check_Caa_du = M_model->scalarProduct( __ea_du,__ea_du );
-	double check_Cma_du = 2./time_step*( M_model->scalarProduct( __emu_du , __ea_du )+M_model->scalarProduct( __emuold_du , __ea_du ) );
-	double check_Cmm_du = 1./(time_step*time_step)*( M_model->scalarProduct( __emu_du , __emu_du ) + 2*M_model->scalarProduct( __emu_du , __emuold_du ) + M_model->scalarProduct( __emuold_du , __emuold_du ) );
+        bdf_dual->start();
 
-	double Cff_du =  dual_residual_coeffs[time_index][0];
-	double Caf_du =  dual_residual_coeffs[time_index][1];
-	double Caa_du =  dual_residual_coeffs[time_index][2];
-	double Cmf_du =  dual_residual_coeffs[time_index][3];
-	double Cma_du =  dual_residual_coeffs[time_index][4];
-	double Cmm_du =  dual_residual_coeffs[time_index][5];
-	std::cout<<" --- time : "<<M_bdf_dual->time()<<std::endl;
-	std::cout<<"Caa : "<< check_Caa_du <<"  -  "<<Caa_du<<"  =>  "<<check_Caa_du-Caa_du<<std::endl;
-	std::cout<<"Cma : "<< check_Cma_du <<"  -  "<<Cma_du<<"  =>  "<<check_Cma_du-Cma_du<<std::endl;
-	std::cout<<"Cmm : "<< check_Cmm_du <<"  -  "<<Cmm_du<<"  =>  "<<check_Cmm_du-Cmm_du<<std::endl;
-	time_index--;
-    }
+        //initialization
+        time_step = bdf_dual->timeStep();
 
+        //boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , bdf_dual->timeInitial() );
+
+        for ( bdf_dual->start(); !bdf_dual->isFinished() ; bdf_dual->next() )
+        {
+            auto bdf_poly = bdf_dual->polyDeriv();
+
+            boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , bdf_dual->time() );
+            A->transpose( Adu );
+            *undu = *Undu[time_index];
+            *unduold = *Unduold[time_index];
+            Adu->multVector( undu, AduUn );
+            M->multVector( undu, Mun );
+            M->multVector( unduold, Munold );
+            AduUn->scale( -1 );
+            Munold->scale( -1 );
+            *Frhs = *F[0];
+
+            vector_ptrtype __ea_du(  backend->newVector( M_model->functionSpace() ) );
+            vector_ptrtype __emu_du(  backend->newVector( M_model->functionSpace() ) );
+            vector_ptrtype __emuold_du(  backend->newVector( M_model->functionSpace() ) );
+            M_model->l2solve( __ea_du, AduUn );
+            M_model->l2solve( __emu_du, Mun );
+            M_model->l2solve( __emuold_du, Munold );
+            double check_Caa_du = M_model->scalarProduct( __ea_du,__ea_du );
+            double check_Cma_du = 2./time_step*( M_model->scalarProduct( __emu_du , __ea_du )+M_model->scalarProduct( __emuold_du , __ea_du ) );
+            double check_Cmm_du = 1./(time_step*time_step)*( M_model->scalarProduct( __emu_du , __emu_du ) + 2*M_model->scalarProduct( __emu_du , __emuold_du ) + M_model->scalarProduct( __emuold_du , __emuold_du ) );
+
+
+            double Cff_du =  dual_residual_coeffs[time_index][0];
+            double Caf_du =  dual_residual_coeffs[time_index][1];
+            double Caa_du =  dual_residual_coeffs[time_index][2];
+            double Cmf_du =  dual_residual_coeffs[time_index][3];
+            double Cma_du =  dual_residual_coeffs[time_index][4];
+            double Cmm_du =  dual_residual_coeffs[time_index][5];
+            LOG(INFO)<<" --- time : "<<bdf_dual->time()<<std::endl;
+            LOG(INFO)<<"Caa : "<< check_Caa_du <<"  -  "<<Caa_du<<"  =>  "<<check_Caa_du-Caa_du<<std::endl;
+            LOG(INFO)<<"Cma : "<< check_Cma_du <<"  -  "<<Cma_du<<"  =>  "<<check_Cma_du-Cma_du<<std::endl;
+            LOG(INFO)<<"Cmm : "<< check_Cmm_du <<"  -  "<<Cmm_du<<"  =>  "<<check_Cmm_du-Cmm_du<<std::endl;
+            time_index--;
+        }
+    }//solve-dual-problem
 }
 
 
@@ -2876,9 +2895,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     if ( 0 )
     {
         std::cout<<"[CRB::checkResidual] use mu = [";
-
         for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
-
         std::cout<< mu[size-1]<<" ]"<<std::endl;
     }
 
@@ -3408,7 +3425,6 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     double time_final;
     int number_of_time_step;
     size_type Qm;
-    int time_index=0;
 
     if ( M_model->isSteady() )
     {
@@ -3473,6 +3489,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
     else
     {
+        int time_index = number_of_time_step-1;
+
 #if 0
         double initial_dual_time = time_for_output+time_step;
         //std::cout<<"initial_dual_time = "<<initial_dual_time<<std::endl;
@@ -3505,8 +3523,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
         for ( time=time_for_output; time>=time_step; time-=time_step )
         {
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
 
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
             Adu.setZero( N,N );
 
             for ( size_type q = 0; q < M_model->Qa(); ++q )
@@ -3522,8 +3540,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
             {
                 for(int m=0; m < M_model->mMaxM(q); m++)
                 {
-                    Adu += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )/time_step;
-                    Fdu += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
+                    Adu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )/time_step;
+                    Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
                 }
             }
 
@@ -3610,7 +3628,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             for(int m=0; m<M_model->mMaxM(q); m++)
                 A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
         }
-        LOG(INFO) << "Mass=" << A << "\n";
+        //LOG(INFO) << "Mass=" << A << "\n";
         google::FlushLogFiles(google::GLOG_INFO);
         F.setZero( N );
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
@@ -3618,7 +3636,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             for(int m=0; m<M_model->mMaxMF(q); m++)
                 F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
         }
-        LOG(INFO) << "F=" << F << "\n";
+        //LOG(INFO) << "F=" << F << "\n";
 
         google::FlushLogFiles(google::GLOG_INFO);
         uN[time_index] = A.lu().solve( F );
@@ -3985,6 +4003,10 @@ CRB<TruthModelType>::delta( size_type N,
 
         //std::cout<<"dual_residual = "<<dual_residual<<std::endl;
 
+        bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+        if ( this->worldComm().globalSize() > 1 )
+            solve_dual_problem = false;
+
         if( solve_dual_problem )
         {
             for ( double time=Tf; time>=dt; time-=dt )
@@ -3996,6 +4018,41 @@ CRB<TruthModelType>::delta( size_type N,
                 time_index--;
             }//end of time loop for dual problem
         }
+
+
+        bool show_residual = this->vm()["crb.show-residual"].template as<bool>() ;
+        if( ! M_offline_step && show_residual )
+        {
+            double sum=0;
+            bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
+            LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
+            time_index=0;
+            for ( double time=dt; time<=Tf; time+=dt )
+            {
+                auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
+                //LOG(INFO) << "primal residual at time "<<time<<" : "<<pr.template get<0>()<<"\n";
+                sum+=pr.template get<0>();
+                time_index++;
+            }
+            LOG(INFO) << "sum of primal residuals  "<<sum<<std::endl;
+
+            time_index--;
+            sum=0;
+
+            if (solve_dual_problem )
+            {
+                for ( double time=Tf; time>=dt; time-=dt )
+                {
+                    auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
+                    //LOG(INFO) << "dual residual at time "<<time<<" : "<<du.template get<0>()<<"\n";
+                    sum += du.template get<0>();
+                    time_index--;
+                }
+            }
+            LOG(INFO) << "sum of dual residuals  "<<sum<<std::endl;
+            LOG( INFO ) <<" ================================= \n";
+
+        }//if show_residual_convergence
 
         double alphaA=1,alphaM=1;
 
@@ -4672,7 +4729,6 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
     beta_vector_type betaMFqm;
     std::vector<beta_vector_type> betaFqm;
     boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu, time );
-
 
     residual_error_type steady_residual_contribution = steadyDualResidual( Ncur, mu, Undu, time );
     std::vector<double> steady_coeff_vector = steady_residual_contribution.template get<1>();

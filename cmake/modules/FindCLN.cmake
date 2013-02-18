@@ -44,7 +44,7 @@ IF ( NOT CLN_INCLUDE_DIR )
       (${CMAKE_SOURCE_DIR}/contrib/cln/src/Makefile.am IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/cln-compile/src/Makefile) )
     message(STATUS "Installing cln in ${CMAKE_BINARY_DIR}/contrib/cln (this may take a while)...")
     execute_process(
-      COMMAND make -j${NProcs2} install
+      COMMAND make -j${NProcs2} -k install
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/cln-compile
       #  OUTPUT_QUIET
       OUTPUT_FILE "cln-install"
