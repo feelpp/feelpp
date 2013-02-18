@@ -492,13 +492,13 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                           ( optional                                  // 4. one required parameter, and
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
-                            ( geo,   *(ExporterGeometry), EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY)
+                            ( geo,   *, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY)
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
     auto e =  exporter_type::New(Environment::vm(),name);
     e->setPrefix( name );
-    e->setMesh( mesh );
+    e->setMesh( mesh, geo );
     e->addRegions();
     return e;
     //return Exporter<Mesh<Simplex<2> >,1>::New();
