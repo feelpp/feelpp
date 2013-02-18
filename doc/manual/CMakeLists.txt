@@ -27,7 +27,7 @@ option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex
 if ( FEELPP_ENABLE_MANUAL )
 include(UseLATEX OPTIONAL)
 
-foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../mycode/laplacian_dirichlet_homogene.cpp")
+foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.cpp")
  FILE(GLOB CPPFILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${cppfile})
  SET(CPPFILES "${CPPFILES};${CPPFILE}")
 endforeach()
@@ -45,13 +45,11 @@ IF(Subversion_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.svn" )
    FILE(APPEND version.tex "\\newcommand{\\feelsvndate}{${FEELPP_WC_LAST_CHANGED_DATE}}")
 ENDIF()
 
+FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
 add_latex_document(feelpp-manual.tex
   INPUTS
-  tutorial/crash_course.tex
-  tutorial/building.tex
-  tutorial/getting-started.tex
-  tutorial/feel.tex
+  ${TUTO_DOC_FILES}
   nonlinear/nonlinear.tex
   heatns/natural-convection-2d.tex
   heat/heatsink.tex
