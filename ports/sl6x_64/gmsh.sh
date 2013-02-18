@@ -10,6 +10,6 @@ cd BuildDir
 cmake -DCMAKE_INSTALL_PREFIX=$GMSH_DIR -DCMAKE_BUILD_TYPE=release -DCMAKE_PREFIX_PATH=$openmpiDir/include ..
 make lib
 make shared
-make -j8 install
+make -j$nbProc install
 export PATH=$PATH:$GMSH_DIR/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GMSH_DIR/lib

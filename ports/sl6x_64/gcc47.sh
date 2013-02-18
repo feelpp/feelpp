@@ -8,8 +8,8 @@ mkdir BUILD_DIR
 cd BUILD_DIR
 #installation en mode utilisateur
 ../gcc-$gccVersion/configure --prefix=$gccDir
-make -j4
-make -j4 install
+make -j$nbProc
+make -j$nbProc install
 export PATH=$gccDir/bin:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$gccDir/lib
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$gccDir/lib64
