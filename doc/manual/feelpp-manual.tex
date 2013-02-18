@@ -141,6 +141,7 @@
 
 \definecolor{lbcolor}{rgb}{0.941,0.984,0.941}
 \definecolor{cblue}{rgb}{0.,0.0,0.6}
+\definecolor{lblue}{HTML}{045FB4}
 
 \usepackage[colorlinks=true]{hyperref}
 \usepackage{filecontents,listings}
@@ -151,8 +152,8 @@
 \lstset{keywordstyle=\color{red}\bfseries}
 %\lstset{keywordstyle=\mdseries\color{red}}
 \lstset{emph={inline},emphstyle=\color{red}\bfseries}
-%\lstset{stringstyle=\ttfamily}
-\lstset{commentstyle=\ttfamily\color{cblue}}
+\lstset{stringstyle=\ttfamily\color{magenta}}
+\lstset{commentstyle=\ttfamily\color{lblue}}
 \lstset{backgroundcolor=\color{lbcolor},rulecolor=}
 %\lstset{numbers=left}
 %\lstset{numbers={none}}
@@ -165,6 +166,7 @@
 prod,element_prod, range, subrange, inner_prod,unite,elements,markedelements,markedfaces,boundaryfaces,faces,internalelements,boundaryelements,edges,boundaryedges,_Q},emphstyle=\color{blue}}
 \lstset{includerangemarker=false,rangeprefix=\/\/\#\ ,% curly left brace plus space
   rangesuffix=\ \#}% space plus curly right brace
+  \lstset{breaklines=true, breakatwhitespace=true}
 
 \newcommand{\feelchapter}[4]{\chapter{#1 \\ \small{\rm By #3}} \vspace{-1cm}
                               Chapter ref: \textbf{[#4]} \label{chap:#4} \vspace{1cm} \chead[#2]{#3}}

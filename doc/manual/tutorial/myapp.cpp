@@ -44,8 +44,8 @@ int main( int argc, char* argv[] )
     app_options.add( feel_options() );
     app_options.add_options()
 	( "value",
-      po::value<double>() -> default_value(4.2),
-      "a 'double' with default value" )
+          po::value<double>() -> default_value(4.2),
+          "a 'double' with default value" )
     ;
 
     // initialize feel++ environment
