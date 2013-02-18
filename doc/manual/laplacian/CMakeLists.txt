@@ -1,8 +1,8 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2012-02-03
+#       Date: 2013-02-18
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2013 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -19,16 +19,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-#
 
-add_custom_target(
-  loadmesh
-  ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/medit/Cylref.mesh
-                                   ${FEELPP_BUILD_DIR}/doc/manual/
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-)
-
-foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh)
-  feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
-endforeach()
+feelpp_add_application( doc_laplacian SRCS laplacian.cpp LABEL doc CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )#
+feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc)
+feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
+feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LABEL doc  )
