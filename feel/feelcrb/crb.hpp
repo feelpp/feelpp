@@ -5118,13 +5118,12 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
     LOG(INFO) << "[offlineResidual] Cmf_du Cma_du Cmm_du\n";
 
-#if 0
     for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
     {
 
         for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
         {
-            Mq[__q1][__m1]->transpose( Mtq1 );
+            Mqm[__q1][__m1]->transpose( Mtq1 );
 
             for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
             {
@@ -5144,13 +5143,12 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                         __Fdu->scale( -1.0 );
                         M_model->l2solve( __Z2, __Fdu );
 
-                        M_Cmf_du[ __q1][ __q2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
+                        M_Cmf_du[ __q1][__m1][ __q2][__m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                     }//elem
                 } // m2
             } // q2
         } // m1
     } // q1
-#endif
 
     for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
     {
