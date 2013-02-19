@@ -44,25 +44,25 @@ INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 # install cln headers
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/include/cln/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel/cln COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/lib/lib*")
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/cln/lib64/lib*")
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
 
 # install gflags headers
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/include/gflags/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel/gflags COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/lib/lib*")
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/gflags/lib64/lib*")
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
 
 # install glog headers
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/include/glog/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel/glog COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib/lib*")
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/glog/lib64/lib*")
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
 
 # install matheval headers
 FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/include/*.h")
 INSTALL(FILES ${files} DESTINATION include/feel/matheval COMPONENT Devel)
-FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib/lib*")
+FILE(GLOB files "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib/lib*" "${CMAKE_CURRENT_BINARY_DIR}/contrib/libmatheval/lib64/lib*")
 INSTALL(FILES ${files} DESTINATION lib/ COMPONENT Devel)
 
 # # gmm
