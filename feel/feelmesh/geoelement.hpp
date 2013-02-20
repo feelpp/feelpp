@@ -1295,8 +1295,6 @@ public:
     //! Number of local Edges (using Euler Formula)
     static const uint16_type numLocalEdges = super::numEdges;
 
-
-
     /**
      *
      *
@@ -1580,8 +1578,8 @@ template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalFaces;
 template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalEdges;
-template<uint16_type Dim,typename GEOSHAPE,typename T>
-const uint16_type GeoElement3D<Dim,GEOSHAPE,T>::nDim;
+template <uint16_type Dim, typename GEOSHAPE, typename T>
+const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::nDim;
 
 } // Feel
 #endif
