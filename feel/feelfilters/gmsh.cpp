@@ -290,7 +290,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 #if BOOST_FILESYSTEM_VERSION == 3
     filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
 #elif BOOST_FILESYSTEM_VERSION == 2
-    filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
+    filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
 #endif
 
 #if BOOST_FILESYSTEM_VERSION == 3
