@@ -48,8 +48,8 @@ public:
     /** @name Typedefs
      */
     //@{
-    typedef MeshBase mesh_type;
-    typedef boost::shared_ptr<MeshBase> mesh_ptrtype;
+    typedef const MeshBase mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef boost::bimap< size_type, size_type > bm_type;
     //@}
 

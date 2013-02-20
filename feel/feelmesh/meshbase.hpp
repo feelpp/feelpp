@@ -303,7 +303,7 @@ public:
     bool hasSubMeshData() const { return M_smd.use_count() > 0; }
 
     //! \return sub mesh
-    boost::shared_ptr<MeshBase> subMesh() const
+    typename smd_type::mesh_ptrtype subMesh() const
         {
             CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
             return M_smd->mesh;
