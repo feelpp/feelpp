@@ -23,6 +23,7 @@ INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
 
+OPTION(FEELPP_ENABLE_SLURM "Enable Feel++ slurm submission scripts generation" OFF)
 
 OPTION(FEELPP_ENABLE_TBB "enable feel++ TBB support" OFF)
 if ( FEELPP_ENABLE_TBB )
