@@ -514,13 +514,14 @@ public:
                                 auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                 double time_crb = ti.elapsed();
 
+                                auto WN = crb->wn();
                                 //auto u_crb = crb->expansion( mu , N );
                                 auto uN_0 = o.template get<4>();
                                 element_type u_crb;
-                                if( model->isSteady()) // Re-use uN given by lb in crb->run
-                                    u_crb = crb->expansion( uN_0 , N ); // Re-use uN given by lb in crb->run
-                                else
-                                    u_crb = crb->expansion( mu , N );
+                                //if( model->isSteady()) // Re-use uN given by lb in crb->run
+                                    u_crb = crb->expansion( uN_0 , N , WN ); // Re-use uN given by lb in crb->run
+                                //else
+                                //    u_crb = crb->expansion( mu , N , WN );
 
                                 std::ostringstream u_crb_str;
                                 u_crb_str << "u_crb(" << mu_str.str() << ")";
