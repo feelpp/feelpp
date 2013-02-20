@@ -12,9 +12,9 @@ sudo yum -y install cmake28 texinfo glibc-devel.i686 icu.x86_64 libicu-devel.x86
 #Pour installer ailleurs: changer la variable $workdir (s'assurer d'avoir les droits)
 #espace nécessaire: 10Go (possibilité de minimiser beaucoup en supprimant les repertoires de compilation)
 alias cmake=`cmake28`
-export workdir=/usr/local/feelpp/
+export workdir=/usr/local/feelpp
 
-export gccVersion=4.7.2
+export gccVersion=4.6.3
 export gccDir=$workdir/gcc-$gccVersion
 export openmpiDir=$workdir/openmpi/gcc-$gccVersion/
 export boostDir=$workdir/boost/gcc-$gccVersion/
