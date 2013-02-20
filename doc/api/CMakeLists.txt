@@ -31,9 +31,11 @@ if ( DOXYGEN )
 
    # make sure that doxygen is not run byt default
    set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
+   configure_file(
      ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
-       ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-       )
+     ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+     )
 
    configure_file(
      ${CMAKE_CURRENT_SOURCE_DIR}/latexheader.tex.in
