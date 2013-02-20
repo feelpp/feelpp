@@ -9,18 +9,24 @@ function builddox
     cd doxygen-$branch
     cmake ../feelpp.git
     make doxygen
-    cd ..
+    cd doc/manual/ 
+#    make feelpp-manual_pdf
+    cd ../../..
 
     # now work in feelpp.docs to push the newly created doxygen files
     mkdir -p feelpp.docs/api/$branch
     cd feelpp.docs && git pull
     
     rsync -avz ../doxygen-$branch/doc/api/html/ api/$branch/html/
+    mkdir api/$branch/pdfs
+#    cp ../doxygen-$branch/doc/manual/feelpp-manual.pdf  api/$branch/pdfs
     git add api/$branch/html/* 
-    git commit -m"update $branch doxygen documentation" -a
+#    git add api/$branch/pdfs/* 
+    git commit -m"update $branch doxygen and user manual documentation" -a
     git push
     cd ..
 }
+
 
 if [ ! -d feelpp.docs ]; then git clone  https://code.google.com/p/feelpp.docs/ feelpp.docs; fi
 cd feelpp.docs && git pull && cd ..
