@@ -379,5 +379,44 @@ BOOST_PARAMETER_FUNCTION(
     return Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix);
 }
 
+namespace detail
+{
+template<typename Args, typename Tag=tag::opt>
+struct option
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<Args, Tag>::type
+                >::type
+            >::type
+        >::type type;
+};
+
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename Feel::detail::option<Args>::type ),
+    optionT, tag,
+    (required
+     (name,(std::string))
+     (in_out(opt),*))
+    (optional
+     (worldcomm, ( WorldComm ), Environment::worldComm() )
+     (sub,( std::string ),"")
+     (prefix,( std::string ),"")
+        ))
+{
+    try
+    {
+        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<typename Feel::detail::option<Args>::type>();
+    }
+    catch (boost::bad_any_cast bac)
+    {
+        CHECK( false ) <<"problem in conversion type of argument "<< name << " : check the option type"<<std::endl;
+    }
+    return opt;
+}
+
 }
 #endif /* __Environment_H */
