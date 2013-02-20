@@ -38,15 +38,26 @@ FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
 FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEELPP_VERSION_STRING}}")
 
-FIND_PACKAGE(Subversion)
-IF(Subversion_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.svn" )
-   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} FEEL)
-   MESSAGE("Current revision is ${FEELPP_WC_REVISION}")
-   MESSAGE("Last changed date is ${FEELPP_WC_LAST_CHANGED_DATE}")
+MESSAGE("Current revision is ${FEELPP_WC_REVISION}")
+MESSAGE("Last changed date is ${FEELPP_WC_LAST_CHANGED_DATE}")
 
-   FILE(APPEND version.tex "\\newcommand{\\feelsvnrevision}{${FEELPP_WC_REVISION}}")
-   FILE(APPEND version.tex "\\newcommand{\\feelsvndate}{${FEELPP_WC_LAST_CHANGED_DATE}}")
-ENDIF()
+MACRO (TODAY RESULT)
+    IF (WIN32)
+        EXECUTE_PROCESS(COMMAND "date" "/T" OUTPUT_VARIABLE ${RESULT})
+        string(REGEX REPLACE "(..)/(..)/..(..).*" "\\3\\2\\1"
+${RESULT} ${${RESULT}})
+    ELSEIF(UNIX)
+        EXECUTE_PROCESS(COMMAND "date" "+%d/%m/%Y" OUTPUT_VARIABLE ${RESULT})
+        string(REGEX REPLACE "(..)/(..)/..(..).*" "\\3\\2\\1"
+${RESULT} ${${RESULT}})
+    ELSE (WIN32)
+        MESSAGE(SEND_ERROR "date not implemented")
+        SET(${RESULT} 000000)
+    ENDIF (WIN32)
+ENDMACRO (TODAY)
+TODAY(THEDATE)
+FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
+FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
 
 FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
