@@ -59,7 +59,7 @@ makeAbout()
 
 template <uint32_type OrderGeo>
 void
-test2dTo1d( Application_ptrtype test_app )
+test2dTo1d()
 {
     typedef Backend<double> backend_type;
 
@@ -76,7 +76,9 @@ test2dTo1d( Application_ptrtype test_app )
 
     //-----------------------------------------------------------//
 
-    auto meshSize = test_app->vm()["hsize"].as<double>();
+    auto meshSize = option(_name="hsize").as<double>();
+    BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
+
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 2,1 );
     GeoTool::Rectangle C( meshSize,"OMEGA",x1,x2 );
@@ -112,6 +114,7 @@ test2dTo1d( Application_ptrtype test_app )
     auto s = integrate( _range=elements( mesh1d ),
                         _expr=trans( idv( u2d )-idv( u1d ) )*( idv( u2d )-idv( u1d ) ) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( s,1e-8 );
+    BOOST_TEST_MESSAGE( "s=" << s );
 } // test2dTo1d
 
 //---------------------------------------------------------------------------------------------//
@@ -120,7 +123,7 @@ test2dTo1d( Application_ptrtype test_app )
 
 template <uint32_type OrderGeo>
 void
-test2dTo2d( Application_ptrtype test_app )
+test2dTo2d()
 {
     typedef Backend<double> backend_type;
 
@@ -140,8 +143,9 @@ test2dTo2d( Application_ptrtype test_app )
     //case 1 : same mesh
     //-------------------------------------------------------
     WorldComm myWorldComm;
-    auto meshSize = test_app->vm()["hsize"].as<double>();
-
+    auto meshSize = option(_name="hsize").as<double>();
+    LOG(INFO) << "meshSize=" << meshSize << "\n";
+    BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 0.6,0 );
     GeoTool::Circle C( meshSize,"OMEGA",x1,x2 );
@@ -162,7 +166,7 @@ test2dTo2d( Application_ptrtype test_app )
                       _expr=vec( cos( M_PI*Px() ),sin( M_PI*Py() ) ) );
                       //_expr=cos(M_PI*Px() ) );
 
-    auto mybackend = backend_type::build( test_app->vm() );
+    auto mybackend = backend(_rebuild=true);
 
     auto opI=opInterpolation( _domainSpace=Xh1,
                               _imageSpace=Xh2,
@@ -173,7 +177,8 @@ test2dTo2d( Application_ptrtype test_app )
                          _expr=trans( idv( u1 ) )*idv( u1 ) ).evaluate()( 0,0 );
     auto s2 = integrate( _range=elements( mesh ),
                          _expr=trans( idv( u2 ) )*idv( u2 ) ).evaluate()( 0,0 );
-    BOOST_CHECK_SMALL( s1-s2,1e-8 );
+    BOOST_CHECK_CLOSE( s1, s2,1e-8 );
+    BOOST_TEST_MESSAGE( "s1=" << s1 << " s2=" << s2 << " s1-s2 = " << s1-s2 );
 
     auto opIa=opInterpolation( _domainSpace=Xh1,
                                _imageSpace=Xh2,
@@ -184,6 +189,7 @@ test2dTo2d( Application_ptrtype test_app )
     auto s2a = integrate( _range=boundaryfaces( mesh ),
                           _expr=trans( idv( u1 )-idv( u2a ) )*( idv( u1 )-idv( u2a ) ) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( s2a,1e-8 );
+    BOOST_TEST_MESSAGE( "s2a=" << s2a );
 
     //-------------------------------------------------------//
     //case 2 : with interpolation tool
@@ -220,7 +226,8 @@ test2dTo2d( Application_ptrtype test_app )
                         _expr=trans(idv(u1))*idv(u1) ).evaluate()(0,0);
     auto s4 = integrate(_range=elements(mesh2),
                         _expr=trans(idv(u2bis))*idv(u2bis) ).evaluate()(0,0);
-    BOOST_CHECK_SMALL( s3-s4,1e-6);
+    BOOST_CHECK_CLOSE( s3,s4,1e-6);
+    BOOST_TEST_MESSAGE( "s3=" << s3 << " s4=" << s4 << " s3-s4 = " << s3-s4 );
 
     auto opI3=opInterpolation( _domainSpace=Xh1,
                                _imageSpace=Xh2bis,
@@ -231,6 +238,7 @@ test2dTo2d( Application_ptrtype test_app )
     auto s7 = integrate( _range=boundaryfaces( mesh2 ),
                          _expr=trans( idv( u1 )-idv( u2bisbis ) )*( idv( u1 )-idv( u2bisbis ) ) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( s7,1e-6 );
+    BOOST_TEST_MESSAGE( "s7=" << s7 );
 
 } // test2dTo2d
 
@@ -238,7 +246,7 @@ test2dTo2d( Application_ptrtype test_app )
 #if defined(FEELPP_HAS_VTK)
 template <uint32_type OrderGeo>
 void
-test2dOpLagrangeP1( Application_ptrtype test_app )
+test2dOpLagrangeP1()
 {
     typedef Backend<double> backend_type;
     typedef Mesh<Simplex<2,OrderGeo,2> > mesh_type;
@@ -248,7 +256,7 @@ test2dOpLagrangeP1( Application_ptrtype test_app )
     typedef FunctionSpace<mesh_type, basis_P1_type> space_P1_type;
 
     WorldComm myWorldComm;
-    auto meshSize = test_app->vm()["hsize"].as<double>();
+    auto meshSize = option(_name="hsize").as<double>();
 
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 0.6,0 );
@@ -264,7 +272,7 @@ test2dOpLagrangeP1( Application_ptrtype test_app )
                           _range=elements( mesh ),
                           _expr=vec( cos( M_PI*Px() ),sin( M_PI*Py() ) ) );
 
-    auto mybackend = backend_type::build(test_app->vm());
+    auto mybackend = backend(_rebuild=true);
 
     auto opLagP1 = lagrangeP1(_space=Xh);
     auto meshLagP1 = opLagP1->mesh();
@@ -282,16 +290,15 @@ test2dOpLagrangeP1( Application_ptrtype test_app )
     BOOST_CHECK_SMALL( s1,1e-6);
 
 #if 0
-    auto myexporter = Exporter<mesh_type>::New( test_app->vm(), "test2dOpLagrangeP1_MyExport" );
-    myexporter->step(0)->setMesh( meshLagP1 );
-    myexporter->step(0)->add( "test2dOpLagrangeP1_uLagP1", uLagP1 );
+    auto myexporter = exporter( _mesh=meshLagP1, _name="test2dOpLagrangeP1_MyExport" );
+    myexporter->add( "test2dOpLagrangeP1_uLagP1", uLagP1 );
     myexporter->save();
 #endif
 }
 
 template <uint32_type OrderGeo>
 void
-test2dOpLagrangeP1Composite( Application_ptrtype test_app )
+test2dOpLagrangeP1Composite()
 {
     typedef Backend<double> backend_type;
     typedef Mesh<Simplex<2,OrderGeo,2> > mesh_type;
@@ -306,13 +313,13 @@ test2dOpLagrangeP1Composite( Application_ptrtype test_app )
     //-------------------------------
     const int VelocityWorld=0;
     const int PressureWorld=1;
-    std::vector<int> MapWorld(test_app->comm().size());
+    std::vector<int> MapWorld(Environment::numberOfProcessors());
     WorldComm myWorldComm;
-    if (test_app->comm().size()>1)
+    if (Environment::numberOfProcessors()>1)
         {
-            for (int proc = 0 ; proc < test_app->comm().size(); ++proc)
+            for (int proc = 0 ; proc < Environment::numberOfProcessors(); ++proc)
                 {
-                    if (proc < test_app->comm().size()/2 ) // if (proc%2==0 )
+                    if (proc < Environment::numberOfProcessors()/2 ) // if (proc%2==0 )
                         MapWorld[proc] = VelocityWorld;
                     else
                         MapWorld[proc] = PressureWorld;
@@ -322,7 +329,7 @@ test2dOpLagrangeP1Composite( Application_ptrtype test_app )
 
     //-------------------------------
 
-    auto meshSize = test_app->vm()["hsize"].as<double>();
+    auto meshSize = option(_name="hsize").as<double>();
 
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 0.6,0 );
@@ -371,7 +378,7 @@ test2dOpLagrangeP1Composite( Application_ptrtype test_app )
                      _range=elements( mesh ),
                      _expr=vec( cos( M_PI*Px() ),sin( M_PI*Py() ) ) );
 
-    auto mybackend = backend_type::build(test_app->vm());
+    auto mybackend = backend(_rebuild=true);
 
     //OperatorLagrangeP1<typename space_type::template sub_functionspace<0>::type::element_type> opLagP1( Xh->template functionSpace<0>(), mybackend, vecLocWorldComm );
     auto opLagP1 = lagrangeP1(_space=Xh->template functionSpace<0>(),
@@ -397,9 +404,9 @@ test2dOpLagrangeP1Composite( Application_ptrtype test_app )
     BOOST_CHECK_SMALL( s1,1e-6);
 
 #if 0
-    auto myexporter = Exporter<mesh_type>::New( test_app->vm(), "test2dOpLagrangeP1_MyExport", myWorldComm );
-    myexporter->step(0)->setMesh( meshLagP1 );
-    myexporter->step(0)->add( "test2dOpLagrangeP1_uHO", uLagP1 );
+    //auto myexporter = exporter( _mesh=meshLagP1, _name="test2dOpLagrangeP1_MyExport", _worldcomm=myWorldComm );
+    auto myexporter = exporter( _mesh=meshLagP1, _name="test2dOpLagrangeP1_MyExport" );
+    myexporter->add( "test2dOpLagrangeP1_uHO", uLagP1 );
     myexporter->save();
 #endif
 
@@ -414,35 +421,85 @@ test2dOpLagrangeP1Composite( Application_ptrtype test_app )
 /**
  * main code
  */
-FEELPP_ENVIRONMENT_WITH_OPTIONS( test_operatorinterpolation::makeAbout(), 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_operatorinterpolation::makeAbout(),
                                  test_operatorinterpolation::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( interp_operatorinterpolation )
 
-BOOST_AUTO_TEST_CASE( interp_operatorinterpolation )
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo1 )
 {
-    using namespace Feel::vf;
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo1" );
     using namespace test_operatorinterpolation;
 
-    Application_ptrtype test_app( new Application_type( boost::unit_test::framework::master_test_suite().argc,
-                                  boost::unit_test::framework::master_test_suite().argv,
-                                  test_operatorinterpolation::makeAbout(),
-                                  test_operatorinterpolation::makeOptions()
-                                                      ) );
+    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/2d2dgeo1" )
+                                   % Environment::about().appName() );
 
-    test_app->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/" )
-                                % test_app->about().appName() );
-
-    test_operatorinterpolation::test2dTo2d<1>( test_app );
-    test_operatorinterpolation::test2dTo2d<2>( test_app );
-    //test_operatorinterpolation::test2dTo2d<3>(test_app);
-    test_operatorinterpolation::test2dTo1d<1>( test_app );
-    test_operatorinterpolation::test2dTo1d<2>( test_app );
-#if defined(FEELPP_HAS_VTK)
-    test_operatorinterpolation::test2dOpLagrangeP1<1>( test_app);
-    test_operatorinterpolation::test2dOpLagrangeP1Composite<1>( test_app);
-#endif
+    test_operatorinterpolation::test2dTo2d<1>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo1 done" );
 }
+
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo2 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2" );
+    using namespace test_operatorinterpolation;
+
+    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/2d2dgeo2" )
+                                   % Environment::about().appName() );
+
+    test_operatorinterpolation::test2dTo2d<2>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2 done" );
+}
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo1 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1" );
+    using namespace test_operatorinterpolation;
+
+    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/2d1dgeo1" )
+                                   % Environment::about().appName() );
+
+    //test_operatorinterpolation::test2dTo2d<3>(test_app);
+    test_operatorinterpolation::test2dTo1d<1>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1 done" );
+}
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo2 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2" );
+    using namespace test_operatorinterpolation;
+
+    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/2d1dgeo2" )
+                                   % Environment::about().appName() );
+
+    test_operatorinterpolation::test2dTo1d<2>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2 done" );
+}
+
+#if defined(FEELPP_HAS_VTK)
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_oplagp1_geo1 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1" );
+    using namespace test_operatorinterpolation;
+
+    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/oplagp1geo1" )
+                                   % Environment::about().appName() );
+
+
+    test_operatorinterpolation::test2dOpLagrangeP1<1>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1 done" );
+}
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_oplagcompositep1_geo1 )
+{
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagcompositep1_geo1");
+    using namespace test_operatorinterpolation;
+
+    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/oplagp1compositegeo1" )
+                                   % Environment::about().appName() );
+
+
+    test_operatorinterpolation::test2dOpLagrangeP1Composite<1>();
+    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagcompositep1_geo1 done");
+}
+#endif // FEELPP_HAS_VTK
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

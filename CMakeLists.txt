@@ -21,7 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-#cmake_minimum_required (VERSION 2.8.9)
 cmake_minimum_required (VERSION 2.8.7)
 
 #
@@ -62,6 +61,15 @@ macro(set_config_option VARNAME STRING)
 endmacro(set_config_option)
 
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
+OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )
+OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
+OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ON)
+OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ON)
+OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ON)
+OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ON)
+OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
+OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
+
 
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
@@ -103,22 +111,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions "  CACHE STRING "Release flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-OPTION(FEELPP_ENABLE_MOVE_SEMANTICS "enable move semantics(elision)" ON )
-MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
-IF ( FEELPP_ENABLE_MOVE_SEMANTICS )
-  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
-  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
-ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS )
-
-
-OPTION(FEELPP_ENABLE_INSTANTIATION_MODE "Instantiation mode" ON )
-MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
-IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
-  SET( FEELPP_INSTANTIATION_MODE 1 )
-ENDIF()
-
-
-
 include(ProcessorCount)
 ProcessorCount(NProcs)
 ##if(N GREATER 1)
@@ -126,16 +118,12 @@ math (EXPR NProcs2 '${NProcs}/2')
 message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
- OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
+
 #else()
 #  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
 #endif()
 
-IF ( FEELPP_ENABLE_MPI_MODE )
-  SET( FEELPP_ENABLE_MPI_MODE 1 )
-ENDIF()
 
-OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 if ( FEELPP_BENCHMARK_FLAGS )
   set(CMAKE_BUILD_TYPE Release )
   set(GCC_PARAM_INLINE_UNIT_GROWTH 150)
@@ -244,20 +232,6 @@ FIND_PACKAGE(Feel++ REQUIRED)
 include( feelpp.macros )
 
 #
-# Python
-#
-FIND_PACKAGE(PythonInterp REQUIRED)
-if(PYTHONINTERP_FOUND)
-  execute_process(COMMAND
-	${PYTHON_EXECUTABLE}
-	-c "import sys; print sys.version[0:3]"
-	OUTPUT_VARIABLE PYTHON_VERSION
-	OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  message(STATUS "Found python version ${PYTHON_VERSION}")
-endif()
-
-#
 # data
 #
 IF(NOT APPLE)
@@ -274,18 +248,6 @@ endif()
 #
 ADD_SUBDIRECTORY ( feel )
 
-
-
-
-SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
-
-OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ON)
-OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ON)
-OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ON)
-OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ON)
-OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
-
-OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 IF( FEELPP_MINIMAL_CONFIGURATION )
   set( BUILD_TESTING OFF )
   set( FEELPP_ENABLE_BENCHMARKS OFF )
@@ -316,6 +278,10 @@ add_dependencies(check testsuite)
 add_dependencies(check doc)
 #add_dependencies(check benchmarks)
 #add_dependencies(check examples)
+IF(FEELPP_ENABLE_TESTS )
+  add_subdirectory( testsuite )
+endif()
+
 
 if ( FEELPP_ENABLE_DOCUMENTATION )
   ADD_SUBDIRECTORY ( doc )
@@ -331,7 +297,6 @@ elseif (EXISTS ${FEELPP_SOURCE_DIR}/applications/opus )
   ADD_SUBDIRECTORY ( applications/opus )
 endif()
 
-
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
   ADD_SUBDIRECTORY ( research )
 endif()
@@ -340,13 +305,10 @@ endif()
 ADD_SUBDIRECTORY ( quickstart )
 
 
-IF(FEELPP_ENABLE_TESTS )
 
-  add_subdirectory( testsuite )
-
-endif()
-
+################################################################################
 # generate configuration header
+################################################################################
 if ( CONFIG_OPTIONS )
   list(SORT CONFIG_OPTIONS)
 endif()
