@@ -64,7 +64,23 @@ macro(feelpp_add_application)
     endif()
   endif()
 
+  if (FEELPP_ENABLE_SLURM )
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.msub "#! /bin/bash
+#MSUB -r ${execname}         # Request name
+#MSUB -n 64                  # Number of tasks to use
+#MSUB -T 1800                # Elapsed time limit in seconds of the job (default: 1800)
+#MSUB -o ${execname}_%I.o    # Standard output. %I is the job id
+#MSUB -e ${execname}_%I.e    # Error output. %I is the job id
+#MSUB -A ra0840              # Project ID
+#MSUB -q standard            # Choosing large nodes
+##MSUB -@ noreply@cea.fr:end # Uncomment this line for being notified at the end of the job by sending a mail at the given address
 
+#set -x
+cd \${BRIDGE_MSUB_PWD}        # BRIDGE_MSUB_PWD is a environment variable which contains the directory where the script was submitted
+unset LC_CTYPE
+ccc_mprun ${execname}  # you can add Feel++ options here
+")
+  endif()
 
   if ( FEELPP_APP_CFG )
     foreach(  cfg ${FEELPP_APP_CFG} )

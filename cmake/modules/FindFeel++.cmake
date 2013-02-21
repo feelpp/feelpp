@@ -23,8 +23,40 @@ INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
 
-
+OPTION(FEELPP_ENABLE_MOVE_SEMANTICS "enable move semantics(elision)" ON )
+OPTION(FEELPP_ENABLE_INSTANTIATION_MODE "Instantiation mode" ON )
+OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
+OPTION(FEELPP_ENABLE_SLURM "Enable Feel++ slurm submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_TBB "enable feel++ TBB support" OFF)
+OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
+OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
+if ( APPLE )
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
+else()
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
+endif()
+OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
+
+
+# enable mpi mode
+IF ( FEELPP_ENABLE_MPI_MODE )
+  SET( FEELPP_ENABLE_MPI_MODE 1 )
+ENDIF()
+
+# enable move semantics
+MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
+IF ( FEELPP_ENABLE_MOVE_SEMANTICS )
+  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
+  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
+ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS )
+
+# enable instantiation
+MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
+IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
+  SET( FEELPP_INSTANTIATION_MODE 1 )
+ENDIF()
+SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
+
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
   IF ( TBB_FOUND )
@@ -257,7 +289,7 @@ ENDIF()
 # xml
 find_package(LibXml2 2.6.27)
 
-# Python
+# Python libs
 FIND_PACKAGE(PythonLibs)
 if ( PYTHONLIBS_FOUND )
    message(STATUS "PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
@@ -266,6 +298,21 @@ if ( PYTHONLIBS_FOUND )
    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
 endif()
 
+#
+# Python interp
+#
+FIND_PACKAGE(PythonInterp REQUIRED)
+if(PYTHONINTERP_FOUND)
+  execute_process(COMMAND
+	${PYTHON_EXECUTABLE}
+	-c "import sys; print sys.version[0:3]"
+	OUTPUT_VARIABLE PYTHON_VERSION
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  message(STATUS "Found python version ${PYTHON_VERSION}")
+endif()
+
+# metis
 FIND_LIBRARY(METIS_LIBRARY
     NAMES
     metis
@@ -495,7 +542,6 @@ MARK_AS_ADVANCED( PARPACK_LIBRARY )
 #
 # SLEPc
 #
-OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
   if ( SLEPC_FOUND )
@@ -510,7 +556,6 @@ endif(FEELPP_ENABLE_SLEPC)
 #
 # Trilinos
 #
-OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
 if (FEELPP_ENABLE_TRILINOS)
 FIND_PACKAGE(Trilinos)
   if ( TRILINOS_FOUND )
@@ -524,11 +569,6 @@ endif (FEELPP_ENABLE_TRILINOS)
 #
 # OpenTURNS
 #
-if ( APPLE )
-  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
-else()
-  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
-endif()
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
   if ( OPENTURNS_FOUND )
@@ -556,7 +596,6 @@ endif()
 #
 # Octave
 #
-OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 if ( FEELPP_ENABLE_OCTAVE )
   FIND_PACKAGE(Octave)
   if ( OCTAVE_FOUND )
