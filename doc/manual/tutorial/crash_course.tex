@@ -7,7 +7,7 @@ This chapter is designed for impatient people who wants to test \feel as soon as
 \section{Requirements}
 Before installing \feel, you need to get this \underline{required packages:}\\
 \begin{itemize}
-\item g++ ($4.4$, $4.5$, $4.6$ and $4.7$  )
+\item g++ ($4.4$, $4.5$, $4.6$ or $4.7$  )
 \item MPI : openmpi (preferred) or mpich
 \item Boost ($\geq$1.39)
 \item Petsc ($\geq$2.3.3)
@@ -16,6 +16,7 @@ Before installing \feel, you need to get this \underline{required packages:}\\
 computing available at \url{http://www.geuz.org/gmsh}}
 \item Libxml2
 \end{itemize}
+It is assumed that all this packages are properly installed.
 
 \section{Building \feel from source on *nix}
 \feel is distributed as a tarball once in a while. The tarballs are available
@@ -36,26 +37,29 @@ We define then the current directory as the source one, ie:
 \end{unixcom}
 
 \section{Compiling}
+Please, notice that 4 Gbites of RAM is a minimum to make \feel compiling (with gcc).
+
 In order to compile \feel and a test application, we create a new directory:
 \begin{unixcom}
-  cd $FeelppSrcDir
-  cd ..
-  mkdir FeelBin
-  cd FeelBin
-  export FeelBinDir=`pwd`
+  mkdir build
+  cd build
+  export buildDir=`pwd`
 \end{unixcom}
 
 and then, we are able to compile our first application:
 \begin{unixcom}
-  cd $FeelppBinDir
+  cd $buildDir
   cmake $FeelppSrcDir
-  cd quickstart
-  make feelpp_qs_laplacian
+  make -j4
 \end{unixcom}
-It is recommended to compile on multiple threads:
+
+This procedure will build the entire librarie (with DebWithRelInfo option) and a dummy program to presents the \feel's abilities.
+
+There is a procedure to install as a system librarie \feel, you may have a look to the
 \begin{unixcom}
-  make -j8 feelpp_qs_laplacian
+  make install
 \end{unixcom}
+procedure, it is not our purpose in that chapter.
 
 \section{\feel Hello World}
 \label{sec:feel-hello-world}
@@ -109,11 +113,11 @@ conditions and solve the discretized (linear) system.
 
 
 \section{First execution \& vizualisation}
-\label{sec:first-execution-}
+\label{sec:first-execution}
 
 To test that part of code, please go to:
 \begin{unixcom}
-  $Feelpp_src/quickstart
+  cd $FeelppSrcDir/quickstart
 \end{unixcom}
 and execute the code, by:
 \begin{unixcom}
@@ -134,6 +138,10 @@ You can vizualise the results using any Ensight file reader, such as Paraview,
 opening \verb=qs_laplacian-1.sos=.
 \begin{unixcom}
   paraview qs_laplacian-1.sos
+\end{unixcom}
+You may have a look to the differents option provided by
+\begin{unixcom}
+  ./feelpp_qs_laplacian --help
 \end{unixcom}
 
 
