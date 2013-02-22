@@ -34,12 +34,12 @@ int main(int argc, char**argv )
 
 	Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="NSProj",
+                     _about=about(_name="nsproj",
                                   _author="Mourad Ismail",
                                   _email="mourad.ismail@ujf-grenoble.fr"));
-    
-    backend_ptrtype backend_V( backend_type::build( env.vm() , "vitesse") );
-    backend_ptrtype backend_P( backend_type::build( env.vm() , "pression") );
+
+    auto  backend_V = backend( _name="vitesse");
+    auto  backend_P = backend( _name="pression");
 
     auto mu = env.vm(_name="mu").as<double>() ;
     auto dt = env.vm(_name="dt").as<double>() ;
@@ -50,7 +50,7 @@ int main(int argc, char**argv )
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                 _desc=geo(
                                           _filename=env.vm(_name="geo.file").as<std::string>(),
-                                          _h=env.vm(_name="mesh2d.hsize").as<double>() 
+                                          _h=env.vm(_name="mesh2d.hsize").as<double>()
                                           )
                                 );
     auto Vh = Pchv<2>( mesh );
@@ -64,7 +64,7 @@ int main(int argc, char**argv )
     auto  aVit = form2( _trial=Vh, _test=Vh, _matrix=Dvit );
 
     auto Ph = Pch<1>( mesh );
-    auto Dpre = backend_P->newMatrix( _test=Ph, _trial=Ph  );    
+    auto Dpre = backend_P->newMatrix( _test=Ph, _trial=Ph  );
     auto aPre = form2( _trial=Ph, _test=Ph, _matrix=Dpre );
 
     auto pn1 = Ph->element( "p" );
@@ -83,7 +83,7 @@ int main(int argc, char**argv )
     auto Fpr = backend_P->newVector( Ph );
     auto lPre = form1( _test=Ph, _vector=Fpr );
 
-    export_ptrtype exporter( export_type::New() );
+    auto exp = exporter( _mesh=mesh, _geo=EXPORTER_GEOMETRY_STATIC );
 
     for(int i=0; i<Niter; i++)
         {
@@ -102,15 +102,15 @@ int main(int argc, char**argv )
             */
             lVit = integrate(_range=elements(mesh),
                              _expr=
-                             dt*inner(id(V),fn1) 
-                             +inner(id(V),idv(UTn)) 
-                             -2*dt* inner(trans(gradv(pn)),id(V)) 
-                             + dt* inner(trans(gradv(pnm1)),id(V)) 
+                             dt*inner(id(V),fn1)
+                             +inner(id(V),idv(UTn))
+                             -2*dt* inner(trans(gradv(pn)),id(V))
+                             + dt* inner(trans(gradv(pnm1)),id(V))
                              );
 
             aVit = integrate(_range=elements(mesh),
                              _expr=
-                             inner(idt(UTn1),id(V)) 
+                             inner(idt(UTn1),id(V))
                              + dt*mu*inner(gradt(UTn1),grad(V))
                                + dt*inner((gradt(UTn1)*idv(UTn)),id(V)) // ( a verifier UgradU )
                              );
@@ -130,12 +130,14 @@ int main(int argc, char**argv )
                      _expr=poiseuille );
             //            aVit+=on(_range=markedfaces(mesh,"outlet"), _rhs=lVit, _element=UTn1,
             //                   _expr=vec(cst(0.),cst(0.)) );
-
             backend_V->solve( _matrix=Dvit, _solution=UTn1, _rhs=Fvit );
-            
 
-            std::cout << " End velocity resolution " << std::endl;
-            std::cout << " Begin pressure resolution " << std::endl;
+
+            if ( Environment::rank() == 0 )
+            {
+                std::cout << " End velocity resolution " << std::endl;
+                std::cout << " Begin pressure resolution " << std::endl;
+            }
             // Pressure
 
             lPre = integrate(_range=elements(mesh),
@@ -143,7 +145,7 @@ int main(int argc, char**argv )
                              -(1./dt)*id(q)*divv(UTn1)
                              + inner(gradv(pn),grad(q))
                              );
-            
+
             aPre = integrate(_range=elements(mesh),
                              _expr=inner(gradt(pn1),grad(q))
                              );
@@ -155,35 +157,38 @@ int main(int argc, char**argv )
             aPre+=on(_range=boundaryfaces(mesh), _rhs=lPre, _element=pn1,
                      _expr=pex );
             */
-            
+
             backend_P->solve( _matrix=Dpre, _solution=pn1, _rhs=Fpr );
-            
-            auto gradPn1Proj = vf::project(Vh,elements(mesh), trans(gradv(pn1)));
-            auto gradPnProj = vf::project(Vh,elements(mesh), trans(gradv(pn)));
-            Un1 = UTn1 - dt*gradPn1Proj + dt*gradPnProj;            
 
-            auto divUn = vf::project(Ph,elements(mesh), divv(Un1) );
-            auto divUTn = vf::project(Ph,elements(mesh), divv(UTn1) );
+            auto gradPn1Proj = vf::project(_space=Vh,_range=elements(mesh), _expr=trans(gradv(pn1)));
+            auto gradPnProj = vf::project(_space=Vh,_range=elements(mesh), _expr=trans(gradv(pn)));
+            Un1 = UTn1 - dt*gradPn1Proj + dt*gradPnProj;
+
+            auto divUn = vf::project(_space=Ph,_range=elements(mesh), _expr=divv(Un1) );
+            auto divUTn = vf::project(_space=Ph,_range=elements(mesh), _expr=divv(UTn1) );
             /*
-            auto uexproj = vf::project(Vh,elements(mesh),uex );
-            auto pexproj = vf::project(Ph,elements(mesh),pex );
+            auto uexproj = project(Vh,elements(mesh),uex );
+            auto pexproj = project(Ph,elements(mesh),pex );
 
-            auto divUex = vf::project(Ph,elements(mesh), divv(uexproj) );
+            auto divUex = project(Ph,elements(mesh), divv(uexproj) );
 
             auto udiff = uexproj - Un1;
             auto pdiff = pexproj - pn;
             */
-            exporter->step( i )->setMesh( mesh );
-            exporter->step( i )->add( "p", pn1 );
-            exporter->step( i )->add( "u", Un1 );
-            //            exporter->step( i )->add( "pdiff", pdiff );
-            //            exporter->step( i )->add( "udiff", udiff );
-            exporter->step( i )->add( "uT", UTn1 );
-            exporter->step( i )->add( "divu", divUn );
-            exporter->step( i )->add( "divuT", divUTn );
-            //            exporter->step( i )->add( "divuex", divUex );
-            exporter->save();
-            
+
+            double time = i*dt;
+
+            exp->step( time )->setMesh( mesh );
+            exp->step( time )->add( "p", pn1 );
+            exp->step( time )->add( "u", Un1 );
+            //            exp->step( i )->add( "pdiff", pdiff );
+            //            exp->step( i )->add( "udiff", udiff );
+            exp->step( time )->add( "uT", UTn1 );
+            exp->step( time )->add( "divu", divUn );
+            exp->step( time )->add( "divuT", divUTn );
+            //            exp->step( i )->add( "divuex", divUex );
+            exp->save();
+
             UTn = UTn1;
             pnm1 = pn;
             pn = pn1;
