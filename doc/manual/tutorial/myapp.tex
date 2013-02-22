@@ -8,7 +8,7 @@
 \section{First \feel Application}
 \label{sec:myapp}
 
-See section \ref{sec:building} for more information about \feel installation.
+See section \ref{chap:tutorial-building} for more information about \feel installation.
 
 \subsection{Minimal example}
 
@@ -34,7 +34,8 @@ We use the C++ \lstinline!namespace! to avoid \lstinline!Feel::! prefix before
 \item
 We pass command line options using the
 \href{http://www.boost.org/doc/libs/1_53_0/doc/html/program_options.html}
-{Boost Program Options}\footnotemark[1] \lstinline!po::! library.
+{Boost Program Options}\footnotemark[1] library using the prefix \lstinline!po::! which is 
+a \feel alias for the Boost::program\_options namespace.
 %
 \footnotetext[1]{\url{http://www.boost.org/doc/libs/1_53_0/doc/html/program_options.html}}
 %
@@ -48,7 +49,7 @@ Then we initialize the environment variables through the \feel
 \lstinline!Environment! class (Check the Constructor prototype on the online documentation).
 
 \item
-we instantiate a new application. We specify the directory where to execute the
+We instantiate a new application. We specify the directory where to execute the
 program. That could be usefull for archiving your results.
 
 \item
@@ -81,13 +82,15 @@ and execute it. You can change your option value.
     ./feelpp_doc_myapp [--value 6.6]
 \end{unixcom}
 %
-Now if you check the log,
+You can list the log files created.
 %
 \begin{unixcom}
-    cat /tmp/<your login>/feelpp_doc_myapp/feelpp_doc_myapp.INFO
+    ls /tmp/<your login>/feelpp_doc_myapp/
 \end{unixcom}
 %
-you should see your value and the processor number used to compute.
+If you open one of these log,
+you should be able to see your value and the processor number 
+used to compute.
 You can run your application on several processors using MPI.
 %
 \begin{unixcom}

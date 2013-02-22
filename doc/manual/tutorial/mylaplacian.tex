@@ -18,6 +18,7 @@ for homogeneous dirichlet conditions,
             u & = & 0 & \text{on}\;\partial\Omega \;,\\
 \end{array}
 \right.
+\label{eq:tuto-mylaplacian-prob}
 \end{equation}
 %
 where $u\in\Omega$ is the unknown "trial" function and $\Omega$ the domain.
@@ -26,7 +27,7 @@ We multiply each part of the first equation by a "test" function $v\in H_0^1(\Om
 and we integrate the resulting equation on the domain $\Omega$,
 %
 \begin{equation}
--\int_\Omega \Delta u \cdot v = \int_\Omega f\cdot v
+-\int_\Omega \Delta u v = \int_\Omega f v \;.
 \end{equation}
 %
 We can integrate by parts this equation (Green Theorem) to obtain \underline{the variationnal
@@ -34,14 +35,16 @@ formulation},
 %
 \begin{equation}
 \int_\Omega \nabla u \nabla v
--\underbrace{ \int_{\partial\Omega} \frac{\partial u}{\partial \vec n}\cdot v }_{= 0}
-=\int_\Omega f \cdot v \;.
+-\underbrace{ \int_{\partial\Omega} \frac{\partial u}{\partial n} v }_{= 0}
+=\int_\Omega f v \;,
 \end{equation}
 %
-where $\vec n$ denotes a normal vector to the boundary. We can rewrite this equation as,
+where $n$ denotes a unit outward normal vector to the boundary. We can rewrite the problem
+(\ref{eq:tuto-mylaplacian-prob}) as find $u\in H_0^1(\Omega)$ such that for all
+$v\in H_0^1(\Omega)$,
 %
 \begin{equation}
-a(u,v)=l(v)
+a(u,v)=l(v) \;,
 \end{equation}
 where $a$ is a bilinear form, continuous, coercive and $l$ a linear form.
 Let's take a look at the \feel code

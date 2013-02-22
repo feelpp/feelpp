@@ -10,15 +10,7 @@
 You should be able to create a mesh now. If it is not the case, get back to the
 section \ref{sec:mymesh}. This part explains how to integrate on a mesh with \feel
 (source \textcolor{magenta}{"doc/manual/tutorial/myintegrals.cpp"}).
-Let's consider the domain of the mesh,
-\[
-    \Omega=[0,1]^d=
-    \{
-        x\in\mathbb{R}^d\;,\;
-        x_i>0\;
-        \sum_{i=1}^d x_i \leqslant 1
-    \}\in\mathbb{R}^d
-\]
+Let's consider the domain $\Omega=[0,1]^d$ and associated meshes.
 Here, we want to integrate the following function,
 %
 \begin{equation}
@@ -38,7 +30,7 @@ To use the \lstinline!integrate()! function, we have to precise the domain range
     \item \lstinline!markedfaces()! to iterate on a choose face.
 \end{itemize}
 %
-You have to specify the expression we wish to compute. \feel provide a set of functions
+You have to specify the expression we wish to compute. \feel provides a set of functions
 to write these expressions \ref{sec:keywords}.
 The \lstinline!evaluate()! function computes the integral on the global mesh.
 The \lstinline!false! parameter limits the computation on the subregion owned by

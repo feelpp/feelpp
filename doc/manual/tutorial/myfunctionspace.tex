@@ -17,16 +17,17 @@ to work on. (source \textcolor{magenta}{"doc/manual/tutorial/myfunctionspace.cpp
 \lstinputlisting[linerange=marker_main-endmarker_main]{tutorial/myfunctionspace.cpp}
 \vspace{2mm}
 %
-As you can see, we instanciate a new function space object $X_h$ using the \lstinline!Pch<int order>()!
-template. These functions are piecewise polynomial of an order precised and the basis functions are
+As you can see, we instantiate a new function space object
+$X_h\subset Pc_h^k=\{v\in C^0(\Omega) \;|\; \forall K\in \tau_h,  v_{|_K}\in P_k(K)\}$ using the \lstinline!Pch<int K>()!
+template. These functions are continuous piecewise polynomials of an order K and the basis functions are
 Lagrange polynomials.
-Let $g$ be a function such as,
+Let $g$ be a function such as for all $(x,y,z)\in \Omega$ we have,
 %
 \[
-    g= \sin(\frac{\pi x}{2}).\cos(\frac{\pi x}{2}).\cos(\frac{\pi z}{2}) \;.
+    g(x,y,z)= \sin(\frac{\pi x}{2}).\cos(\frac{\pi y}{2}).\cos(\frac{\pi z}{2}) \;
 \]
 %
-For $u,w\in X_h$, we build the Lagrange interpolant. We use for this the
+We build the Lagrange interpolant $u\in X_h$ of $g$ and $w\in X_h$ of $u-g$. We use for this the
 \lstinline!vf::project()! function  which returns the projection on the mesh node for
 an expression given as parameter. Then we compute the L2 norm,
 %
