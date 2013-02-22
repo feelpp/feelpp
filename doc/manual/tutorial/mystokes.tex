@@ -13,27 +13,28 @@ on the inlet. We have the following system of equations,
 \begin{equation}
 \left\{
 \begin{array}{rcll}
--\mu\Delta u + \nabla p & = & f & \text{on}\; \Omega \;, \\
-                \div(u) & = & 0 & \text{on}\; \Omega \;, \\
-                     u  & = & g & \text{on}\; \partial\Omega \;, \\
- \frac{\partial u}{\partial \vec n} -p\vec n & = & 0 & \text{on}\; \partial\Omega \;, \\
+-\mu\Delta \bf u + \nabla p & = & \bf f & \text{on}\; \Omega \;, \\
+                \div(\bf u) & = & 0 & \text{on}\; \Omega \;, \\
+                     \bf u  & = & g & \text{on}\; \Gamma_{wall}\cup\Gamma_{inlet} \;, \\
+                     \int p & = & 0 & \text{on}\; \Gamma_{outlet} \;, \\
 \end{array}
 \right.
 \label{eq:tuto-stk}
 \end{equation}
 %
-where $u$ denotes the flow speed, $p$ the fluid pressure, $\mu$ the 
+where $u\in [H_g^1(\Omega)]^d$ denotes the flow speed, $p\in [L_0^2(\Omega)]$ the fluid pressure, $\mu$ the 
 fluid viscosity.
 The last boundary condition expresses a null pressure fixed
-on the outlet. The Poiseuille profile on the boundary is given by,
+on the outlet. The Poiseuille profile on the boundary is,
 %
 \begin{equation}
-u(x,y) = \left(
-         \begin{array}{c}
-           y(1-y)\\
-            0   \\
-         \end{array}
-         \right) \;.
+u(x,y)=
+\left(
+\begin{array}{c}
+ y(1-y) \\
+ 0      \\
+\end{array}
+\right)
 \end{equation}
 %
 The method used to obtain the strong formulation is closed to the one used
@@ -42,9 +43,9 @@ We multiply the first equation by a test function $v\in H^1(\Omega)$
 and we integrate on the domain $\Omega$,
 %
 \begin{equation}
--\int_\Omega \mu \Delta u \cdot v
-+\int_\Omega \nabla p \cdot v
-=\int_\Omega f \cdot v \;.
+-\int_\Omega \mu \Delta \mathbf u \cdot \mathbf v
++\int_\Omega \nabla p \cdot \mathbf v
+=\int_\Omega \mathbf f \cdot \mathbf v \;.
 \end{equation}
 %
 Then we use the Green Formula on the first term and we rewrite the second one 
@@ -52,19 +53,19 @@ to get the following equation,
 %
 \begin{equation}
 \left(
-\int_\Omega \mu \nabla u \nabla v
--\int_{\partial\Omega} \frac{\partial u}{\partial \vec n} \cdot v
+\int_\Omega \mu \nabla \mathbf u : \nabla \mathbf v
+-\int_{\partial\Omega} \frac{\partial \mathbf u}{\partial \mathbf n} \cdot \mathbf v
 \right)
-+\int_\Omega ( \div(p v) - v \div(p) )
-=\int_\Omega f \cdot v \;.
++\int_\Omega ( \div(p \mathbf v) - \mathbf v \div(p) )
+=\int_\Omega \mathbf f \cdot \mathbf v \;.
 \label{eq:tuto-stk-1}
 \end{equation}
 %
-where $\vec n$ denotes a normal vector on the boundary.
+where $n$ denotes a normal vector on the boundary.
 The divergence theorem (or Gauss's theorem) gives,
 %
 \begin{equation}
-\int_\Omega \div(pv) = \int_{\partial\Omega} pv\cdot \vec n\;.
+\int_\Omega \div(p \mathbf v) = \int_{\partial\Omega} p \mathbf v\cdot \mathbf n \;.
 \label{eq:tuto-stk-gauss}
 \end{equation}
 %
@@ -74,7 +75,7 @@ This term is provided by the second equation (\ref{eq:tuto-stk}). We multiply th
 by a test function $q\in L_2(\Omega)$ and we integrate on the domain $\Omega$,
 %
 \begin{equation}
-\int_{\Omega} \div(u) q = 0 \;,
+\int_{\Omega} \div(\mathbf u) q = 0 \;,
 \label{eq:tuto-stk-secondeq}
 \end{equation}
 %
@@ -82,25 +83,27 @@ Finally, we deduce from the equations (\ref{eq:tuto-stk-gauss}), (\ref{eq:tuto-s
 and after rearranging the integrals (\ref{eq:tuto-stk-1}) the variationnal formulation,
 %
 \begin{equation}
-\int_\Omega \mu \nabla u \nabla v
-+\int_\Omega \left( \div(u) q - p \div(v) \right)
+\int_\Omega \mu \nabla \mathbf u :\nabla \mathbf v
++\int_\Omega \left( \div(\mathbf u) q - p \div(\mathbf v) \right)
 +\underbrace{
-    \int_{\partial\Omega} \left( p\vec n - \frac{\partial u}{\partial \vec n} \right) v
+    \int_{\partial\Omega} \left( p \mathbf n - \frac{\partial \mathbf u}{\partial \mathbf n} \right)
+     \cdot \mathbf v
   }_{=0}
-=\int_\Omega f \cdot v 
+=\int_\Omega \mathbf f \cdot \mathbf v 
 \label{eq:tuto-stk-varform}
 \end{equation}
 %
-We have an equation which can be rewritten as,
+We have an equation which can be rewritten as find $(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega)$
+such that for all $(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)$
 \begin{equation}
-    a(u,v) = l(v)
+    a((\mathbf u,p),(\mathbf v,q)) = l((\mathbf v,q))
 \label{eq:tuto-stk-2}
 \end{equation}
 %
 where $a$ is a bilinear form, continuous, coercive and where $l$ is a linear form.
 Let's see the \feel code corresponding to this mathematical statement.
 (source \textcolor{magenta}{"doc/manual/tutorial/mystokes.cpp"}).
-We suppose for this example the viscosity $\mu=1$ and $f=1$.
+We suppose for this example the viscosity $\mu=1$ and $\mathbf f = 0$.
 %
 \vspace{2mm}
 \lstinputlisting[linerange=marker_main-endmarker_main]{tutorial/mystokes.cpp}
@@ -108,7 +111,8 @@ We suppose for this example the viscosity $\mu=1$ and $f=1$.
 %
 As for the laplacian problem, the code is very closed to the mathematical formulation.
 We define the product of function spaces for the flow speed and the flow pressure
-using \lstinline!THch<dim>()! function.
+using \lstinline!THch<order>()! function which is \lstinline!Pch<N+1>!$\times$ \lstinline!Pch<N>!
+for respectively flow speed and pressure spaces.
 We take an element 
 $U=\left(
     \begin{array}{c}

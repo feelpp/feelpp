@@ -1,7 +1,7 @@
 \feelchapter{Getting Started with Feel++}
             {Getting Started with Feel++}
             {Christophe Prud'homme, Baptiste Morin, Guillaume Dollé}
-            {cha:getting-started}
+            {getting-started}
 
 
 % first application
@@ -16,13 +16,8 @@ PETSc is a suite of data structures and routines for the scalable (parallel)
 solution of scientific applications modeled by partial differential
 equations. It employs the MPI standard for parallelism.
 
-The Trilinos Project is an effort to develop algorithms and enabling
-technologies within an object-oriented software framework for the solution of
-large-scale, complex multi-physics engineering and scientific problems.
-
-\feel supports the PETSc and Trilinos framework, the class
-\lstinline!Application!\index{Class!Application} takes care of initialize the
-associated environments.
+\feel supports the PETSc framework, the \lstinline!Environment! \index{Environment}
+takes care of initializing the associated PETSc environment.
 
 
 % mesh manipulation
