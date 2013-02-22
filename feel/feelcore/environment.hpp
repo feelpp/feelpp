@@ -131,6 +131,18 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        (void), static changeRepository, tag,
+        (required
+         (directory,(boost::format)))
+        (optional
+         (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
+         (subdir,*( boost::is_convertible<mpl::_,bool> ),true)
+            ))
+        {
+            changeRepositoryImpl( directory, filename, subdir );
+        }
+
     template <class ArgumentPack>
     Environment(ArgumentPack const& args)
         {
@@ -141,6 +153,16 @@ public:
             S_desc->add( file_options( about.appName() ) );
 
             init( argc, argv, *S_desc, about );
+            if ( S_vm.count("nochdir") == 0 )
+            {
+                std::string defaultdir = about.appName();
+                if ( S_vm.count("directory") )
+                    defaultdir = S_vm["directory"].as<std::string>();
+                std::string d = args[_directory|defaultdir];
+                LOG(INFO) << "change directory to " << d << "\n";
+                boost::format f( d );
+                changeRepository( _directory=f );
+            }
         }
 
     void init( int argc, char** argv, po::options_description const& desc, AboutData const& about );
@@ -203,6 +225,11 @@ public:
      * return number of processors
      */
     static int numberOfProcessors()  { return S_worldcomm->godSize(); }
+
+    /**
+     * return the rank in global mpi communicator
+     */
+    static int rank() { return S_worldcomm->globalRank(); }
 
     /**
      * return variables_map
@@ -280,17 +307,6 @@ public:
             return it->second;
         }
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        (void), static changeRepository, tag,
-        (required
-         (directory,(boost::format)))
-        (optional
-         (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
-         (subdir,*( boost::is_convertible<mpl::_,bool> ),true)
-            ))
-        {
-            changeRepositoryImpl( directory, filename, subdir );
-        }
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
@@ -362,7 +378,9 @@ public:
          (argv,*))
         (optional
          (desc,*)
-         (about,*) )) // no semicolon
+         (about,*)
+         (directory,( std::string ))
+            )) // no semicolon
 };
 
 

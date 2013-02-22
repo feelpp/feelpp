@@ -368,12 +368,18 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
             ( fs::path ( "/usr/share/feel/config" ) )
             ( fs::path ( "/usr/local/share/feel/config" ) )
             ( fs::path ( "/opt/local/share/feel/config" ) );
+        char* env;
+        env = getenv("FEELPP_DIR");
+        if (env != NULL && env[0] != '\0')
+        {
+            prefixes.push_back( fs::path( env ) );
+        }
 
+        VLOG(2) << "try processing cfg files...\n";
         BOOST_FOREACH( auto prefix, prefixes )
         {
             std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-            VLOG(2)<< " Looking for " << config_name << "\n";
-            VLOG(2)<< " Looking for " << config_name << "\n";
+            VLOG(2) << " Looking for " << config_name << "\n";
 
             if ( fs::exists( config_name ) )
             {
@@ -386,8 +392,8 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
             else
             {
                 // try with a prefix feel_
-                std::string config_name = ( boost::format( "%1%/feel_%2%.cfg" ) % prefix.string() % appName ).str();
-                VLOG(2)<< " Looking for " << config_name << "\n";
+                std::string config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                VLOG(2) << " Looking for " << config_name << "\n";
 
                 if ( fs::exists( config_name ) )
                 {
@@ -793,7 +799,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         rep_path = rep_path / (boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
         if ( !fs::exists( rep_path ) )
             fs::create_directory( rep_path );
-        LOG(INFO) << "rep_path=" << rep_path << "\n";
+        LOG(INFO) << "changing directory to " << rep_path << "\n";
     }
     ::chdir( rep_path.string().c_str() );
 
