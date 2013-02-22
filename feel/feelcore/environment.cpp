@@ -773,18 +773,22 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     if ( Environment::vm().count( "nochdir" ) )
         return;
 
-    fs::path rep_path;
+    fs::path rep_path = fs::current_path();
 
-    rep_path = Environment::rootRepository();
-
-    if ( !fs::exists( rep_path ) )
-        fs::create_directory( rep_path );
 
     typedef std::vector< std::string > split_vector_type;
 
     split_vector_type dirs; // #2: Search for tokens
     std::string fmtstr = fmt.str();
     boost::split( dirs, fmtstr, boost::is_any_of( "/" ) );
+
+    fs::path p = dirs.front();
+    if ( p.relative_path() != ".")
+        rep_path = Environment::rootRepository();
+
+    if ( !fs::exists( rep_path ) )
+        fs::create_directory( rep_path );
+
 
     BOOST_FOREACH( std::string const& dir, dirs )
     {
