@@ -10,37 +10,29 @@ makeOptions()
 {
     po::options_description NSProjoptions( "NSproj options" );
     NSProjoptions.add_options()
-    ( "dt", po::value<double>()->default_value( 0.01 ), "time step" )
-    ( "mu", po::value<double>()->default_value( 1 ), "viscosity" )
-    ( "dp", po::value<double>()->default_value( 1 ), "pressure difference" )
-    ( "Niter", po::value<int>()->default_value( 1 ), "time iterations number" )
-    ( "geo.file", po::value<std::string>()->default_value( "tube.geo" ), "geo file" )
-    ;
+        ( "dt", po::value<double>()->default_value( 0.01 ), "time step" )
+        ( "mu", po::value<double>()->default_value( 1 ), "viscosity" )
+        ( "dp", po::value<double>()->default_value( 1 ), "pressure difference" )
+        ( "Niter", po::value<int>()->default_value( 1 ), "time iterations number" )
+        ( "geo.file", po::value<std::string>()->default_value( "tube.geo" ), "geo file" )
+        ;
     return NSProjoptions.add( feel_options().add(backend_options("vitesse").add(backend_options("pression"))) );
 }
 
 int main(int argc, char**argv )
 {
-	using namespace Feel;
-
+    
     typedef Mesh<Simplex<2> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-
-    typedef Backend<double> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
 
 	Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
                      _about=about(_name="nsproj",
                                   _author="Mourad Ismail",
                                   _email="mourad.ismail@ujf-grenoble.fr"));
-
+    
     auto  backend_V = backend( _name="vitesse");
     auto  backend_P = backend( _name="pression");
-
+    
     auto mu = env.vm(_name="mu").as<double>() ;
     auto dt = env.vm(_name="dt").as<double>() ;
     auto Niter = env.vm(_name="Niter").as<int>() ;
@@ -72,7 +64,6 @@ int main(int argc, char**argv )
     auto pnm1  = Ph->element( "p" );
     auto q   = Ph->element( "q" );
 
-    //    auto poiseuille = vec( 4*0.3*Py()*(0.41-Py())/(0.41*0.41),cst(0.) );
     auto poiseuille = vec( 4*Py()*(0.41-Py()),cst(0.) );
 
     auto fn1 = vec( cst(0.),cst(0.) );
@@ -87,19 +78,7 @@ int main(int argc, char**argv )
 
     for(int i=0; i<Niter; i++)
         {
-            /*
-            auto t = i*dt;
-            auto uex = vec( sin(Px())*sin(Py()+t),cos(Px())*cos(Py()+t) );
-            auto pex = cos(Px())*sin(Py()+t);
-            auto fex = vec( sin(Px())*cos(Py()+t) + sin(Px())*sin(Py()+t),
-                            -cos(Px())*sin(Py()+t) + 3*cos(Px())*cos(Py()+t)
-                            );
-            auto fn1 = fex;
 
-            UTn = vf::project(Vh,elements(mesh),uex );
-            pn = vf::project(Ph,elements(mesh),pex );
-            pnm1 = pn;
-            */
             lVit = integrate(_range=elements(mesh),
                              _expr=
                              dt*inner(id(V),fn1)
@@ -112,13 +91,9 @@ int main(int argc, char**argv )
                              _expr=
                              inner(idt(UTn1),id(V))
                              + dt*mu*inner(gradt(UTn1),grad(V))
-                               + dt*inner((gradt(UTn1)*idv(UTn)),id(V)) // ( a verifier UgradU )
+                               + dt*inner((gradt(UTn1)*idv(UTn)),id(V))
                              );
 
-            /*
-            aVit+=on(_range=boundaryfaces(mesh), _rhs=lVit, _element=UTn1,
-                     _expr=uex );
-            */
             aVit+=on(_range=markedfaces(mesh,"wall"), _rhs=lVit, _element=UTn1,
                    _expr=vec(cst(0.),cst(0.)) );
             aVit+=on(_range=markedfaces(mesh,"wall"), _rhs=lVit, _element=UTn1,
@@ -153,10 +128,6 @@ int main(int argc, char**argv )
             //                     _expr=cst(dp) );
             aPre+=on(_range=markedfaces(mesh,"outlet"), _rhs=lPre, _element=pn1,
                      _expr=cst(0.) );
-            /*
-            aPre+=on(_range=boundaryfaces(mesh), _rhs=lPre, _element=pn1,
-                     _expr=pex );
-            */
 
             backend_P->solve( _matrix=Dpre, _solution=pn1, _rhs=Fpr );
 
@@ -165,33 +136,21 @@ int main(int argc, char**argv )
             Un1 = UTn1 - dt*gradPn1Proj + dt*gradPnProj;
 
             auto divUn = vf::project(_space=Ph,_range=elements(mesh), _expr=divv(Un1) );
-            auto divUTn = vf::project(_space=Ph,_range=elements(mesh), _expr=divv(UTn1) );
-            /*
-            auto uexproj = project(Vh,elements(mesh),uex );
-            auto pexproj = project(Ph,elements(mesh),pex );
 
-            auto divUex = project(Ph,elements(mesh), divv(uexproj) );
-
-            auto udiff = uexproj - Un1;
-            auto pdiff = pexproj - pn;
-            */
 
             double time = i*dt;
 
             exp->step( time )->setMesh( mesh );
             exp->step( time )->add( "p", pn1 );
             exp->step( time )->add( "u", Un1 );
-            //            exp->step( i )->add( "pdiff", pdiff );
-            //            exp->step( i )->add( "udiff", udiff );
             exp->step( time )->add( "uT", UTn1 );
             exp->step( time )->add( "divu", divUn );
-            exp->step( time )->add( "divuT", divUTn );
-            //            exp->step( i )->add( "divuex", divUex );
             exp->save();
 
             UTn = UTn1;
             pnm1 = pn;
             pn = pn1;
+
         }
 
 }
