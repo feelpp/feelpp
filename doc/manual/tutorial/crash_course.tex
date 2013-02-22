@@ -7,7 +7,7 @@ This chapter is designed for impatient people who wants to test \feel as soon as
 \section{Requirements}
 Before installing \feel, you need to get this \underline{required packages:}\\
 \begin{itemize}
-\item g++ ($4.4$, $4.5$, $4.6$ or $4.7$  )
+\item g++ ($4.4$, $4.5$, $4.6$ or $4.7$) OR Clang ($\geq 3.1$)
 \item MPI : openmpi (preferred) or mpich
 \item Boost ($\geq$1.39)
 \item Petsc ($\geq$2.3.3)
@@ -37,7 +37,7 @@ We define then the current directory as the source one, ie:
 \end{unixcom}
 
 \section{Compiling}
-Please, notice that 4 Gbites of RAM is a minimum to make \feel compiling (with gcc).
+Please, notice that 4 Gbytes of RAM is a minimum to make \feel compiling (with \textse{gcc}), with clang ($\geq3.1$), the memory footprint is much lower.
 
 In order to compile \feel and a test application, we create a new directory:
 \begin{unixcom}
@@ -55,11 +55,11 @@ and then, we are able to compile our first application:
 
 This procedure will build the entire librarie (with DebWithRelInfo option) and a dummy program to presents the \feel's abilities.
 
-There is a procedure to install as a system librarie \feel, you may have a look to the
+There is a procedure to install as a system librarie \feel.
 \begin{unixcom}
   make install
 \end{unixcom}
-procedure, it is not our purpose in that chapter.
+See chapter 2 for more details.
 
 \section{\feel Hello World}
 \label{sec:feel-hello-world}
@@ -79,21 +79,37 @@ We want to solve the simplest problem:
 \end{equation}
 where $\Omega \in \mathbb{R}^n, n\in{1,2,3}$.\\
 
-That problem is written, in the Finite Element Method formulation:
+That problem written in variational form is:
+looks for $v\in H^1\left( \Omega \right)$
 \begin{equation}\nonumber
   \begin{aligned}
-    a\left( u,v \right)&=f(v).
+    a\left( u,v \right)&=l\left( v \right)\\
+\forall v &\in H^1\left( \Omega \right).
   \end{aligned}
 \end{equation}
 with:
 \begin{equation}\nonumber
   \begin{aligned}
-    a\left( u,v \right)&=\int_{\Omega} \nabla u \cdot \nabla v dx,\\
-    f\left( v \right) &= \int_{\Omega} v dx.
+    a\left( u,v \right)&=\int_{\Omega} \nabla u \cdot \nabla v ,\\
+    l\left( v \right) &= \int_{\Omega} v .
   \end{aligned}
 \end{equation}
 
-The aim of \feel is to provide the simplest way to write the $a$ and $f$ forms.
+The aim of \feel is to provide the simplest way to write the $a$ and $f$ forms.\\
+
+From a discrete point of view, we introduce $V_h\subset H^1\left( \Omega \right)$ such that:
+\begin{equation}\nonumber
+  \begin{aligned}
+V_h = \left\{ v \in C^0\left( \Omega \right), \forall K\in \mathcal{T}_h, \right.v\left|_K \in P_1\left( K \right) \right\},
+    \end{aligned}
+  \end{equation}
+where $\mathcal{T}_h$ is the set of element $K$ forming the mesh of $\Omega$. \\
+We now look for $u_h \in V_h$ such that:
+\begin{equation}\nonumber
+  \begin{aligned}
+    \forall v_h\in V_h, a\left( u_h,v_h \right)=l\left( v_h \right).
+    \end{aligned}
+  \end{equation}
 
 \subsection{About the code}
 \label{sec:about-code}
