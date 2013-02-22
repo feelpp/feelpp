@@ -39,6 +39,47 @@ downloaded and type the following command :
 You are now able to checkout, commit or add the file your judge usefull using \verb|svn|, please don't forget to comment on your various actions. The first commit is subject to the approbation of one of the main developers.
 
 
+\section{Programming environment}
+\label{sec:progr-envir}
+We present here a quick list of all namespaces and librairies proposed by \feel, refer to the tutorial which starts at section ~\ref{cha:getting-started} how you can use them.
+\subsection{Boost C++ Libraries}
+\label{sec:boost-c++-libraries}
+
+\feel depends on a number of libraries, some are required some are optional.
+Among the required libraries, The Boost C++ libraries play a very important role
+as they drive or shape the  design of \feel. \feel uses in particular the
+following Boost libraries:
+\begin{itemize}
+\item Boost.Parameter\index{Boost!Parameter} : use to provide powerful
+  interfaces to \feel and third party library such as
+  \begin{itemize}
+  \item PETSc  for the linear, nonlinear solvers
+  \item SLEPc for the eigenvalue solvers
+  \item GMSH for mesh generation
+  \end{itemize}
+\item Boost.MPL - meta programming library : use for type computations
+\item Boost.Fusion - linking meta-runtime programming: use for type computations
+  used at runtime
+\item Boost.Program\_Options - command-line options library : provides the
+  command line options for the \feel applications as well as configuration files
+\item Boost.Test - Unit testing framework ; used by the \feel testsuite
+\end{itemize}
+
+\subsection{\feel Namepaces}
+
+\begin{itemize}
+\item \lstinline!Feel!
+\item \lstinline!Feel::po!
+\item \lstinline!Feel::mpl!
+\item \lstinline!Feel::ublas!
+\item \lstinline!Feel::math!
+\item \lstinline!Feel::fem!
+\item \lstinline!Feel::vf!
+
+\end{itemize}
+
+
+
 \section{Linear Algebra with PETSC}
 
 \subsection{Using the Petsc Backend: recommended}
