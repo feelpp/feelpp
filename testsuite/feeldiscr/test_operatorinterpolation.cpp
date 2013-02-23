@@ -76,7 +76,7 @@ test2dTo1d()
 
     //-----------------------------------------------------------//
 
-    auto meshSize = option(_name="hsize").as<double>();
+    auto meshSize = option(_name="hsize").template as<double>();
     BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
 
     GeoTool::Node x1( 0,0 );
@@ -143,7 +143,7 @@ test2dTo2d()
     //case 1 : same mesh
     //-------------------------------------------------------
     WorldComm myWorldComm;
-    auto meshSize = option(_name="hsize").as<double>();
+    auto meshSize = option(_name="hsize").template as<double>();
     LOG(INFO) << "meshSize=" << meshSize << "\n";
     BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
     GeoTool::Node x1( 0,0 );
@@ -256,7 +256,7 @@ test2dOpLagrangeP1()
     typedef FunctionSpace<mesh_type, basis_P1_type> space_P1_type;
 
     WorldComm myWorldComm;
-    auto meshSize = option(_name="hsize").as<double>();
+    auto meshSize = option(_name="hsize").template as<double>();
 
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 0.6,0 );
@@ -329,7 +329,7 @@ test2dOpLagrangeP1Composite()
 
     //-------------------------------
 
-    auto meshSize = option(_name="hsize").as<double>();
+    auto meshSize = option(_name="hsize").template as<double>();
 
     GeoTool::Node x1( 0,0 );
     GeoTool::Node x2( 0.6,0 );
