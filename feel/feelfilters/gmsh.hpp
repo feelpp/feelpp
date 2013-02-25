@@ -762,7 +762,7 @@ BOOST_PARAMETER_FUNCTION(
     if ( refine )
     {
         Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
-        gmsh.refine( fname, refine );
+        fname = gmsh.refine( fname, refine );
     }
 
     ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
