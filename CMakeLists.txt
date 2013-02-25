@@ -234,9 +234,9 @@ include( feelpp.macros )
 #
 # data
 #
-IF(NOT APPLE)
-ADD_SUBDIRECTORY ( data )
-ENDIF(NOT APPLE)
+IF(NOT APPLE AND EXISTS data)
+  ADD_SUBDIRECTORY ( data )
+ENDIF()
 
 if (APPLE)
   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)

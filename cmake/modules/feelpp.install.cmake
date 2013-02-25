@@ -106,7 +106,7 @@ foreach(example ${examples} )
 feelpp_add_application( doc_${EXAMPLE_TARGET_NAME} SRCS tutorial/${EXAMPLE_SRCS_NAME} INCLUDE_IN_ALL)
 " )
 endforeach()
-foreach( example myapp mymesh myintegrals myfunctionspace laplacian)
+foreach( example myapp mymesh myintegrals myfunctionspace mylaplacian mystokes)
   FILE(APPEND CMakeLists.txt.doc "
 add_dependencies(tutorial feelpp_doc_${example})
 ")
