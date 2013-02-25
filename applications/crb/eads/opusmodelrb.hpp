@@ -45,6 +45,8 @@
 #include <eads.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelcrb/modelcrbbase.hpp>
+
 /**/
 namespace Feel
 {
@@ -63,11 +65,25 @@ Feel::po::options_description opusModelOptions();
   @author Christophe Prud'homme
   @see
 */
+
+
+class ParameterDefinition
+{
+public:
+    static const uint16_type ParameterSpaceDimension = 5;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+
+
 template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
-class OpusModelRB : public OpusModelBase
+class OpusModelRB : public OpusModelBase, public ModelCrbBase< ParameterDefinition >
 {
     typedef OpusModelBase super;
 public:
+
+    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
     /** @name Typedefs
      */
