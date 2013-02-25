@@ -599,7 +599,7 @@ public:
 
     void checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs, std::vector< std::vector<double> > const& dual_residual_coeffs ) const;
 
-    void compareResidualsForTransientProblems( parameter_type const& mu, std::vector<element_ptrtype> const & Un, std::vector<element_ptrtype> const & Unold, std::vector<element_ptrtype> const& Undu, std::vector<element_ptrtype> const & Unduold, std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector< std::vector<double> > const& dual_residual_coeffs  ) const ;
+    void compareResidualsForTransientProblems(int N, parameter_type const& mu, std::vector<element_ptrtype> const & Un, std::vector<element_ptrtype> const & Unold, std::vector<element_ptrtype> const& Undu, std::vector<element_ptrtype> const & Unduold, std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector< std::vector<double> > const& dual_residual_coeffs  ) const ;
 
 
     void buildFunctionFromRbCoefficients(int N, std::vector< vectorN_type > const & RBcoeff, wn_type const & WN, std::vector<element_ptrtype> & FEMsolutions );
@@ -864,7 +864,7 @@ public:
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
      */
-    element_type expansion( vectorN_type const& u , int const N) const;
+    element_type expansion( vectorN_type const& u , int const N, wn_type const & WN ) const;
 
 
     void checkInitialGuess( const element_type expansion_uN , parameter_type const& mu, vectorN_type & error ) const ;
@@ -907,6 +907,16 @@ public:
     sampling_ptrtype wnmu ( ) const
     {
         return M_WNmu;
+    }
+
+    wn_type wn() const
+    {
+        return M_WN;
+    }
+
+    wn_type wndu() const
+    {
+        return M_WNdu;
     }
 
     /**
@@ -2713,7 +2723,7 @@ CRB<TruthModelType>::buildFunctionFromRbCoefficients(int N, std::vector< vectorN
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const& mu, std::vector<element_ptrtype> const & Un, std::vector<element_ptrtype> const & Unold, std::vector<element_ptrtype> const& Undu, std::vector<element_ptrtype> const & Unduold, std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector < std::vector<double> > const& dual_residual_coeffs ) const
+CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type const& mu, std::vector<element_ptrtype> const & Un, std::vector<element_ptrtype> const & Unold, std::vector<element_ptrtype> const& Undu, std::vector<element_ptrtype> const & Unduold, std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector < std::vector<double> > const& dual_residual_coeffs ) const
 {
 
     LOG( INFO ) <<"\n compareResidualsForTransientProblems \n";
@@ -2806,11 +2816,11 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
     bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
     if( this->worldComm().globalSize() > 1 )
         solve_dual_problem=false;
+
     double sum=0;
     if( solve_dual_problem )
     {
-        LOG(INFO)<<"**********dual problem************* "<<std::endl;
-        element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
+
         Adu = M_model->newMatrix();
 
         auto bdf_dual = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_dual_check_residual_transient" );
@@ -2819,13 +2829,32 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( parameter_type const&
         bdf_dual->setTimeStep( -M_model->timeStep() );
         bdf_dual->setTimeFinal( M_model->timeInitial()+M_model->timeStep() );
         bdf_dual->setOrder( M_model->timeOrder() );
-
         bdf_dual->start();
 
+        //element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
+        LOG(INFO)<<"**********dual problem************* "<<std::endl;
+
+        boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , bdf_dual->timeInitial() );
+
+        vectorN_type dual_initial ( N );
+        for(int i=0; i<N; i++)
+            dual_initial(i) = M_coeff_du_ini_online[i];
+        auto dual_initial_field = this->expansion( dual_initial , N , M_WNdu );
+        *undu = dual_initial_field;
+        M->multVector( undu, Mun );
+        *Frhs = *F[0];
+        vector_ptrtype __ef_du(  backend->newVector( M_model->functionSpace() ) );
+        vector_ptrtype __emu_du(  backend->newVector( M_model->functionSpace() ) );
+        M_model->l2solve( __ef_du, Frhs );
+        M_model->l2solve( __emu_du, Mun );
+        double check_Cff_du = M_model->scalarProduct( __ef_du,__ef_du );
+        double check_Cmf_du = 2*M_model->scalarProduct( __ef_du,__emu_du );
+        double check_Cmm_du = M_model->scalarProduct( __emu_du,__emu_du );
+        double residual_final_condition = math::abs( check_Cff_du + check_Cmf_du + check_Cmm_du );
+        //std::cout<<"residual on final condition : "<<residual_final_condition<<std::endl;
         //initialization
         time_step = bdf_dual->timeStep();
 
-        //boost::tie( M, A, F, boost::tuples::ignore ) = M_model->update( mu , bdf_dual->timeInitial() );
 
         for ( bdf_dual->start(); !bdf_dual->isFinished() ; bdf_dual->next() )
         {
@@ -3329,7 +3358,7 @@ CRB<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X, map_den
     //map_J.setZero( N , N );
     map_J.setZero( );
     beta_vector_type betaJqm;
-    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N ), mu , 0 );
+    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_WN ), mu , 0 );
     for ( size_type q = 0; q < M_model->Qa(); ++q )
     {
         for(int m=0; m<M_model->mMaxA(q); m++)
@@ -3343,7 +3372,7 @@ CRB<TruthModelType>::updateResidual( const map_dense_vector_type& map_X, map_den
 {
     map_R.setZero( );
     std::vector< beta_vector_type > betaRqm;
-    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N ), mu , 0 );
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( map_X , N , M_WN ), mu , 0 );
     for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
     {
         for(int m=0; m<M_model->mMaxF(0,q); m++)
@@ -3378,7 +3407,7 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
 
     vectorN_type L ( ( int )N );
     std::vector<beta_vector_type> betaFqm;
-    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( uN , N ), mu , 0 );
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaFqm, boost::tuples::ignore ) = M_model->computeBetaQm( this->expansion( uN , N , M_WN  ), mu , 0 );
     L.setZero( N );
     for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
     {
@@ -3621,9 +3650,9 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     for ( double time=time_step; time<=time_for_output; time+=time_step )
     {
         if( M_model->isSteady() )
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] , N ), mu ,time );
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] , N , M_WN ), mu ,time );
         else
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N ), mu ,time );
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N , M_WN ), mu ,time );
 
         google::FlushLogFiles(google::GLOG_INFO);
         // compute initial guess for fixed point
@@ -3685,7 +3714,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             if( 0 )
                 boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
             else
-                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N ), mu ,time );
+                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_WN ), mu ,time );
 
             LOG(INFO) << "compute reduce matrices\n";
             google::FlushLogFiles(google::GLOG_INFO);
@@ -5689,7 +5718,7 @@ CRB<TruthModelType>::printMuSelection( void )
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::expansion( parameter_type const& mu , int N)
+CRB<TruthModelType>::expansion( parameter_type const& mu , int N  )
 {
     int Nwn;
 
@@ -5705,13 +5734,14 @@ CRB<TruthModelType>::expansion( parameter_type const& mu , int N)
 
     auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
     int size = uN.size();
+    FEELPP_ASSERT( N <= M_WN.size() )( N )( M_WN.size() ).error( "invalid expansion size ( N and M_WN ) ");
     return Feel::expansion( M_WN, uN[size-1] , Nwn);
 }
 
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::expansion( vectorN_type const& u , int const N) const
+CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type const & WN ) const
 {
     int Nwn;
 
@@ -5721,8 +5751,10 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N) const
         Nwn = M_N;
 
     //FEELPP_ASSERT( M_WN.size() == u.size() )( M_WN.size() )( u.size() ).error( "invalid expansion size");
-    FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
-    return Feel::expansion( M_WN, u, Nwn );
+    FEELPP_ASSERT( Nwn <= WN.size() )( Nwn )( WN.size() ).error( "invalid expansion size ( Nwn and WN ) ");
+    FEELPP_ASSERT( Nwn <= u.size() )( Nwn )( WN.size() ).error( "invalid expansion size ( Nwn and u ) ");
+    //FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
+    return Feel::expansion( WN, u, N );
 }
 
 
@@ -5784,9 +5816,10 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
         buildFunctionFromRbCoefficients(Nwn, uNold, M_WN, Unold );
         buildFunctionFromRbCoefficients(Nwn, uNdu, M_WNdu, Undu );
         buildFunctionFromRbCoefficients(Nwn, uNduold, M_WNdu, Unduold );
-        compareResidualsForTransientProblems( mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
+        compareResidualsForTransientProblems(Nwn, mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
-    return boost::make_tuple( output , e, Nwn , condition_number, uN[0] );
+    int size = uN.size();
+    return boost::make_tuple( output , e, Nwn , condition_number, uN[size-1] );
 }
 
 
