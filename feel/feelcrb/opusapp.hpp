@@ -418,7 +418,7 @@ public:
 
                 std::ostringstream mu_str;
                 //if too many parameters, it will crash
-                int sizemax=8;
+                int sizemax=7;
                 if( size < sizemax )
                     sizemax=size;
                 for ( int i=0; i<sizemax-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
@@ -641,6 +641,23 @@ public:
                                         res << "output="<< o.template get<0>() << "\n";
                                     }//end of proc==master
                                 }//end of else (errorType==2)
+
+                                if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
+                                {
+                                    auto eim_sc_vector = model->scalarContinuousEim();
+                                    auto eim_sd_vector = model->scalarDiscontinuousEim();
+                                    for(int i=0; i<eim_sc_vector.size(); i++)
+                                    {
+                                        auto eim = eim_sc_vector[i];
+                                        eim->studyConvergence( mu );
+                                    }
+                                    for(int i=0; i<eim_sd_vector.size(); i++)
+                                    {
+                                        auto eim = eim_sd_vector[i];
+                                        eim->studyConvergence( mu );
+                                    }
+                                }
+
                                 if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
                                 {
                                     LOG(INFO) << "start convergence study...\n";
