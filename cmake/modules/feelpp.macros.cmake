@@ -64,7 +64,7 @@ macro(feelpp_add_application)
     endif()
   endif()
 
-  if (FEELPP_ENABLE_SLURM )
+  if (FEELPP_ENABLE_CCC )
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.msub "#! /bin/bash
 #MSUB -r ${execname}         # Request name
 #MSUB -n 64                  # Number of tasks to use
