@@ -2840,9 +2840,17 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
         for(int i=0; i<N; i++)
             dual_initial(i) = M_coeff_du_ini_online[i];
         auto dual_initial_field = this->expansion( dual_initial , N , M_WNdu );
+
         *undu = dual_initial_field;
         M->multVector( undu, Mun );
         *Frhs = *F[0];
+
+
+        auto R = backend->newVector( M_model->functionSpace() );
+        R = Frhs;
+        R->add( -1 , *Mun ); //R -= Mun;
+        //std::cout<<"[COMPARE] R->l2Norm() : "<<R->l2Norm()<<std::endl;
+
         vector_ptrtype __ef_du(  backend->newVector( M_model->functionSpace() ) );
         vector_ptrtype __emu_du(  backend->newVector( M_model->functionSpace() ) );
         M_model->l2solve( __ef_du, Frhs );
@@ -3534,19 +3542,30 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
         for ( size_type q = 0; q < M_model->Qm(); ++q )
         {
-            for(int m=0; m < M_model->mMaxM(q); m++)
-                Mdu += betaMqm[q][m]*M_Mq_du[q][m].block( 0,0,N,N );
+            for ( size_type m = 0; m < M_model->mMaxM( q ); ++m )
+            {
+                for(int m=0; m < M_model->mMaxM(q); m++)
+                    Mdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N );
+            }
         }
 
         Ldu.setZero( N );
 
         for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
         {
-            for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
-                Ldu += betaFqm[M_output_index][q][m]*M_Lq_du[q][m].head( N );
+            for ( size_type m = 0; m < M_model->mMaxF(  M_output_index , q ); ++m )
+            {
+                for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+                    Ldu += betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
+            }
         }
 
-        uNduold[time_index] = Mdu.lu().solve( Ldu );
+        /*
+        vectorN_type coeff(N);
+        for(int i=0; i<N; i++) coeff(i) = M_coeff_du_ini_online[i];
+        vectorN_type diff2 = uNduold[time_index] - coeff;
+        std::cout<<"et maintenant le deuxieme diff = \n"<<diff2<<"\n";
+        */
 #else
 
         for ( size_type n=0; n<N; n++ )
@@ -3631,7 +3650,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             time_for_output = number_of_time_step * time_step;
         }
     }
-
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
     beta_vector_type betaMFqm;
@@ -3647,8 +3665,9 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             uNold[0]( n ) = M_coeff_pr_ini_online[n];
     }
 
-    for ( double time=time_step; time<=time_for_output; time+=time_step )
+    for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     {
+
         if( M_model->isSteady() )
             boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] , N , M_WN ), mu ,time );
         else
@@ -3708,6 +3727,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         double fixedpoint_critical_value  = this->vm()["crb.fixedpoint-critical-value"].template as<double>();
         do
         {
+
             LOG(INFO) << "compute eim expansions\n";
             google::FlushLogFiles(google::GLOG_INFO);
 
@@ -3740,6 +3760,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
                 }
             }
+
             LOG(INFO) << "solve reduced model\n";
             google::FlushLogFiles(google::GLOG_INFO);
 
@@ -3748,7 +3769,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
             // solve for new fix point iteration
             uN[time_index] = A.lu().solve( F );
-
             //LOG(INFO) << "uold = " << uNold[time_index] << "\n";
             //LOG(INFO) << "u = " << uN[time_index] << "\n";
 
@@ -3765,13 +3785,11 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
                 }
             }
-
             old_output = output;
             output = L.dot( uN[time_index] );
 
             //output_vector.push_back( output );
             output_vector[time_index] = output;
-
             LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";               google::FlushLogFiles(google::GLOG_INFO);
             fi++;
 
@@ -3788,8 +3806,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         if( (uN[time_index]-previous_uN).norm() > fixedpoint_critical_value )
             throw std::logic_error( "[CRB::lb] fixed point ERROR : norm(uN-uNold) > critical value " );
 
-        time_index++;
-
+        if ( time_index<number_of_time_step-1 )
+            time_index++;
     }
 
     condition_number = computeConditioning( A );
@@ -3799,6 +3817,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, double& condition_number, std::vector< double > & output_vector, int K) const
 {
+
     double time_for_output;
     double time_step;
     double time_final;
@@ -3822,9 +3841,9 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
             time_for_output = number_of_time_step * time_step;
         }
     }
-
     fixedPointPrimal( N, mu , uN , uNold , condition_number, output_vector, K ) ;
-
+    int size=output_vector.size();
+    double o =output_vector[size-1];
     bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
     if( this->worldComm().globalSize() > 1 )
         solve_dual_problem=false;
@@ -3848,7 +3867,6 @@ template<typename TruthModelType>
 boost::tuple<double,double>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
 {
-
     google::FlushLogFiles(google::GLOG_INFO);
 
     bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
@@ -3886,15 +3904,12 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
             time_for_output = number_of_time_step * time_step;
         }
     }
-
-
     if ( N > M_N ) N = M_N;
 
     uN.resize( number_of_time_step );
     uNdu.resize( number_of_time_step );
     uNold.resize( number_of_time_step );
     uNduold.resize( number_of_time_step );
-
 
     int index=0;
     BOOST_FOREACH( auto elem, uN )
@@ -3917,12 +3932,10 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     // init by 1, the model could provide better init
     //uN[0].setOnes(M_N);
     uN[0].setOnes(N);
-
     if( M_use_newton )
         newton( N , mu , uN[0] , condition_number , output_vector[0] );
     else
         fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , condition_number , output_vector , K );
-
 
 
     if( M_compute_variance )
@@ -4034,9 +4047,9 @@ CRB<TruthModelType>::delta( size_type N,
 
         double dual_residual=0;
 
-        //if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
+        if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
 
-        //std::cout<<"dual_residual = "<<dual_residual<<std::endl;
+        std::cout<<"dual_residual = "<<dual_residual<<std::endl;
 
         bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
         if ( this->worldComm().globalSize() > 1 )
