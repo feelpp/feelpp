@@ -56,7 +56,7 @@
 #include <Eigen/Dense>
 
 
-
+#include <feel/feelcrb/modelcrbbase.hpp>
 
 namespace Feel
 {
@@ -103,6 +103,12 @@ makeHeatSink2DAbout( std::string const& str = "heatSink" )
 
 
 
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 3;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
 
 /**
  * \class HeatSink2D
@@ -111,9 +117,13 @@ makeHeatSink2DAbout( std::string const& str = "heatSink" )
  * @author Christophe Prud'homme
  * @see
  */
-class HeatSink2D
+class HeatSink2D : public ModelCrbBase< ParameterDefinition >
 {
 public:
+
+    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
 
     /** @name Constants
@@ -719,8 +729,6 @@ void HeatSink2D::initializationField( element_ptrtype& initial_field , parameter
 void HeatSink2D::init()
 {
 
-    std::cout<<"init !!!!! "<<std::endl;
-
     using namespace Feel::vf;
 
     /*
@@ -730,7 +738,7 @@ void HeatSink2D::init()
     mesh = createGMSHMesh ( _mesh = new mesh_type,
                             _desc = createGeo( meshSize, Lref ),
                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-    std::cout<<"mesh ok"<<std::endl;
+
     /*
      * The function space and some associate elements are then defined
      */
@@ -741,14 +749,17 @@ void HeatSink2D::init()
     pT = element_ptrtype( new element_type( Xh ) );
 
 
-    std::cout<<"evaluation of surface_gamma1 ..."<<std::endl;
     surface_gamma1 = integrate( _range= markedfaces( mesh,"gamma1" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
-    std::cout<<"surface_gamma = "<<surface_gamma1<<std::endl;
 
     M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatSink2d" , _prefix="heatSink2d" );
 
     M_Aqm.resize( this->Qa() );
+    for(int q=0; q<Qa(); q++)
+        M_Aqm[q].resize( 1 );
+
     M_Mqm.resize( this->Qm() );
+    for(int q=0; q<Qm(); q++)
+        M_Mqm[q].resize( 1 );
 
     //three outputs : one "compliant" and two others
     M_Fqm.resize( this->Nl() );

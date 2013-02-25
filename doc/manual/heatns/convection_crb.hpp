@@ -58,6 +58,8 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
+
 // use the Feel namespace
 using namespace Feel;
 using namespace Feel::vf;
@@ -78,6 +80,14 @@ using namespace Feel::vf;
 #define CRB_SOLVER 0
 #endif
 
+
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 2;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+
 /**
  * \class ConvectionCrb
  * The class derives from the Application class
@@ -87,9 +97,13 @@ using namespace Feel::vf;
  * \tparam Order_p pressure polynomial order
  */
 //template< int Order_s, int Order_p, int Order_t >
-class ConvectionCrb
+class ConvectionCrb : public ModelCrbBase< ParameterDefinition >
 {
 public:
+
+    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
     static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 2;
@@ -153,9 +167,9 @@ public:
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 
     /* EIM */
-    typedef EIMFunctionBase<U_space_type, space_type , parameterspace_type> fun_type;
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
-    typedef std::vector<fun_ptrtype> funs_type;
+    //typedef EIMFunctionBase<U_space_type, space_type , parameterspace_type> fun_type;
+    //typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    //typedef std::vector<fun_ptrtype> funs_type;
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
