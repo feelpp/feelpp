@@ -23,4 +23,4 @@
 #
 
 # enable the CCC script generation
-set(FEELPP_ENABLE_CCC TRUE)
+OPTION(FEELPP_ENABLE_CCC "Enable Feel++ tgcc/ccc submission scripts generation" ON)
