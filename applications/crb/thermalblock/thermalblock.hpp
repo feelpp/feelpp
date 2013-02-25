@@ -45,6 +45,8 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <vector>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
+
 namespace Feel
 {
 
@@ -100,6 +102,17 @@ makeThermalBlockAbout( std::string const& str = "thermalBlock" )
 using namespace vf;
 
 
+class ParameterDefinition
+{
+public :
+    static const uint16_type nx = 3;
+    static const uint16_type ny = 3;
+    static const uint16_type ParameterSpaceDimension = nx*ny;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+
+
+
 /**
  * \class ThermalBlock
  *
@@ -110,8 +123,7 @@ using namespace vf;
  */
 
 
-class ThermalBlock
-
+class ThermalBlock : public ModelCrbBase< ParameterDefinition >
 {
 
     static const uint16_type nx = 3;
@@ -119,6 +131,7 @@ class ThermalBlock
 
 
 public:
+
     static const uint16_type ParameterSpaceDimension = nx*ny;
     static const bool is_time_dependent = false;
 
