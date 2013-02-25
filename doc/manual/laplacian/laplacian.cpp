@@ -133,7 +133,7 @@ Laplacian<Dim,Order>::run()
     LOG(INFO) << "------------------------------------------------------------\n";
     LOG(INFO) << "Execute Laplacian<" << Dim << ">\n";
 
-    Environment::changeRepository( boost::format( "doc/manual/tutorial/%1%/%2%-%3%/P%4%/h_%5%/" )
+    Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/%2%-%3%/P%4%/h_%5%/" )
                                    % this->about().appName()
                                    % shape
                                    % Dim
@@ -181,11 +181,11 @@ Laplacian<Dim,Order>::run()
     bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type nu = this->vm()["nu"].template as<double>();
-    std::string exact = 
-        this->vm()[(boost::format("exact%1%D")%Dim).str()].template 
+    std::string exact =
+        this->vm()[(boost::format("exact%1%D")%Dim).str()].template
         as<std::string>();
-    std::string rhs  = 
-        this->vm()[(boost::format("rhs%1%D")%Dim).str()].template 
+    std::string rhs  =
+        this->vm()[(boost::format("rhs%1%D")%Dim).str()].template
         as<std::string>();
     LOG(INFO) << "exact = "  << exact << "\n";
 
