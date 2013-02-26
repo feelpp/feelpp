@@ -789,10 +789,23 @@ template<typename ModelType>
 void
 EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
 {
-    LOG(INFO) << "study convergence... \n";
-    LOG(INFO) << "nb eim basis = " << M_WN << "\n";
+    LOG(INFO) << " Convergence study \n";
+
+    std::string mu_str;
+    for ( int i=0; i<mu.size(); i++ )
+        mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
+
+    std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
+    if( std::ifstream( file_name ) )
+        std::remove( file_name.c_str() );
+
+    std::ofstream conv;
+    conv.open(file_name, std::ios::app);
+
+    conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
+
     int max = this->mMax();
-    for(int N=0; N<max; N++)
+    for(int N=1; N<=max; N++)
     {
         int size = mu.size();
         LOG(INFO)<<" mu = [ ";
@@ -813,24 +826,11 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
         auto l2_error = math::abs( norm_l2_expression - norm_l2_approximation ) / norm_l2_expression;
         LOG(INFO) << "norm l2 error = " << l2_error << "\n";
 
-        //write on file
-        std::string mu_str;
-        for ( int i=0; i<mu.size(); i++ )
-            mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
-
-        std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
-        std::ofstream conv;
-        conv.open(file_name, std::ios::app);
-        if( M_WN == 1 ) //the first run
-        {
-            conv.close();
-            conv.open(file_name, std::ios::app);
-            conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
-        }
-        conv << M_WN << "\t" << l2_error << "\n";
+        conv << N << "\t" << l2_error << "\n";
 
     }//loop over basis functions
 
+    conv.close();
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
