@@ -30,6 +30,7 @@
 #define _FEELPP_EIM_HPP 1
 
 #include <limits>
+#include <numeric>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -370,7 +371,7 @@ public:
     vector_type beta( parameter_type const& mu, size_type M  ) const;
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const;
 
-    void studyConvergence( parameter_type const & mu) const;
+    std::vector<double> studyConvergence( parameter_type const & mu) const;
 
     element_type residual ( size_type M ) const;
 
@@ -786,10 +787,12 @@ EIM<ModelType>::offline(  )
 }
 
 template<typename ModelType>
-void
+std::vector<double>
 EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
 {
     LOG(INFO) << " Convergence study \n";
+
+    std::vector<double> l2ErrorVec;
 
     std::string mu_str;
     for ( int i=0; i<mu.size(); i++ )
@@ -801,7 +804,6 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
 
     std::ofstream conv;
     conv.open(file_name, std::ios::app);
-
     conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
 
     int max = this->mMax();
@@ -826,11 +828,14 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
         auto l2_error = math::abs( norm_l2_expression - norm_l2_approximation ) / norm_l2_expression;
         LOG(INFO) << "norm l2 error = " << l2_error << "\n";
 
+        l2ErrorVec.push_back( l2_error ); // /!\ l2ErrorVec[i] represents error with i+1 bases
+
         conv << N << "\t" << l2_error << "\n";
 
     }//loop over basis functions
 
     conv.close();
+    return l2ErrorVec;
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
@@ -928,7 +933,7 @@ public:
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual size_type  mMax() const = 0;
 
-    virtual void studyConvergence( parameter_type const & mu ) const {};
+    virtual std::vector<double> studyConvergence( parameter_type const & mu ) const = 0;
 
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
@@ -1011,7 +1016,7 @@ public:
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
-    void studyConvergence( parameter_type const & mu ) const { return M_eim->studyConvergence( mu ) ; };
+    std::vector<double> studyConvergence( parameter_type const & mu ) const { return M_eim->studyConvergence( mu ) ; };
 
     size_type mMax() const { return M_eim->mMax(); }
 

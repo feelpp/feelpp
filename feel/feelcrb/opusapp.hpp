@@ -36,6 +36,7 @@
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
+#include <boost/range/join.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -405,6 +406,31 @@ public:
 
             crb->setOfflineStep( false );
 
+            // For EIM convergence study
+            std::map<std::string, std::vector<vectorN_type> > mapConvEIM;
+            auto eim_sc_vector = model->scalarContinuousEim();
+            auto eim_sd_vector = model->scalarDiscontinuousEim();
+            int dimEim = option(_name="eim.dimension-max").template as<int>();
+
+            if (option(_name="eim.cvg-study").template as<bool>())
+                {
+                    for(int i=0; i<eim_sc_vector.size(); i++)
+                        {
+                            auto eim = eim_sc_vector[i];
+                            mapConvEIM[eim->name()] = std::vector<vectorN_type>(dimEim - 1);
+                            for(int j=0; j<dimEim-1; j++)
+                                mapConvEIM[eim->name()][j].resize(Sampling->size());
+                        }
+
+                    for(int i=0; i<eim_sd_vector.size(); i++)
+                        {
+                            auto eim = eim_sd_vector[i];
+                            mapConvEIM[eim->name()] = std::vector<vectorN_type>(dimEim - 1);
+                            for(int j=0; j<dimEim-1; j++)
+                                mapConvEIM[eim->name()][j].resize(Sampling->size());
+                        }
+                }
+
             BOOST_FOREACH( auto mu, *Sampling )
             {
 
@@ -644,17 +670,23 @@ public:
 
                                 if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
                                 {
-                                    auto eim_sc_vector = model->scalarContinuousEim();
-                                    auto eim_sd_vector = model->scalarDiscontinuousEim();
                                     for(int i=0; i<eim_sc_vector.size(); i++)
                                     {
+                                        std::vector<double> l2error;
                                         auto eim = eim_sc_vector[i];
-                                        eim->studyConvergence( mu );
+                                        l2error = eim->studyConvergence( mu );
+
+                                        for(int j=0; j<l2error.size(); j++)
+                                                mapConvEIM[eim->name()][j](curpar-1) = l2error[j];
                                     }
                                     for(int i=0; i<eim_sd_vector.size(); i++)
                                     {
+                                        std::vector<double> l2error;
                                         auto eim = eim_sd_vector[i];
-                                        eim->studyConvergence( mu );
+                                        l2error = eim->studyConvergence( mu );
+
+                                       for(int j=0; j<l2error.size(); j++)
+                                                mapConvEIM[eim->name()][j](curpar-1) = l2error[j];
                                     }
                                 }
 
@@ -742,6 +774,63 @@ public:
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
             bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+
+            if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
+                {
+                    for(int i=0; i<eim_sc_vector.size(); i++)
+                        {
+                            auto eim = eim_sc_vector[i];
+
+                            std::ofstream conv;
+                            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
+                            conv.open(file_name, std::ios::app);
+                            conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+
+
+                            for(int j=0; j<mapConvEIM[eim->name()].size(); j++)
+                                {
+                                    double mean = mapConvEIM[eim->name()][j].mean();
+                                    double variance = 0.0;
+                                    for( int k=0; k < Sampling->size(); k++)
+                                        {
+                                            variance += (mapConvEIM[eim->name()][j](k) - mean)*(mapConvEIM[eim->name()][j](k) - mean)/Sampling->size();
+                                        }
+
+                                    conv << j+1 << "\t"
+                                         << mapConvEIM[eim->name()][j].minCoeff() << "\t"
+                                         << mapConvEIM[eim->name()][j].maxCoeff() << "\t"
+                                         << mean << "\t" << variance << "\n";
+                                }
+                            conv.close();
+                        }
+
+                    for(int i=0; i<eim_sd_vector.size(); i++)
+                        {
+                            auto eim = eim_sd_vector[i];
+
+                            std::ofstream conv;
+                            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
+                            conv.open(file_name, std::ios::app);
+                            conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+
+                            for(int j=0; j<mapConvEIM[eim->name()].size(); j++)
+                                {
+                                    double mean = mapConvEIM[eim->name()][j].mean();
+                                    double variance = 0.0;
+                                    for( int k=0; k < Sampling->size(); k++)
+                                        {
+                                            variance += (mapConvEIM[eim->name()][j](k) - mean)*(mapConvEIM[eim->name()][j](k) - mean)/Sampling->size();
+                                        }
+
+                                    conv << j+1 << "\t"
+                                         << mapConvEIM[eim->name()][j].minCoeff() << "\t"
+                                         << mapConvEIM[eim->name()][j].maxCoeff() << "\t"
+                                         << mean << "\t" << variance << "\n";
+                                }
+                            conv.close();
+                        }
+                }
+
             if ( option(_name="crb.compute-stat").template as<bool>() && compute_fem )
             {
                 LOG( INFO ) << "compute statistics \n";
