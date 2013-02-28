@@ -410,23 +410,23 @@ public:
             std::map<std::string, std::vector<vectorN_type> > mapConvEIM;
             auto eim_sc_vector = model->scalarContinuousEim();
             auto eim_sd_vector = model->scalarDiscontinuousEim();
-            int dimEim = option(_name="eim.dimension-max").template as<int>();
+            //int dimEim = option(_name="eim.dimension-max").template as<int>();
 
             if (option(_name="eim.cvg-study").template as<bool>())
                 {
                     for(int i=0; i<eim_sc_vector.size(); i++)
                         {
                             auto eim = eim_sc_vector[i];
-                            mapConvEIM[eim->name()] = std::vector<vectorN_type>(dimEim - 1);
-                            for(int j=0; j<dimEim-1; j++)
+                            mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
+                            for(int j=0; j<eim->mMax(); j++)
                                 mapConvEIM[eim->name()][j].resize(Sampling->size());
                         }
 
                     for(int i=0; i<eim_sd_vector.size(); i++)
                         {
                             auto eim = eim_sd_vector[i];
-                            mapConvEIM[eim->name()] = std::vector<vectorN_type>(dimEim - 1);
-                            for(int j=0; j<dimEim-1; j++)
+                            mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
+                            for(int j=0; j<eim->mMax(); j++)
                                 mapConvEIM[eim->name()][j].resize(Sampling->size());
                         }
                 }
@@ -787,7 +787,7 @@ public:
                             conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
 
 
-                            for(int j=0; j<mapConvEIM[eim->name()].size(); j++)
+                            for(int j=0; j<eim->mMax(); j++)
                                 {
                                     double mean = mapConvEIM[eim->name()][j].mean();
                                     double variance = 0.0;
@@ -813,7 +813,7 @@ public:
                             conv.open(file_name, std::ios::app);
                             conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
 
-                            for(int j=0; j<mapConvEIM[eim->name()].size(); j++)
+                            for(int j=0; j<eim->mMax(); j++)
                                 {
                                     double mean = mapConvEIM[eim->name()][j].mean();
                                     double variance = 0.0;
