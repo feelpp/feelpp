@@ -410,7 +410,6 @@ public:
             std::map<std::string, std::vector<vectorN_type> > mapConvEIM;
             auto eim_sc_vector = model->scalarContinuousEim();
             auto eim_sd_vector = model->scalarDiscontinuousEim();
-            //int dimEim = option(_name="eim.dimension-max").template as<int>();
 
             if (option(_name="eim.cvg-study").template as<bool>())
                 {
@@ -437,10 +436,11 @@ public:
                 int size = mu.size();
                 if( proc_number == Environment::worldComm().masterRank() )
                 {
-                    std::cout << "(" << curpar++ << "/" << Sampling->size() << ") mu = [ ";
+                    std::cout << "(" << curpar << "/" << Sampling->size() << ") mu = [ ";
                     for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
                     std::cout<< mu[size-1]<<" ]\n ";
                 }
+                curpar++;
 
                 std::ostringstream mu_str;
                 //if too many parameters, it will crash
@@ -677,8 +677,9 @@ public:
                                         l2error = eim->studyConvergence( mu );
 
                                         for(int j=0; j<l2error.size(); j++)
-                                                mapConvEIM[eim->name()][j](curpar-1) = l2error[j];
+                                                mapConvEIM[eim->name()][j][curpar-1] = l2error[j];
                                     }
+ 
                                     for(int i=0; i<eim_sd_vector.size(); i++)
                                     {
                                         std::vector<double> l2error;
@@ -686,7 +687,7 @@ public:
                                         l2error = eim->studyConvergence( mu );
 
                                        for(int j=0; j<l2error.size(); j++)
-                                                mapConvEIM[eim->name()][j](curpar-1) = l2error[j];
+                                                mapConvEIM[eim->name()][j][curpar-1] = l2error[j];
                                     }
                                 }
 
@@ -783,8 +784,12 @@ public:
 
                             std::ofstream conv;
                             std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
-                            conv.open(file_name, std::ios::app);
-                            conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+
+                            if( proc_number == Environment::worldComm().masterRank() )
+                                {
+                                    conv.open(file_name, std::ios::app);
+                                    conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+                                }
 
 
                             for(int j=0; j<eim->mMax(); j++)
@@ -796,10 +801,13 @@ public:
                                             variance += (mapConvEIM[eim->name()][j](k) - mean)*(mapConvEIM[eim->name()][j](k) - mean)/Sampling->size();
                                         }
 
-                                    conv << j+1 << "\t"
-                                         << mapConvEIM[eim->name()][j].minCoeff() << "\t"
-                                         << mapConvEIM[eim->name()][j].maxCoeff() << "\t"
-                                         << mean << "\t" << variance << "\n";
+                                    if( proc_number == Environment::worldComm().masterRank() )
+                                        {
+                                            conv << j+1 << "\t"
+                                                 << mapConvEIM[eim->name()][j].minCoeff() << "\t"
+                                                 << mapConvEIM[eim->name()][j].maxCoeff() << "\t"
+                                                 << mean << "\t" << variance << "\n";
+                                        }
                                 }
                             conv.close();
                         }
@@ -822,10 +830,13 @@ public:
                                             variance += (mapConvEIM[eim->name()][j](k) - mean)*(mapConvEIM[eim->name()][j](k) - mean)/Sampling->size();
                                         }
 
-                                    conv << j+1 << "\t"
-                                         << mapConvEIM[eim->name()][j].minCoeff() << "\t"
-                                         << mapConvEIM[eim->name()][j].maxCoeff() << "\t"
-                                         << mean << "\t" << variance << "\n";
+                                    if( proc_number == Environment::worldComm().masterRank() )
+                                        {
+                                            conv << j+1 << "\t"
+                                                 << mapConvEIM[eim->name()][j].minCoeff() << "\t"
+                                                 << mapConvEIM[eim->name()][j].maxCoeff() << "\t"
+                                                 << mean << "\t" << variance << "\n";
+                                        }
                                 }
                             conv.close();
                         }
