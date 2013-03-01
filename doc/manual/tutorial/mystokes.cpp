@@ -76,7 +76,7 @@ int main(int argc, char**argv )
     a.solve(_rhs=l,_solution=U);
 
     // save results
-    auto e = exporter( _mesh=mesh, _name="poiseuille" );
+    auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->add( "p", p );
     e->save();
