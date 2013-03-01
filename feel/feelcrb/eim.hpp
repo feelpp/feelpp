@@ -791,8 +791,9 @@ std::vector<double>
 EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
 {
     LOG(INFO) << " Convergence study \n";
+    int proc_number =  Environment::worldComm().globalRank();
 
-    std::vector<double> l2ErrorVec;
+    std::vector<double> l2ErrorVec(this->mMax(), 0.0);
 
     std::string mu_str;
     for ( int i=0; i<mu.size(); i++ )
@@ -803,8 +804,11 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
         std::remove( file_name.c_str() );
 
     std::ofstream conv;
-    conv.open(file_name, std::ios::app);
-    conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
+    if( proc_number == Environment::worldComm().masterRank() )
+        {
+            conv.open(file_name, std::ios::app);
+            conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
+        }
 
     int max = this->mMax();
     for(int N=1; N<=max; N++)
@@ -828,9 +832,10 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
         auto l2_error = math::abs( norm_l2_expression - norm_l2_approximation ) / norm_l2_expression;
         LOG(INFO) << "norm l2 error = " << l2_error << "\n";
 
-        l2ErrorVec.push_back( l2_error ); // /!\ l2ErrorVec[i] represents error with i+1 bases
+        l2ErrorVec[N-1] = l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
 
-        conv << N << "\t" << l2_error << "\n";
+        if( proc_number == Environment::worldComm().masterRank() )
+            conv << N << "\t" << l2_error << "\n";
 
     }//loop over basis functions
 
