@@ -34,9 +34,6 @@ FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
   /usr/local/include/feel
   /opt/local/include/feel
   NO_DEFAULT_PATH
-#  /opt/local/include
-#  /usr/local/include
-# /usr/include
   )
 message(STATUS "Gflags first pass: ${GFLAGS_INCLUDE_DIR}")
 
@@ -78,9 +75,7 @@ FIND_LIBRARY(GFLAGS_LIBRARY
   ${CMAKE_BINARY_DIR}/contrib/gflags/lib64/
   ${CMAKE_BINARY_DIR}/contrib/gflags/lib/
   $ENV{FEELPP_DIR}/lib
-#  /opt/local/lib
-#  /usr/local/lib
-#  /usr/lib
+  NO_DEFAULT_PATH
   )
 set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
 message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES} Dir: ${GFLAGS_DIR}" )

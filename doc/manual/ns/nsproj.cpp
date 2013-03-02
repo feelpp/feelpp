@@ -64,7 +64,7 @@ int main(int argc, char**argv )
     auto pnm1  = Ph->element( "p" );
     auto q   = Ph->element( "q" );
 
-    auto poiseuille = vec( 4*Py()*(0.41-Py()),cst(0.) );
+    auto poiseuille = vec( 4*0.3*Py()*(0.41-Py())/(0.41*0.41),cst(0.) );
 
     auto fn1 = vec( cst(0.),cst(0.) );
     auto Fvit = backend_V->newVector( Vh );
@@ -75,6 +75,13 @@ int main(int argc, char**argv )
     auto lPre = form1( _test=Ph, _vector=Fpr );
 
     auto exp = exporter( _mesh=mesh, _geo=EXPORTER_GEOMETRY_STATIC );
+
+    node_type aa(2);
+    aa[0]=0.15;
+    aa[1]=0.2;
+    node_type bb(2);
+    bb[0]=0.25;
+    bb[1]=0.2;
 
     for(int i=0; i<Niter; i++)
         {
@@ -151,6 +158,12 @@ int main(int argc, char**argv )
             pnm1 = pn;
             pn = pn1;
 
+            if ( Environment::rank() == 0 )
+                {
+                    std::cout << "----> pn(aa)-pn(bb) =  " << pn1(aa)(0,0,0)-pn1(bb)(0,0,0) << std::endl;
+                    std::cout << "----> Un(aa) =  " << Un1(aa)(0,0,0) << " , " << Un1(aa)(1,0,0) << std::endl;
+                    std::cout << "----> Un(bb) =  " << Un1(bb)(0,0,0) << " , " << Un1(bb)(1,0,0) << std::endl;
+                }
         }
 
 }

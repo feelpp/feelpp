@@ -30,6 +30,8 @@ add_custom_target(
 )
 
 foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh
-mylaplacian mystokes)
+mylaplacian mystokes myadvection)
   feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
 endforeach()
+
+
