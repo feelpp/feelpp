@@ -45,7 +45,7 @@ makeOptions()
 {
     po::options_description laplacianoptions( "Laplacian options" );
     laplacianoptions.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+        ( "hsize", po::value<double>()->default_value( 0.2 ), "mesh size" )
         ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
         ( "nu", po::value<double>()->default_value( 1 ), "grad.grad coefficient" )
         ( "weakdir", po::value<int>()->default_value( 1 ), "use weak Dirichlet condition" )
