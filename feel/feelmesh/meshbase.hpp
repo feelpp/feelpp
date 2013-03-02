@@ -342,6 +342,13 @@ public:
         }
 #endif
     template<typename M>
+    bool isSameMesh( M const* m ) const
+        {
+            bool same_mesh = ( dynamic_cast<void const*>( this ) == dynamic_cast<void const*>( m ) );
+            return same_mesh;
+        }
+
+    template<typename M>
     bool isSameMesh( boost::shared_ptr<M> m ) const
         {
             bool same_mesh = ( dynamic_cast<void const*>( this ) == dynamic_cast<void*>( m.get() ) );
