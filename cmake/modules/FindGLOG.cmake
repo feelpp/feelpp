@@ -36,9 +36,6 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   /usr/local/include/feel
   /opt/local/include/feel
   NO_DEFAULT_PATH
-#  /opt/local/include
-#  /usr/local/include
-#  /usr/include
   )
 message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
 
@@ -75,10 +72,7 @@ FIND_LIBRARY(GLOG_LIBRARY
   ${CMAKE_BINARY_DIR}/contrib/glog/lib64/
   ${CMAKE_BINARY_DIR}/contrib/glog/lib/
   $ENV{FEELPP_DIR}/lib
-#  NO_DEFAULT_PATH
-#  /opt/local/lib
-#  /usr/local/lib
- # /usr/lib
+  NO_DEFAULT_PATH
   )
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )
