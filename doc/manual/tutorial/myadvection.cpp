@@ -4,7 +4,7 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 	     Guillaume Dollé <guillaume.dolle@math.unistra.fr>
- 
+
   Date 2013-02-25
 
   Copyright (C) 2013 Université de Strasbourg
@@ -40,10 +40,15 @@ using namespace Feel;
 int
 main( int argc, char** argv )
 {
-   
+    auto opt_desc = feel_options().add_options()
+        ( "epsilon", po::value<double>()->default_value( 1 ), "diffusion term coefficient" )
+        ( "betax", po::value<double>()->default_value( 1 ), "convection term coefficient in x-direction" )
+        ( "betay", po::value<double>()->default_value( 1 ), "convection term coefficient in y-direction" )
+        ( "mu", po::value<double>()->default_value( 1 ), "reaction term coefficient" );
+        ;
     // Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
+                     _desc=opt_desc,
                      _about=about(_name="myadvection",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );
@@ -56,11 +61,11 @@ main( int argc, char** argv )
     auto v = Xh->element( "v" );
 
     // diffusion coeff.
-    double epsilon = 1;
+    double epsilon = option(_name="epsilon").as<double>();
     // reaction coeff.
-    double mu = 1;    
-    auto beta = vec( cst(1.),
-                     cst(1.) );
+    double mu = option(_name="mu").as<double>();
+    auto beta = vec( cst(option(_name="betax").as<double>()),
+                     cst(option(_name="betay").as<double>()) );
     auto f = cst(1.);
 
     // left hand side
