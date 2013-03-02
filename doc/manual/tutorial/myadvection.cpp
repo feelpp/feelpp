@@ -40,15 +40,15 @@ using namespace Feel;
 int
 main( int argc, char** argv )
 {
-    auto opt_desc = feel_options().add_options()
+    po::options_description opts ( "Advection diffusion reaction options ");
+    opts.add_options()
         ( "epsilon", po::value<double>()->default_value( 1 ), "diffusion term coefficient" )
         ( "betax", po::value<double>()->default_value( 1 ), "convection term coefficient in x-direction" )
         ( "betay", po::value<double>()->default_value( 1 ), "convection term coefficient in y-direction" )
         ( "mu", po::value<double>()->default_value( 1 ), "reaction term coefficient" );
-        ;
     // Initialize Feel++ Environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=opt_desc,
+                     _desc=opts.add( feel_options() ),
                      _about=about(_name="myadvection",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org") );
