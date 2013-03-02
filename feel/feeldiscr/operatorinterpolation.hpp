@@ -382,9 +382,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // order, different basis) or if the image of domain mesh are related to
     // each other through an extraction (one of them is the sub mesh of the
     // other)
-    if ( ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() ) ||
-         ( this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() ) ) ||
-         ( this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() ) ) )
+#if 1
+    if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) )
+#else
+        if ( ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() ) )
+#endif
     {
         VLOG(2) << "OperatorInterpolation: use same mesh\n";
         VLOG(2) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
@@ -472,12 +474,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         if ( image_related_to_domain )
         {
             domain_eid = this->dualImageSpace()->mesh()->subMeshToMesh( idElem );
-            LOG(INFO) << "[image_related_to_domain] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
+            DVLOG(2) << "[image_related_to_domain] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
         }
         if( domain_related_to_image )
         {
             domain_eid = this->domainSpace()->mesh()->meshToSubMesh( idElem );
-            LOG(INFO) << "[domain_related_to_image] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
+            DVLOG(2) << "[domain_related_to_image] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
         }
 
         if ( domain_eid == invalid_size_type_value )
