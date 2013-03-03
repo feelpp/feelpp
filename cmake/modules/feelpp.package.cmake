@@ -1,4 +1,4 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 --- 
+###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
 #       Date: 2013-02-08
@@ -61,7 +61,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "/admin/;/Templates/;"
   "/auto/;/ltxpng/;"
   "/TAGS;/#.*;/.*~$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
-  "${PROJECT_SOURCE_DIR}/data/"
+  "${PROJECT_SOURCE_DIR}/data/gmsh"
   "${PROJECT_SOURCE_DIR}/benchmarks/"
   "${PROJECT_SOURCE_DIR}/benchmarks/navierstokes/"
   "${PROJECT_SOURCE_DIR}/benchmarks/stokes/"
