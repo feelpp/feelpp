@@ -74,7 +74,7 @@ add_latex_document(feelpp-manual.tex
   ../biblio/feelpp-manual.bib
   ../biblio/feelpp.bib
   ../biblio/feelpp-thesis.bib
-  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian
+  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian pngs/myadvection
   USE_INDEX
   DEFAULT_PDF
   MANGLE_TARGET_NAMES
