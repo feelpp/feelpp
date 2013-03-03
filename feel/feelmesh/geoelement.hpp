@@ -686,10 +686,6 @@ public SubFace
 {
 public:
 
-    //enum { nDim = Dim };
-
-
-
     typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;
     typedef SubFace super2;
 
@@ -1270,7 +1266,6 @@ public SubFaceOfNone
 {
 public:
 
-    //enum { nDim = Dim };
     static const uint16_type nDim = Dim;
 
     typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;

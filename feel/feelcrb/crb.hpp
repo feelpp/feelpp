@@ -3878,7 +3878,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
 
     double time_step;
     double time_final;
-    int number_of_time_step;
+    int number_of_time_step = 0;
     size_type Qm;
 
     if ( M_model->isSteady() )

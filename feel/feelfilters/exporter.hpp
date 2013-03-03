@@ -39,6 +39,13 @@
 
 namespace Feel
 {
+enum ExporterGeometry
+{
+    EXPORTER_GEOMETRY_STATIC = 0,
+    EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY = 1,
+    EXPORTER_GEOMETRY_CHANGE = 2
+
+};
 /**
  * \enum
  */
@@ -327,8 +334,10 @@ public:
     }
 
     void
-    setMesh( mesh_ptrtype mesh )
+    setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
         {
+            M_ex_geometry = exgeo;
+            M_ts_set.back()->setMesh( mesh );
             this->step( 0 )->setMesh( mesh );
         }
     template<typename F>
@@ -431,7 +440,7 @@ public:
             return M_worldComm;
         }
 
-
+    ExporterGeometry exporterGeometry() const { return M_ex_geometry; }
     //@}
 protected:
 
@@ -444,6 +453,7 @@ protected:
     mutable int M_cptOfSave;
     file_type M_ft;
     std::string M_path;
+    ExporterGeometry M_ex_geometry;
 
     mutable timeset_set_type M_ts_set;
 };
@@ -480,14 +490,15 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( mesh, * )
                           ) // required
                           ( optional                                  // 4. one required parameter, and
-                            ( order,*, mpl::int_<1>() )
-                            ( name,*, Environment::about().appName() )
+                            ( order, *, mpl::int_<1>() )
+                            ( name,  *, Environment::about().appName() )
+                            ( geo,   *, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY)
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
     auto e =  exporter_type::New(Environment::vm(),name);
     e->setPrefix( name );
-    e->setMesh( mesh );
+    e->setMesh( mesh, geo );
     e->addRegions();
     return e;
     //return Exporter<Mesh<Simplex<2> >,1>::New();

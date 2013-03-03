@@ -416,6 +416,9 @@ template <typename MeshType,typename IteratorRange,int TheTag>
 typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_faces_ptrtype
 createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /**/ )
 {
+    // we don't deal with this situation yet
+    M_smd.reset();
+
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
     mesh_faces_ptrtype newMesh( new mesh_faces_type( M_mesh->worldComm()) );
     //mesh_faces_ptrtype newMesh( new mesh_faces_type );
@@ -541,6 +544,9 @@ template <typename MeshType,typename IteratorRange,int TheTag>
 typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_edges_ptrtype
 createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /**/ )
 {
+    // we don't deal with this situation yet
+    M_smd.reset();
+
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
     mesh_edges_ptrtype newMesh( new mesh_edges_type( M_mesh->worldComm()) );
     //mesh_edges_ptrtype newMesh( new mesh_edges_type );
@@ -650,7 +656,6 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
         // Add an equivalent element type to the new_mesh
         newMesh->addElement( newElem );
-
     } // end for it
 
 

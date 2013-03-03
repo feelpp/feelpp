@@ -481,6 +481,9 @@ public:
     element_iterator eraseElement( element_iterator position, bool modify=true );
 
 
+    template<typename RangeT, int TheTag>
+    typename trace_mesh<TheTag>::ptrtype
+    trace( RangeT const& range, mpl::int_<TheTag> ) const;
 
     /**
      * creates a mesh by iterating over the elements between
@@ -498,16 +501,13 @@ public:
     typename trace_mesh<TheTag>::ptrtype
     trace() const
     {
-        return trace<TheTag>(boundaryfaces(this->shared_from_this()));
+        return trace(boundaryfaces(this->shared_from_this()),mpl::int_<TheTag>());
     }
 
     template<typename RangeT>
     typename trace_mesh<Tag>::ptrtype
     trace( RangeT const& range ) const;
 
-    template<typename RangeT, int TheTag>
-    typename trace_mesh<TheTag>::ptrtype
-    trace( RangeT const& range, mpl::int_<TheTag> ) const;
 
     template<typename Iterator>
     void createSubmesh( self_type& mesh,

@@ -7,6 +7,7 @@ int main(int argc, char**argv )
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
+                     _directory=".",
                      _about=about(_name="qs_laplacian",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -33,7 +34,7 @@ int main(int argc, char**argv )
     //# endmarker3 #
 
     //# marker4 #
-    auto e = exporter( _mesh=mesh, _name="qs_laplacian" );
+    auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->save();
     return 0;
