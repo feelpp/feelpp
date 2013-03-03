@@ -134,7 +134,7 @@ public:
             const unsigned int m_its,
             bool transpose = false )
     {
-        Debug( 10100 ) << "Matrix solver...\n";
+        DVLOG(2) << "Matrix solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -158,7 +158,7 @@ public:
              const unsigned int m_its,
              bool transpose = false )
     {
-        Debug( 10100 ) << "Matrix solver with preconditioner...\n";
+        DVLOG(2) << "Matrix solver with preconditioner...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -181,7 +181,7 @@ public:
             const unsigned int m_its,
             bool transpose = false )
     {
-        Debug( 10100 ) << "Operator solver...\n";
+        DVLOG(2) << "Operator solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -201,7 +201,7 @@ public:
             const double tol,
             const unsigned int m_its )
     {
-        Debug( 10100 ) << "Operator solver...\n";
+        DVLOG(2) << "Operator solver...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -223,7 +223,7 @@ public:
             const double tol,
             const unsigned int m_its )
     {
-        Debug( 10100 ) << "Operator solver with preconditioner...\n";
+        DVLOG(2) << "Operator solver with preconditioner...\n";
 
         setRHS( rhs );
         setLHS( solution );
@@ -256,7 +256,7 @@ private:
 
     void setUserOperator( mpl::bool_<true>, MatrixSparse<T> const& A )
     {
-        Debug( 10100 ) << "Set matrix operator...\n";
+        DVLOG(2) << "Set matrix operator...\n";
         sparse_matrix_type* A_ptr = const_cast<sparse_matrix_type *>( dynamic_cast< sparse_matrix_type const*>( &A ) );
 
         M_Solver.SetUserMatrix( &A_ptr->mat() );
@@ -267,7 +267,7 @@ private:
     template< typename operator_type >
     void setUserOperator( mpl::bool_<false>, operator_type const& A )
     {
-        Debug( 10100 ) << "Set epetra operator...\n";
+        DVLOG(2) << "Set epetra operator...\n";
 
         M_Solver.SetUserOperator( &( *A ) );
     }

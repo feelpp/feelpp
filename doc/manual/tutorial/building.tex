@@ -1,32 +1,30 @@
 \feelchapter{Building Feel++}
             {Building Feel++}
             {Christophe Prud'homme, Baptiste Morin}
-            {cha:tutorial-building}
+            {tutorial-building}
 
-\section{Building \feel}
-
-\subsection{Getting the source via an archive}
+\section{Getting the source via an archive}
 \label{sec:getting-source-via-1}
 
 \feel is distributed as a tarball once in a while. The tarballs are available
 at
 \begin{center}
-  \href{http://www.feelpp.org/files}{http://www.feelpp.org/files}
+  \href{http://code.google.com/p/feelpp/}{http://code.google.com/p/feelpp/}
 \end{center}
-Download the latest tarball. Then follow the steps and replace
-\texttt{x},\texttt{y},\texttt{z} with the corresponding numbers
+Download the latest tarball.
 
 \begin{unixcom}
-  tar xzf feel-x.y.z.tar.gz
-  cd feel-x.y.z
+  tar -xzf feelpp-0.92.0.tar.gz
+  cd feel-0.92.0
 \end{unixcom}
 
 
-\subsection{Getting the source via Subversion}
+\section{Getting the source via Git}
 \label{sec:getting-source-via}
-In order to download the sources of \feel, you can download it directly from the source depository thanks to Subversion. To make it possible, you can download them anonymously or with an account in LJKForge that you have created. As an open-source project, we strongly suggest you to create an account and take part of the project with sharing your ideas, developments or suggests. If you're interested to participate and become a \feel developer, please don't hesitate to see how it works in the appendix ~\ref{feeldevel}. For now, if you want to get the sources without an account, open a command-line and type
+In order to download the sources of \feel, you can download it directly from the source depository
+thanks to Git. To make it possible, you can download them anonymously or with an account in Github that you have created. As an open-source project, we strongly suggest you to create an account and take part of the project with sharing your ideas, developments or suggests. If you're interested to participate and become a \feel developer, please don't hesitate to see how it works in the appendix ~\ref{feeldevel}. For now, if you want to get the sources without an account, open a command-line and type
 \begin{unixcom}
-		svn checkout svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk feel
+    git clone https://github.com/feelpp/feelpp.git
 \end{unixcom}
 then you can go to the \feel top directory with
 \begin{unixcom}
@@ -39,7 +37,6 @@ benchmarks/  # applications under test
 cmake/   # do not touch, used for compilation
 contrib/
 doc/   # tutorial and examples
-examples/ # examples using Feel++
 feel/   # Feel++ library
 ports/   # used for Mac OS X installation
 research/   # research projects using Feel++
@@ -48,7 +45,7 @@ CMakeListe.txt   # the file for cmake to build, do not modify
 ...
 \end{lstlisting}
 
-\subsection{Unix : dependencies}
+\section{Unix : dependencies}
 \label{sec:about-dependencies}
 
 In order to install \feel on Unix systems (other than Mac OS X, in you have a Macintosh, please go to ~\ref{macosx}), you have to install many dependencies
@@ -58,7 +55,7 @@ This is the list of all the librairies you must have installed on your
 computer, and the \lstinline|*-dev| packages for some of them. \\
 \underline{Required packages}:
 \begin{itemize}
-\item g++ ($4.4$, $4.5$, $4.6$ and $4.7$  )
+\item g++ ($4.5$, $4.6$ and $4.7$) or clang++ ($\geqslant 3.1$)
 \item MPI : openmpi (preferred) or mpich
 \item Boost ($\geq$1.39)
 \item Petsc ($\geq$2.3.3)
@@ -83,10 +80,10 @@ computing available at \url{http://www.geuz.org/gmsh}}
 Note that all these packages are available under Debian/GNU/Linux and
 Ubuntu. They should be available. Once you have installed those dependencies, you can jump to ~\ref{compilingfeel}.
 
-\subsection{\feel on Debian and Ubuntu}
+\section{\feel on Debian and Ubuntu}
 \label{sec:feel-debian-ubuntu}
 
-\subsubsection{Debian}
+\subsection{Debian}
 
 Debian is the platform of choice for \feel, it was developed mainly on it. The commands to install \feel on Debian are
 \begin{unixcom}
@@ -106,7 +103,7 @@ plateforms:
 \item \feel \href{https://buildd.debian.org/status/package.php?p=feel%2b%2b}{Buildd results}
 \end{itemize}
 
-\subsubsection{Ubuntu}
+\subsection{Ubuntu}
 
 \feel was uploaded in the distribution Ubuntu-Natty (11.04) for the first
 time. The commands to install \feel on Ubuntu are
@@ -122,11 +119,11 @@ order to know what is going on with \feel on Ubuntu
 \end{itemize}
 
 
-\subsection{\Feel on Mac OS X}
+\section{\Feel on Mac OS X}
 \label{macosx}
 \feel is also working on Mac operating systems. The way to make it work is quite different.
 
-\subsubsection{Compilers}
+\subsection{Compilers}
 
 In order to \feel and \cmake work properly, you have to install differents compilers :
 \begin{itemize}
@@ -151,7 +148,7 @@ In order to \feel and \cmake work properly, you have to install differents compi
 
 \end{itemize}
 
-\subsubsection{MacPorts}
+\subsection{MacPorts}
 
 \paragraph{Introduction}
 MacPorts is an open-source community projet which aims to design an easy-to-use
@@ -210,7 +207,7 @@ properly or new version not yet available in MacPorts.  These Portfiles are
 installed in \lstinline|ports/macosx/macports|.
 
 
-\subsubsection{MacPorts and \Feel}
+\subsection{MacPorts and \Feel}
 
 
 To be able to install \feel, add the following line in \lstinline|/opt/local/etc/macports/source.conf|
@@ -259,7 +256,7 @@ launched but can have some libraries may not be found but they are not mandatory
 for build Feel++, only the features related to the missing libraries will be
 missing.
 
-\subsubsection{PETSc and SLEPc on Snow Leopard and Lion}
+\subsection{PETSc and SLEPc on Snow Leopard and Lion}
 We have heard about issues with petsc and slepc with some new MacBook Pro with
 Snow Leopard while they are being installed with the command
 \begin{unixcom}
@@ -299,23 +296,20 @@ and type once again
 
 \noindent In that order, slepc and petsc will be installed before atlas, and feel will be properly installed.
 
-\subsubsection{Missing ports}
+\subsection{Missing ports}
 \cmake can build Makefiles even if some packages are missing (latex2html, VTK
 ...). It's not necessary to install them but you can complete the installation
 with MacPorts, \cmake will find them by itself once they have been installed.
 
-\subsection{Compiling Feel}
+\section{Compiling Feel++}
 \label{compilingfeel}
 Feel build system uses \cmake\index{cmake}\footnote{\url{http://www.cmake.org}}
-as its build system. Check that \cmake is using gcc4.5 or 4.4 as C++ compiler
+as its build system. Check that \cmake is using gcc4.5 (or a higher version) 
+or clang++ as C++ compiler
 (you can use the option \lstinline|CMAKE_CXX_COMPILER=<path>/g++-4.5| where the
 \lstinline|path| depends on your OS, it's probably \lstinline|/usr/bin| or
 \lstinline|/opt/local/bin| but you can also change it with the command \lstinline|ccmake|
-and press \lstinline|t| for advanced options).  It's important, as \cmake did
-not produce any Makefile, a CMakeCache.txt won't be created so you'll have to
-check each time that gcc 4.5 is the C++ compiler to be sure the build will be
-correct.
-
+and press \lstinline|t| for advanced options).  
 \feel, using \cmake, can be built either in source and out of source and different
 build type:
 \begin{itemize}
@@ -353,22 +347,6 @@ Once Cmake has made its work, you are now able to compile the library with
 		make
 \end{unixcom}
 \textbf{Important :} from now, all commands should be type in \lstinline|feel.opt| or its subdirectories.
-\paragraph{CMake In Source Build}
-
-Be carefull, this is not advised and if you try this way, \cmake won't let you do. If you really want to, you will have to modifiy the top \lstinline|CMakeLists.txt|. You should consider out source builds by checking the next paragraph.
-
-Enter the source tree and type
-\begin{unixcom}
-  cmake .
-  make
-\end{unixcom}
-
-To customize or change some build setting one can use the \cmake curse interface
-\ccmake
-\begin{unixcom}
-  ccmake . # configure and generate
-  make
-\end{unixcom}
 
 
 % \subsection{Compiling Feel with the AutoTools}
@@ -462,7 +440,7 @@ To customize or change some build setting one can use the \cmake curse interface
 % \end{unixcom}
 
 
-\subsubsection{Compiling the Feel tutorial}
+\subsection{Compiling the Feel++ manual}
 \label{sec:comp-feel-tutor}
 The manual (which includes the tutorial) is edited with \LaTeX  so you need to have installed the \LaTeX  distribution on your computer. \LaTeX  is a high-quality typesetting system, it includes features designed for the production of technical and scientific documentation. There are several ways to make it work, for example you can go on \href{http://www.tug.org/mactex/}{MacTeX website} and follow the instructions to install the distribution. If the command \lstinline|make check| in \lstinline|feel.opt/| has been run before, the tutorial
 should be already compiled and ready. The steps are as follows to build the Feel tutorial
@@ -482,44 +460,6 @@ should be already compiled and ready. The steps are as follows to build the Feel
 %\end{unixcom}
 The directory \lstinline|doc/manual| contains all examples used in the tutorial. You will see how it works in the following parts.
 
-\section{Programming environment}
-\label{sec:progr-envir}
-We present here a quick list of all namespaces and librairies proposed by \feel, you'll see in the tutorial which starts at section ~\ref{cha:getting-started} how you can use them.
-\subsection{Boost C++ Libraries}
-\label{sec:boost-c++-libraries}
-
-\feel depends on a number of libraries, some are required some are optional.
-Among the required libraries, The Boost C++ libraries play a very important role
-as they drive or shape the  design of \feel. \feel uses in particular the
-following Boost libraries:
-\begin{itemize}
-\item Boost.Parameter\index{Boost!Parameter} : use to provide powerful
-  interfaces to \feel and third party library such as
-  \begin{itemize}
-  \item PETSc  for the linear, nonlinear solvers
-  \item SLEPc for the eigenvalue solvers
-  \item GMSH for mesh generation
-  \end{itemize}
-\item Boost.MPL - meta programming library : use for type computations
-\item Boost.Fusion - linking meta-runtime programming: use for type computations
-  used at runtime
-\item Boost.Program\_Options - command-line options library : provides the
-  command line options for the \feel applications as well as configuration files
-\item Boost.Test - Unit testing framework ; used by the \feel testsuite
-\end{itemize}
-
-\subsection{\feel Namepaces}
-
-\begin{itemize}
-\item \lstinline!Feel!
-\item \lstinline!Feel::po!
-\item \lstinline!Feel::mpl!
-\item \lstinline!Feel::ublas!
-\item \lstinline!Feel::math!
-\item \lstinline!Feel::fem!
-\item \lstinline!Feel::vf!
-
-\end{itemize}
 %%% Local Variables:
 %%% coding: utf-8
 %%% mode: latex

@@ -240,12 +240,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             {                                                           \
                 if ( VF_OP_TYPE_IS_VALUE( T ) )                         \
                     v.updateGlobalValues();                             \
-                Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
+                DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
             }                                                           \
             VF_OPERATOR_NAME( O )( VF_OPERATOR_NAME( O ) const& op )    \
                 : M_v ( op.M_v )                                      \
             {                                                           \
-                Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
+                DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
             }                                                           \
             template<typename TheExpr>                                  \
             struct Lambda                                               \
@@ -360,8 +360,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
-                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -383,8 +382,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
-                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -403,8 +401,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
-                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -704,7 +701,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 ret_type M_zero;                                        \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) M_loc;*/ \
                 bool M_did_init;                                        \
-                bool M_same_mesh;                                      \
+                const bool M_same_mesh;                                 \
             };                                                          \
                                                                         \
         protected:                                                      \

@@ -226,11 +226,11 @@ public:
         if ( Application::processId() != root )
             str.resize( size );
 
-        Debug( 1010 ) << "[Application::Broadcast] str.size = " << str.size() << "\n";
-        Debug( 1010 ) << "[Application::Broadcast] before str = " << str << "\n";
+        DVLOG(2) << "[Application::Broadcast] str.size = " << str.size() << "\n";
+        DVLOG(2) << "[Application::Broadcast] before str = " << str << "\n";
 
         MPI_Bcast( &str[0], size, MPI_CHAR, root, comm );
-        Debug( 1010 ) << "[Application::Broadcast] after str = " << str << "\n";
+        DVLOG(2) << "[Application::Broadcast] after str = " << str << "\n";
 
         // deserialize for processId() != root
         if ( Application::processId() != root )

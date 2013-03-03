@@ -117,22 +117,22 @@ public:
     OpusApp()
         :
         super(),
-        M_mode( ( CRBModelMode )this->vm()[_o( this->about().appName(),"run.mode" )].template as<int>() )
+        M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
 
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
-        M_mode( ( CRBModelMode )this->vm()[_o( this->about().appName(),"run.mode" )].template as<int>() )
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
 
     OpusApp( AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -140,14 +140,14 @@ public:
 
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
-        super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
-        M_mode( ( CRBModelMode )this->vm()[_o( this->about().appName(),"run.mode" )].template as<int>() )
+        super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ) ),
+        super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -166,7 +166,7 @@ public:
                 // Note : this name is also use for database storage
                 std::string results_repo_name;
                 if( this->vm().count("crb.results-repo-name") )
-                    results_repo_name = this->vm()["crb.results-repo-name"].template as<std::string>();
+                    results_repo_name = option(_name="crb.results-repo-name").template as<std::string>();
                 else
                     results_repo_name = "default_repo";
 
@@ -221,10 +221,10 @@ public:
 
     void loadDB()
         {
-            bool use_predefined = this->vm()["crb.use-predefined-WNmu"].template as<bool>();
+            bool use_predefined = option(_name="crb.use-predefined-WNmu").template as<bool>();
             std::string file_name = ( boost::format("SamplingWNmu") ).str();
-            int NlogEquidistributed = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>();
-            int Nequidistributed = this->vm()["crb.use-equidistributed-WNmu"].template as<int>();
+            int NlogEquidistributed = option(_name="crb.use-logEquidistributed-WNmu").template as<int>();
+            int Nequidistributed = option(_name="crb.use-equidistributed-WNmu").template as<int>();
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
             if( NlogEquidistributed+Nequidistributed > 0 )
             {
@@ -258,6 +258,7 @@ public:
                 {
                     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                         std::cout << "No CRB DB available, do crb offline computations...\n";
+                    crb->setOfflineStep( true );
                     crb->offline();
                 }
 
@@ -269,7 +270,7 @@ public:
             {
                 bool do_offline = false;
                 int current_dimension = crb->dimension();
-                int dimension_max = this->vm()["crb.dimension-max"].template as<int>();
+                int dimension_max = option(_name="crb.dimension-max").template as<int>();
                 int sampling_size = 0;
                 if( use_predefined )
                     sampling_size = Sampling->readFromFile(file_name);
@@ -281,7 +282,10 @@ public:
                     do_offline=true;
 
                 if( do_offline )
+                {
+                    crb->setOfflineStep( true );
                     crb->offline();
+                }
             }
         }
 
@@ -297,10 +301,10 @@ public:
             }
 
             this->loadDB();
-            int run_sampling_size = this->vm()[_o( this->about().appName(),"run.sampling.size" )].template as<int>();
-            SamplingMode run_sampling_type = ( SamplingMode )this->vm()[_o( this->about().appName(),"run.sampling.mode" )].template as<int>();
-            int output_index = this->vm()["crb.output-index"].template as<int>();
-            //int output_index = this->vm()[_o(this->about().appName(),"output.index")].template as<int>();
+            int run_sampling_size = option(_name=_o( this->about().appName(),"run.sampling.size" )).template as<int>();
+            SamplingMode run_sampling_type = ( SamplingMode )option(_name=_o( this->about().appName(),"run.sampling.mode" )).template as<int>();
+            int output_index = option(_name="crb.output-index").template as<int>();
+            //int output_index = option(_name=_o(this->about().appName(),"output.index")).template as<int>();
 
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
 
@@ -373,7 +377,7 @@ public:
              * mu_0= [ value0 , value1 , ... ]
              * mu_1= [ value0 , value1 , ... ]
              **/
-            if( this->vm()["crb.use-predefined-test-sampling"].template as<bool>() )
+            if( option(_name="crb.use-predefined-test-sampling").template as<bool>() )
             {
                 std::string file_name = ( boost::format("SamplingForTest") ).str();
                 std::ifstream file ( file_name );
@@ -399,6 +403,7 @@ public:
             if( crb->errorType()!=2 )
                 relative_estimated_error_vector.resize( Sampling->size() );
 
+            crb->setOfflineStep( false );
 
             BOOST_FOREACH( auto mu, *Sampling )
             {
@@ -423,7 +428,7 @@ public:
                 LOG(INFO) << "mu=" << mu << "\n";
                 mu.check();
 
-                if( this->vm()["crb.script-mode"].template as<bool>() )
+                if( option(_name="crb.script-mode").template as<bool>() )
                 {
                     unsigned long N = mu.size() + 5;
                     unsigned long P = 2;
@@ -432,8 +437,8 @@ public:
                     for(int i=0; i<mu.size(); i++)
                         X[i] = mu[i];
 
-                    int N_dim = this->vm()["crb.dimension"].template as<int>();
-                    int N_dimMax = this->vm()["crb.dimension-max"].template as<int>();
+                    int N_dim = option(_name="crb.dimension").template as<int>();
+                    int N_dimMax = option(_name="crb.dimension-max").template as<int>();
                     int Nwn;
                     if( N_dim > 0 )
                         Nwn = N_dim;
@@ -442,11 +447,11 @@ public:
 
                     X[N-5] = output_index;
                     X[N-4] = Nwn;
-                    X[N-3] = this->vm()["crb.online-tolerance"].template as<double>();
-                    X[N-2] = this->vm()["crb.error-type"].template as<int>();
-                    //X[N-1] = this->vm()["crb.compute-variance"].template as<int>();
+                    X[N-3] = option(_name="crb.online-tolerance").template as<double>();
+                    X[N-2] = option(_name="crb.error-type").template as<int>();
+                    //X[N-1] = option(_name="crb.compute-variance").template as<int>();
                     X[N-1] = 0;
-                    bool compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
+                    bool compute_variance = option(_name="crb.compute-variance").template as<bool>();
                     if ( compute_variance )
                         X[N-1] = 1;
 
@@ -454,7 +459,7 @@ public:
 
                     std::cout << "output = " << Y[0] << std::endl;
 
-                    std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                    std::ofstream res(option(_name="result-file").template as<std::string>() );
                     res << "output="<< Y[0] << "\n";
                 }
                 else
@@ -482,7 +487,7 @@ public:
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                                 printEntry( ostr, mu, o );
 
-                                std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                                std::ofstream res(option(_name="result-file").template as<std::string>() );
                                 res << "output="<< o[0] << "\n";
 
                             }
@@ -504,18 +509,19 @@ public:
                                 google::FlushLogFiles(google::GLOG_INFO);
 
                                 //dimension of the RB (not necessarily the max)
-                                int N =  this->vm()["crb.dimension"].template as<int>();
+                                int N =  option(_name="crb.dimension").template as<int>();
 
-                                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                                auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                 double time_crb = ti.elapsed();
 
+                                auto WN = crb->wn();
                                 //auto u_crb = crb->expansion( mu , N );
                                 auto uN_0 = o.template get<4>();
                                 element_type u_crb;
-                                if( model->isSteady()) // Re-use uN given by lb in crb->run
-                                    u_crb = crb->expansion( uN_0 , N ); // Re-use uN given by lb in crb->run
-                                else
-                                    u_crb = crb->expansion( mu , N );
+                                //if( model->isSteady()) // Re-use uN given by lb in crb->run
+                                    u_crb = crb->expansion( uN_0 , N , WN ); // Re-use uN given by lb in crb->run
+                                //else
+                                //    u_crb = crb->expansion( mu , N , WN );
 
                                 std::ostringstream u_crb_str;
                                 u_crb_str << "u_crb(" << mu_str.str() << ")";
@@ -531,12 +537,13 @@ public:
                                 double output_fem = -1;
                                 double time_fem = -1;
 
-                                bool compute_fem = this->vm()["crb.compute-fem-during-online"].template as<bool>();
+                                bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
                                 element_type u_fem;
 
                                 if ( compute_fem )
                                 {
-                                    bool use_newton = this->vm()["crb.use-newton"].template as<bool>();
+									bool use_newton = option(_name="crb.use-newton").template as<bool>();
+
                                     ti.restart();
                                     LOG(INFO) << "solve u_fem\n";
                                     google::FlushLogFiles(google::GLOG_INFO);
@@ -544,7 +551,6 @@ public:
                                     //auto u_fem = model->solveRB( mu );
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
 
-                                    //TODO : add use-newton condition
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
                                         u_fem = model->solveFemUsingOnlineEimPicard( mu );
                                     else
@@ -594,7 +600,7 @@ public:
                                         printEntry( ostr, mu, v );
                                         //file_summary_of_simulations.close();
 
-                                        if ( this->vm()["crb.compute-stat"].template as<bool>() && compute_fem )
+                                        if ( option(_name="crb.compute-stat").template as<bool>() && compute_fem )
                                         {
                                             relative_error_vector[curpar-1] = relative_error;
                                             l2_error_vector[curpar-1] = l2_error;
@@ -603,7 +609,7 @@ public:
                                             time_crb_vector[curpar-1] = time_crb;
                                         }
 
-                                        std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                                        std::ofstream res(option(_name="result-file").template as<std::string>() );
                                         res << "output="<< o.template get<0>() << "\n";
 
                                     }
@@ -622,7 +628,7 @@ public:
                                         printEntry( ostr, mu, v );
                                         //file_summary_of_simulations.close();
 
-                                        if ( this->vm()["crb.compute-stat"].template as<bool>() && compute_fem )
+                                        if ( option(_name="crb.compute-stat").template as<bool>() && compute_fem )
                                         {
                                             relative_error_vector[curpar-1] = relative_error;
                                             l2_error_vector[curpar-1] = l2_error;
@@ -631,18 +637,18 @@ public:
                                             time_crb_vector[curpar-1] = time_crb;
                                             relative_estimated_error_vector[curpar-1] = relative_estimated_error;
                                         }
-                                        std::ofstream res(this->vm()["result-file"].template as<std::string>() );
+                                        std::ofstream res(option(_name="result-file").template as<std::string>() );
                                         res << "output="<< o.template get<0>() << "\n";
                                     }//end of proc==master
                                 }//end of else (errorType==2)
-                                if (this->vm()["crb.cvg-study"].template as<bool>() && compute_fem )
+                                if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
                                 {
                                     LOG(INFO) << "start convergence study...\n";
                                     std::map<int, boost::tuple<double,double,double,double> > conver;
                                     for( int N = 1; N < crb->dimension(); N++ )
                                     {
                                         LOG(INFO) << "N=" << N << "...\n";
-                                        auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() , N);
+                                        auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         auto u_crb = crb->expansion( mu , N );
                                         auto u_error = model->functionSpace()->element();
                                         u_error = u_fem - u_crb;
@@ -675,7 +681,7 @@ public:
                                 std::cout << "CRB Online mode\n";
                                 boost::mpi::timer ti;
                                 ti.restart();
-                                auto o = crb->run( mu,  this->vm()["crb.online-tolerance"].template as<double>() );
+                                auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() );
 
                                 if ( crb->errorType()==2 )
                                     {
@@ -718,8 +724,8 @@ public:
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
-            bool compute_fem = this->vm()["crb.compute-fem-during-online"].template as<bool>();
-            if ( this->vm()["crb.compute-stat"].template as<bool>() && compute_fem )
+            bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+            if ( option(_name="crb.compute-stat").template as<bool>() && compute_fem )
             {
                 LOG( INFO ) << "compute statistics \n";
                 Eigen::MatrixXf::Index index_max_l2;

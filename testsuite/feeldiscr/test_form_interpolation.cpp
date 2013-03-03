@@ -91,13 +91,12 @@ makeAbout()
 
 
 template <uint16_type OrderPoly>
-void run( Application_ptrtype & theApp )
+void run()
 {
 
-
-    theApp->changeRepository( boost::format( "/testsuite/feeldiscr/%1%/P%2%/" )
-                              % theApp->about().appName()
-                              % OrderPoly );
+    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/P%2%/" )
+                                   % Environment::about().appName()
+                                   % OrderPoly );
 
 
     /* change parameters below */
@@ -110,8 +109,8 @@ void run( Application_ptrtype & theApp )
     typedef Mesh< Simplex<nDim, 1,nDim> > mesh_type;
     typedef Mesh< Simplex<nDim, 1,nDim> > mesh_bis_type;
 
-    double meshSize = theApp->vm()["hsize"].as<double>();
-    double meshSizeBis = theApp->vm()["hsize-bis"].as<double>();
+    double meshSize = option("hsize").as<double>();
+    double meshSizeBis = option("hsize-bis").as<double>();
 
     // mesh
     GeoTool::Node x1( 0,0 );
@@ -122,6 +121,7 @@ void run( Application_ptrtype & theApp )
     Omega.setMarker( _type="line",_name="Paroi",_marker1=true,_marker3=true );
     Omega.setMarker( _type="surface",_name="Fluid",_markerAll=true );
     auto mesh = Omega.createMesh(_mesh=new mesh_type,_name="omega_"+ mesh_type::shape_type::name() );
+    LOG(INFO) << "created mesh\n";
 
     GeoTool::Rectangle OmegaBis( meshSizeBis,"Omega",x1,x2 );
     OmegaBis.setMarker( _type="line",_name="Entree",_marker4=true );
@@ -131,6 +131,7 @@ void run( Application_ptrtype & theApp )
     auto meshBis = OmegaBis.createMesh(_mesh=new mesh_bis_type,_name="omegaBis_"+ mesh_type::shape_type::name() );
 
     //auto meshBis= mesh->createP1mesh();
+    LOG(INFO) << "created meshBis\n";
 
     typedef Lagrange<nOrderPoly,Scalar,Continuous,PointSetFekete> basis_type;
     typedef FunctionSpace<mesh_type, bases<basis_type> > space_type;
@@ -139,14 +140,14 @@ void run( Application_ptrtype & theApp )
     auto u = Xh->element();
     auto v = Xh->element();
     auto u2 = Xh->element();
+    LOG(INFO) << "created space and elements\n";
 
-    typedef Backend<double> backend_type;
-    auto backend = backend_type::build( theApp->vm() );
+    auto mybackend = backend();
 
     //--------------------------------------------------------------//
 
-    auto A = backend->newMatrix( Xh, Xh );
-    auto F = backend->newVector( Xh );
+    auto A = mybackend->newMatrix( Xh, Xh );
+    auto F = mybackend->newVector( Xh );
     auto pi = cst( M_PI );
     auto u_exact = cos( pi*Px() )*sin( pi*Py() );
     auto dudx = -pi*sin( pi*Px() )*sin( pi*Py() );
@@ -155,6 +156,7 @@ void run( Application_ptrtype & theApp )
     auto lap = -2*pi*pi*cos( pi*Px() )*sin( pi*Py() );
     //auto lap = -pi*pi*cos(pi*Px())*sin(pi*Py())
     //    -pi*pi*cos(pi*Px())*sin(pi*Py());
+    LOG(INFO) << "created exact data and matrix/vector\n";
 
     auto f = -lap;//cst(1.);
     double gammabc=10;
@@ -177,45 +179,42 @@ void run( Application_ptrtype & theApp )
         integrate( boundaryfaces( mesh ),
                    + gammabc*u_exact*id( v )/hFace() );
 
-    A->close();
-    F->close();
+    LOG(INFO) << "A,F assembled\n";
 
     //form2( Xh, Xh, A ) +=
     //    on( boundaryfaces(mesh) , u, F, u_exact );
 
     // solve system
-    backend->solve( A,u,F );
-
+    mybackend->solve( A,u,F );
+    LOG(INFO) << "A u = F solved\n";
     //--------------------------------------------------------------//
 
-    auto A2 = backend->newMatrix( Xh, Xh );
-    auto F2 = backend->newVector( Xh );
+    auto a2 = form2( _test=Xh, _trial=Xh );
+    auto f2 = form1( _test=Xh );
+    LOG(INFO) << "created form2 a2 and form1 F2\n";
 
     // assemblage
-    form2( Xh, Xh, A2, _init=true ) =
-        integrate( elements( meshBis ),
-                   + gradt( u2 )*trans( grad( v ) ),
-                   _Q<10>() );
 
-    form2( Xh, Xh, A2 ) +=
-        integrate( boundaryfaces( meshBis ),
-                   - gradt( u2 )*N()*id( v )
-                   + gammabc*idt( u2 )*id( v )/hFace(),
-                   _Q<10>() );
+    a2 = integrate( elements( meshBis ),
+                    + gradt( u2 )*trans( grad( v ) ),
+                    _Q<10>() );
+    LOG(INFO) << "a2 grad.grad term\n";
+    a2 += integrate( boundaryfaces( meshBis ),
+                     - gradt( u2 )*N()*id( v )
+                     + gammabc*idt( u2 )*id( v )/hFace(),
+                     _Q<10>() );
+    LOG(INFO) << "a2 weak dirichlet terms\n";
 
-    form1( Xh, F2, _init=true ) =
-        integrate( elements( meshBis ),
-                   trans( f )*id( v ),
-                   _Q<10>() );
+    f2 = integrate( elements( meshBis ),
+                    trans( f )*id( v ),
+                    _Q<10>() );
+    LOG(INFO) << "f2 source term\n";
+    f2 += integrate( boundaryfaces( meshBis ),
+                     + gammabc*u_exact*id( v )/hFace(),
+                     _Q<10>() );
+    LOG(INFO) << "f2 dirichlet terms\n";
 
-    form1( Xh, F2 ) +=
-        integrate( boundaryfaces( meshBis ),
-                   + gammabc*u_exact*id( v )/hFace(),
-                   _Q<10>() );
-
-
-    A2->close();
-    F2->close();
+    LOG(INFO) << "a2,f2 assembled\n";
 
     //form2( Xh, Xh, A2 ) +=
     //     on( boundaryfaces(mesh) , u2, F2, u_exact );
@@ -236,7 +235,7 @@ void run( Application_ptrtype & theApp )
 #endif
 
     // solve system
-    backend->solve( A2,u2,F2 );
+    a2.solve( _rhs=f2, _solution=u2 );
 
 
     auto diff = std::sqrt( integrate( elements( mesh ), ( idv( u )-idv( u2 ) )*( idv( u )-idv( u2 ) ) ).evaluate()( 0,0 ) );
@@ -256,18 +255,17 @@ void run( Application_ptrtype & theApp )
 
     //--------------------------------------------------------------//
 
-#if 0
-    // export
-    auto exporter = Exporter<mesh_type>::New( theApp->vm(), "Export" );
-    exporter->step( 0 )->setMesh( mesh );
-    exporter->step( 0 )->add( "u", u );
-    exporter->step( 0 )->add( "ubis", u2 );
-    exporter->save();
-#endif
-
+    if ( option("exporter.export").as<bool>() )
+    {
+        // export
+        auto ex = exporter( _mesh=mesh );
+        ex->add( "u", u );
+        ex->add( "ubis", u2 );
+        ex->save();
+    }
 }
 
-}
+} // namespace test_form_interpolation
 
 #if USE_BOOST_TEST
 
@@ -279,10 +277,7 @@ BOOST_AUTO_TEST_SUITE( form_interpolation )
 BOOST_AUTO_TEST_CASE( form_interpolation )
 {
 
-    auto theApp = Application_ptrtype( new Application_type );
-
-
-    test_form_interpolation::run<2>( theApp );
+    test_form_interpolation::run<2>();
 }
 BOOST_AUTO_TEST_SUITE_END()
 

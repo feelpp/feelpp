@@ -1,0 +1,42 @@
+* Non-Linear Feel++ Examples
+
+In this directory you will find two examples that illustrate how to solve a
+nonlinear partial differential equation.
+
+* Bratu
+
+The Bratu equation has applications in solid fuel ignition models, in chemical
+reaction theory, radiative heat transfer or nanotechnology.
+The Bratu equation reads: given $\lambda > 0$, find $u$ such that
+$$-\Delta u + \lambda e^u = 0 \mbox{ in } \Omega, \quad u = 0 \partial \Omega$$
+
+A finite element implementation is available in [[file:bratu.cpp][bratu.cpp]].
+
+To execute on 4 processors
+#+begin_src shell
+mpirun -np 4 feelpp_doc_bratu --snes-monitor=true
+#+end_src
+
+The option =--snes-monitor=true= displays the Newton iteration residual. To
+visualize the results type =paraview bratu-4.sos=.
+
+* Non-Linear Power
+
+This family of equation has applications in biology or radiative heat transfer
+and possibly other fields.
+
+The equation reads: given $\lambda > 0$, find $u$ such that
+$$-\Delta u + u^\lambda = 1 \mbox{ in } \Omega, \quad u = 0 \partial \Omega$$
+
+A finite element implementation is available in [[file:nonlinearpow.cpp][nonlinearpow.cpp]].
+
+To execute on 4 processors
+#+begin_src shell
+mpirun -np 4 feelpp_doc_nonlinearpow --snes-monitor=true
+#+end_src
+
+The option =--snes-monitor=true= displays the Newton iteration residual. To
+visualize the results type =paraview nonlinearpow-4.sos=.
+
+
+

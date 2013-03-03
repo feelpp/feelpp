@@ -91,10 +91,10 @@ namespace Feel {
     endforeach()
   endforeach()
 endforeach()
-feelpp_add_application( perf_stokes_pressure_2D SRCS stokes_pressure.cpp ${taylor_hood_p2} LABEL doc GEO curvedtube.geo curvedtube3d.geo straighttube.geo DEFS DIM2=2 DEPS gen_feel_perf_stokes_pressure)
-feelpp_add_application( perf_stokes_pressure_3D SRCS stokes_pressure.cpp ${taylor_hood_p3} LABEL doc GEO curvedtube.geo curvedtube3d.geo straighttube.geo DEFS DIM3=3 DEPS gen_feel_perf_stokes_pressure)
-feelpp_add_application( perf_stokes_pressure_lm_2D SRCS stokes_pressure.cpp ${taylor_hood_p2} LABEL doc DEFS FEELPP_USE_LM DIM2=2 DEPS gen_feel_perf_stokes_pressure)
-feelpp_add_application( perf_stokes_pressure_lm_3D SRCS stokes_pressure.cpp  ${taylor_hood_p3} LABEL doc DEFS FEELPP_USE_LM DIM3=3 DEPS DEPS gen_feel_perf_stokes_pressure)
+feelpp_add_application( perf_stokes_pressure_2D SRCS stokes_pressure.cpp ${taylor_hood_p2} LABEL benchmarks GEO curvedtube.geo curvedtube3d.geo straighttube.geo DEFS DIM2=2 DEPS gen_feel_perf_stokes_pressure)
+feelpp_add_application( perf_stokes_pressure_3D SRCS stokes_pressure.cpp ${taylor_hood_p3} LABEL benchmarks GEO curvedtube.geo curvedtube3d.geo straighttube.geo DEFS DIM3=3 DEPS gen_feel_perf_stokes_pressure)
+feelpp_add_application( perf_stokes_pressure_lm_2D SRCS stokes_pressure.cpp ${taylor_hood_p2} LABEL benchmarks DEFS FEELPP_USE_LM DIM2=2 DEPS gen_feel_perf_stokes_pressure)
+feelpp_add_application( perf_stokes_pressure_lm_3D SRCS stokes_pressure.cpp  ${taylor_hood_p3} LABEL benchmarks DEFS FEELPP_USE_LM DIM3=3 DEPS DEPS gen_feel_perf_stokes_pressure)
 
 
 add_subdirectory(Poiseuille)

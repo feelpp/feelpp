@@ -364,13 +364,13 @@ private:
     void serialize( Archive & ar, const unsigned int version )
         {
             ar & boost::serialization::base_object<super>( *this );
-            Debug(4015) << "Serializing points\n";
+            DVLOG(2) << "Serializing points\n";
             ar & boost::serialization::base_object<super_points>( *this );
-            Debug(4015) << "Serializing edges\n";
+            DVLOG(2) << "Serializing edges\n";
             ar & boost::serialization::base_object<super_edges>( *this );
-            Debug(4015) << "Serializing faces\n";
+            DVLOG(2) << "Serializing faces\n";
             ar & boost::serialization::base_object<super_faces>( *this );
-            Debug(4015) << "Serializing elements\n";
+            DVLOG(2) << "Serializing elements\n";
             ar & boost::serialization::base_object<super_elements>( *this );
         }
 
@@ -592,7 +592,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
 }
 
 template <typename GEOSHAPE>
@@ -638,7 +638,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
     ti.restart();
 
     edge_type edg;
@@ -687,7 +687,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
     ti.restart();
 
     std::map<size_type, edge_pair_type> _oriented_edges;
@@ -764,7 +764,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
     ti.restart();
 
     for ( element_iterator elt_it = this->beginElement();
@@ -817,7 +817,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
     ti.restart();
 #if 0
     edge_iterator e_it = this->beginEdge();
@@ -835,7 +835,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] cleaning up edges : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] cleaning up edges : " << ti.elapsed() << "\n";
 #endif
     ti.restart();
 }

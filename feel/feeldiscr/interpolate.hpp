@@ -86,13 +86,13 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
 
     const bool same_basis = boost::is_same<basis_type, typename FunctionType::functionspace_type::basis_type>::value;
-    Debug( 5010 ) << "[interpolate] are the basis the same " << same_basis << "\n";
-    Debug( 5010 ) << "[interpolate] are the meshes the same " << same_mesh << "\n";
+    DVLOG(2) << "[interpolate] are the basis the same " << same_basis << "\n";
+    DVLOG(2) << "[interpolate] are the meshes the same " << same_mesh << "\n";
 
     // if same space type and mesh  then return the function itself
     if ( same_basis && same_mesh == INTERPOLATE_SAME_MESH )
     {
-        Debug( 5010 ) << "[interpolate] Same mesh and same space\n";
+        DVLOG(2) << "[interpolate] Same mesh and same space\n";
         interp = f;
         return;
     }
@@ -118,7 +118,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
     //if ( same_mesh == INTERPOLATE_SAME_MESH )
     if ( ( MeshBase* )f.functionSpace()->mesh().get() == ( MeshBase* )space->mesh().get() )
     {
-        Debug( 5010 ) << "[interpolate] Same mesh but not same space\n";
+        DVLOG(2) << "[interpolate] Same mesh but not same space\n";
 
         domain_gm_ptrtype __dgm = f.functionSpace()->gm();
         typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
@@ -162,25 +162,25 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                               << "  value: " << f( globaldof_f ) << "\n";
 #endif
 
-                    //Debug( 5010 ) << "globaldof = " << globaldof << " firstldof = " << interp.firstLocalIndex() << " lastldof " << interp.lastLocalIndex() << "\n";
+                    //DVLOG(2) << "globaldof = " << globaldof << " firstldof = " << interp.firstLocalIndex() << " lastldof " << interp.lastLocalIndex() << "\n";
                     // update only values on the processor
                     if ( globaldof >= interp.firstLocalIndex() &&
                             globaldof < interp.lastLocalIndex() )
                     {
                         interp( globaldof ) = fvalues[l]( comp,0 );
-                        //Debug( 5010 ) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
+                        //DVLOG(2) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                         //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
                     }
                 }
             }
         }
 
-        Debug( 5010 ) << "[interpolate] Same mesh but not same space done\n";
+        DVLOG(2) << "[interpolate] Same mesh but not same space done\n";
     } // same mesh
 
     else // INTERPOLATE_DIFFERENT_MESH
     {
-        Debug( 5010 ) << "[interpolate] different meshes\n";
+        DVLOG(2) << "[interpolate] different meshes\n";
         domain_gm_ptrtype __dgm = f.functionSpace()->gm();
         typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
         typedef typename domain_gm_type::precompute_type domain_geopc_type;
@@ -236,7 +236,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                 uint16_type comp;
                 boost::tie( dof, comp ) = itab[i];
 #if !defined( NDEBUG )
-                Debug( 5010 ) << "[interpolate] element : " << it->id() << " npts: " << itab.size() << " ptid: " << i
+                DVLOG(2) << "[interpolate] element : " << it->id() << " npts: " << itab.size() << " ptid: " << i
                               << " gdof: " << dof << " comp = " << comp << "\n";
 #endif
 
