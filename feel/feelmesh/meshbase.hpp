@@ -303,7 +303,7 @@ public:
     bool hasSubMeshData() const { return M_smd.use_count() > 0; }
 
     //! \return sub mesh
-    boost::shared_ptr<MeshBase> subMesh() const
+    typename smd_type::mesh_ptrtype subMesh() const
         {
             CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
             return M_smd->mesh;
@@ -341,6 +341,13 @@ public:
             return false;
         }
 #endif
+    template<typename M>
+    bool isSameMesh( M const* m ) const
+        {
+            bool same_mesh = ( dynamic_cast<void const*>( this ) == dynamic_cast<void const*>( m ) );
+            return same_mesh;
+        }
+
     template<typename M>
     bool isSameMesh( boost::shared_ptr<M> m ) const
         {

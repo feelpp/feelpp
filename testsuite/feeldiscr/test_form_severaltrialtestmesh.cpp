@@ -164,8 +164,8 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
 
     auto Xh_u = space_u_type::New( mesh );
     auto Xh_l = space_l_type::New( meshParoi );
-    std::cout << "Xh_u " << Xh_u->nDof() << std::endl;
-    std::cout << "Xh_l " << Xh_l->nDof() << std::endl;
+    LOG(INFO) << "Xh_u " << Xh_u->nDof() << std::endl;
+    LOG(INFO) << "Xh_l " << Xh_l->nDof() << std::endl;
     auto U_u = Xh_u->element();
     auto U_v = Xh_u->element();
 
@@ -179,13 +179,13 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
 
     boost::timer mytimer;
     auto A_uu = backend->newMatrix( _trial=Xh_u, _test=Xh_u, _diag_is_nonzero=false );
-    std::cout << "time to build A_uu " << mytimer.elapsed() << std::endl;mytimer.restart();
+    LOG(INFO) << "time to build A_uu " << mytimer.elapsed() << std::endl;mytimer.restart();
     auto A_ul = backend->newMatrix( _trial=Xh_l, _test=Xh_u,  _diag_is_nonzero=false, _buildGraphWithTranspose=true,_collect_garbage=false );
-    std::cout << "time to build A_ul " << mytimer.elapsed() << std::endl;mytimer.restart();
+    LOG(INFO) << "time to build A_ul " << mytimer.elapsed() << std::endl;mytimer.restart();
     auto A_lu = backend->newMatrix( _trial=Xh_u, _test=Xh_l, _diag_is_nonzero=false,_collect_garbage=false );
-    std::cout << "time to build A_lu " << mytimer.elapsed() << std::endl;mytimer.restart();
+    LOG(INFO) << "time to build A_lu " << mytimer.elapsed() << std::endl;mytimer.restart();
     auto A_ll = backend->newZeroMatrix( _trial=Xh_l, _test=Xh_l);//, _diag_is_nonzero=false );
-    std::cout << "time to build A_ll " << mytimer.elapsed() << std::endl;mytimer.restart();
+    LOG(INFO) << "time to build A_ll " << mytimer.elapsed() << std::endl;mytimer.restart();
 
     auto F_u = backend->newVector( Xh_u );
     auto F_l = backend->newVector( Xh_l );
@@ -236,7 +236,7 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
 
     //--------------------------------------------------------------------------------------------------//
 
-    std::cout << "\n start create MatBlock" << std::endl;
+    LOG(INFO) << "\n start create MatBlock" << std::endl;
     boost::timer time;
 
     auto myb = BlocksSparseMatrix<2,2>()<< A_uu << A_ul
@@ -247,7 +247,7 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
     //form2( Xh_u, Xh_u, AbB ) +=
     //    on( markedfaces(mesh, "Paroi") , U_u, F_u, one()-one() );
 
-    std::cout << "\n time elapsed for create MatBlock " << time.elapsed() << std::endl;
+    LOG(INFO) << "\n time elapsed for create MatBlock " << time.elapsed() << std::endl;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -262,7 +262,7 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
 
     //--------------------------------------------------------------------------------------------------//
 
-    std::cout << "\n solve system start "<< std::endl;mytimer.restart();
+    LOG(INFO) << "\n solve system start "<< std::endl;mytimer.restart();
     auto myprec = preconditioner( _matrix=AbB,
                                   _pc=PreconditionerType::LU_PRECOND,
                                   _backend=backend,
@@ -273,7 +273,7 @@ void runGen( Application_ptrtype & theApp,const Expr1 & expr_f, const Expr2 & ex
                     _rhs=FbB,
                     _prec=myprec );
                     //_pcfactormatsolverpackage="umfpack" );
-    std::cout << "\n solve system finish in"<< mytimer.elapsed() << "s"  << std::endl;
+    LOG(INFO) << "\n solve system finish in"<< mytimer.elapsed() << "s"  << std::endl;
 
     //--------------------------------------------------------------------------------------------------//
 

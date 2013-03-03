@@ -527,7 +527,7 @@ template<typename MeshType>
 void initCache( MeshType const* mesh  )
 {
     size_type nelts = mesh->numElements();
-    //LOG(INFO) << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
+    LOG(INFO) << "[Geomap] start caching J,K,B for " << nelts << " elements\n";
     M_cached.resize( nelts );
     std::fill( M_cached.begin(), M_cached.end(), false );
 
@@ -562,26 +562,31 @@ void setCached( int e, bool v )
 double J( int e ) const
 {
     FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
+    DCHECK( e >= 0 && e < M_J.size() ) << "invalid element id " << e << "( " << M_J.size() << ") for geomap cache, are you using the proper mesh\n";
     return M_J[e];
 }
 matrix_type const& B( int e ) const
 {
     FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
+    DCHECK( e >= 0 && e < M_B.size() ) << "invalid element id " << e << "( " << M_B.size() << ") for geomap cache, are you using the proper mesh\n";
     return M_B[e];
 }
 matrix_type const& K( int e ) const
 {
     FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
+    DCHECK( e >= 0 && e < M_K.size() ) << "invalid element id " << e << "( " << M_K.size() << ") for geomap cache, are you using the proper mesh\n";
     return M_K[e];
 }
 void addJ( int e, double v )
 {
     FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
+    DCHECK( e >= 0 && e < M_J.size() ) << "invalid element id " << e << "( " << M_J.size() << ") for geomap cache, are you using the proper mesh\n";
     M_J[e] = v;
 }
 void addK( int e, matrix_type const& K )
 {
     FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
+    DCHECK( e >= 0 && e < M_K.size() ) << "invalid element id " << e << "( " << M_K.size() << ") for geomap cache, are you using the proper mesh\n";
     M_K[e].resize( K.size1(), K.size2() );
 
     for ( size_type i = 0; i < K.size1(); ++i )
@@ -591,6 +596,7 @@ void addK( int e, matrix_type const& K )
 void addB( int e, matrix_type const& B )
 {
     FEELPP_ASSERT( this->isCacheValid() )( e ).error( "invalid cache" );
+    DCHECK( e >= 0 && e < M_B.size() ) << "invalid element id " << e << "( " << M_B.size() << ") for geomap cache, are you using the proper mesh\n";
     M_B[e].resize( B.size1(), B.size2() );
 
     for ( size_type i = 0; i < B.size1(); ++i )

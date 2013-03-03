@@ -203,13 +203,34 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
 
-    while ( __ts_it != __ts_en )
+    switch ( this->exporterGeometry() )
+    {
+    case EXPORTER_GEOMETRY_STATIC:
     {
         timeset_ptrtype __ts = *__ts_it;
-        __out << "model: " << __ts->index() << " " << __ts->name()
-              << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".geo***"  << "\n";
-        ++__ts_it;
+        __out << "model: " << __ts->name()
+              << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".geo";
     }
+    break;
+    default:
+    case EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:
+    case EXPORTER_GEOMETRY_CHANGE:
+    {
+        while ( __ts_it != __ts_en )
+        {
+            timeset_ptrtype __ts = *__ts_it;
+
+            __out << "model: " << __ts->index() << " " << __ts->name()
+                  << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".geo***";
+            if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+                __out << " change_coords_only";
+
+            ++__ts_it;
+        }
+    }
+    break;
+    }
+    __out << "\n";
 
     __out << "VARIABLES:" << "\n";
 
@@ -355,19 +376,35 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
 
             std::ostringstream __geofname;
 
-            __geofname << this->path() << "/"
-                       << __ts->name()
-                       << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
-                       << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-
-            if ( __step->isInMemory() )
+            if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
             {
-                //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
-                //, __ts->name(), __geofname.str() );
-                _M_filename =  __geofname.str();
-                __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                __geofname << this->path() << "/"
+                           << __ts->name()
+                           << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
+                           << ".geo";
+                // save only if index == 0
+                if ( __step->isInMemory() && ( __it  == __ts->beginStep() ) )
+                {
+                    //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
+                    //, __ts->name(), __geofname.str() );
+                    _M_filename =  __geofname.str();
+                    __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                }
             }
-
+            else
+            {
+                __geofname << this->path() << "/"
+                           << __ts->name()
+                           << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
+                           << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
+                if ( __step->isInMemory() )
+                {
+                    //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
+                    //, __ts->name(), __geofname.str() );
+                    _M_filename =  __geofname.str();
+                    __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                }
+            }
             ++__it;
         }
 

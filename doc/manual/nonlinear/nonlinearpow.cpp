@@ -71,6 +71,7 @@ main( int argc, char** argv )
 
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
+            if (!J) J = backend()->newMatrix( Vh, Vh );
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
             a = integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
 
