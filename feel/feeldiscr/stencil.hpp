@@ -337,12 +337,12 @@ private:
             if ( test_related_to_trial )
             {
                 domain_eid = _M_X1->mesh()->subMeshToMesh( idElem );
-                LOG(INFO) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
             }
             if( trial_related_to_test )
             {
                 domain_eid = _M_X2->mesh()->meshToSubMesh( idElem );
-                LOG(INFO) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
             }
             return domain_eid;
         }
