@@ -5,7 +5,8 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-02-14
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -129,8 +130,8 @@ NUMERICAL_TRAITS( float,int,float )
 
 #if defined( FEELPP_USES_BOOST_INTERVAL )
 #define FEELPP_INTERVAL_DEBUG( TYPE )                                                        \
-   SDebugStream& operator<<( SDebugStream& o, Feel::interval_## TYPE ##_type  const& e );    \
-   SNDebugStream& operator<<( SNDebugStream& o, Feel::interval_## TYPE ##_type const& e );
+    SDebugStream& operator<<( SDebugStream& o, Feel::interval_## TYPE ##_type  const& e ); \
+    SNDebugStream& operator<<( SNDebugStream& o, Feel::interval_## TYPE ##_type const& e );
 
 FEELPP_INTERVAL_DEBUG( default );
 FEELPP_INTERVAL_DEBUG( std );

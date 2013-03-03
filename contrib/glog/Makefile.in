@@ -62,11 +62,12 @@ host_triplet = @host@
 # These are x86-specific, having to do with frame-pointers
 @ENABLE_FRAME_POINTERS_TRUE@@X86_64_TRUE@am__append_2 = -fno-omit-frame-pointer
 @ENABLE_FRAME_POINTERS_FALSE@@X86_64_TRUE@am__append_3 = -DNO_FRAME_POINTER
+@DISABLE_RTTI_TRUE@am__append_4 = -fno-rtti
 TESTS = logging_unittest$(EXEEXT) demangle_unittest$(EXEEXT) \
 	stacktrace_unittest$(EXEEXT) symbolize_unittest$(EXEEXT) \
 	stl_logging_unittest$(EXEEXT) utilities_unittest$(EXEEXT) \
 	$(am__EXEEXT_1)
-@HAVE_GMOCK_TRUE@am__append_4 = mock_log_test
+@HAVE_GMOCK_TRUE@am__append_5 = mock_log_test
 noinst_PROGRAMS = $(am__EXEEXT_2) $(am__EXEEXT_3)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(dist_doc_DATA) \
@@ -134,18 +135,20 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-libglog_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
+libfeelpp_glog_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am__objects_1 =
-am_libglog_la_OBJECTS = $(am__objects_1) libglog_la-logging.lo \
-	libglog_la-raw_logging.lo libglog_la-vlog_is_on.lo \
-	libglog_la-utilities.lo libglog_la-demangle.lo \
-	libglog_la-symbolize.lo libglog_la-signalhandler.lo
-nodist_libglog_la_OBJECTS = $(am__objects_1)
-libglog_la_OBJECTS = $(am_libglog_la_OBJECTS) \
-	$(nodist_libglog_la_OBJECTS)
-libglog_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(libglog_la_CXXFLAGS) \
-	$(CXXFLAGS) $(libglog_la_LDFLAGS) $(LDFLAGS) -o $@
+am_libfeelpp_glog_la_OBJECTS = $(am__objects_1) \
+	libfeelpp_glog_la-logging.lo libfeelpp_glog_la-raw_logging.lo \
+	libfeelpp_glog_la-vlog_is_on.lo libfeelpp_glog_la-utilities.lo \
+	libfeelpp_glog_la-demangle.lo libfeelpp_glog_la-symbolize.lo \
+	libfeelpp_glog_la-signalhandler.lo
+nodist_libfeelpp_glog_la_OBJECTS = $(am__objects_1)
+libfeelpp_glog_la_OBJECTS = $(am_libfeelpp_glog_la_OBJECTS) \
+	$(nodist_libfeelpp_glog_la_OBJECTS)
+libfeelpp_glog_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) \
+	$(libfeelpp_glog_la_LDFLAGS) $(LDFLAGS) -o $@
 @HAVE_GMOCK_TRUE@am__EXEEXT_1 = mock_log_test$(EXEEXT)
 am__EXEEXT_2 = logging_unittest$(EXEEXT) demangle_unittest$(EXEEXT) \
 	stacktrace_unittest$(EXEEXT) symbolize_unittest$(EXEEXT) \
@@ -159,8 +162,8 @@ am_demangle_unittest_OBJECTS = $(am__objects_1) \
 nodist_demangle_unittest_OBJECTS = $(am__objects_1)
 demangle_unittest_OBJECTS = $(am_demangle_unittest_OBJECTS) \
 	$(nodist_demangle_unittest_OBJECTS)
-demangle_unittest_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_2)
+demangle_unittest_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
 demangle_unittest_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(demangle_unittest_CXXFLAGS) $(CXXFLAGS) \
@@ -170,7 +173,8 @@ am_logging_striptest0_OBJECTS = $(am__objects_1) \
 nodist_logging_striptest0_OBJECTS = $(am__objects_1)
 logging_striptest0_OBJECTS = $(am_logging_striptest0_OBJECTS) \
 	$(nodist_logging_striptest0_OBJECTS)
-logging_striptest0_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2)
+logging_striptest0_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2)
 logging_striptest0_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(logging_striptest0_CXXFLAGS) $(CXXFLAGS) \
@@ -180,7 +184,8 @@ am_logging_striptest10_OBJECTS = $(am__objects_1) \
 nodist_logging_striptest10_OBJECTS = $(am__objects_1)
 logging_striptest10_OBJECTS = $(am_logging_striptest10_OBJECTS) \
 	$(nodist_logging_striptest10_OBJECTS)
-logging_striptest10_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2)
+logging_striptest10_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2)
 logging_striptest10_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(logging_striptest10_CXXFLAGS) $(CXXFLAGS) \
@@ -190,7 +195,8 @@ am_logging_striptest2_OBJECTS = $(am__objects_1) \
 nodist_logging_striptest2_OBJECTS = $(am__objects_1)
 logging_striptest2_OBJECTS = $(am_logging_striptest2_OBJECTS) \
 	$(nodist_logging_striptest2_OBJECTS)
-logging_striptest2_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2)
+logging_striptest2_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2)
 logging_striptest2_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(logging_striptest2_CXXFLAGS) $(CXXFLAGS) \
@@ -200,8 +206,8 @@ am_logging_unittest_OBJECTS = $(am__objects_1) \
 nodist_logging_unittest_OBJECTS = $(am__objects_1)
 logging_unittest_OBJECTS = $(am_logging_unittest_OBJECTS) \
 	$(nodist_logging_unittest_OBJECTS)
-logging_unittest_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_2)
+logging_unittest_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
 logging_unittest_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(logging_unittest_CXXFLAGS) $(CXXFLAGS) \
@@ -213,7 +219,7 @@ am__mock_log_test_SOURCES_DIST = src/glog/log_severity.h \
 @HAVE_GMOCK_TRUE@nodist_mock_log_test_OBJECTS = $(am__objects_1)
 mock_log_test_OBJECTS = $(am_mock_log_test_OBJECTS) \
 	$(nodist_mock_log_test_OBJECTS)
-@HAVE_GMOCK_TRUE@mock_log_test_DEPENDENCIES = libglog.la \
+@HAVE_GMOCK_TRUE@mock_log_test_DEPENDENCIES = libfeelpp_glog.la \
 @HAVE_GMOCK_TRUE@	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
 mock_log_test_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(mock_log_test_CXXFLAGS) \
@@ -223,8 +229,8 @@ am_signalhandler_unittest_OBJECTS = $(am__objects_1) \
 nodist_signalhandler_unittest_OBJECTS = $(am__objects_1)
 signalhandler_unittest_OBJECTS = $(am_signalhandler_unittest_OBJECTS) \
 	$(nodist_signalhandler_unittest_OBJECTS)
-signalhandler_unittest_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_2)
+signalhandler_unittest_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
 signalhandler_unittest_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(signalhandler_unittest_CXXFLAGS) $(CXXFLAGS) \
@@ -234,7 +240,8 @@ am_stacktrace_unittest_OBJECTS = $(am__objects_1) \
 nodist_stacktrace_unittest_OBJECTS = $(am__objects_1)
 stacktrace_unittest_OBJECTS = $(am_stacktrace_unittest_OBJECTS) \
 	$(nodist_stacktrace_unittest_OBJECTS)
-stacktrace_unittest_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2)
+stacktrace_unittest_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2)
 stacktrace_unittest_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(stacktrace_unittest_CXXFLAGS) $(CXXFLAGS) \
@@ -244,8 +251,8 @@ am_stl_logging_unittest_OBJECTS = $(am__objects_1) \
 nodist_stl_logging_unittest_OBJECTS = $(am__objects_1)
 stl_logging_unittest_OBJECTS = $(am_stl_logging_unittest_OBJECTS) \
 	$(nodist_stl_logging_unittest_OBJECTS)
-stl_logging_unittest_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_2)
+stl_logging_unittest_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
 stl_logging_unittest_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(stl_logging_unittest_CXXFLAGS) $(CXXFLAGS) \
@@ -255,8 +262,8 @@ am_symbolize_unittest_OBJECTS = $(am__objects_1) \
 nodist_symbolize_unittest_OBJECTS = $(am__objects_1)
 symbolize_unittest_OBJECTS = $(am_symbolize_unittest_OBJECTS) \
 	$(nodist_symbolize_unittest_OBJECTS)
-symbolize_unittest_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_2)
+symbolize_unittest_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
 symbolize_unittest_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(symbolize_unittest_CXXFLAGS) $(CXXFLAGS) \
@@ -266,8 +273,8 @@ am_utilities_unittest_OBJECTS = $(am__objects_1) \
 nodist_utilities_unittest_OBJECTS = $(am__objects_1)
 utilities_unittest_OBJECTS = $(am_utilities_unittest_OBJECTS) \
 	$(nodist_utilities_unittest_OBJECTS)
-utilities_unittest_DEPENDENCIES = libglog.la $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_2)
+utilities_unittest_DEPENDENCIES = libfeelpp_glog.la \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_2)
 utilities_unittest_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(utilities_unittest_CXXFLAGS) $(CXXFLAGS) \
@@ -295,7 +302,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libglog_la_SOURCES) $(nodist_libglog_la_SOURCES) \
+SOURCES = $(libfeelpp_glog_la_SOURCES) \
+	$(nodist_libfeelpp_glog_la_SOURCES) \
 	$(demangle_unittest_SOURCES) \
 	$(nodist_demangle_unittest_SOURCES) \
 	$(logging_striptest0_SOURCES) \
@@ -316,10 +324,10 @@ SOURCES = $(libglog_la_SOURCES) $(nodist_libglog_la_SOURCES) \
 	$(nodist_symbolize_unittest_SOURCES) \
 	$(utilities_unittest_SOURCES) \
 	$(nodist_utilities_unittest_SOURCES)
-DIST_SOURCES = $(libglog_la_SOURCES) $(demangle_unittest_SOURCES) \
-	$(logging_striptest0_SOURCES) $(logging_striptest10_SOURCES) \
-	$(logging_striptest2_SOURCES) $(logging_unittest_SOURCES) \
-	$(am__mock_log_test_SOURCES_DIST) \
+DIST_SOURCES = $(libfeelpp_glog_la_SOURCES) \
+	$(demangle_unittest_SOURCES) $(logging_striptest0_SOURCES) \
+	$(logging_striptest10_SOURCES) $(logging_striptest2_SOURCES) \
+	$(logging_unittest_SOURCES) $(am__mock_log_test_SOURCES_DIST) \
 	$(signalhandler_unittest_SOURCES) \
 	$(stacktrace_unittest_SOURCES) $(stl_logging_unittest_SOURCES) \
 	$(symbolize_unittest_SOURCES) $(utilities_unittest_SOURCES)
@@ -369,6 +377,7 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -401,6 +410,7 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
@@ -430,9 +440,11 @@ abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
+ac_cv___attribute___noinline = @ac_cv___attribute___noinline@
 ac_cv___attribute___noreturn = @ac_cv___attribute___noreturn@
 ac_cv___attribute___printf_4_5 = @ac_cv___attribute___printf_4_5@
 ac_cv_cxx_using_operator = @ac_cv_cxx_using_operator@
@@ -479,7 +491,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 localedir = @localedir@
 localstatedir = @localstatedir@
-lt_ECHO = @lt_ECHO@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
@@ -503,7 +514,8 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
 # This is mostly based on configure options
-AM_CXXFLAGS = $(am__append_1) $(am__append_2) $(am__append_3)
+AM_CXXFLAGS = $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4)
 glogincludedir = $(includedir)/glog
 gloginclude_HEADERS = src/glog/log_severity.h
 nodist_gloginclude_HEADERS = src/glog/logging.h src/glog/raw_logging.h src/glog/vlog_is_on.h src/glog/stl_logging.h
@@ -511,7 +523,7 @@ noinst_HEADERS = src/glog/logging.h.in src/glog/raw_logging.h.in src/glog/vlog_i
 dist_doc_DATA = AUTHORS COPYING ChangeLog INSTALL NEWS README README.windows \
                 doc/designstyle.css doc/glog.html
 
-lib_LTLIBRARIES = libglog.la
+lib_LTLIBRARIES = libfeelpp_glog.la
 
 # The libraries libglog depends on.
 COMMON_LIBS = $(PTHREAD_LIBS) $(GFLAGS_LIBS) $(UNWIND_LIBS)
@@ -536,78 +548,78 @@ logging_unittest_SOURCES = $(gloginclude_HEADERS) \
 nodist_logging_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 logging_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 logging_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-logging_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+logging_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 logging_striptest0_SOURCES = $(gloginclude_HEADERS) \
                              src/logging_striptest_main.cc
 
 nodist_logging_striptest0_SOURCES = $(nodist_gloginclude_HEADERS)
 logging_striptest0_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 logging_striptest0_LDFLAGS = $(PTHREAD_CFLAGS)
-logging_striptest0_LDADD = libglog.la $(COMMON_LIBS)
+logging_striptest0_LDADD = libfeelpp_glog.la $(COMMON_LIBS)
 logging_striptest2_SOURCES = $(gloginclude_HEADERS) \
                              src/logging_striptest2.cc
 
 nodist_logging_striptest2_SOURCES = $(nodist_gloginclude_HEADERS)
 logging_striptest2_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 logging_striptest2_LDFLAGS = $(PTHREAD_CFLAGS)
-logging_striptest2_LDADD = libglog.la $(COMMON_LIBS)
+logging_striptest2_LDADD = libfeelpp_glog.la $(COMMON_LIBS)
 logging_striptest10_SOURCES = $(gloginclude_HEADERS) \
                               src/logging_striptest10.cc
 
 nodist_logging_striptest10_SOURCES = $(nodist_gloginclude_HEADERS)
 logging_striptest10_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 logging_striptest10_LDFLAGS = $(PTHREAD_CFLAGS)
-logging_striptest10_LDADD = libglog.la $(COMMON_LIBS)
+logging_striptest10_LDADD = libfeelpp_glog.la $(COMMON_LIBS)
 demangle_unittest_SOURCES = $(gloginclude_HEADERS) \
                             src/demangle_unittest.cc
 
 nodist_demangle_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 demangle_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 demangle_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-demangle_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+demangle_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 stacktrace_unittest_SOURCES = $(gloginclude_HEADERS) \
                               src/stacktrace_unittest.cc
 
 nodist_stacktrace_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 stacktrace_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 stacktrace_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-stacktrace_unittest_LDADD = libglog.la $(COMMON_LIBS)
+stacktrace_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS)
 symbolize_unittest_SOURCES = $(gloginclude_HEADERS) \
                               src/symbolize_unittest.cc
 
 nodist_symbolize_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 symbolize_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 symbolize_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-symbolize_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+symbolize_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 stl_logging_unittest_SOURCES = $(gloginclude_HEADERS) \
                                src/stl_logging_unittest.cc
 
 nodist_stl_logging_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 stl_logging_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 stl_logging_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-stl_logging_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+stl_logging_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 signalhandler_unittest_SOURCES = $(gloginclude_HEADERS) \
                                src/signalhandler_unittest.cc
 
 nodist_signalhandler_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 signalhandler_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 signalhandler_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-signalhandler_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+signalhandler_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 utilities_unittest_SOURCES = $(gloginclude_HEADERS) \
                              src/utilities_unittest.cc
 
 nodist_utilities_unittest_SOURCES = $(nodist_gloginclude_HEADERS)
 utilities_unittest_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 utilities_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-utilities_unittest_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
+utilities_unittest_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
 @HAVE_GMOCK_TRUE@mock_log_test_SOURCES = $(gloginclude_HEADERS) \
 @HAVE_GMOCK_TRUE@                        src/mock-log_test.cc
 
 @HAVE_GMOCK_TRUE@nodist_mock_log_test_SOURCES = $(nodist_gloginclude_HEADERS)
 @HAVE_GMOCK_TRUE@mock_log_test_CXXFLAGS = $(PTHREAD_CFLAGS) $(TEST_CFLAGS)
 @HAVE_GMOCK_TRUE@mock_log_test_LDFLAGS = $(PTHREAD_CFLAGS)
-@HAVE_GMOCK_TRUE@mock_log_test_LDADD = libglog.la $(COMMON_LIBS) $(TEST_LIBS)
-libglog_la_SOURCES = $(gloginclude_HEADERS) \
+@HAVE_GMOCK_TRUE@mock_log_test_LDADD = libfeelpp_glog.la $(COMMON_LIBS) $(TEST_LIBS)
+libfeelpp_glog_la_SOURCES = $(gloginclude_HEADERS) \
                        src/logging.cc src/raw_logging.cc src/vlog_is_on.cc \
                        src/utilities.cc src/utilities.h \
                        src/demangle.cc src/demangle.h \
@@ -622,15 +634,16 @@ libglog_la_SOURCES = $(gloginclude_HEADERS) \
                        src/base/mutex.h src/base/googleinit.h \
                        src/base/commandlineflags.h src/googletest.h
 
-nodist_libglog_la_SOURCES = $(nodist_gloginclude_HEADERS)
-libglog_la_CXXFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_CFLAGS) $(AM_CXXFLAGS) -DNDEBUG
-libglog_la_LDFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS)
-libglog_la_LIBADD = $(COMMON_LIBS)
+nodist_libfeelpp_glog_la_SOURCES = $(nodist_gloginclude_HEADERS)
+libfeelpp_glog_la_CXXFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_CFLAGS) $(AM_CXXFLAGS) -DNDEBUG
+libfeelpp_glog_la_LDFLAGS = $(PTRHEAD_CFLAGS) $(GFLAGS_LDFLAGS)
+libfeelpp_glog_la_LIBADD = $(COMMON_LIBS)
 WINDOWS_PROJECTS = google-glog.sln vsprojects/libglog/libglog.vcproj \
 	vsprojects/logging_unittest/logging_unittest.vcproj \
 	vsprojects/libglog_static/libglog_static.vcproj \
 	vsprojects/logging_unittest_static/logging_unittest_static.vcproj
-EXTRA_DIST = packages/rpm.sh packages/rpm/rpm.spec packages/deb.sh packages/deb \
+EXTRA_DIST = packages/rpm.sh packages/rpm/rpm.spec \
+	packages/deb.sh packages/deb/* \
 	$(SCRIPTS) src/logging_unittest.err src/demangle_unittest.txt \
 	src/windows/config.h src/windows/port.h src/windows/port.cc \
 	src/windows/preprocess.sh \
@@ -741,8 +754,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libglog.la: $(libglog_la_OBJECTS) $(libglog_la_DEPENDENCIES) $(EXTRA_libglog_la_DEPENDENCIES) 
-	$(libglog_la_LINK) -rpath $(libdir) $(libglog_la_OBJECTS) $(libglog_la_LIBADD) $(LIBS)
+libfeelpp_glog.la: $(libfeelpp_glog_la_OBJECTS) $(libfeelpp_glog_la_DEPENDENCIES) $(EXTRA_libfeelpp_glog_la_DEPENDENCIES) 
+	$(libfeelpp_glog_la_LINK) -rpath $(libdir) $(libfeelpp_glog_la_OBJECTS) $(libfeelpp_glog_la_LIBADD) $(LIBS)
 
 clean-noinstPROGRAMS:
 	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
@@ -793,13 +806,13 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/demangle_unittest-demangle_unittest.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libglog_la-demangle.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libglog_la-logging.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libglog_la-raw_logging.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libglog_la-signalhandler.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libglog_la-symbolize.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libglog_la-utilities.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libglog_la-vlog_is_on.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfeelpp_glog_la-demangle.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfeelpp_glog_la-logging.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfeelpp_glog_la-raw_logging.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfeelpp_glog_la-signalhandler.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfeelpp_glog_la-symbolize.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfeelpp_glog_la-utilities.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libfeelpp_glog_la-vlog_is_on.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logging_striptest0-logging_striptest_main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logging_striptest10-logging_striptest10.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logging_striptest2-logging_striptest2.Po@am__quote@
@@ -832,54 +845,54 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libglog_la-logging.lo: src/logging.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -MT libglog_la-logging.lo -MD -MP -MF $(DEPDIR)/libglog_la-logging.Tpo -c -o libglog_la-logging.lo `test -f 'src/logging.cc' || echo '$(srcdir)/'`src/logging.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libglog_la-logging.Tpo $(DEPDIR)/libglog_la-logging.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/logging.cc' object='libglog_la-logging.lo' libtool=yes @AMDEPBACKSLASH@
+libfeelpp_glog_la-logging.lo: src/logging.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -MT libfeelpp_glog_la-logging.lo -MD -MP -MF $(DEPDIR)/libfeelpp_glog_la-logging.Tpo -c -o libfeelpp_glog_la-logging.lo `test -f 'src/logging.cc' || echo '$(srcdir)/'`src/logging.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libfeelpp_glog_la-logging.Tpo $(DEPDIR)/libfeelpp_glog_la-logging.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/logging.cc' object='libfeelpp_glog_la-logging.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -c -o libglog_la-logging.lo `test -f 'src/logging.cc' || echo '$(srcdir)/'`src/logging.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -c -o libfeelpp_glog_la-logging.lo `test -f 'src/logging.cc' || echo '$(srcdir)/'`src/logging.cc
 
-libglog_la-raw_logging.lo: src/raw_logging.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -MT libglog_la-raw_logging.lo -MD -MP -MF $(DEPDIR)/libglog_la-raw_logging.Tpo -c -o libglog_la-raw_logging.lo `test -f 'src/raw_logging.cc' || echo '$(srcdir)/'`src/raw_logging.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libglog_la-raw_logging.Tpo $(DEPDIR)/libglog_la-raw_logging.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/raw_logging.cc' object='libglog_la-raw_logging.lo' libtool=yes @AMDEPBACKSLASH@
+libfeelpp_glog_la-raw_logging.lo: src/raw_logging.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -MT libfeelpp_glog_la-raw_logging.lo -MD -MP -MF $(DEPDIR)/libfeelpp_glog_la-raw_logging.Tpo -c -o libfeelpp_glog_la-raw_logging.lo `test -f 'src/raw_logging.cc' || echo '$(srcdir)/'`src/raw_logging.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libfeelpp_glog_la-raw_logging.Tpo $(DEPDIR)/libfeelpp_glog_la-raw_logging.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/raw_logging.cc' object='libfeelpp_glog_la-raw_logging.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -c -o libglog_la-raw_logging.lo `test -f 'src/raw_logging.cc' || echo '$(srcdir)/'`src/raw_logging.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -c -o libfeelpp_glog_la-raw_logging.lo `test -f 'src/raw_logging.cc' || echo '$(srcdir)/'`src/raw_logging.cc
 
-libglog_la-vlog_is_on.lo: src/vlog_is_on.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -MT libglog_la-vlog_is_on.lo -MD -MP -MF $(DEPDIR)/libglog_la-vlog_is_on.Tpo -c -o libglog_la-vlog_is_on.lo `test -f 'src/vlog_is_on.cc' || echo '$(srcdir)/'`src/vlog_is_on.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libglog_la-vlog_is_on.Tpo $(DEPDIR)/libglog_la-vlog_is_on.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/vlog_is_on.cc' object='libglog_la-vlog_is_on.lo' libtool=yes @AMDEPBACKSLASH@
+libfeelpp_glog_la-vlog_is_on.lo: src/vlog_is_on.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -MT libfeelpp_glog_la-vlog_is_on.lo -MD -MP -MF $(DEPDIR)/libfeelpp_glog_la-vlog_is_on.Tpo -c -o libfeelpp_glog_la-vlog_is_on.lo `test -f 'src/vlog_is_on.cc' || echo '$(srcdir)/'`src/vlog_is_on.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libfeelpp_glog_la-vlog_is_on.Tpo $(DEPDIR)/libfeelpp_glog_la-vlog_is_on.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/vlog_is_on.cc' object='libfeelpp_glog_la-vlog_is_on.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -c -o libglog_la-vlog_is_on.lo `test -f 'src/vlog_is_on.cc' || echo '$(srcdir)/'`src/vlog_is_on.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -c -o libfeelpp_glog_la-vlog_is_on.lo `test -f 'src/vlog_is_on.cc' || echo '$(srcdir)/'`src/vlog_is_on.cc
 
-libglog_la-utilities.lo: src/utilities.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -MT libglog_la-utilities.lo -MD -MP -MF $(DEPDIR)/libglog_la-utilities.Tpo -c -o libglog_la-utilities.lo `test -f 'src/utilities.cc' || echo '$(srcdir)/'`src/utilities.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libglog_la-utilities.Tpo $(DEPDIR)/libglog_la-utilities.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/utilities.cc' object='libglog_la-utilities.lo' libtool=yes @AMDEPBACKSLASH@
+libfeelpp_glog_la-utilities.lo: src/utilities.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -MT libfeelpp_glog_la-utilities.lo -MD -MP -MF $(DEPDIR)/libfeelpp_glog_la-utilities.Tpo -c -o libfeelpp_glog_la-utilities.lo `test -f 'src/utilities.cc' || echo '$(srcdir)/'`src/utilities.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libfeelpp_glog_la-utilities.Tpo $(DEPDIR)/libfeelpp_glog_la-utilities.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/utilities.cc' object='libfeelpp_glog_la-utilities.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -c -o libglog_la-utilities.lo `test -f 'src/utilities.cc' || echo '$(srcdir)/'`src/utilities.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -c -o libfeelpp_glog_la-utilities.lo `test -f 'src/utilities.cc' || echo '$(srcdir)/'`src/utilities.cc
 
-libglog_la-demangle.lo: src/demangle.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -MT libglog_la-demangle.lo -MD -MP -MF $(DEPDIR)/libglog_la-demangle.Tpo -c -o libglog_la-demangle.lo `test -f 'src/demangle.cc' || echo '$(srcdir)/'`src/demangle.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libglog_la-demangle.Tpo $(DEPDIR)/libglog_la-demangle.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/demangle.cc' object='libglog_la-demangle.lo' libtool=yes @AMDEPBACKSLASH@
+libfeelpp_glog_la-demangle.lo: src/demangle.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -MT libfeelpp_glog_la-demangle.lo -MD -MP -MF $(DEPDIR)/libfeelpp_glog_la-demangle.Tpo -c -o libfeelpp_glog_la-demangle.lo `test -f 'src/demangle.cc' || echo '$(srcdir)/'`src/demangle.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libfeelpp_glog_la-demangle.Tpo $(DEPDIR)/libfeelpp_glog_la-demangle.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/demangle.cc' object='libfeelpp_glog_la-demangle.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -c -o libglog_la-demangle.lo `test -f 'src/demangle.cc' || echo '$(srcdir)/'`src/demangle.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -c -o libfeelpp_glog_la-demangle.lo `test -f 'src/demangle.cc' || echo '$(srcdir)/'`src/demangle.cc
 
-libglog_la-symbolize.lo: src/symbolize.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -MT libglog_la-symbolize.lo -MD -MP -MF $(DEPDIR)/libglog_la-symbolize.Tpo -c -o libglog_la-symbolize.lo `test -f 'src/symbolize.cc' || echo '$(srcdir)/'`src/symbolize.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libglog_la-symbolize.Tpo $(DEPDIR)/libglog_la-symbolize.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/symbolize.cc' object='libglog_la-symbolize.lo' libtool=yes @AMDEPBACKSLASH@
+libfeelpp_glog_la-symbolize.lo: src/symbolize.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -MT libfeelpp_glog_la-symbolize.lo -MD -MP -MF $(DEPDIR)/libfeelpp_glog_la-symbolize.Tpo -c -o libfeelpp_glog_la-symbolize.lo `test -f 'src/symbolize.cc' || echo '$(srcdir)/'`src/symbolize.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libfeelpp_glog_la-symbolize.Tpo $(DEPDIR)/libfeelpp_glog_la-symbolize.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/symbolize.cc' object='libfeelpp_glog_la-symbolize.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -c -o libglog_la-symbolize.lo `test -f 'src/symbolize.cc' || echo '$(srcdir)/'`src/symbolize.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -c -o libfeelpp_glog_la-symbolize.lo `test -f 'src/symbolize.cc' || echo '$(srcdir)/'`src/symbolize.cc
 
-libglog_la-signalhandler.lo: src/signalhandler.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -MT libglog_la-signalhandler.lo -MD -MP -MF $(DEPDIR)/libglog_la-signalhandler.Tpo -c -o libglog_la-signalhandler.lo `test -f 'src/signalhandler.cc' || echo '$(srcdir)/'`src/signalhandler.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libglog_la-signalhandler.Tpo $(DEPDIR)/libglog_la-signalhandler.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/signalhandler.cc' object='libglog_la-signalhandler.lo' libtool=yes @AMDEPBACKSLASH@
+libfeelpp_glog_la-signalhandler.lo: src/signalhandler.cc
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -MT libfeelpp_glog_la-signalhandler.lo -MD -MP -MF $(DEPDIR)/libfeelpp_glog_la-signalhandler.Tpo -c -o libfeelpp_glog_la-signalhandler.lo `test -f 'src/signalhandler.cc' || echo '$(srcdir)/'`src/signalhandler.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libfeelpp_glog_la-signalhandler.Tpo $(DEPDIR)/libfeelpp_glog_la-signalhandler.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='src/signalhandler.cc' object='libfeelpp_glog_la-signalhandler.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libglog_la_CXXFLAGS) $(CXXFLAGS) -c -o libglog_la-signalhandler.lo `test -f 'src/signalhandler.cc' || echo '$(srcdir)/'`src/signalhandler.cc
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libfeelpp_glog_la_CXXFLAGS) $(CXXFLAGS) -c -o libfeelpp_glog_la-signalhandler.lo `test -f 'src/signalhandler.cc' || echo '$(srcdir)/'`src/signalhandler.cc
 
 demangle_unittest-demangle_unittest.o: src/demangle_unittest.cc
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(demangle_unittest_CXXFLAGS) $(CXXFLAGS) -MT demangle_unittest-demangle_unittest.o -MD -MP -MF $(DEPDIR)/demangle_unittest-demangle_unittest.Tpo -c -o demangle_unittest-demangle_unittest.o `test -f 'src/demangle_unittest.cc' || echo '$(srcdir)/'`src/demangle_unittest.cc

@@ -168,7 +168,7 @@ struct MakeBareEntity<Ele, 1>
     operator()() const
     {
         size_type i1 = ( _M_element.point( 0 ) ).id();
-        Debug( 4015 )  << "[mesh1d::updateFaces] point index in face " << i1 << "\n";
+        DVLOG(2)  << "[mesh1d::updateFaces] point index in face " << i1 << "\n";
         entity_type bface;
         bface = makeBarePoint( i1 ).first;
         return bface;
@@ -314,7 +314,7 @@ processorBoundingBox ( const MeshType& mesh,
     // the bounding box for the whole domain.
     if ( pid == invalid_size_type_value )
     {
-        Debug( 4100 ) << "[processorBoundingBox] np pid given\n";
+        DVLOG(2) << "[processorBoundingBox] np pid given\n";
 
         for ( unsigned int n=0; n<mesh.numPoints(); n++ )
             for ( unsigned int i=0; i<mesh.dimension(); i++ )
@@ -328,7 +328,7 @@ processorBoundingBox ( const MeshType& mesh,
     // to only consider those elements living on that processor
     else
     {
-        Debug( 4100 ) << "[processorBoundingBox] process bounding box on pid " << pid << "\n";
+        DVLOG(2) << "[processorBoundingBox] process bounding box on pid " << pid << "\n";
         typename MeshType::element_iterator it = mesh.beginElementWithProcessId( pid );
         typename MeshType::element_iterator en = mesh.endElementWithProcessId( pid );
 
@@ -347,8 +347,8 @@ processorBoundingBox ( const MeshType& mesh,
         max( i ) = 0;
     }
 
-    Debug( 4100 ) << "[processorBoundingBox] min= " << min << "\n";
-    Debug( 4100 ) << "[processorBoundingBox] max= " << max << "\n";
+    DVLOG(2) << "[processorBoundingBox] min= " << min << "\n";
+    DVLOG(2) << "[processorBoundingBox] max= " << max << "\n";
     const MeshBoundingBox ret_val( min, max );
 
     return ret_val;
@@ -368,9 +368,9 @@ processorBoundingSphere ( const MeshType& mesh,
     const Real  diag = Feel::distance( bbox.second, bbox.first );
     const Point cent = Feel::middle( bbox.second, bbox.first );
 
-    Debug( 4100 ) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
-    Debug( 4100 ) << "[processorBoundingSphere] center " << cent << "\n";
-    Debug( 4100 ) << "[processorBoundingSphere] radius " << 0.5*diag << "\n";
+    DVLOG(2) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
+    DVLOG(2) << "[processorBoundingSphere] center " << cent << "\n";
+    DVLOG(2) << "[processorBoundingSphere] radius " << 0.5*diag << "\n";
     return Sphere ( cent, .5*diag );
 }
 

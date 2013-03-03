@@ -32,9 +32,12 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/context.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelmesh/submeshdata.hpp>
 
 namespace Feel
 {
+class SubMeshData;
+
 /**
  * Components of a mesh that can be enabled or disabled when calling
  * \c updateForUse()
@@ -78,6 +81,10 @@ public:
      * -# the processor id the face belongs to
      */
     typedef boost::tuple<size_type, size_type> face_processor_type;
+
+
+    typedef SubMeshData smd_type;
+    typedef boost::shared_ptr<smd_type> smd_ptrtype;
 
     //@}
 
@@ -284,6 +291,127 @@ public:
         return M_worldComm.localComm();
     }
 
+    virtual void meshModified() = 0;
+
+    //! set sub mesh data
+    void setSubMeshData( smd_ptrtype smd )
+        {
+            M_smd = smd;
+        }
+
+    //! \return true if mesh holds sub mesh data
+    bool hasSubMeshData() const { return M_smd.use_count() > 0; }
+
+    //! \return sub mesh
+    typename smd_type::mesh_ptrtype subMesh() const
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            return M_smd->mesh;
+        }
+
+    //! \return true if the mesh is related to the mesh \p m
+    bool isSubMeshFrom( MeshBase const* m ) const
+        {
+            VLOG(2) << "isSubMeshFrom<mesh_ptrtype> called\n";
+            if ( !M_smd ) return false;
+            bool res= (M_smd->mesh.get() == m);
+            VLOG(2) << "this isSubMeshFrom m: " << res << "\n";
+            return res;
+        }
+    //! \return true if the mesh is related to the mesh \p m
+    bool isSubMeshFrom( boost::shared_ptr<MeshBase> m ) const
+        {
+            return isSubMeshFrom( m.get() );
+        }
+
+    //! \return true if the mesh is related to the mesh \p m
+    bool isParentMeshOf( boost::shared_ptr<MeshBase> m ) const
+        {
+            VLOG(2) << "isParentMeshOf<mesh_ptrtype> called\n";
+            bool res = m->isSubMeshFrom( this );
+            if ( res == false ) return res;
+            VLOG(2) << "this isParentMeshOf m: " << res << "\n";
+            return res;
+        }
+#if 0
+    template<typename M>
+    bool isSubMeshFrom( boost::shared_ptr<M> m ) const
+        {
+            VLOG(2) << "isSubMeshFrom<M> called\n";
+            return false;
+        }
+#endif
+    template<typename M>
+    bool isSameMesh( M const* m ) const
+        {
+            bool same_mesh = ( dynamic_cast<void const*>( this ) == dynamic_cast<void const*>( m ) );
+            return same_mesh;
+        }
+
+    template<typename M>
+    bool isSameMesh( boost::shared_ptr<M> m ) const
+        {
+            bool same_mesh = ( dynamic_cast<void const*>( this ) == dynamic_cast<void*>( m.get() ) );
+            return same_mesh;
+        }
+    template<typename M>
+    bool isRelatedTo( boost::shared_ptr<M> m ) const
+        {
+            bool same_mesh = isSameMesh(m);
+            VLOG(2) << "same_mesh: " << same_mesh << "\n";
+            bool is_submesh_from = isSubMeshFrom( m );
+            VLOG(2) << "isSubMeshFrom: " << is_submesh_from << "\n";
+            bool is_parentmesh_of = isParentMeshOf( m );
+            VLOG(2) << "is_parentmesh_of: " << is_parentmesh_of << "\n";
+            return same_mesh || is_submesh_from || is_parentmesh_of;
+        }
+
+    //! \return id in parent mesh given the id in the sub mesh
+    size_type subMeshToMesh( size_type id ) const
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            return M_smd->bm.left.find( id )->second;
+        }
+
+    //! \return id in sub mesh given the id in the parent mesh
+    size_type meshToSubMesh( size_type id ) const
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                return M_smd->bm.right.find( id )->second;
+            // the submesh element id has not been found, return invalid value
+            return invalid_size_type_value;
+        }
+
+    //! \return id in parent mesh given the id in the sub mesh
+    size_type subMeshToMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
+        {
+            if ( this == m.get() )
+                return id;
+            if ( isRelatedTo( m ) )
+            {
+                CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+                return M_smd->bm.left.find( id )->second;
+            }
+            return invalid_size_type_value;
+        }
+
+    //! \return id in sub mesh given the id in the parent mesh
+    size_type meshToSubMesh( boost::shared_ptr<MeshBase> m, size_type id ) const
+        {
+            if ( this == m.get() )
+                return id;
+            if ( isRelatedTo( m ) )
+            {
+                CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+                if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                    return M_smd->bm.right.find( id )->second;
+                // the submesh element id has not been found, return invalid value
+                // will return invalid_size_type_value
+            }
+            return invalid_size_type_value;
+        }
+
     //@}
 
 
@@ -328,6 +456,7 @@ protected:
      * check elements orientation and fix it if needed
      */
     virtual void checkAndFixPermutation() = 0;
+
 
 private:
     friend class boost::serialization::access;
@@ -374,6 +503,10 @@ private:
     uint16_type M_n_parts;
 
     WorldComm M_worldComm;
+
+    // sub mesh data
+    smd_ptrtype M_smd;
+
 };
 }
 #endif /* __MeshBase_H */

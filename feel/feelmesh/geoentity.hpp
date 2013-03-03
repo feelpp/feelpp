@@ -648,6 +648,10 @@ public:
     {
         return M_elist;
     }
+    std::set<size_type>& elements()
+    {
+        return M_elist;
+    }
 
     //@}
 
@@ -661,25 +665,25 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            Debug( 4015 ) << "Serializing GeoEntity...\n";
-            Debug( 4015 ) << "  - id...\n";
+            DVLOG(2) << "Serializing GeoEntity...\n";
+            DVLOG(2) << "  - id...\n";
             ar & M_id;
-            Debug( 4015 ) << "  - id:" << M_id << "\n";
-            Debug( 4015 ) << "  - entity...\n";
+            DVLOG(2) << "  - id:" << M_id << "\n";
+            DVLOG(2) << "  - entity...\n";
             ar & M_entity;
-            Debug( 4015 ) << "  - entity:" << M_entity.context() << "\n";
-            Debug( 4015 ) << "  - geometry...\n";
+            DVLOG(2) << "  - entity:" << M_entity.context() << "\n";
+            DVLOG(2) << "  - geometry...\n";
             ar & M_geometry;
-            Debug( 4015 ) << "  - geometry:" << M_geometry.context() << "\n";
-            Debug( 4015 ) << "  - shape...\n";
+            DVLOG(2) << "  - geometry:" << M_geometry.context() << "\n";
+            DVLOG(2) << "  - shape...\n";
             ar & M_shape;
-            Debug( 4015 ) << "  - shape:" << M_shape.context() << "\n";
-            Debug( 4015 ) << "  - npids...\n";
+            DVLOG(2) << "  - shape:" << M_shape.context() << "\n";
+            DVLOG(2) << "  - npids...\n";
             ar & M_npids;
-            Debug( 4015 ) << "  - npids:" << M_npids << "\n";
-            Debug( 4015 ) << "  - pid...\n";
+            DVLOG(2) << "  - npids:" << M_npids << "\n";
+            DVLOG(2) << "  - pid...\n";
             ar & M_pid;
-            Debug( 4015 ) << "  - pid:" << M_pid << "\n";
+            DVLOG(2) << "  - pid:" << M_pid << "\n";
             ar & M_pidInPartition;
             ar & M_neighor_pids;
             ar & M_idInPartition;

@@ -229,6 +229,9 @@ public:
      */
     DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
 
+    mesh_type* mesh() { return M_mesh; }
+    mesh_type* mesh() const { return M_mesh; }
+
     /**
      * \return the number of dof for faces on the boundary
      */
@@ -558,7 +561,7 @@ public:
              localToGlobal( Elem const& El, const uint16_type localNode, const uint16_type c = 0 ) const
     {
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<Elem::nDim>,mpl::int_<nDim> >,mpl::identity<element_access>,mpl::identity<face_access> >::type::type access_type;
-        //Debug( 5005 ) << "dof:(" << El.id() << ", " << localNode << ")= "
+        //DVLOG(2) << "dof:(" << El.id() << ", " << localNode << ")= "
         //<< access_type(*this)( El.id(), localNode, c ) << "\n";
         return access_type( *this )( El.id(), localNode, c );
     }
@@ -664,10 +667,10 @@ public:
 
         if ( !this->isElementDone( __elt.id() ) )
         {
-            Debug( 11111 ) << "adding dof from element " << __elt.id() << "\n";
+            DVLOG(3) << "adding dof from element " << __elt.id() << "\n";
             size_type gdofcount = shift;
-            Debug( 5005 ) << "next_free_dof " << next_free_dof  << "\n";
-            Debug( 5005 ) << "current dof " << dofIndex( next_free_dof ) << "\n";
+            DVLOG(2) << "next_free_dof " << next_free_dof  << "\n";
+            DVLOG(2) << "current dof " << dofIndex( next_free_dof ) << "\n";
 
 
             /*
@@ -716,7 +719,7 @@ public:
 
         else
         {
-            Debug( 11111 ) << "element " << __elt.id() << "has already been taken care of\n";
+            DVLOG(3) << "element " << __elt.id() << "has already been taken care of\n";
         }
     }
     /**
@@ -808,6 +811,8 @@ public:
      */
     void build( mesh_type& M )
     {
+        M_mesh = boost::addressof( M );
+
         _M_elt_done.resize( M.numElements() );
         std::fill( _M_elt_done.begin(), _M_elt_done.end(), false );
 
@@ -1069,7 +1074,7 @@ public:
 
             if ( itdof == endof )
             {
-                Debug( 5005 ) << "[dof] dof (" << gDof.template get<0>() << "," << gDof.template get<1>() << "," << gDof.template get<2>() << ") not yet inserted in map\n";
+                DVLOG(2) << "[dof] dof (" << gDof.template get<0>() << "," << gDof.template get<1>() << "," << gDof.template get<2>() << ") not yet inserted in map\n";
                 boost::tie( itdof, __inserted ) = map_gdof.insert( std::make_pair( gDof, dofIndex( pDof ) ) );
 
                 pDof += 1;
@@ -1081,14 +1086,14 @@ public:
 
             else
             {
-                Debug( 5005 ) << "[dof] dof (" << gDof.template get<0>() << ","
+                DVLOG(2) << "[dof] dof (" << gDof.template get<0>() << ","
                               << gDof.template get<1>()
                               << "," << gDof.template get<2>()
                               << ") already inserted in map with dof_id = " << itdof->second << "\n";
             }
 
 #if !defined( NDEBUG )
-            Debug( 5005 ) << "global dof = " << itdof->second
+            DVLOG(2) << "global dof = " << itdof->second
                           << " local dof = " << fe_type::nLocalDof*itdof->first.template get<1>() + lc_dof
                           << " element = " << ie
                           << " entity = " << itdof->first.template get<0>()
@@ -1200,7 +1205,7 @@ private:
         shifts.template get<0>() = lc;
 
 #if !defined(NDEBUG)
-        Debug( 5005 ) << "[Dof::updateVolumeDof(addVertexDof] vertex proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+        DVLOG(2) << "[Dof::updateVolumeDof(addVertexDof] vertex proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
     void addEdgeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
@@ -1237,7 +1242,7 @@ private:
         // update shifts
         shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
-        Debug( 5005 ) << "[Dof::addEdgeDof(1)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+        DVLOG(2) << "[Dof::addEdgeDof(1)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
     void addEdgeDof( element_type const& /*__elt*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
@@ -1292,7 +1297,7 @@ private:
         // update shifts
         shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
-        Debug( 5005 ) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+        DVLOG(2) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
 
@@ -1347,7 +1352,7 @@ private:
         // update shifts
         shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
-        Debug( 5005 ) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+        DVLOG(2) << "[Dof::addEdgeDof] edge proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
 
@@ -1382,7 +1387,7 @@ private:
         // update shifts
         shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
-        Debug( 5005 ) << "[Dof::addFaceDof(2,true)] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+        DVLOG(2) << "[Dof::addFaceDof(2,true)] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
     void addFaceDof( element_type const& /*M*/, uint16_type /*processor*/, size_type& /*next_free_dof*/,
@@ -1464,7 +1469,7 @@ private:
         // update shifts
         shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
-        Debug( 5005 ) << "[Dof::addFaceDof<3>] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+        DVLOG(2) << "[Dof::addFaceDof<3>] face proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
     void addVolumeDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
@@ -1495,7 +1500,7 @@ private:
         // update shifts
         shifts.template get<0>() = lc;
 #if !defined(NDEBUG)
-        Debug( 5005 ) << "[Dof::updateVolumeDof(<2>)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
+        DVLOG(2) << "[Dof::updateVolumeDof(<2>)] element proc" << processor << " next_free_dof = " << next_free_dof << "\n";
 #endif
     }
 
@@ -1689,7 +1694,7 @@ private:
 
         FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
 #if !defined(NDEBUG)
-        Debug( 5005 ) << " local face id : " << iFaEl << "\n";
+        DVLOG(2) << " local face id : " << iFaEl << "\n";
 #endif
         size_type nVerticesF = face_type::numVertices * fe_type::nDofPerVertex;
         size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
@@ -1756,7 +1761,7 @@ private:
 #endif
 
 #if !defined(NDEBUG)
-        Debug( 5005 ) << " local face id : " << iFaEl << "\n";
+        DVLOG(2) << " local face id : " << iFaEl << "\n";
 #endif
         size_type nVerticesF = face_type::numVertices * fe_type::nDofPerVertex;
         size_type ndofF = ( face_type::numVertices * fe_type::nDofPerVertex +
@@ -1841,7 +1846,7 @@ private:
 #endif
 
 #if !defined(NDEBUG)
-        Debug( 5005 ) << " local face id : " << iFaEl << "\n";
+        DVLOG(2) << " local face id : " << iFaEl << "\n";
 #endif
         size_type nVerticesAndEdgeF = ( face_type::numVertices * fe_type::nDofPerVertex +
                                         face_type::numEdges * fe_type::nDofPerEdge );
@@ -2011,6 +2016,7 @@ private:
 
 private:
 
+    mesh_type* M_mesh;
     fe_ptrtype _M_fe;
 
     reference_convex_type _M_convex_ref;
@@ -2273,7 +2279,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
     uint16_type iFaEl = __face.pos_first();
     FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
 #if !defined(NDEBUG)
-    Debug( 5005 ) << " local face id : " << iFaEl << "\n";
+    DVLOG(2) << " local face id : " << iFaEl << "\n";
 #endif
 
     // Loop number of DofTable per edge
@@ -2325,7 +2331,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
     uint16_type iFaEl = __face.pos_first();
     FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
 #if !defined(NDEBUG)
-    Debug( 5005 ) << " local face id : " << iFaEl << "\n";
+    DVLOG(2) << " local face id : " << iFaEl << "\n";
 #endif
 
     // loop on face vertices
@@ -2394,7 +2400,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addFacePeriodicDof( element_type co
     uint16_type iFaEl = __face.pos_first();
     FEELPP_ASSERT( iFaEl != invalid_uint16_type_value ).error ( "invalid element index in face" );
 #if !defined(NDEBUG)
-    Debug( 5005 ) << " local face id : " << iFaEl << "\n";
+    DVLOG(2) << " local face id : " << iFaEl << "\n";
 #endif
 
     // Loop on number of Dof per face
@@ -2464,7 +2470,7 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     _M_face_sign = ublas::scalar_vector<bool>( M.numFaces(), false );
 
     const bool doperm = ( ( ( Shape == SHAPE_TETRA ) && ( nOrder > 2 ) ) || ( ( Shape == SHAPE_HEXA ) && ( nOrder > 1 ) ) );
-    Debug( 5005 ) << "generateFacePermutations: " << doperm << "\n";
+    DVLOG(2) << "generateFacePermutations: " << doperm << "\n";
     generateFacePermutations( M, mpl::bool_<doperm>() );
 }
 template<typename MeshType, typename FEType, typename PeriodicityType>
@@ -2803,7 +2809,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         element_const_iterator it_elt = M.beginElementWithProcessId( processor );
         element_const_iterator en_elt = M.endElementWithProcessId( processor );
         size_type n_elts = std::distance( it_elt, en_elt );
-        Debug( 5005 ) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
+        DVLOG(2) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
         this->_M_first_df[processor] = next_free_dof;
 
         if ( is_periodic || is_discontinuous_locally )
@@ -2811,7 +2817,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
         it_elt = M.beginElementWithProcessId( processor );
 
-        Debug( 5005 ) << "[buildDofMap] starting with elt " << it_elt->id() << "\n";
+        DVLOG(2) << "[buildDofMap] starting with elt " << it_elt->id() << "\n";
 
         for ( ; it_elt!=en_elt; ++it_elt )
         {
@@ -2873,7 +2879,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
                     ostr << _M_el_l2g[ __elt.id()][ fe_type::nLocalDof*c + l ] << " ";
                 }
 
-                Debug( 5005 ) << ostr.str() << "\n";
+                DVLOG(2) << ostr.str() << "\n";
             }
         }
 
@@ -2890,16 +2896,16 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     this->_M_n_dofs = next_free_dof;
 
 #if !defined(NDEBUG)
-    Debug( 5005 ) << " n global dof " << nDof() << "\n";
-    Debug( 5005 ) << " n local dof " << nLocalDof() << "\n";
+    DVLOG(2) << " n global dof " << nDof() << "\n";
+    DVLOG(2) << " n local dof " << nLocalDof() << "\n";
 #endif
 
     for ( size_type processor=0; processor<M.worldComm().localSize(); processor++ )
     {
-        Debug( 5005 ) << "o processor " << processor << "\n";
-        Debug( 5005 ) << "  - n dof on proc " << nDofOnProcessor( processor ) << "\n";
-        Debug( 5005 ) << "  - first dof " << firstDof( processor ) << "\n";
-        Debug( 5005 ) << "  - last dof " << lastDof( processor ) << "\n";
+        DVLOG(2) << "o processor " << processor << "\n";
+        DVLOG(2) << "  - n dof on proc " << nDofOnProcessor( processor ) << "\n";
+        DVLOG(2) << "  - first dof " << firstDof( processor ) << "\n";
+        DVLOG(2) << "  - last dof " << lastDof( processor ) << "\n";
     }
 
     //if ( is_continuous )
@@ -2934,7 +2940,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     auto it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
     auto en_elt = M.endElementWithProcessId( M.worldComm().localRank() );
     //size_type n_elts = std::distance( it_elt, en_elt);
-    //Debug( 5005 ) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
+    //DVLOG(2) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
 
     size_type theFirstDf = start_next_free_dof;
 
@@ -3011,10 +3017,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
                         face_type::numEdges * fe_type::nDofPerEdge +
                         face_type::numFaces * fe_type::nDofPerFace );
     _M_n_dof_per_face_on_bdy = nDofF;
-    Debug( 5005 ) << "vertex dof : " <<  face_type::numVertices * fe_type::nDofPerVertex << "\n";
-    Debug( 5005 ) << "edge dof : " <<  face_type::numEdges * fe_type::nDofPerEdge << "\n";
-    Debug( 5005 ) << "face dof : " << face_type::numFaces * fe_type::nDofPerFace  << "\n";
-    Debug( 5005 ) << "number of Dof on an Element Face : " << nDofF << "\n";
+    DVLOG(2) << "vertex dof : " <<  face_type::numVertices * fe_type::nDofPerVertex << "\n";
+    DVLOG(2) << "edge dof : " <<  face_type::numEdges * fe_type::nDofPerEdge << "\n";
+    DVLOG(2) << "face dof : " << face_type::numFaces * fe_type::nDofPerFace  << "\n";
+    DVLOG(2) << "number of Dof on an Element Face : " << nDofF << "\n";
 
     if ( nDofF == 0 ) return;
 
@@ -3040,8 +3046,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
             // 0 is the invalid value for the sign !
             _M_face_l2g[i1][i2] = default_dof;
 
-    Debug( 5005 ) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
-    Debug( 5005 ) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
+    DVLOG(2) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
+    DVLOG(2) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
 
     for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
     {
@@ -3056,11 +3062,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 #if !defined(NDEBUG)
 
         if (  __face_it->isOnBoundary() )
-            Debug( 5005 ) << "[buildBoundaryDofMap] boundary global face id : " << __face_it->id()
+            DVLOG(2) << "[buildBoundaryDofMap] boundary global face id : " << __face_it->id()
                           << " marker: " << __face_it->marker()<< "\n";
 
         else
-            Debug( 5005 ) << "[buildBoundaryDofMap] global face id : " << __face_it->id() << "\n";
+            DVLOG(2) << "[buildBoundaryDofMap] global face id : " << __face_it->id() << "\n";
 
 #endif
         uint16_type lcVertex = 0;
@@ -3094,7 +3100,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
     if ( fe_type::is_modal )
         return;
 
-    Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates\n";
+    DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
 
@@ -3165,7 +3171,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
         FEELPP_ASSERT( dof_done[dof_id] == true )( dof_id )( nLocalDofWithGhost() )( firstDof() )( lastDof() )( fe_type::nDim )( fe_type::nLocalDof ).warn( "invalid dof point" );
     }
 
-    Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates done\n";
+    DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
 template<typename MeshType, typename FEType, typename PeriodicityType>
 void
@@ -3176,7 +3182,7 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
     if ( fe_type::is_modal )
         return;
 
-    Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates\n";
+    DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
 

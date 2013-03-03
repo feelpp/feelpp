@@ -64,9 +64,10 @@ generic_options()
         ( "help", "prints this help message" )
         ( "license", "prints the license text" )
         ( "version", "prints the version" )
-        ( "v", po::value<int>(), "verbosity level" )
+        //( "v", po::value<int>(), "verbosity level" )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
+        ( "directory", po::value<std::string>(), "change directory to specified one" )
         ;
     return generic;
 }

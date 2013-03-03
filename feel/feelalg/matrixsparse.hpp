@@ -762,6 +762,7 @@ protected:
 
 typedef MatrixSparse<double> d_sparse_matrix_type;
 typedef boost::shared_ptr<d_sparse_matrix_type> d_sparse_matrix_ptrtype;
+typedef boost::shared_ptr<d_sparse_matrix_type> sparse_matrix_ptrtype;
 
 
 //-----------------------------------------------------------------------

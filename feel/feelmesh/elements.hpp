@@ -856,20 +856,6 @@ public:
 
     }
 
-    /**
-     * erase element at position \p position
-     *
-     * @param position \p position is a valid dereferenceable iterator of the index.
-     *
-     * @return An iterator pointing to the element immediately
-     * following the one that was deleted, or \c end() if no such element
-     * exists.
-     */
-    element_iterator eraseElement( element_iterator position )
-    {
-        return _M_elements.erase( position );
-    }
-
     template<typename ElementVecType>
     void updateMarker2( ElementVecType const& evec )
     {

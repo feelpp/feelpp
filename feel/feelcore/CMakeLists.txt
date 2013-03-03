@@ -30,11 +30,12 @@ set(SRC
   xmlparser.hpp
   applicationxml.cpp
   about.cpp
-  debug.cpp
   typeinfo.cpp
   smartassert.cpp
   pslogger.cpp
-  worldcomm.cpp )
+  worldcomm.cpp
+  debug.cpp
+ )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelcore "${SRC};${HDR}")

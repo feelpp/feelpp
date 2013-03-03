@@ -198,7 +198,6 @@ MatrixEigenDense<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> 
                                      size_type start_i,
                                      size_type start_j )
 {
-#warning Not yet implemented
     LOG(ERROR) << "invalid call to updateBlockMat(), not yet implemented\n";
 
 }

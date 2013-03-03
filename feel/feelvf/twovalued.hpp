@@ -255,22 +255,22 @@ public:
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            //Debug( 5051 ) << "sumv_left= " << _M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
+            //DVLOG(2) << "sumv_left= " << _M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
             //<< "sumv_right= " << _M_tensor_expr_right.evalq( q, c1, c2 ) << "\n";
             Feel::detail::ignore_unused_variable_warning( i );
             value_type resl = _M_tensor_expr_left.evalq( c1, c2, q );
             value_type resr = _M_tensor_expr_right.evalq( c1, c2, q );
             value_type res = resl + resr;
-            //Debug( 5051 ) << "resl( " << i << "," << c1 << "," << c2 << "," << q << ")=" << resl << "\n";
-            //Debug( 5051 ) << "resr( " << i << "," << c1 << "," << c2 << "," << q << ")=" << resr << "\n";
-            //Debug( 5051 ) << "res( " << i << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            //DVLOG(2) << "resl( " << i << "," << c1 << "," << c2 << "," << q << ")=" << resl << "\n";
+            //DVLOG(2) << "resr( " << i << "," << c1 << "," << c2 << "," << q << ")=" << resr << "\n";
+            //DVLOG(2) << "res( " << i << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            //Debug( 5051 ) << "sumv_left= " << _M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
+            //DVLOG(2) << "sumv_left= " << _M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
             //<< "sumv_right= " << _M_tensor_expr_right.evalq( q, c1, c2 ) << "\n";
             return _M_tensor_expr_left.evalq( c1, c2, q )+_M_tensor_expr_right.evalq( c1, c2, q );
         }
@@ -437,7 +437,7 @@ public:
             _M_map( fusion::make_map<key_type >( _M_gmc ) ),
             _M_tensor_expr( expr.expression(), _M_map, fev )
         {
-            Debug( 5051 ) << "expr SumExpr<" << Side << "> is_zero " << is_zero::value << "\n";
+            DVLOG(2) << "expr SumExpr<" << Side << "> is_zero " << is_zero::value << "\n";
         }
 
         tensor( this_type const& expr,
@@ -447,7 +447,7 @@ public:
             _M_map( fusion::make_map<key_type >( _M_gmc ) ),
             _M_tensor_expr( expr.expression(), _M_map, fev )
         {
-            Debug( 5051 ) << "expr SumExpr is_zero " << is_zero::value << "\n";
+            DVLOG(2) << "expr SumExpr is_zero " << is_zero::value << "\n";
         }
 
         template<typename IM>
@@ -675,7 +675,7 @@ public:
             _M_map( fusion::make_map<key_type>( _M_gmc ) ),
             _M_tensor_expr( expr.expression(), _M_map, fev, feu )
         {
-            Debug( 5051 ) << "expr SumTExpr<" << Side << "> is_zero " << is_zero::value << "\n";
+            DVLOG(2) << "expr SumTExpr<" << Side << "> is_zero " << is_zero::value << "\n";
         }
 
         template<typename IM>
