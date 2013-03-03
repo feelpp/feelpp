@@ -486,23 +486,7 @@ public:
      * and a \p Vector \p V to \p this, where \p this=U.
      */
     void addVector ( const Vector<value_type>& V_in,
-                     const MatrixSparse<value_type>& A_in )
-    {
-        const VectorPetsc<T>* V = dynamic_cast<const VectorPetsc<T>*>( &V_in );
-        const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
-
-        assert ( V != 0 );
-        assert ( A != 0 );
-
-        int ierr=0;
-
-        A->close();
-
-        // The const_cast<> is not elegant, but it is required since PETSc
-        // is not const-correct.
-        ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), V->_M_vec, _M_vec, _M_vec );
-        CHKERRABORT( this->comm(),ierr );
-    }
+                     const MatrixSparse<value_type>& A_in );
 
 
     /**
@@ -713,7 +697,7 @@ protected:
      * This boolean value should only be set to false
      * for the constructor which takes a PETSc Vec object.
      */
-    const bool _M_destroy_vec_on_exit;
+    bool _M_destroy_vec_on_exit;
 };
 
 template <typename T>
