@@ -68,7 +68,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/benchmarks/ethiersteinman/"
   "${PROJECT_SOURCE_DIR}/benchmarks/kovasznay/"
   "${PROJECT_SOURCE_DIR}/doc/poster/"
-  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
+#  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
   "${PROJECT_SOURCE_DIR}/doc/manual/feel-manual.pdf"
   "${PROJECT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf"
   "${PROJECT_SOURCE_DIR}/doc/figures/backgrounds/"
