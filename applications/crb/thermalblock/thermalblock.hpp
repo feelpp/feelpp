@@ -886,7 +886,10 @@ ThermalBlock::output( int output_index, parameter_type const& mu )
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+                element_ptrtype eltF( new element_type( Xh ) );
+                *eltF = *M_Fqm[output_index][q][m];
+                output += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
+                //output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
             }
         }
     }

@@ -72,7 +72,7 @@ SolverLinearTrilinos<T>::solve ( MatrixSparse<T>  const& matrix,
                                  const double tol,
                                  const unsigned int m_its )
 {
-    Debug( 10010 ) << "Matrix solver...\n";
+    DVLOG(2) << "Matrix solver...\n";
 
     setRHS( rhs );
     setLHS( solution );

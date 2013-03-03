@@ -142,7 +142,7 @@ private:
         for ( vertex_permutation_type p = pbegin; p < pend; ++p )
         {
             ppts[f].insert( std::make_pair( p, pts.points() ) );
-            Debug( 5090 ) << "[quadmapped] ppts[" << f << "]["
+            DVLOG(2) << "[quadmapped] ppts[" << f << "]["
                           << p.value() << "]="
                           << ppts[f].find( p )->second << "\n";
         }
@@ -156,7 +156,7 @@ private:
         for ( edge_permutation_type p = pbegin; p < pend; ++p )
         {
             ppts[f].insert( std::make_pair( p, permutatePoints( pts.points(), p ) ) );
-            Debug( 5090 ) << "[quadmapped] ppts[" << f << "][" << p.value() << "]=" << ppts[f].find( p )->second << "\n";
+            DVLOG(2) << "[quadmapped] ppts[" << f << "][" << p.value() << "]=" << ppts[f].find( p )->second << "\n";
         }
     }
     void
@@ -173,7 +173,7 @@ private:
         for ( face_permutation_type p = pbegin; p < pend; ++p )
         {
             ppts[f].insert( std::make_pair( p, permutatePoints( pts.points(), p ) ) );
-            Debug( 5090 ) << "[quadmapped] ppts[" << f << "][" << p.value() << "]=" << ppts[f].find( p )->second << "\n";
+            DVLOG(2) << "[quadmapped] ppts[" << f << "][" << p.value() << "]=" << ppts[f].find( p )->second << "\n";
         }
     }
 

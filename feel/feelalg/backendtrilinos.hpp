@@ -276,20 +276,20 @@ public:
 
         vector_type v = *u;
 
-        //Debug(10003) << "Initial EpetraVector " << v << "\n";
+        //DVLOG(2) << "Initial EpetraVector " << v << "\n";
 
         const size_type L = v.localSize();
 
         for ( size_type i=0; i<L; i++ )
         {
-            Debug( 10003 ) << "x(" << x.firstLocalIndex() + i  << ")="
+            DVLOG(2) << "x(" << x.firstLocalIndex() + i  << ")="
                            << "v[" << v_map.GID( i ) << "] = "
                            << v( i ) << "\n";
 
             x( x.firstLocalIndex() + i ) = v( i );
         }
 
-        Debug( 10003 ) << "Epetra2Ublas:" << x << "\n";
+        DVLOG(2) << "Epetra2Ublas:" << x << "\n";
     }
 
 
@@ -299,14 +299,14 @@ public:
         epetra_vector_type& _v( dynamic_cast<epetra_vector_type&>( *v ) );
         Epetra_Map v_map( _v.Map() );
 
-        Debug( 10002 ) << "Local size of ublas vector" << x.localSize() << "\n";
-        Debug( 10002 ) << "Local size of epetra vector" << v->localSize() << "\n";
+        DVLOG(2) << "Local size of ublas vector" << x.localSize() << "\n";
+        DVLOG(2) << "Local size of epetra vector" << v->localSize() << "\n";
 
         const size_type L = v->localSize();
 
         for ( size_type i=0; i<L; i++ )
         {
-            Debug( 10002 ) << "v[" << v_map.GID( i ) << "] = "
+            DVLOG(2) << "v[" << v_map.GID( i ) << "] = "
                            << "x(" << x.firstLocalIndex() + i  << ")="
                            << x( x.firstLocalIndex() + i ) << "\n";
 
@@ -321,7 +321,7 @@ public:
         Epetra_Map componentMap ( epetraMap( Xh->template functionSpace<index>()->map() ) );
         Epetra_Map globalMap ( epetraMap( Xh->map() ) );
 
-        //Debug(10006) << "Component map: " << componentMap << "\n";
+        //DVLOG(2) << "Component map: " << componentMap << "\n";
 
         Epetra_MultiVector component( componentMap, 1 );
 
@@ -340,12 +340,12 @@ public:
                 int localID = globalMap.LID( compGlobalID+shift );
                 //                         int globalID = globalMap.GID(localID);
 
-                Debug( 10006 ) << "[MyBackend] Copy entry sol[" << localID << "]=" <<  sol[0][localID]
+                DVLOG(2) << "[MyBackend] Copy entry sol[" << localID << "]=" <<  sol[0][localID]
                                << " to component[" << compLocalID << "]\n";
 
                 component[0][compLocalID] = sol[0][localID];
 
-                Debug( 10006 ) << component[0][compLocalID] << "\n";
+                DVLOG(2) << component[0][compLocalID] << "\n";
             }
         }
 
@@ -374,13 +374,13 @@ public:
                 int localID = globalMap.LID( compGlobalID+shift );
                 //                         int globalID = globalMap.GID(localID);
 
-                Debug( 10006 ) << "Copy entry component[" << compLocalID << "] to sol[" << localID << "]="
+                DVLOG(2) << "Copy entry component[" << compLocalID << "] to sol[" << localID << "]="
                                <<  sol[0][localID]
                                << "]\n";
 
                 sol[0][localID] = comp[0][compLocalID] ;
 
-                Debug( 10006 ) << comp[0][compLocalID] << "\n";
+                DVLOG(2) << comp[0][compLocalID] << "\n";
             }
         }
     }

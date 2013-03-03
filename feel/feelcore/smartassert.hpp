@@ -36,26 +36,28 @@
 #include <utility>
 #include <vector>
 #include <map>
+#include <glog/logging.h>
 
 namespace Feel
 {
 enum
 {
+    lvl_info = google::GLOG_INFO,
 
     // default behavior - just loggs this assert
     // (a message is shown to the user to the console)
-    lvl_warn = 100,
+    lvl_warn = google::GLOG_WARNING,
 
     // default behavior - asks the user what to do:
     // Ignore/ Retry/ etc.
-    lvl_debug = 200,
+    lvl_debug = google::GLOG_INFO,
 
     // default behavior - throws a SmartAssert_error
-    lvl_error = 300,
+    lvl_error = google::GLOG_ERROR,
 
     // default behavior - dumps all assert context to console,
     // and aborts
-    lvl_fatal = 1000
+    lvl_fatal = google::GLOG_FATAL
 };
 
 
@@ -69,7 +71,7 @@ class AssertContext
 {
     typedef std::string string;
 public:
-    AssertContext() : _M_level( lvl_debug )
+    AssertContext() : _M_level( lvl_info )
     {}
 
     // where the assertion failed: file & line
@@ -268,6 +270,10 @@ struct Assert
         return *this;
     }
 
+    Assert & info( const char * strMsg = 0 )
+    {
+        return level( lvl_info, strMsg );
+    }
     Assert & warn( const char * strMsg = 0 )
     {
         return level( lvl_warn, strMsg );
@@ -446,8 +452,10 @@ inline ::Feel::Assert make_assert( const char * expr )
 #define SMART_ASSERT_A(x) FEELPP_SMART_ASSERT_OP(x, B)
 #define SMART_ASSERT_B(x) FEELPP_SMART_ASSERT_OP(x, A)
 
-#define FEELPP_SMART_ASSERT_OP(x, next) \
+#define FEELPP_SMART_ASSERT_OP(x, next)         \
     SMART_ASSERT_A.printCurrentValue((x), #x).SMART_ASSERT_ ## next \
     /**/
+
+
 
 #endif

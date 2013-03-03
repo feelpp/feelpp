@@ -85,7 +85,7 @@ struct BFAssign2
     template<typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& X ) const
     {
-        Debug( 5050 ) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << _M_test_index << "\n";
+        DVLOG(2) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << _M_test_index << "\n";
 
         if ( _M_bf.testSpace()->worldsComm()[_M_test_index].isActive() )
         {
@@ -93,7 +93,7 @@ struct BFAssign2
                               make_bfassign1( _M_bf, _M_expr, X, _M_test_index ) );
         }
 
-        Debug( 5050 ) << "[BFAssign2::operator()] stop loop on trial spaces against test space index: " << _M_test_index << "\n";
+        DVLOG(2) << "[BFAssign2::operator()] stop loop on trial spaces against test space index: " << _M_test_index << "\n";
         ++_M_test_index;
 
     }
@@ -504,6 +504,48 @@ public:
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
+
+        size_type trialElementId( size_type trial_eid ) const
+            {
+                size_type idElem = trial_eid;
+                size_type domain_eid = idElem;
+                const bool test_related_to_trial = _M_form.testSpace()->mesh()->isSubMeshFrom( _M_form.trialSpace()->mesh() );
+                const bool trial_related_to_test = _M_form.trialSpace()->mesh()->isSubMeshFrom( _M_form.testSpace()->mesh() );
+                if ( test_related_to_trial )
+                {
+                    domain_eid = _M_form.testSpace()->mesh()->subMeshToMesh( idElem );
+                    DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                if( trial_related_to_test )
+                {
+                    domain_eid = _M_form.trialSpace()->mesh()->meshToSubMesh( idElem );
+                    DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                return domain_eid;
+            }
+        size_type trialElementId( typename mesh_1_type::element_iterator it ) const
+            {
+                return trialElementId( it->id() );
+            }
+        size_type trialElementId( typename mesh_1_type::element_type const& e ) const
+            {
+                return trialElementId( e.id() );
+            }
+        bool isZero( size_type i ) const
+            {
+                size_type domain_eid = trialElementId( i );
+                if ( domain_eid == invalid_size_type_value )
+                    return true;
+                return false;
+            }
+        bool isZero( typename mesh_1_type::element_iterator it ) const
+            {
+                return this->isZero( it->id() );
+            }
+        bool isZero( typename mesh_1_type::element_type const& e ) const
+            {
+                return this->isZero( e.id() );
+            }
 
         void update( map_test_geometric_mapping_context_type const& gmcTest,
                      map_trial_geometric_mapping_context_type const& _gmcTrial,
@@ -1100,7 +1142,8 @@ public:
     //@{
 
 
-
+    // close matrix
+    void close() { _M_matrix->close(); }
 
 
     /**
@@ -1259,12 +1302,13 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     _M_threshold( threshold )
 {
     boost::timer tim;
-    Debug( 5050 ) << "begin constructor with default listblock\n";
+    DVLOG(2) << "begin constructor with default listblock\n";
 
+    if ( !_M_matrix ) _M_matrix = backend()->newMatrix( _test=_M_X1, _trial=_M_X2 );
     _M_lb.push_back( Block ( 0, 0, 0, 0 ) );
 
-    Debug( 5050 ) << " - form init in " << tim.elapsed() << "\n";
-    Debug( 5050 ) << "begin constructor with default listblock done\n";
+    DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
+    DVLOG(2) << "begin constructor with default listblock done\n";
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -1289,7 +1333,7 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     _M_do_threshold( do_threshold ),
     _M_threshold( threshold )
 {
-
+    if ( !_M_matrix ) _M_matrix = backend()->newMatrix( _test=_M_X1, _trial=_M_X2 );
 }
 
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1301,7 +1345,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 {
     if ( init )
     {
-        Debug( 5055 ) << "[BilinearForm::assign<false>] start\n";
+        DVLOG(2) << "[BilinearForm::assign<false>] start\n";
         typedef ublas::matrix_range<matrix_type> matrix_range_type;
         typename list_block_type::const_iterator __bit = _M_lb.begin();
         typename list_block_type::const_iterator __ben = _M_lb.end();
@@ -1317,7 +1361,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 
     __expr.assemble( _M_X1, _M_X2, *this );
 
-    Debug( 5055 ) << "[BilinearForm::assign<false>] stop\n";
+    DVLOG(2) << "[BilinearForm::assign<false>] stop\n";
 
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1327,12 +1371,12 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         bool init,
         mpl::bool_<true> )
 {
-    Debug( 5050 ) << "BilinearForm::assign() start loop on test spaces\n";
+    DVLOG(2) << "BilinearForm::assign() start loop on test spaces\n";
 
     if ( init ) _M_matrix->zero();
 
     assign( __expr, mpl::bool_<true>(), mpl::bool_<( FE1::nSpaces > 1 && FE2::nSpaces > 1 )>() );
-    Debug( 5050 ) << "BilinearForm::assign() stop loop on test spaces\n";
+    DVLOG(2) << "BilinearForm::assign() stop loop on test spaces\n";
 
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1392,10 +1436,10 @@ template<typename ExprT>
 BilinearForm<FE1, FE2, ElemContType>&
 BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 {
-    Debug( 5055 ) << "[BilinearForm::operator+=] start\n";
+    DVLOG(2) << "[BilinearForm::operator+=] start\n";
     this->assign( __expr, false, mpl::bool_<mpl::or_< mpl::bool_< ( FE1::nSpaces > 1 )>,
                   mpl::bool_< ( FE2::nSpaces > 1 )> >::type::value >() );
-    Debug( 5055 ) << "[BilinearForm::operator+=] stop\n";
+    DVLOG(2) << "[BilinearForm::operator+=] stop\n";
     return *this;
 }
 
@@ -1417,10 +1461,10 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
 {
     if ( _M_bf.testSpace()->worldsComm()[_M_test_index].isActive() )
     {
-        Debug( 5050 ) << "[BFAssign1::operator()] expression has test functions index "
+        DVLOG(2) << "[BFAssign1::operator()] expression has test functions index "
                       << _M_test_index << " : "
                       << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
-        Debug( 5050 ) << "[BFAssign1::operator()] expression has trial functions index "
+        DVLOG(2) << "[BFAssign1::operator()] expression has trial functions index "
                       << _M_trial_index << " :"
                       << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
 
@@ -1431,7 +1475,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
             return;
         }
 
-        Debug( 5050 ) << "[BFAssign1::operator()] terms found with "
+        DVLOG(2) << "[BFAssign1::operator()] terms found with "
                       << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
         typedef SpaceType trial_space_type;
         typedef TestSpaceType test_space_type;
@@ -1440,7 +1484,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
 
         if ( _M_bf.testSpace()->worldsComm()[_M_test_index].globalSize()>1 )
         {
-            //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+            //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             if (_M_bf.testSpace()->hasEntriesForAllSpaces())
                 list_block.push_back( Feel::vf::Block( 0, 0,
                                                        _M_bf.testSpace()->nLocalDofStart( _M_test_index ),
@@ -1452,7 +1496,7 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
 
         else
         {
-            //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+            //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             list_block.push_back( Feel::vf::Block( 0,0,
                                                    _M_bf.testSpace()->nDofStart( _M_test_index ),
                                                    _M_bf.trialSpace()->nDofStart( _M_trial_index ) ) );
@@ -1478,10 +1522,10 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
     if ( _M_bf.testSpace()->worldsComm()[_M_test_index].isActive() )
     {
 
-        Debug( 5050 ) << "[BFAssign3::operator()] expression has trial functions index "
+        DVLOG(2) << "[BFAssign3::operator()] expression has trial functions index "
                       << _M_test_index << " : "
                       << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
-        Debug( 5050 ) << "[BFAssign3::operator()] expression has test functions index "
+        DVLOG(2) << "[BFAssign3::operator()] expression has test functions index "
                       << _M_trial_index << " :"
                       << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
 
@@ -1492,7 +1536,7 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
             return;
         }
 
-        Debug( 5050 ) << "[BFAssign3::operator()] terms found with "
+        DVLOG(2) << "[BFAssign3::operator()] terms found with "
                       << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
         typedef SpaceType test_space_type;
         typedef TrialSpaceType trial_space_type;
@@ -1505,7 +1549,7 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
         // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
         if ( _M_bf.testSpace()->worldsComm()[_M_test_index].globalSize()>1 )
         {
-            //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+            //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             if (_M_bf.testSpace()->hasEntriesForAllSpaces())
                 list_block.push_back( Feel::vf::Block( 0, 0,
                                                        _M_bf.testSpace()->nLocalDofStart( _M_test_index ),
@@ -1517,7 +1561,7 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
 
         else
         {
-            //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+            //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             list_block.push_back( Feel::vf::Block( 0,0,
                                                    _M_bf.testSpace()->nDofStart( _M_test_index ),
                                                    _M_bf.trialSpace()->nDofStart( _M_trial_index ) ) );

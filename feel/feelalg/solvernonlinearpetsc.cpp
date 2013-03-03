@@ -856,7 +856,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
-        Debug( 7020 )  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+        DVLOG(2)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
     this->clear();
@@ -964,7 +964,7 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
-        Debug( 7020 )  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+        DVLOG(2)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
     this->clear();
@@ -986,7 +986,7 @@ void
 SolverNonLinearPetsc<T>::setPetscKspSolverType()
 {
     int ierr = 0;
-    Debug( 7010 ) << "[SolverNonLinearPetsc] ksp solver type:  " << this->kspSolverType() << "\n";
+    DVLOG(2) << "[SolverNonLinearPetsc] ksp solver type:  " << this->kspSolverType() << "\n";
 
     switch ( this->kspSolverType() )
     {

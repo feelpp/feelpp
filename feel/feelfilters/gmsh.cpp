@@ -181,8 +181,8 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
         boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
-        Debug( 10000 ) << "found hsize: " << regex_search(__geo, regex, boost::match_default) << "\n";
-        Debug( 10000 ) << "hstr: " << hstr.str() << "\n";
+        DVLOG(2) << "found hsize: " << regex_search(__geo, regex, boost::match_default) << "\n";
+        DVLOG(2) << "hstr: " << hstr.str() << "\n";
 
         _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all );
     }
@@ -200,7 +200,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
 
     if ( !fs::exists( __path ) )
     {
-        Debug( 10000 ) << "generating: " << __geoname.str() << "\n";
+        DVLOG(2) << "generating: " << __geoname.str() << "\n";
         std::ofstream __geofile( __geoname.str().c_str() );
         __geofile << _geo;
         __geofile.close();
@@ -287,7 +287,11 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 {
 #if FEELPP_HAS_GMSH
     std::ostringstream filename;
+#if BOOST_FILESYSTEM_VERSION == 3
+    filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
+#elif BOOST_FILESYSTEM_VERSION == 2
     filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
+#endif
 
 #if BOOST_FILESYSTEM_VERSION == 3
     boost::system::error_code ec;

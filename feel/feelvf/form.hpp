@@ -238,6 +238,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
 {
     Feel::detail::ignore_unused_variable_warning( args );
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
+    //if (!matrix) matrix.reset( backend()->newMatrix( _trial=trial, _test=test ) );
     bool do_threshold = false;
     double threshold = 1e-16;
     return form( test, trial, matrix, rowstart, colstart, init, do_threshold, threshold, pattern );

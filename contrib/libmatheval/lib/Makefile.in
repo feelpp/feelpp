@@ -115,13 +115,14 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libmatheval_la_DEPENDENCIES =
-am_libmatheval_la_OBJECTS = parser.lo scanner.lo error.lo matheval.lo \
-	g77_interface.lo node.lo symbol_table.lo xmalloc.lo xmath.lo
-libmatheval_la_OBJECTS = $(am_libmatheval_la_OBJECTS)
-libmatheval_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+libfeelpp_matheval_la_DEPENDENCIES =
+am_libfeelpp_matheval_la_OBJECTS = parser.lo scanner.lo error.lo \
+	matheval.lo g77_interface.lo node.lo symbol_table.lo \
+	xmalloc.lo xmath.lo
+libfeelpp_matheval_la_OBJECTS = $(am_libfeelpp_matheval_la_OBJECTS)
+libfeelpp_matheval_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libmatheval_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(libfeelpp_matheval_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -142,8 +143,8 @@ YLWRAP = $(top_srcdir)/config/ylwrap
 YACCCOMPILE = $(YACC) $(AM_YFLAGS) $(YFLAGS)
 LTYACCCOMPILE = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=compile $(YACC) $(AM_YFLAGS) $(YFLAGS)
-SOURCES = $(libmatheval_la_SOURCES)
-DIST_SOURCES = $(libmatheval_la_SOURCES)
+SOURCES = $(libfeelpp_matheval_la_SOURCES)
+DIST_SOURCES = $(libfeelpp_matheval_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -276,12 +277,12 @@ top_srcdir = @top_srcdir@
 MAINTAINERCLEANFILES = Makefile.in parser.c parser.h scanner.c
 EXTRA_DIST = parser.h
 INCLUDES = -I$(top_builddir) -I$(top_srcdir)
-lib_LTLIBRARIES = libmatheval.la
-libmatheval_la_SOURCES = parser.y scanner.l error.c matheval.c	\
+lib_LTLIBRARIES = libfeelpp_matheval.la
+libfeelpp_matheval_la_SOURCES = parser.y scanner.l error.c matheval.c	\
 g77_interface.c node.c symbol_table.c xmalloc.c xmath.c
 
-libmatheval_la_LDFLAGS = -version-info 1:0:0
-libmatheval_la_LIBADD = -lfl -lm
+libfeelpp_matheval_la_LDFLAGS = -version-info 1:0:0
+libfeelpp_matheval_la_LIBADD = -lfl -lm
 include_HEADERS = matheval.h
 noinst_HEADERS = common.h error.h node.h symbol_table.h xmalloc.h	\
 xmath.h
@@ -356,8 +357,8 @@ clean-libLTLIBRARIES:
 parser.h: parser.c
 	@if test ! -f $@; then rm -f parser.c; else :; fi
 	@if test ! -f $@; then $(MAKE) $(AM_MAKEFLAGS) parser.c; else :; fi
-libmatheval.la: $(libmatheval_la_OBJECTS) $(libmatheval_la_DEPENDENCIES) $(EXTRA_libmatheval_la_DEPENDENCIES) 
-	$(libmatheval_la_LINK) -rpath $(libdir) $(libmatheval_la_OBJECTS) $(libmatheval_la_LIBADD) $(LIBS)
+libfeelpp_matheval.la: $(libfeelpp_matheval_la_OBJECTS) $(libfeelpp_matheval_la_DEPENDENCIES) $(EXTRA_libfeelpp_matheval_la_DEPENDENCIES) 
+	$(libfeelpp_matheval_la_LINK) -rpath $(libdir) $(libfeelpp_matheval_la_OBJECTS) $(libfeelpp_matheval_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

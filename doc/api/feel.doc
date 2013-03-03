@@ -2,7 +2,7 @@
 
 namespace Feel
 {
-/*! \mainpage Feel++: Finite Element Embedded Library (or Language) in C++
+/*! \mainpage Feel++: Finite Element Embedded Library and Language in C++
 
 Feel is a unified C++ implementation of Galerkin methods (finite and spectral
 element methods) in 1D, 2D And 3D to solve partial differential equations.
@@ -10,17 +10,6 @@ element methods) in 1D, 2D And 3D to solve partial differential equations.
 \section toc Table of  Contents
 
   - \ref Introduction
-  - \b Tutorial
-    - \ref ProgEnv
-    - \ref CreatingApplications
-    - \ref ManipulatingMeshes
-    - \ref ComputingIntegrals
-    - \ref ManipulatingFunctionSpaces
-    - \ref WritingVariationalFormulations
-    - \ref SolvingLinearAlgebra
-  - \b Examples
-    - \ref SolvingNonlinearEquations
-
 <hr>
 \htmlonly
 <center>
@@ -59,29 +48,11 @@ could be express in various ways such as :
 
 
 
-Feel was initially developed at École Polytechnique Fédérale de
-Lausanne(Suisse) and is now a joint effort between UniversitÃ© Joseph Fourier
-(Grenoble) and École Polytechnique Fédérale de Lausanne(Suisse). The
-author is
+Feel was initially developed at École Polytechnique Fédérale de Lausanne(Suisse)
+and is now a joint effort between Université de Strasbourg, Université Joseph
+Fourier (Grenoble), University of Coimbra (Portugal) and CNRS.
 
- - Christophe Prud'homme <christophe.prudhomme#ujf-grenoble.fr>
-   (Lab. Jean Kuntzmann, Université Joseph Fourier, France)
-
-\section contributors Contributors
-
- - Goncalo Pena contributed the dof handling in 3D when polynomial
-   order is > 2, a 2D Fekete point set class, the 3D warpblend point
-   set
-
- - Gilles Steiner contributed the boundary adapted polynomial classes
-   and in various places in the polynomial library
-
- - Christoph Winkelmann contributed bug reports and a few bug fixes
-
- - Klaus Sapelza contributed the matrix/vector  wrappers for Trilinos::Epetra
-
- - Benjamin Stamm contributed bug reports
-
+See the Credits.org file for proper credits attribution.
 
 */
 }

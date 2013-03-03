@@ -193,7 +193,7 @@ template<typename Convex, typename T>
 void
 PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 {
-    Debug( 8098 ) << "[PointSetToMesh::visit(<1>)] pointset to mesh\n";
+    DVLOG(2) << "[PointSetToMesh::visit(<1>)] pointset to mesh\n";
     _M_mesh = mesh_ptrtype( new mesh_type );
 
     size_type __npts = pset->nPoints();
@@ -281,7 +281,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
         }
 
         element_type const& e  = _M_mesh->addElement( pf );
-        Debug( 8099 ) << "o element " << e.id() << "\n"
+        DVLOG(2) << "o element " << e.id() << "\n"
                       << "  p1 = " << e.point( 0 ).node() << "\n"
                       << "  p2 = " << e.point( 1 ).node() << "\n";
     }
@@ -289,19 +289,19 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 
     FEELPP_ASSERT( n_faces == _M_mesh->numFaces() )( n_faces )( _M_mesh->numFaces() ).error( "invalid face container size" );
 
-    Debug( 8099 ) <<"[PointSetToMesh<1>] done with element accumulation !\n";
+    DVLOG(2) <<"[PointSetToMesh<1>] done with element accumulation !\n";
 
     _M_mesh->setNumVertices( __npts );
 
-    Debug( 8099 ) <<"[PointSetToMesh<1>] Face Update !\n";
+    DVLOG(2) <<"[PointSetToMesh<1>] Face Update !\n";
 
     //// do not renumber the _M_mesh entities
     //_M_mesh->updateForUse( MESH_ALL_COMPONENTS & (~MESH_RENUMBER) );
 
-    Debug( 8099 ) <<"[PointSetToMesh<1>] Face Update Successful !\n";
+    DVLOG(2) <<"[PointSetToMesh<1>] Face Update Successful !\n";
 
 
-    Debug( 8098 ) << "[PointSetToMesh::visit(<1>)] done\n";
+    DVLOG(2) << "[PointSetToMesh::visit(<1>)] done\n";
 }
 template<typename Convex, typename T>
 void
@@ -315,7 +315,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 
     if ( _M_vertices )
     {
-        Debug( 8099 ) << "adding vertices\n" << _M_vertices.get() << "\n";
+        DVLOG(2) << "adding vertices\n" << _M_vertices.get() << "\n";
 
         for ( size_type i = 0; i < _M_vertices->size2(); ++i )
         {
@@ -329,8 +329,8 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     {
         perturbation[i] = std::rand()*1e-6/RAND_MAX;
         uint16_type index = newPoints->InsertNextPoint( pset->points()( 0,i )+perturbation[i], pset->points()( 1,i ), 0 );
-        Debug( 8098 ) << "Inserting point with id " << index << "\n";
-        Debug( 8098 ) << "pset.point( " << i << " )= " << pset->point( i ) << "\n";
+        DVLOG(2) << "Inserting point with id " << index << "\n";
+        DVLOG(2) << "pset.point( " << i << " )= " << pset->point( i ) << "\n";
     }
 
     vtkPolyData *polyData = vtkPolyData::New();
@@ -357,8 +357,8 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     int Nelem = outMesh->GetNumberOfPolys();
     int Npts = outMesh->GetNumberOfPoints();
 
-    Debug( 8098 ) << "Number of cells  = " << Nelem   << "\n";
-    Debug( 8098 ) << "Number of points  = " << Npts   << "\n";
+    DVLOG(2) << "Number of cells  = " << Nelem   << "\n";
+    DVLOG(2) << "Number of points  = " << Npts   << "\n";
 
     for ( int i=0; i< Npts; ++i )
     {
@@ -372,28 +372,28 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
     for ( int i=0; i< Nelem; ++i )
     {
         //  std::cout << "\nLa cellule num�ro : " << i << " compte " << outMesh->GetCell(i)->GetNumberOfPoints() << " points." << "\n";
-        Debug( 8098 ) << "Element Id = " << i << "\n";
-        Debug( 8098 ) << "Point 0 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 0 ) <<") =" ;
-        Debug( 8098 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[0] << " , "
+        DVLOG(2) << "Element Id = " << i << "\n";
+        DVLOG(2) << "Point 0 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 0 ) <<") =" ;
+        DVLOG(2) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[0] << " , "
                       << outMesh->GetCell( i )->GetPoints()->GetPoint( 0 )[1]<< ")" << "\n";
-        Debug( 8098 ) << "Point 1 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 1 ) <<") =" ;
-        Debug( 8098 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[0] << " , "
+        DVLOG(2) << "Point 1 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 1 ) <<") =" ;
+        DVLOG(2) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[0] << " , "
                       << outMesh->GetCell( i )->GetPoints()->GetPoint( 1 )[1]<< ")" << "\n";
-        Debug( 8098 ) << "Point 2 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 2 ) <<") =" ;
-        Debug( 8098 ) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[0] << " , "
+        DVLOG(2) << "Point 2 (" <<  ( int )outMesh->GetCell( i )->GetPointId( 2 ) <<") =" ;
+        DVLOG(2) << "(" << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[0] << " , "
                       << outMesh->GetCell( i )->GetPoints()->GetPoint( 2 )[1]<< ")" << "\n";
 
-        Debug( 8098 ) << outMesh->GetCell( i )->GetNumberOfEdges() << "\n";
-        Debug( 8098 ) << ( int )outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 0 ) << "\n";
-        Debug( 8098 ) << ( int )outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 1 ) << "\n";
+        DVLOG(2) << outMesh->GetCell( i )->GetNumberOfEdges() << "\n";
+        DVLOG(2) << ( int )outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 0 ) << "\n";
+        DVLOG(2) << ( int )outMesh->GetCell( i )->GetEdge( 0 )->GetPointId( 1 ) << "\n";
     }
 
 
 
-    Debug( 8098 ) << "[PointSetToMesh::visit(<2>)] delaunay done, now vtk to Mesh<>\n";
+    DVLOG(2) << "[PointSetToMesh::visit(<2>)] delaunay done, now vtk to Mesh<>\n";
     FilterFromVtk<mesh_type> meshfromvtk( outMesh );
     meshfromvtk.visit( _M_mesh.get() );
-    Debug( 8098 ) << "[PointSetToMesh::visit(<2>)] done\n";
+    DVLOG(2) << "[PointSetToMesh::visit(<2>)] done\n";
 
 #else
     std::cerr << "The library was not compiled with vtk support\n";
@@ -434,16 +434,16 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
     delaunay3D->SetInput( polyData );
     delaunay3D->SetOffset( 5 );
 
-    Debug( 8098 ) <<"[PointSetToMesh::visit(<3>)] Offset = " << delaunay3D->GetOffset() << "\n";
+    DVLOG(2) <<"[PointSetToMesh::visit(<3>)] Offset = " << delaunay3D->GetOffset() << "\n";
     delaunay3D->Update();
 
     vtkUnstructuredGrid* outMesh = delaunay3D->GetOutput( );
 
 
-    Debug( 8098 ) << "[PointSetToMesh::visit(<3>)] delaunay done, now vtk to Mesh<>\n";
+    DVLOG(2) << "[PointSetToMesh::visit(<3>)] delaunay done, now vtk to Mesh<>\n";
     FilterFromVtk3D<mesh_type> meshfromvtk( outMesh );
     meshfromvtk.visit( _M_mesh.get() );
-    Debug( 8098 ) << "[PointSetToMesh::visit(<3>)] done\n";
+    DVLOG(2) << "[PointSetToMesh::visit(<3>)] done\n";
 
 
 #else

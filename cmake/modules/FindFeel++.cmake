@@ -23,8 +23,41 @@ INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
 
-
+OPTION(FEELPP_ENABLE_MOVE_SEMANTICS "enable move semantics(elision)" ON )
+OPTION(FEELPP_ENABLE_INSTANTIATION_MODE "Instantiation mode" ON )
+OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
+OPTION(FEELPP_ENABLE_SLURM "Enable Feel++ slurm submission scripts generation" OFF)
+OPTION(FEELPP_ENABLE_CCC "Enable Feel++ tgcc/ccc submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_TBB "enable feel++ TBB support" OFF)
+OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
+OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
+if ( APPLE )
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
+else()
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
+endif()
+OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
+
+
+# enable mpi mode
+IF ( FEELPP_ENABLE_MPI_MODE )
+  SET( FEELPP_ENABLE_MPI_MODE 1 )
+ENDIF()
+
+# enable move semantics
+MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
+IF ( FEELPP_ENABLE_MOVE_SEMANTICS )
+  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
+  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
+ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS )
+
+# enable instantiation
+MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
+IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
+  SET( FEELPP_INSTANTIATION_MODE 1 )
+ENDIF()
+SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
+
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
   IF ( TBB_FOUND )
@@ -139,11 +172,15 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GINAC" )
 #ENDIF()
 
-add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
-SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
-set(DL_LIBS ${CMAKE_DL_LIBS})
-add_subdirectory(contrib/ginac)
+add_definitions(-DHAVE_LIBDL)
+# cln and ginac
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+  add_definitions(-DIN_GINAC -DHAVE_LIBDL)
+  include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
+  SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
+  set(DL_LIBS ${CMAKE_DL_LIBS})
+  add_subdirectory(contrib/ginac)
+endif()
 
 #
 # Eigen
@@ -154,20 +191,6 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   add_subdirectory(contrib/eigen)
   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
 endif()
-
-#
-# Gmm
-#
-FIND_PACKAGE(GMM)
-IF(GMM_FOUND)
-   MESSAGE(STATUS "Using built-in gmm")
-   include_directories(${GMM_INCLUDE_DIR})
-ELSE()
-   MESSAGE(STATUS "Using contrib/gmm headers")
-   FILE(GLOB files "contrib/gmm/include/*.h")
-   #add_subdirectory(contrib/gmm)
-   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/gmm )
-ENDIF()
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
@@ -267,7 +290,7 @@ ENDIF()
 # xml
 find_package(LibXml2 2.6.27)
 
-# Python
+# Python libs
 FIND_PACKAGE(PythonLibs)
 if ( PYTHONLIBS_FOUND )
    message(STATUS "PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
@@ -276,6 +299,21 @@ if ( PYTHONLIBS_FOUND )
    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
 endif()
 
+#
+# Python interp
+#
+FIND_PACKAGE(PythonInterp REQUIRED)
+if(PYTHONINTERP_FOUND)
+  execute_process(COMMAND
+	${PYTHON_EXECUTABLE}
+	-c "import sys; print sys.version[0:3]"
+	OUTPUT_VARIABLE PYTHON_VERSION
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  message(STATUS "Found python version ${PYTHON_VERSION}")
+endif()
+
+# metis
 FIND_LIBRARY(METIS_LIBRARY
     NAMES
     metis
@@ -505,7 +543,6 @@ MARK_AS_ADVANCED( PARPACK_LIBRARY )
 #
 # SLEPc
 #
-OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
   if ( SLEPC_FOUND )
@@ -520,7 +557,6 @@ endif(FEELPP_ENABLE_SLEPC)
 #
 # Trilinos
 #
-OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
 if (FEELPP_ENABLE_TRILINOS)
 FIND_PACKAGE(Trilinos)
   if ( TRILINOS_FOUND )
@@ -534,11 +570,6 @@ endif (FEELPP_ENABLE_TRILINOS)
 #
 # OpenTURNS
 #
-if ( APPLE )
-  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
-else()
-  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
-endif()
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
   if ( OPENTURNS_FOUND )
@@ -566,7 +597,6 @@ endif()
 #
 # Octave
 #
-OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 if ( FEELPP_ENABLE_OCTAVE )
   FIND_PACKAGE(Octave)
   if ( OCTAVE_FOUND )
@@ -626,11 +656,16 @@ endif()
 # if Feel++ has been installed on the system
 #
 if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib )
-  FIND_PATH(FEELPP_INCLUDE_DIR feelconfig.h  PATHS /usr/include/feel /usr/lib/feel/include /opt/feel/include /usr/ljk/include/feel /usr/local  )
+  include(feelpp.macros)
+  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS $ENV{FEELPP_DIR}/include/ /usr/include /opt/local/include PATH_SUFFIXES feel )
 
-  FIND_LIBRARY(FEELPP_LIBRARY feel++ PATHS /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+#  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+#  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+#  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
 
-  INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} )
+  INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} ${FEELPP_INCLUDE_DIR}/feel )
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
     FEELPP_INCLUDE_DIR  FEELPP_LIBRARY
     )
@@ -646,6 +681,7 @@ if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contr
   FEELPP_INCLUDE_DIR
   FEELPP_LIBRARY
   )
+SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY}  ${FEELPP_LIBRARIES})
 else()
   message(STATUS "we work within Feel++ sources")
   INCLUDE_DIRECTORIES (
@@ -653,9 +689,10 @@ else()
     ${FEELPP_SOURCE_DIR}/
     ${FEELPP_SOURCE_DIR}/contrib/gmm/include
     )
+  SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
 endif()
 
-SET(FEELPP_LIBRARIES feel++  ${FEELPP_LIBRARIES})
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}

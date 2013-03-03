@@ -278,6 +278,19 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
+        bool isZero( size_type i ) const
+            {
+                return false;
+            }
+        bool isZero( typename mesh_type::element_iterator it ) const
+            {
+                return this->isZero( it->id() );
+            }
+        bool isZero( typename mesh_type::element_type const& e ) const
+            {
+                return this->isZero( e.id() );
+            }
+
         void update( map_test_geometric_mapping_context_type const& _gmcTest,
                      map_trial_geometric_mapping_context_type const & gmcTrial,
                      map_geometric_mapping_expr_context_type const& _gmcExpr );
@@ -545,6 +558,29 @@ public:
         return _M_F( i );
     }
 
+    /**
+     * Computes the application of the form on an element of the function space
+     *
+     * @param __v element of Space 1 (test space)
+     * @return f(v)
+     */
+    value_type operator()( element_type const& __v ) const
+    {
+        return _M_F->dot( __v );
+    }
+
+    /**
+     * Computes the application of the form on an element of the function space
+     *
+     * @param __v element of Space 1 (test space)
+     * @return f(v)
+     */
+    value_type operator()( typename space_type::element_type const& __v ) const
+    {
+        return _M_F->dot( __v );
+    }
+
+
     //@}
 
     /** @name Accessors
@@ -769,10 +805,10 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & 
     _M_threshold( __vf._M_threshold )
 
 {
-    Debug( 5060 ) << "LinearForm copy constructor\n";
-    Debug( 5060 ) << "     n Dof : " << _M_X->nDof() << "\n";
-    Debug( 5060 ) << "    F size : " << _M_F->size() << "\n";
-    Debug( 5060 ) << "block size : " << _M_lb.size() << "\n";
+    DVLOG(2) << "LinearForm copy constructor\n";
+    DVLOG(2) << "     n Dof : " << _M_X->nDof() << "\n";
+    DVLOG(2) << "    F size : " << _M_F->size() << "\n";
+    DVLOG(2) << "block size : " << _M_lb.size() << "\n";
 }
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -796,7 +832,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
         _M_lb.push_back( Block( __i, 0,
                                 __i*_M_X->nDofPerComponent(),
                                 0 ) );
-        Debug( 5050 ) << "[linearform::linearform] block: "
+        DVLOG(2) << "[linearform::linearform] block: "
                       << Block( __i, 0, __i*_M_X->nDofPerComponent(), 0 )  << "\n";
     }
 
@@ -848,7 +884,7 @@ struct LFAssign
     {
         if ( _M_lf.testSpace()->worldsComm()[_M_index].isActive() )
         {
-            Debug( 5050 ) << "expression has test functions ? :"
+            DVLOG(2) << "expression has test functions ? :"
                           << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result
                     << "\n";
 
@@ -947,9 +983,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __ex
 
         for ( ; __bit != __ben; ++__bit )
         {
-            Debug( 5050 ) << "LinearForm:: block: " << *__bit << "\n";
+            DVLOG(2) << "LinearForm:: block: " << *__bit << "\n";
             size_type g_ic_start = __bit->globalRowStart();
-            Debug( 5050 ) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
+            DVLOG(2) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
 
             _M_F->zero( g_ic_start,g_ic_start + _M_X->nDof() );
         }

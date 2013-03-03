@@ -110,7 +110,7 @@ ExporterEnsight<MeshType,N>::save() const
 
     //static int freq = 0;
 
-    Debug( 8006 ) << "[ExporterEnsight::save] checking if frequency is ok\n";
+    DVLOG(2) << "[ExporterEnsight::save] checking if frequency is ok\n";
 
 
     if ( this->cptOfSave() % this->freq()  )
@@ -120,31 +120,31 @@ ExporterEnsight<MeshType,N>::save() const
     }
 
     boost::timer ti;
-    Debug( 8006 ) << "[ExporterEnsight::save] export in ensight format\n";
+    DVLOG(2) << "[ExporterEnsight::save] export in ensight format\n";
 
-    Debug( 8006 ) << "[ExporterEnsight::save] export sos\n";
+    DVLOG(2) << "[ExporterEnsight::save] export sos\n";
     _F_writeSoSFile();
-    Debug( 8006 ) << "[ExporterEnsight::save] export sos ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "[ExporterEnsight::save] export sos ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
-    Debug( 8006 ) << "[ExporterEnsight::save] export case file\n";
+    DVLOG(2) << "[ExporterEnsight::save] export case file\n";
     _F_writeCaseFile();
-    Debug( 8006 ) << "[ExporterEnsight::save] export case file ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "[ExporterEnsight::save] export case file ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
-    Debug( 8006 ) << "[ExporterEnsight::save] export geo(mesh) file\n";
+    DVLOG(2) << "[ExporterEnsight::save] export geo(mesh) file\n";
     _F_writeGeoFiles();
-    Debug( 8006 ) << "[ExporterEnsight::save] export geo(mesh) file ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "[ExporterEnsight::save] export geo(mesh) file ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
-    Debug( 8006 ) << "[ExporterEnsight::save] export variable file\n";
+    DVLOG(2) << "[ExporterEnsight::save] export variable file\n";
     _F_writeVariableFiles();
-    Debug( 8006 ) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
-    Debug( 8006 ) << "[ExporterEnsight::save] export time set\n";
+    DVLOG(2) << "[ExporterEnsight::save] export time set\n";
     this->saveTimeSet();
-    Debug( 8006 ) << "[ExporterEnsight::save] export time set ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "[ExporterEnsight::save] export time set ok, time " << ti.elapsed() << "\n";
 }
 
 template<typename MeshType, int N>
@@ -160,7 +160,7 @@ ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
 
         if ( __out.fail() )
         {
-            Debug( 3100 ) << "cannot open " << filestr.str()  << "\n";
+            DVLOG(2) << "cannot open " << filestr.str()  << "\n";
             exit( 0 );
         }
 
@@ -192,7 +192,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
 
     if ( __out.fail() )
     {
-        Debug( 3100 ) << "cannot open " << filestr.str()  << "\n";
+        DVLOG(2) << "cannot open " << filestr.str()  << "\n";
         exit( 0 );
     }
 
@@ -203,13 +203,34 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
 
-    while ( __ts_it != __ts_en )
+    switch ( this->exporterGeometry() )
+    {
+    case EXPORTER_GEOMETRY_STATIC:
     {
         timeset_ptrtype __ts = *__ts_it;
-        __out << "model: " << __ts->index() << " " << __ts->name()
-              << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".geo***"  << "\n";
-        ++__ts_it;
+        __out << "model: " << __ts->name()
+              << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".geo";
     }
+    break;
+    default:
+    case EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:
+    case EXPORTER_GEOMETRY_CHANGE:
+    {
+        while ( __ts_it != __ts_en )
+        {
+            timeset_ptrtype __ts = *__ts_it;
+
+            __out << "model: " << __ts->index() << " " << __ts->name()
+                  << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank() << ".geo***";
+            if ( this->exporterGeometry() == EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
+                __out << " change_coords_only";
+
+            ++__ts_it;
+        }
+    }
+    break;
+    }
+    __out << "\n";
 
     __out << "VARIABLES:" << "\n";
 
@@ -355,19 +376,35 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
 
             std::ostringstream __geofname;
 
-            __geofname << this->path() << "/"
-                       << __ts->name()
-                       << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
-                       << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-
-            if ( __step->isInMemory() )
+            if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
             {
-                //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
-                //, __ts->name(), __geofname.str() );
-                _M_filename =  __geofname.str();
-                __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                __geofname << this->path() << "/"
+                           << __ts->name()
+                           << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
+                           << ".geo";
+                // save only if index == 0
+                if ( __step->isInMemory() && ( __it  == __ts->beginStep() ) )
+                {
+                    //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
+                    //, __ts->name(), __geofname.str() );
+                    _M_filename =  __geofname.str();
+                    __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                }
             }
-
+            else
+            {
+                __geofname << this->path() << "/"
+                           << __ts->name()
+                           << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
+                           << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
+                if ( __step->isInMemory() )
+                {
+                    //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
+                    //, __ts->name(), __geofname.str() );
+                    _M_filename =  __geofname.str();
+                    __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                }
+            }
             ++__it;
         }
 
@@ -431,7 +468,7 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
         __varfname << this->path() << "/" << __var->first
                    << "-" << this->worldComm().globalSize() << "_" << __var->second.worldComm().localRank() // important localRank
                    << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-        Debug( 8006 ) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
+        DVLOG(2) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
         std::fstream __out( __varfname.str().c_str(), std::ios::out | std::ios::binary );
 
         char buffer[ 80 ];
@@ -488,7 +525,7 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
 
         __out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
 
-        Debug( 8006 ) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "done\n";
+        DVLOG(2) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "done\n";
         ++__var;
     }
 }
@@ -506,7 +543,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
         __evarfname << this->path() << "/" << __evar->first
                     << "-" << this->worldComm().globalSize() << "_" << __evar->second.worldComm().localRank() // important localRank
                     << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-        Debug( 8006 ) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "...\n";
+        DVLOG(2) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "...\n";
         std::fstream __out( __evarfname.str().c_str(), std::ios::out | std::ios::binary );
 
         char buffer[ 80 ];
@@ -520,10 +557,10 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
         {
             sprintf( buffer, "part %d",p_it->first );
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
-            Debug( 8006 ) << "part " << buffer << "\n";
+            DVLOG(2) << "part " << buffer << "\n";
             strcpy( buffer, this->elementType().c_str() );
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
-            Debug( 8006 ) << "element type " << buffer << "\n";
+            DVLOG(2) << "element type " << buffer << "\n";
 
             uint16_type nComponents = __evar->second.nComponents;
 
@@ -541,14 +578,14 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
             if ( !__evar->second.areGlobalValuesUpdated() )
                 __evar->second.updateGlobalValues();
 
-            Debug( 8006 ) << "[saveElement] firstLocalIndex = " << __evar->second.firstLocalIndex() << "\n";
-            Debug( 8006 ) << "[saveElement] lastLocalIndex = " << __evar->second.lastLocalIndex() << "\n";
-            Debug( 8006 ) << "[saveElement] field.size = " << __field_size << "\n";
+            DVLOG(2) << "[saveElement] firstLocalIndex = " << __evar->second.firstLocalIndex() << "\n";
+            DVLOG(2) << "[saveElement] lastLocalIndex = " << __evar->second.lastLocalIndex() << "\n";
+            DVLOG(2) << "[saveElement] field.size = " << __field_size << "\n";
             size_type e = 0;
 
             for ( ; elt_it != elt_en; ++elt_it, ++e )
             {
-                Debug( 8006 ) << "pid : " << this->worldComm().globalRank()
+                DVLOG(2) << "pid : " << this->worldComm().globalRank()
                               << " elt_it :  " << elt_it->id()
                               << " e : " << e << "\n";
 
@@ -560,7 +597,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
                     {
                         size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt_it->id(),0, c ) );
 
-                        Debug( 8006 ) << "c : " << c
+                        DVLOG(2) << "c : " << c
                                       << " gdofid: " << global_node_id
                                       << " dofid : " << dof_id
                                       << " f.size : " <<  __field.size()
@@ -581,7 +618,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
 
 #if 1
                         //__field[global_node_id] = __evar->second.globalValue(dof_id);
-                        Debug( 8006 ) << "c : " << c
+                        DVLOG(2) << "c : " << c
                                       << " gdofid: " << global_node_id
                                       << " dofid : " << dof_id
                                       << " field :  " << __field[global_node_id]
@@ -597,7 +634,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
             __out.write( ( char * ) __field.data().begin(), nComponents * e * sizeof( float ) );
         }
 
-        Debug( 8006 ) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "done\n";
+        DVLOG(2) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "done\n";
         ++__evar;
     }
 }
@@ -687,7 +724,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
         //int __ne = p_it->second;
         int __ne = std::distance( elt_it, elt_en );
 
-        Debug( 8006 ) << "num Elements to save : " << __ne << "\n";
+        DVLOG(2) << "num Elements to save : " << __ne << "\n";
 
         __out.write( ( char * ) &__ne, sizeof( int ) );
 

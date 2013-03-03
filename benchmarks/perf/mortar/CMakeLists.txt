@@ -39,7 +39,7 @@ namespace Feel {
   endforeach()
 endforeach()
 endforeach()
-message(STATUS "${MORTAR}")
+
 add_executable(feel_perf_mortar bench.cpp  ${MORTAR}  )
 add_dependencies(feel_perf_mortar gen_feel_perf_mortar)
 target_link_libraries(feel_perf_mortar ${FEELPP_LIBRARIES})

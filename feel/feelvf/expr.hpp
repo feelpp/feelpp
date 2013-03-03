@@ -630,18 +630,18 @@ public:
                    boost::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
-        Debug( 5051 ) << "calling assemble(u,v)\n";
+        DVLOG(2) << "calling assemble(u,v)\n";
         M_expr.assemble( __u, __v, __f );
-        Debug( 5051 ) << "calling assemble(u,v) done\n";
+        DVLOG(2) << "calling assemble(u,v) done\n";
     }
 
     template<typename Elem1, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& __v,
                    FormType& __f ) const
     {
-        Debug( 5051 ) << "calling assemble(v)\n";
+        DVLOG(2) << "calling assemble(v)\n";
         M_expr.assemble( __v, __f );
-        Debug( 5051 ) << "calling assemble(v) done\n";
+        DVLOG(2) << "calling assemble(v) done\n";
     }
 
     template<typename P0hType>
@@ -952,18 +952,18 @@ public:
                    boost::shared_ptr<Elem2> const& __v,
                    FormType& __f ) const
     {
-        Debug( 5051 ) << "calling assemble(u,v)\n";
+        DVLOG(2) << "calling assemble(u,v)\n";
         M_expr.assemble( __u, __v, __f );
-        Debug( 5051 ) << "calling assemble(u,v) done\n";
+        DVLOG(2) << "calling assemble(u,v) done\n";
     }
 
     template<typename Elem1, typename FormType>
     void assemble( boost::shared_ptr<Elem1> const& __v,
                    FormType& __f ) const
     {
-        Debug( 5051 ) << "calling assemble(v)\n";
+        DVLOG(2) << "calling assemble(v)\n";
         M_expr.assemble( __v, __f );
-        Debug( 5051 ) << "calling assemble(v) done\n";
+        DVLOG(2) << "calling assemble(v) done\n";
     }
 #if 0
     //__typeof__( M_expr.evaluate() )
@@ -1366,7 +1366,7 @@ public:
 protected:
     Cst() : M_constant( 0 )
     {
-        //Debug( 5051 ) << "Cst::Cst( default ) : constant value: " << M_constant << "\n";
+        //DVLOG(2) << "Cst::Cst( default ) : constant value: " << M_constant << "\n";
     }
 
     const T M_constant;
@@ -1911,7 +1911,7 @@ public:
         M_expr_1( __expr1 ),
         M_expr_2( __expr2 )
     {
-        Debug( 5051 ) << "OpMax::OpMax default constructor\n";
+        DVLOG(2) << "OpMax::OpMax default constructor\n";
     }
 
     OpMax( OpMax const& __vfp  )
@@ -1919,7 +1919,7 @@ public:
         M_expr_1( __vfp.M_expr_1 ),
         M_expr_2( __vfp.M_expr_2 )
     {
-        Debug( 5051 ) << "OpMax::OpMax copy constructor\n";
+        DVLOG(2) << "OpMax::OpMax copy constructor\n";
     }
 
     expression_1_type const& left() const
@@ -2106,7 +2106,7 @@ public:
         M_expr_1( __expr1 ),
         M_expr_2( __expr2 )
     {
-        Debug( 5051 ) << "OpMin::OpMin default constructor\n";
+        DVLOG(2) << "OpMin::OpMin default constructor\n";
     }
 
     OpMin( OpMin const& __vfp  )
@@ -2114,7 +2114,7 @@ public:
         M_expr_1( __vfp.M_expr_1 ),
         M_expr_2( __vfp.M_expr_2 )
     {
-        Debug( 5051 ) << "OpMin::OpMin copy constructor\n";
+        DVLOG(2) << "OpMin::OpMin copy constructor\n";
     }
 
     expression_1_type const& left() const
@@ -2308,7 +2308,7 @@ public:
         M_expr_1( __expr1 ),
         M_expr_2( __expr2 )
     {
-        Debug( 5051 ) << "Pow::Pow default constructor\n";
+        DVLOG(2) << "Pow::Pow default constructor\n";
     }
 
     Pow( Pow const& __vfp  )
@@ -2316,7 +2316,7 @@ public:
         M_expr_1( __vfp.M_expr_1 ),
         M_expr_2( __vfp.M_expr_2 )
     {
-        Debug( 5051 ) << "Pow::Pow copy constructor\n";
+        DVLOG(2) << "Pow::Pow copy constructor\n";
     }
 
     bool isSymetric() const

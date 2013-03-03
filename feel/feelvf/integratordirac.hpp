@@ -185,7 +185,7 @@ public:
                    FormType& __f ) const
     {
         typedef typename Elem1::functionspace_type functionspace_type;
-        Debug( 5066 ) << "[IntegratorDirac::assemble()] is_same: "
+        DVLOG(2) << "[IntegratorDirac::assemble()] is_same: "
                       << mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>::value << "\n";
         assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>() );
     }
@@ -330,7 +330,7 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
                             //std::cout << "interpfunc :  " << interpfunc << "\n";
 
                             rhs->add( globaldof, atomcharges[dof] * interpfunc( comp, 0, 0 ) );
-                            // Debug(  ) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
+                            // DVLOG(2) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
                             //           << " (just added " << atomcharges[dof] * interpfunc( comp, 0, 0 ) << " )" << "\n";
                             v.setGlobalValue( globaldof, 0 );
 

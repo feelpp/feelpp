@@ -45,6 +45,7 @@
 #endif
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/debug.hpp>
 
 namespace Feel
 {
@@ -61,7 +62,7 @@ namespace posix_time = boost::posix_time;
 
   void A::f()
   {
-    Debug(100) << "A::f() is called.\n";
+    DVLOG(2) << "A::f() is called.\n";
     // do something here
   }
 
@@ -674,14 +675,14 @@ Warning( bool cond, int area )
 DebugStream
 Error( int area )
 {
-    //Debug () << LBacktrace() << "\n";
+    //DVLOG(2) << LBacktrace() << "\n";
     return DebugStream( "ERROR: ", area, DEBUG_ERROR );
 }
 
 DebugStream
 Error( bool cond, int area )
 {
-    //Debug () << LBacktrace() << "\n";
+    //DVLOG(2) << LBacktrace() << "\n";
     if ( cond )
         return DebugStream( "ERROR: ", area, DEBUG_ERROR );
 

@@ -179,33 +179,33 @@ struct ID
     void save( Archive & ar, const unsigned int /*version*/ ) const
     {
         size_type e1 = M_id.shape()[0];
-        Debug( 5010 ) << "saving in archive e1= " << e1 << "\n";
+        DVLOG(2) << "saving in archive e1= " << e1 << "\n";
         ar  & e1;
         size_type e2 = M_id.shape()[1];
-        Debug( 5010 ) << "saving in archive e2= " << e2 << "\n";
+        DVLOG(2) << "saving in archive e2= " << e2 << "\n";
         ar  & e2;
         size_type e3 = M_id.shape()[2];
-        Debug( 5010 ) << "saving in archive e3= " << e3 << "\n";
+        DVLOG(2) << "saving in archive e3= " << e3 << "\n";
         ar  & e3;
-        Debug( 5010 ) << "saving in archive array of size = " << M_id.num_elements() << "\n";
+        DVLOG(2) << "saving in archive array of size = " << M_id.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
-        Debug( 5010 ) << "saving in archive done\n";
+        DVLOG(2) << "saving in archive done\n";
     }
     template<class Archive>
     void load( Archive & ar, const unsigned int /*version*/ )
     {
         size_type e1, e2, e3;
         ar  & e1;
-        Debug( 5010 ) << "loading from archive e1= " << e1 << "\n";
+        DVLOG(2) << "loading from archive e1= " << e1 << "\n";
         ar  & e2;
-        Debug( 5010 ) << "loading from archive e2= " << e2 << "\n";
+        DVLOG(2) << "loading from archive e2= " << e2 << "\n";
         ar  & e3;
-        Debug( 5010 ) << "loading from archive e3= " << e3 << "\n";
+        DVLOG(2) << "loading from archive e3= " << e3 << "\n";
         M_id.resize( boost::extents[e1] );
-        Debug( 5010 ) << "loading from archive array of size = " << M_id.num_elements() << "\n";
+        DVLOG(2) << "loading from archive array of size = " << M_id.num_elements() << "\n";
         ar  & boost::serialization::make_array( M_id.data(), M_id.num_elements() );
-        Debug( 5010 ) << "loading from archive done\n";
-        Debug( 5010 ) << "creating view interpolation context done\n";
+        DVLOG(2) << "loading from archive done\n";
+        DVLOG(2) << "creating view interpolation context done\n";
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
@@ -246,33 +246,33 @@ struct DD
     void save( Archive & ar, const unsigned int /*version*/ ) const
     {
         size_type e1 = _M_grad.shape()[0];
-        Debug( 5010 ) << "saving in archive e1= " << e1 << "\n";
+        DVLOG(2) << "saving in archive e1= " << e1 << "\n";
         ar  & e1;
         size_type e2 = _M_grad.shape()[1];
-        Debug( 5010 ) << "saving in archive e2= " << e2 << "\n";
+        DVLOG(2) << "saving in archive e2= " << e2 << "\n";
         ar  & e2;
         size_type e3 = _M_grad.shape()[2];
-        Debug( 5010 ) << "saving in archive e3= " << e3 << "\n";
+        DVLOG(2) << "saving in archive e3= " << e3 << "\n";
         ar  & e3;
-        Debug( 5010 ) << "saving in archive array of size = " << _M_grad.num_elements() << "\n";
+        DVLOG(2) << "saving in archive array of size = " << _M_grad.num_elements() << "\n";
         ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
-        Debug( 5010 ) << "saving in archive done\n";
+        DVLOG(2) << "saving in archive done\n";
     }
     template<class Archive>
     void load( Archive & ar, const unsigned int /*version*/ )
     {
         size_type e1, e2, e3;
         ar  & e1;
-        Debug( 5010 ) << "loading from archive e1= " << e1 << "\n";
+        DVLOG(2) << "loading from archive e1= " << e1 << "\n";
         ar  & e2;
-        Debug( 5010 ) << "loading from archive e2= " << e2 << "\n";
+        DVLOG(2) << "loading from archive e2= " << e2 << "\n";
         ar  & e3;
-        Debug( 5010 ) << "loading from archive e3= " << e3 << "\n";
+        DVLOG(2) << "loading from archive e3= " << e3 << "\n";
         _M_grad.resize( boost::extents[e1] );
-        Debug( 5010 ) << "loading from archive array of size = " << _M_grad.num_elements() << "\n";
+        DVLOG(2) << "loading from archive array of size = " << _M_grad.num_elements() << "\n";
         ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
-        Debug( 5010 ) << "loading from archive done\n";
-        Debug( 5010 ) << "creating view interpolation context done\n";
+        DVLOG(2) << "loading from archive done\n";
+        DVLOG(2) << "creating view interpolation context done\n";
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
@@ -1971,7 +1971,7 @@ public:
          */
         void operator()( MESH_CHANGES mesh_changes )
         {
-            Debug( 5010 ) << "Update element after a change in the mesh\n";
+            DVLOG(2) << "Update element after a change in the mesh\n";
         }
 
         template<typename AE>
@@ -2653,10 +2653,10 @@ public:
                                      detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
 
             typename mpl::at_c<functionspace_vector_type,i>::type space( _M_functionspace->template functionSpace<i>() );
-            Debug( 5010 ) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
-            Debug( 5010 ) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
-            Debug( 5010 ) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
-            Debug( 5010 ) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
+            DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
+            DVLOG(2) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
+            DVLOG(2) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
+            DVLOG(2) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
 
             if ( this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
             {
@@ -2677,8 +2677,8 @@ public:
                 }
 
 #endif
-                Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-                Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+                DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
+                DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
                 return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
             }
 
@@ -2703,8 +2703,8 @@ public:
                             ublas::range( 0, space->nLocalDof() ),
                             _M_functionspace->template functionSpace<i>()->map() );
 
-                Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-                Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+                DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
+                DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
 
                 return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
             }
@@ -2719,10 +2719,10 @@ public:
                                      detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
             typename mpl::at_c<functionspace_vector_type,i>::type space( _M_functionspace->template functionSpace<i>() );
 
-            Debug( 5010 ) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
-            Debug( 5010 ) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
-            Debug( 5010 ) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
-            Debug( 5010 ) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
+            DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
+            DVLOG(2) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
+            DVLOG(2) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
+            DVLOG(2) << "Element <" << -1 << ">::size :  "<<  this->size() << "\n";
 
             if ( this->functionSpace()->worldsComm()[i].isActive() )
             {
@@ -2745,8 +2745,8 @@ public:
 
 #endif
 
-                Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-                Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+                DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
+                DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
                 return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
             }
 
@@ -2767,8 +2767,8 @@ public:
                             ublas::range( 0, space->nLocalDof() ),
                             _M_functionspace->template functionSpace<i>()->map() );
 
-                Debug( 5010 ) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
-                Debug( 5010 ) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
+                DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
+                DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
                 return typename mpl::at_c<element_vector_type,i>::type( space, ct, name );
             }
 
@@ -3018,7 +3018,7 @@ public:
         {
             //ar & BOOST_SERIALIZATION_NVP( boost::serialization::base_object<super>(*this) );
             ar & boost::serialization::make_nvp( "name", _M_name );
-            Debug( 5010 ) << "got name " << _M_name << "\n";
+            DVLOG(2) << "got name " << _M_name << "\n";
 
             if ( Archive::is_saving::value )
             {
@@ -3045,7 +3045,7 @@ public:
                     std::ostringstream v_str;
                     v_str << "value_" << i;
 
-                    //                     Debug( 5010 ) << "save value " << value << " at " << v_str.str() << "\n";
+                    //                     DVLOG(2) << "save value " << value << " at " << v_str.str() << "\n";
 
                     ar & boost::serialization::make_nvp( v_str.str().c_str(), value );
                 }
@@ -3059,7 +3059,7 @@ public:
                 ar & boost::serialization::make_nvp( "size", s );
 
                 // verify number of degree of freedom
-                Debug( 5010 ) << "loading ublas::vector of size " << s << "\n";
+                DVLOG(2) << "loading ublas::vector of size " << s << "\n";
 
                 if ( s != this->functionSpace()->nLocalDofWithGhost() )
                     throw std::logic_error( ( boost::format( "load function: invalid number of degrees of freedom, read %1% but has %2%" ) % s % this->functionSpace()->nLocalDofWithGhost() ).str() );
@@ -3090,9 +3090,9 @@ public:
                     value_type value(  0 );
                     std::ostringstream v_str;
                     v_str << "value_" << i;
-                    //                     Debug( 5010 ) << "load value at " << v_str.str() << "\n";
+                    //                     DVLOG(2) << "load value at " << v_str.str() << "\n";
                     ar & boost::serialization::make_nvp( v_str.str().c_str(), value );
-                    //                     Debug( 5010 ) << "got value " << value << " at index " << i << "\n";
+                    //                     DVLOG(2) << "got value " << value << " at index " << i << "\n";
                     this->operator[]( i ) = value;
                 }
             }
@@ -3233,10 +3233,10 @@ public:
                periodicity_type periodicity = periodicity_type() )
     {
         Context ctx( mesh_components );
-        Debug( 5010 ) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
-        Debug( 5010 ) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
-        Debug( 5010 ) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
-        Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
+        DVLOG(2) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
+        DVLOG(2) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
+        DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
+        DVLOG(2) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
         this->init( mesh, mesh_components, periodicity, std::vector<boost::tuple<size_type, uint16_type, size_type> >(), mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
@@ -3249,10 +3249,10 @@ public:
     {
 
         Context ctx( mesh_components );
-        Debug( 5010 ) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
-        Debug( 5010 ) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
-        Debug( 5010 ) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
-        Debug( 5010 ) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
+        DVLOG(2) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
+        DVLOG(2) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
+        DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
+        DVLOG(2) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
         this->init( mesh, mesh_components, periodicity, dofindices, mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
@@ -3295,7 +3295,7 @@ public:
      */
     void operator()( MESH_CHANGES mesh_changes )
     {
-        Debug( 5010 ) << "Update function space after a change in the mesh\n";
+        DVLOG(2) << "Update function space after a change in the mesh\n";
 
     }
 
@@ -3812,7 +3812,7 @@ public:
         _M_dofOnOff( __fe._M_dofOnOff ),
         _M_rt( __fe._M_rt )
     {
-        Debug( 5010 ) << "copying FunctionSpace\n";
+        DVLOG(2) << "copying FunctionSpace\n";
     }
 
 protected:
@@ -3962,8 +3962,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
         mpl::bool_<false> )
 {
-    Debug( 5010 ) << "calling init(<space>) begin\n";
-    Debug( 5010 ) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
+    DVLOG(2) << "calling init(<space>) begin\n";
+    DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
     _M_mesh = __m;
 
 
@@ -3991,9 +3991,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] ) );
 
-    Debug( 5010 ) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
+    DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
     _M_dof->setDofIndices( dofindices );
-    Debug( 5010 ) << "[functionspace] is_periodic = " << is_periodic << "\n";
+    DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
 
     _M_dof->build( _M_mesh );
 
@@ -4010,20 +4010,20 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                                                                            std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
     }
 
-    Debug( 5010 ) << "nb dim : " << qDim() << "\n";
-    Debug( 5010 ) << "nb dof : " << nDof() << "\n";
-    Debug( 5010 ) << "nb dof per component: " << nDofPerComponent() << "\n";
+    DVLOG(2) << "nb dim : " << qDim() << "\n";
+    DVLOG(2) << "nb dof : " << nDof() << "\n";
+    DVLOG(2) << "nb dof per component: " << nDofPerComponent() << "\n";
 
     if ( is_vectorial )
     {
-        Debug( 5010 ) << "component space :: nb dim : " << _M_comp_space->qDim() << "\n";
-        Debug( 5010 ) << "component space :: nb dof : " << _M_comp_space->nDof() << "\n";
-        Debug( 5010 ) << "component space :: nb dof per component: " << _M_comp_space->nDofPerComponent() << "\n";
+        DVLOG(2) << "component space :: nb dim : " << _M_comp_space->qDim() << "\n";
+        DVLOG(2) << "component space :: nb dof : " << _M_comp_space->nDof() << "\n";
+        DVLOG(2) << "component space :: nb dof per component: " << _M_comp_space->nDofPerComponent() << "\n";
     }
 
     //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
 
-    Debug( 5010 ) << "calling init(<space>) end\n";
+    DVLOG(2) << "calling init(<space>) end\n";
 
 }
 
@@ -4035,7 +4035,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
                                          mpl::bool_<true> )
 {
-    Debug( 5010 ) << "calling init(<composite>) begin\n";
+    DVLOG(2) << "calling init(<composite>) begin\n";
     _M_mesh = __m;
 
     // todo : check worldsComm size and _M_functionspaces are the same!
@@ -4044,8 +4044,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     _M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
-    Debug( 5010 ) << "calling nDof(<composite>)" << this->nDof() << "\n";
-    Debug( 5010 ) << "calling init(<composite>) end\n";
+    DVLOG(2) << "calling nDof(<composite>)" << this->nDof() << "\n";
+    DVLOG(2) << "calling init(<composite>) end\n";
 
     proc_dist_map_type emptyMap;
     procDistMap = fusion::accumulate( _M_functionspaces,
@@ -4060,7 +4060,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
             {
                 // construction with same partionment for all subspaces
                 // and each processors has entries for all subspaces
-                Debug( 5010 ) << "init(<composite>) type hasEntriesForAllSpaces\n";
+                DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
                 // build usefull data for detail::updateDataMapProcessStandard
                 std::vector<size_type> startDofGlobalCluster(this->worldComm().globalSize());
                 std::vector<size_type> nLocalDofWithoutGhostWorld(this->worldComm().globalSize());
@@ -4092,7 +4092,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
             {
                 // construction with same partionment for all subspaces
                 // and one processor has entries for only one subspace
-                Debug( 5010 ) << "init(<composite>) type Not hasEntriesForAllSpaces\n";
+                DVLOG(2) << "init(<composite>) type Not hasEntriesForAllSpaces\n";
 
                 // build the WorldComm associated to mix space
                 WorldComm mixSpaceWorldComm = this->worldsComm()[0];
@@ -4137,9 +4137,9 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
 {
-    Debug( 5010 ) << "calling nDof(<composite>) begin\n";
+    DVLOG(2) << "calling nDof(<composite>) begin\n";
     size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NbDof() );
-    Debug( 5010 ) << "calling nDof(<composite>) end\n";
+    DVLOG(2) << "calling nDof(<composite>) end\n";
     return ndof;
 }
 
@@ -4154,9 +4154,9 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 {
-    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
     size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
-    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
 
@@ -4172,9 +4172,9 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
 {
-    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
     size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
-    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
 
@@ -4189,9 +4189,9 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
-    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
     size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
-    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
 
@@ -4206,9 +4206,9 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
 {
-    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
     size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >( this->worldsComm() ) );
-    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
 
@@ -4223,9 +4223,9 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
-    Debug( 5010 ) << "calling nLocalDof(<composite>) begin\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
     size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
-    Debug( 5010 ) << "calling nLocalDof(<composite>) end\n";
+    DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
 
@@ -4348,7 +4348,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
         size_type cv_stored = ( *it )->id;
 
 
-        Debug( 5010 ) << "[FunctionSpace::findPoint] id : " << cv_stored << "\n";
+        DVLOG(2) << "[FunctionSpace::findPoint] id : " << cv_stored << "\n";
 
         __git.setXReal( pt );
         ptr = __git.xRef();
@@ -4357,14 +4357,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
         bool isin;
         value_type dmin;
         boost::tie( isin, dmin ) = refelem.isIn( ptr );
-        Debug( 5010 ) << "[FunctionSpace::findPoint] isin: " << isin << " dmin: " << dmin << "\n";
+        DVLOG(2) << "[FunctionSpace::findPoint] isin: " << isin << " dmin: " << dmin << "\n";
 
         closest =  ( dmin > closest.second )?std::make_pair( cv_stored, dmin ):closest;
 
         if ( isin )
         {
-            Debug( 5010 ) << "[FunctionSpace::findPoint] id of the convex where " << pt << " belongs : " << cv_stored << "\n";
-            Debug( 5010 ) << "[FunctionSpace::findPoint] ref coordinate: " << ptr << "\n";
+            DVLOG(2) << "[FunctionSpace::findPoint] id of the convex where " << pt << " belongs : " << cv_stored << "\n";
+            DVLOG(2) << "[FunctionSpace::findPoint] ref coordinate: " << ptr << "\n";
             cv = ( *it )->id;
             //_M_prof_find_points.pause();
             return true;
@@ -4400,8 +4400,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e 
     _M_ct( __e._M_ct ),
     _M_containersOffProcess( __e._M_containersOffProcess )
 {
-    Debug( 5010 ) << "Element<copy>::range::start = " << this->start() << "\n";
-    Debug( 5010 ) << "Element<copy>::range::size = " << this->size() << "\n";
+    DVLOG(2) << "Element<copy>::range::start = " << this->start() << "\n";
+    DVLOG(2) << "Element<copy>::range::size = " << this->size() << "\n";
 
 }
 
@@ -4419,10 +4419,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     _M_ct( __ct ),
     _M_containersOffProcess( boost::none )
 {
-    Debug( 5010 ) << "Element::start = " << this->start() << "\n";
-    Debug( 5010 ) << "Element::size = " << this->size() << "\n";
-    Debug( 5010 ) << "Element::ndof = " << this->nDof() << "\n";
-    Debug( 5010 ) << "Element::nlocaldof = " << this->nLocalDof() << "\n";
+    DVLOG(2) << "Element::start = " << this->start() << "\n";
+    DVLOG(2) << "Element::size = " << this->size() << "\n";
+    DVLOG(2) << "Element::ndof = " << this->nDof() << "\n";
+    DVLOG(2) << "Element::nlocaldof = " << this->nLocalDof() << "\n";
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4440,12 +4440,12 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     _M_ct( __ct ),
     _M_containersOffProcess( boost::none )
 {
-    Debug( 5010 ) << "Element<range>::range::start = " << __c.start() << "\n";
-    Debug( 5010 ) << "Element<range>::range::size = " << __c.size() << "\n";
-    Debug( 5010 ) << "Element<range>::start = " << this->start() << "\n";
-    Debug( 5010 ) << "Element<range>::size = " << this->size() << "\n";
-    Debug( 5010 ) << "Element<range>::ndof = " << this->nDof() << "\n";
-    Debug( 5010 ) << "Element<range>::nlocaldof = " << this->nLocalDof() << "\n";
+    DVLOG(2) << "Element<range>::range::start = " << __c.start() << "\n";
+    DVLOG(2) << "Element<range>::range::size = " << __c.size() << "\n";
+    DVLOG(2) << "Element<range>::start = " << this->start() << "\n";
+    DVLOG(2) << "Element<range>::size = " << this->size() << "\n";
+    DVLOG(2) << "Element<range>::ndof = " << this->nDof() << "\n";
+    DVLOG(2) << "Element<range>::nlocaldof = " << this->nLocalDof() << "\n";
     _M_start = __c.start();
 }
 
@@ -4527,7 +4527,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
     if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) || extrapolate )
     {
 #if !defined( NDEBUG )
-        Debug( 5010 ) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
+        DVLOG(2) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
 #endif
         gm_ptrtype __gm = functionSpace()->gm();
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
@@ -4567,16 +4567,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         id_type __id( this->id( *fectx ) );
 
-        //Debug(5010) << "[interpolation]  id = " << __id << "\n";
+        //DVLOG(2) << "[interpolation]  id = " << __id << "\n";
 #if defined(FEELPP_HAS_MPI)
-        Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
+        DVLOG(2) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             mpi::broadcast( functionSpace()->mesh()->comm(), __id, functionSpace()->mesh()->comm().rank() );
         }
 
-        //Debug(5010) << "[interpolation] after broadcast id = " << __id << "\n";
+        //DVLOG(2) << "[interpolation] after broadcast id = " << __id << "\n";
 #endif /* FEELPP_HAS_MPI */
         return __id;
     }
@@ -4598,7 +4598,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         for ( ; i < global_found_pt.size(); ++i )
             if ( global_found_pt[i] != 0 )
             {
-                Debug( 5010 ) << "processor " << i << " has the point " << __x << "\n";
+                DVLOG(2) << "processor " << i << " has the point " << __x << "\n";
                 found = true;
                 break;
             }
@@ -4607,20 +4607,18 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
 
         if ( found )
         {
-            Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
+            DVLOG(2) << "receiving interpolation context from processor " << i << "\n";
 #if defined(FEELPP_HAS_MPI)
 
             if ( functionSpace()->mesh()->comm().size() > 1 )
                 mpi::broadcast( functionSpace()->mesh()->comm(), __id, i );
 
 #endif /* FEELPP_HAS_MPI */
-
-            Debug( 5010 ) << "[interpolation] after broadcast id = " << __id << "\n";
         }
 
         else
         {
-            Warning() << "no processor seems to have the point " << __x << "\n";
+            LOG(WARNING) << "no processor seems to have the point " << __x << "\n";
         }
 
         return __id;
@@ -4637,6 +4635,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
     const uint16_type nq = context.xRefs().size2();
 
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
@@ -4647,7 +4653,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
         for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
         {
             typename array_type::index ldof = basis_type::nDof*c1+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             //std::cout << "ldof = " << ldof << "\n";
             //std::cout << "gdof = " << gdof << "\n";
 
@@ -4779,7 +4785,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
     if ( functionSpace()->findPoint( __x, __cv_id, __x_ref ) )
     {
 #if !defined( NDEBUG )
-        Debug( 5010 ) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
+        DVLOG(2) << "Point " << __x << " is in element " << __cv_id << " pt_ref=" << __x_ref << "\n";
 #endif
         gm_ptrtype __gm = functionSpace()->gm();
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
@@ -4818,16 +4824,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 #endif /* FEELPP_HAS_MPI */
 
         grad_type g_( this->grad( *fectx ) );
-        //Debug(5010) << "[interpolation]  id = " << v << "\n";
+        //DVLOG(2) << "[interpolation]  id = " << v << "\n";
 #if defined(FEELPP_HAS_MPI)
-        Debug( 5010 ) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
+        DVLOG(2) << "sending interpolation context to all processors from " << functionSpace()->mesh()->comm().rank() << "\n";
 
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             mpi::broadcast( functionSpace()->mesh()->comm(), g_, functionSpace()->mesh()->comm().rank() );
         }
 
-        //Debug(5010) << "[interpolation] after broadcast g_ = " << g_ << "\n";
+        //DVLOG(2) << "[interpolation] after broadcast g_ = " << g_ << "\n";
 #endif /* FEELPP_HAS_MPI */
         return g_;
     }
@@ -4849,7 +4855,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
         for ( ; i < global_found_pt.size(); ++i )
             if ( global_found_pt[i] != 0 )
             {
-                Debug( 5010 ) << "processor " << i << " has the point " << __x << "\n";
+                DVLOG(2) << "processor " << i << " has the point " << __x << "\n";
                 found = true;
                 break;
             }
@@ -4858,7 +4864,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
         if ( found )
         {
-            Debug( 5010 ) << "receiving interpolation context from processor " << i << "\n";
+            DVLOG(2) << "receiving interpolation context from processor " << i << "\n";
 #if defined(FEELPP_HAS_MPI)
 
             if ( functionSpace()->mesh()->comm().size() > 1 )
@@ -4866,7 +4872,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
 
 #endif /* FEELPP_HAS_MPI */
 
-            //Debug(5010) << "[interpolation] after broadcast id = " << v << "\n";
+            //DVLOG(2) << "[interpolation] after broadcast id = " << v << "\n";
         }
 
         else
@@ -4888,6 +4894,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
     //std::cout << "coeff=" << coeff << "\n";
     //array_type v( boost::extents[nComponents1][nRealDim][context.xRefs().size2()] );
     //std::fill( v.data(), v.data()+v.num_elements(), value_type( 0 ) );
@@ -4898,7 +4912,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5055,6 +5069,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
     const size_type Q = context.xRefs().size2();
 
     for ( int l = 0; l < basis_type::nDof; ++l )
@@ -5064,7 +5086,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5215,6 +5237,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -5222,7 +5252,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5266,6 +5296,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
+
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
         const int ncdof = is_product?nComponents1:1;
@@ -5273,7 +5312,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -6098,29 +6137,6 @@ operator<<( std::ostream& os, detail::ID<T,M,N> const& id )
         os << std::endl;
     }
 
-    return os;
-}
-template<typename T,int M, int N>
-inline
-DebugStream&
-operator<<( DebugStream& __os, detail::ID<T,M,N> const& id )
-{
-    if ( __os.doPrint() )
-    {
-        std::ostringstream __str;
-
-        __str << id;
-
-        __os << __str.str() << "\n";
-    }
-
-    return __os;
-}
-template<typename T, int M, int N>
-inline
-NdebugStream&
-operator<<( NdebugStream& os, detail::ID<T,M,N> const& )
-{
     return os;
 }
 

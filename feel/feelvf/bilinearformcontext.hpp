@@ -176,19 +176,20 @@ template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
-        map_trial_geometric_mapping_context_type const& _gmcTrial,
-        map_geometric_mapping_expr_context_type const& _gmcExpr )
+                                                                                                                      map_trial_geometric_mapping_context_type const& _gmcTrial,
+                                                                                                                      map_geometric_mapping_expr_context_type const& _gmcExpr )
 {
     update( _gmcTest, _gmcTrial, _gmcExpr, boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );
+    // if we know that the result will be zero, don't update the integrator and return immediately
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmcExpr ) );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
-        map_trial_geometric_mapping_context_type const& _gmcTrial,
-        map_geometric_mapping_expr_context_type const& _gmcExpr,
-        mpl::bool_<false> )
+                                                                                                                      map_trial_geometric_mapping_context_type const& _gmcTrial,
+                                                                                                                      map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                                                      mpl::bool_<false> )
 {
     fusion::for_each( _M_test_fec, vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
@@ -200,9 +201,9 @@ template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
-        map_trial_geometric_mapping_context_type const& _gmcTrial,
-        map_geometric_mapping_expr_context_type const& _gmcExpr,
-        mpl::bool_<true> )
+                                                                                                                      map_trial_geometric_mapping_context_type const& _gmcTrial,
+                                                                                                                      map_geometric_mapping_expr_context_type const& _gmcExpr,
+                                                                                                                      mpl::bool_<true> )
 {
     fusion::for_each( _M_test_fec, vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
@@ -298,7 +299,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
 #if !defined(NDEBUG)
     test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_test_gmc );
-    Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
+    DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
     if ( _M_form.isPatternDefault() && boost::is_same<trial_dof_type,test_dof_type>::value &&
@@ -409,7 +410,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
 #if !defined(NDEBUG)
     test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( _M_test_gmc );
-    Debug( 5050 ) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
+    DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
     if ( isFirstExperience )
@@ -435,16 +436,15 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     size_type col_start = _M_lb.front().globalColumnStart();
 
 #if !defined(NDEBUG)
-    Debug( 5050 ) << "[BilinearForm::assemble] global assembly in element " << elt_0 << "\n";
-    Debug( 5050 ) << "[BilinearForm::assemble] row start " << row_start << "\n";
-    Debug( 5050 ) << "[BilinearForm::assemble] col start " << col_start << "\n";
+    DVLOG(2) << "[BilinearForm::assemble] global assembly in element " << elt_0 << "\n";
+    DVLOG(2) << "[BilinearForm::assemble] row start " << row_start << "\n";
+    DVLOG(2) << "[BilinearForm::assemble] col start " << col_start << "\n";
 #endif /* NDEBUG */
     bool do_less = ( ( _M_form.isPatternDefault() &&
                        ( _M_test_dof->nComponents == _M_trial_dof->nComponents ) ) &&
                      !_M_form.isPatternCoupled() );
 
     if ( do_less )
-        //if ( 0 )
     {
         for ( uint16_type c = 0; c < trial_dof_type::nComponents1; ++c )
         {
@@ -470,14 +470,19 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     else
     {
+        size_type trial_eid= this->trialElementId( elt_0 );
+        //
+        DCHECK( trial_eid != invalid_size_type_value )
+            << "this case should have been taken care of earlier before the assembly process\n";
+
         M_local_rows.array() = _M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-        M_local_cols.array() = _M_trial_dof->localToGlobalIndices( elt_0 ).array() + col_start;
+        M_local_cols.array() = _M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
 
 
         if ( test_dof_type::is_modal || trial_dof_type::is_modal )
         {
             M_local_rowsigns = _M_test_dof->localToGlobalSigns( elt_0 );
-            M_local_colsigns = _M_trial_dof->localToGlobalSigns( elt_0 );
+            M_local_colsigns = _M_trial_dof->localToGlobalSigns( trial_eid );
             _M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
         }
 

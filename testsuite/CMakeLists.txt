@@ -1,4 +1,4 @@
-###  CMakeLists.txt --- 
+###  CMakeLists.txt ---
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2009-11-28
@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
 add_custom_target( testsuite )
 
 foreach( testdir core alg mesh poly filters material discr crb )

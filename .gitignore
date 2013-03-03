@@ -11,6 +11,7 @@
 /.kdev4
 /CMakeCache.txt
 /CMakeFiles
+/CMakeLists.txt.doc
 /CMakeLists.txt~
 /CPackConfig.cmake
 /CPackSourceConfig.cmake
@@ -24,6 +25,7 @@
 /NEWS.pdf
 /NEWS.tex
 /NEWS.txt
+/README.html
 /README.org~
 /SVNREVISION
 /TAGS

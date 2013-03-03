@@ -1,0 +1,46 @@
+% (C) 2013 - Université de Strasbourg
+% * Guillaume Dollé <guillaume.dolle@math.unistra.fr>
+% * Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+% Tutorial documentation - myintegrals
+%
+
+\section{Computing Integrals}
+\label{sec:myintegrals}
+
+You should be able to create a mesh now. If it is not the case, get back to the
+section \ref{sec:mymesh}. This part explains how to integrate on a mesh with \feel
+(source \textcolor{magenta}{"doc/manual/tutorial/myintegrals.cpp"}).
+Let's consider the domain $\Omega=[0,1]^d$ and associated meshes.
+Here, we want to integrate the following function,
+%
+\begin{equation}
+    f(x,y,z) = x^2 + y^2 + z^2
+\end{equation}
+%
+on the whole domain $\Omega$ and on part of the boundary $\Omega$. Take a look at the code.
+%
+\vspace{2mm}
+\lstinputlisting[linerange=marker_main-endmarker_main]{tutorial/myintegrals.cpp}
+\vspace{2mm}
+%
+To use the \lstinline!integrate()! function, we have to precise the domain range. You can use,
+\begin{itemize}
+    \item \lstinline!elements()! to iterate on the whole mesh $\Omega$,
+    \item \lstinline!boundaryfaces()! to iterate on the boundary $\partial\Omega$,
+    \item \lstinline!markedfaces()! to iterate on a choose face.
+\end{itemize}
+%
+You have to specify the expression we wish to compute. \feel provides a set of functions
+to write these expressions \ref{sec:keywords}.
+The \lstinline!evaluate()! function computes the integral on the global mesh.
+The \lstinline!false! parameter limits the computation on the subregion owned by
+the processor.
+%
+Note that \feel computes automatically the quadrature and consider by default each
+non polynomial terms of the expression as a polynomial of degree 2. You can change
+it by passing a \lstinline!_quad! parameter to the \lstinline!integrate()! function 
+which takes a \lstinline!_Q<int order>! object as value.
+(refer to API documentation).
+
+
+

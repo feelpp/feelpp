@@ -24,17 +24,17 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 add_custom_target(gen_feel_perf_stokes_Poiseuille ALL )
 
-  feelpp_add_application( perf_stokes_poiseuille_DD_2D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DD STOKESPRESSMESHTYPE=1 NO_TEST)
-  feelpp_add_application( perf_stokes_poiseuille_DD_3D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DD STOKESPRESSMESHTYPE=2 NO_TEST)
-  feelpp_add_application( perf_stokes_poiseuille_DD_2D_lm SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DD FEELPP_USE_LM STOKESPRESSMESHTYPE=1 NO_TEST)
-  feelpp_add_application( perf_stokes_poiseuille_DD_3D_lm SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DD FEELPP_USE_LM STOKESPRESSMESHTYPE=2 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DD_2D SRCS stokes_poiseuille.cpp LABEL benchmarks DEFS FEELPP_COND=DD STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DD_3D SRCS stokes_poiseuille.cpp LABEL benchmarks DEFS FEELPP_COND=DD STOKESPRESSMESHTYPE=2 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DD_2D_lm SRCS stokes_poiseuille.cpp LABEL benchmarks DEFS FEELPP_COND=DD FEELPP_USE_LM STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DD_3D_lm SRCS stokes_poiseuille.cpp LABEL benchmarks DEFS FEELPP_COND=DD FEELPP_USE_LM STOKESPRESSMESHTYPE=2 NO_TEST)
 
 
-  feelpp_add_application( perf_stokes_poiseuille_DN_2D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DN STOKESPRESSMESHTYPE=1 NO_TEST)
-  feelpp_add_application( perf_stokes_poiseuille_DN_3D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=DN STOKESPRESSMESHTYPE=2 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DN_2D SRCS stokes_poiseuille.cpp LABEL benchmarks DEFS FEELPP_COND=DN STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_DN_3D SRCS stokes_poiseuille.cpp LABEL benchmarks DEFS FEELPP_COND=DN STOKESPRESSMESHTYPE=2 NO_TEST)
 
-  feelpp_add_application( perf_stokes_poiseuille_NN_2D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=NN STOKESPRESSMESHTYPE=1 NO_TEST)
-  feelpp_add_application( perf_stokes_poiseuille_NN_3D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=NN STOKESPRESSMESHTYPE=2 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_NN_2D SRCS stokes_poiseuille.cpp LABEL benchmarks DEFS FEELPP_COND=NN STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_NN_3D SRCS stokes_poiseuille.cpp LABEL benchmarks DEFS FEELPP_COND=NN STOKESPRESSMESHTYPE=2 NO_TEST)
 
 
 #  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -59,3 +59,4 @@ add_custom_target(gen_feel_perf_stokes_Poiseuille ALL )
 #      feelpp_add_application( stokesdd_P${PORDER}G${GORDER} SRCS stokesdd_P${PORDER}G${GORDER}.cpp LABEL doc DEFS STOKESPRESSMESHTYPE=2 NO_TEST )
 #    endforeach()
 #  endforeach()
+

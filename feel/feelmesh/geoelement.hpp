@@ -239,16 +239,41 @@ public:
                  ( boost::get<3>( M_element1 ) == p ) );
     }
 
-    void disconnect()
+    void disconnect0()
     {
         M_element0 = boost::make_tuple( ( ElementType const* )0,
                                         invalid_size_type_value,
                                         invalid_uint16_type_value,
                                         invalid_size_type_value );
+    }
+
+    void disconnect1()
+    {
         M_element1 = boost::make_tuple( ( ElementType const* )0,
                                         invalid_size_type_value,
                                         invalid_uint16_type_value,
                                         invalid_size_type_value );
+    }
+
+    void disconnect()
+    {
+        disconnect0();
+        disconnect1();
+    }
+
+    void disconnect( ElementType const& elem )
+    {
+        if(boost::get<0>( M_element0 ) == boost::addressof(elem))
+        {
+            DVLOG(2) << "connecting 1 to 0 and disconnecting 1..\n";
+            M_element0 = M_element1;
+            disconnect1();
+        }
+        else
+        {
+            DVLOG(2) << "disconnecting 1..\n";
+            disconnect1();
+        }
     }
 
 private:
@@ -661,10 +686,6 @@ public SubFace
 {
 public:
 
-    //enum { nDim = Dim };
-
-
-
     typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;
     typedef SubFace super2;
 
@@ -880,7 +901,7 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            Debug( 4015 ) << "Serializing Geoelement1D id: " << this->id() << "...\n";
+            DVLOG(2) << "Serializing Geoelement1D id: " << this->id() << "...\n";
             ar & boost::serialization::base_object<super>( *this );
             ar & boost::serialization::base_object<super2>( *this );
         }
@@ -1194,13 +1215,21 @@ public:
         return std::make_pair( M_edges.begin(), M_edges.end() );
     }
 
+    void disconnectSubEntities()
+    {
+        for(unsigned int i = 0; i<numLocalEdges;++i)
+        {
+            M_edges[i]->disconnect(*this);
+        }
+    }
+
 private:
 
     friend class boost::serialization::access;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            Debug( 4015 ) << "Serializing Geoelement2D id: " << this->id() << "...\n";
+            DVLOG(2) << "Serializing Geoelement2D id: " << this->id() << "...\n";
             ar & boost::serialization::base_object<super>( *this );
             ar & boost::serialization::base_object<super2>( *this );
             ar & M_edges;
@@ -1237,7 +1266,7 @@ public SubFaceOfNone
 {
 public:
 
-    enum { nDim = Dim };
+    static const uint16_type nDim = Dim;
 
     typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;
     typedef SubFaceOfNone super2;
@@ -1265,8 +1294,6 @@ public:
     static const uint16_type numLocalFaces = super::numFaces;
     //! Number of local Edges (using Euler Formula)
     static const uint16_type numLocalEdges = super::numEdges;
-
-
 
     /**
      *
@@ -1551,6 +1578,8 @@ template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalFaces;
 template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalEdges;
+template <uint16_type Dim, typename GEOSHAPE, typename T>
+const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::nDim;
 
 } // Feel
 #endif
