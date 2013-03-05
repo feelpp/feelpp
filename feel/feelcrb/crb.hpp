@@ -3466,7 +3466,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     double time_for_output;
     double time_step;
     double time_final;
-    int number_of_time_step;
+    int number_of_time_step=1;
     size_type Qm;
 
     if ( M_model->isSteady() )
@@ -3474,7 +3474,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
         time_step = 1e30;
         time_for_output = 1e30;
         Qm = 0;
-        number_of_time_step=1;
+        //number_of_time_step=1;
     }
 
     else
@@ -3622,7 +3622,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
     double time_step;
     double time_final;
-    int number_of_time_step;
+    int number_of_time_step=1;
     size_type Qm;
     int time_index=0;
     double output=0;
@@ -3632,7 +3632,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         time_step = 1e30;
         time_for_output = 1e30;
         Qm = 0;
-        number_of_time_step=1;
+        //number_of_time_step=1;
     }
 
     else
@@ -4049,7 +4049,7 @@ CRB<TruthModelType>::delta( size_type N,
 
         if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
 
-        std::cout<<"dual_residual = "<<dual_residual<<std::endl;
+        //std::cout<<"dual_residual = "<<dual_residual<<std::endl;
 
         bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
         if ( this->worldComm().globalSize() > 1 )
