@@ -629,7 +629,7 @@ void
 ThermalBlock::init()
 {
 
-    std::string mshfile_name = M_vm["mshfile"].template as<std::string>();
+    std::string mshfile_name = M_vm["mshfile"].as<std::string>();
 
     if( mshfile_name=="" )
     {
@@ -640,7 +640,7 @@ ThermalBlock::init()
     else
     {
         mmesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=M_vm["mshfile"].template as<std::string>(),
+                             _filename=M_vm["mshfile"].as<std::string>(),
                              _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
     }
 
