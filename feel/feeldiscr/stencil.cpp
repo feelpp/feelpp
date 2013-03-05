@@ -50,7 +50,7 @@ stencilManagerGarbageCollect()
             std::for_each( entry.first.get<3>().begin(),
                            entry.first.get<3>().end(),
                            [&ostr]( size_type i ) { ostr << i << ","; } );
-            std::cout << "[stencilManagerGarbageCollect] deleting entry space: ( "
+            LOG(INFO) << "[stencilManagerGarbageCollect] deleting entry space: ( "
                       << entry.first.get<0>()
                       << "," << entry.first.get<1>()
                       << "," << int(entry.first.get<2>())
@@ -107,15 +107,15 @@ stencilManagerPrint()
         std::for_each( entry.first.get<3>().begin(),
                        entry.first.get<3>().end(),
                        [&ostr]( size_type i ) { ostr << i << ","; } );
-            std::cout << "[stencilManagerPrint] ("
-                      << entry.first.get<0>() << "[" << entry.first.get<0>().use_count() << "]"
-                      << "," << entry.first.get<1>() << "[" << entry.first.get<1>().use_count() << "]"
-                      << "," << int(entry.first.get<2>())
-                      << ", (" << ostr.str()
-                      << "),"
-                      << "," << int(entry.first.get<4>())
-                      << "): "
-                      << " " << entry.second << "[" << entry.second.use_count() << "]"<< "\n";
+        LOG(INFO) << "[stencilManagerPrint] ("
+                  << entry.first.get<0>() << "[" << entry.first.get<0>().use_count() << "]"
+                  << "," << entry.first.get<1>() << "[" << entry.first.get<1>().use_count() << "]"
+                  << "," << int(entry.first.get<2>())
+                  << ", (" << ostr.str()
+                  << "),"
+                  << "," << int(entry.first.get<4>())
+                  << "): "
+                  << " " << entry.second << "[" << entry.second.use_count() << "]"<< "\n";
     }
     std::cout << "********************************************************************************\n";
 }

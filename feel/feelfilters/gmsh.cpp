@@ -287,12 +287,14 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 {
 #if FEELPP_HAS_GMSH
     std::ostringstream filename;
-    filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
+    //filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
 
 #if BOOST_FILESYSTEM_VERSION == 3
+    filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
     boost::system::error_code ec;
     fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
 #elif BOOST_FILESYSTEM_VERSION == 2
+    filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
     fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
 #endif
 

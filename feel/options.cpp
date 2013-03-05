@@ -27,21 +27,12 @@
    \date 2007-07-21
  */
 #include <feel/options.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelalg/backendpetsc.hpp>
-#include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelalg/backendtrilinos.hpp>
-#include <feel/feelmaterial/materiallib.hpp>
-
-#include <feel/feeldiscr/bdf2.hpp>
-
-
-#include <feel/feelfilters/exporter.hpp>
 
 namespace Feel
 {
+
+
+
 po::options_description
 file_options( std::string const& appname )
 {
@@ -64,9 +55,10 @@ generic_options()
         ( "help", "prints this help message" )
         ( "license", "prints the license text" )
         ( "version", "prints the version" )
-        ( "v", po::value<int>(), "verbosity level" )
+        ( "v", po::value<int>()->default_value(0), "verbosity level" )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
+        ( "directory", po::value<std::string>(), "change directory to specified one" )
         ;
     return generic;
 }

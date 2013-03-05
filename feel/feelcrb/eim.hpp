@@ -30,6 +30,7 @@
 #define _FEELPP_EIM_HPP 1
 
 #include <limits>
+#include <numeric>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -196,20 +197,23 @@ public:
                 M_offline_done = false;
             }
 
-            if( M_vm["eim.study-cvg"].template as<bool>() )
-                {
-                    M_WN=1;
-                    do{
-                        offline();
-                        studyConvergence();
-
-                        M_offline_done = false;
-                        M_WN++;
-                    }while( M_WN < M_vm["eim.dimension-max"].template as<int>() );
-                }
-
             if ( !this->isOfflineDone() )
                 offline();
+#if 0
+            //old version of convergence
+            if( M_vm["eim.study-cvg"].template as<bool>() )
+            {
+                M_WN=1;
+                do{
+                    offline();
+                    studyConvergence();
+
+                    M_offline_done = false;
+                    M_WN++;
+                }while( M_WN < M_vm["eim.dimension-max"].template as<int>() );
+            }
+#endif
+
         }
 
     EIM( EIM const & __bbf )
@@ -367,12 +371,14 @@ public:
     vector_type beta( parameter_type const& mu, size_type M  ) const;
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const;
 
+    std::vector<double> studyConvergence( parameter_type const & mu) const;
+
     element_type residual ( size_type M ) const;
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
 
-    element_type operator()( parameter_type const& mu ) const { return expansion( M_q, beta( mu ) ); }
-    element_type operator()( parameter_type const& mu, solution_type const& T ) const { return expansion( M_q, beta( mu, T ) ); }
+    element_type operator()( parameter_type const& mu , int N) const { return expansion( M_q, beta( mu ) , N); }
+    element_type operator()( parameter_type const& mu, solution_type const& T , int N ) const { return expansion( M_q, beta( mu, T ) , N ); }
     /**
        orthonormalize
     */
@@ -500,7 +506,6 @@ private:
        \f$1 \leq i,j \leq M\f$.
     */
     void offline();
-    void studyConvergence();
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -646,12 +651,12 @@ EIM<ModelType>::offline(  )
     }
 
     // store residual
-    //auto res = M_model->functionSpace()->element();
+    auto res = M_model->functionSpace()->element();
 
-    if( !M_vm["eim.study-cvg"].template as<bool>() || M_WN == 1 )
-    {
-        LOG(INFO) << "compute finite element solution at mu_1...\n";
-        M_g.push_back( M_model->operator()( mu ) );
+    //if( !M_vm["eim.study-cvg"].template as<bool>() || M_WN == 1 )
+    // {
+    LOG(INFO) << "compute finite element solution at mu_1...\n";
+    M_g.push_back( M_model->operator()( mu ) );
 
     LOG(INFO) << "compute T^" << 0 << "...\n";
     // Build T^0
@@ -675,10 +680,10 @@ EIM<ModelType>::offline(  )
         << "q[0](t[0] != 1 " << "q[0] = " << M_q[0]( M_t[0] )( 0, 0, 0 )
         << "  t[0] = "<< M_t[0] << "\n";
 
-        ++M_M;
-    }
-    else
-        M_M = M_WN - 1;
+    ++M_M;
+    //}
+    //else
+    //M_M = M_WN - 1;
 
     /**
        \par build \f$W^g_M\f$
@@ -686,14 +691,12 @@ EIM<ModelType>::offline(  )
     double err = 1;
 
    //for residual storage
-    auto res = M_model->functionSpace()->element();
+   //auto res = M_model->functionSpace()->element();
 
     LOG(INFO) << "start greedy algorithm...\n";
-    //for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
-    for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
+    //for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
+    for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
     {
-        if( M_vm["eim.study-cvg"].template as<bool>() )
-            ++M_M;
 
         LOG(INFO) << "M=" << M_M << "...\n";
 
@@ -707,7 +710,7 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
                   << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
 
-        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() && !M_vm["eim.study-cvg"].template as<bool>() )
+        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() )
             break;
 
         /**
@@ -767,7 +770,7 @@ EIM<ModelType>::offline(  )
 
 
         LOG(INFO) << "================================================================================\n";
-        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() && !M_vm["eim.study-cvg"].template as<bool>() )
+        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() ) 
         {
             ++M_M;
             break;
@@ -784,49 +787,60 @@ EIM<ModelType>::offline(  )
 }
 
 template<typename ModelType>
-void
-EIM<ModelType>::studyConvergence()
+std::vector<double>
+EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
 {
-    LOG(INFO) << "study convergence... \n";
-    LOG(INFO) << "nb eim basis = " << M_WN << "\n";
+    LOG(INFO) << " Convergence study \n";
+    int proc_number =  Environment::worldComm().globalRank();
 
-    auto S = M_model->parameterSpace()->sampling();
-    S->logEquidistribute(5);
-    BOOST_FOREACH( auto mu, *S )
+    std::vector<double> l2ErrorVec(this->mMax(), 0.0);
+
+    std::string mu_str;
+    for ( int i=0; i<mu.size(); i++ )
+        mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
+
+    std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
+    if( std::ifstream( file_name ) )
+        std::remove( file_name.c_str() );
+
+    std::ofstream conv;
+    if( proc_number == Environment::worldComm().masterRank() )
         {
-            LOG(INFO) << "mu = " << mu << "\n";
-
-            // Compute expression
-            auto ana_expr = M_model->operator()(mu);
-
-            // Compute eim expansion
-            auto eim_expr = this->operator()(mu);
-
-            //Compute l2error
-            LOG(INFO) << "EIM name : " << M_model->name() << "\n";
-            double l2_ana = ana_expr.l2Norm();
-            LOG(INFO) << "normL2 w_ana = " << l2_ana << "\n";
-            double l2_eim = eim_expr.l2Norm();
-            LOG(INFO) << "normL2 w_eim = " << l2_eim << "\n";
-            auto l2_error = math::abs( l2_ana - l2_eim ) / l2_ana;
-            LOG(INFO) << "normL2 error = " << l2_error << "\n";
-
-            //write on file
-            std::string mu_str;
-            for ( int i=0; i<mu.size(); i++ )
-                mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
-
-            std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
-            std::ofstream conv;
             conv.open(file_name, std::ios::app);
-            if( M_WN == 1 ) //the first run
-                {
-                    conv.close();
-                    conv.open(file_name, std::ios::app);
-                    conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
-                }
-            conv << M_WN << "\t" << l2_error << "\n";
+            conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
         }
+
+    int max = this->mMax();
+    for(int N=1; N<=max; N++)
+    {
+        int size = mu.size();
+        LOG(INFO)<<" mu = [ ";
+        for ( int i=0; i<size-1; i++ ) LOG(INFO)<< mu[i] <<" , ";
+        LOG(INFO)<< mu[size-1]<<" ]\n";
+
+        // Compute expression
+        auto expression = M_model->operator()(mu);
+
+        // Compute eim expansion
+        auto eim_approximation = this->operator()(mu , N);
+        //Compute l2error
+        LOG(INFO) << "EIM name : " << M_model->name() << "\n";
+        double norm_l2_expression = expression.l2Norm();
+        LOG(INFO) << "norm_l2 expression = " << norm_l2_expression << "\n";
+        double norm_l2_approximation = eim_approximation.l2Norm();
+        LOG(INFO) << "norm_l2_approximation = " << norm_l2_approximation << "\n";
+        auto l2_error = math::abs( norm_l2_expression - norm_l2_approximation ) / norm_l2_expression;
+        LOG(INFO) << "norm l2 error = " << l2_error << "\n";
+
+        l2ErrorVec[N-1] = l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
+
+        if( proc_number == Environment::worldComm().masterRank() )
+            conv << N << "\t" << l2_error << "\n";
+
+    }//loop over basis functions
+
+    conv.close();
+    return l2ErrorVec;
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
@@ -924,6 +938,8 @@ public:
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual size_type  mMax() const = 0;
 
+    virtual std::vector<double> studyConvergence( parameter_type const & mu ) const = 0;
+
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -998,12 +1014,14 @@ public:
         }
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
-    element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
+    element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu , M_eim->mMax() ); }
 
     element_type const& q( int m ) const { return M_eim->q( m ); }
 
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
+
+    std::vector<double> studyConvergence( parameter_type const & mu ) const { return M_eim->studyConvergence( mu ) ; };
 
     size_type mMax() const { return M_eim->mMax(); }
 

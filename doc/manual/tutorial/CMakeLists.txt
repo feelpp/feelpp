@@ -29,27 +29,9 @@ add_custom_target(
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh Test)
+foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh
+mylaplacian mystokes myadvection)
   feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
 endforeach()
 
-
-if( NOT FEELPP_MINIMAL_CONFIGURATION )
-
-  feelpp_add_application( doc_laplacian SRCS laplacian.cpp LABEL doc CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )
-  feelpp_add_application( m1cssi_laplacian SRCS m1cssi_laplacian.cpp LABEL doc  )
-
-  feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LABEL doc  )
-  feelpp_add_application( doc_stokes_periodic SRCS stokes_periodic.cpp LABEL doc  )
-
-  feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc)
-  feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
-  feelpp_add_application( doc_sound SRCS sound.cpp room.cpp LABEL doc )
-  feelpp_add_application( doc_wave SRCS wave.cpp room.cpp LABEL doc )
-  feelpp_add_application( doc_advection SRCS advection.cpp CFG advection.cfg LABEL doc )
-
-  feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
-  feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
-
-endif()
 

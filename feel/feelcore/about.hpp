@@ -503,7 +503,7 @@ BOOST_PARAMETER_FUNCTION(
     (AboutData), about, tag,
     ( required (name, *  ) )
     ( optional
-      ( author,  *, "Feel++"  )
+      ( author,  *, "Feel++ Consortium"  )
       ( task,  *, "developer"  )
       ( email,  *, "feelpp-devel@feelpp.org"  )
       ( desc, *, "Feel++ application" )

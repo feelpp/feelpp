@@ -16576,19 +16576,20 @@ SAVE_LIBS="$LIBS"
 # Check whether --with-gflags was given.
 if test "${with_gflags+set}" = set; then :
   withval=$with_gflags; GFLAGS_CFLAGS="-I${with_gflags}/include"
-  GFLAGS_LIBS="-L${with_gflags}/lib -lgflags"
+  GFLAGS_LIBS="-L${with_gflags}/lib -lfeelpp_gflags"
   CFLAGS="$CFLAGS $GFLAGS_CFLAGS"
   LIBS="$LIBS $GFLAGS_LIBS"
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lgflags" >&5
-$as_echo_n "checking for main in -lgflags... " >&6; }
-if ${ac_cv_lib_gflags_main+:} false; then :
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lfeelpp_gflags" >&5
+$as_echo_n "checking for main in -lfeelpp_gflags... " >&6; }
+if ${ac_cv_lib_feelpp_gflags_main+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgflags  $LIBS"
+LIBS="-lfeelpp_gflags  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -16602,28 +16603,29 @@ return main ();
 }
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_gflags_main=yes
+  ac_cv_lib_feelpp_gflags_main=yes
 else
-  ac_cv_lib_gflags_main=no
+  ac_cv_lib_feelpp_gflags_main=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gflags_main" >&5
-$as_echo "$ac_cv_lib_gflags_main" >&6; }
-if test "x$ac_cv_lib_gflags_main" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_feelpp_gflags_main" >&5
+$as_echo "$ac_cv_lib_feelpp_gflags_main" >&6; }
+if test "x$ac_cv_lib_feelpp_gflags_main" = xyes; then :
   ac_cv_have_libgflags=1
 else
   ac_cv_have_libgflags=0
 fi
+
 
 if test x"$ac_cv_have_libgflags" = x"1"; then
 
 $as_echo "#define HAVE_LIB_GFLAGS 1" >>confdefs.h
 
   if test x"$GFLAGS_LIBS" = x""; then
-    GFLAGS_LIBS="-lgflags"
+    GFLAGS_LIBS="-lfeelpp_gflags"
   fi
 else
   GFLAGS_CFLAGS=

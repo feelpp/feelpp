@@ -1338,10 +1338,6 @@ BOOST_PARAMETER_FUNCTION(
     return thebdf;
 }
 
-/**
- * command line options
- */
-po::options_description bdf_options( std::string const& prefix = "" );
 
 }
 #endif

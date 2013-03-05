@@ -363,7 +363,7 @@ public:
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
      */
-    element_type expansion( vectorN_type const& u , int const N) const;
+    element_type expansion( vectorN_type const& u , int const N, wn_type const & WN ) const;
 
 
     /**
@@ -389,6 +389,18 @@ public:
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         }
         M_scm->setTruthModel( M_model );
+    }
+
+
+    //! set boolean indicates if we are in offline_step or not
+    void setOfflineStep( bool b )
+    {
+        M_offline_step = b;
+    }
+
+    wn_type wn() const
+    {
+        return M_WN;
     }
 
 
@@ -499,6 +511,7 @@ private:
     parameter_type M_current_mu;
     int M_no_residual_index;
 
+    bool M_offline_step;
 
 };
 
@@ -1062,7 +1075,7 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
         //bring the jacobian matrix from the model and then project it into the reduced basis
-        auto expansionX = expansion( map_X , N);
+        auto expansionX = expansion( map_X , N , M_WN);
         auto J = M_model->jacobian( expansionX );
         matrixN_type model_reduced_jacobian( N , N );
         for(int i=0; i<N; i++)
@@ -1116,7 +1129,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
-        auto expansionX = expansion( map_X , N);
+        auto expansionX = expansion( map_X , N , M_WN);
         auto R = M_model->residual( expansionX );
         vectorN_type model_reduced_residual( N );
         element_ptrtype eltR( new element_type( M_model->functionSpace() ) );
@@ -1393,7 +1406,7 @@ CRBTrilinear<TruthModelType>::expansion( parameter_type const& mu , int N)
 
 template<typename TruthModelType>
 typename CRBTrilinear<TruthModelType>::element_type
-CRBTrilinear<TruthModelType>::expansion( vectorN_type const& u , int const N) const
+CRBTrilinear<TruthModelType>::expansion( vectorN_type const& u , int const N,  wn_type const & WN) const
 {
     int Nwn;
 
@@ -1403,8 +1416,10 @@ CRBTrilinear<TruthModelType>::expansion( vectorN_type const& u , int const N) co
         Nwn = M_N;
 
     //FEELPP_ASSERT( N == u.size() )( N )( u.size() ).error( "invalid expansion size");
-    FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
-    return Feel::expansion( M_WN, u, N );
+    //FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
+    //int size = uN.size();
+    FEELPP_ASSERT( N <= M_WN.size() )( N )( M_WN.size() ).error( "invalid expansion size ( N and M_WN ) ");
+    return Feel::expansion( WN, u, N );
 }
 
 

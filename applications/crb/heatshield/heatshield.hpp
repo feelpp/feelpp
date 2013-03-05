@@ -48,6 +48,7 @@
 
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelcrb/modelcrbbase.hpp>
 
 #include <feel/feeldiscr/bdf2.hpp>
 
@@ -89,7 +90,12 @@ makeHeatShieldAbout( std::string const& str = "heatShield" )
     return about;
 }
 
-
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 2;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
 
 
 /**
@@ -99,9 +105,13 @@ makeHeatShieldAbout( std::string const& str = "heatShield" )
  * @author Christophe Prud'homme
  * @see
  */
-class HeatShield
+class HeatShield : public ModelCrbBase< ParameterDefinition >
 {
 public:
+
+    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
 
     /** @name Constants
@@ -683,7 +693,7 @@ void HeatShield::init()
 
     using namespace Feel::vf;
 
-    std::string mshfile_name = M_vm["mshfile"].template as<std::string>();
+    std::string mshfile_name = option("mshfile").as<std::string>();
 
     /*
      * First we create the mesh or load it if already exist
@@ -698,7 +708,7 @@ void HeatShield::init()
     else
     {
         mesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=M_vm["mshfile"].template as<std::string>(),
+                             _filename=option("mshfile").as<std::string>(),
                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
     }
 
