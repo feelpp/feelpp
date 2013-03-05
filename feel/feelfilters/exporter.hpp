@@ -460,7 +460,6 @@ protected:
 
 
 
-po::options_description exporter_options( std::string const& prefix = "" );
 
 namespace detail
 {
