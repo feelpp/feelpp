@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-04-12
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2013 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-#
-FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
-
-INSTALL(FILES ${files} DESTINATION share/feel/cmake/machines COMPONENT Devel)
+set(Boost_NO_BOOST_CMAKE TRUE)
+set(Boost_NO_SYSTEM_PATHS TRUE)
