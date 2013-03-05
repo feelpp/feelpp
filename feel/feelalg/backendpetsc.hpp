@@ -414,7 +414,7 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     return res;
 } // BackendPetsc::solve
 
-po::options_description backendpetsc_options( std::string const& prefix = "" );
+
 
 #endif // FEELPP_HAS_PETSC_H
 } // Feel

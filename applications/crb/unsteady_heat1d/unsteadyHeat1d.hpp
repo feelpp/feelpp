@@ -55,7 +55,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
-
+#include <feel/feelcrb/modelcrbbase.hpp>
 
 namespace Feel
 {
@@ -124,6 +124,15 @@ createGeo( double meshSize  )
     return gmshp;
 }
 
+
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 4;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+
+
 /**
  * \class UnsteadyHeat1D
  * \brief brief description
@@ -131,9 +140,14 @@ createGeo( double meshSize  )
  * @author Christophe Prud'homme
  * @see
  */
-class UnsteadyHeat1D
+class UnsteadyHeat1D : public ModelCrbBase<ParameterDefinition>
 {
 public:
+
+
+    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
 
     /** @name Constants
@@ -729,7 +743,7 @@ UnsteadyHeat1D::init()
 
 
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
-    std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
+    std::cout << "Number of dof " << Xh->nLocalDof() << std::endl;
 
     assemble();
 
@@ -895,6 +909,7 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
         }
     }
 
+    F->close();
     F->zero();
 
     for ( size_type q = 0; q < M_Fqm[output_index].size(); ++q )
@@ -916,6 +931,7 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
             D->addMatrix( M_betaMqm[q][m]*bdf_coeff, M_Mqm[q][m] );
             //right hand side
             *vec_bdf_poly = bdf_poly;
+            vec_bdf_poly->close();
             vec_bdf_poly->scale( M_betaMqm[q][m] );
             F->addVector( *vec_bdf_poly, *M_Mqm[q][m] );
         }
@@ -942,28 +958,24 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
     element_type v( Xh, "v" );//test functions
 
     pT->zero();
+    T->zero();
 
     assemble();
 
     this->computeBetaQm( mu );
-
-    M_bdf->initialize( *T );
 
     if ( M_is_steady )
     {
         M_bdf->setSteady();
     }
 
-    double bdf_coeff = M_bdf->polyDerivCoefficient( 0 );
-
-    std::cout<<"  -- solving primal "<<std::endl;
-
-    for ( M_bdf->start(); !M_bdf->isFinished(); M_bdf->next() )
+    for ( M_bdf->start(*T); !M_bdf->isFinished(); M_bdf->next() )
     {
+        double bdf_coeff = M_bdf->polyDerivCoefficient( 0 );
+
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
         auto ret = backend->solve( _matrix=D,  _solution=T, _rhs=F, _reuse_prec=( M_bdf->iteration() >=2 ) );
-
         if ( !ret.get<0>() )
         {
             LOG(INFO)<<"WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
@@ -1058,12 +1070,10 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, bool export_
 
     using namespace vf;
 
-
-    vector_ptrtype U( backend->newVector( Xh ) );
-    *U = *pT;
+    //vector_ptrtype U( backend->newVector( Xh ) );
+    //*U = *pT;
 
     double output=0;
-
     // right hand side (compliant)
     if ( output_index == 0 )
     {
@@ -1071,7 +1081,10 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, bool export_
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+                element_ptrtype eltF( new element_type( Xh ) );
+                *eltF = *M_Fqm[output_index][q][m];
+                output += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
+                //output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
             }
         }
 

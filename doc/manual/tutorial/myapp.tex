@@ -1,0 +1,123 @@
+% (C) 2013 - Université de Strasbourg
+% * Guillaume Dollé <guillaume.dolle@math.unistra.fr>
+% * Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+% Tutorial documentation - myapp
+%
+
+
+\section{First \feel Application}
+\label{sec:myapp}
+
+See section \ref{chap:tutorial-building} for more information about \feel installation.
+
+\subsection{Minimal example}
+
+Let's begin with our first program using the \feel framework
+(source \textcolor{magenta}{"doc/manual/tutorial/myapp.cpp"}).
+Before all, you have to include the \feel headers.
+%
+\vspace{2mm}
+\begin{lstlisting}
+  #include <feel/feel.hpp>
+  using namespace Feel;
+\end{lstlisting}
+\vspace{2mm}
+%
+We use the C++ \lstinline!namespace! to avoid \lstinline!Feel::! prefix before
+\feel objects.
+%
+\vspace{2mm}
+\lstinputlisting[linerange=marker1-endmarker1]{tutorial/myapp.cpp}
+\vspace{2mm}
+%
+\begin{itemize}
+\item
+We pass command line options using the
+\href{http://www.boost.org/doc/libs/1_53_0/doc/html/program_options.html}
+{Boost Program Options}\footnotemark[1] library using the prefix \lstinline!po::! which is 
+a \feel alias for the Boost::program\_options namespace.
+%
+\footnotetext[1]{\url{http://www.boost.org/doc/libs/1_53_0/doc/html/program_options.html}}
+%
+To add a new \feel option, we must create a new
+\feel \lstinline!options_description!. You must add the default \feel options
+and the new one that we choose here as a double value. Note that the default
+value will be assigned if not specified by the user.
+
+\item
+Then we initialize the environment variables through the \feel
+\lstinline!Environment! class (Check the Constructor prototype on the online documentation).
+
+\item
+We instantiate a new application. We specify the directory where to execute the
+program. That could be usefull for archiving your results.
+
+\item
+Finally, we save the results in a log file using the
+\href{http://code.google.com/p/google-glog/}{google-glog library}
+\footnotemark[2].
+%
+\footnotetext{\url{http://code.google.com/p/google-glog/}}
+%
+As you can see, we save in this example our custom option value and the
+current processor number.
+
+\end{itemize}
+
+
+\subsection{Compilation, execution, logs}
+
+To compile a tutorial, just use the GNU make command.
+%
+\begin{unixcom}
+    make feelpp_doc_<appname>
+\end{unixcom}
+%
+where \textit{appname} is the name of the application you wish to
+compile (here, \lstinline!myapp!).
+Go to the execution directory as specified in the program,
+and execute it. You can change your option value.
+%
+\begin{unixcom}
+    ./feelpp_doc_myapp [--value 6.6]
+\end{unixcom}
+%
+You can list the log files created.
+%
+\begin{unixcom}
+    ls /tmp/<your login>/feelpp_doc_myapp/
+\end{unixcom}
+%
+If you open one of these log,
+you should be able to see your value and the processor number 
+used to compute.
+You can run your application on several processors using MPI.
+%
+\begin{unixcom}
+    mpirun -np 2 feelpp_doc_myapp
+\end{unixcom}
+%
+Note that there will be one log for each processor in that case.
+
+
+\subsection{Config files}
+
+A config file can be parsed to the program to profile your options.
+The default config paths are,
+\begin{enumerate}
+    \item current dir
+    \item \verb|$HOME/feel/config/|
+    \item \verb|$INSTALL_PREFIX/share/feel/config/|
+\end{enumerate}
+then you have to write inside one of these folders a file called
+\lstinline!<app_name>.cfg! or \lstinline!feelpp_<app_name>.cfg!.
+For example, our \lstinline!myapp.cfg! would looks like,
+%
+\vspace{2mm}
+\begin{lstlisting}
+    value=0.53
+\end{lstlisting}
+\vspace{2mm}
+%
+Note that you can specify the config file through the option \lstinline!--config-file=<path>!
+

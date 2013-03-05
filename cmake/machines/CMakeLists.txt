@@ -21,8 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(modules
-  feelpp.machines.config.cmake
-  )
+#
+FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
 
-INSTALL(FILES ${modules} DESTINATION share/feel/cmake/machines COMPONENT Devel)
+INSTALL(FILES ${files} DESTINATION share/feel/cmake/machines COMPONENT Devel)

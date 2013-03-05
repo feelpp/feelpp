@@ -686,10 +686,6 @@ public SubFace
 {
 public:
 
-    //enum { nDim = Dim };
-
-
-
     typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;
     typedef SubFace super2;
 
@@ -1270,7 +1266,7 @@ public SubFaceOfNone
 {
 public:
 
-    enum { nDim = Dim };
+    static const uint16_type nDim = Dim;
 
     typedef GeoND<Dim, GEOSHAPE, T, GeoElement0D<Dim, SubFaceOfNone, T> > super;
     typedef SubFaceOfNone super2;
@@ -1298,8 +1294,6 @@ public:
     static const uint16_type numLocalFaces = super::numFaces;
     //! Number of local Edges (using Euler Formula)
     static const uint16_type numLocalEdges = super::numEdges;
-
-
 
     /**
      *
@@ -1584,6 +1578,8 @@ template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalFaces;
 template <uint16_type Dim, typename GEOSHAPE, typename T>
 const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::numLocalEdges;
+template <uint16_type Dim, typename GEOSHAPE, typename T>
+const uint16_type GeoElement3D<Dim, GEOSHAPE, T>::nDim;
 
 } // Feel
 #endif

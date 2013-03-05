@@ -199,7 +199,7 @@ typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int
 //typedef boost::mpl::list<boost::mpl::int_<3> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
-#if 0
+#if 1
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh, T, dim_types )
 {
     if ( ( T::value == 1 ) &&
@@ -299,7 +299,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
 }
 #endif
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim2_types;
-typedef boost::mpl::list<boost::mpl::int_<2> > dim2_types;
+//typedef boost::mpl::list<boost::mpl::int_<2> > dim2_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
 {
     using namespace Feel;

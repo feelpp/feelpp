@@ -368,12 +368,18 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
             ( fs::path ( "/usr/share/feel/config" ) )
             ( fs::path ( "/usr/local/share/feel/config" ) )
             ( fs::path ( "/opt/local/share/feel/config" ) );
+        char* env;
+        env = getenv("FEELPP_DIR");
+        if (env != NULL && env[0] != '\0')
+        {
+            prefixes.push_back( fs::path( env ) );
+        }
 
+        VLOG(2) << "try processing cfg files...\n";
         BOOST_FOREACH( auto prefix, prefixes )
         {
             std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-            VLOG(2)<< " Looking for " << config_name << "\n";
-            VLOG(2)<< " Looking for " << config_name << "\n";
+            VLOG(2) << " Looking for " << config_name << "\n";
 
             if ( fs::exists( config_name ) )
             {
@@ -386,8 +392,8 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
             else
             {
                 // try with a prefix feel_
-                std::string config_name = ( boost::format( "%1%/feel_%2%.cfg" ) % prefix.string() % appName ).str();
-                VLOG(2)<< " Looking for " << config_name << "\n";
+                std::string config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                VLOG(2) << " Looking for " << config_name << "\n";
 
                 if ( fs::exists( config_name ) )
                 {
@@ -446,7 +452,7 @@ Environment::Environment()
     google::InstallFailureSignalHandler();
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
-    LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
 #else
     int n = 1 ;
 #endif
@@ -529,7 +535,7 @@ Environment::Environment( int& argc, char**& argv )
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
-    //LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
 
@@ -590,11 +596,10 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
             google::InitGoogleLogging("feel++");
     }
     google::InstallFailureSignalHandler();
-
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
-    //LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
 
@@ -626,21 +631,25 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     S_about = about;
     doOptions( argc, envargv, *S_desc, about.appName() );
 
+    // make sure that we pass the proper verbosity level to glog
+    if ( S_vm.count("v") )
+        FLAGS_v = S_vm["v"].as<int>();
+
     freeargv( envargv );
 
 }
 Environment::~Environment()
 {
-    LOG(INFO) << "[~Environment] sending delete to all deleters" << "\n";
+    VLOG(2) << "[~Environment] sending delete to all deleters" << "\n";
 
     // send signal to all deleters
     S_deleteObservers();
     google::FlushLogFiles(google::GLOG_INFO);
-    LOG(INFO) << "[~Environment] delete signal sent" << "\n";
+    VLOG(2) << "[~Environment] delete signal sent" << "\n";
 
     if ( i_initialized )
     {
-        LOG(INFO) << "[~Environment] finalizing slepc,petsc and mpi\n";
+        VLOG(2) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
@@ -767,18 +776,22 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     if ( Environment::vm().count( "nochdir" ) )
         return;
 
-    fs::path rep_path;
+    fs::path rep_path = fs::current_path();
 
-    rep_path = Environment::rootRepository();
-
-    if ( !fs::exists( rep_path ) )
-        fs::create_directory( rep_path );
 
     typedef std::vector< std::string > split_vector_type;
 
     split_vector_type dirs; // #2: Search for tokens
     std::string fmtstr = fmt.str();
     boost::split( dirs, fmtstr, boost::is_any_of( "/" ) );
+
+    fs::path p = dirs.front();
+    if ( p.relative_path() != ".")
+        rep_path = Environment::rootRepository();
+
+    if ( !fs::exists( rep_path ) )
+        fs::create_directory( rep_path );
+
 
     BOOST_FOREACH( std::string const& dir, dirs )
     {
@@ -793,7 +806,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         rep_path = rep_path / (boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
         if ( !fs::exists( rep_path ) )
             fs::create_directory( rep_path );
-        LOG(INFO) << "rep_path=" << rep_path << "\n";
+        LOG(INFO) << "changing directory to " << rep_path << "\n";
     }
     ::chdir( rep_path.string().c_str() );
 

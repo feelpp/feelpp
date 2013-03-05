@@ -21,8 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-#cmake_minimum_required (VERSION 2.8.9)
-cmake_minimum_required (VERSION 2.8.8)
+cmake_minimum_required (VERSION 2.8.7)
 
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
@@ -62,66 +61,15 @@ macro(set_config_option VARNAME STRING)
 endmacro(set_config_option)
 
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
+OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )
+OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
+OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ON)
+OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ON)
+OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ON)
+OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ON)
+OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
+OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 
-OPTION(FEELPP_ENABLE_GIT "enable Feel++ looking up for svn information" OFF)
-SET(FEELPP_SCM "git")
-# IF(FEELPP_ENABLE_GIT AND ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn ) )
-# #IF ( Subversion_FOUND AND EXISTS ${PROJECT_SOURCE_DIR}/.svn )
-#   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} Project)
-#   MESSAGE("Current revision is ${Project_WC_REVISION}")
-#   Subversion_WC_LOG(${PROJECT_SOURCE_DIR} Project)
-#   MESSAGE("Last changed log is ${Project_LAST_CHANGED_LOG}")
-# ELSE()
-FIND_PACKAGE(Git)
-if(GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
-  message(STATUS "Git found" )
-  if ( NOT EXISTS ${PROJECT_SOURCE_DIR}/contrib/ginac/ginac )
-    message(STATUS "initializing submodules...")
-    execute_process(COMMAND git submodule init WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} )
-    message(STATUS "updating submodules...")
-    execute_process(COMMAND git submodule update WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} )
-  endif()
-
-  execute_process(
-    COMMAND git rev-parse --verify -q --short HEAD
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE Project_WC_REVISION
-    ERROR_VARIABLE GIT_COMMIT_error
-    RESULT_VARIABLE GIT_COMMIT_result)
-  if ( NOT ${GIT_COMMIT_result} EQUAL 0 )
-    MESSAGE(SEND_ERROR "Command \"git rev-parse --verify -q --short git-svn\" failed with output:\n${GIT_COMMIT_error}")
-  else()
-    STRING(STRIP "${Project_WC_REVISION}" Project_WC_REVISION )
-    MESSAGE(STATUS "Git commit: ${Project_WC_REVISION}")
-  endif()
-else()
-  if(EXISTS ${PROJECT_SOURCE_DIR}/GITREVISION)
-    file(READ ${PROJECT_SOURCE_DIR}/GITREVISION Project_WC_REVISION)
-  endif()
-endif()
-
-
-set(FEELPP_VERSION_MAJOR "0")
-set(FEELPP_VERSION_MINOR "92")
-set(FEELPP_VERSION_MICRO "0")
-set(FEELPP_REVISION "0" )
-set(FEELPP_BUILDID "0" )
-if (FEELPP_ENABLE_GIT AND GIT_FOUND AND  EXISTS ${PROJECT_SOURCE_DIR}/.git )
-  set(FEELPP_VERSION_EXTRA "~${FEELPP_SCM}${Project_WC_REVISION}")
-  set(FEELPP_REVISION "${Project_WC_REVISION}")
-  set(FEELPP_BUILDID "${Project_WC_REVISION}")
-  file(WRITE "${CMAKE_SOURCE_DIR}/GITREVISION" "${Project_WC_REVISION}")
-else()
-  set(FEELPP_VERSION_EXTRA "")
-  if ( EXISTS "${CMAKE_SOURCE_DIR}/SVNREVISION" )
-    file(READ "${CMAKE_SOURCE_DIR}/SVNREVISION" FEELPP_REVISION)
-    file(READ "${CMAKE_SOURCE_DIR}/SVNREVISION" FEELPP_BUILDID)
-  endif()
-endif()
-set(FEELPP_VERSION "(((${FEELPP_VERSION_MAJOR}) << 16) | ((${FEELPP_VERSION_MINOR}) << 9) | (${FEELPP_VERSION_MICRO}))" )
-set(FEELPP_VERSION_STRING "${FEELPP_VERSION_MAJOR}.${FEELPP_VERSION_MINOR}.${FEELPP_VERSION_MICRO}${FEELPP_VERSION_EXTRA}")
-set(FEELPP_SHARED_VERSION "1.0.0" )
-set(FEELPP_SHARED_SOVERSION "1" )
 
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
@@ -129,11 +77,18 @@ SET(FEELPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE INTERNAL "")
 
+
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/cmake/modules ${FEELPP_HOME_DIR}/cmake/machines )
 add_subdirectory(cmake/modules)
 add_subdirectory(cmake/machines)
+
+# set the Feel++ version
+include(feelpp.version)
+
+# possibly set the Feel++ configuration
 include(feelpp.machines.config)
 
+# RelWithDebInfo  is the default value for CMAKE_BUILD_TYPE
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
@@ -156,22 +111,6 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions "  CACHE STRING "Release flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-OPTION(FEELPP_ENABLE_MOVE_SEMANTICS "enable move semantics(elision)" ON )
-MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
-IF ( FEELPP_ENABLE_MOVE_SEMANTICS )
-  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
-  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
-ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS )
-
-
-OPTION(FEELPP_ENABLE_INSTANTIATION_MODE "Instantiation mode" ON )
-MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
-IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
-  SET( FEELPP_INSTANTIATION_MODE 1 )
-ENDIF()
-
-
-
 include(ProcessorCount)
 ProcessorCount(NProcs)
 ##if(N GREATER 1)
@@ -179,16 +118,12 @@ math (EXPR NProcs2 '${NProcs}/2')
 message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
 #  set(ctest_test_args ${ctest_test_args} PARALLEL_LEVEL ${N2})
- OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
+
 #else()
 #  OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" OFF )
 #endif()
 
-IF ( FEELPP_ENABLE_MPI_MODE )
-  SET( FEELPP_ENABLE_MPI_MODE 1 )
-ENDIF()
 
-OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 if ( FEELPP_BENCHMARK_FLAGS )
   set(CMAKE_BUILD_TYPE Release )
   set(GCC_PARAM_INLINE_UNIT_GROWTH 150)
@@ -297,25 +232,11 @@ FIND_PACKAGE(Feel++ REQUIRED)
 include( feelpp.macros )
 
 #
-# Python
-#
-FIND_PACKAGE(PythonInterp REQUIRED)
-if(PYTHONINTERP_FOUND)
-  execute_process(COMMAND
-	${PYTHON_EXECUTABLE}
-	-c "import sys; print sys.version[0:3]"
-	OUTPUT_VARIABLE PYTHON_VERSION
-	OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  message(STATUS "Found python version ${PYTHON_VERSION}")
-endif()
-
-#
 # data
 #
-IF(NOT APPLE)
-ADD_SUBDIRECTORY ( data )
-ENDIF(NOT APPLE)
+IF(NOT APPLE AND EXISTS data)
+  ADD_SUBDIRECTORY ( data )
+ENDIF()
 
 if (APPLE)
   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
@@ -327,18 +248,6 @@ endif()
 #
 ADD_SUBDIRECTORY ( feel )
 
-
-
-
-SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
-
-OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ON)
-OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ON)
-OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ON)
-OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ON)
-OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
-
-OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 IF( FEELPP_MINIMAL_CONFIGURATION )
   set( BUILD_TESTING OFF )
   set( FEELPP_ENABLE_BENCHMARKS OFF )
@@ -369,12 +278,16 @@ add_dependencies(check testsuite)
 add_dependencies(check doc)
 #add_dependencies(check benchmarks)
 #add_dependencies(check examples)
+IF(FEELPP_ENABLE_TESTS )
+  add_subdirectory( testsuite )
+endif()
+
 
 if ( FEELPP_ENABLE_DOCUMENTATION )
   ADD_SUBDIRECTORY ( doc )
 endif ( FEELPP_ENABLE_DOCUMENTATION )
 
-if ( FEELPP_ENABLE_BENCHMARKS )
+if ( FEELPP_ENABLE_BENCHMARKS AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks )
   ADD_SUBDIRECTORY ( benchmarks )
 endif()
 
@@ -384,7 +297,6 @@ elseif (EXISTS ${FEELPP_SOURCE_DIR}/applications/opus )
   ADD_SUBDIRECTORY ( applications/opus )
 endif()
 
-
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
   ADD_SUBDIRECTORY ( research )
 endif()
@@ -393,13 +305,10 @@ endif()
 ADD_SUBDIRECTORY ( quickstart )
 
 
-IF(FEELPP_ENABLE_TESTS )
 
-  add_subdirectory( testsuite )
-
-endif()
-
+################################################################################
 # generate configuration header
+################################################################################
 if ( CONFIG_OPTIONS )
   list(SORT CONFIG_OPTIONS)
 endif()

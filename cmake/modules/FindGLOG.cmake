@@ -36,9 +36,6 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   /usr/local/include/feel
   /opt/local/include/feel
   NO_DEFAULT_PATH
-#  /opt/local/include
-#  /usr/local/include
-#  /usr/include
   )
 message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
 
@@ -46,6 +43,7 @@ message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
 if (NOT GLOG_INCLUDE_DIR )
   if(${CMAKE_SOURCE_DIR}/contrib/glog/configure.ac IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog-compile/configure)
     message(STATUS "Building glog in ${CMAKE_BINARY_DIR}/contrib/glog-compile...")
+    message(STATUS "   - using gflags ${GFLAGS_DIR}...")
     execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/glog-compile)
     execute_process(
       COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}
@@ -75,10 +73,7 @@ FIND_LIBRARY(GLOG_LIBRARY
   ${CMAKE_BINARY_DIR}/contrib/glog/lib64/
   ${CMAKE_BINARY_DIR}/contrib/glog/lib/
   $ENV{FEELPP_DIR}/lib
-#  NO_DEFAULT_PATH
-#  /opt/local/lib
-#  /usr/local/lib
- # /usr/lib
+  NO_DEFAULT_PATH
   )
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )
