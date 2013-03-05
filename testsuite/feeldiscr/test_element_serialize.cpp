@@ -294,6 +294,7 @@ TestElementSerialize<Dim>::load( Archive & ar, const unsigned int version )
     M_rebuilt_vector_element.resize( M_nb_element );
     M_vector_element.resize( M_nb_element );
 
+#if 0
     for(int e=0; e<M_nb_element; e++)
     {
         M_element_temp = Xh->element();
@@ -303,9 +304,10 @@ TestElementSerialize<Dim>::load( Archive & ar, const unsigned int version )
 
         M_vector_element[e] = Xh->element();
     }
-
+#else
     //problem when loading M_vector_element
-    //ar & BOOST_SERIALIZATION_NVP( M_vector_element );
+    ar & BOOST_SERIALIZATION_NVP( M_vector_element );
+#endif
 }
 
 
