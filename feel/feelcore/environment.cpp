@@ -452,7 +452,7 @@ Environment::Environment()
     google::InstallFailureSignalHandler();
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
-    LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
 #else
     int n = 1 ;
 #endif
@@ -535,7 +535,7 @@ Environment::Environment( int& argc, char**& argv )
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
-    //LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
 
@@ -596,11 +596,10 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
             google::InitGoogleLogging("feel++");
     }
     google::InstallFailureSignalHandler();
-
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
-    //LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
 
@@ -632,21 +631,25 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     S_about = about;
     doOptions( argc, envargv, *S_desc, about.appName() );
 
+    // make sure that we pass the proper verbosity level to glog
+    if ( S_vm.count("v") )
+        FLAGS_v = S_vm["v"].as<int>();
+
     freeargv( envargv );
 
 }
 Environment::~Environment()
 {
-    LOG(INFO) << "[~Environment] sending delete to all deleters" << "\n";
+    VLOG(2) << "[~Environment] sending delete to all deleters" << "\n";
 
     // send signal to all deleters
     S_deleteObservers();
     google::FlushLogFiles(google::GLOG_INFO);
-    LOG(INFO) << "[~Environment] delete signal sent" << "\n";
+    VLOG(2) << "[~Environment] delete signal sent" << "\n";
 
     if ( i_initialized )
     {
-        LOG(INFO) << "[~Environment] finalizing slepc,petsc and mpi\n";
+        VLOG(2) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
