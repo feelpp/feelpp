@@ -222,7 +222,7 @@ public:
         M_vm ( vm ),
         M_backend( backend_type::build( vm ) ),
         meshSize( vm["hsize"].as<double>() ),
-        gamma_dir( M_vm["gamma_dir"].as<double>() ),
+        gamma_dir( vm["gamma_dir"].as<double>() ),
         M_Dmu( new parameterspace_type ),
         timers()
     {
@@ -629,7 +629,8 @@ void
 ThermalBlock::init()
 {
 
-    std::string mshfile_name = M_vm["mshfile"].as<std::string>();
+    //std::string mshfile_name = M_vm["mshfile"].as<std::string>();
+    std::string mshfile_name = option(_name="mshfile").as<std::string>();
 
     if( mshfile_name=="" )
     {
@@ -640,8 +641,8 @@ ThermalBlock::init()
     else
     {
         mmesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=M_vm["mshfile"].as<std::string>(),
-                             _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+                              _filename=option(_name="mshfile").as<std::string>(),
+                              _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
     }
 
     auto names = mmesh->markerNames();
