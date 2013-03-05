@@ -1,0 +1,72 @@
+% (C) 2013 - Université de Strasbourg
+% * Guillaume Dollé <guillaume.dolle@math.unistra.fr>
+% * Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+% Tutorial documentation - mymesh
+%
+
+
+\section{Laplacian Problem}
+\label{sec:tuto-mylaplacian}
+
+This part explains how to solve the Laplacian equation 
+for homogeneous dirichlet conditions,
+%
+\begin{equation}
+\left\{
+\begin{array}{rcll}
+    -\Delta u & = & f & \text{on}\;\Omega \;, \\
+            u & = & 0 & \text{on}\;\partial\Omega \;,\\
+\end{array}
+\right.
+\label{eq:tuto-mylaplacian-prob}
+\end{equation}
+%
+where $u\in\Omega$ is the unknown "trial" function and $\Omega$ the domain.
+%
+We multiply each part of the first equation by a "test" function $v\in H_0^1(\Omega)$ 
+and we integrate the resulting equation on the domain $\Omega$,
+%
+\begin{equation}
+-\int_\Omega \Delta u v = \int_\Omega f v \;.
+\end{equation}
+%
+We can integrate by parts this equation (Green Theorem) to obtain \underline{the variationnal
+formulation},
+%
+\begin{equation}
+\int_\Omega \nabla u \nabla v
+-\underbrace{ \int_{\partial\Omega} \frac{\partial u}{\partial n} v }_{= 0}
+=\int_\Omega f v \;,
+\end{equation}
+%
+where $n$ denotes a unit outward normal vector to the boundary. We can rewrite the problem
+(\ref{eq:tuto-mylaplacian-prob}) as find $u\in H_0^1(\Omega)$ such that for all
+$v\in H_0^1(\Omega)$,
+%
+\begin{equation}
+a(u,v)=l(v) \;,
+\end{equation}
+where $a$ is a bilinear form, continuous, coercive and $l$ a linear form.
+Let's take a look at the \feel code
+(source \textcolor{magenta}{"doc/manual/tutorial/mylaplacian.cpp"}).
+We consider for this example $f=1$ constant.
+%
+\vspace{2mm}
+\lstinputlisting[linerange=marker_main-endmarker_main]{tutorial/mylaplacian.cpp}
+\vspace{2mm}
+%
+As you can see, the program looks very close to the mathematical formulation.
+We use the \lstinline!form2()! function to define the bilinear form and \lstinline!form1()!
+for the linear one. The gradient for the trial functions is declared with the \lstinline!gradt()!
+expression where as \lstinline!grad()! is used for the test functions
+(see all keywords \ref{sec:keywords}).
+Note that we need to transpose the second vector to perform the scalar product.
+To introduce the homogeneous dirichlet conditions on the boundary, we use the function
+\lstinline!on()!. Once the variationnal formulation and the boundary conditions are set, we call
+the solver with \lstinline!solve()!.
+
+
+
+
+
+

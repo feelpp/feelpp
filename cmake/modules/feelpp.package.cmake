@@ -1,4 +1,4 @@
-###  TEMPLATE.txt.tpl; coding: utf-8 --- 
+###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
 #  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
 #       Date: 2013-02-08
@@ -59,21 +59,26 @@ SET(CPACK_SOURCE_STRIP_FILES "")
 set(CPACK_SOURCE_IGNORE_FILES
   "/\\\\.git/;\\\\.gitignore;/\\\\.svn;"
   "/admin/;/Templates/;"
-  "/auto/;"
-  "/TAGS;/#.*;/.*~$;/.cvsignore;/.bzrignore;/work/"
-  "${PROJECT_SOURCE_DIR}/benchmarks/turek/"
+  "/auto/;/ltxpng/;"
+  "/TAGS;/#.*;/.*~$;/.cvsignore;/.bzrignore;/work/;/autom4te.cache/"
+  "${PROJECT_SOURCE_DIR}/data/gmsh"
+  "${PROJECT_SOURCE_DIR}/benchmarks/"
+  "${PROJECT_SOURCE_DIR}/benchmarks/navierstokes/"
   "${PROJECT_SOURCE_DIR}/benchmarks/stokes/"
   "${PROJECT_SOURCE_DIR}/benchmarks/ethiersteinman/"
   "${PROJECT_SOURCE_DIR}/benchmarks/kovasznay/"
   "${PROJECT_SOURCE_DIR}/doc/poster/"
-  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
+#  "${PROJECT_SOURCE_DIR}/doc/manual/pdfs/"
+  "${PROJECT_SOURCE_DIR}/doc/manual/feel-manual.pdf"
+  "${PROJECT_SOURCE_DIR}/doc/manual/manual/feel-manual.pdf"
   "${PROJECT_SOURCE_DIR}/doc/figures/backgrounds/"
   "${PROJECT_SOURCE_DIR}/doc/figures/logos/"
   "${PROJECT_SOURCE_DIR}/examples/fluid/"
   "${PROJECT_SOURCE_DIR}/examples/levelset/"
   "${PROJECT_SOURCE_DIR}/examples/pbeq/"
   "${PROJECT_SOURCE_DIR}/research/"
-  "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;/opt/"
+  "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;/opt/;"
+  "*.eps;*.tag;"
   "*.aux;*.log;*.bbl;*.idx;*.ist;*.out;*.blg;OpusManualBenchmarkEADSUJF.pdf"
   "${PROJECT_SOURCE_DIR}/applications/opus.old"
   "${PROJECT_SOURCE_DIR}/applications/opus/"

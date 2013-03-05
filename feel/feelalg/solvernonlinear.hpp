@@ -575,9 +575,5 @@ protected:
 };
 
 
-/**
- * command line options
- */
-po::options_description nlsolver_options();
 } // Feel
 #endif /* __SolverNonLinear_H */

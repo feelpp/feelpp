@@ -50,6 +50,8 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
+
 
 namespace Feel
 {
@@ -115,6 +117,14 @@ createGeo( double meshSize  )
     return gmshp;
 }
 
+
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 4;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+
 /**
  * \class Heat1D
  * \brief brief description
@@ -122,9 +132,14 @@ createGeo( double meshSize  )
  * @author Christophe Prud'homme
  * @see
  */
-class Heat1D
+class Heat1D : public ModelCrbBase<ParameterDefinition>
 {
 public:
+
+
+    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
 
     /** @name Constants
@@ -780,7 +795,16 @@ Heat1D::output( int output_index, parameter_type const& mu )
     // right hand side (compliant)
     if ( output_index == 0 )
     {
-        output = M_betaFqm[0][0][0]*dot( M_Fqm[0][0][0], U ) + M_betaFqm[0][1][0]*dot( M_Fqm[0][1][0], U );
+        //output = M_betaFqm[0][0][0]*dot( M_Fqm[0][0][0], U ) + M_betaFqm[0][1][0]*dot( M_Fqm[0][1][0], U );
+        for ( int q=0; q<Ql( output_index ); q++ )
+        {
+            for ( int m=0; m<mMaxF(output_index,q); m++ )
+            {
+                element_ptrtype eltF( new element_type( Xh ) );
+                *eltF = *M_Fqm[output_index][q][m];
+                output += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
+            }
+        }
         //std::cout << "output0 c1 = " << s1 <<"\n";
         //double s2 = ( M_thetaFq[0](0)*integrate( markedfaces(mesh,mesh->markerName( "left" )), idv(*pT) ).evaluate()(0,0) +
         //M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );

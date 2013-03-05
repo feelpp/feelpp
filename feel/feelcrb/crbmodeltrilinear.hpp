@@ -621,6 +621,22 @@ public:
         return true;
     }
 
+    /**
+     * returns list of eim objects ( scalar continuous)
+     */
+    typename model_type::funs_type scalarContinuousEim()
+    {
+        return M_model->scalarContinuousEim();
+    }
+
+    /**
+     * returns list of eim objects ( scalar discontinuous)
+     */
+    typename model_type::funsd_type scalarDiscontinuousEim()
+    {
+        return M_model->scalarDiscontinuousEim();
+    }
+
 
 protected:
 

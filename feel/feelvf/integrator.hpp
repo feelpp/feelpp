@@ -231,7 +231,7 @@ public:
         M_partitioner( partitioner )
     {
         M_elts.push_back( elts );
-        LOG( INFO ) << "Integrator constructor from expression\n";
+        DLOG(INFO) << "Integrator constructor from expression\n";
     }
 
     Integrator( std::list<Elements> const& elts, Im const& /*__im*/, expression_type const& __expr,
@@ -246,7 +246,7 @@ public:
         M_grainsize( grainsize ),
         M_partitioner( partitioner )
     {
-        LOG( INFO ) << "Integrator constructor from expression\n";
+        DLOG(INFO) << "Integrator constructor from expression\n";
         if ( elts.size() )
         {
             M_eltbegin = elts.begin()->template get<1>();
@@ -267,7 +267,7 @@ public:
         M_grainsize( __vfi.M_grainsize ),
         M_partitioner( __vfi.M_partitioner )
     {
-        LOG( INFO ) << "Integrator copy constructor\n";
+        DLOG(INFO) << "Integrator copy constructor\n";
     }
 
     virtual ~Integrator() {}
@@ -306,10 +306,10 @@ public:
             quad1_type quad1;
             //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
             auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_tbb, M_grainsize, M_partitioner);
-            VLOG(2) << " -- M_elts size=" << M_elts.size() << "\n";
-            VLOG(2) << " -- nelts=" << std::distance( M_eltbegin, M_eltend ) << "\n";
-            VLOG(2) << " -- integrate: quad = " << i.im().nPoints() << "\n";
-            VLOG(2) << " -- integrate: quad1 = " << i.im2().nPoints() << "\n";
+            DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
+            DLOG(INFO) << " -- nelts=" << std::distance( M_eltbegin, M_eltend ) << "\n";
+            DLOG(INFO) << " -- integrate: quad = " << i.im().nPoints() << "\n";
+            DLOG(INFO) << " -- integrate: quad1 = " << i.im2().nPoints() << "\n";
             i.setBeginElement( M_eltbegin );
             i.setEndElement( M_eltend );
             return i;
@@ -752,11 +752,10 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
 
         bool same_mesh = ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __u->mesh().get() ) &&
                            dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) );
-        const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() );
-        const bool trial_related_to_test = __u->mesh()->isRelatedTo( __v->mesh() );
-        if ( same_mesh || test_related_to_trial || trial_related_to_test )
+        const bool test_related_to_trial = __v->mesh()->isRelatedTo( __u->mesh() ) && ( __u->mesh()->isSameMesh( it->mesh() ) || __v->mesh()->isSameMesh( it->mesh() ) );
+        if ( same_mesh || test_related_to_trial )
         {
-            VLOG(2) << "[integrator::assemble bilinear form] same_mesh: " << same_mesh << " test_related_to_trial: " << test_related_to_trial << " trial_related_to_test: " << trial_related_to_test << "\n";
+            DLOG(INFO) << "[integrator::assemble bilinear form] same_mesh: " << same_mesh << " test_related_to_trial: " << test_related_to_trial << "\n";
             assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>() );
 
         }
@@ -843,7 +842,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
             {
                 element_iterator it = lit->template get<1>();
                 element_iterator en = lit->template get<2>();
-                VLOG(2) << "integrating over " << std::distance( it, en )  << " elements\n";
+                DLOG(INFO) << "integrating over " << std::distance( it, en )  << " elements\n";
 
                 // check that we have elements to iterate over
                 if ( it == en )
@@ -903,17 +902,17 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         //ti1.restart();
                         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                         formc->update( mapgmc,mapgmc,mapgmc );
-                        //LOG( INFO )  << "update gmc : " << ti1.elapsed() << "\n";
+                        //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
                         //t1+=ti1.elapsed();
 
                         //ti2.restart();
                         formc->integrate();
-                        //LOG( INFO )  << "integrate : " << ti2.elapsed() << "\n";
+                        //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
                         //t2+=ti2.elapsed();
 
                         //ti3.restart();
                         formc->assemble();
-                        //LOG( INFO )  << "assemble : " << ti3.elapsed() << "\n";
+                        //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
                         //t3+=ti3.elapsed();
                     }
                     break;
@@ -924,7 +923,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         __c1->update( *it );
                         //t0+=ti0.elapsed();
 #if 0
-                        LOG( INFO ) << "Element: " << it->id() << "\n"
+                        DLOG(INFO) << "Element: " << it->id() << "\n"
                                       << " o - points : " << it->G() << "\n"
                                       << " o - quadrature :\n"
                                       << "     ref : " << this->im().points() << "\n"
@@ -933,17 +932,17 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         //ti1.restart();
                         map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                         formc1->update( mapgmc1,mapgmc1,mapgmc1 );
-                        //LOG( INFO )  << "update gmc : " << ti1.elapsed() << "\n";
+                        //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
                         //t1+=ti1.elapsed();
 
                         //ti2.restart();
                         formc1->integrate();
-                        //LOG( INFO )  << "integrate : " << ti2.elapsed() << "\n";
+                        //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
                         //t2+=ti2.elapsed();
 
                         //ti3.restart();
                         formc1->assemble();
-                        //LOG( INFO )  << "assemble : " << ti3.elapsed() << "\n";
+                        //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
                         //t3+=ti3.elapsed();
                     }
                     break;
@@ -956,7 +955,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             __c->update( *it );
                             //t0+=ti0.elapsed();
 #if 0
-                            LOG( INFO ) << "Element: " << it->id() << "\n"
+                            DLOG(INFO) << "Element: " << it->id() << "\n"
                                           << " o - points : " << it->G() << "\n"
                                           << " o - quadrature :\n"
                                           << "     ref : " << this->im().points() << "\n"
@@ -966,17 +965,17 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                             formc->update( mapgmc,mapgmc,mapgmc );
 
-                            //LOG( INFO )  << "update gmc : " << ti1.elapsed() << "\n";
+                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
                             //t1+=ti1.elapsed();
 
                             //ti2.restart();
                             formc->integrate();
-                            //LOG( INFO )  << "integrate : " << ti2.elapsed() << "\n";
+                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
                             //t2+=ti2.elapsed();
 
                             //ti3.restart();
                             formc->assemble();
-                            //LOG( INFO )  << "assemble : " << ti3.elapsed() << "\n";
+                            //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
                             //t3+=ti3.elapsed();
                         }
 
@@ -986,7 +985,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             __c1->update( *it );
                             //t0+=ti0.elapsed();
 #if 0
-                            LOG( INFO ) << "Element: " << it->id() << "\n"
+                            DLOG(INFO) << "Element: " << it->id() << "\n"
                                           << " o - points : " << it->G() << "\n"
                                           << " o - quadrature :\n"
                                           << "     ref : " << this->im().points() << "\n"
@@ -996,17 +995,17 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                             formc1->update( mapgmc1,mapgmc1,mapgmc1 );
 
-                            //LOG( INFO )  << "update gmc : " << ti1.elapsed() << "\n";
+                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
                             //t1+=ti1.elapsed();
 
                             //ti2.restart();
                             formc1->integrate();
-                            //LOG( INFO )  << "integrate : " << ti2.elapsed() << "\n";
+                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
                             //t2+=ti2.elapsed();
 
                             //ti3.restart();
                             formc1->assemble();
-                            //LOG( INFO )  << "assemble : " << ti3.elapsed() << "\n";
+                            //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
                             //t3+=ti3.elapsed();
                         }
                     }
@@ -1017,13 +1016,13 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 delete formc1;
             }// end loop on list of elements
 #if 0
-            LOG( INFO ) << "[elements] Overall geometric mapping update time : " << ( t0+t1+t2 ) << " per element:" << ( t0+t1+t2 )/std::distance( this->beginElement(), this->endElement() ) << "\n";
-            LOG( INFO ) << "[elements] Overall geometric mapping update time : " << t0 << "\n";
-            LOG( INFO ) << "[elements] Overall form update time : " << t1 << "\n";
-            LOG( INFO ) << "[elements] Overall local assembly time : " << t2 << "\n";
-            LOG( INFO ) << "[elements] Overall global assembly time : " << t3 << "\n";
+            DLOG(INFO) << "[elements] Overall geometric mapping update time : " << ( t0+t1+t2 ) << " per element:" << ( t0+t1+t2 )/std::distance( this->beginElement(), this->endElement() ) << "\n";
+            DLOG(INFO) << "[elements] Overall geometric mapping update time : " << t0 << "\n";
+            DLOG(INFO) << "[elements] Overall form update time : " << t1 << "\n";
+            DLOG(INFO) << "[elements] Overall local assembly time : " << t2 << "\n";
+            DLOG(INFO) << "[elements] Overall global assembly time : " << t3 << "\n";
 #endif
-            LOG( INFO ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+            DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
 
 
         }
@@ -1308,7 +1307,7 @@ template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<true> /**/ ) const
 {
-    LOG( INFO ) << "integrating over "
+    DLOG(INFO) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " faces\n";
     boost::timer __timer;
 
@@ -1374,10 +1373,10 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         uint16_type __face_id_in_elt_0 = it->pos_first();
 
         // get the geometric mapping associated with element 0
-        //LOG( INFO ) << "element " << it->element(0)  << "face " << __face_id_in_elt_0 << " permutation " << it->element(0).permutation( __face_id_in_elt_0 ) << "\n";
+        //DLOG(INFO) << "element " << it->element(0)  << "face " << __face_id_in_elt_0 << " permutation " << it->element(0).permutation( __face_id_in_elt_0 ) << "\n";
         gm_ptrtype __gm = it->element( 0 ).gm();
         gm1_ptrtype __gm1 = it->element( 0 ).gm1();
-        //LOG( INFO ) << "[integrator] evaluate(faces), gm is cached: " << __gm->isCached() << "\n";
+        //DLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << __gm->isCached() << "\n";
         gmc_ptrtype __c0( new gmc_type( __gm, it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
         gmc1_ptrtype __c01( new gmc1_type( __gm1, it->element( 0 ), __geopc1, __face_id_in_elt_0 ) );
 
@@ -1442,7 +1441,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
         boost::timer ti0,ti1, ti2, ti3;
         //double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
-        LOG( INFO ) << "[Integrator::faces/forms] starting...\n";
+        DLOG(INFO) << "[Integrator::faces/forms] starting...\n";
 
         //
         // start the real intensive job:
@@ -1577,13 +1576,13 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
     }// end loop on list of element
 
 #if 0
-    LOG( INFO ) << "[faces] Overall integration time : " << ( t0+t1+t2+t3 ) << " per element:" << ( t0+t1+t2+t3 )/std::distance( this->beginElement(), this->endElement() ) << "for " << std::distance( this->beginElement(), this->endElement() ) << "elements\n";
-    LOG( INFO ) << "[faces] Overall geometric mapping update time : " << t0 << "\n";
-    LOG( INFO ) << "[faces] Overall form update time : " << t1 << "\n";
-    LOG( INFO ) << "[faces] Overall local assembly time : " << t2 << "\n";
-    LOG( INFO ) << "[faces] Overall global assembly time : " << t3 << "\n";
+    DLOG(INFO) << "[faces] Overall integration time : " << ( t0+t1+t2+t3 ) << " per element:" << ( t0+t1+t2+t3 )/std::distance( this->beginElement(), this->endElement() ) << "for " << std::distance( this->beginElement(), this->endElement() ) << "elements\n";
+    DLOG(INFO) << "[faces] Overall geometric mapping update time : " << t0 << "\n";
+    DLOG(INFO) << "[faces] Overall form update time : " << t1 << "\n";
+    DLOG(INFO) << "[faces] Overall local assembly time : " << t2 << "\n";
+    DLOG(INFO) << "[faces] Overall global assembly time : " << t3 << "\n";
 #endif
-    LOG( INFO ) << "integrating over faces done in " << __timer.elapsed() << "s\n";
+    DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
     //std::cout << "integrating over faces done in " << __timer.elapsed() << "s\n";
 }
 
@@ -1920,7 +1919,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 {
-    VLOG(2)  << "integrating over "
+    DLOG(INFO)  << "integrating over "
              << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
@@ -1977,7 +1976,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             //std::cout << "0.5" << std::endl;
             gm1_ptrtype gm1( new gm1_type ); //it->gm1();
             //std::cout << "0.6:  " << gm1.use_count() << " " << gm.use_count() << std::endl;
-            //DVLOG(2) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
+            //DDLOG(INFO) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
             typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
                                                                                this->im().points() ) );
             //std::cout << "1" << std::endl;
@@ -2045,7 +2044,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                 case GeomapStrategyType::GEOMAP_O1:
                 {
-                    //DVLOG(2) << "geomap o1" << "\n";
+                    //DDLOG(INFO) << "geomap o1" << "\n";
                     __c1->update( *it );
                     map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                     expr1.update( mapgmc );
@@ -2064,10 +2063,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                 case GeomapStrategyType::GEOMAP_OPT:
                 {
-                    //DVLOG(2) << "geomap opt" << "\n";
+                    //DDLOG(INFO) << "geomap opt" << "\n";
                     if ( it->isOnBoundary() )
                     {
-                        //DVLOG(2) << "boundary element using ho" << "\n";
+                        //DDLOG(INFO) << "boundary element using ho" << "\n";
                         __c->update( *it );
                         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
                         expr.update( mapgmc );
@@ -2085,7 +2084,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
                     else
                     {
-                        //DVLOG(2) << "interior element using order 1" << "\n";
+                        //DDLOG(INFO) << "interior element using order 1" << "\n";
                         __c1->update( *it );
                         map_gmc1_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
                         expr1.update( mapgmc );
@@ -2105,7 +2104,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 }
             }
         }
-        VLOG(2) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+        DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
     }
 
@@ -2144,7 +2143,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
 Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 {
-    LOG( INFO ) << "integrating over "
+    DLOG(INFO) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
     boost::timer __timer;
 
@@ -2198,7 +2197,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
         FEELPP_ASSERT( it->element(0).gm() )( it->id() ).error( "invalid geometric transformation" );
         gm_ptrtype gm = it->element( 0 ).gm();
 
-        //DVLOG(2) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
+        //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
         for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
         {
             __integrators.push_back( im( __f ) );
@@ -2330,7 +2329,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
     }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
-    LOG( INFO ) << "integrating over faces done in " << __timer.elapsed() << "s\n";
+    DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
     return res;
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
@@ -2338,7 +2337,7 @@ template<typename P0hType>
 typename P0hType::element_type
 Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_ELEMENTS> ) const
 {
-    LOG( INFO ) << "integrating over "
+    DLOG(INFO) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << " elements\n";
     boost::timer __timer;
 
@@ -2379,7 +2378,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
         // geometric mapping and reference finite element
         //
         gm_ptrtype gm = it->gm();
-        //DVLOG(2) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
+        //DDLOG(INFO) << "[integrator] evaluate(elements), gm is cached: " << gm->isCached() << "\n";
         typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( gm,
                                                                            this->im().points() ) );
 
@@ -2430,7 +2429,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
     }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
-    LOG( INFO ) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+    DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
 
     return p0;
 }
@@ -2439,7 +2438,7 @@ template<typename P0hType>
 typename P0hType::element_type
 Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mpl::int_<MESH_FACES> ) const
 {
-    LOG( INFO ) << "integrating over "
+    DLOG(INFO) << "integrating over "
                   << std::distance( this->beginElement(), this->endElement() )  << "faces\n";
     boost::timer __timer;
 
@@ -2490,7 +2489,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
         gm_ptrtype gm = it->element( 0 ).gm();
 
-        //DVLOG(2) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
+        //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
         for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
         {
             __integrators.push_back( im( __f ) );
@@ -2627,7 +2626,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
     }
     //std::cout << "res=" << res << "\n";
     //std::cout << "res1=" << res1 << "\n";
-    LOG( INFO ) << "integrating over faces done in " << __timer.elapsed() << "s\n";
+    DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
     return p0;
 }
 /// \endcond
@@ -2670,7 +2669,7 @@ integrate( Elts const& elts,
            GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
 {
 
-    LOG( INFO ) << "[integrate] order to integrate = " << ExpressionOrder<Elts,ExprT>::value << "\n";
+    DLOG(INFO) << "[integrate] order to integrate = " << ExpressionOrder<Elts,ExprT>::value << "\n";
     _Q< ExpressionOrder<Elts,ExprT>::value > quad;
     return integrate_impl( elts, quad, expr, gt, quad );
 
@@ -2864,12 +2863,12 @@ BOOST_PARAMETER_FUNCTION(
     double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    VLOG(2) << "[mean] measure = " << meas << "\n";
+    DLOG(INFO) << "[mean] measure = " << meas << "\n";
     CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
     auto eint = integrate( _range=range, _expr=expr, _quad=quad, _geomap=geomap,
                            _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
                            _partitioner=partitioner, _verbose=verbose ).evaluate();
-    VLOG(2) << "[ein] eint = " << eint << "\n";
+    DLOG(INFO) << "[ein] eint = " << eint << "\n";
     return eint/meas;
 }
 

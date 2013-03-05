@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-05-25
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -117,7 +117,6 @@ private:
 };
 
 typedef Singleton< Feel::Factory< Material, std::string > > MaterialFactory;
-po::options_description material_options( std::string const& prefix = "" );
 
 } // Feel
 #endif /* __MaterialLib_H */
