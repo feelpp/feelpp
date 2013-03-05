@@ -41,5 +41,52 @@ file_options( std::string const& prefix );
 po::options_description
 feel_options( std::string const& prefix = "" );
 
+//! add benchmark options to feel++ applications
+po::options_description benchmark_options( std::string const& prefix = "" );
+
+/**
+ * \param prefix prefix given to the  backend option
+ * \return backend command line options description
+ */
+po::options_description backend_options( std::string const& prefix = "" );
+
+po::options_description backendpetsc_options( std::string const& prefix = "" );
+
+po::options_description mesh_options( int Dim, std::string const& prefix = "" );
+
+/**
+ * defines solver eigen options
+ *
+ * The \p prefix parameter allows to set different eigensolver options for
+ * different eigensolver. It allows to distinguish between these options
+ * \code
+ * // register two slepc eigensolver options
+ * add_options( solvereigen_options( "eigen1" ) ).add_options( solvereigen_options( "eigen2" ));
+ * // build an eigen solver associated with option set eigen1
+ * SolverEigen<double>::build( vm, "eigen1" );
+ * \endcode
+ *
+ * \param prefix prefix allows to prefix options
+ */
+po::options_description solvereigen_options( std::string const& prefix = "" );
+
+/**
+ * command line options for non linear solver
+ */
+po::options_description nlsolver_options();
+
+/**
+ * command line options for BDF
+ */
+po::options_description bdf_options( std::string const& prefix = "" );
+
+/**
+ * command line options for exporter
+ */
+
+po::options_description exporter_options( std::string const& prefix = "" );
+
+po::options_description material_options( std::string const& prefix = "" );
+
 }
 #endif // _FEELPP_OPTIONS_HPP
