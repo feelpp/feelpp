@@ -693,7 +693,7 @@ void HeatShield::init()
 
     using namespace Feel::vf;
 
-    std::string mshfile_name = M_vm["mshfile"].as<std::string>();
+    std::string mshfile_name = option("mshfile").as<std::string>();
 
     /*
      * First we create the mesh or load it if already exist
@@ -708,7 +708,7 @@ void HeatShield::init()
     else
     {
         mesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=M_vm["mshfile"].as<std::string>(),
+                             _filename=option("mshfile").as<std::string>(),
                              _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
     }
 
