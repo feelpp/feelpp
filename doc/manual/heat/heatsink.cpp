@@ -211,7 +211,7 @@ private:
     // average file
     std::ofstream out;
     double Tavg, Tgamma1;
-    boost::shared_ptr<export_type> exporter;
+    boost::shared_ptr<export_type> M_exporter;
 
 }; // HeatSink class
 
@@ -235,7 +235,7 @@ HeatSink<Dim,Order>::HeatSink()
     Tamb( this-> vm()["Tamb"].template as <double>() ),
     heat_flux( this-> vm()["heat_flux"].template as <double>() ),
     steady( this->vm()["steady"].template as<bool>() ),
-    exporter( export_type::New( this->vm(), this->about().appName() ) )
+    M_exporter()
 {
     this->changeRepository( boost::format( "%1%/%2%/%3%/" )
                             % this->about().appName()
@@ -248,8 +248,9 @@ HeatSink<Dim,Order>::HeatSink()
      * First we create the mesh
      */
     mesh = createGMSHMesh ( _mesh = new mesh_type,
-                            _desc = makefin( meshSize, width, depth , L ),
-                            _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
+                            _desc = makefin( meshSize, width, depth , L ) );
+    // build exporter
+    M_exporter = exporter( _mesh=mesh );
 
     /*
      * Calculate the two surfaces used for averages calculation
@@ -261,7 +262,7 @@ HeatSink<Dim,Order>::HeatSink()
      * The function space associated to the mesh
      */
     Xh = space_type::New( mesh );
-    M_bdf = bdf( _space=Xh, _vm=this->vm(), _name="Temperature" );
+    M_bdf = bdf( _space=Xh, _name="Temperature" );
 
     /*
      * Right hand side
@@ -336,10 +337,6 @@ HeatSink<Dim, Order>::run()
 
     D->close();
 
-    if ( this->vm().count( "export-matlab" ) )
-    {
-        D->printMatlab( "D.m" );
-    }
 
     /*
      * Left and right hand sides construction (non-steady state) with BDF
@@ -347,6 +344,7 @@ HeatSink<Dim, Order>::run()
     T = vf::project( _space=Xh, _expr=cst( Tamb ) );
 
     M_bdf->initialize( T );
+    this->exportResults( M_bdf->timeInitial(), T );
 
     std::cout << "The step is : " << M_bdf->timeStep() << "\n"
               << "The initial time is : " << M_bdf->timeInitial() << "\n"
@@ -391,9 +389,9 @@ HeatSink<Dim, Order>::exportResults( double time, element_type& U )
 {
     if ( this->vm().count( "export" ) )
     {
-        exporter->step( time )->setMesh( U.functionSpace()->mesh() );
-        exporter->step( time )->add( "Temperature", U );
-        exporter->save();
+        M_exporter->step( time )->setMesh( U.functionSpace()->mesh() );
+        M_exporter->step( time )->add( "Temperature", U );
+        M_exporter->save();
     }
 } // HeatSink::exportResults
 
