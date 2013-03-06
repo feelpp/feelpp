@@ -80,9 +80,11 @@ unset LC_CTYPE
 #cd /workdir/math/whoami
 ")
     if ( FEELPP_APP_CFG )
-      get_filename_component( CFG_NAME ${cfg} NAME )
-      file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm
-        "mpirun --bind-to-core -x LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/${execname} --config-file=${cfg}  # add other fel++  options here")
+      foreach(  cfg ${FEELPP_APP_CFG} )
+        get_filename_component( CFG_NAME ${cfg} NAME )
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm " 
+           mpirun --bind-to-core -x LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/${execname} --config-file=${cfg}  # add other fel++  options here")
+      endforeach()
     else( FEELPP_APP_CFG )
       file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm
         "mpirun --bind-to-core -x LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/${execname} # add other feel++ options here")
