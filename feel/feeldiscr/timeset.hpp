@@ -1644,7 +1644,7 @@ public:
     bool hasMesh() const { return _M_mesh; }
     mesh_ptrtype mesh() const
         {
-            CHECK( hasMesh() ) << "Time Set has no mesh data structure associated\n";
+            DLOG_IF( WARNING, hasMesh() ) << "Time Set has no mesh data structure associated\n";
             return _M_mesh.get();
         }
 
