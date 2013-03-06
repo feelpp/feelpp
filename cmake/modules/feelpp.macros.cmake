@@ -64,6 +64,33 @@ macro(feelpp_add_application)
     endif()
   endif()
 
+  if ( FEELPP_ENABLE_SLURM )
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm "#! /bin/bash
+# type 'sbatch ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm' to submit the job,
+# sbatch will pich the number of cores
+# given in the script by '#SBATCH -n xxx', you can override this value by
+# typing 'sbatch -n xxxx ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm'
+
+#SBATCH -n 2048 #need 2048 cores (one thread by core)
+source $HOME/.bash_profile
+unset LC_CTYPE
+
+#export IMPORTANT_VAR=important_value
+
+#cd /workdir/math/whoami
+")
+    if ( FEELPP_APP_CFG )
+      foreach(  cfg ${FEELPP_APP_CFG} )
+        get_filename_component( CFG_NAME ${cfg} NAME )
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm " 
+           mpirun --bind-to-core -x LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/${execname} --config-file=${cfg}  # add other fel++  options here")
+      endforeach()
+    else( FEELPP_APP_CFG )
+      file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm
+        "mpirun --bind-to-core -x LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/${execname} # add other feel++ options here")
+    endif( FEELPP_APP_CFG )
+  endif( FEELPP_ENABLE_SLURM )
+
   if (FEELPP_ENABLE_CCC )
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.msub "#! /bin/bash
 #MSUB -r ${execname}         # Request name
