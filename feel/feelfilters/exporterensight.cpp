@@ -369,29 +369,26 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
         typename timeset_type::step_const_iterator __end = __ts->endStep();
         __it = boost::prior( __end );
 
+        if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
+        {
+            std::ostringstream __geofname;
+            __geofname << this->path() << "/"
+                       << __ts->name()
+                       << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
+                       << ".geo";
+            _M_filename =  __geofname.str();
+            CHECK( (*__it)->mesh() ) << "Invalid mesh data structure in static geometry mode\n";
+            (*__it)->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+        }
+
         while ( __it != __end )
         {
-            typename timeset_type::step_ptrtype __step = *__it;;
+            typename timeset_type::step_ptrtype __step = *__it;
 
 
             std::ostringstream __geofname;
 
-            if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
-            {
-                __geofname << this->path() << "/"
-                           << __ts->name()
-                           << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
-                           << ".geo";
-                // save only if index == 0
-                if ( __step->isInMemory() && ( __it  == __ts->beginStep() ) )
-                {
-                    //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
-                    //, __ts->name(), __geofname.str() );
-                    _M_filename =  __geofname.str();
-                    __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
-                }
-            }
-            else
+            if ( this->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
             {
                 __geofname << this->path() << "/"
                            << __ts->name()

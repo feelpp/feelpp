@@ -338,7 +338,7 @@ public:
         {
             M_ex_geometry = exgeo;
             M_ts_set.back()->setMesh( mesh );
-            this->step( 0 )->setMesh( mesh );
+            //this->step( 0 )->setMesh( mesh );
         }
     template<typename F>
     void
@@ -491,13 +491,13 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                           ( optional                                  // 4. one required parameter, and
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
-                            ( geo,   *, EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY)
+                            ( geo,   *, Environment::vm(_name="exporter.geometry").template as<int>() )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
     auto e =  exporter_type::New(Environment::vm(),name);
     e->setPrefix( name );
-    e->setMesh( mesh, geo );
+    e->setMesh( mesh, (ExporterGeometry) geo );
     e->addRegions();
     return e;
     //return Exporter<Mesh<Simplex<2> >,1>::New();
