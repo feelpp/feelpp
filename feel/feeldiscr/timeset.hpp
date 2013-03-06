@@ -1912,7 +1912,8 @@ TimeSet<MeshType, N>::step( Real __time )
                       << numberOfSteps( mpl::bool_<IgnoreStepType::value>() ) << "\n";
 
         step_ptrtype thestep( new Step( this, __time, numberOfSteps( mpl::bool_<IgnoreStepType::value>() ) + 1 ) );
-
+        if ( this->mesh() )
+            thestep->setMesh( this->mesh() );
         boost::tie( __sit, __inserted ) = insertStep( thestep,mpl::bool_<IgnoreStepType::value>() );
 
         //boost::tie( __sit, __inserted ) = _M_step_set.insert( step_ptrtype( new Step( this, __time,
