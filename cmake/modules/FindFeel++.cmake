@@ -410,15 +410,21 @@ message(STATUS "ML: ${ML_LIBRARY}" )
 IF ( ML_LIBRARY )
 SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
-FIND_LIBRARY(GFORTRAN_LIBRARY
+
+if ( NOT GFORTRAN_LIBRARY )
+   FIND_LIBRARY(GFORTRAN_LIBRARY
     NAMES
     gfortran
     PATHS
-    "/opt/local/lib"
-    "/usr/lib/gcc/x86_64-linux-gnu/"
+    $ENV{LIBRARY_PATH}
+    /opt/local/lib
+    /usr/lib/gcc/x86_64-linux-gnu/
     PATH_SUFFIXES
-    gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
-)
+    gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4 
+    )
+endif()
+
+message(STATUS "gfortran lib: ${GFORTRAN_LIBRARY} ")
 if ( GFORTRAN_LIBRARY )
   set( FEELPP_LIBRARIES ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
