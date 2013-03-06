@@ -66,13 +66,14 @@ macro(feelpp_add_application)
 
   if ( FEELPP_ENABLE_SLURM )
     file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm "#! /bin/bash
-# type 'sbatch ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm' to submit the job, 
-# sbatch will pich the number of cores 
-# given in the script by '#SBATCH -n xxx', you can override this value by 
+# type 'sbatch ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm' to submit the job,
+# sbatch will pich the number of cores
+# given in the script by '#SBATCH -n xxx', you can override this value by
 # typing 'sbatch -n xxxx ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm'
 
 #SBATCH -n 2048 #need 2048 cores (one thread by core)
 source $HOME/.bash_profile
+unset LC_CTYPE
 
 #export IMPORTANT_VAR=important_value
 
