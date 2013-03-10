@@ -28,6 +28,9 @@
 
 INCLUDE(CheckIncludeFileCXX)
 
+# flex is required by libmatheval
+find_package(FLEX REQUIRED)
+
 # try to find libmatheval headers, if not found then install glog from contrib into
 # build directory and set MATHEVAL_INCLUDE_DIR and MATHEVAL_LIBRARIES
 FIND_PATH(MATHEVAL_INCLUDE_DIR matheval/matheval.h
