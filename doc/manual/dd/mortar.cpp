@@ -43,7 +43,6 @@
 
 /** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
 
 /**
  * \return the list of options
@@ -85,15 +84,15 @@ makeAbout()
 }
 
 /**
- * \class Mortar
+ * \class MortarLaplacian
  *
- * Mortar Solver using continuous approximation spaces
+ * MortarLaplacian Solver using continuous approximation spaces
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=2 or 3)
  */
 template<int Dim, int Order1, int Order2>
-class Mortar
+class MortarLaplacian
     :
 public Simget
 {
@@ -141,7 +140,7 @@ public:
     /**
      * Constructor
      */
-    Mortar()
+    MortarLaplacian()
         :
         super(),
         M_backend( backend_type::build( this->vm() ) ),
@@ -199,11 +198,11 @@ private:
     // second subdomain marker for interfaces
     int gamma2;
 
-}; // Mortar
+}; // MortarLaplacian
 
 template<int Dim, int Order1, int Order2>
-typename Mortar<Dim, Order1, Order2>::mesh_ptrtype
-Mortar<Dim, Order1, Order2>::createMesh(  double xmin, double xmax, double meshsize, int id )
+typename MortarLaplacian<Dim, Order1, Order2>::mesh_ptrtype
+MortarLaplacian<Dim, Order1, Order2>::createMesh(  double xmin, double xmax, double meshsize, int id )
 {
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -225,7 +224,7 @@ Mortar<Dim, Order1, Order2>::createMesh(  double xmin, double xmax, double meshs
 
 template<int Dim, int Order1, int Order2>
 void
-Mortar<Dim, Order1, Order2>::exportResults( element1_type& u, element2_type& v, trace_element_type& t )
+MortarLaplacian<Dim, Order1, Order2>::exportResults( element1_type& u, element2_type& v, trace_element_type& t )
 {
 
     auto Xh1=u.functionSpace();
@@ -283,14 +282,14 @@ Mortar<Dim, Order1, Order2>::exportResults( element1_type& u, element2_type& v, 
     LOG(INFO) << "exportResults done\n";
     timers["export"].second = timers["export"].first.elapsed();
     std::cout << "[timer] exportResults(): " << timers["export"].second << "s\n";
-} // Mortar::export
+} // MortarLaplacian::export
 
 template<int Dim, int Order1, int Order2>
 void
-Mortar<Dim, Order1, Order2>::run()
+MortarLaplacian<Dim, Order1, Order2>::run()
 {
     LOG(INFO) << "-------------------------------------\n";
-    LOG(INFO) << "Execute Mortar<" << Dim << "," << Order1 << "," << Order2 << ">\n";
+    LOG(INFO) << "Execute MortarLaplacian<" << Dim << "," << Order1 << "," << Order2 << ">\n";
 
     Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%/h_%6%-%7%/" )
                                    % this->about().appName()
@@ -523,7 +522,7 @@ Mortar<Dim, Order1, Order2>::run()
 
     this->exportResults( u1,u2,mu );
 
-} // Mortar::run
+} // MortarLaplacian::run
 
 /**
  * main function: entry point of the program
@@ -539,8 +538,8 @@ main( int argc, char** argv )
 
     Application app;
 
-    app.add( new Mortar<2,2,2>() );
-    app.add( new Mortar<2,2,3>() );
+    app.add( new MortarLaplacian<2,2,2>() );
+    app.add( new MortarLaplacian<2,2,3>() );
 
     app.run();
 }
