@@ -49,12 +49,18 @@ using namespace Feel;
 gmsh_ptrtype
 makefin( double hsize, double width, double deep, double L )
 {
-    std::ostringstream ostr;
 
+
+    std::ostringstream nameStr;
+    nameStr.precision( 3 );
+    nameStr << "fin_sink";
+    gmsh_ptrtype gmshp( new Gmsh );
+    gmshp->setPrefix( nameStr.str() );
+    std::ostringstream ostr;
+    ostr << gmshp->preamble();
     if ( !deep ) // 2D Mesh
     {
-        ostr << "Mesh.MshFileVersion = 2.1;\n"
-             << "Point (1) = {0, 0, 0, " << hsize << "};\n"
+        ostr << "Point (1) = {0, 0, 0, " << hsize << "};\n"
              << "Point (2) = {0.001, 0, 0, " << hsize << "};\n"
              << "Point (3) = {0.001, 0.001, 0, " << hsize << "};\n"
              << "Point (4) = {"<< width <<", 0.001, 0, " << hsize << "};\n"
@@ -88,8 +94,7 @@ makefin( double hsize, double width, double deep, double L )
 
     else   //3D Mesh
     {
-        ostr << "Mesh.MshFileVersion = 2.1;\n"
-             << "Point (1) = {0, 0, 0, " << hsize << "};\n"
+        ostr << "Point (1) = {0, 0, 0, " << hsize << "};\n"
              << "Point (2) = {0.001, 0, 0, " << hsize << "};\n"
              << "Point (3) = {0.001, 0.001, 0, " << hsize << "};\n"
              << "Point (4) = {"<< width <<", 0.001, 0, " << hsize << "};\n"
@@ -180,11 +185,6 @@ makefin( double hsize, double width, double deep, double L )
 
     }
 
-    std::ostringstream nameStr;
-    nameStr.precision( 3 );
-    nameStr << "fin_sink";
-    gmsh_ptrtype gmshp( new Gmsh );
-    gmshp->setPrefix( nameStr.str() );
     gmshp->setDescription( ostr.str() );
     return gmshp;
 }

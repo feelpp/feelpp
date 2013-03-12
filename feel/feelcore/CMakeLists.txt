@@ -28,7 +28,6 @@ set(SRC
   environment.cpp
   simget.cpp
   xmlparser.hpp
-  applicationxml.cpp
   about.cpp
   typeinfo.cpp
   smartassert.cpp
