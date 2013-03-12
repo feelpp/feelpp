@@ -377,8 +377,11 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
                        << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
                        << ".geo";
             _M_filename =  __geofname.str();
-            CHECK( (*__it)->mesh() ) << "Invalid mesh data structure in static geometry mode\n";
-            (*__it)->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+            CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
+            if ( __ts->hasMesh() )
+                __ts->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+            if ( (*__it)->hasMesh() && !__ts->hasMesh() )
+                (*__it)->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
         }
 
         while ( __it != __end )

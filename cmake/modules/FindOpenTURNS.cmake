@@ -23,6 +23,11 @@
 include (CheckIncludeFileCXX)
 include (FindPackageHandleStandardArgs)
 
+#
+# Xml2
+#
+FIND_PACKAGE(LibXml2)
+
 find_program(OT_CONFIG openturns-config QUIET) 
 execute_process( COMMAND ${OT_CONFIG} --version
   OUTPUT_VARIABLE ot_version

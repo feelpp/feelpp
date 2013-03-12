@@ -80,7 +80,12 @@ FIND_LIBRARY( MATHEVAL_LIB feelpp_matheval matheval
   $ENV{FEELPP_DIR}/lib
   ${CMAKE_BINARY_DIR}/contrib/libmatheval/lib/
   /usr/lib /opt/local/lib  $ENV{MATHEVAL_DIR}/lib)
-SET(MATHEVAL_LIBRARIES ${MATHEVAL_LIB} )
+
+if (MATHEVAL_LIB )
+  FIND_LIBRARY( LIBFL NAMES fl REQUIRED)
+endif ()
+
+SET(MATHEVAL_LIBRARIES ${MATHEVAL_LIB} ${LIBFL} )
 message(STATUS "Libmatheval includes: ${MATHEVAL_INCLUDE_DIR} Libraries: ${MATHEVAL_LIBRARIES}" )
 
 # handle the QUIETLY and REQUIRED arguments and set GLOG_FOUND to TRUE if

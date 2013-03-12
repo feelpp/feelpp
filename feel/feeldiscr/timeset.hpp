@@ -1644,7 +1644,7 @@ public:
     bool hasMesh() const { return _M_mesh; }
     mesh_ptrtype mesh() const
         {
-            CHECK( hasMesh() ) << "Time Set has no mesh data structure associated\n";
+            DLOG_IF( WARNING, hasMesh() ) << "Time Set has no mesh data structure associated\n";
             return _M_mesh.get();
         }
 
@@ -1912,7 +1912,7 @@ TimeSet<MeshType, N>::step( Real __time )
                       << numberOfSteps( mpl::bool_<IgnoreStepType::value>() ) << "\n";
 
         step_ptrtype thestep( new Step( this, __time, numberOfSteps( mpl::bool_<IgnoreStepType::value>() ) + 1 ) );
-        if ( this->mesh() )
+        if ( this->hasMesh() )
             thestep->setMesh( this->mesh() );
         boost::tie( __sit, __inserted ) = insertStep( thestep,mpl::bool_<IgnoreStepType::value>() );
 

@@ -24,3 +24,13 @@
 
 # enable the CCC script generation
 OPTION(FEELPP_ENABLE_CCC "Enable Feel++ tgcc/ccc submission scripts generation" ON)
+
+# find the gfortran library
+FIND_LIBRARY(GFORTRAN_LIBRARY
+    NAMES
+    gfortran
+    PATHS
+    /usr/local/gcc-4.6.3/lib
+    $ENV{LIBRARY_PATH}
+)
+message(STATUS "curie gfortran lib: ${GFORTRAN_LIBRARY} ")
