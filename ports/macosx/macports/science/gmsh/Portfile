@@ -5,10 +5,10 @@ PortSystem          1.0
 PortGroup           cmake 1.0
 
 name                gmsh
-version             2.6.1
+version             2.7.0
 categories          science
 platforms           darwin
-maintainers         ujf-grenoble.fr:Christophe.Prudhomme
+maintainers         feelpp.org:christophe.prudhomme
 description         Finite element mesh generator in 1D, 2D and 3D
 long_description    \
         Gmsh is an automatic 3D finite element mesh generator (primarily   \
@@ -24,8 +24,8 @@ extract.suffix      .tgz
 conflicts           gmsh-devel
 
 checksums           \
-                          sha1    b541fd9f1aadf1df7bf6fdd97a68ca41966ffeb6 \
-                          rmd160  49ab2054d546e4549250119cec0453cd1cdfffef
+                          sha1    6c73036c7caee4e3091f721d01b1640d2b329b36 \
+                          rmd160  39ecc1a097ef560a17230af609523934d48c2cf6
 
 # https://trac.macports.org/ticket/33925
 if {${configure.compiler} == "clang"} {

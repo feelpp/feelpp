@@ -26,3 +26,13 @@ set(Boost_NO_SYSTEM_PATHS TRUE)
 
 set(FEELPP_ENABLE_SLURM TRUE)
 set(FEELPP_ENABLE_MANUAL OFF)
+
+# find the gfortran library
+FIND_LIBRARY(GFORTRAN_LIBRARY
+    NAMES
+    gfortran
+    PATHS
+    $ENV{gccDir}/lib64
+    $ENV{LIBRARY_PATH}
+)
+message(STATUS "hpc-login gfortran lib: ${GFORTRAN_LIBRARY} ")
