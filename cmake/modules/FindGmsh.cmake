@@ -98,12 +98,24 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   endif()
 
   if( NOT GMSH_LIBRARY )
-    get_filename_component(GMSH_LIBRARY_PATH "${GMSH_LIBRARY}" PATH)
+    set( GMSHLIB libGmsh.so )
     if(APPLE)
-      set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/libGmsh.dylib" )
-    else(APPLE)
-      set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/libGmsh.so" )
+      set( GMSHLIB libGmsh.dylib )
     endif(APPLE)
+    if($ENV{GMSH_DIR})
+      FIND_PATH(GMSH_LIBRARY_PATH
+        ${GMSHLIB}
+        PATHS
+        $ENV{GMSH_DIR}/
+        NO_DEFAULT_PATH )
+    else()
+      FIND_PATH(GMSH_LIBRARY_PATH
+        ${GMSHLIB}
+        PATHS
+        ${CMAKE_SYSTEM_PREFIX_PATH} )
+    endif()
+
+    set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSH_LIB}" )
   endif()
 
   FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
