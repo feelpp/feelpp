@@ -170,7 +170,8 @@ public:
         M_B(),
         M_t(),
         M_index_max(),
-        M_model( 0 )
+        M_model( 0 ),
+        M_pc( 0 )
         {}
     EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8 )
         :
@@ -189,7 +190,8 @@ public:
         M_B(),
         M_t(),
         M_index_max(),
-        M_model( model )
+        M_model( model ),
+        M_pc( M_model )
         {
             if ( !loadDB() || M_vm["eim.rebuild-database"].template as<bool>() )
             {
@@ -218,7 +220,7 @@ public:
 
     EIM( EIM const & __bbf )
         :
-    super(__bbf),
+        super(__bbf),
         M_is_read( __bbf.M_is_read ),
         M_is_written( __bbf.M_is_written ),
         M_name( __bbf.M_name ),
@@ -232,6 +234,7 @@ public:
         M_t( __bbf.M_t ),
         M_index_max( __bbf.M_index_max ),
         M_model( __bbf.M_model )
+        M_pc( __bbf.M_pc )
         {}
     ~EIM()
         {}
@@ -464,6 +467,7 @@ protected:
     std::vector<size_type> M_index_max;
 
     model_type* M_model;
+    typename model_type::PreCompute M_pc;
 protected:
 
 private:
@@ -545,11 +549,16 @@ EIM<ModelType>::residual( size_type __M ) const
     vector_type rhs( __M );
 
     //LOG(INFO) << "g[" << __M << "]=" << M_g[__M] << "\n";
+    // TODO:
+#if 1
     for ( size_type __m = 0;__m < __M;++__m )
     {
         LOG(INFO) << "t[" << __m << "]=" << M_t[__m] << "\n";
         rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
     }
+#else
+    rhs= M_g[__M].evaluate( M_pc );
+#endif
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
     LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
 
@@ -739,9 +748,14 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
 
+        // add in precompute object the last magic point
+        M_pc.add( M_t.back() );
+
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
         // update interpolation matrix
+        // TODO: update only the new line and eventually the new column rather than recomputing everything
         M_B.conservativeResize( M_M, M_M );
+#if 1
         for( int __i = 0; __i < M_M; ++__i )
         {
             for( int __j = 0; __j < M_M; ++__j )
@@ -750,6 +764,12 @@ EIM<ModelType>::offline(  )
 
             }
         }
+#else
+        for( int __j = 0; __j < M_M; ++__j )
+        {
+            this->M_B.col( __j ) = M_q[__j].evaluate( M_pc );
+        }
+#endif
         LOG(INFO) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
 #if 0
         for( int __i = 0; __i < M_M; ++__i )
@@ -770,7 +790,7 @@ EIM<ModelType>::offline(  )
 
 
         LOG(INFO) << "================================================================================\n";
-        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() ) 
+        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() )
         {
             ++M_M;
             break;
@@ -866,6 +886,7 @@ public:
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef Eigen::Matrix<double, nDim, 1> node_type;
+    typedef Eigen::Matrix<double, SpaceType::basis_type::nLocalDof, Eigen::Dynamic> matrix_basis_pc_type;
 
     typedef EIM<EIMFunctionBase<SpaceType,model_functionspace_type, ParameterSpaceType> > eim_type;
     typedef typename eim_type::vector_type vector_type;
@@ -932,6 +953,14 @@ public:
             LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
+    // TODO:
+#if 0
+    vector_type operator()( solution_type const& T, node_type const& x, parameter_type const& mu, Context& ctx )
+        {
+            return this->operator()( T, mu, ctx );
+        }
+
+#endif
 
     virtual element_type const& q( int m )  const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
@@ -939,6 +968,35 @@ public:
     virtual size_type  mMax() const = 0;
 
     virtual std::vector<double> studyConvergence( parameter_type const & mu ) const = 0;
+
+    /**
+     * Pre compute basis function at magic points
+     */
+    struct PreCompute
+    {
+        PreCompute( EimFunctionBase* f ) : M_f( f ) {}
+        void add( node_type t )
+            {
+                // add point t to list of points
+                M_t.push_back( t );
+                M_phi_t.conservativeResize( Eigen::NoChange, M_t.size() );
+
+                // localise t in space, find geometrical element in which t
+                // belongs
+
+                // compute image by inverse geometric mapping of t in reference
+                // element
+
+                // compute for each basis function in reference element its
+                // value at \hat{t} in reference element and store in matrix
+                // form
+
+
+            }
+
+        std::vector<node_type> M_t;
+        matrix_basis_pc_type M_phi_t;
+    };
 
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
@@ -1012,6 +1070,19 @@ public:
             M_u = T;
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
+
+    // TODO:
+#if 0
+    vector_type operator()( solution_type const& T, parameter_type const&  mu, Context& ctx )
+        {
+            M_mu = mu;
+            M_mu.check();
+            // no need to solve we have already an approximation (typically from
+            // an nonlinear iteration procedure)
+            M_u = T;
+            return vf::evaluate( _expr=M_expr, _ctx=ctx );
+        }
+#endif
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
     element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu , M_eim->mMax() ); }
