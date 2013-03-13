@@ -38,11 +38,11 @@ int main(int argc, char**argv )
                      _about=about(_name="harmonic",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
-    auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,4>>,
-                                _desc=domain( _name="kovaznay"
+    auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,4> >,
+                                _desc=domain( _name="kovaznay",
                                               _usenames=false,
                                               _shape="hypercube",
-                                              _h=meshSize,
+                                              _h=option(_name="mesh2d.hsize").as<double>(),
                                               _xmin=-0.5, _xmax=1,
                                               _ymin=-0.5, _ymax=1.5 ) );
     auto Vh = Pch<4>( mesh );
