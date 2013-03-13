@@ -23,15 +23,19 @@
 #
 include (FindPackageHandleStandardArgs)
 
-find_program( GMSH_EXECUTABLE gmsh
-  PATH
-  if($ENV{GMSH_DIR})
+if($ENV{GMSH_DIR})
+  find_program( GMSH_EXECUTABLE gmsh
+    PATH
     $ENV{GMSH_DIR}/bin
     NO_DEFAULT_PATH
-  else($ENV{GMSH_DIR})
+    DOC "GMSH mesh generator" )
+else()
+  find_program( GMSH_EXECUTABLE gmsh
+    PATH
     ${CMAKE_SYSTEM_PREFIX_PATH}
-  endif($ENV{GMSH_DIR})
-  DOC "GMSH mesh generator" )
+    DOC "GMSH mesh generator" )
+endif()
+
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
@@ -78,31 +82,23 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   #endif()
   #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
 
-  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATH
-    if($ENV{GMSH_DIR})
+  if($ENV{GMSH_DIR})
+    FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
+      PATH
       $ENV{GMSH_DIR}
       NO_DEFAULT_PATH
-    else($ENV{GMSH_DIR})
+      PATH_SUFFIXES
+      lib  )
+  else()
+    FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
+      PATH
       ${CMAKE_SYSTEM_PREFIX_PATH}
-    endif($ENV{GMSH_DIR})
-    PATH_SUFFIXES
-    lib  )
+      PATH_SUFFIXES
+      lib  )
+  endif()
+
   if( NOT GMSH_LIBRARY )
-    FIND_PATH(GMSH_LIBRARY_PATH
-      if(APPLE)
-        libGmsh.dylib
-      else(APPLE)
-        libGmsh.so
-      endif(APPLE)
-      PATHS
-      if($ENV{GMSH_DIR})
-        $ENV{GMSH_DIR}/
-        NO_DEFAULT_PATH
-      else($ENV{GMSH_DIR})
-        ${CMAKE_SYSTEM_PREFIX_PATH}
-      endif($ENV{GMSH_DIR})
-      PATH_SUFFIXES lib )
+    get_filename_component(GMSH_LIBRARY_PATH "${GMSH_LIBRARY}" PATH)
     if(APPLE)
       set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/libGmsh.dylib" )
     else(APPLE)
