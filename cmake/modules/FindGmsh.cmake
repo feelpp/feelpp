@@ -23,30 +23,37 @@
 #
 include (FindPackageHandleStandardArgs)
 
-find_program( GMSH_EXECUTABLE gmsh 
-  PATH 
+find_program( GMSH_EXECUTABLE gmsh
+  PATH
   if($ENV{GMSH_DIR})
     $ENV{GMSH_DIR}/bin
     NO_DEFAULT_PATH
   else($ENV{GMSH_DIR})
-    ${CMAKE_SYSTEM_PREFIX_PATH} 
+    ${CMAKE_SYSTEM_PREFIX_PATH}
   endif($ENV{GMSH_DIR})
   DOC "GMSH mesh generator" )
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
-  FIND_PATH(GMSH_INCLUDE_DIR
-    Gmsh.h Context.h GModel.h
-    PATHS 
-    if($ENV{GMSH_DIR})
+  if($ENV{GMSH_DIR})
+    FIND_PATH(GMSH_INCLUDE_DIR
+      Gmsh.h Context.h GModel.h
+      PATHS
       $ENV{GMSH_DIR}/include/gmsh
       NO_DEFAULT_PATH
-    else($ENV{GMSH_DIR})
-      ${CMAKE_SYSTEM_PREFIX_PATH} 
-    endif($ENV{GMSH_DIR})
-    PATH_SUFFIXES include include/gmsh
-    DOC "Directory where GMSH header files are stored" )
+      PATH_SUFFIXES include include/gmsh
+      DOC "Directory where GMSH header files are stored" )
+  else($ENV{GMSH_DIR})
+    FIND_PATH(GMSH_INCLUDE_DIR
+      Gmsh.h Context.h GModel.h
+      PATHS
+      ${CMAKE_SYSTEM_PREFIX_PATH}
+      PATH_SUFFIXES include include/gmsh
+      DOC "Directory where GMSH header files are stored" )
+  endif($ENV{GMSH_DIR})
+
+
   include_directories(${GMSH_INCLUDE_DIR})
   if ( GMSH_INCLUDE_DIR )
     set( FEELPP_HAS_GMSH_H 1 )
@@ -77,7 +84,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       $ENV{GMSH_DIR}
       NO_DEFAULT_PATH
     else($ENV{GMSH_DIR})
-      ${CMAKE_SYSTEM_PREFIX_PATH} 
+      ${CMAKE_SYSTEM_PREFIX_PATH}
     endif($ENV{GMSH_DIR})
     PATH_SUFFIXES
     lib  )
@@ -88,12 +95,12 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       else(APPLE)
         libGmsh.so
       endif(APPLE)
-      PATHS 
+      PATHS
       if($ENV{GMSH_DIR})
         $ENV{GMSH_DIR}/
         NO_DEFAULT_PATH
       else($ENV{GMSH_DIR})
-        ${CMAKE_SYSTEM_PREFIX_PATH} 
+        ${CMAKE_SYSTEM_PREFIX_PATH}
       endif($ENV{GMSH_DIR})
       PATH_SUFFIXES lib )
     if(APPLE)
@@ -106,13 +113,13 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
     PATH
       $ENV{GMSH_DIR}
-      ${CMAKE_SYSTEM_PREFIX_PATH} 
+      ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib  )
   FIND_LIBRARY(GL_LIBRARY NAMES GL
     PATH
       $ENV{GMSH_DIR}
-      ${CMAKE_SYSTEM_PREFIX_PATH} 
+      ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib  )
 
