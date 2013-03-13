@@ -255,27 +255,35 @@ searchPartitionAroundNode( const int myRank, ublas::vector<double> const& nodeSe
 } // searchPartitionAroundNode
 
 
-template<typename element_type>
+template<typename mesh_type>
 void
 searchPartitionAroundEdge( const int myRank,
-                           typename element_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
-                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           typename mesh_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           typename mesh_type::element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           std::set<boost::tuple<int,size_type> > & multiProcessRes, bool firstExp, mpl::int_<0> /**/ )
+{}
+
+template<typename mesh_type>
+void
+searchPartitionAroundEdge( const int myRank,
+                           typename mesh_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           typename mesh_type::element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
                            std::set<boost::tuple<int,size_type> > & multiProcessRes, bool firstExp, mpl::int_<1> /**/ )
 {}
 
-template<typename element_type>
+template<typename mesh_type>
 void
 searchPartitionAroundEdge( const int myRank,
-                           typename element_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
-                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           typename mesh_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           typename mesh_type::element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
                            std::set<boost::tuple<int,size_type> > & multiProcessRes, bool firstExp, mpl::int_<2> /**/ )
 {}
 
-template<typename element_type>
+template<typename mesh_type>
 void
 searchPartitionAroundEdge( const int myRank,
-                           typename element_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
-                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           typename mesh_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           typename mesh_type::element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
                            std::set<boost::tuple<int,size_type> > & multiProcessRes, bool firstExp, mpl::int_<3> /**/ )
 {
 
@@ -285,13 +293,13 @@ searchPartitionAroundEdge( const int myRank,
     {
         iFaEl = ( faceContainEdge.processId() == faceContainEdge.proc_first() )? faceContainEdge.pos_first():faceContainEdge.pos_second();
         //local edge number (in element)
-        iEdEl = element_type::fToE(  iFaEl, idEdgesInFace );
+        iEdEl = mesh_type::element_type::fToE(  iFaEl, idEdgesInFace );
     }
 
     auto const& theedge = (firstExp)?eltOnProc.edge(iEdEl):faceContainEdge.edge(idEdgesInFace);
     //auto const& theEdgesVertices = theedge.vertices();
 
-    for ( uint16_type f = 0; f < element_type::numTopologicalFaces; ++f )
+    for ( uint16_type f = 0; f < mesh_type::element_type::numTopologicalFaces; ++f )
     {
         auto const& theFace = eltOnProc.face(f);
 
@@ -305,7 +313,7 @@ searchPartitionAroundEdge( const int myRank,
 
         // face contains edge?
         bool find=false;uint16_type newEdgeIdInFace=0;
-        for (uint16_type ed=0;ed<element_type::face_type::numEdges && !find ;++ed)
+        for (uint16_type ed=0;ed<mesh_type::element_type::face_type::numEdges && !find ;++ed)
         {
             //auto const& otheredges = theFace.edge(ed);
             if (theFace.edge(ed).id() == theedge.id())
@@ -316,7 +324,7 @@ searchPartitionAroundEdge( const int myRank,
                 auto const& newEdgesVertices = theFace.edge(ed).vertices();
                 //auto const& theEdgesVertices = theedge.vertices();
                 bool find2=true;
-                for (uint16_type d=0;d<element_type::nDim;++d)
+                for (uint16_type d=0;d<mesh_type::element_type::nDim;++d)
                     {
                         find2 = find2 && ( std::abs( newEdgesVertices(d,0)-theEdgesVertices(d,0) )<1e-9 );
                     }
@@ -334,7 +342,7 @@ searchPartitionAroundEdge( const int myRank,
                 if (eltOnProc0.processId()!=myRank)
                     multiProcessRes.insert( boost::make_tuple(eltOnProc0.processId(),theFace.idInPartition(eltOnProc0.processId()) ));
                 else if (eltOnProc.id()!=eltOnProc0.id())
-                    searchPartitionAroundEdge(myRank,theFace,newEdgeIdInFace,eltOnProc0,memoryIdsFaces,multiProcessRes,false,mpl::int_<3>());
+                    searchPartitionAroundEdge<mesh_type>(myRank,theFace,newEdgeIdInFace,eltOnProc0,memoryIdsFaces,multiProcessRes,false,mpl::int_<3>());
             }
             if ( theFace.isConnectedTo1() )
             {
@@ -342,7 +350,7 @@ searchPartitionAroundEdge( const int myRank,
                 if (eltOnProc1.processId()!=myRank)
                     multiProcessRes.insert( boost::make_tuple(eltOnProc1.processId(),theFace.idInPartition(eltOnProc1.processId()) ));
                 else if (eltOnProc.id()!=eltOnProc1.id())
-                    searchPartitionAroundEdge(myRank,theFace,newEdgeIdInFace,eltOnProc1,memoryIdsFaces,multiProcessRes,false,mpl::int_<3>());
+                    searchPartitionAroundEdge<mesh_type>(myRank,theFace,newEdgeIdInFace,eltOnProc1,memoryIdsFaces,multiProcessRes,false,mpl::int_<3>());
             }
         } // if (find)
 
@@ -350,14 +358,14 @@ searchPartitionAroundEdge( const int myRank,
 
 }
 
-template<typename element_type>
+template<typename mesh_type>
 void
 searchPartitionAroundEdge( const int myRank,
-                           typename element_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
-                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           typename mesh_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           typename mesh_type::element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
                            std::set<boost::tuple<int,size_type> > & multiProcessRes )
 {
-    searchPartitionAroundEdge(myRank,faceContainEdge,idEdgesInFace,eltOnProc,memoryIdsFaces,multiProcessRes,true,mpl::int_<element_type::nDim>());
+    searchPartitionAroundEdge<mesh_type>(myRank,faceContainEdge,idEdgesInFace,eltOnProc,memoryIdsFaces,multiProcessRes,true,mpl::int_<mesh_type::nDim>());
 }
 
 } // namespace detail
@@ -579,7 +587,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
 
                 int edgeGetLocDof = locDofInEgde / nDofPerEdgeTemp;
 
-                detail::searchPartitionAroundEdge( myRank, theface, edgeGetLocDof, eltOnProc, memoryIdsFaces, multiProcessRes );
+                detail::searchPartitionAroundEdge<mesh_type>( myRank, theface, edgeGetLocDof, eltOnProc, memoryIdsFaces, multiProcessRes );
             }
             //if (proc==0 ) std::cout << "myRank " << myRank << " multiProcessRes.size() " << multiProcessRes.size() << " " << nodeDofRecv << std::endl;
             auto nbMultiProcessRes = multiProcessRes.size();
