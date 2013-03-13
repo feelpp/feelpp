@@ -764,7 +764,15 @@ public:
         _M_F->set( i, v );
     }
 
+    LinearForm& operator+=( LinearForm& f )
+        {
+            if ( this == &f )
+                return *this;
 
+            *_M_F += f._M_F;
+
+            return *this;
+        }
     //@}
 
 protected:
