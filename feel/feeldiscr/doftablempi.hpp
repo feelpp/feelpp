@@ -102,6 +102,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapInit( m
 
     if ( nbFaceDof == 0 ) return;
     //------------------------------------------------------------------------------//
+    std::vector<bool> dofdone(this->_M_n_localWithGhost_df[myRank],false);
     // iteration on all interprocessfaces in order to send requests to the near proc
     auto face_it = mesh.interProcessFaces().first;
     auto face_en = mesh.interProcessFaces().second;
@@ -139,7 +140,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapInit( m
             {
                 // add dof in subcontainer
                 const size_type theglobdof = faceLocalToGlobal( face_it->id(),l,c ).template get<0>();
-                dofSetAdd.insert(boost::make_tuple(theglobdof,c));
+                if (!dofdone[theglobdof])
+                {
+                    dofSetAdd.insert(boost::make_tuple(theglobdof,c));
+                    dofdone[theglobdof]=true;
+                }
             }
             // add composante dofs in result container
         }
@@ -196,6 +201,167 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
+namespace detail {
+
+template<typename element_type>
+void
+searchPartitionAroundNode( const int myRank, ublas::vector<double> const& nodeSearched,
+                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           std::set<boost::tuple<int,size_type> > & multiProcessRes )
+{
+    for ( uint16_type f = 0; f < element_type::numTopologicalFaces; ++f )
+        {
+            auto const& theFace = eltOnProc.face(f);
+            size_type theFaceId = theFace.id();
+            if (memoryIdsFaces.find(theFaceId) != memoryIdsFaces.end()) continue;
+
+            // save face
+            memoryIdsFaces.insert( theFaceId );
+            // face contains node?
+            bool find=false;
+            auto const& facevertices = theFace.vertices();
+            for (uint16_type v=0;v<element_type::face_type::numVertices && !find ;++v)
+                {
+                    bool find2=true;
+                    for (uint16_type d=0;d<element_type::nDim;++d)
+                        {
+                            find2 = find2 && ( std::abs( facevertices(d,v)-nodeSearched[d] )<1e-9 );
+                        }
+                    if (find2) find=true;
+                }
+
+            if (find)
+                {
+                    if ( theFace.isConnectedTo0() )
+                        {
+                            auto const& eltOnProc0 = theFace.element0();
+                            if (eltOnProc0.processId()!=myRank)
+                                multiProcessRes.insert( boost::make_tuple(eltOnProc0.processId(),theFace.idInPartition(eltOnProc0.processId()) ));
+                            else if (eltOnProc.id()!=eltOnProc0.id())
+                                searchPartitionAroundNode(myRank,nodeSearched,eltOnProc0,memoryIdsFaces,multiProcessRes );
+                        }
+                    if ( theFace.isConnectedTo1() )
+                        {
+                            auto const& eltOnProc1 = theFace.element1();
+                            if (eltOnProc1.processId()!=myRank)
+                                multiProcessRes.insert( boost::make_tuple(eltOnProc1.processId(),theFace.idInPartition(eltOnProc1.processId()) ));
+                            else if (eltOnProc.id()!=eltOnProc1.id())
+                                searchPartitionAroundNode(myRank,nodeSearched,eltOnProc1,memoryIdsFaces,multiProcessRes );
+                        }
+                } // if (find)
+
+        } // for ( uint16_type f = 0; f < element_type::numTopologicalFaces; ++f )
+
+} // searchPartitionAroundNode
+
+
+template<typename element_type>
+void
+searchPartitionAroundEdge( const int myRank,
+                           typename element_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           std::set<boost::tuple<int,size_type> > & multiProcessRes, bool firstExp, mpl::int_<1> /**/ )
+{}
+
+template<typename element_type>
+void
+searchPartitionAroundEdge( const int myRank,
+                           typename element_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           std::set<boost::tuple<int,size_type> > & multiProcessRes, bool firstExp, mpl::int_<2> /**/ )
+{}
+
+template<typename element_type>
+void
+searchPartitionAroundEdge( const int myRank,
+                           typename element_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           std::set<boost::tuple<int,size_type> > & multiProcessRes, bool firstExp, mpl::int_<3> /**/ )
+{
+
+    // only usefull whith first pass
+    uint16_type iFaEl=0,iEdEl=0;
+    if (firstExp)
+    {
+        iFaEl = ( faceContainEdge.processId() == faceContainEdge.proc_first() )? faceContainEdge.pos_first():faceContainEdge.pos_second();
+        //local edge number (in element)
+        iEdEl = element_type::fToE(  iFaEl, idEdgesInFace );
+    }
+
+    auto const& theedge = (firstExp)?eltOnProc.edge(iEdEl):faceContainEdge.edge(idEdgesInFace);
+    //auto const& theEdgesVertices = theedge.vertices();
+
+    for ( uint16_type f = 0; f < element_type::numTopologicalFaces; ++f )
+    {
+        auto const& theFace = eltOnProc.face(f);
+
+        size_type theFaceId = theFace.id();
+        //auto const& theneighborface = mesh.face( eltOnProc.face(f).id() );
+
+        if (memoryIdsFaces.find(theFaceId) != memoryIdsFaces.end()) continue;
+
+        // save face
+        memoryIdsFaces.insert( theFaceId );
+
+        // face contains edge?
+        bool find=false;uint16_type newEdgeIdInFace=0;
+        for (uint16_type ed=0;ed<element_type::face_type::numEdges && !find ;++ed)
+        {
+            //auto const& otheredges = theFace.edge(ed);
+            if (theFace.edge(ed).id() == theedge.id())
+            {
+                find=true; newEdgeIdInFace=ed;
+#if 0
+                // check
+                auto const& newEdgesVertices = theFace.edge(ed).vertices();
+                //auto const& theEdgesVertices = theedge.vertices();
+                bool find2=true;
+                for (uint16_type d=0;d<element_type::nDim;++d)
+                    {
+                        find2 = find2 && ( std::abs( newEdgesVertices(d,0)-theEdgesVertices(d,0) )<1e-9 );
+                    }
+                if (!find2) std::cout << "\n IAOIOIOAIOIO"<<std::endl;
+                //if (newEdgesVertices!=theEdgesVertices) std::cout << "\IAOIOIOAIOIO"<<std::endl;
+#endif
+            }
+        }
+
+        if (find)
+        {
+            if ( theFace.isConnectedTo0() )
+            {
+                auto const& eltOnProc0 = theFace.element0();
+                if (eltOnProc0.processId()!=myRank)
+                    multiProcessRes.insert( boost::make_tuple(eltOnProc0.processId(),theFace.idInPartition(eltOnProc0.processId()) ));
+                else if (eltOnProc.id()!=eltOnProc0.id())
+                    searchPartitionAroundEdge(myRank,theFace,newEdgeIdInFace,eltOnProc0,memoryIdsFaces,multiProcessRes,false,mpl::int_<3>());
+            }
+            if ( theFace.isConnectedTo1() )
+            {
+                auto const& eltOnProc1 = theFace.element1();
+                if (eltOnProc1.processId()!=myRank)
+                    multiProcessRes.insert( boost::make_tuple(eltOnProc1.processId(),theFace.idInPartition(eltOnProc1.processId()) ));
+                else if (eltOnProc.id()!=eltOnProc1.id())
+                    searchPartitionAroundEdge(myRank,theFace,newEdgeIdInFace,eltOnProc1,memoryIdsFaces,multiProcessRes,false,mpl::int_<3>());
+            }
+        } // if (find)
+
+    } // for ( uint16_type f = 0; f < element_type::numTopologicalFaces; ++f )
+
+}
+
+template<typename element_type>
+void
+searchPartitionAroundEdge( const int myRank,
+                           typename element_type::face_type const& faceContainEdge,const uint16_type idEdgesInFace,
+                           element_type const& eltOnProc, std::set<size_type> & memoryIdsFaces,
+                           std::set<boost::tuple<int,size_type> > & multiProcessRes )
+{
+    searchPartitionAroundEdge(myRank,faceContainEdge,idEdgesInFace,eltOnProc,memoryIdsFaces,multiProcessRes,true,mpl::int_<element_type::nDim>());
+}
+
+} // namespace detail
+
 template<typename MeshType, typename FEType, typename PeriodicityType>
 boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
 DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
@@ -241,16 +407,12 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
                 mapMsgComp[proc].insert( std::make_pair( nbMsgToSend[proc], comp ) );
                 //------------------------------------------------------------------------------//
                 // get info to send
-                //ublas::vector<double> dataToSend( 2+nDim );
-                //dataToSend[0]=itFaces->first;//idFaceInPartition;
-                //dataToSend[1]=comp;// composante
                 ublas::vector<double> nodeDofToSend( nDim );
                 nodeDofToSend[0]=dofPoint( theglobdof ).template get<0>()[0];
                 if ( nDim>1 )
                     nodeDofToSend[1]=dofPoint( theglobdof ).template get<0>()[1];
                 if ( nDim>2 )
                     nodeDofToSend[2]=dofPoint( theglobdof ).template get<0>()[2];
-                //boost::tuple< size_type, uint16_type
                 auto dataToSend= boost::make_tuple(itFaces->first,comp,nodeDofToSend);
                 //------------------------------------------------------------------------------//
                 // send
@@ -276,8 +438,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
         for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
         {
             //recv
-            //ublas::vector<double> dataToRecv( 2+nDim );
-            //ublas::vector<double> dataToRecv( nDim );
             boost::tuple<size_type,uint16_type,ublas::vector<double> > dataToRecv;
             this->worldComm().recv( proc, cpt, dataToRecv );
             //------------------------------------------------------------------------------//
@@ -339,9 +499,15 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
 
             //------------------------------------------------------------------------------//
             // check
-            if ( !find ) std::cout<<"\n [buildGhostInterProcessDofMap] : Dof point not find on interprocess face " << nodeDofRecv << std::endl;
+            //if ( !find ) std::cout<<"\n [buildGhostInterProcessDofMap] : Dof point not find on interprocess face " << nodeDofRecv << std::endl;
+            CHECK( find ) << "\nPROBLEM with parallel dof table construction : Dof point not find on interprocess face " << nodeDofRecv << "\n";
+
             //------------------------------------------------------------------------------//
+
+#if 0
             // search maybe an another neighbor
+            std::vector<boost::tuple<int,size_type> > multiProcessResVec( 0 );
+
             bool eltHasMultiProcess = false;
             int eltMultiProcessProcId = 0;
             size_type eltMultiProcessFaceId = 0;
@@ -386,11 +552,41 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
                                 eltMultiProcessProcId = eltOnProc1ProcId;
 
                             eltMultiProcessFaceId = eltOnProc.face(f).idInPartition( eltMultiProcessProcId );
+
+                            //multiProcessResVec[0]=boost::make_tuple(eltMultiProcessProcId,eltMultiProcessFaceId);
+                            multiProcessResVec.push_back(boost::make_tuple(eltMultiProcessProcId,eltMultiProcessFaceId));
+
                         }
 
                     } // if (locDof<fe_type::nDofPerVertex)
                 } // if (locDof<fe_type::nDofPerVertex)
             } // for ( uint16_type f = 0; f < face_type::numTopologicalFaces; ++f )
+
+#else
+            std::set<size_type> memoryIdsFaces;
+            std::set<boost::tuple<int,size_type> > multiProcessRes;
+            if ( locDof < face_type::numVertices*fe_type::nDofPerVertex)
+            {
+                detail::searchPartitionAroundNode( myRank, nodeDofRecv, eltOnProc, memoryIdsFaces, multiProcessRes );
+            }
+            else if ( nDim == 3 && locDof < (face_type::numVertices*fe_type::nDofPerVertex + face_type::numEdges*fe_type::nDofPerEdge) )
+            {
+                int locDofInEgde = locDof - face_type::numVertices*fe_type::nDofPerVertex;
+
+                const int nDofPerEdgeTemp = mpl::if_<boost::is_same<mpl::int_<fe_type::nDofPerEdge>,mpl::int_<0> >,
+                                                     mpl::int_<1>,
+                                                     mpl::int_<fe_type::nDofPerEdge> >::type::value;
+
+                int edgeGetLocDof = locDofInEgde / nDofPerEdgeTemp;
+
+                detail::searchPartitionAroundEdge( myRank, theface, edgeGetLocDof, eltOnProc, memoryIdsFaces, multiProcessRes );
+            }
+            //if (proc==0 ) std::cout << "myRank " << myRank << " multiProcessRes.size() " << multiProcessRes.size() << " " << nodeDofRecv << std::endl;
+            auto nbMultiProcessRes = multiProcessRes.size();
+            std::vector<boost::tuple<int,size_type> > multiProcessResVec( nbMultiProcessRes );
+            std::copy( multiProcessRes.begin(),multiProcessRes.end(),
+                       multiProcessResVec.begin() );
+#endif
 
             //------------------------------------------------------------------------------//
             // get global dof
@@ -398,10 +594,15 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
             const int dofGlobAsked = thedof.template get<0>();
             //------------------------------------------------------------------------------//
             // prepare data to send
+#if 0
             boost::tuple<size_type,bool,int,size_type> eltAskedMultiProcess = boost::make_tuple(thedof.template get<0>(),
                                                                                                 eltHasMultiProcess,
                                                                                                 eltMultiProcessProcId,
                                                                                                 eltMultiProcessFaceId );
+#else
+            auto eltAskedMultiProcess = boost::make_tuple(thedof.template get<0>(),multiProcessResVec);
+#endif
+
             //------------------------------------------------------------------------------//
             // send response
             this->worldComm().send( proc, cpt, eltAskedMultiProcess );
@@ -418,6 +619,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
         {
             auto const myGlobProcessDof = mapMsg[proc][cpt];
             //------------------------------------------------------------------------------//
+#if 0
             // recv data
             boost::tuple<size_type,bool,int,size_type> eltAskedMultiProcess;
             this->worldComm().recv( proc, cpt, eltAskedMultiProcess );
@@ -427,6 +629,19 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
             const bool eltHasMultiProcess = eltAskedMultiProcess.template get<1>();
             const size_type eltMultiProcessProcId = eltAskedMultiProcess.template get<2>();
             const size_type eltMultiProcessFaceId = eltAskedMultiProcess.template get<3>();
+#else
+            // recv data
+            boost::tuple<size_type,std::vector<boost::tuple<int,size_type> > > eltAskedMultiProcess;
+            this->worldComm().recv( proc, cpt, eltAskedMultiProcess );
+            //------------------------------------------------------------------------------//
+            // get data
+            const int dofGlobRecv = eltAskedMultiProcess.template get<0>();
+            const auto multiProcessRes = eltAskedMultiProcess.template get<1>();
+            //const bool eltHasMultiProcess = (bool) (multiProcessRes.size()>0);
+            //const size_type eltMultiProcessProcId = multiProcessRes.front().template get<0>();
+            //const size_type eltMultiProcessFaceId = multiProcessRes.front().template get<1>();
+#endif
+
             //------------------------------------------------------------------------------//
             // update mapInterProcessDof data
             if ( mapInterProcessDof.find( myGlobProcessDof ) == mapInterProcessDof.end() )
@@ -441,12 +656,30 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
             // save global dof with search on proc
             memoryFace[proc].insert(myGlobProcessDof);
             //------------------------------------------------------------------------------//
+#if 0
             // add maybe more search
             if ( eltHasMultiProcess && memoryFace[eltMultiProcessProcId].find( myGlobProcessDof ) == memoryFace[eltMultiProcessProcId].end() )
             {
                 listNeedMoreSearch[eltMultiProcessProcId][eltMultiProcessFaceId].insert(boost::make_tuple(myGlobProcessDof,mapMsgComp[proc][cpt]));
                 ++counterListNeedMoreSearchLoc;
             }
+#else
+            // add maybe more search
+            auto itMP = multiProcessRes.begin();
+            auto const enMP = multiProcessRes.end();
+            for ( ; itMP!=enMP ;++itMP )
+                {
+                    auto const eltMultiProcessProcId = itMP->template get<0>();
+                    auto const eltMultiProcessFaceId = itMP->template get<1>();
+                    if ( memoryFace[eltMultiProcessProcId].find( myGlobProcessDof ) == memoryFace[eltMultiProcessProcId].end() )
+                        {
+                            listNeedMoreSearch[eltMultiProcessProcId][eltMultiProcessFaceId].insert(boost::make_tuple(myGlobProcessDof,mapMsgComp[proc][cpt]));
+                            ++counterListNeedMoreSearchLoc;
+                        }
+                }
+#endif
+
+
             //------------------------------------------------------------------------------//
         } // for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
     } // for ( int proc=0; proc<this->worldComm().size(); ++proc )
