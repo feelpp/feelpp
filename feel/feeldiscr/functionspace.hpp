@@ -1668,7 +1668,7 @@ public:
                 LOG(INFO) << "found point " << t << " in element " << eid << "\n";
                 LOG(INFO) << "  - reference coordinates " << xref << "\n";
 
-                basis_type::points_type p(mesh_type::nDim,1);
+                typename basis_type::points_type p(mesh_type::nDim,1);
                 ublas::column( p, 0 ) = xref;
                 // compute for each basis function in reference element its
                 // value at \hat{t} in reference element
@@ -1684,6 +1684,11 @@ public:
 
                 this->push_back( ctx );
             }
+
+        int nPoints()
+        {
+            return M_t.size();
+        }
 
         std::vector<node_type> M_t;
         functionspace_ptrtype M_Xh;
@@ -2215,6 +2220,10 @@ public:
             id_( context, v );
         }
 
+
+        /*
+         * evaluate the function at all points added to functionspace_type::Context
+         */
         Eigen::Matrix<value_type, Eigen::Dynamic, 1>
         evaluate( functionspace_type::Context const & context ) const
         {
@@ -2230,6 +2239,19 @@ public:
                 r(i) = v[0][0][0];
             }
             return r;
+        }
+
+        /*
+         * evaluate the function only at the point number i
+         */
+        double
+        evaluate( functionspace_type::Context const & context, int i ) const
+        {
+            boost::array<typename array_type::index, 1> shape;
+            shape[0] = 1;
+            id_array_type v( shape );
+            id( context[i] , v );
+            return v[0][0][0];
         }
 
         void
