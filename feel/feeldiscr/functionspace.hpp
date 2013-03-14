@@ -6272,6 +6272,20 @@ Pdh( boost::shared_ptr<MeshType> mesh )
 }
 
 /**
+ * \fn Odh<k,MeshType>
+ *
+ * build a function space of discontinuous function which are piecewise polynomial
+ * of degree and L2 Orthonormal
+ */
+template<int Order,typename MeshType>
+inline
+boost::shared_ptr<FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>>
+Odh( boost::shared_ptr<MeshType> mesh )
+{
+    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( mesh );
+}
+
+/**
  * \fn Pchv<k,MeshType>
  *
  * build a function space of continuous function which are piecewise polynomial
