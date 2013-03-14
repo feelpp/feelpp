@@ -27,7 +27,7 @@
    \date 2013-03-13
  */
 #include <feel/feel.hpp>
-
+#include <feel/feelmesh/meshmover.hpp>
 int main(int argc, char**argv )
 {
     //# marker1 #
@@ -60,19 +60,25 @@ int main(int argc, char**argv )
           _expr=constant(0.) );
     a+=on(_range=markedfaces(mesh,4), _rhs=l, _element=u,
           _expr=constant(0.) );
+    std::cout<<"coucou" << "\n";
     a+=on(_range=markedfaces(mesh,2), _rhs=l, _element=u,
-          _expr=0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1));
+          _expr=-0.5-0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1));
+    std::cout<<"coucou2" << "\n";
     a.solve(_rhs=l,_solution=u);
+    std::cout<<"coucou3" << "\n";
 
     auto e = exporter( _mesh=mesh );
     e->step(0)->setMesh( mesh );
     e->step(0)->add( "u", u );
     e->save();
 
-    moveMesh( mesh, u );
+    std::cout<<"coucou4" << "\n";
+    meshMove( mesh, u );
+    std::cout<<"coucou5" << "\n";
     e->step(1)->setMesh( mesh );
     e->step(1)->add( "u", u );
     e->save();
+    std::cout<<"coucou6" << "\n";
 
 
 
