@@ -225,19 +225,21 @@ TestFspaceContext<Dim>::run( const double* X, unsigned long P, double* Y, unsign
 
     //expression we want to evaluate
     auto x = Px();
+#if DIM >= 2
     auto y = Py();
     auto theta = 2*atan(Py()/(Px()+sqrt(Px()*Px()+Py()*Py())));
     auto r= sqrt(Px()*Px()+Py()*Py());
+#endif
 
     //projection on the mesh
     auto px = vf::project( M_Xh , elements(mesh), x );
+#if DIM >= 2
     auto py = vf::project( M_Xh , elements(mesh), y );
     auto ptheta = vf::project( M_Xh , elements(mesh), theta );
     auto pr = vf::project( M_Xh , elements(mesh), r );
-
+#endif
 
     //nodes where we want evaluate expressions x,y,r,theta
-
 #if DIM==1
     node_type t1; /*x*/ t1(0)=0.1;
     M_ctx.add( t1 );
@@ -265,14 +267,17 @@ TestFspaceContext<Dim>::run( const double* X, unsigned long P, double* Y, unsign
 
     //evaluation on all nodes via functionspace and M_ctx
     auto px_evaluate = px->evaluate( M_ctx );
+#if DIM >= 2
     auto py_evaluate = py->evaluate( M_ctx );
     auto ptheta_evaluate = ptheta->evaluate( M_ctx );
     auto pr_evaluate = pr->evaluate( M_ctx );
+#endif
 
     //true expressions (for verification)
     double x_t1=t1(0);
     double x_t2=t2(0);
     double x_t3=t3(0);
+#if DIM >=2
     double y_t1=t1(1);
     double y_t2=t2(1);
     double y_t3=t3(1);
@@ -282,6 +287,7 @@ TestFspaceContext<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     double theta_t1 = 2*atan(y_t1 / (x_t1 + r_t1 ) );
     double theta_t2 = 2*atan(y_t2 / (x_t2 + r_t2 ) );
     double theta_t3 = 2*atan(y_t3 / (x_t3 + r_t3 ) );
+#endif
 
     //store true expressions in a vectore
     std::vector<double> solution_x, solution_y, solution_theta, solution_r;
@@ -294,6 +300,7 @@ TestFspaceContext<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     solution_x[0] = x_t1;
     solution_x[1] = x_t2;
     solution_x[2] = x_t3;
+#if DIM >= 2
     solution_y[0] = y_t1;
     solution_y[1] = y_t2;
     solution_y[2] = y_t3;
@@ -303,6 +310,7 @@ TestFspaceContext<Dim>::run( const double* X, unsigned long P, double* Y, unsign
     solution_r[0] = r_t1;
     solution_r[1] = r_t2;
     solution_r[2] = r_t3;
+#endif
 
     //verification step
     for( int i=0; i<M_ctx.nPoints(); i++)
@@ -313,6 +321,7 @@ TestFspaceContext<Dim>::run( const double* X, unsigned long P, double* Y, unsign
          BOOST_CHECK_CLOSE( evaluation_x, evaluation_x_node, 1e-13 );
          BOOST_CHECK_CLOSE( evaluation_x, solution_x[i], 1e-13 );
 
+#if DIM >= 2
          //check for expression y
          double evaluation_y = py_evaluate( i );
          double evaluation_y_node = py->evaluate(M_ctx , i);
@@ -330,6 +339,7 @@ TestFspaceContext<Dim>::run( const double* X, unsigned long P, double* Y, unsign
          double evaluation_r_node = pr->evaluate(M_ctx , i);
          BOOST_CHECK_CLOSE( evaluation_r, evaluation_r_node, 1e-13 );
          BOOST_CHECK_CLOSE( evaluation_r, solution_r[i], 1e-13 );
+#endif
      }
 
 
