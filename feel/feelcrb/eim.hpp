@@ -171,7 +171,7 @@ public:
         M_t(),
         M_index_max(),
         M_model( 0 ),
-        M_pc( 0 )
+        M_ctx()
         {}
     EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8 )
         :
@@ -191,7 +191,7 @@ public:
         M_t(),
         M_index_max(),
         M_model( model ),
-        M_pc( M_model )
+        M_ctx( M_model->functionSpace() )
         {
             if ( !loadDB() || M_vm["eim.rebuild-database"].template as<bool>() )
             {
@@ -234,7 +234,7 @@ public:
         M_t( __bbf.M_t ),
         M_index_max( __bbf.M_index_max ),
         M_model( __bbf.M_model )
-        M_pc( __bbf.M_pc )
+        M_ctx( __bbf.M_ctx )
         {}
     ~EIM()
         {}
@@ -467,7 +467,9 @@ protected:
     std::vector<size_type> M_index_max;
 
     model_type* M_model;
-    typename model_type::PreCompute M_pc;
+
+    typename model_type::functionspace_type::Context M_ctx;
+
 protected:
 
 private:
@@ -520,10 +522,7 @@ EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
 {
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
-    for ( size_type __m = 0;__m < __M;++__m )
-    {
-        __beta[__m] = M_model->operator()( this->M_t[__m], mu );
-    }
+    __beta = M_model->operator()( M_ctx, mu );
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
     return __beta;
 }
@@ -533,10 +532,7 @@ EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_typ
 {
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
-    for ( size_type __m = 0;__m < __M;++__m )
-    {
-        __beta[__m] = M_model->operator()( T, this->M_t[__m], mu );
-    }
+    __beta = M_model->operator()( T, M_ctx, mu );
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
     return __beta;
 }
@@ -549,16 +545,8 @@ EIM<ModelType>::residual( size_type __M ) const
     vector_type rhs( __M );
 
     //LOG(INFO) << "g[" << __M << "]=" << M_g[__M] << "\n";
-    // TODO:
-#if 1
-    for ( size_type __m = 0;__m < __M;++__m )
-    {
-        LOG(INFO) << "t[" << __m << "]=" << M_t[__m] << "\n";
-        rhs[__m]= M_g[__M]( M_t[__m] )(0,0,0);
-    }
-#else
-    rhs= M_g[__M].evaluate( M_pc );
-#endif
+    rhs = M_g[__M].evaluate( M_ctx );
+
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
     LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
 
@@ -598,6 +586,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
     maxerr.setZero();
     int index = 0;
     LOG(INFO) << "Compute best fit M=" << __M << "\n";
+    vector_type rhs( __M );
     BOOST_FOREACH( mu, *trainset )
     {
         LOG(INFO) << "compute best fit check mu...\n";
@@ -606,11 +595,8 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         // evaluate model at mu
         auto Z = M_model->operator()( mu );
 
-        vector_type rhs( __M );
-        for ( size_type __m = 0;__m < __M;++__m )
-        {
-            rhs[__m]= Z( M_t[__m] )(0,0,0);
-        }
+        rhs = Z.evaluate( M_ctx );
+
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
         auto res = vf::project( _space=M_model->functionSpace(),
                                 _expr=idv(Z)-idv( expansion( M_q, rhs, __M ) ) );
@@ -749,27 +735,17 @@ EIM<ModelType>::offline(  )
         M_q.push_back( res );
 
         // add in precompute object the last magic point
-        M_pc.add( M_t.back() );
+        M_ctx.add( M_t.back() );
 
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
         // update interpolation matrix
         // TODO: update only the new line and eventually the new column rather than recomputing everything
         M_B.conservativeResize( M_M, M_M );
-#if 1
-        for( int __i = 0; __i < M_M; ++__i )
-        {
-            for( int __j = 0; __j < M_M; ++__j )
-            {
-                this->M_B( __i, __j ) = M_q[__j]( M_t[__i] )(0,0,0);
-
-            }
-        }
-#else
         for( int __j = 0; __j < M_M; ++__j )
         {
-            this->M_B.col( __j ) = M_q[__j].evaluate( M_pc );
+            this->M_B.col( __j ) = M_q[__j].evaluate( M_ctx );
         }
-#endif
+
         LOG(INFO) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
 #if 0
         for( int __i = 0; __i < M_M; ++__i )
@@ -875,6 +851,7 @@ public:
     typedef typename functionspace_type::mesh_type mesh_type;
     typedef typename functionspace_type::mesh_ptrtype mesh_ptrtype;
     typedef typename functionspace_type::value_type value_type;
+    typedef typename functionspace_type::Context context_type;
 
     typedef ModelSpaceType model_functionspace_type;
     typedef typename model_functionspace_type::element_type solution_type;
@@ -953,14 +930,22 @@ public:
             LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
-    // TODO:
-#if 0
-    vector_type operator()( solution_type const& T, node_type const& x, parameter_type const& mu, Context& ctx )
-        {
-            return this->operator()( T, mu, ctx );
-        }
 
-#endif
+    vector_type operator()( context_type const& ctx, parameter_type const& mu )
+        {
+            // use ctx to select only the elements where we evaluate the
+            // function at mu this would speedup tremendously this step, be
+            // careful that it should be done only at the projection step
+            element_type v = this->operator()( mu );
+            return v.evaluate( ctx );
+        }
+    vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu )
+        {
+            // use ctx to select only the elements where we evaluate the function at mu
+            // this would speedup tremendously this step
+            element_type v = this->operator()( T, mu );
+            return v.evaluate( ctx );
+        }
 
     virtual element_type const& q( int m )  const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
@@ -968,35 +953,6 @@ public:
     virtual size_type  mMax() const = 0;
 
     virtual std::vector<double> studyConvergence( parameter_type const & mu ) const = 0;
-
-    /**
-     * Pre compute basis function at magic points
-     */
-    struct PreCompute
-    {
-        PreCompute( EimFunctionBase* f ) : M_f( f ) {}
-        void add( node_type t )
-            {
-                // add point t to list of points
-                M_t.push_back( t );
-                M_phi_t.conservativeResize( Eigen::NoChange, M_t.size() );
-
-                // localise t in space, find geometrical element in which t
-                // belongs
-
-                // compute image by inverse geometric mapping of t in reference
-                // element
-
-                // compute for each basis function in reference element its
-                // value at \hat{t} in reference element and store in matrix
-                // form
-
-
-            }
-
-        std::vector<node_type> M_t;
-        matrix_basis_pc_type M_phi_t;
-    };
 
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
@@ -1070,19 +1026,6 @@ public:
             M_u = T;
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
-
-    // TODO:
-#if 0
-    vector_type operator()( solution_type const& T, parameter_type const&  mu, Context& ctx )
-        {
-            M_mu = mu;
-            M_mu.check();
-            // no need to solve we have already an approximation (typically from
-            // an nonlinear iteration procedure)
-            M_u = T;
-            return vf::evaluate( _expr=M_expr, _ctx=ctx );
-        }
-#endif
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
     element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu , M_eim->mMax() ); }
