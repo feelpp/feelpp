@@ -38,14 +38,14 @@ int main(int argc, char**argv )
                      _about=about(_name="harmonic",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
-    auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,4> >,
+    auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,2> >,
                                 _desc=domain( _name="kovaznay",
                                               _usenames=false,
                                               _shape="hypercube",
                                               _h=option(_name="mesh2d.hsize").as<double>(),
                                               _xmin=-0.5, _xmax=1,
                                               _ymin=-0.5, _ymax=1.5 ) );
-    auto Vh = Pch<4>( mesh );
+    auto Vh = Pchv<2>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
 
@@ -53,33 +53,55 @@ int main(int argc, char**argv )
 
     auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) );
+                  _expr=trace(gradt(u)*trans(grad(v))) );
     a+=on(_range=markedfaces(mesh,1), _rhs=l, _element=u,
-          _expr=constant(0.) );
+          _expr=zero<2,1>() );
     a+=on(_range=markedfaces(mesh,3), _rhs=l, _element=u,
-          _expr=constant(0.) );
+          _expr=zero<2,1>() );
     a+=on(_range=markedfaces(mesh,4), _rhs=l, _element=u,
-          _expr=constant(0.) );
-    std::cout<<"coucou" << "\n";
+          _expr=zero<2,1>() );
     a+=on(_range=markedfaces(mesh,2), _rhs=l, _element=u,
-          _expr=-0.5-0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1));
-    std::cout<<"coucou2" << "\n";
+          _expr=vec(cst(0.),0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1)));
+
     a.solve(_rhs=l,_solution=u);
     std::cout<<"coucou3" << "\n";
 
-    auto e = exporter( _mesh=mesh );
-    e->step(0)->setMesh( mesh );
-    e->step(0)->add( "u", u );
+
+    auto m1 = lagrangeP1(_space=Vh)->mesh();
+    auto XhVisu = Pchv<1>(m1);
+
+    auto opIVisu = opInterpolation(_domainSpace=Vh,
+                                   _imageSpace=XhVisu,
+                                   _type=InterpolationNonConforme(false,true,false) );
+    auto uVisu = opIVisu->operator()(u);
+    auto e = exporter( _mesh=m1, _name="initial" );
+    e->step(0)->setMesh( m1 );
+    e->step(0)->add( "u", uVisu );
     e->save();
 
-    std::cout<<"coucou4" << "\n";
-    meshMove( mesh, u );
-    std::cout<<"coucou5" << "\n";
-    e->step(1)->setMesh( mesh );
-    e->step(1)->add( "u", u );
+    meshMove( m1, uVisu );
+
+    auto e1 = exporter( _mesh=m1, _name="moved" );
+    e1->step(0)->setMesh( m1  );
+    e1->step(0)->add( "u", uVisu );
+    e1->save();
+
+#if 0
+	auto e = exporter( _mesh=m1, _name="initial" );
+    e->step(0)->setMesh( m1 );
+    e->step(0)->add( "u", u );
     e->save();
     std::cout<<"coucou6" << "\n";
 
+    meshMove( mesh, u );
+
+    auto Vh2 = Pchv<2>( mesh );
+    auto m2 = lagrangeP1(_space=Vh2)->mesh();
+    auto e1 = exporter( _mesh=m2, _name="moved" );
+    e1->step(0)->setMesh( m2  );
+    e1->step(0)->add( "u", u );
+    e1->save();
+#endif
 
 
     return 0;
