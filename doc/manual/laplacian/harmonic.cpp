@@ -38,14 +38,14 @@ int main(int argc, char**argv )
                      _about=about(_name="harmonic",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
-    auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,1> >,
+    auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,2> >,
                                 _desc=domain( _name="kovaznay",
                                               _usenames=false,
                                               _shape="hypercube",
                                               _h=option(_name="mesh2d.hsize").as<double>(),
                                               _xmin=-0.5, _xmax=1,
                                               _ymin=-0.5, _ymax=1.5 ) );
-    auto Vh = Pchv<1>( mesh );
+    auto Vh = Pchv<2>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
 
@@ -64,15 +64,20 @@ int main(int argc, char**argv )
           _expr=vec(cst(0.),0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1)));
     a.solve(_rhs=l,_solution=u);
 
-	auto e = exporter( _mesh=mesh );
-    e->step(0)->setMesh( mesh );
+    auto m1 = lagrangeP1(_space=Vh)->mesh();
+	auto e = exporter( _mesh=m1, _name="initial" );
+    e->step(0)->setMesh( m1 );
     e->step(0)->add( "u", u );
     e->save();
 
     meshMove( mesh, u );
-    e->step(1)->setMesh( mesh  );
-    e->step(1)->add( "u", u );
-    e->save();
+
+    auto Vh2 = Pchv<2>( mesh );
+    auto m2 = lagrangeP1(_space=Vh2)->mesh();
+    auto e1 = exporter( _mesh=m2, _name="moved" );
+    e1->step(0)->setMesh( m2  );
+    e1->step(0)->add( "u", u );
+    e1->save();
 
 
 
