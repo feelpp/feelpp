@@ -64,7 +64,27 @@ int main(int argc, char**argv )
           _expr=vec(cst(0.),0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1)));
     a.solve(_rhs=l,_solution=u);
 
+
     auto m1 = lagrangeP1(_space=Vh)->mesh();
+    auto XhVisu = Pchv<1>(m1);
+
+    auto opIVisu = opInterpolation(_domainSpace=Vh,
+                                   _imageSpace=XhVisu,
+                                   _type=InterpolationNonConforme(false,true,false) );
+    auto uVisu = opIVisu->operator()(u);
+    auto e = exporter( _mesh=m1, _name="initial" );
+    e->step(0)->setMesh( m1 );
+    e->step(0)->add( "u", uVisu );
+    e->save();
+
+    meshMove( m1, uVisu );
+
+    auto e1 = exporter( _mesh=m1, _name="moved" );
+    e1->step(0)->setMesh( m1  );
+    e1->step(0)->add( "uu", uVisu ); // warning not "u" but "uu" : the same name write the same file
+    e1->save();
+
+#if 0
 	auto e = exporter( _mesh=m1, _name="initial" );
     e->step(0)->setMesh( m1 );
     e->step(0)->add( "u", u );
@@ -78,7 +98,7 @@ int main(int argc, char**argv )
     e1->step(0)->setMesh( m2  );
     e1->step(0)->add( "u", u );
     e1->save();
-
+#endif
 
 
     return 0;
