@@ -81,7 +81,7 @@ int main(int argc, char**argv )
 
     auto e1 = exporter( _mesh=m1, _name="moved" );
     e1->step(0)->setMesh( m1  );
-    e1->step(0)->add( "uu", uVisu ); // warning not "u" but "uu" : the same name write the same file
+    e1->step(0)->add( "u", uVisu );
     e1->save();
 
 #if 0
