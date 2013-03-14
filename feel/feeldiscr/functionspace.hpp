@@ -1640,6 +1640,54 @@ public:
     */
     //@{
 
+    /**
+     * \class Context
+     */
+    class Context
+        :
+        public std::vector<basis_context_ptrtype>
+    {
+    public:
+        Context( functionspace_ptrtype Xh ) : M_Xh( Xh ) {}
+        ~Context() {}
+
+        void add( node_type t )
+            {
+                // add point t to list of points
+                M_t.push_back( t );
+
+                // localise t in space, find geometrical element in which t
+                // belongs
+                node_type m( mesh_type::nDim );
+                for(int i = 0; i < mesh_type::nDim; ++i )
+                    m(i) = t(i);
+                auto r = M_Xh->mesh()->tool_localization()->searchElement( m );
+                CHECK( r.template get<0>() == true ) << "point " << t << " could not be found in the mesh\n";
+                auto eid = r.template get<1>();
+                auto xref = r.template get<2>();
+                LOG(INFO) << "found point " << t << " in element " << eid << "\n";
+                LOG(INFO) << "  - reference coordinates " << xref << "\n";
+
+                basis_type::points_type p(mesh_type::nDim,1);
+                ublas::column( p, 0 ) = xref;
+                // compute for each basis function in reference element its
+                // value at \hat{t} in reference element
+                auto basispc = M_Xh->basis()->precompute( M_Xh->basis(), p );
+                auto gmpc = M_Xh->mesh()->gm()->precompute( p );
+
+                // build geometric mapping
+                auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT>( M_Xh->mesh()->element( eid ),
+                                                                            gmpc );
+
+                // compute finite element context
+                auto ctx = M_Xh->basis()->template context<vm::POINT>( M_Xh->basis(), gmc, basispc );
+
+                this->push_back( ctx );
+            }
+
+        std::vector<node_type> M_t;
+        functionspace_ptrtype M_Xh;
+    };
 
     /**
      * \class Element
@@ -2167,9 +2215,26 @@ public:
             id_( context, v );
         }
 
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1>
+        evaluate( functionspace_type::Context const & context ) const
+        {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> r( context.size() );
+            auto it = context.begin();
+            auto en = context.end();
+            boost::array<typename array_type::index, 1> shape;
+            shape[0] = 1;
+            id_array_type v( shape );
+            for( int i = 0 ; it != en; ++it, ++i )
+            {
+                id( *it, v );
+                r(i) = v[0][0][0];
+            }
+            return r;
+        }
 
         void
         idInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
+
 
         /*
          * Get the reals points matrix in a context
