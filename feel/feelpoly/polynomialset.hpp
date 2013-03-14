@@ -73,6 +73,8 @@ namespace Feel
  */
 template<typename Poly, template<uint16_type> class PolySetType = Scalar >
 class PolynomialSet
+    :
+        public boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > >
 {
 public:
 
@@ -997,6 +999,12 @@ public:
     preCompute( self_ptrtype p, points_type const& P )
     {
         return precompute_ptrtype( new PreCompute( p, P ) );
+    }
+
+    precompute_ptrtype
+    preCompute( points_type const& P )
+    {
+        return precompute_ptrtype( new PreCompute( this->shared_from_this(), P ) );
     }
 
     typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
