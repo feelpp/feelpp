@@ -2247,6 +2247,7 @@ public:
         double
         evaluate( functionspace_type::Context const & context, int i ) const
         {
+            FEELPP_ASSERT( i >= 0 && i < context.size() )( i )( context.size() ).error( "the index of the point where you want to evaluate the element is out of range" );
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
