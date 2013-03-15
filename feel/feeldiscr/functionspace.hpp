@@ -1654,6 +1654,7 @@ public:
         public std::vector<basis_context_ptrtype>
     {
     public:
+        typedef typename matrix_node<value_type>::type matrix_node_type;
         Context( functionspace_ptrtype Xh ) : M_Xh( Xh ) {}
         ~Context() {}
 
@@ -1664,15 +1665,18 @@ public:
 
                 // localise t in space, find geometrical element in which t
                 // belongs
-                node_type m( mesh_type::nDim );
+                matrix_node_type m( mesh_type::nDim, 1 );
                 for(int i = 0; i < mesh_type::nDim; ++i )
-                    m(i) = t(i);
-                auto r = M_Xh->mesh()->tool_localization()->searchElement( m );
-                CHECK( r.template get<0>() == true ) << "point " << t << " could not be found in the mesh\n";
-                auto eid = r.template get<1>();
-                auto xref = r.template get<2>();
-                LOG(INFO) << "found point " << t << " in element " << eid << "\n";
-                LOG(INFO) << "  - reference coordinates " << xref << "\n";
+                    m(i,0) = t(i);
+                auto loc =  M_Xh->mesh()->tool_localization();
+                loc->run_analysis( m, invalid_size_type_value );
+                auto it = loc->result_analysis_begin();
+                auto en = loc->result_analysis_end();
+                DCHECK( boost::next(it) == en ) << "Logic problem in finding one point in the mesh\n";
+                auto eid = it->first;
+                auto xref = boost::get<1>( *(it->second.begin()) );
+                DVLOG(2) << "found point " << t << " in element " << eid << "\n";
+                DVLOG(2) << "  - reference coordinates " << xref << "\n";
 
                 typename basis_type::points_type p(mesh_type::nDim,1);
 
@@ -1680,16 +1684,20 @@ public:
                 // compute for each basis function in reference element its
                 // value at \hat{t} in reference element
                 auto basispc = M_Xh->basis()->preCompute( M_Xh->basis(), p );
-                auto gmpc = M_Xh->mesh()->gm()->preCompute( p );
+                DVLOG(2) << "build precompute data structure for basis functions\n";
+                auto gmpc = M_Xh->mesh()->gm()->preCompute( M_Xh->mesh()->gm(), p );
+                DVLOG(2) << "build precompute data structure for geometric mapping\n";
 
                 // build geometric mapping
                 auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT>( M_Xh->mesh()->element( eid ),
                                                                             gmpc );
+                DVLOG(2) << "build geometric mapping context\n";
 
                 // compute finite element context
                 auto ctx = basis_context_ptrtype( new basis_context_type( M_Xh->basis(), gmc, basispc ) );
-
+                DVLOG(2) << "build basis function context\n";
                 this->push_back( ctx );
+                DVLOG(2) << "Context size: " << this->size() << "\n";
 
             }
 
@@ -2247,6 +2255,7 @@ public:
             id_array_type v( shape );
             for( int i = 0 ; it != en; ++it, ++i )
             {
+                v[0].setZero(1);
                 id( *(*it), v );
                 r(i) = v[0]( 0, 0 );
             }
@@ -2259,7 +2268,7 @@ public:
         double
         evaluate( functionspace_type::Context const & context, int i ) const
         {
-            FEELPP_ASSERT( i >= 0 && i < context.size() )( i )( context.size() ).error( "the index of the point where you want to evaluate the element is out of range" );
+            CHECK( i >= 0 && i < context.size() ) << "the index " << i << " of the point where you want to evaluate the element is out of range\n";
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
