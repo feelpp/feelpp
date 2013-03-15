@@ -233,7 +233,7 @@ public:
         M_B( __bbf.M_B ),
         M_t( __bbf.M_t ),
         M_index_max( __bbf.M_index_max ),
-        M_model( __bbf.M_model )
+        M_model( __bbf.M_model ),
         M_ctx( __bbf.M_ctx )
         {}
     ~EIM()
