@@ -1606,11 +1606,17 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
+            mpl::identity<mpl::void_> >::type::type pts_gmc_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
             mpl::identity<mpl::void_> >::type::type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_ptrtype>, mpl::identity<mpl::void_> >::type::type geopc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
+
+    // basis context
+    typedef typename basis_type::template Context<vm::POINT, basis_type, gm_type, geoelement_type, pts_gmc_type::context> basis_context_type;
+    typedef boost::shared_ptr<basis_context_type> basis_context_ptrtype;
 
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
@@ -1694,6 +1700,10 @@ public:
         std::vector<node_type> M_t;
         functionspace_ptrtype M_Xh;
     };
+    /**
+     * \return function space context
+     */
+    Context context() { return Context( this->shared_from_this() ); }
 
     /**
      * \class Element
@@ -2221,22 +2231,6 @@ public:
             id_( context, v );
         }
 
-        Eigen::Matrix<value_type, Eigen::Dynamic, 1>
-        evaluate( functionspace_type::Context const & context ) const
-        {
-            Eigen::Matrix<value_type, Eigen::Dynamic, 1> r( context.size() );
-            auto it = context.begin();
-            auto en = context.end();
-            boost::array<typename array_type::index, 1> shape;
-            shape[0] = 1;
-            id_array_type v( shape );
-            for( int i = 0 ; it != en; ++it, ++i )
-            {
-                id( *it, v );
-                r(i) = v[0][0][0];
-            }
-            return r;
-        }
 
         /*
          * evaluate the function at all points added to functionspace_type::Context
@@ -3337,7 +3331,7 @@ public:
                size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                periodicity_type periodicity = periodicity_type() )
     {
-        Context ctx( mesh_components );
+        Feel::Context ctx( mesh_components );
         DVLOG(2) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
         DVLOG(2) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
@@ -3353,7 +3347,7 @@ public:
                periodicity_type periodicity = periodicity_type() )
     {
 
-        Context ctx( mesh_components );
+        Feel::Context ctx( mesh_components );
         DVLOG(2) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
         DVLOG(2) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
