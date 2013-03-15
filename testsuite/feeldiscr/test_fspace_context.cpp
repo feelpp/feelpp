@@ -74,7 +74,7 @@ testFspaceContext()
     auto mesh=unitHypercube<Dim>();
     auto Xh = Pch<1>( mesh );
     auto ctx = Xh->context();
-
+    BOOST_TEST_MESSAGE( "functionspace defined\n" );
     //expression we want to evaluate
     auto x = Px();
     auto y = Py();
@@ -87,7 +87,7 @@ testFspaceContext()
     auto ptheta = vf::project( Xh , elements(mesh), theta );
     auto pr = vf::project( Xh , elements(mesh), r );
 
-
+    BOOST_TEST_MESSAGE( "expression defined done\n" );
     //nodes where we want evaluate expressions x,y,r,theta
 #if 0
 #if DIM==1
@@ -116,21 +116,25 @@ testFspaceContext()
 #endif
 #else
 
-    node_type t1; /*x*/ t1(0)=0.1; /*y*/ t1(1)=0.2;
+    node_type t1(Dim), t2(Dim), t3(Dim);
+    if ( Dim >= 2 ) { /*x*/ t1(0)=0.1; /*y*/ t1(1)=0.2;}
+    if ( Dim >= 2 ) { /*x*/ t2(0)=0.1; /*y*/ t2(1)=0.8; }
+    if ( Dim >= 2 ) { /*x*/ t3(0)=1; /*y*/ t3(1)=1; }
     ctx.add( t1 );
-    node_type t2; /*x*/ t2(0)=0.1; /*y*/ t2(1)=0.8;
     ctx.add( t2 );
-    node_type t3; /*x*/ t3(0)=1; /*y*/ t3(1)=1;
     ctx.add( t3 );
 
 #endif
 
-    //evaluation on all nodes via functionspace and ctx
-    auto px_evaluate = px->evaluate( ctx );
-    auto py_evaluate = py->evaluate( ctx );
-    auto ptheta_evaluate = ptheta->evaluate( ctx );
-    auto pr_evaluate = pr->evaluate( ctx );
+    BOOST_TEST_MESSAGE( "define pts done\n" );
 
+    //evaluation on all nodes via functionspace and ctx
+    auto px_evaluate = px.evaluate( ctx );
+    auto py_evaluate = py.evaluate( ctx );
+    auto ptheta_evaluate = ptheta.evaluate( ctx );
+    auto pr_evaluate = pr.evaluate( ctx );
+
+    BOOST_TEST_MESSAGE( "evaluate expressions at pts done\n" );
 
     //true expressions (for verification)
     double x_t1=t1(0);
@@ -171,32 +175,32 @@ testFspaceContext()
     solution_r[1] = r_t2;
     solution_r[2] = r_t3;
 
-
+    BOOST_TEST_MESSAGE( "start check\n" );
     //verification step
     for( int i=0; i<ctx.nPoints(); i++)
      {
          //check for expression x
          double evaluation_x = px_evaluate( i );
-         double evaluation_x_node = px->evaluate(ctx , i);
+         double evaluation_x_node = px.evaluate(ctx , i);
          BOOST_CHECK_CLOSE( evaluation_x, evaluation_x_node, 1e-13 );
          BOOST_CHECK_CLOSE( evaluation_x, solution_x[i], 1e-13 );
 
 #if 1 //DIM >= 2
          //check for expression y
          double evaluation_y = py_evaluate( i );
-         double evaluation_y_node = py->evaluate(ctx , i);
+         double evaluation_y_node = py.evaluate(ctx , i);
          BOOST_CHECK_CLOSE( evaluation_y, evaluation_y_node, 1e-13 );
          BOOST_CHECK_CLOSE( evaluation_y, solution_y[i], 1e-13 );
 
          //check for expression theta
          double evaluation_theta = ptheta_evaluate( i );
-         double evaluation_theta_node = ptheta->evaluate(ctx , i);
+         double evaluation_theta_node = ptheta.evaluate(ctx , i);
          BOOST_CHECK_CLOSE( evaluation_theta, evaluation_theta_node, 1e-13 );
          BOOST_CHECK_CLOSE( evaluation_theta, solution_theta[i], 1e-13 );
 
          //check for expression r
          double evaluation_r = pr_evaluate( i );
-         double evaluation_r_node = pr->evaluate(ctx , i);
+         double evaluation_r_node = pr.evaluate(ctx , i);
          BOOST_CHECK_CLOSE( evaluation_r, evaluation_r_node, 1e-13 );
          BOOST_CHECK_CLOSE( evaluation_r, solution_r[i], 1e-13 );
 #endif

@@ -2168,7 +2168,7 @@ public:
         boost::multi_array<hess_type,2> _M_hessian;
     };
 
-    template<size_type context_v, size_type context_g, typename BasisType, typename GeoType, typename ElementType>
+    template<size_type context_v, typename BasisType, typename GeoType, typename ElementType>
     boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >
     context( boost::shared_ptr<BasisType> b, boost::shared_ptr<GeoType> gm, precompute_ptrtype& pc )
     {
