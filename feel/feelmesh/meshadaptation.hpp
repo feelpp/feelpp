@@ -661,6 +661,7 @@ namespace Feel
         argExe[exeName.size()] = '\0';
         argvGmsh[0] = argExe;
 
+
         /// argv[1] => geofile
         char *argGeo = new char[geofileNameWE.size() + 1];
         copy(geofileNameWE.begin(), geofileNameWE.end(), argGeo);
@@ -680,18 +681,22 @@ namespace Feel
         //// Initializing
         GmshInitialize(argcGmsh, argvGmsh);
 
+
         GmshSetOption("Mesh", "Algorithm", 5.);
-        ::GModel *m = new GModel();
+        ::GModel *newGmshModel = new GModel();
+
+        //CTX::instance()->mesh.secondOrderIncomplete = 0;
+        //CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
 
         // Retreive list of files
         for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
             {
-                std::cout << "loaded files : " << CTX::instance()->files[i] << std::endl;
+                LOG(INFO) << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << "\n";
                 MergeFile(CTX::instance()->files[i]);
             }
 
         // /* Create Fields from PView list */
-        ::FieldManager* myFieldManager = m->getFields();
+        ::FieldManager* myFieldManager = newGmshModel->getFields();
         std::list<int> idList;
 
         for (unsigned int i = 0; i < ::PView::list.size(); i++)
@@ -704,7 +709,7 @@ namespace Feel
                         return 0;
                     }
 
-                std::cout << "Add " << v->getData()->getFileName() << " as PostView" << std::endl;
+                LOG(INFO) << "[MeshAdaptation] PostView : " << v->getData()->getFileName() << "\n";
 
                 /// Add new PView as post processing file
                 int id = myFieldManager->newId();
@@ -741,18 +746,26 @@ namespace Feel
         if (Dim == 3)
             CTX::instance()->mesh.algo3d = ALGO_3D_MMG3D;
 
-        m->deleteMesh(); //Delete current mesh
-        m->mesh(Dim);
+        newGmshModel->deleteMesh(); //Delete current mesh
+        newGmshModel->mesh(Dim);
 
-        std::cout << "New mesh built : " << newMeshName << std::endl;
-        m->writeMSH(newMeshName);
-        std::cout << m->getNumMeshVertices() << " vertices ";
-        std::cout << m->getNumMeshElements() << " elements\n";
+        LOG(INFO) << "[MeshAdaptation] New mesh built : " << newMeshName << "\n";
+        newGmshModel->writeMSH(newMeshName);
+        LOG(INFO) << "[MeshAdaptation] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+        LOG(INFO) << "[MeshAdaptation] elements : " << newGmshModel->getNumMeshElements() << "\n";
 
         //// Delete list of loaded files
         CTX::instance()->files.erase(CTX::instance()->files.begin(), CTX::instance()->files.end());
         //// Delete PView list
         ::PView::list.erase(::PView::list.begin(), ::PView::list.end() );
+
+        // Cleanup memory
+        newGmshModel->destroy();
+        delete newGmshModel;
+        delete[] argGeo;
+        delete[] argExe;
+        delete[] argvGmsh;
+        GmshFinalize();
 
 #else
         std::string newAccessGeofile = createAdaptedGeo(geofile, name, posfiles, aniso);
