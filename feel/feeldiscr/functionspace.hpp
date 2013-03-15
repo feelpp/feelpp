@@ -1679,17 +1679,18 @@ public:
                 ublas::column( p, 0 ) = xref;
                 // compute for each basis function in reference element its
                 // value at \hat{t} in reference element
-                auto basispc = M_Xh->basis()->precompute( M_Xh->basis(), p );
-                auto gmpc = M_Xh->mesh()->gm()->precompute( p );
+                auto basispc = M_Xh->basis()->preCompute( M_Xh->basis(), p );
+                auto gmpc = M_Xh->mesh()->gm()->preCompute( p );
 
                 // build geometric mapping
                 auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT>( M_Xh->mesh()->element( eid ),
                                                                             gmpc );
 
                 // compute finite element context
-                auto ctx = M_Xh->basis()->template context<vm::POINT>( M_Xh->basis(), gmc, basispc );
+                auto ctx = basis_context_ptrtype( new basis_context_type( M_Xh->basis(), gmc, basispc ) );
 
                 this->push_back( ctx );
+
             }
 
         int nPoints()
@@ -2246,8 +2247,8 @@ public:
             id_array_type v( shape );
             for( int i = 0 ; it != en; ++it, ++i )
             {
-                id( *it, v );
-                r(i) = v[0][0][0];
+                id( *(*it), v );
+                r(i) = v[0]( 0, 0 );
             }
             return r;
         }
@@ -2262,8 +2263,8 @@ public:
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
-            id( context[i] , v );
-            return v[0][0][0];
+            id( *(context[i]) , v );
+            return v[0](0,0);
         }
 
         void
