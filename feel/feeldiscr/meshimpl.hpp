@@ -2063,9 +2063,10 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Localization::init()
 {
+    LOG(INFO) << "initialize Localisation tool...\n";
     if ( !M_mesh ) return;
 
-    DLOG_IF( WARNING, IsInit == false ) << "You have already initialized the tool of localization\n";
+    DLOG_IF( WARNING, IsInit == true ) << "You have already initialized the tool of localization\n";
 
 
     //clear data
@@ -2092,7 +2093,7 @@ Mesh<Shape, T, Tag>::Localization::init()
 
     IsInit=true;
     IsInitBoundaryFaces=false;
-
+    LOG(INFO) << "Localisation tool initialized.\n";
 }
 
 template<typename Shape, typename T, int Tag>
@@ -2146,6 +2147,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
     double dmin;
     node_type x_ref;
 
+    DCHECK( _id < M_mesh->numElements() ) << "Invalid element id  " << _id << " to find point " <<  _pt << "\n";
     //get element with the id
     auto const& elt = M_mesh->element( _id );
 
@@ -2162,6 +2164,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
     else
         {
             // get inverse geometric transformation
+            //gmc1_inverse_type gic( M_mesh->gm1(), elt, mpl::int_<1>(), this->mesh()->worldComm().subWorldCommSeq() );
             gmc1_inverse_type gic( M_mesh->gm1(), elt, mpl::int_<1>(), this->mesh()->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
@@ -2227,10 +2230,8 @@ boost::tuple<bool, size_type, typename Mesh<Shape, T, Tag>::node_type>
 Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
 {
 
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+    LOG_IF( WARNING, IsInit == true ) << "Localization tool not initialized\n";
+
     bool isin=false;double dmin=0;
     node_type x_ref;
     size_type idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
@@ -2242,10 +2243,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
     auto itLT=ListTri.begin();
     auto itLT_end=ListTri.end();
 
-#if !defined( NDEBUG )
-    //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
-    FEELPP_ASSERT( std::distance( itLT,itLT_end )>0 ).error( " problem in list localization : is empty" );
-#endif
+    CHECK( std::distance( itLT,itLT_end )>0 ) << "Localization list is empty\n";
 
     while ( itLT != itLT_end && !isin  )
     {
@@ -2289,11 +2287,9 @@ boost::tuple<std::vector<bool>, size_type>
 Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                                             const size_type & eltHypothetical )
 {
-
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+    DLOG_IF(WARNING, IsInit == false ) << "You don't have initialized the tool of localization\n";
+    CHECK( M_mesh ) << "Invalid mesh data structure\n";
+    if ( !IsInit ) init();
 
     bool find_x;
     size_type cv_id=eltHypothetical;
@@ -2499,7 +2495,7 @@ Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Localization::searchInKdTree( const node_type & p,
-        std::list< std::pair<size_type, uint> > & ListTri )
+                                                   std::list< std::pair<size_type, uint> > & ListTri )
 {
     //search for nearest points
     M_kd_tree->search( p );
@@ -2510,9 +2506,7 @@ Mesh<Shape, T, Tag>::Localization::searchInKdTree( const node_type & p,
     typename KDTree::points_search_const_iterator itNN = ptsNN.begin();
     typename KDTree::points_search_const_iterator itNN_end = ptsNN.end();
 
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( std::distance( itNN,itNN_end )>0 ).error( "none Near Neighbor Points are find" );
-#endif
+    DCHECK( std::distance( itNN,itNN_end )>0 ) << "no Nearest Neighbor Points are found\n";
 
     //iterator on a l(ist index element
     typename std::list<size_type>::iterator itL;
