@@ -71,7 +71,8 @@ template<int Dim>
 void
 testFspaceContext()
 {
-    auto mesh=unitHypercube<Dim>();
+    //auto mesh=unitHypercube<Dim>();
+    auto mesh=unitSquare();
     auto Xh = Pch<1>( mesh );
     auto ctx = Xh->context();
     BOOST_TEST_MESSAGE( "functionspace defined\n" );
@@ -134,6 +135,8 @@ testFspaceContext()
     auto ptheta_evaluate = ptheta.evaluate( ctx );
     auto pr_evaluate = pr.evaluate( ctx );
 
+    LOG(INFO) << "px_evaluate=" << px_evaluate << "\n";
+
     BOOST_TEST_MESSAGE( "evaluate expressions at pts done\n" );
 
     //true expressions (for verification)
@@ -184,6 +187,8 @@ testFspaceContext()
          double evaluation_x_node = px.evaluate(ctx , i);
          BOOST_CHECK_CLOSE( evaluation_x, evaluation_x_node, 1e-13 );
          BOOST_CHECK_CLOSE( evaluation_x, solution_x[i], 1e-13 );
+         BOOST_CHECK_CLOSE( evaluation_x_node, solution_x[i], 1e-13 );
+
 
 #if 1 //DIM >= 2
          //check for expression y
@@ -207,7 +212,7 @@ testFspaceContext()
      }
 
 
-} // TestFspaceContext::run
+} // TestFspaceContext ::run
 
 
 /**
