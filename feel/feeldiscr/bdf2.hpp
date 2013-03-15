@@ -100,6 +100,7 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( true ),
+        M_saveFreq( 1 ),
         M_rankProcInNameOfFiles( false ),
         M_worldComm( Environment::worldComm() )
     {}
@@ -125,6 +126,7 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( true ),
+        M_saveFreq( 1 ),
         M_rankProcInNameOfFiles( false ),
         M_worldComm( Environment::worldComm() )
     {
@@ -151,6 +153,7 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( vm[prefixvm( prefix, "bdf.save" )].as<bool>() ),
+        M_saveFreq( vm[prefixvm( prefix, "bdf.save.freq" )].as<int>() ),
         M_rankProcInNameOfFiles( vm[prefixvm( prefix, "bdf.rank-proc-in-files-name" )].as<bool>() ),
         M_worldComm( worldComm )
     {
@@ -175,6 +178,7 @@ public:
         M_alpha( BDF_MAX_ORDER ),
         M_beta( BDF_MAX_ORDER ),
         M_saveInFile( true ),
+        M_saveFreq( 1 ),
         M_worldComm( worldComm )
     {
     }
@@ -199,7 +203,8 @@ public:
         M_time_values_map( b.M_time_values_map ),
         M_alpha( b.M_alpha ),
         M_beta( b.M_beta ),
-        M_saveInFile( true ),
+        M_saveInFile( b.M_saveInFile ),
+        M_saveFreq( b.M_saveFreq ),
         M_rankProcInNameOfFiles( b.M_rankProcInNameOfFiles ),
         M_worldComm( b.M_worldComm )
     {}
@@ -528,6 +533,11 @@ public:
         return M_saveInFile;
     }
 
+    int saveFreq() const
+    {
+        return M_saveFreq;
+    }
+
     bool rankProcInNameOfFiles() const
     {
         return  M_rankProcInNameOfFiles ;
@@ -581,6 +591,10 @@ public:
     void setSaveInFile( bool b )
     {
         M_saveInFile = b;
+    }
+    void setSaveFreq(int v)
+    {
+        M_saveFreq=v;
     }
     void setRankProcInNameOfFiles( bool b )
     {
@@ -659,6 +673,9 @@ protected:
 
     //! Save solutions in file after each step
     bool M_saveInFile;
+
+    //! frequence of save solutions
+    int M_saveFreq;
 
     //! put the rank of the processor in generated files
     bool M_rankProcInNameOfFiles;
@@ -783,7 +800,17 @@ protected:
 
                 else
                 {
-                    M_time_values_map.resize( M_iteration+1 );
+                    if (this->saveFreq()==1)
+                    {
+                        M_time_values_map.resize( M_iteration+1 );
+                    }
+                    else
+                    {
+                        int nItBack = M_iteration % this->saveFreq();
+                        M_iteration-=nItBack;
+                        M_time_values_map.resize( M_iteration+1 );
+                        M_Ti = M_time_values_map.back();
+                    }
                 }
 
                 DVLOG(2) << "[Bdf] initial time is Ti=" << M_Ti << "\n";
@@ -1196,6 +1223,15 @@ Bdf<SpaceType>::saveCurrent()
 {
     if (!this->saveInFile()) return;
 
+    bool doSave=false;
+    for ( uint8_type i = 0; i < this->timeOrder() && !doSave; ++i )
+        {
+            int iterTranslate = M_iteration + this->timeOrder()-(i+1);
+            if (iterTranslate % this->saveFreq()==0) doSave=true;
+        }
+
+    if (!doSave) return;
+
     BdfBaseMetadata bdfsaver( *this );
     bdfsaver.save();
 
@@ -1319,6 +1355,7 @@ BOOST_PARAMETER_FUNCTION(
       ( restart_path,*,vm[prefixvm( prefix,"bdf.restart.path" )].template as<std::string>() )
       ( restart_at_last_save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.restart.at-last-save" )].template as<bool>() )
       ( save,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.save" )].template as<bool>() )
+      ( freq,*(boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.save.freq" )].template as<int>() )
       ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.rank-proc-in-files-name" )].template as<bool>() )
     ) )
 {
@@ -1334,6 +1371,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setRestartPath( restart_path );
     thebdf->setRestartAtLastSave( restart_at_last_save );
     thebdf->setSaveInFile( save );
+    thebdf->setSaveFreq( freq );
     thebdf->setRankProcInNameOfFiles( rank_proc_in_files_name );
     return thebdf;
 }
