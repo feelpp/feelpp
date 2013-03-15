@@ -514,8 +514,6 @@ template<typename ModelType>
 typename EIM<ModelType>::vector_type
 EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
 {
-    boost::mpi::timer ti;
-
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
     for ( size_type __m = 0;__m < __M;++__m )
@@ -524,17 +522,12 @@ EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
     }
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
 
-    double time_beta = ti.elapsed();
-    LOG(INFO)<<"[develop-beta(mu,__M)] for mu = "<<mu<<" and M ="<< __M<<" , beta coefficients are computed in "<<time_beta<<" s\n";
-
     return __beta;
 }
 template<typename ModelType>
 typename EIM<ModelType>::vector_type
 EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_type __M ) const
 {
-    boost::mpi::timer ti;
-
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
     for ( size_type __m = 0;__m < __M;++__m )
@@ -542,9 +535,6 @@ EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_typ
         __beta[__m] = M_model->operator()( T, this->M_t[__m], mu );
     }
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
-
-    double time_beta = ti.elapsed();
-    LOG(INFO)<<"[develop-beta(mu,__M,T)] for mu = "<<mu<<" and M ="<< __M<<" , beta coefficients are computed in "<<time_beta<<" s\n";
 
     return __beta;
 }
