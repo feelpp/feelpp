@@ -411,7 +411,7 @@ BOOST_AUTO_TEST_SUITE( eimsuite )
 
 BOOST_AUTO_TEST_CASE( test_eim1 )
 {
-    BOOST_TEST_MESSAGE( "test_eim1 done" );
+    BOOST_TEST_MESSAGE( "test_eim1 starts..." );
 
     Application app;
     app.add( new model );
@@ -422,7 +422,7 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
 }
 BOOST_AUTO_TEST_CASE( test_eim2 )
 {
-    BOOST_TEST_MESSAGE( "test_eim2 done" );
+    BOOST_TEST_MESSAGE( "test_eim2 starts..." );
 
     Application app;
     app.add( new model_circle );

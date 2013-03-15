@@ -523,6 +523,7 @@ EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
     __beta = M_model->operator()( M_ctx, mu );
+    DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
     return __beta;
 }
@@ -533,6 +534,7 @@ EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_typ
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
     __beta = M_model->operator()( T, M_ctx, mu );
+    DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
     return __beta;
 }
@@ -546,6 +548,7 @@ EIM<ModelType>::residual( size_type __M ) const
 
     //LOG(INFO) << "g[" << __M << "]=" << M_g[__M] << "\n";
     rhs = M_g[__M].evaluate( M_ctx );
+    DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
 
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
     LOG(INFO) << "solve B sol = rhs with rhs = " << rhs <<"\n";
@@ -596,6 +599,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         auto Z = M_model->operator()( mu );
 
         rhs = Z.evaluate( M_ctx );
+        DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
 
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
         auto res = vf::project( _space=M_model->functionSpace(),
@@ -660,6 +664,11 @@ EIM<ModelType>::offline(  )
     M_t.push_back( zmax.template get<1>() );
     LOG(INFO) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
     //LOG(INFO) << "g = " << M_g[0] << "\n";
+    typename Feel::node<value_type>::type no(nDim);
+    for(int i =0;i < nDim; ++i ) no(i) = M_t.back()(i);
+
+    // add in precompute object the last magic point
+    M_ctx.add( no );
 
     LOG(INFO) << "compute and insert q_0...\n";
     // insert first element
@@ -734,8 +743,10 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
 
+        for(int i =0;i < nDim; ++i ) no(i) = M_t.back()(i);
+
         // add in precompute object the last magic point
-        M_ctx.add( M_t.back() );
+        M_ctx.add( no );
 
         std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
         // update interpolation matrix
