@@ -287,7 +287,6 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 {
 #if FEELPP_HAS_GMSH
     std::ostringstream filename;
-    //filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
 
 #if BOOST_FILESYSTEM_VERSION == 3
     filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
@@ -298,8 +297,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
     fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
 #endif
 
-    for ( int l = 0; l < level; ++l )
-    {
+#if !defined(FEELPP_HAS_GMSH_LIBRARY)
         // generate mesh
         std::ostringstream __str;
 
@@ -311,8 +309,44 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
             __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
                   << " -refine " << filename.str();
 
-        ::system( __str.str().c_str() );
+    for ( int l = 0; l < level; ++l )
+    {
+        auto err = ::system( __str.str().c_str() );
     }
+
+#else
+    //// Initializing
+    //GmshInitialize();
+    GModel* newGmshModel = new GModel();
+    newGmshModel->readMSH(filename.str());
+
+    CTX::instance()->mesh.order = M_order;
+    CTX::instance()->mesh.secondOrderIncomplete = 0;
+    CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
+
+
+    LOG(INFO) << "[Gmsh::refine] Original mesh : " << filename.str() << "\n";
+    LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+    LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
+    LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
+    //std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
+
+    for ( int l = 0; l < level; ++l )
+    {
+        newGmshModel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+    }
+
+    PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
+    newGmshModel->writeMSH( filename.str() );
+    LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
+    LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+    LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
+    LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
+
+    newGmshModel->destroy();
+    delete newGmshModel;
+    //GmshFinalize();
+#endif
 
     return filename.str();
 #else
@@ -385,7 +419,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
-    new GModel();
+    GModel* newGmshModel = new GModel();
     GModel::current()->setName( _name );
     GModel::current()->setFileName( _name );
     GModel::current()->readGEO( _name+".geo" );
@@ -398,7 +432,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
     LOG(INFO) << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
     GModel::current()->writeMSH( _name+".msh" );
-    //GModel::current()->destroy();
+
+    newGmshModel->destroy();
+    delete newGmshModel;
 #endif
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
