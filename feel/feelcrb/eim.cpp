@@ -49,6 +49,7 @@ eimOptions( std::string const& prefix )
         ( "eim.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
         ( "eim.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
         ( "eim.cvg-study" , Feel::po::value<bool>()->default_value( 0 ), "for convergence study" )
+        ( "eim.use-dimension-max-functions" , Feel::po::value<bool>()->default_value( 0 ), "force to use dimension-max basis functions" )
         ;
 
     return eimoptions;
