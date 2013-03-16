@@ -41,6 +41,9 @@
 #include <feel/feelfilters/gmshenums.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+// Gmsh
+#include <GModel.h>
+#include <MElement.h>
 
 namespace Feel
 {
@@ -298,10 +301,10 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
 
     if ( this->version() != "1.0" &&
-            this->version() != "2.0" &&
-            this->version() != "2.1" &&
-            this->version() != "2.2" &&
-            this->version() != FEELPP_GMSH_FORMAT_VERSION )
+         this->version() != "2.0" &&
+         this->version() != "2.1" &&
+         this->version() != "2.2" &&
+         this->version() != FEELPP_GMSH_FORMAT_VERSION )
         throw std::logic_error( "invalid gmsh file format version" );
 
     DVLOG(2) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit()] starts\n";
@@ -322,22 +325,39 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     __is >> __buf;
 
     std::string theversion;
+    bool binary = false, swap = false;
 
     if ( ( ( this->version() == "2.0" ) ||
-            ( this->version() == "2.1" ) ||
-            ( this->version() == "2.2" ) ||
-            ( this->version() == FEELPP_GMSH_FORMAT_VERSION ) )  &&
-            std::string( __buf ) == "$MeshFormat" )
+           ( this->version() == "2.1" ) ||
+           ( this->version() == "2.2" ) ||
+           ( this->version() == FEELPP_GMSH_FORMAT_VERSION ) )  &&
+         std::string( __buf ) == "$MeshFormat" )
     {
 
         // version file-type(0=ASCII,1=BINARY) data-size(sizeof(double))
-        __is >> theversion >> __buf >> __buf;
-        FEELPP_ASSERT( boost::lexical_cast<double>( theversion ) >= 2 )( theversion )( this->version() ).warn( "invalid gmsh file format version " );
+        int format, size;
+        __is >> theversion >> format >> size;
+        LOG_IF( WARNING,  boost::lexical_cast<double>( theversion ) >= 2 )
+            <<  "invalid gmsh file format version " << theversion << " and feel++ version "
+            << "\n";
+        if(format)
+        {
+            binary = true;
+            LOG(INFO) << "Mesh is in binary format\n";
+            int one;
+            __is.read( (char*)&one, sizeof(int) );
+            if(one != 1)
+            {
+                swap = true;
+                LOG(INFO) <<"Swapping bytes from binary file\n";
+            }
+        }
         // should be $EndMeshFormat
         __is >> __buf;
-        FEELPP_ASSERT( std::string( __buf ) == "$EndMeshFormat" )
-        ( __buf )
-        ( "$EndMeshFormat" ).error ( "invalid file format entry" );
+        CHECK( std::string( __buf ) == "$EndMeshFormat" )
+            << "invalid file format entry "
+            << __buf
+            << " instead of $EndMeshFormat\n";
         __is >> __buf;
         DVLOG(2) << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
 
@@ -377,8 +397,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             }
             __is >> __buf;
             FEELPP_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
-            ( __buf )
-            ( "$EndPhysicalNames" ).error ( "invalid file format entry" );
+                ( __buf )
+                ( "$EndPhysicalNames" ).error ( "invalid file format entry" );
             __is >> __buf;
         }
 
@@ -395,9 +415,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     FEELPP_ASSERT( std::string( __buf ) == "$NOD" ||
                    std::string( __buf ) == "$Nodes" ||
                    std::string( __buf ) == "$ParametricNodes" )
-    ( __buf )
-    ( "$NOD" )( "$Nodes" )( "$ParametricNodes" )
-    .error( "invalid nodes string in gmsh importer" );
+        ( __buf )
+        ( "$NOD" )( "$Nodes" )( "$ParametricNodes" )
+        .error( "invalid nodes string in gmsh importer" );
     bool has_parametric_nodes = ( std::string( __buf ) == "$ParametricNodes" );
     uint __n;
     __is >> __n;
@@ -418,24 +438,36 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     for ( uint __i = 0; __i < __n; ++__i )
     {
-        uint __ni;
-        __is >> __ni
-             >> __x[3*__i]
-             >> __x[3*__i+1]
-             >> __x[3*__i+2];
+        int __ni;
+        if ( !binary )
+        {
+            __is >> __ni
+                 >> __x[3*__i]
+                 >> __x[3*__i+1]
+                 >> __x[3*__i+2];
+        }
+        else
+        {
+            __is.read( (char*)&__ni, sizeof(int) );
+            __is.read( (char*)&__x[3*__i], 3*sizeof(double) );
+
+        }
 
         if ( has_parametric_nodes )
         {
-            __is >> __gdim[__i] >> __gtag[__i];
+            if ( !binary )
+            {
+                __is >> __gdim[__i] >> __gtag[__i];
 
-            // if gdim == 0 then u = v = 0
-            // if gdim == 3 then no need for a parametric point
-            // this logic is done later when filling the mesh data structure
-            if ( __gdim[__i] == 1 )
-                __is >> __uv[2*__i];
+                // if gdim == 0 then u = v = 0
+                // if gdim == 3 then no need for a parametric point
+                // this logic is done later when filling the mesh data structure
+                if ( __gdim[__i] == 1 )
+                    __is >> __uv[2*__i];
 
-            else if ( __gdim[__i] == 2 )
-                __is >> __uv[2*__i] >> __uv[2*__i+1];
+                else if ( __gdim[__i] == 2 )
+                    __is >> __uv[2*__i] >> __uv[2*__i+1];
+            }
         }
 
         // stores mapping to be able to reorder the indices
@@ -449,26 +481,23 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     FEELPP_ASSERT( std::string( __buf ) == "$ENDNOD" ||
                    std::string( __buf ) == "$EndNodes" ||
                    std::string( __buf ) == "$EndParametricNodes"
-                 )
-    ( __buf )
-    ( "$ENDNOD" )( "$EndNodes" )( "$EndParametricNodes" ).error( "invalid end nodes string in gmsh importer" );
+        )
+        ( __buf )
+        ( "$ENDNOD" )( "$EndNodes" )( "$EndParametricNodes" ).error( "invalid end nodes string in gmsh importer" );
 
 
     //
     // Read ELEMENTS
     //
     __is >> __buf;
-    DVLOG(2) << "buf: "<< __buf << "\n";
-    FEELPP_ASSERT( std::string( __buf ) == "$ELM" ||
-                   std::string( __buf ) == "$Elements" )
-    ( __buf )
-    ( "$ELM" )( "$Elements" )
-    .error( "invalid elements string in gmsh importer" );
+    CHECK( std::string( __buf ) == "$ELM" ||
+           std::string( __buf ) == "$Elements" )
+        << "invalid elements string " << __buf << " in gmsh importer, it should be either $ELM or $Elements\n";
 
     uint __nele;
     __is >> __nele;
 
-    DVLOG(2) << "number of elements: " << __nele << "\n";
+    LOG(INFO) << "Reading " << __nele << " elements...\n";
     std::vector<std::vector<int> > __e( __nele ); // nodes in each element
     std::vector<std::vector<int> > __et( __nele ); // tags in each element
     std::vector<int> __idGmshToFeel( __nele ); // id Gmsh to id Feel
@@ -515,92 +544,110 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     nptable[30]=35;
     nptable[31]=56;
 
-    for ( uint __i = 0; __i < __nele; ++__i )
+    if ( !binary )
     {
-        int __ne = 0, __t = 0, __physical_region = 0, __np = 0, __elementary_region = 1;
-        std::vector<int> partitions;
-
-        if ( this->version() == "1.0" )
+        for ( uint __i = 0; __i < __nele; ++__i )
         {
-            __is >> __ne  // elm-number
-                 >> __t // elm-type
-                 >> __physical_region // reg-phys
-                 >> __elementary_region // reg-elem
-                 >> __np; // number-of-nodes
-            FEELPP_ASSERT( __np == nptable[__t] )( __np )( __t )( nptable[__t] ).error( "invalid number of nodes" );
-        }
+            int __ne = 0, __t = 0, __physical_region = 0, __np = 0, __elementary_region = 1;
+            std::vector<int> partitions;
 
-        else if ( boost::lexical_cast<double>( this->version() ) >= 2  )
-        {
-            int __ntag;
-            __is >> __ne  // elm-number
-                 >> __t // elm-type
-                 >> __ntag; // number-of-tags
-
-            for ( int t = 0; t < __ntag; ++t )
+            if ( this->version() == "1.0" )
             {
-                int tag;
-                // tag=1 physical region
-                // tag=2 elementary region
-                // tag=3 n partition tags
-                // tag=4.. partition ids
-                __is >> tag;
+                CHECK(!binary) << "binary gmsh version 1.0 is not supported\n";
+                if ( !binary )
+                {
 
-                if ( tag < 0 )
-                    __et[__i].push_back( -tag );
+                    __is >> __ne  // elm-number
+                         >> __t // elm-type
+                         >> __physical_region // reg-phys
+                         >> __elementary_region // reg-elem
+                         >> __np; // number-of-nodes
+                    FEELPP_ASSERT( __np == nptable[__t] )( __np )( __t )( nptable[__t] ).error( "invalid number of nodes" );
+                }
+            }
+            else if ( boost::lexical_cast<double>( this->version() ) >= 2  )
+            {
+                int __ntag;
 
-                else
-                    __et[__i].push_back( tag );
+                __is >> __ne  // elm-number
+                     >> __t // elm-type
+                     >> __ntag; // number-of-tags
+
+                for ( int t = 0; t < __ntag; ++t )
+                {
+                    int tag;
+                    // tag=1 physical region
+                    // tag=2 elementary region
+                    // tag=3 n partition tags
+                    // tag=4.. partition ids
+                    __is >> tag;
+
+                    if ( tag < 0 )
+                        __et[__i].push_back( -tag );
+
+                    else
+                        __et[__i].push_back( tag );
+                }
+
+                if ( ( theversion=="2.0" || theversion=="2.1" ) &&  __ntag==3 )
+                {
+                    __et[__i].push_back( __et[__i][2] );
+                    __et[__i][2]=1;
+                    ++__ntag;
+                }
+
+                // shift partition id according to processor ids
+                for ( int ii = 3; ii < __ntag; ++ ii )
+                    __et[__i][ii] -= 1;
+
+                for ( int jj=0; jj < ( int )__et[__i].size(); ++jj )
+                    DVLOG(2) << __et[__i][jj] << " ";
+
+                DVLOG(2) << " is on proc:" << isElementOnProcessor( __et[__i] ).template get<0>() << "\n";
+                __np = nptable[__t];
+
+                DVLOG(2) << "element type: " << __t << " nb pts: " << __np << "\n";
             }
 
-            if ( ( theversion=="2.0" || theversion=="2.1" ) &&  __ntag==3 )
+            ++__gt[ __t ];
+            __etype[__i] = GMSH_ENTITY( __t );
+
+            if ( M_use_elementary_region_as_physical_region )
             {
-                __et[__i].push_back( __et[__i][2] );
-                __et[__i][2]=1;
-                ++__ntag;
+                __et[__i][0]=__et[__i][1];
             }
 
-            // shift partition id according to processor ids
-            for ( int ii = 3; ii < __ntag; ++ ii )
-                __et[__i][ii] -= 1;
+            __e[__i].resize( __np );
+            int __p = 0;
 
-            for ( int jj=0; jj < ( int )__et[__i].size(); ++jj )
-                DVLOG(2) << __et[__i][jj] << " ";
+            while ( __p != __np )
+            {
+                __is >> __e[__i][__p];
+                // reorder the nodes since they may not have had a contiguous ordering
+                __e[__i][__p] = itoii[ __e[__i][__p]];
 
-            DVLOG(2) << " is on proc:" << isElementOnProcessor( __et[__i] ).template get<0>() << "\n";
-            __np = nptable[__t];
-
-            DVLOG(2) << "element type: " << __t << " nb pts: " << __np << "\n";
+                ++__p;
+            }
         }
+    } // !binary
+    else // binary case
+    {
+        int header[3];
 
-        ++__gt[ __t ];
-        __etype[__i] = GMSH_ENTITY( __t );
+        __is.read( (char*)&header, 3*sizeof(int) );
+        int type = header[0];
+        int numElems = header[1];
+        int numTags = header[2];
+        int numVertices = MElement::getInfoMSH(type);
 
-        if ( M_use_elementary_region_as_physical_region )
-        {
-            __et[__i][0]=__et[__i][1];
-        }
-
-        __e[__i].resize( __np );
-        int __p = 0;
-
-        while ( __p != __np )
-        {
-            __is >> __e[__i][__p];
-            // reorder the nodes since they may not have had a contiguous ordering
-            __e[__i][__p] = itoii[ __e[__i][__p]];
-
-            ++__p;
-        }
-    }
+    } // binary
 
     // make sure that we have read everything
     __is >> __buf;
-    DVLOG(2) << "buf: "<< __buf << "\n";
-    FEELPP_ASSERT( std::string( __buf ) == "$ENDELM" ||
-                   std::string( __buf ) == "$EndElements" )
-    ( __buf )
-    ( "$ENDELM" )( "$EndElements" ).error( "invalid end elements string in gmsh importer" );
+    CHECK( std::string( __buf ) == "$ENDELM" ||
+           std::string( __buf ) == "$EndElements" )
+        << "invalid end elements string " << __buf
+        << " in gmsh importer. It should be either $ENDELM or $EndElements\n";
 
     // read physical names
     if ( boost::lexical_cast<double>( this->version() ) >= 2  )
@@ -611,7 +658,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     //
     // FILL Mesh Data Structure
     //
-    DVLOG(2) << "number of edges= " << __gt[1] << "\n";
+    LOG(INFO) << " - Number of Edges :  " << __gt[1] << "\n";
 
     __isonboundary.assign( __n, false );
     std::vector<int> vv( 2, 0 );
@@ -620,7 +667,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     for ( uint __i = 0; __i < __nele; ++__i )
     {
         if ( isElementOnProcessor( __et[__i] ).template get<0>() == false ||
-                _M_ignorePhysicalGroup.find( __et[__i][0] ) != _M_ignorePhysicalGroup.end() )
+             _M_ignorePhysicalGroup.find( __et[__i][0] ) != _M_ignorePhysicalGroup.end() )
             continue;
 
         switch ( __etype[__i] )
@@ -712,7 +759,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     for ( uint __i = 0; __i < __nele; ++__i )
     {
         if ( isElementOnProcessor( __et[__i] ).template get<0>() == false ||
-                _M_ignorePhysicalGroup.find( __et[__i][0] ) != _M_ignorePhysicalGroup.end() )
+             _M_ignorePhysicalGroup.find( __et[__i][0] ) != _M_ignorePhysicalGroup.end() )
             continue;
 
         switch ( __etype[__i] )
