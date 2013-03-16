@@ -244,13 +244,13 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         // generate mesh
         std::ostringstream __meshname;
         __meshname << __name << ".msh";
-        LOG( INFO ) << "mesh file name: " << __meshname.str() << "\n";
-        LOG( INFO ) << "does mesh file name exists ?: " << fs::exists( __meshname.str() ) << "\n";
+        LOG( INFO ) << "Mesh filename: " << __meshname.str() << "\n";
+        LOG( INFO ) << " - does mesh file name exists : " << fs::exists( __meshname.str() )?"true":"false" << "\n";
         fs::path __meshpath( __meshname.str() );
 
         if ( geochanged || __forceRebuild || !fs::exists( __meshpath ) )
         {
-            LOG( INFO ) << "generating: " << __meshname.str() << "\n";
+            LOG( INFO ) << "Generating " << __meshname.str() << "...\n";
 #if 0
 
             if ( __geo.find( "Volume" ) != std::string::npos )
@@ -267,16 +267,16 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
 #else
             generate( __geoname.str(), this->dimension(), parametric );
 #endif
+            LOG( INFO ) << "Generating " << __meshname.str() << " done.\n";
         }
-
-        LOG(INFO) << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
         fname=__meshname.str();
     }
     google::FlushLogFiles(INFO);
-    if ( mpi::environment::initialized() )
+    if ( mpi::environment::initialized() && Environment::numberOfProcessors() > 1 )
     {
+        LOG(INFO) << "Broadcast mesh filename : " << fname << " to all other mpi processes\n";
         mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
-        LOG(INFO) << "[Gmsh::generate] broadcast mesh filename : " << fname << " to all other processes\n";
+
 
     }
 
@@ -426,11 +426,11 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GModel::current()->mesh( dim );
     for( int l = 0; l < M_refine_levels-1; ++l )
     {
-        LOG(INFO) << "refine mesh level : " << l << "\n";
+        LOG(INFO) << "Mesh refinement level : " << l << "\n";
         GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
     }
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-    LOG(INFO) << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
+    LOG(INFO) << "Mesh partitions : " << GModel::current()->getMeshPartitions().size() << "\n";
     GModel::current()->writeMSH( _name+".msh" );
 
     newGmshModel->destroy();
