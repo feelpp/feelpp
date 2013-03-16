@@ -337,7 +337,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         // version file-type(0=ASCII,1=BINARY) data-size(sizeof(double))
         int format, size;
         __is >> theversion >> format >> size;
-        LOG_IF( WARNING,  boost::lexical_cast<double>( theversion ) >= 2 )
+        LOG_IF( WARNING,  boost::lexical_cast<double>( theversion ) < 2 )
             <<  "invalid gmsh file format version " << theversion << " and feel++ version "
             << "\n";
         if(format)
@@ -349,7 +349,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             if(one != 1)
             {
                 swap = true;
-                LOG(INFO) <<"Swapping bytes from binary file\n";
+                LOG(INFO) <<"Swapping bytes from binary file (to be done)\n";
             }
         }
         // should be $EndMeshFormat
