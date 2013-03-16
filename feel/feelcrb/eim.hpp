@@ -520,16 +520,11 @@ template<typename ModelType>
 typename EIM<ModelType>::vector_type
 EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
 {
-    boost::mpi::timer ti;
-
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
     __beta = M_model->operator()( M_ctx, mu );
     DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
-
-    double time_beta = ti.elapsed();
-    LOG(INFO)<<"[rbframework-beta(mu,__M)] for mu = "<<mu<<" and M ="<< __M<<" , beta coefficients are computed in "<<time_beta<<" s\n";
 
     return __beta;
 }
@@ -537,16 +532,11 @@ template<typename ModelType>
 typename EIM<ModelType>::vector_type
 EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_type __M ) const
 {
-    boost::mpi::timer ti;
-
     // beta=B_M\g(Od(indx),mut(i))'
     vector_type __beta( __M );
     __beta = M_model->operator()( T, M_ctx, mu );
     DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
-
-    double time_beta = ti.elapsed();
-    LOG(INFO)<<"[rbframework-beta(mu,__M,T)] for mu = "<<mu<<" and M ="<< __M<<" , beta coefficients are computed in "<<time_beta<<" s\n";
 
     return __beta;
 }
