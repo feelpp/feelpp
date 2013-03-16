@@ -712,7 +712,8 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
                   << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
 
-        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() )
+        //if we want to impose the use of dimension-max functions, we don't want to stop here
+        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
             break;
 
         /**
@@ -772,7 +773,8 @@ EIM<ModelType>::offline(  )
 
 
         LOG(INFO) << "================================================================================\n";
-        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() ) 
+        //if we want to impose the use of dimension-max functions, we don't want to stop here
+        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
         {
             ++M_M;
             break;
