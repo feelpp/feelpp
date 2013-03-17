@@ -35,6 +35,7 @@ namespace Feel
 {
 namespace po = boost::program_options;
 
+
 po::options_description
 file_options( std::string const& prefix );
 
@@ -53,6 +54,8 @@ po::options_description backend_options( std::string const& prefix = "" );
 po::options_description backendpetsc_options( std::string const& prefix = "" );
 
 po::options_description mesh_options( int Dim, std::string const& prefix = "" );
+
+po::options_description gmsh_options( std::string const& prefix = "" );
 
 /**
  * defines solver eigen options

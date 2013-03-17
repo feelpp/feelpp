@@ -76,6 +76,13 @@ enum GMSH_ORDER
     GMSH_ORDER_FOUR = 4,
     GMSH_ORDER_FIVE = 5
 };
+
+enum GMSH_FORMAT
+{
+    GMSH_FORMAT_ASCII = 0,
+    GMSH_FORMAT_BINARY = 1
+};
+
 /**
  * \class Gmsh
  * \brief Gmsh Mesh Generator
@@ -154,6 +161,7 @@ public:
                 M_dimension = __g.M_dimension;
                 M_order = __g.M_order;
                 M_version = __g.M_version;
+                M_format = __g.M_format;
                 M_addmidpoint = __g.M_addmidpoint;
                 M_usePhysicalNames = __g.M_usePhysicalNames;
                 M_shear = __g.M_shear;
@@ -196,6 +204,24 @@ public:
         {
             return M_version;
         }
+
+    /**
+     * @return file format
+     */
+    GMSH_FORMAT format() const
+        {
+            return M_format;
+        }
+
+    /**
+     * @return true if gmsh format is ascii
+     */
+    bool isASCIIFormat() const { return M_format == GMSH_FORMAT_ASCII; }
+
+    /**
+     * @return true if gmsh format is binary
+     */
+    bool isBinaryFormat() const { return M_format == GMSH_FORMAT_BINARY; }
 
     /**
      * \return the name of the file
@@ -366,14 +392,23 @@ public:
         }
 
     /**
-     * set the file format version
+     * set the file format \p version in ascii or binary \p format
      */
-    void setVersion( std::string version )
+    void setVersion( std::string version, GMSH_FORMAT format = GMSH_FORMAT_ASCII )
         {
             if ( version != "1" && version != "2" && version != FEELPP_GMSH_FORMAT_VERSION )
                 throw std::invalid_argument( "invalid gmsh file format version" );
 
             M_version = version;
+            M_format = format;
+        }
+
+    /**
+     * set file \p format: ascii or binary
+     */
+    void setFileFormat( GMSH_FORMAT format )
+        {
+            M_format = format;
         }
 
     /**
@@ -579,6 +614,9 @@ protected:
     int M_order;
     // gmsh
     std::string M_version;
+
+    // gmsh file format (ascii or binary)
+    GMSH_FORMAT M_format;
 
     // name of the file
     std::string M_name;
@@ -849,6 +887,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
+      ( format,         *, option(_name="gmsh.format").as<int>() )
       ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
       ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
       ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
@@ -878,6 +917,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setPartitioner( partitioner );
         desc->setMshFileByPartition( partition_file );
         desc->setRefinementLevels( refine );
+        desc->setFileFormat( (GMSH_FORMAT)format );
 
         std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
