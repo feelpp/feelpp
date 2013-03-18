@@ -81,6 +81,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_dimension( nDim ),
     M_order( nOrder ),
     M_version( FEELPP_GMSH_FORMAT_VERSION ),
+    M_format( GMSH_FORMAT_ASCII ),
     M_I( nDim ),
     M_h( 0.1 ),
     M_addmidpoint( true ),
@@ -101,6 +102,7 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_dimension( __g.M_dimension ),
     M_order( __g.M_order ),
     M_version( __g.M_version ),
+    M_format( __g.M_format ),
     M_I( __g.M_I ),
     M_h( __g.M_h ),
     M_addmidpoint( __g.M_addmidpoint ),
@@ -244,13 +246,13 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         // generate mesh
         std::ostringstream __meshname;
         __meshname << __name << ".msh";
-        LOG( INFO ) << "mesh file name: " << __meshname.str() << "\n";
-        LOG( INFO ) << "does mesh file name exists ?: " << fs::exists( __meshname.str() ) << "\n";
+        LOG( INFO ) << "Mesh filename: " << __meshname.str() << "\n";
+        LOG( INFO ) << " - does mesh file name exists : " << (fs::exists( __meshname.str() )?"true":"false") << "\n";
         fs::path __meshpath( __meshname.str() );
 
         if ( geochanged || __forceRebuild || !fs::exists( __meshpath ) )
         {
-            LOG( INFO ) << "generating: " << __meshname.str() << "\n";
+            LOG( INFO ) << "Generating " << __meshname.str() << "...\n";
 #if 0
 
             if ( __geo.find( "Volume" ) != std::string::npos )
@@ -267,16 +269,16 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
 #else
             generate( __geoname.str(), this->dimension(), parametric );
 #endif
+            LOG( INFO ) << "Generating " << __meshname.str() << " done.\n";
         }
-
-        LOG(INFO) << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
         fname=__meshname.str();
     }
     google::FlushLogFiles(INFO);
-    if ( mpi::environment::initialized() )
+    if ( mpi::environment::initialized() && Environment::numberOfProcessors() > 1 )
     {
+        LOG(INFO) << "Broadcast mesh filename : " << fname << " to all other mpi processes\n";
         mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
-        LOG(INFO) << "[Gmsh::generate] broadcast mesh filename : " << fname << " to all other processes\n";
+
 
     }
 
@@ -426,15 +428,22 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GModel::current()->mesh( dim );
     for( int l = 0; l < M_refine_levels-1; ++l )
     {
-        LOG(INFO) << "refine mesh level : " << l << "\n";
+        LOG(INFO) << "Mesh refinement level : " << l << "\n";
         GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
     }
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-    LOG(INFO) << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
-    GModel::current()->writeMSH( _name+".msh" );
+    LOG(INFO) << "Mesh partitions : " << GModel::current()->getMeshPartitions().size() << "\n";
+
+    // convert mesh to latest binary format
+    CHECK(GModel::current()->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << GModel::current()->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
+
+    CTX::instance()->mesh.binary = M_format;
+    LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
+    GModel::current()->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
 
     newGmshModel->destroy();
     delete newGmshModel;
+
 #endif
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
