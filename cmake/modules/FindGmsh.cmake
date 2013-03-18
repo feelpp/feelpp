@@ -23,31 +23,56 @@
 #
 include (FindPackageHandleStandardArgs)
 
-find_program( GMSH_EXECUTABLE gmsh DOC "GMSH mesh generator" )
+if(DEFINED ENV{GMSH_DIR})
+  find_program( GMSH_EXECUTABLE gmsh
+    PATH
+    $ENV{GMSH_DIR}/bin
+    NO_DEFAULT_PATH
+    DOC "GMSH mesh generator" )
+else(DEFINED ENV{GMSH_DIR})
+  find_program( GMSH_EXECUTABLE gmsh
+    PATH
+    ${CMAKE_SYSTEM_PREFIX_PATH}
+    PATH_SUFFIXES bin
+    DOC "GMSH mesh generator" )
+endif(DEFINED ENV{GMSH_DIR})
 
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
-  FIND_PATH(GMSH_INCLUDE_DIR
-    Gmsh.h Context.h GModel.h
-    PATHS ${CMAKE_SYSTEM_PREFIX_PATH} $ENV{GMSH_DIR}/include/gmsh
-    PATH_SUFFIXES include include/gmsh
-    DOC "Directory where GMSH header files are stored" )
+  if(DEFINED ENV{GMSH_DIR})
+    FIND_PATH(GMSH_INCLUDE_DIR
+      Gmsh.h Context.h GModel.h
+      PATHS
+      $ENV{GMSH_DIR}
+      NO_DEFAULT_PATH
+      PATH_SUFFIXES include include/gmsh
+      DOC "Directory where GMSH header files are stored" )
+  else(DEFINED ENV{GMSH_DIR})
+    FIND_PATH(GMSH_INCLUDE_DIR
+      Gmsh.h Context.h GModel.h
+      PATHS
+      ${CMAKE_SYSTEM_PREFIX_PATH}
+      PATH_SUFFIXES include include/gmsh ../include ../include/gmsh
+      DOC "Directory where GMSH header files are stored" )
+  endif(DEFINED ENV{GMSH_DIR})
+
+
   include_directories(${GMSH_INCLUDE_DIR})
   if ( GMSH_INCLUDE_DIR )
-	set( FEELPP_HAS_GMSH_H 1 )
+    set( FEELPP_HAS_GMSH_H 1 )
     FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
       Openfile.h Field.h
       PATHS ${GMSH_INCLUDE_DIR}
       DOC "Directory where GMSH header files are stored" )
-      if ( GMSH_ADAPTMESH_INCLUDE_DIR )
-	set( FEELPP_HAS_GMSH_H 1 )
-      else ( GMSH_ADAPTMESH_INCLUDE_DIR )
-	message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
-	message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
-      endif( GMSH_ADAPTMESH_INCLUDE_DIR )
-  endif()
+    if ( GMSH_ADAPTMESH_INCLUDE_DIR )
+      set( FEELPP_HAS_GMSH_H 1 )
+    else ( GMSH_ADAPTMESH_INCLUDE_DIR )
+      message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
+      message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
+    endif( GMSH_ADAPTMESH_INCLUDE_DIR )
+  endif(GMSH_INCLUDE_DIR)
   #include(CheckIncludeFiles)
   #set(CMAKE_REQUIRED_INCLUDES "${GMSH_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
   #check_include_file(Gmsh.h FEELPP_HAS_GMSH_GMSH_H )
@@ -58,30 +83,49 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   #endif()
   #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
 
-  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATH
-    ${CMAKE_SYSTEM_PREFIX_PATH}
-    $ENV{GMSH_DIR}
-    PATH_SUFFIXES
-    lib  )
+  if(DEFINED ENV{GMSH_DIR})
+    FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
+      PATH
+      $ENV{GMSH_DIR}/lib
+      NO_DEFAULT_PATH)
+  else(DEFINED ENV{GMSH_DIR})
+    FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
+      PATH
+      ${CMAKE_SYSTEM_PREFIX_PATH}
+      PATH_SUFFIXES
+      lib ../lib)
+  endif(DEFINED ENV{GMSH_DIR})
+
   if( NOT GMSH_LIBRARY )
-    FIND_PATH(GMSH_LIBRARY_PATH
-      libGmsh.so
-      PATHS ${CMAKE_SYSTEM_PREFIX_PATH} $ENV{GMSH_DIR}/
-      PATH_SUFFIXES lib )
-    set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/libGmsh.so" )
-  endif()
+    if(APPLE)
+      set( GMSHLIB libGmsh.dylib )
+    else(APPLE)
+      set( GMSHLIB libGmsh.so )
+    endif(APPLE)
+    if(DEFINED ENV{GMSH_DIR})
+      FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
+        PATHS $ENV{GMSH_DIR}/lib
+	NO_DEFAULT_PATH)
+    else(DEFINED ENV{GMSH_DIR})
+      FIND_PATH(GMSH_LIBRARY_PATH
+        ${GMSHLIB}
+        PATHS
+        ${CMAKE_SYSTEM_PREFIX_PATH} )
+    endif(DEFINED ENV{GMSH_DIR})
+
+    set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
+  endif(NOT GMSH_LIBRARY)
 
   FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
     PATH
-    ${CMAKE_SYSTEM_PREFIX_PATH}
-    $ENV{GMSH_DIR}/lib
+      $ENV{GMSH_DIR}
+      ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib  )
   FIND_LIBRARY(GL_LIBRARY NAMES GL
     PATH
-    ${CMAKE_SYSTEM_PREFIX_PATH}
-    $ENV{GMSH_DIR}/lib
+      $ENV{GMSH_DIR}
+      ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib  )
 
