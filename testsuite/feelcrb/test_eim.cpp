@@ -275,7 +275,7 @@ public:
             e->save();
 
             //some statistics
-            LOG(INFO)<<"develop - Computational time during online step ( "<<n<<" evaluations )\n";
+            LOG(INFO)<<"Computational time during online step ( "<<n<<" evaluations )\n";
             if( option("eim.use-dimension-max-functions").as<bool>() )
                 LOG(INFO)<<option("eim.dimension-max").as<int>()<<" eim basis functions were used\n";
             Eigen::MatrixXf::Index index;
@@ -443,7 +443,7 @@ BOOST_AUTO_TEST_SUITE( eimsuite )
 
 BOOST_AUTO_TEST_CASE( test_eim1 )
 {
-    BOOST_TEST_MESSAGE( "test_eim1 done" );
+    BOOST_TEST_MESSAGE( "test_eim1 starts..." );
 
     Application app;
     app.add( new model );
@@ -454,7 +454,7 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
 }
 BOOST_AUTO_TEST_CASE( test_eim2 )
 {
-    BOOST_TEST_MESSAGE( "test_eim2 done" );
+    BOOST_TEST_MESSAGE( "test_eim2 starts..." );
 
     Application app;
     app.add( new model_circle );
