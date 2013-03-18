@@ -984,14 +984,11 @@ public:
                                            std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
                                            std::vector< std::set<size_type > > & memoryFace );
     void buildDofNotPresent( std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
-                             std::set<int> & setInterProcessDofNotPresent );
+                             std::map<size_type,boost::tuple<size_type,size_type> > & setInterProcessDofNotPresent );
 
     void buildGlobalProcessToGlobalClusterDofMap( mesh_type& mesh,
-            std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
-            std::set<int> const& setInterProcessDofNotPresent );
-    void updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& mapInterProcessDof,
-                               std::set<int> const& setInterProcessDofNotPresent,
-                               int procToUpdate );
+            std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
+    void updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
 
 #endif
     /**
