@@ -63,6 +63,7 @@ makeOptions()
     ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
     ( "chrono-online-step" , po::value<bool>()->default_value( false ), "give acces to computational time during online step if true" )
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
+    ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
     return simgetoptions.add( eimOptions() ).add( Feel::feel_options() );
 }
@@ -94,7 +95,7 @@ class model:
 public:
     typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<3> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
@@ -128,6 +129,7 @@ public:
                                                  _h=0.025 ) );
 
             Xh =  space_type::New( mesh );
+            LOG(INFO) << " nb dofs : "<<Xh->nDof()<<"\n";
             BOOST_CHECK( Xh );
             u = Xh->element();
             Dmu = parameterspace_type::New();
@@ -247,6 +249,7 @@ public:
             int n = option("n-eval").as<int>();
             LOG(INFO)<<"will compute "<<n<<" evaluations\n";
             bool chrono = option("chrono-online-step").as<bool>();
+            bool cvg_study = option("cvg-study").as<bool>();
             S->logEquidistribute(n);
             int fun_number=0;
             std::vector<vectorN_type> time_vector( M_funs.size() );
@@ -262,6 +265,10 @@ public:
                         auto v = fun->operator()( p );
                         e->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
                         LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
+                    }
+                    if( cvg_study )
+                    {
+                        fun->studyConvergence( p );
                     }
                     boost::mpi::timer timer;
                     auto w = fun->interpolant( p );
