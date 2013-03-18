@@ -21,17 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-set(Boost_NO_BOOST_CMAKE TRUE)
-set(Boost_NO_SYSTEM_PATHS TRUE)
 
-set(FEELPP_ENABLE_SLURM TRUE)
 
-# find the gfortran library
-FIND_LIBRARY(GFORTRAN_LIBRARY
-    NAMES
-    gfortran
-    PATHS
-    $ENV{gccDir}/lib64
-    $ENV{LIBRARY_PATH}
-)
-message(STATUS "hpc-login gfortran lib: ${GFORTRAN_LIBRARY} ")

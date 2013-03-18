@@ -60,16 +60,21 @@ macro(set_config_option VARNAME STRING)
   message(STATUS "Found " ${STRING})
 endmacro(set_config_option)
 
+# this variable controls the default value of the "FEELPP_ENABLE_XXX" options which are
+# normally set to ON (useful if you want to configure a minimal version of feel++:
+# e.g. "cmake -DFEELPP_DEFAULT=0 -DFEELPP_ENABLE_TESTS=1 -DFEELPP_ENABLE_=1")
+set(FEELPP_DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
+
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
-OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ON)
-OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ON)
-OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ON)
-OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ON)
-OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ON)
+OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
-
+OPTION(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex)" ${FEELPP_DEFAULT})
 
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
