@@ -1079,7 +1079,7 @@ Stencil<X1,X2>::computeGraph( size_type hints, mpl::bool_<true> )
                                   first2_dof_on_proc, last2_dof_on_proc,
                                   _M_X1->worldComm() ) );
 
-    if (_M_X1->nLocalDofWithoutGhost()==0 && _M_X2->nLocalDofWithoutGhost()==0 ) return sparsity_graph;
+    //if (_M_X1->nLocalDofWithoutGhost()==0 && _M_X2->nLocalDofWithoutGhost()==0 ) return sparsity_graph;
 
     auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
     auto elem_en  = _M_X1->mesh()->endElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );

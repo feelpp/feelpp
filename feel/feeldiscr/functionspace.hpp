@@ -6251,14 +6251,28 @@ expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
  */
 template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar>>>>
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>>>
 Pch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>>::New( mesh );
 }
 
 /**
- * \fn Pch<k,MeshType>
+ * \fn Pdh<k,MeshType>
+ *
+ * build a function space of discontinuous function which are piecewise polynomial
+ * of degree (total or in each variable) less than k.
+ */
+template<int Order,typename MeshType>
+inline
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>>
+Pdh( boost::shared_ptr<MeshType> mesh )
+{
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( mesh );
+}
+
+/**
+ * \fn Pchv<k,MeshType>
  *
  * build a function space of continuous function which are piecewise polynomial
  * of degree (total or in each variable) less than k.

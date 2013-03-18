@@ -117,6 +117,8 @@ private:
     mesh_ptrtype M_mesh;
 };
 
+
+
 template<typename MeshType>
 template<typename DisplType>
 typename MeshMover<MeshType>::value_type
@@ -237,5 +239,13 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     imesh->tool_localization()->reset();
 }
 
+template<typename MeshType, typename DisplType>
+boost::shared_ptr<MeshType>
+meshMove( boost::shared_ptr<MeshType>& m, DisplType const& u )
+{
+    MeshMover<MeshType> mover( m );
+    mover.apply( m, u );
+    return m;
+}
 } // Feel
 #endif /* __MeshMover_H */

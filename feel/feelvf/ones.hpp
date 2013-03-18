@@ -66,6 +66,7 @@ public:
 
     static const uint16_type imorder = 0;
     static const bool imIsPoly = true;
+    static const bool is_terminal = true;
 
     template<typename Func>
     struct HasTestFunction

@@ -1668,9 +1668,10 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
         if ( it->isGhostCell() )
             {
+                DVLOG(2) << "element " << it->id() << " is a ghost cell\n";
                 for (auto it_pid=it->idInPartition().begin(),en_pid=it->idInPartition().end() ; it_pid!=en_pid ; ++it_pid)
                     {
-                        //std::cout << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
+                        DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
                         const int procToSend=it_pid->first;
                         if (procToSend!=it->pidInPartition())
                             {

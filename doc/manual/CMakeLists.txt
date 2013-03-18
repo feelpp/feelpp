@@ -23,6 +23,12 @@
 #
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
+find_program(LATEX NAMES latex pdflatex)
+if ( LATEX )
+  option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex)" ON)
+else()
+  option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex)" OFF)
+endif()
 
 if ( FEELPP_ENABLE_MANUAL )
 include(UseLATEX OPTIONAL)

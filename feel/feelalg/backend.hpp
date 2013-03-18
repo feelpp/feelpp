@@ -593,6 +593,9 @@ public:
     bool showKSPConvergedReason() const { return M_showKSPConvergedReason; }
     bool showSNESConvergedReason() const { return M_showSNESConvergedReason; }
 
+    bool reusePrec() const { return M_reuse_prec; }
+    bool reuseJac() const { return M_reuse_jac; }
+
     bool reusePrecRebuildAtFirstNewtonStep() const { return M_reusePrecRebuildAtFirstNewtonStep; }
     bool reuseJacRebuildAtFirstNewtonStep() const { return M_reuseJacRebuildAtFirstNewtonStep; }
 
@@ -672,6 +675,9 @@ public:
     void setShowSNESMonitor( bool b ) { M_showSNESMonitor=b; }
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
     void setShowSNESConvergedReason( bool b ) { M_showSNESConvergedReason=b; }
+
+    void setReusePrec( bool b ) { M_reuse_prec=b; }
+    void setReuseJac( bool b) { M_reuse_jac=b; }
 
     void setReusePrecRebuildAtFirstNewtonStep(bool b) { M_reusePrecRebuildAtFirstNewtonStep=b; }
     void setReuseJacRebuildAtFirstNewtonStep(bool b) { M_reuseJacRebuildAtFirstNewtonStep=b; }
