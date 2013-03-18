@@ -275,7 +275,7 @@ public:
             e->save();
 
             //some statistics
-            LOG(INFO)<<"rbframework - Computational time during online step ( "<<n<<" evaluations )\n";
+            LOG(INFO)<<"Computational time during online step ( "<<n<<" evaluations )\n";
             if( option("eim.use-dimension-max-functions").as<bool>() )
                 LOG(INFO)<<option("eim.dimension-max").as<int>()<<" eim basis functions were used\n";
             Eigen::MatrixXf::Index index;
