@@ -1981,7 +1981,7 @@ class Inverse
 
     template<typename GeoElem>
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge,
-             WorldComm const& worldComm = Environment::worldComm() )
+             WorldComm const& worldComm = Environment::worldComm().subWorldCommSeq() )
         :
         _M_gm( __gm ),
         _M_xref( __gm->dim() ),
@@ -2019,7 +2019,7 @@ class Inverse
 
     template<typename GeoElem>
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge, mpl::int_<1>/**/ ,
-             WorldComm const& worldComm = Environment::worldComm())
+             WorldComm const& worldComm = Environment::worldComm().subWorldCommSeq())
     :
         _M_gm( __gm ),
         _M_xref( __gm->dim() ),
