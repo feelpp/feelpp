@@ -31,6 +31,10 @@
 namespace Feel
 {
 
+std::string
+prefixvm( std::string const& prefix,
+          std::string const& opt,
+          std::string const& sep = "." );
 
 
 po::options_description
@@ -64,6 +68,18 @@ generic_options()
 }
 
 po::options_description
+gmsh_options( std::string const& prefix )
+{
+    po::options_description _options( "Gmsh " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" );
+
+    return _options;
+
+}
+
+po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
@@ -87,6 +103,9 @@ feel_options( std::string const& prefix  )
 
         /* exporter options */
         .add( exporter_options( prefix ) )
+
+        /* gmsh options */
+        .add( gmsh_options( prefix ) )
 
         /* material options */
         .add( material_options( prefix ) )

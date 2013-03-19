@@ -61,6 +61,9 @@ makeOptions()
     po::options_description simgetoptions( "test_eim options" );
     simgetoptions.add_options()
     ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "chrono-online-step" , po::value<bool>()->default_value( false ), "give acces to computational time during online step if true" )
+    ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
+    ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
     return simgetoptions.add( eimOptions() ).add( Feel::feel_options() );
 }
@@ -92,7 +95,7 @@ class model:
 public:
     typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef FunctionSpace<mesh_type,bases<Lagrange<1> > > space_type;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<3> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
@@ -110,10 +113,12 @@ public:
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
+    typedef Eigen::VectorXd vectorN_type;
+
     model()
         :
         Simget(),
-        meshSize( this->vm()["hsize"].as<double>() )
+        meshSize( option("hsize").as<double>() )
         {
 
             mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -124,6 +129,7 @@ public:
                                                  _h=0.025 ) );
 
             Xh =  space_type::New( mesh );
+            LOG(INFO) << " nb dofs : "<<Xh->nDof()<<"\n";
             BOOST_CHECK( Xh );
             u = Xh->element();
             Dmu = parameterspace_type::New();
@@ -174,7 +180,8 @@ public:
                            _name="mu0" );
             BOOST_TEST_MESSAGE( "create e1 done" );
             M_funs.push_back( e1 );
-            BOOST_CHECK_EQUAL( e1->mMax(), 1 );
+            if ( ! option("eim.use-dimension-max-functions").as<bool>() )
+                BOOST_CHECK_EQUAL( e1->mMax(), 1 );
 
             LOG(INFO) << "=== mu(0) x === \n";
             auto e2 = eim( _model=eim_no_solve(this),
@@ -239,22 +246,54 @@ public:
         {
             auto e = exporter( _mesh=mesh, _name=this->about().appName() );
             auto S = Dmu->sampling();
-            S->logEquidistribute(10);
+            int n = option("n-eval").as<int>();
+            LOG(INFO)<<"will compute "<<n<<" evaluations\n";
+            bool chrono = option("chrono-online-step").as<bool>();
+            bool cvg_study = option("cvg-study").as<bool>();
+            S->logEquidistribute(n);
+            int fun_number=0;
+            std::vector<vectorN_type> time_vector( M_funs.size() );
             BOOST_FOREACH( auto fun, M_funs )
             {
+                time_vector[fun_number].resize( n );
+                int mu_number=0;
                 BOOST_FOREACH( auto p, *S )
                 {
-                    LOG(INFO) << "evaluate model at p = " << p << "\n";
-                    auto v = fun->operator()( p );
-                    LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
+                    if( ! chrono )
+                    {
+                        LOG(INFO) << "evaluate model at p = " << p << "\n";
+                        auto v = fun->operator()( p );
+                        e->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
+                        LOG(INFO) << "evaluate eim interpolant at p = " << p << "\n";
+                    }
+                    if( cvg_study )
+                    {
+                        fun->studyConvergence( p );
+                    }
+                    boost::mpi::timer timer;
                     auto w = fun->interpolant( p );
-
-                    e->add( (boost::format( "%1%(%2%)" ) % fun->name() % p(0) ).str(), v );
+                    double t=timer.elapsed();
                     e->add( (boost::format( "%1%-eim(%2%)" ) % fun->name() % p(0) ).str(), w );
-
+                    time_vector[fun_number]( mu_number )=t;
+                    mu_number++;
                 }
+                fun_number++;
             }
             e->save();
+
+            //some statistics
+            LOG(INFO)<<"Computational time during online step ( "<<n<<" evaluations )\n";
+            if( option("eim.use-dimension-max-functions").as<bool>() )
+                LOG(INFO)<<option("eim.dimension-max").as<int>()<<" eim basis functions were used\n";
+            Eigen::MatrixXf::Index index;
+            for(int expression=0; expression<time_vector.size(); expression++)
+            {
+                LOG(INFO)<<"expression number "<<expression<<"\n";
+                double min = time_vector[expression].minCoeff(&index);
+                double max = time_vector[expression].maxCoeff(&index);
+                double mean = time_vector[expression].mean();
+                LOG(INFO)<<"min : "<<min<<" - max : "<<max<<" - mean : "<<mean<<std::endl;
+            }
 
         }
     void run( const double*, long unsigned int, double*, long unsigned int ) {}
@@ -411,7 +450,7 @@ BOOST_AUTO_TEST_SUITE( eimsuite )
 
 BOOST_AUTO_TEST_CASE( test_eim1 )
 {
-    BOOST_TEST_MESSAGE( "test_eim1 done" );
+    BOOST_TEST_MESSAGE( "test_eim1 starts..." );
 
     Application app;
     app.add( new model );
@@ -422,7 +461,7 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
 }
 BOOST_AUTO_TEST_CASE( test_eim2 )
 {
-    BOOST_TEST_MESSAGE( "test_eim2 done" );
+    BOOST_TEST_MESSAGE( "test_eim2 starts..." );
 
     Application app;
     app.add( new model_circle );

@@ -93,7 +93,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       PATH
       ${CMAKE_SYSTEM_PREFIX_PATH}
       PATH_SUFFIXES
-      lib ../lib)
+      lib )
   endif(DEFINED ENV{GMSH_DIR})
 
   if( NOT GMSH_LIBRARY )

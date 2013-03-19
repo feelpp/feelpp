@@ -1196,7 +1196,8 @@ OperatorInterpolation<DomainSpaceType,
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
 
-    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
     auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
 
     for ( size_type k=0 ; k<memmapGdof[proc_id].size() ; ++k)
@@ -1438,7 +1439,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     matrix_node_type verticesOfEltSearched;
 
     // random (just to start)
-    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    //size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithId(this->domainSpace()->mesh()->worldComm().localRank())->id();
+    size_type eltIdLocalised = this->domainSpace()->mesh()->beginElementWithProcessId(this->domainSpace()->mesh()->worldComm().localRank())->id();
     auto const& eltRandom = this->domainSpace()->mesh()->element(eltIdLocalised);
 
     std::vector<bool> dof_done( this->dualImageSpace()->nLocalDof(), false);
