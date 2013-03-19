@@ -76,6 +76,7 @@ class PolynomialSet
     :
         public boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > >
 {
+    typedef boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > > super_enable_shared_from_this;
 public:
 
     /** @name Constants
@@ -1004,7 +1005,7 @@ public:
     precompute_ptrtype
     preCompute( points_type const& P )
     {
-        return precompute_ptrtype( new PreCompute( this->shared_from_this(), P ) );
+        return precompute_ptrtype( new PreCompute( super_enable_shared_from_this::shared_from_this(), P ) );
     }
 
     typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
