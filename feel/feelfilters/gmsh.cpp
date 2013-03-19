@@ -92,7 +92,8 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_shear( 0 ),
     M_recombine( 0 ),
     M_refine_levels( 0 ),
-    M_substructuring( false )
+    M_substructuring( false ),
+    M_periodic()
 {
     this->setReferenceDomain();
 }
@@ -113,7 +114,8 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_shear( __g.M_shear ),
     M_recombine( __g.M_recombine ),
     M_refine_levels( __g.M_refine_levels ),
-    M_substructuring( __g.M_substructuring )
+    M_substructuring( __g.M_substructuring ),
+    M_periodic( __g.M_periodic )
 {}
 Gmsh::~Gmsh()
 {}

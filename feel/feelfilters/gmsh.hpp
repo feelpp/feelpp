@@ -58,6 +58,8 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
+class PeriodicEntities: public std::map<int,std::pair<int,int> > {};
+
 enum GMSH_PARTITIONER
 {
     GMSH_PARTITIONER_CHACO = 1,
@@ -166,6 +168,7 @@ public:
                 M_usePhysicalNames = __g.M_usePhysicalNames;
                 M_shear = __g.M_shear;
                 M_refine_levels = __g.M_refine_levels;
+                M_periodic = __g.M_periodic;
             }
 
             return *this;
@@ -230,6 +233,8 @@ public:
         {
             return M_name;
         }
+
+    PeriodicEntities const& periodic() const { return M_periodic; }
 
     /**
      * \return bounding box
@@ -530,6 +535,10 @@ public:
             M_recombine = _recombine;
         }
 
+    void setPeriodic( PeriodicEntities const& p )
+        {
+            M_periodic = p;
+        }
     //@}
 
     /** \name  Methods
@@ -647,6 +656,8 @@ protected:
     int M_refine_levels;
 
     bool M_substructuring;
+
+    PeriodicEntities M_periodic;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -887,7 +898,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( format,         *, option(_name="gmsh.format").as<int>() )
+      ( format,         *, option(_name="gmsh.format").template as<int>() )
       ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
       ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
       ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
@@ -895,6 +906,7 @@ BOOST_PARAMETER_FUNCTION(
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
+      ( periodic,        *, PeriodicEntities() )
       ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
@@ -918,6 +930,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setMshFileByPartition( partition_file );
         desc->setRefinementLevels( refine );
         desc->setFileFormat( (GMSH_FORMAT)format );
+        desc->setPeriodic( periodic );
 
         std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
@@ -1235,15 +1248,20 @@ unitSegment()
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
-inline
-boost::shared_ptr<Mesh<Simplex<2> > >
-unitSquare()
+BOOST_PARAMETER_FUNCTION(
+    ( boost::shared_ptr<Mesh<Simplex<2> > > ),
+    unitSquare,
+    tag,
+    ( optional
+      ( periodic,       *, PeriodicEntities() )
+        ) )
 {
     return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
                           _desc=domain( _name="square",
                                         _shape="hypercube",
                                         _dim=2,
-                                        _h=Environment::vm(_name="mesh2d.hsize").as<double>() ) );
+                                        _h=Environment::vm(_name="mesh2d.hsize").as<double>(),
+                                        _periodic=periodic ) );
 }
 
 /**

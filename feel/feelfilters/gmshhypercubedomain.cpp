@@ -176,6 +176,16 @@ GmshHypercubeDomain::getDescription2D() const
          << "Line Loop(5) = {1,2,3,4};\n"
          << "Plane Surface(6) = {5};\n";
 
+    if ( !this->periodic().empty() )
+    {
+        std::for_each( this->periodic().begin(),
+                      this->periodic().end(),
+                       [&ostr]( std::pair<int,std::pair<int,int> > const& p )
+                       {
+                           CHECK( p.first == 1 ) << "Invalid periodic entity dimension : " << p.first << ",  should be 1";
+                           ostr << "Periodic Line ( " << p.second.first << " ) = { " << p.second.second << " };\n";
+                      } );
+    }
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Line(1) = {1};\n"

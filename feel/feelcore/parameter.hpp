@@ -206,6 +206,7 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( components )
     BOOST_PARAMETER_NAME( periodicity )
+    BOOST_PARAMETER_NAME( periodic )
 
     BOOST_PARAMETER_NAME( collect_garbage )
 
