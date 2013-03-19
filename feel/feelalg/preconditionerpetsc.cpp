@@ -430,7 +430,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string 
     KSP* subksps;
 
     // the number of blocks on this processor
-    int n_local;
+    int n_local = 1;
 
     // The global number of the first block on this processor.
     // This is not used, so we just pass PETSC_NULL instead.
