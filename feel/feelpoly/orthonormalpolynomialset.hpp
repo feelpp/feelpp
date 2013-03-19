@@ -283,13 +283,14 @@ class OrthonormalPolynomialSet
 {
 public:
     template<uint16_type N,
+             uint16_type RealDim,
              typename T = double,
              typename Convex = Simplex<N> >
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,N,PolySetType,T,TheTAG,Simplex> >,
-                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,N,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
+                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Simplex> >,
+                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
     typedef result_type type;
     };
 
