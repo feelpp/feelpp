@@ -1615,7 +1615,9 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
 
     // basis context
-    typedef typename basis_type::template Context<vm::POINT, basis_type, gm_type, geoelement_type, pts_gmc_type::context> basis_context_type;
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<mpl::void_>,
+                              mpl::identity<typename basis_0_type::template Context<vm::POINT, basis_0_type, gm_type, geoelement_type, pts_gmc_type::context> > >::type::type basis_context_type;
     typedef boost::shared_ptr<basis_context_type> basis_context_ptrtype;
 
     // dof
@@ -1659,6 +1661,13 @@ public:
         ~Context() {}
 
         void add( node_type t )
+            {
+                add( t, mpl::bool_<is_composite>() );
+            }
+        void add( node_type t, mpl::bool_<true> )
+            {
+            }
+        void add( node_type t, mpl::bool_<false> )
             {
                 // add point t to list of points
                 M_t.push_back( t );
