@@ -178,6 +178,13 @@ testFspaceContext()
     solution_r[1] = r_t2;
     solution_r[2] = r_t3;
 
+    boost::timer t;
+    auto v1 = evaluateFromContext( _context=ctx, _expr=Px() );
+    std::cout << "v1 = " << v1 << " time: " << t.elapsed() << "s\n";t.restart();
+    auto v2 = evaluateFromContext( _context=ctx, _expr=idv(px) );
+    std::cout << "v2 = " << v2 << " time: " << t.elapsed() << "s\n";
+    BOOST_CHECK_SMALL( (v1-v2).norm(), 1e-13 );
+
     BOOST_TEST_MESSAGE( "start check\n" );
     //verification step
     for( int i=0; i<ctx.nPoints(); i++)
