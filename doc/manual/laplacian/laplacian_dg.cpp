@@ -45,7 +45,7 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
-    auto a = form2( _trial=Vh, _test=Vh, _pattern=Pattern::EXTENDED );
+    auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a +=integrate( internalfaces( mesh ),

@@ -42,6 +42,7 @@ template<uint16_type Dim,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
+         uint16_type TheTAG,
          template<uint16_type,uint16_type,uint16_type> class Convex>
 class OrthonormalPolynomialSet;
 }

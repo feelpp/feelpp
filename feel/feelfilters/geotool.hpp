@@ -1143,6 +1143,7 @@ public:
           ( name, ( std::string ) )
         ) //required
         ( optional
+          ( format,         *, option(_name="gmsh.format").template as<int>() )
           ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
           ( refine,          *( boost::is_integral<mpl::_> ), 0 )
           ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
@@ -1169,6 +1170,7 @@ public:
             Gmsh gmsh( _mesh_type::nDim, _mesh_type::nOrder, worldcomm );
             gmsh.setRecombine( _mesh_type::shape_type::is_hypercube );
             gmsh.setRefinementLevels( refine );
+            gmsh.setFileFormat( (GMSH_FORMAT)format );
             gmsh.setNumberOfPartitions( partitions );
             gmsh.setPartitioner( partitioner );
             gmsh.setMshFileByPartition( partition_file );
