@@ -1615,6 +1615,7 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
 
     // basis context
+    //typedef typename basis_type::template Context<vm::POINT, basis_type, gm_type, geoelement_type, pts_gmc_type::context> basis_context_type;
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<mpl::void_>,
                               mpl::identity<typename basis_0_type::template Context<vm::POINT, basis_0_type, gm_type, geoelement_type, pts_gmc_type::context> > >::type::type basis_context_type;
@@ -1661,31 +1662,54 @@ public:
         ~Context() {}
 
         void add( node_type t )
-            {
+        {
                 add( t, mpl::bool_<is_composite>() );
-            }
+        }
         void add( node_type t, mpl::bool_<true> )
-            {
-            }
+        {
+        }
         void add( node_type t, mpl::bool_<false> )
-            {
-                // add point t to list of points
-                M_t.push_back( t );
+        {
+            LOG(INFO)<<"add point\n";
 
-                // localise t in space, find geometrical element in which t
-                // belongs
-                matrix_node_type m( mesh_type::nDim, 1 );
-                for(int i = 0; i < mesh_type::nDim; ++i )
-                    m(i,0) = t(i);
-                auto loc =  M_Xh->mesh()->tool_localization();
-                loc->run_analysis( m, invalid_size_type_value );
+            //rank of the current processor
+            int proc_number = Environment::worldComm().globalRank();
+
+            //total number of processors
+            int nprocs = Environment::worldComm().globalSize();
+
+            // add point t to list of points
+            M_t.push_back( t );
+
+            // localise t in space, find geometrical element in which t
+            // belongs
+            matrix_node_type m( mesh_type::nDim, 1 );
+            for(int i = 0; i < mesh_type::nDim; ++i )
+                m(i,0) = t(i);
+            auto loc =  M_Xh->mesh()->tool_localization();
+            loc->setExtrapolation( false );
+            auto analysis = loc->run_analysis( m, invalid_size_type_value );
+            auto found_points = analysis.template get<0>();
+            bool found = found_points[0];
+
+            std::vector<int> found_pt( nprocs, 0 );
+            std::vector<int> global_found_pt( nprocs, 0 );
+
+            if( found ) //we are on the proc that have the searched point
+            {
+
+                found_pt[proc_number]=1;
+
                 auto it = loc->result_analysis_begin();
                 auto en = loc->result_analysis_end();
                 DCHECK( boost::next(it) == en ) << "Logic problem in finding one point in the mesh\n";
                 auto eid = it->first;
                 auto xref = boost::get<1>( *(it->second.begin()) );
-                DVLOG(2) << "found point " << t << " in element " << eid << "\n";
+                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<proc_number<<"\n";
                 DVLOG(2) << "  - reference coordinates " << xref << "\n";
+
+                LOG(INFO) << "found point " << t << " in element " << eid << " on proc "<<proc_number<<"\n";
+                LOG(INFO) << "  - reference coordinates " << xref << "\n";
 
                 typename basis_type::points_type p(mesh_type::nDim,1);
 
@@ -1708,15 +1732,55 @@ public:
                 this->push_back( ctx );
                 DVLOG(2) << "Context size: " << this->size() << "\n";
 
-            }
+                if ( nprocs > 1 )
+                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+                else
+                    global_found_pt[ 0 ] = found_pt[ 0 ];
 
-        int nPoints()
+
+            }//if( found )
+            else
+            {
+                if ( nprocs > 1 )
+                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+
+            }//not found case
+
+            //verify that the point is on a proc
+            bool found_on_a_proc = false;
+            int i;
+            for (i = 0 ; i < global_found_pt.size(); ++i )
+            {
+                if ( global_found_pt[i] != 0 )
+                {
+                    DVLOG(2) << "processor " << i << " has the point " << t << "\n";
+                    found_on_a_proc = true;
+                    M_t_proc.push_back(i);
+                    break;
+                }
+            }
+            CHECK( found_on_a_proc ) << "the point " << t << " was not found ! \n";
+
+
+        }//add ( non composite case )
+
+        int nPoints() const
         {
             return M_t.size();
         }
 
+        int processorHavingPoint( int point_number ) const
+        {
+            return M_t_proc[point_number];
+        }
+
+    private:
+
         std::vector<node_type> M_t;
+        std::vector<int> M_t_proc;//point number i is on proc M_t_proc[i]
         functionspace_ptrtype M_Xh;
+
+
     };
     /**
      * \return function space context
@@ -2256,19 +2320,60 @@ public:
         Eigen::Matrix<value_type, Eigen::Dynamic, 1>
         evaluate( functionspace_type::Context const & context ) const
         {
+            //rank of the current processor
+            int proc_number = Environment::worldComm().globalRank();
+
+            //total number of processors
+            int nprocs = Environment::worldComm().globalSize();
+
             Eigen::Matrix<value_type, Eigen::Dynamic, 1> r( context.size() );
             auto it = context.begin();
             auto en = context.end();
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
-            for( int i = 0 ; it != en; ++it, ++i )
+            if( context.size() > 0 )
             {
-                v[0].setZero(1);
-                id( *(*it), v );
-                r(i) = v[0]( 0, 0 );
+                for( int i = 0 ; it != en; ++it, ++i )
+                {
+                    v[0].setZero(1);
+                    id( *(*it), v );
+                    r(i) = v[0]( 0, 0 );
+                }
             }
-            return r;
+
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> union_r ( context.nPoints() );
+
+            if( nprocs > 1 )
+            {
+                int index=0;//the proc may contains severals points se we need to have
+                            //an index to insert values
+
+                for(int pt_number=0; pt_number<context.nPoints(); pt_number++)
+                {
+                    int proc_having_point = context.processorHavingPoint(pt_number);
+                    //the evaluation was done only on one proc so need to broadcast
+                    if( proc_number == proc_having_point )
+                    {
+                        boost::mpi::broadcast( Environment::worldComm() , r(index) , proc_number );
+                        union_r( pt_number ) = r(index);
+                        index++;//local index increases
+                    }
+                    else
+                    {
+                        double r_from_other ;
+                        boost::mpi::broadcast( Environment::worldComm() , r_from_other , proc_having_point );
+                        //union_r.resize(union_r.rows()+r_from_other.rows());
+                        union_r( pt_number ) = r_from_other;
+                    }
+                }
+            }// nprocs > 1
+            else
+            {
+                union_r = r;
+            }
+
+            return union_r;
         }
 
         /*
@@ -2277,12 +2382,51 @@ public:
         double
         evaluate( functionspace_type::Context const & context, int i ) const
         {
-            CHECK( i >= 0 && i < context.size() ) << "the index " << i << " of the point where you want to evaluate the element is out of range\n";
+            //rank of the current processor
+            int proc_number = Environment::worldComm().globalRank();
+
+            //total number of processors
+            int nprocs = Environment::worldComm().globalSize();
+
+            int size = context.nPoints();
+            CHECK( i >= 0 && i < size ) << "the index " << i << " of the point where you want to evaluate the element is out of range\n";
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
+
+            double res=0;
+
+            CHECK( nprocs == 1 ) << "this function is not yet implemented in parallel ... \n";
+#if 0
+            if( nprocs > 1 )
+            {
+                int proc_having_point = context.processorHavingPoint( i );
+                LOG(INFO)<<"proc_having_point : " <<proc_having_point<<"\n";
+                //WARNING
+                //we need to search the rank of the point in the context
+                //for example the proc can have points t2,t10 and t20 so if we want to evaluate expression
+                //at t20 we need to do
+                //index=3
+                //id( *(context[index]) , v )
+
+                //the evaluation was done only on one proc so need to broadcast
+                if( proc_number == proc_having_point )
+                {
+                    int index=0;
+                    boost::mpi::broadcast( Environment::worldComm() , v[0](0,0) , proc_number );
+                    res = v[0](0,0);
+                }
+                else
+                    boost::mpi::broadcast( Environment::worldComm() , res , proc_having_point );
+
+            }
+            else
+            {
+            }
+#endif
             id( *(context[i]) , v );
-            return v[0](0,0);
+            res = v[0](0,0);
+            return res;
         }
 
         void
