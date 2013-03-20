@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-04-30
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,7 @@ template<uint16_type Dim,
          uint16_type RealDim,
          template<uint16_type> class PolySetType = Scalar,
          typename T = double,
+         uint16_type TheTAG = 0,
          template<uint16_type,uint16_type,uint16_type> class Convex = Simplex>
 class OrthonormalPolynomialSet
 {};
@@ -54,19 +55,21 @@ template<uint16_type Dim,
          uint16_type Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
-         typename T>
-class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, Simplex>
+         typename T,
+         uint16_type TheTAG>
+class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Simplex>
     :
 public PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType >
 {
     typedef PolynomialSet<Dubiner<Dim, RealDim, Order, Normalized<true>, T, StorageUBlas>, PolySetType > super;
 public:
 
+    static const uint16_type TAG = TheTAG;
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
     static const uint16_type nRealDim = RealDim;
     static const bool isTransformationEquivalent = true;
-    typedef OrthonormalPolynomialSet<Dim, Order,RealDim, PolySetType, T, Simplex> self_type;
+    typedef OrthonormalPolynomialSet<Dim, Order,RealDim, PolySetType, T, TheTAG, Simplex> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
@@ -133,9 +136,9 @@ public:
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, Simplex > toScalar() const
+    OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Simplex > toScalar() const
     {
-        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, Simplex >();
+        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Simplex >();
     }
 
     /**
@@ -161,16 +164,18 @@ template<uint16_type Dim,
          uint16_type Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
-         typename T>
-const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, Simplex>::nLocalDof;
+         typename T,
+         uint16_type TheTAG>
+const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, TheTAG, Simplex>::nLocalDof;
 
 
 template<uint16_type Dim,
          uint16_type Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
-         typename T>
-class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, Hypercube>
+         typename T,
+         uint16_type TheTAG>
+class OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Hypercube>
     :
 public PolynomialSet<Legendre<Dim, RealDim, Order, Normalized<true>, T>, PolySetType >
 {
@@ -182,7 +187,7 @@ public:
     static const uint16_type nRealDim = RealDim;
     static const bool isTransformationEquivalent = true;
 
-    typedef OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, Hypercube> self_type;
+    typedef OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType, T, TheTAG, Hypercube> self_type;
     typedef self_type component_basis_type;
 
     typedef typename super::polyset_type polyset_type;
@@ -243,9 +248,9 @@ public:
         this->setCoefficient( polyset_type::toType( m ), true );
     }
 
-    OrthonormalPolynomialSet<Dim, Order, RealDim,Scalar,T, Hypercube > toScalar() const
+    OrthonormalPolynomialSet<Dim, Order, RealDim,Scalar,T, TheTAG, Hypercube > toScalar() const
     {
-        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, Hypercube >();
+        return OrthonormalPolynomialSet<Dim, Order, RealDim, Scalar,T, TheTAG, Hypercube >();
     }
     std::string familyName() const
     {
@@ -265,28 +270,40 @@ template<uint16_type Dim,
          uint16_type Order,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
-         typename T>
-const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, Hypercube>::nLocalDof;
+         typename T,
+         uint16_type TheTAG>
+const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, TheTAG, Hypercube>::nLocalDof;
 } // detail
 /** \encond  */
 
 template<uint16_type Order,
-         template<uint16_type Dim> class PolySetType = Scalar>
+         template<uint16_type Dim> class PolySetType = Scalar,
+         uint16_type TheTAG=0 >
 class OrthonormalPolynomialSet
 {
 public:
     template<uint16_type N,
+             uint16_type RealDim,
              typename T = double,
              typename Convex = Simplex<N> >
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                mpl::identity<detail::OrthonormalPolynomialSet<N,Order,N,PolySetType,T,Simplex> >,
-                mpl::identity<detail::OrthonormalPolynomialSet<N,Order,N,PolySetType,T,Hypercube> > >::type::type result_type;
-        typedef result_type type;
+                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Simplex> >,
+                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
+    typedef result_type type;
     };
 
-    typedef OrthonormalPolynomialSet<Order,Scalar> component_basis_type;
+    template<uint16_type TheNewTAG>
+    struct ChangeTag
+    {
+        typedef OrthonormalPolynomialSet<Order,PolySetType,TheNewTAG> type;
+    };
+
+    typedef OrthonormalPolynomialSet<Order,Scalar,TheTAG> component_basis_type;
+
+    static const uint16_type nOrder =  Order;
+    static const uint16_type TAG = TheTAG;
 };
 
 } // Feel
