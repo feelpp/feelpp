@@ -148,7 +148,13 @@ template<typename CTX, typename ExprT>
 typename EvaluatorContext<CTX, ExprT>::element_type
 EvaluatorContext<CTX, ExprT>::operator()() const
 {
-    boost::timer __timer;
+    //boost::timer __timer;
+
+    //rank of the current processor
+    int proc_number = Environment::worldComm().globalRank();
+
+    //total number of processors
+    int nprocs = Environment::worldComm().globalSize();
 
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
@@ -167,6 +173,11 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
     element_type __v( npoints*shape::M );
     __v.setZero();
+
+    //local version of __v on each proc
+    element_type __localv( M_ctx.size()*shape::M );
+    __localv.setZero();
+
 
     if ( !M_ctx.empty() )
     {
@@ -187,10 +198,38 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
             for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
             {
-                __v( shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
+                __localv( shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
             }
         }
     }
+
+    //now every proc have filled localv ( if they have points )
+    //each proc has to fill __v
+    if( nprocs > 1 )
+    {
+        int index=0;//the proc may contains severals points se we need to have
+                    //an index to insert values
+
+        for(int p=0; p<npoints; p++)
+        {
+            int proc_having_point = M_ctx.processorHavingPoint(p);
+            if( proc_number == proc_having_point )
+            {
+                boost::mpi::broadcast( Environment::worldComm() , __localv(index) , proc_number );
+                __v( p ) = __localv( index );
+                index++;//local index increases
+            }
+            else
+            {
+                double contribution_from_other ;
+                boost::mpi::broadcast( Environment::worldComm() , contribution_from_other , proc_having_point );
+                __v( p ) = contribution_from_other ;
+            }
+        }
+    }// nprocs > 1
+    else
+        __v = __localv;
+
     return __v;
 }
 
