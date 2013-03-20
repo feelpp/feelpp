@@ -271,7 +271,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 new_face.setNumberOfPartitions( 1 );
                 new_face.setProcessId( old_face.processId() );
                 new_face.idInPartition().clear();
-                new_face.neighborPartitionIds().resize( 1,old_face.pidInPartition() );
+                new_face.neighborPartitionIds().clear();
 
                 // add it to the list of faces
                 auto addFaceRes = newMesh->addFace( new_face );
@@ -395,9 +395,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 new_elem.setNumberOfPartitions(2/*old_elem.numberOfPartitions()*/);
                 new_elem.setProcessId(old_elem.processId());
                 new_elem.idInPartition().clear();
-                std::vector<int> newNeighborPartitionIds(2);
-                newNeighborPartitionIds[0]=old_elem.pidInPartition();
-                newNeighborPartitionIds[1]=old_elem.processId();
+                std::vector<int> newNeighborPartitionIds(1);
+                newNeighborPartitionIds[0]=old_elem.processId();
                 new_elem.setNeighborPartitionIds( newNeighborPartitionIds );
 
                 // Loop over the nodes on this element.
