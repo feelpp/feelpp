@@ -32,6 +32,9 @@
 #include <fstream>
 
 #include <feel/feel.hpp>
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/Dense>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -67,6 +70,54 @@ makeAbout()
 }
 
 
+Eigen::VectorXd
+r( std::vector<node_type> vec )
+{
+    int size = vec.size();
+    Eigen::VectorXd res( vec.size() );
+    for(int i=0; i<size; i++)
+    {
+        double x = vec[i](0);
+        double y = vec[i](1);
+        res(i)=sqrt(x*x+y*y);
+    }
+    return res;
+}
+
+Eigen::VectorXd
+theta( std::vector<node_type> vec )
+{
+    int size = vec.size();
+    Eigen::VectorXd res( vec.size() );
+    for(int i=0; i<size; i++)
+    {
+        double x = vec[i](0);
+        double y = vec[i](1);
+        res(i)=2*atan(y/(x+sqrt(x*x+y*y)));
+    }
+    return res;
+}
+
+Eigen::VectorXd
+x( std::vector<node_type> vec )
+{
+    int size = vec.size();
+    Eigen::VectorXd res( vec.size() );
+    for(int i=0; i<size; i++)
+        res(i)=vec[i](0);
+    return res;
+}
+
+Eigen::VectorXd
+y( std::vector<node_type> vec )
+{
+    int size = vec.size();
+    Eigen::VectorXd res( vec.size() );
+    for(int i=0; i<size; i++)
+        res(i)=vec[i](1);
+    return res;
+}
+
 template<int Dim>
 void
 testFspaceContext()
@@ -76,58 +127,36 @@ testFspaceContext()
     auto Xh = Pch<1>( mesh );
     auto ctx = Xh->context();
     BOOST_TEST_MESSAGE( "functionspace defined\n" );
+
     //expression we want to evaluate
-    auto x = Px();
-    auto y = Py();
-    auto theta = 2*atan(Py()/(Px()+sqrt(Px()*Px()+Py()*Py())));
-    auto r= sqrt(Px()*Px()+Py()*Py());
+    auto exprX = Px();
+    auto exprY = Py();
+    auto exprTheta = 2*atan(Py()/(Px()+sqrt(Px()*Px()+Py()*Py())));
+    auto exprR= sqrt(Px()*Px()+Py()*Py());
 
     //projection on the mesh
-    auto px = vf::project( Xh , elements(mesh), x );
-    auto py = vf::project( Xh , elements(mesh), y );
-    auto ptheta = vf::project( Xh , elements(mesh), theta );
-    auto pr = vf::project( Xh , elements(mesh), r );
+    auto px = vf::project( Xh , elements(mesh), exprX );
+    auto py = vf::project( Xh , elements(mesh), exprY );
+    auto ptheta = vf::project( Xh , elements(mesh), exprTheta );
+    auto pr = vf::project( Xh , elements(mesh), exprR );
 
     BOOST_TEST_MESSAGE( "expression defined done\n" );
-    //nodes where we want evaluate expressions x,y,r,theta
-#if 0
-#if DIM==1
-    node_type t1; /*x*/ t1(0)=0.1;
-    ctx.add( t1 );
-    node_type t2; /*x*/ t2(0)=0.2;
-    ctx.add( t2 );
-    node_type t3; /*x*/ t3(0)=1;
-    ctx.add( t3 );
-#elif DIM==2
-    node_type t1; /*x*/ t1(0)=0.1; /*y*/ t1(1)=0.2;
-    ctx.add( t1 );
-    node_type t2; /*x*/ t2(0)=0.1; /*y*/ t2(1)=0.8;
-    ctx.add( t2 );
-    node_type t3; /*x*/ t3(0)=1; /*y*/ t3(1)=1;
-    ctx.add( t3 );
-#elif DIM==3
-    node_type t1; /*x*/ t1(0)=0.1; /*y*/ t1(1)=0.2; /*z*/ t1(2)=1;
-    ctx.add( t1 );
-    node_type t2; /*x*/ t2(0)=0.1; /*y*/ t2(1)=0.8; /*z*/ t2(2)=0.4;
-    ctx.add( t2 );
-    node_type t3; /*x*/ t3(0)=1; /*y*/ t3(1)=1; /*z*/ t2(2)=0.6;
-    ctx.add( t3 );
-#else
-    throw std::logic_error("ERROR with the dimension ( dim > 3 ) " );
-#endif
-#else
 
+
+    std::vector< node_type > vec_t;
     node_type t1(Dim), t2(Dim), t3(Dim);
-    if ( Dim >= 2 ) { /*x*/ t1(0)=0.1; /*y*/ t1(1)=0.2;}
-    if ( Dim >= 2 ) { /*x*/ t2(0)=0.1; /*y*/ t2(1)=0.8; }
-    if ( Dim >= 2 ) { /*x*/ t3(0)=1; /*y*/ t3(1)=1; }
+    /*x*/ t1(0)=0.1; /*y*/ t1(1)=0.2;
+    /*x*/ t2(0)=0.1; /*y*/ t2(1)=0.8;
+    /*x*/ t3(0)=1; /*y*/ t3(1)=1;
+    vec_t.push_back(t1);
+    vec_t.push_back(t2);
+    vec_t.push_back(t3);
+    BOOST_TEST_MESSAGE( "define pts done\n" );
+
     ctx.add( t1 );
     ctx.add( t2 );
     ctx.add( t3 );
-
-#endif
-
-    BOOST_TEST_MESSAGE( "define pts done\n" );
+    BOOST_TEST_MESSAGE( "pts added to ctx\n" );
 
     //evaluation on all nodes via functionspace and ctx
     auto px_evaluate = px.evaluate( ctx );
@@ -135,88 +164,38 @@ testFspaceContext()
     auto ptheta_evaluate = ptheta.evaluate( ctx );
     auto pr_evaluate = pr.evaluate( ctx );
 
-    LOG(INFO) << "px_evaluate=" << px_evaluate << "\n";
+    //boost::timer t;
+    auto evaluateX = evaluateFromContext( _context=ctx, _expr= exprX );
 
-    BOOST_TEST_MESSAGE( "evaluate expressions at pts done\n" );
+    auto evaluateY = evaluateFromContext( _context=ctx, _expr= exprY );
+    auto evaluateTheta = evaluateFromContext( _context=ctx, _expr= exprTheta );
+    auto evaluateR = evaluateFromContext( _context=ctx, _expr= exprR );
 
-    //true expressions (for verification)
-    double x_t1=t1(0);
-    double x_t2=t2(0);
-    double x_t3=t3(0);
-
-    double y_t1=t1(1);
-    double y_t2=t2(1);
-    double y_t3=t3(1);
-    double r_t1 = sqrt( x_t1*x_t1 + y_t1*y_t1 );
-    double r_t2 = sqrt( x_t2*x_t2 + y_t2*y_t2 );
-    double r_t3 = sqrt( x_t3*x_t3 + y_t3*y_t3 );
-    double theta_t1 = 2*atan(y_t1 / (x_t1 + r_t1 ) );
-    double theta_t2 = 2*atan(y_t2 / (x_t2 + r_t2 ) );
-    double theta_t3 = 2*atan(y_t3 / (x_t3 + r_t3 ) );
+    auto evaluateProjX = evaluateFromContext( _context=ctx, _expr=idv(px) );
+    auto evaluateProjY = evaluateFromContext( _context=ctx, _expr=idv(py) );
+    auto evaluateProjTheta = evaluateFromContext( _context=ctx, _expr=idv(ptheta) );
+    auto evaluateProjR = evaluateFromContext( _context=ctx, _expr=idv(pr) );
 
 
-    //store true expressions in a vectore
-    std::vector<double> solution_x, solution_y, solution_theta, solution_r;
-    solution_x.resize(ctx.nPoints());
-    solution_y.resize(ctx.nPoints());
-    solution_theta.resize(ctx.nPoints());
-    solution_r.resize(ctx.nPoints());
+    //true expressions evaluated at points vec_t
+    Eigen::VectorXd true_x ( vec_t.size() );      true_x = x ( vec_t );
+    Eigen::VectorXd true_y ( vec_t.size() );      true_y = y ( vec_t );
+    Eigen::VectorXd true_theta ( vec_t.size() );  true_theta = theta( vec_t );
+    Eigen::VectorXd true_r ( vec_t.size() );      true_r = r( vec_t );
 
-    //fill vectors solution
-    solution_x[0] = x_t1;
-    solution_x[1] = x_t2;
-    solution_x[2] = x_t3;
+    //verification
+    BOOST_CHECK_SMALL( (evaluateX-true_x).norm(), 1e-13 );
+    BOOST_CHECK_SMALL( (evaluateY-true_y).norm(), 1e-13 );
+    BOOST_CHECK_SMALL( (evaluateTheta-true_theta).norm(), 1e-13 );
+    BOOST_CHECK_SMALL( (evaluateR-true_r).norm(), 1e-13 );
 
-    // dim >=2
-    solution_y[0] = y_t1;
-    solution_y[1] = y_t2;
-    solution_y[2] = y_t3;
-    solution_theta[0] = theta_t1;
-    solution_theta[1] = theta_t2;
-    solution_theta[2] = theta_t3;
-    solution_r[0] = r_t1;
-    solution_r[1] = r_t2;
-    solution_r[2] = r_t3;
-
-    boost::timer t;
-    auto v1 = evaluateFromContext( _context=ctx, _expr=Px() );
-    std::cout << "v1 = " << v1 << " time: " << t.elapsed() << "s\n";t.restart();
-    auto v2 = evaluateFromContext( _context=ctx, _expr=idv(px) );
-    std::cout << "v2 = " << v2 << " time: " << t.elapsed() << "s\n";
-    BOOST_CHECK_SMALL( (v1-v2).norm(), 1e-13 );
-
-    BOOST_TEST_MESSAGE( "start check\n" );
-    //verification step
-    for( int i=0; i<ctx.nPoints(); i++)
-     {
-         //check for expression x
-         double evaluation_x = px_evaluate( i );
-         double evaluation_x_node = px.evaluate(ctx , i);
-         BOOST_CHECK_CLOSE( evaluation_x, evaluation_x_node, 1e-13 );
-         BOOST_CHECK_CLOSE( evaluation_x, solution_x[i], 1e-13 );
-         BOOST_CHECK_CLOSE( evaluation_x_node, solution_x[i], 1e-13 );
+    BOOST_CHECK_SMALL( (evaluateX-evaluateProjX).norm(), 1e-13 );
+    BOOST_CHECK_SMALL( (evaluateY-evaluateProjY).norm(), 1e-13 );
+    BOOST_CHECK_SMALL( (evaluateTheta-evaluateProjTheta).norm(), 1e-5 );
+    BOOST_CHECK_SMALL( (evaluateR-evaluateProjR).norm(), 1e-5 );
 
 
-#if 1 //DIM >= 2
-         //check for expression y
-         double evaluation_y = py_evaluate( i );
-         double evaluation_y_node = py.evaluate(ctx , i);
-         BOOST_CHECK_CLOSE( evaluation_y, evaluation_y_node, 1e-13 );
-         BOOST_CHECK_CLOSE( evaluation_y, solution_y[i], 1e-13 );
-
-         //check for expression theta
-         double evaluation_theta = ptheta_evaluate( i );
-         double evaluation_theta_node = ptheta.evaluate(ctx , i);
-         BOOST_CHECK_CLOSE( evaluation_theta, evaluation_theta_node, 1e-13 );
-         BOOST_CHECK_CLOSE( evaluation_theta, solution_theta[i], 1e-13 );
-
-         //check for expression r
-         double evaluation_r = pr_evaluate( i );
-         double evaluation_r_node = pr.evaluate(ctx , i);
-         BOOST_CHECK_CLOSE( evaluation_r, evaluation_r_node, 1e-13 );
-         BOOST_CHECK_CLOSE( evaluation_r, solution_r[i], 1e-13 );
-#endif
-     }
+    //BOOST_CHECK_CLOSE( evaluation_x, solution_x[i], 1e-13 );
 
 
 } // TestFspaceContext ::run
