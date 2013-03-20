@@ -946,6 +946,8 @@ public:
             return res;
         }
 
+    virtual vector_type operator()( context_type const& ctx, parameter_type const& mu ) = 0;
+    virtual vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu ) = 0;
 
     virtual element_type const& q( int m )  const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;

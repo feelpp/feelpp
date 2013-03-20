@@ -61,7 +61,7 @@ makeOptions()
     po::options_description simgetoptions( "test_eim options" );
     simgetoptions.add_options()
     ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
-    ( "chrono-online-step" , po::value<bool>()->default_value( false ), "give acces to computational time during online step if true" )
+    ( "chrono-online-step" , po::value<bool>()->default_value( false ), "give access to computational time during online step if true" )
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
     ;
