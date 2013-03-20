@@ -266,16 +266,16 @@ template<uint16_type N,
 class CrouzeixRaviart
     :
 public FiniteElement<typename mpl::if_<mpl::bool_<Convex<N,1,N>::is_simplex>,
-    mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex> >,
-    mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
+                                       mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, TheTAG, Convex> >,
+                                       mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
     detail::CrouzeixRaviartDual,
     PointSetEquiSpaced >
 {
     typedef FiniteElement<typename mpl::if_<mpl::bool_<Convex<N,1,N>::is_simplex>,
-            mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, Convex> >,
-            mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
-            detail::CrouzeixRaviartDual,
-            PointSetEquiSpaced > super;
+                                            mpl::identity<Feel::detail::OrthonormalPolynomialSet<N, 1, RealDim, PolySetType, T, TheTAG, Convex> >,
+                                            mpl::identity<fem::detail::RannacherTurekPolynomialSet<N, PolySetType, T> > >::type::type,
+                          detail::CrouzeixRaviartDual,
+                          PointSetEquiSpaced > super;
 public:
 
     BOOST_STATIC_ASSERT( N > 1 );

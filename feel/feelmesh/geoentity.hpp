@@ -498,6 +498,13 @@ public:
     {
         return M_neighor_pids;
     }
+    /**
+     * \return the number of partition the element is linked to
+     */
+    std::vector<int> & neighborPartitionIds()
+    {
+        return M_neighor_pids;
+    }
 
     /**
      * set id in a partition pid of the entity
@@ -519,6 +526,14 @@ public:
      * \return idInPartition map
      */
     std::map<uint16_type, size_type> const& idInPartition() const
+    {
+        return M_idInPartition;
+    }
+
+    /**
+     * \return idInPartition map
+     */
+    std::map<uint16_type, size_type> & idInPartition()
     {
         return M_idInPartition;
     }
