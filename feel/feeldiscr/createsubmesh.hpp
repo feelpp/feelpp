@@ -575,9 +575,6 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     } // if ( nProc > 1 )
 #endif
 
-    Environment::worldComm().localComm().barrier();
-    std::cout << "finish creatsubmesh" << std::endl;
-
     VLOG(2) << "submesh created\n";google::FlushLogFiles(google::GLOG_INFO);
     newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
 
