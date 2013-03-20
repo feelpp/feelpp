@@ -946,21 +946,6 @@ public:
             return res;
         }
 
-    vector_type operator()( context_type const& ctx, parameter_type const& mu )
-        {
-            // use ctx to select only the elements where we evaluate the
-            // function at mu this would speedup tremendously this step, be
-            // careful that it should be done only at the projection step
-            element_type v = this->operator()( mu );
-            return v.evaluate( ctx );
-        }
-    vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu )
-        {
-            // use ctx to select only the elements where we evaluate the function at mu
-            // this would speedup tremendously this step
-            element_type v = this->operator()( T, mu );
-            return v.evaluate( ctx );
-        }
 
     virtual element_type const& q( int m )  const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
@@ -1004,7 +989,7 @@ public:
 
     typedef typename super::eim_type eim_type;
     typedef typename super::eim_ptrtype eim_ptrtype;
-
+    typedef typename super::context_type context_type;
     typedef typename super::vector_type vector_type;
 
     EIMFunction( po::variables_map const& vm,
@@ -1027,7 +1012,9 @@ public:
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
+#if !NDEBUG
             M_mu.check();
+#endif
             M_u = M_model->solve( mu );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -1035,11 +1022,26 @@ public:
     element_type operator()( solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
+#if !NDEBUG
             M_mu.check();
+#endif
             // no need to solve we have already an approximation (typically from
             // an nonlinear iteration procedure)
             M_u = T;
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
+        }
+
+    vector_type operator()( context_type const& ctx, parameter_type const& mu )
+        {
+            M_mu=mu;
+            M_u = M_model->solve( mu );
+            return evaluateFromContext( _context=ctx, _expr=M_expr );
+        }
+    vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu )
+        {
+            M_mu = mu;
+            M_u = T;
+            return evaluateFromContext( _context=ctx, _expr=M_expr );
         }
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
