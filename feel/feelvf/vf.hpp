@@ -113,6 +113,7 @@ struct ExtractGm
 //#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelvf/evaluator.hpp>
+#include <feel/feelvf/evaluatorcontext.hpp>
 
 
 

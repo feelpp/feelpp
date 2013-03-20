@@ -203,6 +203,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( element )
     BOOST_PARAMETER_NAME( parameter )
     BOOST_PARAMETER_NAME( sampling )
+    BOOST_PARAMETER_NAME( context )
 
     BOOST_PARAMETER_NAME( components )
     BOOST_PARAMETER_NAME( periodicity )
