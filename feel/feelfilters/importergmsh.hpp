@@ -865,6 +865,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
         point_type __pt( __i,__n, __isonboundary[ __i ] );
         __pt.setOnBoundary( __isonboundary[ __i ] );
+        __pt.setProcessId( invalid_uint16_type_value );
 
         if ( has_parametric_nodes )
         {
@@ -1220,6 +1221,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     {
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
+            if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
         }
@@ -1330,6 +1332,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     {
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
+            if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
         }
