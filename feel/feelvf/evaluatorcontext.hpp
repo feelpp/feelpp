@@ -193,6 +193,10 @@ EvaluatorContext<CTX, ExprT>::operator()() const
              * context if the reference points are the same
              */
             map_gmc_type mapgmci( fusion::make_pair<vf::detail::gmc<0> >(ctx->gmContext() ) );
+
+            //project the expression only on elements containing points
+            //auto proj_expr = vf::project( _space=ctx->functionSpace(), _expr=M_expr , _range= );
+
             t_expr_type tensor_expr( M_expr, mapgmci );
             tensor_expr.update( mapgmci );
 
