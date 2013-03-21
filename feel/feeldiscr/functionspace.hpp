@@ -1774,6 +1774,11 @@ public:
             return M_t_proc[point_number];
         }
 
+        functionspace_ptrtype functionSpace() const
+        {
+            return M_Xh;
+        }
+
     private:
 
         std::vector<node_type> M_t;
