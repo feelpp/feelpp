@@ -167,6 +167,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     typedef typename t_expr_type::value_type value_type;
     typedef typename t_expr_type::shape shape;
 
+
     CHECK( shape::M == 1 ) << "Invalid expression shape " << shape::M << " should be 1";
 
     int npoints = M_ctx.nPoints();
@@ -182,9 +183,15 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     if ( !M_ctx.empty() )
     {
 
+        auto Xh = M_ctx.functionSpace();
+        context_type vec_ctx ( Xh );
+
         for ( int p = 0; it!=en ; ++it, ++p )
         {
             auto const& ctx = *it;
+            //std::vector<typename context_type::value_type> vec_ctx;
+            vec_ctx.clear();
+            vec_ctx.push_back( *it );
 
             /**
              * be careful there is no guarantee that the set of contexts will
@@ -194,9 +201,16 @@ EvaluatorContext<CTX, ExprT>::operator()() const
              */
             map_gmc_type mapgmci( fusion::make_pair<vf::detail::gmc<0> >(ctx->gmContext() ) );
 
-            //project the expression only on elements containing points
-            //auto proj_expr = vf::project( _space=ctx->functionSpace(), _expr=M_expr , _range= );
+            //element associated with the geometrical mapping
+            auto const& e = ctx->gmContext()->element();
 
+            //project the expression only on element containing point
+            auto proj_expr = vf::project( _space=Xh, _expr=M_expr , _range=idedelements( Xh->mesh(), e.id() ) );
+
+            //evaluate the projected expression at point p
+            auto val = proj_expr.evaluate( vec_ctx );
+            __localv( p ) = val( 0 );
+#if 0
             t_expr_type tensor_expr( M_expr, mapgmci );
             tensor_expr.update( mapgmci );
 
@@ -204,6 +218,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             {
                 __localv( shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
             }
+#endif
         }
     }
 
