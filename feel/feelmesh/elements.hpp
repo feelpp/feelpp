@@ -246,6 +246,20 @@ public:
                 e.point( i ).addElement( e.id() );
         }
     };
+
+    /**
+     * @class ElementConnectPointToElement
+     * @brief connect point to element
+     *
+     */
+    struct ElementGhostConnectPointToElement
+    {
+        void operator()( element_type& e )
+        {
+            for ( int i = 0; i < e.numPoints; ++i )
+                e.point( i ).addElementGhost( e.processId(),e.id() );
+        }
+    };
     /// \endcond
 
     //@}
