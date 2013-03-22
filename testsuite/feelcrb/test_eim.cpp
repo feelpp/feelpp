@@ -60,7 +60,6 @@ makeOptions()
 {
     po::options_description simgetoptions( "test_eim options" );
     simgetoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
     ( "chrono-online-step" , po::value<bool>()->default_value( false ), "give access to computational time during online step if true" )
     ( "n-eval", po::value<int>()->default_value( 10 ), "number of evaluations" )
     ( "cvg-study" , po::value<bool>()->default_value( false ), "run a convergence study if true" )
@@ -121,12 +120,17 @@ public:
         meshSize( option("hsize").as<double>() )
         {
 
+
+            mesh = unitSquare();
+            //to modify hsize use --mesh2d.hsize in command line
+#if 0
             mesh = createGMSHMesh( _mesh=new mesh_type,
                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % 2 ).str() ,
                                                  _usenames=true,
                                                  _shape="hypercube",
                                                  _dim=2,
                                                  _h=0.025 ) );
+#endif
 
             Xh =  space_type::New( mesh );
             LOG(INFO) << " nb dofs : "<<Xh->nDof()<<"\n";
