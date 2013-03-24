@@ -5849,9 +5849,7 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigned long P, mpl::bool_<true> )
 {
-
-
-    std::cout<<"N = "<<N<<" et P = "<<P<<std::endl;
+    //std::cout<<"N = "<<N<<" et P = "<<P<<std::endl;
 
     for ( unsigned long p= 0; p < N-5; ++p ) std::cout<<"mu["<<p<<"] = "<<X[p]<<std::endl;
 
@@ -5875,16 +5873,16 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
     //setCRBErrorType(errorType);
 
     setOutputIndex( ( int )X[N-5] );
-    std::cout<<"output_index = "<<X[N-5]<<std::endl;
+    //std::cout<<"output_index = "<<X[N-5]<<std::endl;
     int Nwn =  X[N-4];
-    std::cout<<" Nwn = "<<Nwn<<std::endl;
+    //std::cout<<" Nwn = "<<Nwn<<std::endl;
     int maxerror = X[N-3];
-    std::cout<<" maxerror = "<<maxerror<<std::endl;
+    //std::cout<<" maxerror = "<<maxerror<<std::endl;
     CRBErrorType errorType =( CRBErrorType )X[N-2];
-    std::cout<<"errorType = "<<X[N-2]<<std::endl;
+    //std::cout<<"errorType = "<<X[N-2]<<std::endl;
     setCRBErrorType( errorType );
     M_compute_variance = X[N-1];
-    std::cout<<"M_compute_variance = "<<M_compute_variance<<std::endl;
+    //std::cout<<"M_compute_variance = "<<M_compute_variance<<std::endl;
 
 
 #if 0
