@@ -430,16 +430,24 @@ public:
                         }
                 }
 
+            int crb_dimension = option(_name="crb.dimension").template as<int>();
+            int crb_dimension_max = option(_name="crb.dimension-max").template as<int>();
+            double crb_online_tolerance = option(_name="crb.online-tolerance").template as<double>();
+            int crb_error_type = option(_name="crb.error-type").template as<int>();
+            bool crb_compute_variance  = option(_name="crb.compute-variance").template as<bool>();
+
             BOOST_FOREACH( auto mu, *Sampling )
             {
-
                 int size = mu.size();
+
+#if !NDEBUG
                 if( proc_number == Environment::worldComm().masterRank() )
                 {
                     std::cout << "(" << curpar << "/" << Sampling->size() << ") mu = [ ";
                     for ( int i=0; i<size-1; i++ ) std::cout<< mu[i] <<" , ";
                     std::cout<< mu[size-1]<<" ]\n ";
                 }
+#endif
                 curpar++;
 
                 std::ostringstream mu_str;
@@ -450,10 +458,10 @@ public:
                 for ( int i=0; i<sizemax-1; i++ ) mu_str << std::scientific << std::setprecision( 5 ) << mu[i] <<",";
                 mu_str << std::scientific << std::setprecision( 5 ) << mu[size-1];
 
-
+#if !NDEBUG
                 LOG(INFO) << "mu=" << mu << "\n";
                 mu.check();
-
+#endif
                 if( option(_name="crb.script-mode").template as<bool>() )
                 {
                     unsigned long N = mu.size() + 5;
@@ -463,27 +471,25 @@ public:
                     for(int i=0; i<mu.size(); i++)
                         X[i] = mu[i];
 
-                    int N_dim = option(_name="crb.dimension").template as<int>();
-                    int N_dimMax = option(_name="crb.dimension-max").template as<int>();
+                    int N_dim = crb_dimension;
+                    int N_dimMax = crb_dimension_max;
                     int Nwn;
                     if( N_dim > 0 )
                         Nwn = N_dim;
                     else
                         Nwn = N_dimMax;
-
                     X[N-5] = output_index;
                     X[N-4] = Nwn;
-                    X[N-3] = option(_name="crb.online-tolerance").template as<double>();
-                    X[N-2] = option(_name="crb.error-type").template as<int>();
+                    X[N-3] = crb_online_tolerance;
+                    X[N-2] = crb_error_type;
                     //X[N-1] = option(_name="crb.compute-variance").template as<int>();
                     X[N-1] = 0;
-                    bool compute_variance = option(_name="crb.compute-variance").template as<bool>();
+                    bool compute_variance = crb_compute_variance;
                     if ( compute_variance )
                         X[N-1] = 1;
 
                     this->run( X.data(), X.size(), Y.data(), Y.size() );
-
-                    std::cout << "output = " << Y[0] << std::endl;
+                    //std::cout << "output = " << Y[0] << std::endl;
 
                     std::ofstream res(option(_name="result-file").template as<std::string>() );
                     res << "output="<< Y[0] << "\n";
@@ -771,6 +777,9 @@ public:
                     std::cout << "------------------------------------------------------------\n";
                 }
             }
+
+            model->computationalTimeEimStatistics();
+
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
