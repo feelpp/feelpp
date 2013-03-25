@@ -5929,23 +5929,21 @@ CRB<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsigne
       }
 
     // std::cout<<" list of parameters : [";
-
     // for ( unsigned long i=0; i<N-1; i++ ) std::cout<<X[i]<<" , ";
-
     // std::cout<<X[N-1]<<" ] "<<std::endl;
 
 
     setOutputIndex( ( int )X[N-5] );
-    std::cout<<"output_index = "<<X[N-5]<<std::endl;
+    //std::cout<<"output_index = "<<X[N-5]<<std::endl;
     int Nwn =  X[N-4];
-    std::cout<<" Nwn = "<<Nwn<<std::endl;
+    //std::cout<<" Nwn = "<<Nwn<<std::endl;
     int maxerror = X[N-3];
-    std::cout<<" maxerror = "<<maxerror<<std::endl;
+    //std::cout<<" maxerror = "<<maxerror<<std::endl;
     CRBErrorType errorType =( CRBErrorType )X[N-2];
-    std::cout<<"errorType = "<<X[N-2]<<std::endl;
+    //std::cout<<"errorType = "<<X[N-2]<<std::endl;
     setCRBErrorType( errorType );
     M_compute_variance = X[N-1];
-    std::cout<<"M_compute_variance = "<<M_compute_variance<<std::endl;
+    //std::cout<<"M_compute_variance = "<<M_compute_variance<<std::endl;
 
 #if 0
     auto lo = M_rbconv.right.range( boost::bimaps::unbounded,boost::bimaps::_key <= maxerror );
