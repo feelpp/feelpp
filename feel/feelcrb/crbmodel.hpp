@@ -1042,6 +1042,10 @@ public:
         return 1;
     }
 
+    void computationalTimeEimStatistics ()
+    {
+        return M_model->computationalTimeEimStatistics();
+    }
 
     double timeStep()
     {
