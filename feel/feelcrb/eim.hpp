@@ -423,6 +423,16 @@ public:
                     __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
                 // save q
                 LOG(INFO) << "q saved/loaded\n";
+
+                //add interpolation points to the context
+                typename Feel::node<value_type>::type no(nDim);
+                for(int i=0 ; i<M_t.size(); i++)
+                {
+                    node_type t = M_t[i];
+                    for(int dim =0; dim < nDim; ++dim )
+                            no(dim) = t(dim);
+                    M_ctx.add( no );
+                }
             }
             else
             {
