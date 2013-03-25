@@ -91,6 +91,11 @@ public :
         return M_funs_d;
     }
 
+    virtual void computationalTimeEimStatistics()
+    {
+        LOG(INFO)<<"computationalTimeEimStatistics was called but the model doesn't provide the implementation of this function";
+    }
+
 protected :
 
     funs_type M_funs;
