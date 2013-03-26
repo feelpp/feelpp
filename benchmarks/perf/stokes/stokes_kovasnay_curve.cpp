@@ -247,9 +247,7 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::init()
     auto vv = Wh->element();
 
     auto FF = M_backend->newVector( Wh );
-    std::cout<< "size of F: "<<FF->size()<< "\n";
     auto DD =  M_backend->newMatrix( Wh, Wh );
-    std::cout<< "size of DD: "<<DD->size1()<< "\n";
   
     auto ll = form1( _test=Wh,  _vector=FF  );
 
@@ -266,10 +264,9 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::init()
           _expr=vec(cst(0.),0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1)));
 
     aa.solve(_rhs=ll,_solution=uu);
-    std::cout<<"coucou3" << "\n";
+  
 
-
-    auto m1 = lagrangeP1(_space=Wh)->mesh();
+    //auto m1 = lagrangeP1(_space=Wh)->mesh();
     /*//-----------------------------------------
     auto XhVisu = Pchv<1>(m1);
     auto opIVisu = opInterpolation(_domainSpace=Vh,
@@ -289,11 +286,10 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::init()
     e1->save();*/
 
     //-----------------------
-	auto e2 = exporter( _mesh=m1, _name="initial" );
+	/*auto e2 = exporter( _mesh=m1, _name="initial" );
     e2->step(0)->setMesh( m1 );
     e2->step(0)->add( "uu", uu );
-    e2->save();
-    std::cout<<"coucou6" << "\n";
+    e2->save();*/
 
     meshMove( mesh, uu );
     std::cout << "number of elements of 2D: " << mesh->numElements() << "\n";
@@ -332,11 +328,8 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::init()
     Xh = space_type::New( mesh );
     Uh=space_type_U::New(mesh);
     F = M_backend->newVector( Xh );
-    std::cout<< "size of F: "<<F->size()<< "\n";
     D =  M_backend->newMatrix( Xh, Xh );
-    std::cout<< "size of D: "<<D->size1()<< "\n";
     A =  M_backend->newMatrix( Xh, Xh );
-    std::cout<< "size of A: "<<A->size1()<< "\n";
 }
 template<int POrder, int GeoOrder>
 void
@@ -366,8 +359,8 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
 
 
     //# marker5 #
-    auto deft = sym(gradt( u ));
-    auto def = sym(grad( v ));
+    auto deft = gradt( u );
+    auto def = grad( v );
     //# endmarker5 #
 
     //# marker6 #
@@ -385,8 +378,8 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
     auto P_outlet=0.;
 
     //*********************  solution exacte kovasnay 2D *****************
-    auto nuu = 0.035;
-    double lambdaa = 1./( 2.*nuu ) - math::sqrt( 1./( 4.*nuu*nuu ) + 4.*pi*pi );
+    //auto mu = 0.035;
+    double lambdaa = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
     // total stress tensor (test)
     auto u1 = 1. - exp( lambdaa * Px() ) * cos( 2.*pi*Py() );
     auto u2 = ( lambdaa/( 2.*pi ) ) * exp( lambdaa * Px() ) * sin( 2.*pi*Py() );
@@ -399,28 +392,30 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
     auto grad_exact = val( mat<2,2>( du_dx, du_dy, dv_dx, dv_dy ) );
     auto div_exact = val( du_dx + dv_dy );
 
+    //auto p_exact = val( ( -exp( 2.*lambdaa*Px() ) )/2.0-0.125*( exp( -1.0*lambdaa )-1.0*exp( 3.0*lambdaa ) )/lambdaa );
     auto p_exact = val( ( -0.5*exp( 2.*lambdaa*Px() ) ) );
 
-    auto f1 = (exp( lambdaa * Px() )*((lambdaa*lambdaa - 4.*pi*pi)*nuu*cos(2.*pi*Py()) - lambdaa*exp( lambdaa * Px() )));
-    // auto f1 = ( -mu*( -lambda*lambda*exp( lambda*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambda*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambda*exp( 2.0*lambda*Px() ) );
+    auto f1 = (exp( lambdaa * Px() )*((lambdaa*lambdaa - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambdaa*exp( lambdaa * Px() )));
+    //auto f1 = ( -mu*( -lambdaa*lambdaa*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambdaa*exp( 2.0*lambdaa*Px() ) );
 
-    auto f2 = (exp( lambdaa * Px() )*nuu*sin(2.*pi*Py())*(-lambdaa*lambdaa +4*pi*pi));
-    // auto f2 = ( -mu*( lambda*lambda*lambda*exp( lambda*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambda*exp( lambda*Px() )*sin( 2.0*pi*Py() )*pi ) );
+     //auto f2 = (exp( lambdaa * Px() )*mu*sin(2.*pi*Py())*(-lambdaa*lambdaa +4*pi*pi));
+    auto f2 = ( -mu*( lambdaa*lambdaa*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )*pi ) );
 
     auto f = val( vec( f1,f2 ) ); //+ convection;
 
     //double pmean = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/mesh->measure();
     //double pmean = -0.125*( math::exp( -1.0*lambda )-1.0*math::exp( 3.0*lambda ) )/lambda;
     //*************************************************************************************
+
     std::cout<< "number of dof in Xh: " << Xh->nDof() << "\n";
     auto taille=5.5+1.503061665;
-    auto mean_p_exact =integrate( elements( mesh ),  p_exact ).evaluate()(0,0) /taille;
+    auto mean_p_exact =integrate( elements( mesh ),  p_exact ).evaluate()(0,0) /mesh->measure();//taille;
     std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
     stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ));
-    std::cout << "size of F " <<F->size() << "\n";
+
    //#if defined( FEELPP_USE_LM )
     stokes_rhs += integrate( elements( mesh ),id(nu)* p_exact );   //add the mean of the exact pressure
     //#endif
@@ -431,26 +426,19 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     boost::timer chrono;
-    stokes += integrate( elements( mesh ), 2*mu*inner( deft,def ) );
-    std::cout << "mu*inner(deft,def): " << chrono.elapsed() << "\n";
-    std::cout << "size of D " <<D->size1() << "\n";
+    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );//*2
     chrono.restart();
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
-    std::cout << "(u,p): " << chrono.elapsed() << "\n";
-    chrono.restart();
     //#if defined( FEELPP_USE_LM )
     stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ));
-    std::cout << "(lambda,p): " << chrono.elapsed() << "\n";
     chrono.restart();
     //#endif
 
     stokes+=on( _range=boundaryfaces(mesh), _element=u,_rhs=stokes_rhs,
                 _expr=u_exact );
 
-   
-    std::cout << "bc: " << chrono.elapsed() << "\n";
-    chrono.restart();
-    stokes.solve( _rhs=stokes_rhs, _solution=U);
+    M_backend->solve( _matrix=D, _solution=U, _rhs=F );
+    // stokes.solve( _rhs=stokes_rhs, _solution=U);
 
 
 size_type nnz = 0 ;
@@ -550,15 +538,16 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprP
 
     //**************  F ******************
     auto FappCur = integrate(markedfaces( mesh,2) , inner(SigmaNN,idv(v))).evaluate()(0,0);
-    std::cout << "FappCur = "<<math::abs(-2.486163775- FappCur) << "\n" ;
+    std::cout << "FappCur = "<<math::abs(2.486163775-FappCur) << "\n" ;
+    LOG(INFO) << "FappCur = "<<math::abs(2.486163775- FappCur) << "\n" ;
 
 
     //**************  Somme des integrales  ******************
     auto sum=integrate( elements( mesh ),2*mu*inner( Du,Dv ) - divv( v )*idv( p)).evaluate();
     sum+=integrate( markedfaces( mesh,1 ),inner(idv(p)*vf::N()-2*mu*Du*vf::N(),idv(v))).evaluate();
     sum+=integrate( markedfaces( mesh,3 ),inner(idv(p)*vf::N()-2*mu*Du*vf::N(),idv(v))).evaluate();
-    std::cout << "Sum = "<<  -2.486163775-sum(0,0) << "\n" ;
-    LOG(INFO) << "Sum = "<<  -2.486163775-sum(0,0) << "\n" ;
+    std::cout << "Sum = "<<  2.486163775-sum(0,0) << "\n" ;
+    LOG(INFO) << "Sum = "<<  2.486163775-sum(0,0) << "\n" ;
     // #endif*/
 
     auto u_ex = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
@@ -567,6 +556,31 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprP
 
     if ( exporter2->doExport() )
     {
+        /*auto m11 = lagrangeP1(_space=Xh)->mesh();
+        auto XhVisu = Pchv<1>(m11);
+        auto opIVisu = opInterpolation(_domainSpace=Xh,
+                                       _imageSpace=XhVisu,
+                                       _type=InterpolationNonConforme(false,true,false) );
+        auto uVisu = opIVisu->operator()(u);
+        auto pVisu = opIVisu->operator()(p);
+        auto u_exactVisu = opIVisu->operator()(u_exact);
+        auto p_exactVisu = opIVisu->operator()(p_exact);
+
+        auto e22 = exporter2( _mesh=m11, _name="initial_visu" );
+        e22->step(0)->setMesh( m11 );
+        e22->step(0)->add( "u", uVisu );
+        e22->step(0)->add( "p", pVisu );
+        e22->step(0)->add( "u_exact", u_exactVisu );
+        e22->step(0)->add( "p_exact", p_exactVisu );
+
+        e22->save();
+
+        /* meshMove( m1, uVisu );
+        auto e1 = exporter( _mesh=m1, _name="moved_visu" );
+        e1->step(0)->setMesh( m1  );
+        e1->step(0)->add( "u_visu", uVisu );
+        e1->save();*/
+
         exporter2->step( 0 )->setMesh( U.functionSpace()->mesh() );
         exporter2->step( 0 )->addRegions();
         exporter2->step( 0 )->add( "v", V.template element<0>() );
@@ -577,7 +591,7 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprP
         exporter2->step( 0 )->add( "u_exact", u_ex );
         exporter2->step( 0 )->add( "p_exact", p_ex );
         exporter2->save();
-    }
+        }
 
 } // Stokes::export
 } // Feel
