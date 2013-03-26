@@ -977,12 +977,20 @@ public:
                                        std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
     void buildGhostInterProcessDofMapInit( mesh_type& mesh,
                                            std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
+    void buildGhostInterProcessDofMapInit2( mesh_type& mesh,
+                                           std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
 
     boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
     buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
                                            std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
                                            std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
                                            std::vector< std::set<size_type > > & memoryFace );
+    void//    boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
+    buildGhostInterProcessDofMapRecursive2( mesh_type& mesh,
+                                           std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
+                                           std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
+                                           std::vector< std::set<size_type > > & memoryFace );
+
     void buildDofNotPresent( std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
                              std::map<size_type,boost::tuple<size_type,size_type> > & setInterProcessDofNotPresent );
 
