@@ -185,14 +185,15 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         for ( unsigned int n=0; n < old_elem.nPoints(); n++ )
         {
             //FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
+            auto const& old_point = old_elem.point( n );
 
-            if ( new_node_numbers[old_elem.point( n ).id()] == invalid_size_type_value )
+            if ( new_node_numbers[old_point.id()] == invalid_size_type_value )
             {
-                new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
+                new_node_numbers[old_point.id()] = n_new_nodes;
 
                 DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] insert point " << old_elem.point( n ) << "\n";
 
-                point_type pt( old_elem.point( n ) );
+                point_type pt( old_point );
                 pt.setId( n_new_nodes );
 
                 // Add this node to the new mesh
@@ -205,19 +206,34 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                 if ( n < element_type::numVertices )
                 {
-                    FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
-                    new_vertex[old_elem.point( n ).id()]=1;
+                    FEELPP_ASSERT( new_vertex[old_point.id()] == 0 ).error( "already seen this point?" );
+                    new_vertex[old_point.id()]=1;
                 }
+
+                if (old_point.numberOfElementsGhost()>0)
+                    {
+                        auto itg = old_point.elementsGhost().begin();
+                        auto const eng = old_point.elementsGhost().end();
+                        for ( ; itg!=eng ; ++itg )
+                        {
+                            auto const procIdGhost = itg->template get<0>();
+                            auto const eltIdGhost = itg->template get<1>();
+                            auto const& ghostElt = M_mesh->element(eltIdGhost,procIdGhost);
+                            ghostCellsFind[procIdGhost].insert(boost::make_tuple( ghostElt.id(),
+                                                                                  ghostElt.idInPartition(ghostElt.processId())) );
+                        }
+                    }
+
             }
 
             // Define this element's connectivity on the new mesh
-            FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < newMesh->numPoints() ).error( "invalid connectivity" );
+            FEELPP_ASSERT ( new_node_numbers[old_point.id()] < newMesh->numPoints() ).error( "invalid connectivity" );
 
-            DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
-                          << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
+            DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_point.id()
+                          << ") as point new(" << new_node_numbers[old_point.id()]
                           << ") in element " << new_elem.id() << "\n";
 
-            new_elem.setPoint( n, newMesh->point( new_node_numbers[old_elem.point( n ).id()] ) );
+            new_elem.setPoint( n, newMesh->point( new_node_numbers[old_point.id()] ) );
 
         } // for (unsigned int n=0 ... )
 
@@ -282,8 +298,9 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                     newMesh->faces().modify( addFaceRes.first, detail::update_id_in_partition_type( addFaceRes.first->pidInPartition(), addFaceRes.first->id() ) );
                 }
 
+#if 0
                 // maybe have a ghost cell connected to this face
-                if (old_face.isInterProcessDomain())
+                if (false && old_face.isInterProcessDomain())
                 {
                     if (old_face.isConnectedTo0())
                         {
@@ -303,8 +320,15 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 else
                 {
                     // TODO see points (2D or 3D) or edges (3D)
-                }
+                    for ( uint16_type p = 0; p < old_face.nPoints(); ++p )
+                        {
+                            auto const& oldpoint = old_elem.point( old_elem.fToP( s,p ) );
+                            //if ( oldpoint.isLinkedToOtherPartitions() ) std::cout << "\n Find point multiprocess"<<std::endl;
+                            //if ( oldpoint.idInPartition().size()>0 ) std::cout << "\n Find point multiprocess"<<std::endl;
+                        }
 
+                }
+#endif
             }
 
         } // for (unsigned int s=0 ... )

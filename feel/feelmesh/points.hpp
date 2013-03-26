@@ -371,6 +371,13 @@ public:
         return _M_points.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
+
+    std::pair<pid_point_iterator, pid_point_iterator>
+    pointsWithProcessId( size_type p ) const
+    {
+        return _M_points.template get<detail::by_pid>().equal_range( p );
+    }
+
     //@}
 
     /** @name  Mutators

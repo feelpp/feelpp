@@ -328,8 +328,8 @@ Stokes::exportResults( ExprUExact u_exact, ExprPExact p_exact,
         v = U.element<0>();
 
 #if defined( FEELPP_USE_LM )
-        exporter->step( 0 )->add( {"u","p","l"}, U );
-        exporter->step( 0 )->add( {"u_exact","p_exact","l_exact"}, V );
+        exporter->step( 0 )->add( std::vector<std::string>({"u","p","l"}), U );
+        exporter->step( 0 )->add( std::vector<std::string>({"u_exact","p_exact","l_exact"}), V );
 #else
         exporter->step( 0 )->add( std::vector<std::string>({"u","p"}), U );
         exporter->step( 0 )->add( std::vector<std::string>({"u_exact","p_exact"}), V );
@@ -347,9 +347,14 @@ main( int argc, char** argv )
 
     using namespace Feel;
 
+#if defined( FEELPP_USE_LM )
+    std::string name = "stokes_lm";
+#else
+    std::string name = "stokes";
+#endif
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="stokes",
+                     _about=about(_name=name.c_str(),
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
