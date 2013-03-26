@@ -1590,7 +1590,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
         new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
-        new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
+        //new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());
 
         // Loop over the P1 nodes on this element.
@@ -1651,7 +1651,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
                 new_face.setNumberOfPartitions(old_face.numberOfPartitions());
                 new_face.setProcessId(old_face.processId());
-                new_face.setIdInPartition( old_face.pidInPartition(), n_new_faces );
+                //new_face.setIdInPartition( old_face.pidInPartition(), n_new_faces );
                 new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
                 // update P1 points info
                 for ( uint16_type p = 0; p < face_type::numVertices; ++p )
@@ -1669,7 +1669,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         if ( it->isGhostCell() )
             {
                 DVLOG(2) << "element " << it->id() << " is a ghost cell\n";
-                for (auto it_pid=it->idInPartition().begin(),en_pid=it->idInPartition().end() ; it_pid!=en_pid ; ++it_pid)
+                for (auto it_pid=it->idInOthersPartitions().begin(),en_pid=it->idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
                     {
                         DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
                         const int procToSend=it_pid->first;
@@ -1778,7 +1778,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                     for (int k=0;k<vecToRecv[proc].size();++k)
                         {
                             auto elttt = new_mesh->elementIterator( memory_id[proc][k], /*new_mesh->worldComm().localRank()*/ proc );
-                            new_mesh->elements().modify( elttt, detail::update_id_in_partition_type( proc, vecToRecv[proc][k] ) );
+                            new_mesh->elements().modify( elttt, detail::updateIdInOthersPartitions( proc, vecToRecv[proc][k] ) );
                         }
                 }
 
