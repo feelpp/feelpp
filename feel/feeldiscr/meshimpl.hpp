@@ -838,7 +838,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 __f.setId( _faceit->second );
 
                 // set the id for this partition
-                __f.setIdInPartition( this->worldComm().localRank(),__f.id() );
+                //__f.setIdInPartition( this->worldComm().localRank(),__f.id() );
 
                 DVLOG(2) << "set face id " << __f.id()
                          << " iterator id = " << __it->id()
@@ -902,7 +902,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 face.setProcessId( __element.processId() );
 
                 // set the id for this partition
-                face.setIdInPartition( this->worldComm().localRank(),face.id() );
+                //face.setIdInPartition( this->worldComm().localRank(),face.id() );
 
                 // set the vertices of the face
                 for ( size_type k = 0; k < face_type::numPoints; ++k )
@@ -1237,10 +1237,11 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     {
         element_type const& __element = *iv;
         const int IdProcessOfGhost = __element.processId();
-        const size_type idInPartition = __element.idInPartition( IdProcessOfGhost );
+        const size_type idInPartition = __element.idInOthersPartitions( IdProcessOfGhost );
 
-        //this->elements().modify( iv, typename super_elements::ElementGhostConnectPointToElement() );
         this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
+        if ( nDim==3 )
+            this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectEdgeToElement() );
 
         // send
         this->worldComm().localComm().send( IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition );
@@ -1406,7 +1407,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                 // get the good face
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
                 //update the face
-                this->faces().modify( face_it, detail::update_id_in_partition_type( proc, idFaceRecv ) );
+                this->faces().modify( face_it, detail::updateIdInOthersPartitions( proc, idFaceRecv ) );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
 
@@ -1434,9 +1435,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                 // get the good face
                 auto point_it = this->pointIterator( theelt.point( jBis ).id() );
                 //update the face
-                this->points().modify( point_it, detail::update_id_in_partition_type( proc, idPointRecv ) );
+                this->points().modify( point_it, detail::updateIdInOthersPartitions( proc, idPointRecv ) );
             } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
 
+            /*for ( size_type j = 0; j < element_type::numLocalEdges; j++ )
+            {
+            }*/
 
         } // for ( int cpt=0;cpt<nbMsgToSend[proc];++cpt)
     } // for (int proc=0; proc<M_comm.size();++proc)
@@ -1871,7 +1875,7 @@ Mesh<Shape, T, Tag>::decode()
         pf.setId( this->numFaces() );
         pf.setProcessIdInPartition( this->worldComm().localRank() );
         pf.setProcessId( this->worldComm().localRank() );
-        pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
+        //pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
 
         const int shift = face_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
@@ -1893,7 +1897,7 @@ Mesh<Shape, T, Tag>::decode()
         pv.setTags(  tags  );
         pv.setProcessIdInPartition( this->worldComm().localRank() );
         pv.setProcessId( this->worldComm().localRank() );
-        pv.setIdInPartition( this->worldComm().localRank(),pv.id() );
+        //pv.setIdInPartition( this->worldComm().localRank(),pv.id() );
 
         const int shift = elt_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
@@ -1904,7 +1908,7 @@ Mesh<Shape, T, Tag>::decode()
 #if 0
         __idGmshToFeel=pv.id();
         auto theelt = mesh->elementIterator( pv.id(), pv.partitionId() );
-        mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
+        mesh->elements().modify( theelt, detail::updateIdInOthersPartitions( this->worldComm().localRank(), pv.id() ) );
 #endif
     }
     LOG(INFO) << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";
