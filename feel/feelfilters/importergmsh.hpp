@@ -1017,9 +1017,6 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     boost::tie( fit, inserted ) = mesh->addFace( pf );
     __idGmshToFeel=pf.id();
 
-    auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
-
     DVLOG(2) << "added point on boundary ("
                   << fit->isOnBoundary() << ") with id :" << fit->id() << " and marker " << pf.marker()
                   << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
@@ -1094,9 +1091,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    auto theelt = mesh->elementIterator( e.id(), e.partitionId() );
-    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
-
     _M_n_vertices[ __e.indices[0] ] = 1;
     _M_n_vertices[ __e.indices[1] ] = 1;
     DVLOG(2) << "added edge with id :" << e.id()
@@ -1141,9 +1135,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     boost::tie( fit, inserted ) = mesh->addFace( e );
     __idGmshToFeel=e.id();
 
-    auto theface = mesh->faceIterator( e.id() );
-    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
-
     DVLOG(2) << "added edge on boundary ("
                   << fit->isOnBoundary() << ") with id :" << fit->id()
                   << " n1: " << mesh->point( __e.indices[0] ).node()
@@ -1183,9 +1174,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     e.setOnBoundary( true );
     auto eit = mesh->addEdge( e );
     __idGmshToFeel=eit.id();
-
-    auto theedge = mesh->edgeIterator( e.id() );
-    mesh->edges().modify( theedge, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
 
     if ( npoints_per_edge == 2 )
         DVLOG(2) << "added edge on boundary ("
@@ -1240,9 +1228,6 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    auto theelt = mesh->elementIterator( e.id(), e.partitionId() );
-    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
-
     _M_n_vertices[ __e.indices[0] ] = 1;
     _M_n_vertices[ __e.indices[1] ] = 1;
     _M_n_vertices[ __e.indices[2] ] = 1;
@@ -1289,9 +1274,6 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     boost::tie( fit, inserted ) = mesh->addFace( e );
 
     __idGmshToFeel=e.id();
-
-    auto theface = mesh->faceIterator( e.id() );
-    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
 
     _M_n_vertices[ __e.indices[0] ] = 1;
     _M_n_vertices[ __e.indices[1] ] = 1;
@@ -1352,9 +1334,6 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
 
     mesh->addElement( e );
     __idGmshToFeel=e.id();
-
-    auto theelt = mesh->elementIterator( e.id(), e.partitionId() );
-    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
 
     _M_n_vertices[ __e.indices[0] ] = 1;
     _M_n_vertices[ __e.indices[1] ] = 1;
@@ -1445,7 +1424,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::vector<int> c
             this->worldComm().localComm().recv( proc, cpt, idFeel );
             // update data
             auto elttt = mesh->elementIterator( mapMsg[proc][cpt],proc );
-            mesh->elements().modify( elttt, Feel::detail::update_id_in_partition_type( proc, idFeel ) );
+            mesh->elements().modify( elttt, Feel::detail::updateIdInOthersPartitions( proc, idFeel ) );
 #if 0
             std::cout << "[updateGhostCellInfo]----3---\n"
                       << "END! I am the proc" << this->worldComm().localRank()<<" I receive of the proc " << proc
