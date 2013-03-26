@@ -26,3 +26,4 @@ feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrang
 feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LABEL doc  )
 feelpp_add_application( doc_laplacian_harmonic SRCS harmonic.cpp LABEL doc  )
 feelpp_add_application( doc_laplacian_dg SRCS laplacian_dg.cpp LABEL doc  )
+feelpp_add_application( doc_laplacian_with_holes SRCS laplacian_with_holes.cpp LABEL doc  )
