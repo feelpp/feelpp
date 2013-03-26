@@ -177,7 +177,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
         new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
-        new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
+        //new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());// TODO
 
 
@@ -220,7 +220,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                             auto const eltIdGhost = itg->template get<1>();
                             auto const& ghostElt = M_mesh->element(eltIdGhost,procIdGhost);
                             ghostCellsFind[procIdGhost].insert(boost::make_tuple( ghostElt.id(),
-                                                                                  ghostElt.idInPartition(ghostElt.processId())) );
+                                                                                  ghostElt.idInOthersPartitions(ghostElt.processId())) );
                         }
                     }
 
@@ -286,7 +286,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
                 new_face.setNumberOfPartitions( 1 );
                 new_face.setProcessId( old_face.processId() );
-                new_face.idInPartition().clear();
+                new_face.idInOthersPartitions().clear();
                 new_face.neighborPartitionIds().clear();
 
                 // add it to the list of faces
@@ -295,7 +295,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 if (addFaceRes.second)
                 {
                     //update the face
-                    newMesh->faces().modify( addFaceRes.first, detail::update_id_in_partition_type( addFaceRes.first->pidInPartition(), addFaceRes.first->id() ) );
+                    newMesh->faces().modify( addFaceRes.first, detail::updateIdInOthersPartitions( addFaceRes.first->pidInPartition(), addFaceRes.first->id() ) );
                 }
 
 #if 0
@@ -307,14 +307,14 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                             auto const& eltConnect0 = old_face.element0();
                             if (eltConnect0.isGhostCell())
                                 ghostCellsFind[eltConnect0.processId()].insert(boost::make_tuple(eltConnect0.id(),
-                                                                                                 eltConnect0.idInPartition(eltConnect0.processId())) );
+                                                                                                 eltConnect0.idInOthersPartitions(eltConnect0.processId())) );
                         }
                     if (old_face.isConnectedTo1())
                         {
                             auto const& eltConnect1 = old_face.element1();
                             if (eltConnect1.isGhostCell())
                                 ghostCellsFind[eltConnect1.processId()].insert(boost::make_tuple(eltConnect1.id(),
-                                                                                                 eltConnect1.idInPartition(eltConnect1.processId())) );
+                                                                                                 eltConnect1.idInOthersPartitions(eltConnect1.processId())) );
                         }
                 }
                 else
@@ -336,7 +336,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         if ( it->isGhostCell() )
         {
             VLOG(2) << "  - is ghostcell \n";google::FlushLogFiles(google::GLOG_INFO);
-            for (auto it_pid=it->idInPartition().begin(),en_pid=it->idInPartition().end() ; it_pid!=en_pid ; ++it_pid)
+            for (auto it_pid=it->idInOthersPartitions().begin(),en_pid=it->idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
             {
                 VLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<Environment::worldComm().localRank() << "\n";
                 const int procToSend=it_pid->first;
@@ -418,7 +418,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
                 new_elem.setNumberOfPartitions(2/*old_elem.numberOfPartitions()*/);
                 new_elem.setProcessId(old_elem.processId());
-                new_elem.idInPartition().clear();
+                new_elem.idInOthersPartitions().clear();
                 std::vector<int> newNeighborPartitionIds(1);
                 newNeighborPartitionIds[0]=old_elem.processId();
                 new_elem.setNeighborPartitionIds( newNeighborPartitionIds );
@@ -475,8 +475,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                 //idEltAsked;
                 auto elttt = newMesh->elementIterator( e.id(),  proc );
-                newMesh->elements().modify( elttt, detail::update_id_in_partition_type( newMesh->worldComm().localRank(), e.id() ) );
-                newMesh->elements().modify( elttt, detail::update_id_in_partition_type( proc, idEltAsked ) );
+                //newMesh->elements().modify( elttt, detail::updateIdInOthersPartitions( newMesh->worldComm().localRank(), e.id() ) );
+                newMesh->elements().modify( elttt, detail::updateIdInOthersPartitions( proc, idEltAsked ) );
 
             } //  if (idEltAsked != invalid_size_type_value)
 
@@ -590,7 +590,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             for (int k=0;k<vecToRecv[proc].size();++k)
             {
                 auto elttt = newMesh->elementIterator( memory_id[proc][k], /*new_mesh->worldComm().localRank()*/ proc );
-                newMesh->elements().modify( elttt, detail::update_id_in_partition_type( proc, vecToRecv[proc][k] ) );
+                newMesh->elements().modify( elttt, detail::updateIdInOthersPartitions( proc, vecToRecv[proc][k] ) );
             }
         }
 
@@ -675,7 +675,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         newElem.setProcessIdInPartition( oldElem.pidInPartition() );
         newElem.setNumberOfPartitions(oldElem.numberOfPartitions());
         newElem.setProcessId(oldElem.processId());
-        newElem.setIdInPartition( oldElem.pidInPartition(), n_new_elem );
+        //newElem.setIdInPartition( oldElem.pidInPartition(), n_new_elem );
         newElem.setNeighborPartitionIds(oldElem.neighborPartitionIds());// TODO
 
 
@@ -803,7 +803,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
         newElem.setProcessIdInPartition( oldElem.pidInPartition() );
         newElem.setNumberOfPartitions(oldElem.numberOfPartitions());
         newElem.setProcessId(oldElem.processId());
-        newElem.setIdInPartition( oldElem.pidInPartition(), n_new_elem );
+        //newElem.setIdInPartition( oldElem.pidInPartition(), n_new_elem );
         newElem.setNeighborPartitionIds(oldElem.neighborPartitionIds());// TODO
 
 
