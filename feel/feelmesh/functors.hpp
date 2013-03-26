@@ -259,6 +259,22 @@ private:
     size_type _M_id;
 };
 
+struct UpdateProcessId
+{
+    UpdateProcessId( int pid )
+        :
+        _M_pid( pid )
+    {}
+    template<typename ElementType>
+    void operator()( ElementType& element )
+    {
+        element.setProcessId( _M_pid );
+    }
+private:
+    int _M_pid;
+};
+
+
 } // detail
 /// \endcond detail
 }
