@@ -1113,8 +1113,8 @@ public:
      */
     edge_type& edge( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         return boost::ref( *M_edges[i] );
     }
 
@@ -1174,7 +1174,7 @@ public:
      */
     edge_permutation_type permutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges << " in element id " << this->id();
         return M_edge_permutation[i];
     }
 

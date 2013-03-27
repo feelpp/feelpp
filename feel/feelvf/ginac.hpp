@@ -59,7 +59,14 @@ template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
 template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
 template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
 
-
+inline
+std::vector<symbol>
+symbols( std::initializer_list<std::string> l )
+{
+    std::vector<symbol> s;
+    std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
+    return s;
+}
 
 namespace vf
 {
