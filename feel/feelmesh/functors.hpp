@@ -242,9 +242,9 @@ private:
 
 };
 
-struct update_id_in_partition_type
+struct updateIdInOthersPartitions
 {
-    update_id_in_partition_type( uint16_type pid, size_type id )
+    updateIdInOthersPartitions( uint16_type pid, size_type id )
         :
         _M_pid( pid ),
         _M_id( id )
@@ -252,7 +252,7 @@ struct update_id_in_partition_type
     template<typename ElementType>
     void operator()( ElementType& element )
     {
-        element.setIdInPartition( _M_pid, _M_id );
+        element.setIdInOthersPartitions( _M_pid, _M_id );
     }
 private:
     uint16_type _M_pid;

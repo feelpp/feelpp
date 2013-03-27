@@ -910,6 +910,17 @@ public:
     sampling_ptrtype trainSet() const { return M_trainset; }
     virtual void setTrainSet( sampling_ptrtype tset ) { M_trainset = tset; }
 
+    void addOnlineTime( const double time )
+    {
+        int size = M_online_time.size();
+        M_online_time.conservativeResize( size+1 );
+        M_online_time( size ) = time;
+    }
+    Eigen::VectorXd onlineTime()
+    {
+        return M_online_time;
+    }
+
     mesh_ptrtype mesh() const { return M_fspace->mesh(); }
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
 
@@ -950,6 +961,7 @@ public:
     sampling_ptrtype M_trainset;
     std::string M_modelname;
     std::string M_name;
+    Eigen::VectorXd M_online_time;//contains online computational time
 };
 
 
