@@ -91,6 +91,53 @@ public :
         return M_funs_d;
     }
 
+    void computeStatistics( Eigen::VectorXd vector , std::string name )
+    {
+        double min,max,mean,mean1,mean2,standard_deviation,variance;
+        Eigen::MatrixXf::Index index;
+        Eigen::VectorXd square;
+
+        bool force = option("eim.use-dimension-max-functions").template as<bool>();
+        int Neim=0;
+        if( force )
+            Neim = option("eim.dimension-max").template as<int>();
+
+        int N = vector.size();
+
+        if( force )
+            LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times with "<<Neim<<" basis functions )";
+        else
+            LOG( INFO ) <<" statistics  for "<<name<<" (  was called "<< N << " times )";
+
+        min = vector.minCoeff(&index);
+        max = vector.maxCoeff(&index);
+        mean = vector.mean();
+        mean1 = mean * mean;
+        square  = vector.array().pow(2);
+        mean2 = square.mean();
+        standard_deviation = math::sqrt( mean2 - mean1 );
+        LOG(INFO)<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation;
+
+    }
+
+    void computationalTimeEimStatistics()
+    {
+
+        auto eim_sc_vector = this->scalarContinuousEim();
+        for(int i = 0; i<eim_sc_vector.size();i++)
+        {
+            auto eim = eim_sc_vector[i];
+            this->computeStatistics( eim->onlineTime() , eim->name() );
+        }
+        auto eim_sd_vector = this->scalarDiscontinuousEim();
+        for(int i = 0; i<eim_sd_vector.size();i++)
+        {
+            auto eim = eim_sd_vector[i];
+            this->computeStatistics( eim->onlineTime() , eim->name() );
+        }
+
+    }
+
 protected :
 
     funs_type M_funs;
