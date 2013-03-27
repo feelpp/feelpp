@@ -1764,6 +1764,21 @@ public:
 
         }//add ( non composite case )
 
+
+        void addCtx( basis_context_ptrtype ctx , int proc_having_the_point)
+        {
+            this->push_back( ctx );
+            node_type n;//only to increase M_t ( this function may be called during online step of crb )
+            M_t.push_back( n );
+            M_t_proc.push_back(proc_having_the_point);
+        }
+        void removeCtx()
+        {
+            this->clear();
+            M_t.clear();
+            M_t_proc.clear();
+        }
+
         int nPoints() const
         {
             return M_t.size();
