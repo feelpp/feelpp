@@ -64,7 +64,7 @@ std::vector<symbol>
 symbols( std::initializer_list<std::string> l )
 {
     std::vector<symbol> s;
-    s.insert( s.begin(), l.begin(), l.end() );
+    std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
     return s;
 }
 
