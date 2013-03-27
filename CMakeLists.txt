@@ -27,7 +27,10 @@ cmake_minimum_required (VERSION 2.8.7)
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
 # Waiting for cmake to fix it
-SET(ENV{LIBRARY_PATH} "")
+OPTION(FEELPP_RESET_ENV_LIBRARY_PATH "apply SET(ENV{LIBRARY_PATH} )" ON )
+if (FEELPP_RESET_ENV_LIBRARY_PATH)
+  SET(ENV{LIBRARY_PATH} "")
+endif()
 
 # guard against in-source builds
 
