@@ -305,7 +305,7 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::init()
     //-------------------
 
 
-
+    //mesh=StraightenMesh(mesh);
 
     /* //********************** Rectangle ***************************************
     mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -532,21 +532,21 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprP
     //#if (STOKESPRESSMESHTYPE ==2)
     auto vv=vec(cst(1.), cst(1.));
     v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), vv );
-    auto Du= sym(gradv(u));
-    auto Dv= sym(gradv(v));
-    auto SigmaNN =(-idv(p)*vf::N()+2*mu*Du*vf::N());
+    auto Du= gradv(u);//sym
+    auto Dv= gradv(v);//sym
+    auto SigmaNN =(-idv(p)*vf::N()+mu*Du*vf::N());//*2
 
     //**************  F ******************
     auto FappCur = integrate(markedfaces( mesh,2) , inner(SigmaNN,idv(v))).evaluate()(0,0);
-    std::cout << "FappCur = "<<math::abs(2.486163775-FappCur) << "\n" ;
+    std::cout << "FappCur = "<<FappCur << "\n" ;
     LOG(INFO) << "FappCur = "<<math::abs(2.486163775- FappCur) << "\n" ;
 
 
     //**************  Somme des integrales  ******************
-    auto sum=integrate( elements( mesh ),2*mu*inner( Du,Dv ) - divv( v )*idv( p)).evaluate();
+    auto sum=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p)).evaluate();//*2
     sum+=integrate( markedfaces( mesh,1 ),inner(idv(p)*vf::N()-2*mu*Du*vf::N(),idv(v))).evaluate();
     sum+=integrate( markedfaces( mesh,3 ),inner(idv(p)*vf::N()-2*mu*Du*vf::N(),idv(v))).evaluate();
-    std::cout << "Sum = "<<  2.486163775-sum(0,0) << "\n" ;
+    std::cout << "Sum = "<< sum(0,0) << "\n" ;
     LOG(INFO) << "Sum = "<<  2.486163775-sum(0,0) << "\n" ;
     // #endif*/
 
@@ -608,6 +608,6 @@ main( int argc, char** argv )
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
-    Feel::Stokes_Kovasnay_Curve<1,1> Stokes_Kovasnay_Curve;
+    Feel::Stokes_Kovasnay_Curve<2,4> Stokes_Kovasnay_Curve;
     Stokes_Kovasnay_Curve.run();
 }

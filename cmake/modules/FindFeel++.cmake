@@ -6,7 +6,7 @@
 
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 --stdlib=libstdc++" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
   # ensures that boost.signals2 compiles with clang++ >= 3.1
   add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
 ENDIF()
