@@ -4,11 +4,11 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
+#should check the version of gcc for -std=c++0x ou -std=c++11
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 --stdlib=libstdc++" )
-  # ensures that boost.signals2 compiles with clang++ >= 3.1
-  add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+  MESSAGE(STATUS "Use c++11 for clang >= 3.1")
 ENDIF()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
@@ -38,7 +38,7 @@ else()
 endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 
-OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenLG support" ON)
+OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
 
 
 # enable mpi mode
@@ -132,10 +132,23 @@ endif (APPLE)
 SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
 
 FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization)
+if(Boost_FOUND)
+  message( status "Boost version: ${Boost_VERSION}")
+  IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    # ensures that boost.signals2 compiles with clang++ >= 3.1
+    STRING(COMPARE LESS "${BOOST_VERSION}" 1.53.0 CXX11_ADDED)
+    IF(!CXX11_ADDED)
+      add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
+    ELSE()
+      add_definitions(-DBOOST_NO_CXX11_VARIADIC_TEMPLATES)
+    ENDIF()
+  ENDIF()
+endif()
+
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51")
+set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51" "1.52" "1.53")
 set( BOOST_PARAMETER_MAX_ARITY 20 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
