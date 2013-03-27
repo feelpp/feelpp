@@ -191,7 +191,8 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             auto const& ctx = *it;
             //std::vector<typename context_type::value_type> vec_ctx;
             vec_ctx.clear();
-            vec_ctx.push_back( *it );
+            vec_ctx.addCtx( *it , proc_number );
+            //vec_ctx.push_back( *it );
 
             /**
              * be careful there is no guarantee that the set of contexts will
@@ -210,6 +211,8 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             //evaluate the projected expression at point p
             auto val = proj_expr.evaluate( vec_ctx );
             __localv( p ) = val( 0 );
+
+            vec_ctx.removeCtx();
 #if 0
             t_expr_type tensor_expr( M_expr, mapgmci );
             tensor_expr.update( mapgmci );
@@ -232,23 +235,57 @@ EvaluatorContext<CTX, ExprT>::operator()() const
         for(int p=0; p<npoints; p++)
         {
             int proc_having_point = M_ctx.processorHavingPoint(p);
+            double info=0 ;
+            double info_send_recv = 0;
             if( proc_number == proc_having_point )
             {
-                boost::mpi::broadcast( Environment::worldComm() , __localv(index) , proc_number );
-                __v( p ) = __localv( index );
+                info =  __localv(index);
+                LOG( INFO ) <<" info sent : "<<info;
+                //boost::mpi::broadcast( Environment::worldComm() , info , proc_number );
+                //__v( p ) = __localv( index );
                 index++;//local index increases
+
+                if( nprocs == 2 )
+                {
+                    info_send_recv = info;
+                    if( proc_number == 0 )
+                        Environment::worldComm().send(1,0,info_send_recv);
+                    else
+                        Environment::worldComm().send(0,0,info_send_recv);
+                }
             }
             else
             {
-                double contribution_from_other ;
-                boost::mpi::broadcast( Environment::worldComm() , contribution_from_other , proc_having_point );
-                __v( p ) = contribution_from_other ;
+                LOG( INFO ) <<" info from proc "<<proc_having_point;
+                if( nprocs == 2 )
+                {
+                    if( proc_number == 0 )
+                        Environment::worldComm().recv(1,0,info_send_recv);
+                    else
+                        Environment::worldComm().recv(0,0,info_send_recv);
+                }
+                //double contribution_from_other=0 ;
+                //boost::mpi::broadcast( Environment::worldComm() , contribution_from_other ,  proc_having_point);
+                //LOG( INFO ) <<"info recue de "<<proc_having_point<<": \n"<<contribution_from_other;
+                //google::FlushLogFiles(google::GLOG_INFO);
+                //__v( p ) = contribution_from_other ;
             }
+
+            boost::mpi::broadcast( Environment::worldComm() , info , proc_having_point );
+
+            if( nprocs == 2 )
+                LOG( INFO ) << " now info : "<<info<<" and info_send_recv : "<<info_send_recv;
+            else
+                LOG( INFO ) <<" now info : "<<info;
+
+            __v( p ) = info ;
         }
+
     }// nprocs > 1
     else
         __v = __localv;
 
+    LOG ( INFO ) << "__v : \n"<<__v;
     return __v;
 }
 
