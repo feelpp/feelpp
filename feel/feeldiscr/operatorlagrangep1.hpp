@@ -339,7 +339,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
             elt.setProcessIdInPartition( it->pidInPartition() );
             elt.setNumberOfPartitions(it->numberOfPartitions());
             elt.setProcessId(it->processId());
-            elt.setIdInPartition( it->pidInPartition(), elid );
+            //elt.setIdInPartition( it->pidInPartition(), elid );
             //elt.setNeighborPartitionIds(it->neighborPartitionIds());
 
             // accumulate the points

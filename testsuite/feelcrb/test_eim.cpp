@@ -121,12 +121,17 @@ public:
         meshSize( option("hsize").as<double>() )
         {
 
+
+            mesh = unitSquare();
+            //to modify hsize use --mesh2d.hsize in command line
+#if 0
             mesh = createGMSHMesh( _mesh=new mesh_type,
                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % 2 ).str() ,
                                                  _usenames=true,
                                                  _shape="hypercube",
                                                  _dim=2,
                                                  _h=0.025 ) );
+#endif
 
             Xh =  space_type::New( mesh );
             LOG(INFO) << " nb dofs : "<<Xh->nDof()<<"\n";

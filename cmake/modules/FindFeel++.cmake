@@ -6,7 +6,7 @@
 
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 --stdlib=libstdc++" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
   # ensures that boost.signals2 compiles with clang++ >= 3.1
   add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
 ENDIF()
@@ -37,6 +37,8 @@ else()
   OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
 endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
+
+OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenLG support" ON)
 
 
 # enable mpi mode
@@ -621,7 +623,7 @@ FIND_PACKAGE(Gmsh REQUIRED)
 if ( GMSH_FOUND )
   ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
   if ( GL2PS_LIBRARY )
-   if ( GL_LIBRARY )
+   if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
      SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
    else()
      SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
