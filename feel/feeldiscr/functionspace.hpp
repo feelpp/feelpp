@@ -1654,7 +1654,9 @@ public:
      */
     class Context
         :
-        public std::vector<basis_context_ptrtype>
+        //public std::vector<basis_context_ptrtype>
+        //the index of point is associated to a basis_context_ptrtype
+        public std::map<int,basis_context_ptrtype>
     {
     public:
         typedef typename matrix_node<value_type>::type matrix_node_type;
@@ -1708,9 +1710,6 @@ public:
                 DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<proc_number<<"\n";
                 DVLOG(2) << "  - reference coordinates " << xref << "\n";
 
-                LOG(INFO) << "found point " << t << " in element " << eid << " on proc "<<proc_number<<"\n";
-                LOG(INFO) << "  - reference coordinates " << xref << "\n";
-
                 typename basis_type::points_type p(mesh_type::nDim,1);
 
                 ublas::column( p, 0 ) = xref;
@@ -1729,8 +1728,10 @@ public:
                 // compute finite element context
                 auto ctx = basis_context_ptrtype( new basis_context_type( M_Xh->basis(), gmc, basispc ) );
                 DVLOG(2) << "build basis function context\n";
-                this->push_back( ctx );
-                DVLOG(2) << "Context size: " << this->size() << "\n";
+                //this->push_back( ctx );
+                int number = M_t.size()-1;
+                this->insert( std::pair<int,basis_context_ptrtype>( number , ctx ) );
+                //DVLOG(2) << "Context size: " << this->size() << "\n";
 
                 if ( nprocs > 1 )
                     mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
@@ -1767,10 +1768,11 @@ public:
 
         void addCtx( basis_context_ptrtype ctx , int proc_having_the_point)
         {
-            this->push_back( ctx );
+            int position = M_t.size();
+            this->insert( std::pair<int,basis_context_ptrtype>( position , ctx ) );
             node_type n;//only to increase M_t ( this function may be called during online step of crb )
             M_t.push_back( n );
-            M_t_proc.push_back(proc_having_the_point);
+            M_t_proc.push_back( proc_having_the_point );
         }
         void removeCtx()
         {
@@ -1831,6 +1833,8 @@ public:
 
         //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
         typedef typename VectorUblas<T>::range::type ct_type;
+
+        typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_type;
 
         /**
          * usefull in // with composite case
@@ -2338,17 +2342,24 @@ public:
          * evaluate the function at all points added to functionspace_type::Context
          */
         Eigen::Matrix<value_type, Eigen::Dynamic, 1>
-        evaluate( functionspace_type::Context const & context ) const
+        evaluate( functionspace_type::Context const & context , bool do_communications=true) const
         {
+            int npoints = context.nPoints();
+
             //rank of the current processor
             int proc_number = Environment::worldComm().globalRank();
 
             //total number of processors
             int nprocs = Environment::worldComm().globalSize();
 
-            Eigen::Matrix<value_type, Eigen::Dynamic, 1> r( context.size() );
             auto it = context.begin();
             auto en = context.end();
+
+            eigen_type __globalr( npoints );
+            __globalr.setZero();
+            eigen_type __localr( npoints );
+            __localr.setZero();
+
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
@@ -2357,50 +2368,23 @@ public:
                 for( int i = 0 ; it != en; ++it, ++i )
                 {
                     v[0].setZero(1);
-                    id( *(*it), v );
-                    r(i) = v[0]( 0, 0 );
+                    auto basis = it->second;
+                    id( *basis, v );
+                    int global_index = it->first;
+                    __localr( global_index ) = v[0]( 0, 0 );
                 }
             }
 
-            Eigen::Matrix<value_type, Eigen::Dynamic, 1> union_r ( context.nPoints() );
-
-            if( nprocs > 1 )
-            {
-                int index=0;//the proc may contains severals points se we need to have
-                            //an index to insert values
-
-                for(int pt_number=0; pt_number<context.nPoints(); pt_number++)
-                {
-                    int proc_having_point = context.processorHavingPoint(pt_number);
-                    //the evaluation was done only on one proc so need to broadcast
-                    if( proc_number == proc_having_point )
-                    {
-                        boost::mpi::broadcast( Environment::worldComm() , r(index) , proc_number );
-                        union_r( pt_number ) = r(index);
-                        index++;//local index increases
-                    }
-                    else
-                    {
-                        double r_from_other ;
-                        boost::mpi::broadcast( Environment::worldComm() , r_from_other , proc_having_point );
-                        //union_r.resize(union_r.rows()+r_from_other.rows());
-                        union_r( pt_number ) = r_from_other;
-                    }
-                }
-            }// nprocs > 1
+            if( do_communications )
+                mpi::all_reduce( Environment::worldComm() , __localr, __globalr, std::plus< eigen_type >() );
             else
-            {
-                union_r = r;
-            }
+                __globalr = __localr;
 
-            return union_r;
+            return __globalr;
         }
 
-        /*
-         * evaluate the function only at the point number i
-         */
         double
-        evaluate( functionspace_type::Context const & context, int i ) const
+        evaluate( functionspace_type::Context const & context, int i , bool do_communications=true) const
         {
             //rank of the current processor
             int proc_number = Environment::worldComm().globalRank();
@@ -2408,45 +2392,25 @@ public:
             //total number of processors
             int nprocs = Environment::worldComm().globalSize();
 
-            int size = context.nPoints();
-            CHECK( i >= 0 && i < size ) << "the index " << i << " of the point where you want to evaluate the element is out of range\n";
+            int npoints = context.nPoints();
+            CHECK( i >= 0 && i < npoints ) << "the index " << i << " of the point where you want to evaluate the element is out of range\n";
             boost::array<typename array_type::index, 1> shape;
             shape[0] = 1;
             id_array_type v( shape );
 
-            double res=0;
-
-            CHECK( nprocs == 1 ) << "this function is not yet implemented in parallel ... \n";
-#if 0
-            if( nprocs > 1 )
+            double result=0;
+            int proc_having_the_point = context.processorHavingPoint( i );
+            if( proc_number == proc_having_the_point )
             {
-                int proc_having_point = context.processorHavingPoint( i );
-                LOG(INFO)<<"proc_having_point : " <<proc_having_point<<"\n";
-                //WARNING
-                //we need to search the rank of the point in the context
-                //for example the proc can have points t2,t10 and t20 so if we want to evaluate expression
-                //at t20 we need to do
-                //index=3
-                //id( *(context[index]) , v )
-
-                //the evaluation was done only on one proc so need to broadcast
-                if( proc_number == proc_having_point )
-                {
-                    int index=0;
-                    boost::mpi::broadcast( Environment::worldComm() , v[0](0,0) , proc_number );
-                    res = v[0](0,0);
-                }
-                else
-                    boost::mpi::broadcast( Environment::worldComm() , res , proc_having_point );
-
+                auto basis = context.at( i );
+                id( *basis , v );
+                result = v[0](0,0);
             }
-            else
-            {
-            }
-#endif
-            id( *(context[i]) , v );
-            res = v[0](0,0);
-            return res;
+
+            if( do_communications )
+                boost::mpi::broadcast( Environment::worldComm() , result , proc_having_the_point );
+
+            return result;
         }
 
         void
