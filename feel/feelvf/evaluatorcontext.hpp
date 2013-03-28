@@ -148,8 +148,6 @@ template<typename CTX, typename ExprT>
 typename EvaluatorContext<CTX, ExprT>::element_type
 EvaluatorContext<CTX, ExprT>::operator()() const
 {
-    //boost::timer __timer;
-
     //rank of the current processor
     int proc_number = Environment::worldComm().globalRank();
 
@@ -159,7 +157,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
 
-    typedef typename CTX::value_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef typename CTX::mapped_type::value_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
@@ -172,13 +170,12 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
     int npoints = M_ctx.nPoints();
 
-    element_type __v( npoints*shape::M );
-    __v.setZero();
+    element_type __globalv( npoints*shape::M );
+    __globalv.setZero();
 
     //local version of __v on each proc
-    element_type __localv( M_ctx.size()*shape::M );
+    element_type __localv( npoints*shape::M );
     __localv.setZero();
-
 
     if ( !M_ctx.empty() )
     {
@@ -186,13 +183,12 @@ EvaluatorContext<CTX, ExprT>::operator()() const
         auto Xh = M_ctx.functionSpace();
         context_type vec_ctx ( Xh );
 
+        //loop on local points
         for ( int p = 0; it!=en ; ++it, ++p )
         {
             auto const& ctx = *it;
-            //std::vector<typename context_type::value_type> vec_ctx;
             vec_ctx.clear();
-            vec_ctx.addCtx( *it , proc_number );
-            //vec_ctx.push_back( *it );
+            vec_ctx.addCtx(  it->second , proc_number );
 
             /**
              * be careful there is no guarantee that the set of contexts will
@@ -200,19 +196,25 @@ EvaluatorContext<CTX, ExprT>::operator()() const
              * the programmer so that we don't have to re-create the expression
              * context if the reference points are the same
              */
-            map_gmc_type mapgmci( fusion::make_pair<vf::detail::gmc<0> >(ctx->gmContext() ) );
+            map_gmc_type mapgmci( fusion::make_pair<vf::detail::gmc<0> >(ctx.second->gmContext() ) );
 
             //element associated with the geometrical mapping
-            auto const& e = ctx->gmContext()->element();
+            auto const& e = ctx.second->gmContext()->element();
 
             //project the expression only on element containing point
             auto proj_expr = vf::project( _space=Xh, _expr=M_expr , _range=idedelements( Xh->mesh(), e.id() ) );
 
             //evaluate the projected expression at point p
-            auto val = proj_expr.evaluate( vec_ctx );
-            __localv( p ) = val( 0 );
+            bool do_communications=false;//we don't want that each proc have the result now ( but latter )
+            auto val = proj_expr.evaluate( vec_ctx , do_communications );
+
+            //global index of the local point
+            int global_p = it->first;
+
+            __localv( global_p ) = val( 0 );
 
             vec_ctx.removeCtx();
+
 #if 0
             t_expr_type tensor_expr( M_expr, mapgmci );
             tensor_expr.update( mapgmci );
@@ -225,68 +227,10 @@ EvaluatorContext<CTX, ExprT>::operator()() const
         }
     }
 
-    //now every proc have filled localv ( if they have points )
-    //each proc has to fill __v
-    if( nprocs > 1 )
-    {
-        int index=0;//the proc may contains severals points se we need to have
-                    //an index to insert values
+    //bring back each proc contribution in __globalv
+    mpi::all_reduce( Environment::worldComm() , __localv, __globalv, std::plus< element_type >() );
 
-        for(int p=0; p<npoints; p++)
-        {
-            int proc_having_point = M_ctx.processorHavingPoint(p);
-            double info=0 ;
-            double info_send_recv = 0;
-            if( proc_number == proc_having_point )
-            {
-                info =  __localv(index);
-                LOG( INFO ) <<" info sent : "<<info;
-                //boost::mpi::broadcast( Environment::worldComm() , info , proc_number );
-                //__v( p ) = __localv( index );
-                index++;//local index increases
-
-                if( nprocs == 2 )
-                {
-                    info_send_recv = info;
-                    if( proc_number == 0 )
-                        Environment::worldComm().send(1,0,info_send_recv);
-                    else
-                        Environment::worldComm().send(0,0,info_send_recv);
-                }
-            }
-            else
-            {
-                LOG( INFO ) <<" info from proc "<<proc_having_point;
-                if( nprocs == 2 )
-                {
-                    if( proc_number == 0 )
-                        Environment::worldComm().recv(1,0,info_send_recv);
-                    else
-                        Environment::worldComm().recv(0,0,info_send_recv);
-                }
-                //double contribution_from_other=0 ;
-                //boost::mpi::broadcast( Environment::worldComm() , contribution_from_other ,  proc_having_point);
-                //LOG( INFO ) <<"info recue de "<<proc_having_point<<": \n"<<contribution_from_other;
-                //google::FlushLogFiles(google::GLOG_INFO);
-                //__v( p ) = contribution_from_other ;
-            }
-
-            boost::mpi::broadcast( Environment::worldComm() , info , proc_having_point );
-
-            if( nprocs == 2 )
-                LOG( INFO ) << " now info : "<<info<<" and info_send_recv : "<<info_send_recv;
-            else
-                LOG( INFO ) <<" now info : "<<info;
-
-            __v( p ) = info ;
-        }
-
-    }// nprocs > 1
-    else
-        __v = __localv;
-
-    LOG ( INFO ) << "__v : \n"<<__v;
-    return __v;
+    return __globalv;
 }
 
 }
@@ -344,9 +288,9 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    LOG(INFO) << "evaluate expression..." << std::endl;
+    //LOG(INFO) << "evaluate expression..." << std::endl;
     return evaluatecontext_impl( context, expr, geomap );
-    LOG(INFO) << "evaluate expression done." << std::endl;
+    //LOG(INFO) << "evaluate expression done." << std::endl;
 }
 
 
