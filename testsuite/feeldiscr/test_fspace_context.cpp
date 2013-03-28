@@ -256,9 +256,11 @@ testFspaceContext()
     auto ptheta_evaluate = ptheta.evaluate( ctx );
     auto pr_evaluate = pr.evaluate( ctx );
 
+
     //boost::timer t;
     auto evaluateX = evaluateFromContext( _context=ctx, _expr= exprX );
     auto evaluateX2 = evaluateFromContext( _context=ctx, _expr= exprX2 );
+
     auto evaluateX3 = evaluateFromContext( _context=ctx, _expr= exprX3 );
     auto evaluateX4 = evaluateFromContext( _context=ctx, _expr= exprX4 );
     auto evaluateXY = evaluateFromContext( _context=ctx, _expr= exprXY );
@@ -297,8 +299,15 @@ testFspaceContext()
     Eigen::VectorXd true_sin2pix ( vec_t.size() ); true_sin2pix = sin2pix( vec_t );
 
     //verification
+    double eval1 = ptheta_evaluate(0);
+    double eval2 = ptheta.evaluate( ctx , 0);
+    BOOST_CHECK_SMALL( (eval1-eval2), 1e-13 );
+
+    eval1 = ptheta_evaluate(2);
+    eval2 = ptheta.evaluate( ctx , 2);
+    BOOST_CHECK_SMALL( (eval1-eval2), 1e-13 );
+
     BOOST_CHECK_SMALL( (evaluateX-true_x).norm(), 1e-13 );
-    BOOST_CHECK_SMALL( (evaluateY-true_y).norm(), 1e-13 );
     BOOST_CHECK_SMALL( (evaluateY-true_y).norm(), 1e-13 );
     BOOST_CHECK_SMALL( (evaluateX2-true_x2).norm(), 1e-13 );
     BOOST_CHECK_SMALL( (evaluateX3-true_x3).norm(), 1e-13 );
@@ -307,9 +316,9 @@ testFspaceContext()
     BOOST_CHECK_SMALL( (evaluateX2Y2-true_x2y2).norm(), 1e-13 );
     BOOST_CHECK_SMALL( (evaluateXY3-true_xy3).norm(), 1e-13 );
 
-    BOOST_CHECK_SMALL( (evaluateTheta-true_theta).norm(), 1e-13 );
-    BOOST_CHECK_SMALL( (evaluateR-true_r).norm(), 1e-13 );
-    BOOST_CHECK_SMALL( (evaluateSin2PiX-true_sin2pix).norm(), 1e-13 );
+    BOOST_CHECK_SMALL( (evaluateTheta-true_theta).norm(), 1e-7 );
+    BOOST_CHECK_SMALL( (evaluateR-true_r).norm(), 1e-7 );
+    BOOST_CHECK_SMALL( (evaluateSin2PiX-true_sin2pix).norm(), 5e-6 );
 
     BOOST_CHECK_SMALL( (evaluateX-evaluateProjX).norm(), 1e-13 );
     BOOST_CHECK_SMALL( (evaluateY-evaluateProjY).norm(), 1e-13 );
@@ -322,12 +331,7 @@ testFspaceContext()
 
     BOOST_CHECK_SMALL( (evaluateTheta-evaluateProjTheta).norm(), 1e-7 );
     BOOST_CHECK_SMALL( (evaluateR-evaluateProjR).norm(), 1e-7 );
-
     BOOST_CHECK_SMALL( (evaluateSin2PiX-evaluateProjSin2PiX).norm(), 5e-6 );
-
-
-    //BOOST_CHECK_CLOSE( evaluation_x, solution_x[i], 1e-13 );
-
 
 } // TestFspaceContext ::run
 
