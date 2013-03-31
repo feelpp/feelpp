@@ -1042,9 +1042,9 @@ public:
         return 1;
     }
 
-    void computationalTimeEimStatistics ()
+    void computeStatistics ( Eigen::VectorXd vector , std::string name )
     {
-        return M_model->computationalTimeEimStatistics();
+        return M_model->computeStatistics( vector , name );
     }
 
     double timeStep()
