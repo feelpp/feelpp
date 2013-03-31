@@ -1086,9 +1086,6 @@ public:
                                            model ) );
         if ( !M_crb->isDBLoaded() || M_crb->rebuildDB() )
         {
-            std::cout<<"on refait la DB !!!!!"<<std::endl;
-            std::cout<<"M_crb->isDBLoaded() : "<<M_crb->isDBLoaded()<<std::endl;
-            std::cout<<"M_crb->rebuildDB() : "<<M_crb->rebuildDB()<<std::endl;
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 LOG( INFO ) << "No CRB DB available, do crb offline computations...";
             M_crb->setOfflineStep( true );
