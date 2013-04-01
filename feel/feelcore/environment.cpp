@@ -764,10 +764,10 @@ Environment::findFile( std::string const& filename )
         }
 
         if ( Environment::systemGeoRepository().template get<1>()  &&
-             fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
+             fs::exists( fs::path( Environment::systemGeoRepository().template get<0>() ) / filename ) )
         {
-            LOG(INFO) << "File" << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
-            return ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string();
+            LOG(INFO) << "File" << ( fs::path( Environment::systemGeoRepository().template get<0>() ) / filename ) << " found";
+            return ( fs::path( Environment::systemGeoRepository().template get<0>() ) / filename ).string();
         }
     }
     LOG(INFO) << "File " << filename << " not found";
