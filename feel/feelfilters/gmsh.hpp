@@ -57,31 +57,6 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
-enum GMSH_PARTITIONER
-{
-    GMSH_PARTITIONER_CHACO = 1,
-    GMSH_PARTITIONER_METIS = 2
-
-};
-
-extern const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT;
-
-
-enum GMSH_ORDER
-{
-    GMSH_ORDER_ONE = 1,
-    GMSH_ORDER_TWO = 2,
-    GMSH_ORDER_THREE = 3,
-    GMSH_ORDER_FOUR = 4,
-    GMSH_ORDER_FIVE = 5
-};
-
-enum GMSH_FORMAT
-{
-    GMSH_FORMAT_ASCII = 0,
-    GMSH_FORMAT_BINARY = 1
-};
-
 /**
  * \class Gmsh
  * \brief Gmsh Mesh Generator
@@ -764,7 +739,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( straighten,          *( boost::is_integral<mpl::_> ), 1 )
+      ( straighten,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,		   *,false )
@@ -782,27 +757,35 @@ BOOST_PARAMETER_FUNCTION(
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
-    std::string fname = filename;
+
+    std::string filename_with_path = Environment::findFile( filename );
+    if ( filename_with_path.empty() )
+    {
+        std::vector<std::string> plist = Environment::geoPathList();
+        std::ostringstream ostr;
+        std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
+        CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
+    }
 
     if ( rebuild_partitions )
     {
         Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
         gmsh.setNumberOfPartitions( partitions );
-        gmsh.setPartitioner( partitioner );
+        gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
         gmsh.setMshFileByPartition( partition_file );
-        gmsh.rebuildPartitionMsh(filename,rebuild_partitions_filename);
+        gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
         // new mesh to load
-        fname=rebuild_partitions_filename;
+        filename_with_path=rebuild_partitions_filename;
     }
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
     {
         Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
-        fname = gmsh.refine( fname, refine );
+        filename_with_path = gmsh.refine( filename_with_path, refine );
     }
 
-    ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+    ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
@@ -889,7 +872,7 @@ BOOST_PARAMETER_FUNCTION(
       ( format,         *, option(_name="gmsh.format").template as<int>() )
       ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
       ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
-      ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
+      ( straighten,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
@@ -913,7 +896,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setOrder( mesh->nOrder );
         desc->setWorldComm( worldcomm );
         desc->setNumberOfPartitions( partitions );
-        desc->setPartitioner( partitioner );
+        desc->setPartitioner( (GMSH_PARTITIONER) partitioner );
         desc->setMshFileByPartition( partition_file );
         desc->setRefinementLevels( refine );
         desc->setFileFormat( (GMSH_FORMAT)format );
@@ -1037,11 +1020,11 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
     ( optional
-      ( h,              *( boost::is_arithmetic<mpl::_> ), double( 0.1 ) )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), std::string( "" ) ) )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() ) )
     )
 
 {
@@ -1054,43 +1037,20 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setPrefix( fs::path( filename ).stem() );
 #endif
 
-    fs::path cp;
-
-    try
+    std::string filename_with_path = Environment::findFile( filename );
+    if ( filename_with_path.empty() )
     {
-        fs::current_path( cp );
-    }
-
-    catch ( ... )
-    {
-
-    }
-    // first try in the current path
-    if ( fs::exists( cp / filename ) )
-    {
-        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( ( cp/filename ).string() ) );
-    }
-
-    else if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
-    {
-        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( ( fs::path( Environment::localGeoRepository() ) / filename ).string() ) );
-    }
-
-    else if ( Environment::systemGeoRepository().template get<1>()  &&
-              fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
-    {
-        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string() ) );
-    }
-
-    else
-    {
+        std::vector<std::string> plist = Environment::geoPathList();
         std::ostringstream ostr;
-        ostr << "File " << filename << " was not found neither in current directory or in " << Environment::localGeoRepository() << " or in " << Environment::systemGeoRepository();
-        throw std::invalid_argument( ostr.str() );
+        std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
+        CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
     }
+
+    gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( filename_with_path ) );
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
+        fs::path cp = fs::current_path();
         std::vector<std::string> depends_on_files;
         if ( !depends.empty() )
             algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
@@ -1215,6 +1175,87 @@ BOOST_PARAMETER_FUNCTION(
     return meshname;
 }
 
+
+/**
+ *
+ * \brief load a mesh data structure (hold in a shared_ptr<>) using GMSH
+ *
+ * \arg mesh mesh data structure
+ * \arg filename filename string (with extension)
+ * \arg refine optionally refine with \p refine levels the mesh (default: 0)
+ * \arg update update the mesh data structure (build internal faces and edges) (default : true)
+ * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
+ */
+BOOST_PARAMETER_FUNCTION(
+    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
+    load,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( mesh, * )
+
+        ) // 4. one required parameter, and
+
+    ( optional
+      ( filename, *, option(_name="gmsh.filename").template as<std::string>() )
+      ( straighten,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
+      ( refine,          *( boost::is_integral<mpl::_> ), 0 )
+      ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
+      ( physical_are_elementary_regions,		   *, option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
+      ( worldcomm,       *, Environment::worldComm() )
+      ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
+      ( rebuild_partitions_filename,	*, filename )
+      ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
+      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() )
+        )
+    )
+{
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
+
+    fs::path mesh_name=filename;
+    CHECK( mesh_name.extension() == ".geo" || mesh_name.extension() == ".msh" )
+        << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
+
+    if ( mesh_name.extension() == ".geo" )
+    {
+        return createGMSHMesh( _mesh=mesh,
+                               _desc=geo( _filename=mesh_name.string(),
+                                          _depends=depends ),
+                               _straighten=straighten,
+                               _refine=refine,
+                               _update=update,
+                               _physical_are_elementary_regions=physical_are_elementary_regions,
+                               _worldcomm=worldcomm,
+                               //_rebuild_partitions=rebuild_partitions,
+                               //_rebuild_partitions_filename=rebuild_partitions_filename,
+                               _partitions=partitions,
+                               _partitioner=partitioner,
+                               _partition_file=partition_file
+            );
+    }
+
+    if ( mesh_name.extension() == ".msh" )
+    {
+        return loadGMSHMesh( _mesh=mesh,
+                             _filename=mesh_name.string(),
+                             _straighten=straighten,
+                             _refine=refine,
+                             _update=update,
+                             _physical_are_elementary_regions=physical_are_elementary_regions,
+                             _worldcomm=worldcomm,
+                             _rebuild_partitions=rebuild_partitions,
+                             _rebuild_partitions_filename=rebuild_partitions_filename,
+                             _partitions=partitions,
+                             _partitioner=partitioner,
+                             _partition_file=partition_file
+            );
+    }
+    return _mesh_ptrtype( mesh );
+}
 
 
 /**
