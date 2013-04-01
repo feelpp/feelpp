@@ -27,7 +27,7 @@
    \date 2013-03-13
  */
 #include <feel/feel.hpp>
-
+#include <feel/feelmesh/meshmover.hpp>
 int main(int argc, char**argv )
 {
     //# marker1 #
@@ -62,7 +62,9 @@ int main(int argc, char**argv )
           _expr=zero<2,1>() );
     a+=on(_range=markedfaces(mesh,2), _rhs=l, _element=u,
           _expr=vec(cst(0.),0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1)));
+
     a.solve(_rhs=l,_solution=u);
+    std::cout<<"coucou3" << "\n";
 
 
     auto m1 = lagrangeP1(_space=Vh)->mesh();
@@ -89,6 +91,7 @@ int main(int argc, char**argv )
     e->step(0)->setMesh( m1 );
     e->step(0)->add( "u", u );
     e->save();
+    std::cout<<"coucou6" << "\n";
 
     meshMove( mesh, u );
 

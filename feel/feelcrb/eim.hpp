@@ -1064,6 +1064,7 @@ public:
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
+
     vector_type operator()( context_type const& ctx, parameter_type const& mu )
         {
             M_mu=mu;
@@ -1091,6 +1092,7 @@ public:
             M_crb->setOfflineStep( true );
             M_crb->offline();
         }
+
         int n_eval = option(_name="eim.computational-time-neval").template as<int>();
 
         typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( M_model->parameterSpace() ) );
