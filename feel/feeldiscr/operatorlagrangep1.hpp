@@ -149,7 +149,10 @@ public:
      */
     OperatorLagrangeP1( domain_space_ptrtype const& space,
                         backend_ptrtype const& backend,
-                        std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>(1,Environment::worldComm()) );
+                        std::vector<WorldComm> const& worldsComm = std::vector<WorldComm>(1,Environment::worldComm()),
+                        std::string pathMeshLagP1=".",
+                        std::string prefix="",
+                        bool rebuild=true );
 
     /**
      * destructor. nothing really to be done here
@@ -259,7 +262,10 @@ private:
 template<typename space_type>
 OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& space,
                                                     backend_ptrtype const& backend,
-                                                    std::vector<WorldComm> const& worldsComm)
+                                                    std::vector<WorldComm> const& worldsComm,
+                                                    std::string pathMeshLagP1,
+                                                    std::string prefix,
+                                                    bool rebuild )
     :
     super( space,
            dual_image_space_ptrtype( new dual_image_space_type( image_mesh_ptrtype( new image_mesh_type ) ) ),
@@ -273,21 +279,46 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
              _M_pset.points() ) ),
     _M_p2m()
 {
-    // create a triangulation of the current convex
-    // using equispaced points defined on the reference
-    // element
-    //_M_p2m.addBoundaryPoints( _M_pset.points() );
-    _M_p2m.visit( &_M_pset );
 
-// #if !defined( NDEBUG )
-//     ExporterQuick<image_mesh_type> exp( "vtk", "ensight" );
-//     exp.save( _M_p2m.mesh() );
-// #endif
+    std::string nameMeshLagP1base = "meshLagP1-"+space->basisName()+(boost::format("-order%1%")%domain_space_type::basis_type::nOrder).str();
+    std::string nameMeshLagP1 = prefixvm(prefix,nameMeshLagP1base);
+    if ( rebuild )
+    {
+        if (_M_mesh->worldComm().globalRank() == _M_mesh->worldComm().masterRank() )
+        {
+            // create a triangulation of the current convex
+            // using equispaced points defined on the reference
+            // element
+            //_M_p2m.addBoundaryPoints( _M_pset.points() );
+            _M_p2m.visit( &_M_pset );
 
-    // do not renumber the mesh entities
-    _M_p2m.mesh()->components().clear ( MESH_RENUMBER );
-    _M_p2m.mesh()->components().clear ( MESH_CHECK );
-    _M_p2m.mesh()->updateForUse();
+            // #if !defined( NDEBUG )
+            //     ExporterQuick<image_mesh_type> exp( "vtk", "ensight" );
+            //     exp.save( _M_p2m.mesh() );
+            // #endif
+
+            // do not renumber the mesh entities
+            _M_p2m.mesh()->components().clear ( MESH_RENUMBER );
+            _M_p2m.mesh()->components().clear ( MESH_CHECK );
+            _M_p2m.mesh()->updateForUse();
+
+            _M_p2m.mesh()->save( _name=nameMeshLagP1,_path=pathMeshLagP1 );
+        }
+
+        _M_mesh->worldComm().barrier();
+
+        if (_M_mesh->worldComm().globalRank() != _M_mesh->worldComm().masterRank() )
+        {
+            _M_p2m.mesh()->load( _name=nameMeshLagP1,_path=pathMeshLagP1,
+                                 _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+        }
+    }
+    else
+    {
+        _M_p2m.mesh()->load( _name=nameMeshLagP1,_path=pathMeshLagP1,
+                             _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    }
+
 
     VLOG(2) << "[P1 Lagrange] Pointset " << _M_pset.points() << "\n";
 
@@ -611,9 +642,13 @@ template<typename space_type>
 boost::shared_ptr<OperatorLagrangeP1<space_type> >
 opLagrangeP1_impl( boost::shared_ptr<space_type> const& Xh,
                    typename OperatorLagrangeP1<space_type>::backend_ptrtype const& backend,
-                   std::vector<WorldComm> const& worldsComm)
+                   std::vector<WorldComm> const& worldsComm,
+                   std::string pathMeshLagP1,
+                   std::string prefix,
+                   bool rebuild
+                   )
 {
-    return boost::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,worldsComm ) );
+    return boost::shared_ptr<OperatorLagrangeP1<space_type> >( new OperatorLagrangeP1<space_type>( Xh,backend,worldsComm,pathMeshLagP1,prefix,rebuild ) );
 }
 
 
@@ -635,11 +670,14 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( backend,        *, Backend<typename compute_opLagrangeP1_return<Args>::space_type::value_type>::build() )
       ( worldscomm, *, std::vector<WorldComm>( 1,Environment::worldComm() ) )
+      ( path,       *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
+      ( prefix,       *( boost::is_convertible<mpl::_,std::string> ), std::string("") )
+      ( rebuild,          *( boost::is_integral<mpl::_> ), 1 )
     ) // optionnal
 )
 {
     Feel::detail::ignore_unused_variable_warning( args );
-    return opLagrangeP1_impl(space,backend,worldscomm);
+    return opLagrangeP1_impl(space,backend,worldscomm,path,prefix,rebuild);
 }
 
 
