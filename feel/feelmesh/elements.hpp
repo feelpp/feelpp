@@ -46,6 +46,26 @@ namespace Feel
 {
 namespace multi_index = boost::multi_index;
 /// \cond detail
+
+namespace detail
+{
+    template <typename EltType >
+    void
+    updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<1> /**/)
+    {}
+    template <typename EltType >
+    void
+    updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<2> /**/)
+    {}
+    template <typename EltType >
+    void
+    updateElementGhostConnectEdgeToElement( EltType& e, int i, mpl::int_<3> /**/)
+    {
+        e.edge( i ).addElementGhost( e.processId(),e.id() );
+    }
+}
+
+
 /*!
   \class Elements
   \brief Elements container class
@@ -246,6 +266,36 @@ public:
                 e.point( i ).addElement( e.id() );
         }
     };
+
+    /**
+     * @class ElementConnectPointToElement
+     * @brief connect point to element
+     *
+     */
+    struct ElementGhostConnectPointToElement
+    {
+        void operator()( element_type& e )
+        {
+            for ( int i = 0; i < e.numPoints; ++i )
+                e.point( i ).addElementGhost( e.processId(),e.id() );
+        }
+    };
+
+    /**
+     * @class ElementGhostConnectEdgeToElement
+     * @brief connect edge to element
+     *
+     */
+    struct ElementGhostConnectEdgeToElement
+    {
+        void operator()( element_type& e )
+        {
+            for ( int i = 0; i < e.numEdges; ++i )
+                detail::updateElementGhostConnectEdgeToElement(e,i,mpl::int_<element_type::nDim>());
+        }
+    };
+
+
     /// \endcond
 
     //@}

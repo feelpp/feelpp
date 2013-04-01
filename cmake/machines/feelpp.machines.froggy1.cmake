@@ -1,6 +1,7 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2013-02-18
+
+#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+#       Date: 2012-04-12
 #
 #  Copyright (C) 2013 Feel++ Consortium
 #
@@ -19,11 +20,21 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
+#
 
-feelpp_add_application( doc_laplacian SRCS laplacian.cpp LABEL doc CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )#
-feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc)
-feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
-feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LABEL doc  )
-feelpp_add_application( doc_laplacian_harmonic SRCS harmonic.cpp LABEL doc  )
-feelpp_add_application( doc_laplacian_dg SRCS laplacian_dg.cpp LABEL doc  )
-feelpp_add_application( doc_laplacian_with_holes SRCS laplacian_with_holes.cpp LABEL doc  )
+#set(FEELPP_RESET_ENV_LIBRARY_PATH OFF)
+set(FEELPP_ENABLE_MANUAL OFF)
+set(BLAS_blas_LIBRARY $ENV{packagesBaseDir}/blas/BLAS/blas_LINUX.a)
+
+
+message(STATUS "on froggy1 : BLAS_blas_LIBRARY : ${BLAS_blas_LIBRARY} ")
+
+# find the gfortran library
+FIND_LIBRARY(GFORTRAN_LIBRARY
+    NAMES
+    gfortran
+    PATHS
+    $ENV{gccDir}/lib
+    $ENV{LIBRARY_PATH}
+)
+message(STATUS "on froggy1 : gfortran lib: ${GFORTRAN_LIBRARY} ")
