@@ -492,13 +492,15 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
                             ( geo,   *, Environment::vm(_name="exporter.geometry").template as<int>() )
+                            ( worldcomm, *, Environment::worldComm() )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New(Environment::vm(),name);
+    auto e =  exporter_type::New(Environment::vm(),name,worldcomm);
     e->setPrefix( name );
     e->setMesh( mesh, (ExporterGeometry) geo );
-    e->addRegions();
+    // addRegions not work with transient simulation!
+    //e->addRegions();
     return e;
     //return Exporter<Mesh<Simplex<2> >,1>::New();
 }

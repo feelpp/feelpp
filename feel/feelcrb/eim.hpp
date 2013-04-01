@@ -50,6 +50,9 @@
 
 #include <feel/feelvf/vf.hpp>
 
+#include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/crbmodel.hpp>
+
 #include <Eigen/Core>
 
 namespace Feel
@@ -373,6 +376,7 @@ public:
 
     std::vector<double> studyConvergence( parameter_type const & mu) const;
 
+    void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
     element_type residual ( size_type M ) const;
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
@@ -916,10 +920,7 @@ public:
         M_online_time.conservativeResize( size+1 );
         M_online_time( size ) = time;
     }
-    Eigen::VectorXd onlineTime()
-    {
-        return M_online_time;
-    }
+    Eigen::VectorXd onlineTime() const { return M_online_time; }
 
     mesh_ptrtype mesh() const { return M_fspace->mesh(); }
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
@@ -954,6 +955,7 @@ public:
     virtual size_type  mMax() const = 0;
 
     virtual std::vector<double> studyConvergence( parameter_type const & mu ) const = 0;
+    virtual void computationalTimeStatistics( std::string appname )  = 0;
 
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
@@ -974,6 +976,7 @@ class EIMFunction
 public:
     typedef ModelType model_type;
     typedef ModelType* model_ptrtype;
+    typedef boost::shared_ptr<ModelType> boost_shared_model_ptrtype;
 
     typedef SpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -994,6 +997,11 @@ public:
 
     typedef typename super::vector_type vector_type;
 
+    typedef CRBModel<ModelType> crbmodel_type;
+    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef CRB<crbmodel_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
     EIMFunction( po::variables_map const& vm,
                  model_ptrtype model,
                  functionspace_ptrtype space,
@@ -1004,6 +1012,7 @@ public:
                  std::string const& name )
         :
         super( vm, space, model->parameterSpace(), sampling, model->modelName(), name ),
+        M_vm( vm ),
         M_model( model ),
         M_expr( expr ),
         M_u( u ),
@@ -1029,6 +1038,47 @@ public:
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
+    void computationalTimeStatistics( std::string appname )
+    {
+        auto model = crbmodel_ptrtype( new crbmodel_type( M_vm , CRBModelMode::CRB ) );
+        //make sure that the CRB DB is already build
+        M_crb = crb_ptrtype( new crb_type( appname,
+                                           M_vm ,
+                                           model ) );
+        if ( !M_crb->isDBLoaded() || M_crb->rebuildDB() )
+        {
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                LOG( INFO ) << "No CRB DB available, do crb offline computations...";
+            M_crb->setOfflineStep( true );
+            M_crb->offline();
+        }
+
+        int n_eval = option(_name="eim.computational-time-neval").template as<int>();
+
+        typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( M_model->parameterSpace() ) );
+        Sampling->logEquidistribute( n_eval  );
+
+        //dimension
+        int N =  option(_name="crb.dimension").template as<int>();
+        //reduced basis approximation space
+        auto WN = M_crb->wn();
+        BOOST_FOREACH( auto mu, *Sampling )
+        {
+            LOG( INFO ) << "[computational] mu = \n"<<mu;
+            auto o = M_crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+            auto uN = o.template get<4>();
+            auto u_crb = M_crb->expansion( uN , N , WN );
+
+            boost::mpi::timer t;
+            this->beta( mu , u_crb );
+            double time_elapsed = t.elapsed();
+            this->addOnlineTime( time_elapsed );
+        }
+
+        M_model->computeStatistics( super::onlineTime() , super::name() );
+
+    }
+
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
     element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu , M_eim->mMax() ); }
 
@@ -1042,11 +1092,13 @@ public:
     size_type mMax() const { return M_eim->mMax(); }
 
 private:
+    po::variables_map M_vm;
     model_ptrtype M_model;
     expr_type M_expr;
     solution_type& M_u;
     parameter_type& M_mu;
     eim_ptrtype M_eim;
+    crb_ptrtype M_crb;
 };
 
 namespace detail
