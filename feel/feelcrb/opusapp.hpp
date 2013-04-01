@@ -311,7 +311,7 @@ public:
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
 
             int n_eval_computational_time = option(_name="eim.computational-time-neval").template as<int>();
-            std::cout<<"n-eval : "<<n_eval_computational_time<<std::endl;
+
             if( n_eval_computational_time > 0 )
             {
                 auto eim_sc_vector = model->scalarContinuousEim();

@@ -74,6 +74,13 @@ public:
     multi_index::const_mem_fun<edge_type,
     Marker1 const&,
     &edge_type::marker> >,
+
+    // sort by less<int> on processId
+    multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
+    multi_index::const_mem_fun<edge_type,
+    uint16_type,
+    &edge_type::processId> >,
+
     // sort by less<int> on boundary
     multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
     multi_index::const_mem_fun<edge_type,
@@ -89,6 +96,10 @@ public:
 
     typedef typename marker_edges::iterator marker_edge_iterator;
     typedef typename marker_edges::const_iterator marker_edge_const_iterator;
+
+    typedef typename edges_type::template index<detail::by_pid>::type pid_edges;
+    typedef typename pid_edges::iterator pid_edge_iterator;
+    typedef typename pid_edges::const_iterator pid_edge_const_iterator;
 
     typedef typename edges_type::template index<detail::by_location>::type location_edges;
     typedef typename location_edges::iterator location_edge_iterator;
@@ -372,6 +383,16 @@ public:
     location_edge_const_iterator endEdgeOnBoundary() const
     {
         return _M_edges.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+    }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the faces
+     * with processor \p p
+     */
+    std::pair<pid_edge_iterator, pid_edge_iterator>
+    edgesWithProcessId( size_type p ) const
+    {
+        return _M_edges.template get<detail::by_pid>().equal_range( p );
     }
 
     //@}
