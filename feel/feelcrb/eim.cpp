@@ -50,6 +50,7 @@ eimOptions( std::string const& prefix )
         ( "eim.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
         ( "eim.cvg-study" , Feel::po::value<bool>()->default_value( 0 ), "for convergence study" )
         ( "eim.use-dimension-max-functions" , Feel::po::value<bool>()->default_value( 0 ), "force to use dimension-max basis functions" )
+        ( "eim.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of eim online step" )
         ;
 
     return eimoptions;
