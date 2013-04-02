@@ -134,9 +134,8 @@ FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_t
 if(Boost_FOUND)
   IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     # ensures that boost.signals2 compiles with clang++ >= 3.1
-    STRING(COMPARE GREATER "${BOOST_VERSION}" 1.52.0 CXX11_ADDED)
-    #message(STATUS "Boost version: ${Boost_VERSION} CXX11_ADDED ${CXX11_ADDED}" )
-    IF(CXX11_ADDED)
+   MESSAGE(STATUS "Boost_Version= ${Boost_VERSION}")
+   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "52")
       add_definitions(-DBOOST_NO_CXX11_VARIADIC_TEMPLATES) 
       message(STATUS "added -DBOOST_NO_CXX11_VARIADIC_TEMPLATES" )
     ELSE()
