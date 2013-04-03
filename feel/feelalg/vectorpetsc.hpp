@@ -849,6 +849,9 @@ public:
     void duplicateFromOtherPartition( Vector<T> const& vecInput );
 
     value_type dot( Vector<T> const& __v );
+
+    size_type localSize() const;
+
 private :
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
