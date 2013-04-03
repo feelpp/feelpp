@@ -763,7 +763,7 @@ Environment::findFile( std::string const& filename )
             return ( fs::path( Environment::localGeoRepository() ) / filename ).string();
         }
 
-        if ( Environment::systemGeoRepository().template get<1>()  &&
+        if ( Environment::systemGeoRepository().get<1>()  &&
              fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
         {
             LOG(INFO) << "File" << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
@@ -785,7 +785,7 @@ Environment::geoPathList()
                    } );
     if ( fs::exists( Environment::localGeoRepository() ) )
         plist.push_back( Environment::localGeoRepository() );
-    if ( Environment::systemGeoRepository().template get<1>()  &&
+    if ( Environment::systemGeoRepository().get<1>()  &&
          fs::exists( Environment::systemGeoRepository().get<0>() ) )
         plist.push_back( Environment::systemGeoRepository().get<0>() );
     return plist;
