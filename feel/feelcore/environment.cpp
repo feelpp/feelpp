@@ -725,6 +725,72 @@ Environment::rootRepository()
     return std::string();
 }
 std::string
+Environment::findFile( std::string const& filename )
+{
+    fs::path cp = fs::current_path();
+
+    if ( fs::exists( fs::path( filename ) ) )
+    {
+        LOG(INFO) << "File " << filename << " found";
+        return filename;
+    }
+
+    // first try in the current path
+    if ( fs::exists( cp / filename ) )
+    {
+        LOG(INFO) << "File " << (cp/filename) << " found";
+        return ( cp/filename ).string();
+    }
+    // look in to paths list from end-1 to begin
+    auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
+                            [&filename] ( fs::path const& p ) -> bool
+                            {
+                                if ( fs::exists( p/filename) )
+                                    return true;
+                                return false;
+                            } );
+    if ( it != S_paths.rend() )
+    {
+        LOG(INFO) << "File " << (*it/filename) << " found";
+        return ( *it / filename ).string();
+    }
+
+    if ( fs::path( filename ).extension() == ".geo" || fs::path( filename ).extension() == ".msh" )
+    {
+        if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
+        {
+            LOG(INFO) << "File " << (fs::path( Environment::localGeoRepository() ) / filename ) << " found";
+            return ( fs::path( Environment::localGeoRepository() ) / filename ).string();
+        }
+
+        if ( Environment::systemGeoRepository().get<1>()  &&
+             fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
+        {
+            LOG(INFO) << "File" << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
+            return ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string();
+        }
+    }
+    LOG(INFO) << "File " << filename << " not found";
+    return std::string();
+}
+std::vector<std::string>
+Environment::geoPathList()
+{
+    std::vector<std::string> plist;
+    plist.push_back( fs::current_path().string() );
+    std::for_each( S_paths.rbegin(), S_paths.rend(),
+                   [&plist] ( fs::path const& p )
+                   {
+                       plist.push_back( p.string() );
+                   } );
+    if ( fs::exists( Environment::localGeoRepository() ) )
+        plist.push_back( Environment::localGeoRepository() );
+    if ( Environment::systemGeoRepository().get<1>()  &&
+         fs::exists( Environment::systemGeoRepository().get<0>() ) )
+        plist.push_back( Environment::systemGeoRepository().get<0>() );
+    return plist;
+}
+std::string
 Environment::localGeoRepository()
 {
     fs::path rep_path;
@@ -777,7 +843,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         return;
 
     fs::path rep_path = fs::current_path();
-
+    S_paths.push_back( rep_path );
 
     typedef std::vector< std::string > split_vector_type;
 
@@ -874,6 +940,7 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 
+std::vector<fs::path> Environment::S_paths;
 fs::path Environment::S_scratchdir;
 
 } // detail

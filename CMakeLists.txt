@@ -27,7 +27,10 @@ cmake_minimum_required (VERSION 2.8.7)
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
 # Waiting for cmake to fix it
-SET(ENV{LIBRARY_PATH} "")
+OPTION(FEELPP_RESET_ENV_LIBRARY_PATH "apply SET(ENV{LIBRARY_PATH} )" ON )
+if (FEELPP_RESET_ENV_LIBRARY_PATH)
+  SET(ENV{LIBRARY_PATH} "")
+endif()
 
 # guard against in-source builds
 
@@ -74,7 +77,6 @@ OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT}
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
-OPTION(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex)" ${FEELPP_DEFAULT})
 
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")

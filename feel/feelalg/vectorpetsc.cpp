@@ -980,6 +980,20 @@ VectorPetscMPI<T>::dot( Vector<T> const& __v )
     return e;
 }
 
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+size_type
+VectorPetscMPI<T>::localSize() const
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
+
+    int petsc_size=0;
+    int ierr = VecGetLocalSize( _M_vecLocal, &petsc_size );
+    CHKERRABORT( this->comm(),ierr );
+
+    return static_cast<size_type>( petsc_size );
+}
 
 
 template class VectorPetsc<double>;

@@ -290,6 +290,7 @@ public:
             }
         }
 
+
     FEELPP_DONT_INLINE
     void run()
         {
@@ -308,6 +309,26 @@ public:
             //int output_index = option(_name=_o(this->about().appName(),"output.index")).template as<int>();
 
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
+
+            int n_eval_computational_time = option(_name="eim.computational-time-neval").template as<int>();
+            if( n_eval_computational_time > 0 )
+            {
+                auto eim_sc_vector = model->scalarContinuousEim();
+                auto eim_sd_vector = model->scalarDiscontinuousEim();
+                int size1 = eim_sc_vector.size();
+                int size2 = eim_sd_vector.size();
+                if( size1 + size2 == 0 )
+                    throw std::logic_error( "[OpusApp] no eim object detected" );
+
+                std::string appname = this->about().appName();
+                for(int i=0; i<size1; i++)
+                    eim_sc_vector[i]->computationalTimeStatistics(appname);
+                for(int i=0; i<size2; i++)
+                    eim_sd_vector[i]->computationalTimeStatistics(appname);
+
+                run_sampling_size = 0;
+            }
+
 
             switch ( run_sampling_type )
             {
@@ -778,12 +799,20 @@ public:
                 }
             }
 
-            model->computationalTimeEimStatistics();
+            //model->computationalTimeEimStatistics();
 
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
             bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+            bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
+            if( n_eval_computational_time )
+            {
+                //if we want stat on computational time on EIM online step
+                //we are not interested in errors statistics
+                compute_stat = false;
+                compute_fem = false;
+            }
 
             if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
                 {
@@ -851,7 +880,7 @@ public:
                         }
                 }
 
-            if ( option(_name="crb.compute-stat").template as<bool>() && compute_fem )
+            if ( compute_stat && compute_fem )
             {
                 LOG( INFO ) << "compute statistics \n";
                 Eigen::MatrixXf::Index index_max_l2;
