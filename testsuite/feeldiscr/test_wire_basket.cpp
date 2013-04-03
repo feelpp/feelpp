@@ -81,11 +81,9 @@ void run( Application_ptrtype & theApp )
     typedef Exporter<mesh_type> export_type;
     // trace
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-    //typedef typename space_type::trace_functionspace_type trace_space_type;
     typedef Exporter<trace_mesh_type> trace_export_type;
     // trace_trace
     typedef typename trace_mesh_type::trace_mesh_type trace_trace_mesh_type;
-    //typedef typename trace_space_type::trace_functionspace_type trace_trace_space_type;
     typedef Exporter<trace_trace_mesh_type> trace_trace_export_type;
 
     //--------------------------------------------------------------------------------------------------//
@@ -174,19 +172,18 @@ void run( Application_ptrtype & theApp )
                                                 ) );
 
     //auto wirebasket = createSubmesh( mesh3D, markededges(mesh3D,"WireBasket") );
-    FEELPP_ASSERT( wirebasket->numElements() != 0 )( wirebasket->numElements() ).error( "invalid wirebasket mesh" );
-    //auto Wh = trace_trace_space_type::New( _mesh=wirebasket );
     auto Xh3D = space_type::New(_mesh=mesh3D);
     auto Wh = Xh3D->wireBasket();
+    FEELPP_ASSERT( Wh->mesh()->numElements() != 0 )( Wh->mesh()->numElements() ).error( "invalid wirebasket mesh" );
+
     auto w = Wh->element();
     auto z = Wh->element();
 
     auto M = backend->newMatrix( _test=Wh, _trial=Wh );
-    //form2( _trial=Wh, _test=Wh, _matrix=M ) = integrate( _range=elements(wirebasket), _expr=idt(w)*id(z) );
     form2( _trial=Wh, _test=Wh, _matrix=M ) = integrate( _range=elements(Wh->mesh()), _expr=idt(w)*id(z) );
     w.setOnes();
     z.setOnes();
-    //std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
+    std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
     BOOST_CHECK_CLOSE( M->energy( w, w ), 12., 1e-12 );
 
     //-------------------------------------------------------------------------------------------------------
