@@ -437,6 +437,7 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
 
                            }
                        } } );
+
     // then propagate top-down marker from face if edge has not been marked
     std::for_each( this->beginFace(), this->endFace(),
                    [this]( face_type const& f )
@@ -676,7 +677,6 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_<3> )
 {
-
     for ( auto elt = this->beginEdge();
             elt != this->endEdge(); ++elt )
     {
@@ -703,7 +703,6 @@ Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_
 
         }
     }
-
 }
 template<typename Shape, typename T, int Tag>
 void
@@ -1699,7 +1698,7 @@ Mesh<Shape, T, Tag>::recv(int p, int tag)
 {
     VLOG(1) << "receiving markername\n";
     //this->comm().recv( p, tag, M_markername );
-    int s;
+    int s = 0;
     //this->comm().recv( p, tag, s );
     VLOG(1) << "receiving markername size: "<< s << "\n";
     for( int i = 0; i < s; ++i )
