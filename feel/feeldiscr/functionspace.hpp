@@ -1594,6 +1594,19 @@ public:
             mpl::identity<FunctionSpace<trace_mesh_type, bases_list> >,
             mpl::identity<mpl::void_> >::type::type trace_functionspace_type;
     typedef typename boost::shared_ptr<trace_functionspace_type> trace_functionspace_ptrtype;
+
+    // wirebasket
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+            mpl::identity<typename mesh_type::trace_trace_mesh_type>,
+            mpl::identity<mpl::void_> >::type::type trace_trace_mesh_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+            mpl::identity<typename mesh_type::trace_trace_mesh_ptrtype>,
+            mpl::identity<mpl::void_> >::type::type trace_trace_mesh_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+            mpl::identity<FunctionSpace<trace_trace_mesh_type, bases_list> >,
+            mpl::identity<mpl::void_> >::type::type trace_trace_functionspace_type;
+    typedef typename boost::shared_ptr<trace_trace_functionspace_type> trace_trace_functionspace_ptrtype;
+
 #if 0
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
             mpl::identity<typename trace_functionspace_type::element_type>,
@@ -3740,6 +3753,23 @@ public:
     trace( RangeT range  )  const
     {
         return trace_functionspace_type::New( mesh()->trace( range ) );
+    }
+
+
+    /**
+     * \return trace trace space
+     */
+    trace_trace_functionspace_ptrtype
+    wireBasket()  const
+    {
+        //return trace( mpl::greater<mpl::int_<nDim>,mpl::int_<1> >::type() )
+        return trace_trace_functionspace_type::New( mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ) );
+    }
+    template<typename RangeT>
+    trace_trace_functionspace_ptrtype
+    wireBasket( RangeT range  )  const
+    {
+        return trace_trace_functionspace_type::New( mesh()->wireBasket( range ) );
     }
 
 

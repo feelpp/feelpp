@@ -22,7 +22,7 @@
 */
 /**
    \file test_trace.cpp
-   \author Abdoulaye Samake <abdoulaye.samake1.prudhomme@e.ujf-grenoble.fr>
+   \author Abdoulaye Samake <abdoulaye.samake.@imag.fr>
    \date 2011-08-20
  */
 
@@ -55,22 +55,6 @@ makeOptions()
     return testoptions.add( Feel::feel_options() );
 }
 
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_trace" ,
-                     "test_trace" ,
-                     "0.2",
-                     "nD(n=1,2,3) Test Trace operations on simplices or simplex products",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2008-2009 Universite Joseph Fourier" );
-
-    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
-    return about;
-
-}
-
 template<typename T, int Dim, int Order = 1>
 struct imesh
 {
@@ -91,23 +75,10 @@ public:
 
     typedef typename imesh<double_type,Dim,Order>::convex_type convex_type;
     typedef typename imesh<double_type,Dim,Order>::type mesh_type;
-    typedef typename imesh<double_type,Dim,Order>::ptrtype mesh_ptrtype;
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-    typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
-
-
     typedef FunctionSpace<mesh_type, bases<Lagrange<Order, Scalar> >, double> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef Backend<double_type> backend_type;
-
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-    typedef Exporter<mesh_type,Order> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
     typedef Exporter<trace_mesh_type,Order> trace_export_type;
-    typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
-
-
-
 
     /**
      * Constructor
@@ -118,55 +89,27 @@ public:
         M_backend( backend_type::build( this->vm() ) ),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() )
-    {
-    }
+    {}
 
     void run();
-
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
 
 private:
 
     //! linear algebra backend
     backend_ptrtype M_backend;
-
     //! mesh characteristic size
     double meshSize;
-
     //! shape of the domain
     std::string shape;
 }; // Test
 
-template<int Dim,int Order>
+template<int Dim, int Order>
 void
 Test<Dim,Order>::run()
 {
+
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute Test<" << Dim << "," << Order << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
-
-    if ( shape == "ellipsoid" )
-        X[1] = 2;
-
-    else if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim, int Order>
-void
-Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    if ( X[1] == 2 ) shape = "ellipsoid";
 
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%G%4%/h_%5%/" )
@@ -176,16 +119,16 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
                                        % Order
                                        % meshSize );
 
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                _usenames=true,
-                                                _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
-                                                _shape=shape,
-                                                _order=Order,
-                                                _dim=Dim,
-                                                _h=X[0] ) );
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
+                                              _usenames=true,
+                                              _convex=( convex_type::is_hypercube )?"Hypercube":"Simplex",
+                                              _shape=shape,
+                                              _order=Order,
+                                              _dim=Dim,
+                                              _h=meshSize ) );
 
-    space_ptrtype Xh = space_type::New( mesh );
+    auto Xh = space_type::New(_mesh=mesh);
     auto u = Xh->element();
     auto v = Xh->element();
     auto gproj = Xh->element();
@@ -193,19 +136,19 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
     double_type pi = M_PI;
 
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
-    gproj = vf::project( Xh, elements( mesh ), g );
+    gproj = vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
 
     auto f = pi*pi*Dim*g;
 
     auto trace_mesh = mesh->trace( boundaryfaces( mesh ) );
     auto Th = Xh->trace( boundaryfaces( mesh ) ) ;
-    auto t = vf::project( Th, elements( Th->mesh() ), g );
+    auto t = vf::project( _space=Th, _range=elements( Th->mesh() ), _expr=g );
 
-    auto op_trace = operatorTrace( Xh );
+    auto op_trace = operatorTrace(Xh);
     //auto g_trace = op_trace->trace( _range=boundaryfaces( mesh ), _expr=g );
     auto g_trace = op_trace->trace( _expr=g );
 
-    double measure = integrate( elements( Th->mesh() ), cst( 1.0 ), _quad=_Q<5>() ).evaluate()( 0,0 );
+    double measure = integrate( _range=elements( Th->mesh() ), _expr=cst( 1.0 ), _quad=_Q<5>() ).evaluate()( 0,0 );
     std::cout << " -- measure  =" << measure << "\n";
     double e1 = integrate( _range=elements( Th->mesh() ), _expr=idv( t ), _quad=_Q<15>() ).evaluate()( 0,0 );
     std::cout << " -- |trace|  =" << e1 << "\n";
@@ -213,7 +156,7 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
     std::cout << " -- |g|_bdy  =" << e2 << "\n";
     double e3 = integrate( _range=boundaryfaces( mesh ), _expr=g, _quad=_Q<15>() ).evaluate()( 0,0 );
     std::cout << " -- |g|  =" << e3 << "\n";
-    double error = integrate( elements( Th->mesh() ), idv( t )-idv( g_trace ) ).evaluate()( 0,0 );
+    double error = integrate( _range=elements( Th->mesh() ), _expr=idv( t )-idv( g_trace ) ).evaluate()( 0,0 );
     std::cout << " -- |op_trace-trace|  =" << error << "\n";
 
     std::vector<std::string> bdynames = boost::assign::list_of( "Dirichlet" )( "Neumann" );
@@ -222,10 +165,10 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
         std::cout << "============================================================\n";
         std::cout << "Boundary "  << bdy << "\n";
         auto Lh = Xh->trace( markedfaces( mesh,bdy ) ) ;
-        auto l = vf::project( Lh, elements( Lh->mesh() ), g );
+        auto l = vf::project( _space=Lh, _range=elements( Lh->mesh() ), _expr=g );
 
 
-        double measure = integrate( elements( Lh->mesh() ), cst( 1.0 ), _quad=_Q<5>() ).evaluate()( 0,0 );
+        double measure = integrate( _range=elements( Lh->mesh() ), _expr=cst( 1.0 ), _quad=_Q<5>() ).evaluate()( 0,0 );
         std::cout << " -- measure(" << bdy << ")  =" << measure << "\n";
         double e1 = integrate( _range=elements( Lh->mesh() ), _expr=idv( l ), _quad=_Q<15>() ).evaluate()( 0,0 );
         std::cout << " -- |trace|(" << bdy << ")  =" << e1 << "\n";
@@ -235,7 +178,7 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
         std::cout << " -- |g|(" << bdy << ")  =" << e3 << "\n";
 
         auto g2 = trans( vf::P() )*vf::P();
-        auto l2 = vf::project( Lh, elements( Lh->mesh() ), g2 );
+        auto l2 = vf::project( _space=Lh, _range=elements( Lh->mesh() ), _expr=g2 );
         double p1 = integrate( _range=elements( Lh->mesh() ), _expr=idv( l2 ), _quad=_Q<15>() ).evaluate()( 0,0 );
         std::cout << " -- proj(x^2+y^2)(" << bdy << ")  =" << p1 << "\n";
         double p2 = integrate( _range=elements( Lh->mesh() ),  _expr=g2, _quad=_Q<15>() ).evaluate()( 0,0 );
@@ -245,17 +188,16 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     }
 
+    auto trace_exporter = trace_export_type::New( this->vm(),
+                                                  ( boost::format( "trace-%1%-%2%-%3%" )
+                                                    % this->about().appName()
+                                                    % shape
+                                                    % Dim ).str() );
 
-    trace_export_ptrtype trace_exporter( trace_export_type::New( this->vm(),
-                                         ( boost::format( "trace-%1%-%2%-%3%" )
-                                           % this->about().appName()
-                                           % shape
-                                           % Dim ).str() ) );
 
     if ( trace_exporter->doExport() )
     {
         LOG(INFO) << "trace export starts\n";
-
         trace_exporter->step( 0 )->setMesh( trace_mesh );
         trace_exporter->step( 0 )->add( "trace_g", t );
         trace_exporter->save();
@@ -267,18 +209,15 @@ Test<Dim,Order>::run( const double* X, unsigned long P, double* Y, unsigned long
 int
 main( int argc, char** argv )
 {
-    Environment env( _argc=argc,
-                     _argv=argv,
-                     _desc=makeOptions(), _about=makeAbout() );
+
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=about(_name="test_trace",
+                                  _author="Abdoulaye Samake",
+                                  _email="abdoulaye.samake@imag.fr") );
     Application app;
 
-
-    // app.add( new Test<1>( app.vm(), app.about() ) );
-    //app.add( new Test<2,1>( app.vm(), app.about() ) );
-    //app.add( new Test<2,2>( app.vm(), app.about() ) );
     app.add( new Test<2,3>() );
-    // app.add( new Test<3>( app.vm(), app.about() ) );
-
     app.run();
 
 }
