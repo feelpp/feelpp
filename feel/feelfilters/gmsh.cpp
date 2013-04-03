@@ -118,6 +118,24 @@ Gmsh::Gmsh( Gmsh const & __g )
 Gmsh::~Gmsh()
 {}
 
+Gmsh&
+Gmsh::operator=( Gmsh const& __g )
+{
+    if (  this != &__g )
+    {
+        M_dimension = __g.M_dimension;
+        M_order = __g.M_order;
+        M_version = __g.M_version;
+        M_format = __g.M_format;
+        M_addmidpoint = __g.M_addmidpoint;
+        M_usePhysicalNames = __g.M_usePhysicalNames;
+        M_shear = __g.M_shear;
+        M_refine_levels = __g.M_refine_levels;
+    }
+
+    return *this;
+}
+
 boost::shared_ptr<Gmsh>
 Gmsh::New( po::variables_map const& vm )
 {
@@ -660,4 +678,38 @@ const bool meshs112s = Gmsh::Factory::type::instance().registerProduct( "hypercu
 const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,yypercube)", *new Feel::detail::HypercubeDomain( 1, 1, 2, "hypercube" ) );
 
 /// \endcond detail
+
+
+
+
+boost::shared_ptr<Mesh<Simplex<1> > >
+unitSegment()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
+                          _desc=domain( _name="segment",
+                                        _shape="hypercube",
+                                        _dim=3,
+                                        _h=Environment::vm(_name="mesh1d.hsize").as<double>() ) );
+}
+
+boost::shared_ptr<Mesh<Simplex<2> > >
+unitSquare()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
+                          _desc=domain( _name="square",
+                                        _shape="hypercube",
+                                        _dim=2,
+                                        _h=Environment::vm(_name="mesh2d.hsize").as<double>() ) );
+}
+
+boost::shared_ptr<Mesh<Simplex<3> > >
+unitCube()
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<3> >,
+                          _desc=domain( _name="cube",
+                                        _shape="hypercube",
+                                        _dim=3,
+                                        _h=Environment::vm(_name="mesh3d.hsize").as<double>() ) );
+}
+
 } // Feel
