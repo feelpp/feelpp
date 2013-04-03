@@ -206,6 +206,11 @@ public:
     typedef boost::tuple<size_type /*element id*/, uint16_type /*lid*/, uint16_type /*c*/, size_type /*gDof*/, uint16_type /*type*/> periodic_dof_type;
     typedef std::multimap<size_type /*gid*/, periodic_dof_type> periodic_dof_map_type;
 
+    DofTable( WorldComm const& _worldComm )
+        :
+        super( _worldComm )
+        {}
+
     /**
      * @brief The minimal constructor
      *
