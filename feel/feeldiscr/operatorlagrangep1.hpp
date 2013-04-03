@@ -33,7 +33,7 @@
 #include <feel/feelpoly/fekete.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feelfilters/pointsettomesh.hpp>
-#include <feel/feelfilters/exporterquick.hpp>
+//#include <feel/feelfilters/exporterquick.hpp>
 
 namespace Feel
 {
