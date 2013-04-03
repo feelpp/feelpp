@@ -325,7 +325,7 @@ public:
     face_processor_type const& localFaceId( element_type const& e,
                                             size_type const n ) const
     {
-        return _M_e2f[std::make_pair(e.id(),n)];
+        return _M_e2f.find(std::make_pair(e.id(),n))->second;
     }
 
     /**
@@ -334,7 +334,7 @@ public:
     face_processor_type const& localFaceId( size_type const e,
                                             size_type const n ) const
     {
-        return _M_e2f[std::make_pair(e,n)];
+        return _M_e2f.find(std::make_pair(e,n))->second;
     }
 #if 0
     /**
