@@ -975,18 +975,17 @@ public:
      */
     void buildGhostInterProcessDofMap( mesh_type& mesh,
                                        std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
+    void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
+    void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
+                                                                    std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
+    void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDof( mesh_type& mesh,
+                                                 std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend );
+    void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
+
     void buildGhostInterProcessDofMapInit( mesh_type& mesh,
                                            std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
-    void buildGhostInterProcessDofMapInit2( mesh_type& mesh,
-                                           std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
-
     boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
     buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
-                                           std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
-                                           std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
-                                           std::vector< std::set<size_type > > & memoryFace );
-    void//    boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
-    buildGhostInterProcessDofMapRecursive2( mesh_type& mesh,
                                            std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
                                            std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
                                            std::vector< std::set<size_type > > & memoryFace );

@@ -45,8 +45,6 @@ int main(int argc, char**argv )
           _expr=constant(0.) );
     a.solve(_rhs=l,_solution=u);
 
-	cout<<"equazione risolta"<<endl;
-
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->save();
