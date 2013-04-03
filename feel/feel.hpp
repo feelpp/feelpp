@@ -61,7 +61,6 @@ using GiNaC::ex;
 
 }
 
-#include <feel/extern.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
