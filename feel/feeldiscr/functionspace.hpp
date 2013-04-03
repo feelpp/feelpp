@@ -3879,7 +3879,7 @@ private:
         }
         component_functionspace_ptrtype operator()( mpl::bool_<false> )
         {
-            return component_functionspace_type::NewPtr( _M_mesh );
+            return component_functionspace_type::New( _M_mesh );
         }
 
     private:
