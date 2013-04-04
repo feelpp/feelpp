@@ -632,6 +632,25 @@ typedef typename mpl::if_<is_shared_ptr<_type>,
 typedef boost::shared_ptr<type> ptrtype;
 };
 
+template<typename Args, typename Tag=tag::geoentity>
+struct meshFromGeoEntity
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<Args, Tag>::type
+                >::type
+            >::type
+    >::type _type;
+
+    typedef typename _type::GeoShape GeoShape;
+    typedef typename mpl::if_< mpl::bool_<GeoShape::is_simplex>,
+                               mpl::identity< Mesh< Simplex< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >,
+                               mpl::identity< Mesh< Hypercube< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >
+                               >::type::type type;
+};
+
+
 template <typename ElementSpaceType>
 void
 straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<0> /**/ )
@@ -929,6 +948,26 @@ BOOST_PARAMETER_FUNCTION(
     exporter.saveMesh( filename, mesh, parametricnodes );
 
 }
+
+BOOST_PARAMETER_FUNCTION(
+    ( void ),  // return type
+    saveGeoEntityAsGMSHMesh,    // 2. function name
+    tag,             // 3. namespace of tag types
+    ( required
+      ( geoentity, * )
+      ( filename, * ) ) // 4. one required parameter, and
+    )
+{
+    typedef typename Feel::detail::meshFromGeoEntity<Args>::type _mesh_type;
+
+#if BOOST_FILESYSTEM_VERSION == 3
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  Environment::worldComm().subWorldCommSeq() );
+#elif BOOST_FILESYSTEM_VERSION == 2
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
+#endif
+    exporter.gmshSaveOneElementAsMesh( filename, geoentity );
+}
+
 
 /**
  *
