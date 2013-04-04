@@ -35,7 +35,7 @@ using namespace Feel;
 
 int main( int argc, char* argv[] )
 {
-    using GiNaC::table;
+    using GiNaC::symtab;
     using GiNaC::symbol;
 
     ex exact_parsed;
@@ -55,7 +55,8 @@ int main( int argc, char* argv[] )
     case(2) : {
         vars = symbols<2>();
         exact_parsed = parse(exact, vars); 
-        boost::for_each( ex_to<table>(exaxt_parsed), [](std::pair<std::string, ex> const& s ) {LOG(INFO) << "Symbol " << s.first << " added\n";} );
+        // just trying to retrieve symtab from ex
+        // boost::for_each( GiNaC::ex_to<symtab>(exact_parsed), [](std::pair<std::string, ex> const& s ) {std::cout << "Symbol " << s.first << " added\n";} );
         auto f = expr(exact,vars);
         break;
     }
