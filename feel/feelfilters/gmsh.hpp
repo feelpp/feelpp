@@ -45,7 +45,6 @@
 #include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelmesh/meshmover.hpp>
-#include <feel/feelfilters/exporterquick.hpp>
 
 namespace Feel
 {
@@ -57,6 +56,7 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
+
 /**
  * \class Gmsh
  * \brief Gmsh Mesh Generator
@@ -128,22 +128,7 @@ public:
      *
      * \return the newly generated Gmsh object
      */
-    Gmsh& operator=( Gmsh const& __g )
-        {
-            if (  this != &__g )
-            {
-                M_dimension = __g.M_dimension;
-                M_order = __g.M_order;
-                M_version = __g.M_version;
-                M_format = __g.M_format;
-                M_addmidpoint = __g.M_addmidpoint;
-                M_usePhysicalNames = __g.M_usePhysicalNames;
-                M_shear = __g.M_shear;
-                M_refine_levels = __g.M_refine_levels;
-            }
-
-            return *this;
-        }
+    Gmsh& operator=( Gmsh const& __g );
 
     static boost::shared_ptr<Gmsh> New( po::variables_map const& vm );
     static boost::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2, uint16_type o = 1, std::string const& ct = "simplex" );
@@ -942,6 +927,7 @@ BOOST_PARAMETER_FUNCTION(
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, mesh->worldComm() );
 #endif
     exporter.saveMesh( filename, mesh, parametricnodes );
+
 }
 
 /**
@@ -1289,24 +1275,24 @@ BOOST_PARAMETER_FUNCTION(
  */
 BOOST_PARAMETER_FUNCTION(
     ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
-    load,    // 2. function name
+    loadMesh,    // 2. function name
 
     tag,           // 3. namespace of tag types
 
     ( required
-      ( mesh, * )
+      ( mesh, *)
 
         ) // 4. one required parameter, and
 
     ( optional
-      ( filename, *, option(_name="gmsh.filename").template as<std::string>() )
-      ( straighten,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
+      ( filename, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.filename").template as<std::string>() )
+      ( straighten,          (bool), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( physical_are_elementary_regions,		   *, option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
-      ( worldcomm,       *, Environment::worldComm() )
+      ( physical_are_elementary_regions,		   (bool), option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
+      ( worldcomm,       (WorldComm), Environment::worldComm() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
-      ( rebuild_partitions_filename,	*, filename )
+      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
@@ -1362,30 +1348,12 @@ BOOST_PARAMETER_FUNCTION(
 /**
  * build a mesh of the unit segment [0,1]
  */
-inline
-boost::shared_ptr<Mesh<Simplex<1> > >
-unitSegment()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
-                          _desc=domain( _name="segment",
-                                        _shape="hypercube",
-                                        _dim=3,
-                                        _h=Environment::vm(_name="mesh1d.hsize").as<double>() ) );
-}
+boost::shared_ptr<Mesh<Simplex<1> > > unitSegment();
 
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
-inline
-boost::shared_ptr<Mesh<Simplex<2> > >
-unitSquare()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
-                          _desc=domain( _name="square",
-                                        _shape="hypercube",
-                                        _dim=2,
-                                        _h=Environment::vm(_name="mesh2d.hsize").as<double>() ) );
-}
+boost::shared_ptr<Mesh<Simplex<2> > > unitSquare();
 
 /**
  * build a mesh of the unit circle using triangles
@@ -1426,16 +1394,7 @@ unitSphere()
 /**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons
  */
-inline
-boost::shared_ptr<Mesh<Simplex<3> > >
-unitCube()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<3> >,
-                          _desc=domain( _name="cube",
-                                        _shape="hypercube",
-                                        _dim=3,
-                                        _h=Environment::vm(_name="mesh3d.hsize").as<double>() ) );
-}
+boost::shared_ptr<Mesh<Simplex<3> > > unitCube();
 
 template<int Dim>
 inline
