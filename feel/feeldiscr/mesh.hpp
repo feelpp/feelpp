@@ -226,9 +226,11 @@ public:
     template<int TheTag>
     struct trace_trace_mesh
     {
+        static const uint16_type nDim = (GeoShape::nDim==1)?GeoShape::nDim-1:GeoShape::nDim-2;
         typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
-                                  mpl::identity< Mesh< Simplex< GeoShape::nDim-2,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
-                                  mpl::identity< Mesh< Hypercube<GeoShape::nDim-2,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+                                  mpl::identity< Mesh< Simplex<nDim,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
+                                  mpl::identity< Mesh< Hypercube<nDim,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+
         typedef boost::shared_ptr<type> ptrtype;
         typedef boost::shared_ptr<const type> const_ptrtype;
     };
