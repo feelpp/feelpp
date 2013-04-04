@@ -6335,10 +6335,10 @@ Pchv( boost::shared_ptr<MeshType> mesh )
  */
 template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>,Lagrange<Order,Scalar>>>>
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>>
 THch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>,Lagrange<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( mesh );
 }
 
 
