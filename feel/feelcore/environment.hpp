@@ -45,6 +45,11 @@
 
 namespace Feel
 {
+#if !defined(STRICT_GINAC_PARSER_DEF)
+static bool strict_ginac_parser = true;
+#define STRICT_GINAC_PARSER_DEF 
+#endif
+
 namespace detail
 {
 inline
@@ -162,6 +167,13 @@ public:
                 LOG(INFO) << "change directory to " << d << "\n";
                 boost::format f( d );
                 changeRepository( _directory=f );
+            }
+            if ( S_vm.count("nostrictginacparser") != 0 )
+            {
+                std::cout << "strict_ginac_parser = " << strict_ginac_parser << "\n";
+                LOG(INFO) << "disable strict ginac parser\n";
+                std::cout << "disable strict ginac parser\n";
+                strict_ginac_parser = false;
             }
         }
 

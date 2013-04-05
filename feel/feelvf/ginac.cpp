@@ -148,19 +148,25 @@ namespace GiNaC
         //boost::for_each( syms, [&table]( symbol const& s ) { std::cerr << "adding symbol: " << s.get_name() << std::endl; table[s.get_name()] = s; } );
         LOG(INFO) <<"define parser\n";
         parser reader(table);
-        //reader.strict = true; // to ensure that no more symbols are added
+        reader.strict = Feel::strict_ginac_parser; // true to ensure that no more symbols are added
 
         LOG(INFO) <<"parse expression\n";
         ex e; // = reader(str);
         try 
             {
                 e = reader(str);
-                symtab table_symbols = reader.get_syms();
-                boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s ) {LOG(INFO) << "Symbol " << s.first << " added\n";} );
+                if (!reader.strict)
+                    {
+                        symtab table_symbols = reader.get_syms();
+                        boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s ) {LOG(INFO) << "Symbol " << s.first << " added\n";} );
+                    }
             }
         catch (parse_error& err) 
             {
-                std::cerr << err.what() << std::endl;
+                reader.strict = false;
+                e =reader(str);
+
+                std::cerr << "GiNaC error parsing " << e << "\n" << err.what() << std::endl;
             }
 
         LOG(INFO) << "e=" << e << "\n";

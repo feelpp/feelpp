@@ -27,14 +27,69 @@
 */
 #include <iostream>
 #include <string>
+#include <list>
 
 #include <feel/feel.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 using namespace Feel;
 
+class my_visitor :
+    public GiNaC::visitor,
+    public GiNaC::symbol::visitor
+{
+public:
+    const std::list<std::string> & get_symbols()
+    {
+        symbols.sort();
+        symbols.unique();
+        return symbols;
+    }
+
+private:
+    std::list<std::string> symbols;
+
+    void visit(const symbol & s)
+    { 
+        symbols.push_back(s.get_name()); 
+    }
+
+};
+inline
+Feel::po::options_description
+makeOptions()
+{
+    Feel::po::options_description ginacoptions("Ginac options");
+    ginacoptions.add_options()
+        ("exact", Feel::po::value<std::string>()->default_value( "" ), "name of the input")
+        ("dim", Feel::po::value<int>()->default_value( 0 ), "geometric dimension")
+        ;
+    return ginacoptions.add( Feel::feel_options() );
+}
+
+inline
+Feel::AboutData
+makeAbout()
+{
+    Feel::AboutData about( "ginac" ,
+                           "ginac" ,
+                           "0.1",
+                           "test ginac integration with Feelpp",
+                           Feel::AboutData::License_GPL,
+                           "Copyright (c) 2012-2013 Laboratoire national des Champs magnetiques Intenses");
+
+    about.addAuthor("Christophe Trophime", "developer", "christophe.trophime@lncmi.cnrs.fr", "");
+    return about;
+
+}
+
 int main( int argc, char* argv[] )
 {
+    using namespace Feel;
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
     using GiNaC::symtab;
     using GiNaC::symbol;
 
@@ -43,21 +98,18 @@ int main( int argc, char* argv[] )
     std::string exact;
     int dim;
 
+    std::cout << "strict_ginac_parser=" << strict_ginac_parser << std::endl << std::flush;
     std::cout << "dim=" << std::flush; std::cin >> dim; std::cout << std::flush;
     std::cout << "exact=" << std::flush; std::cin >> exact; std::cout << std::flush;
     switch (dim) {
     case(1) : {
         vars = symbols<1>();
         exact_parsed = parse(exact, vars);
-        auto f = expr(exact,vars);
         break;
     }
     case(2) : {
         vars = symbols<2>();
         exact_parsed = parse(exact, vars); 
-        // just trying to retrieve symtab from ex
-        // boost::for_each( GiNaC::ex_to<symtab>(exact_parsed), [](std::pair<std::string, ex> const& s ) {std::cout << "Symbol " << s.first << " added\n";} );
-        auto f = expr(exact,vars);
         break;
     }
     case(3) : {
@@ -72,6 +124,24 @@ int main( int argc, char* argv[] )
     }
     }
 
-    std::cout << exact_parsed << std::endl;
+    // retrieve symbols - not working because nops is not "recursive"
+    std::cout << "Loading symbols from : " << exact_parsed << std::endl << std::flush;
+    std::cout << "Contains " << exact_parsed.GiNaC::ex::nops() << " Ginac:ex objects\n" << std::flush;
+
+    for (GiNaC::const_iterator i=exact_parsed.begin(); i!=exact_parsed.end(); ++i)
+        {
+            if ( GiNaC::is_a<symbol>(*i) )
+                std::cout << "Found Symbol : " << GiNaC::ex_to<symbol>(*i).get_name() << std::endl;
+        }
+    std::cout << std::flush;
+    //not working because ex is not mutable
+    //boost::for_each(exact_parsed, [](GiNaC::ex const& e) {if (GiNaC::is_a<symbol>(e)) std::cout << "Found Symbol : " <<  GiNaC::ex_to<symbol>(e).get_name() << "\n";});
+
+    // Retrieve each symbols using viitor
+    std::cout << "Loading symbols from : " << exact_parsed << " (visitor)" << std::endl << std::flush;
+    my_visitor v;
+    exact_parsed.traverse(v);
+    std::list<std::string> symbols = v.get_symbols();
+    boost::for_each(symbols, [](std::string const& s) {std::cout << "Found Symbol :" << s << std::endl;});
     return 0;
 }
