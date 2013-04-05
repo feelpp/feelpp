@@ -63,6 +63,7 @@ generic_options()
         ( "v", po::value<int>()->default_value(0), "verbosity level" )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
+        ( "nostrictginacparser", "Disable strict parsing for ginac symbols" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
         ;
     return generic;
