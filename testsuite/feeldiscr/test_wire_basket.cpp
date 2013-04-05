@@ -63,7 +63,7 @@ makeAbout()
 template <uint16_type OrderPoly>
 void run( Application_ptrtype & theApp )
 {
-    //using namespace Feel;
+
     /* change parameters below */
     const int nDim = 3;
     const int nOrderPoly = OrderPoly;
@@ -76,32 +76,15 @@ void run( Application_ptrtype & theApp )
 
     //--------------------------------------------------------------------------------------------------//
 
-    typedef double value_type;
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
     typedef Mesh< Simplex<nDim,1,nDim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type, bases<Lagrange<OrderPoly,Scalar> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef Exporter<mesh_type> export_type;
-    typedef boost::shared_ptr<export_type> export_ptrtype;
-
     // trace
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-    typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
-    typedef typename space_type::trace_functionspace_type trace_space_type;
-    typedef typename boost::shared_ptr<trace_space_type> trace_space_ptrtype;
     typedef Exporter<trace_mesh_type> trace_export_type;
-    typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
-
     // trace_trace
     typedef typename trace_mesh_type::trace_mesh_type trace_trace_mesh_type;
-    typedef typename trace_mesh_type::trace_mesh_ptrtype trace_trace_mesh_ptrtype;
-    typedef typename trace_space_type::trace_functionspace_type trace_trace_space_type;
-    typedef typename boost::shared_ptr<trace_trace_space_type> trace_trace_space_ptrtype;
     typedef Exporter<trace_trace_mesh_type> trace_trace_export_type;
-    typedef boost::shared_ptr<trace_trace_export_type> trace_trace_export_ptrtype;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -117,58 +100,46 @@ void run( Application_ptrtype & theApp )
     auto pi = M_PI;
     auto g = sin( pi*( 2*Px()+Py()+1./4 ) )*cos( pi*( Py()-1./4 ) );
 
-
-    auto Xh = space_type::New( mesh );
-
-    auto domain_measure = integrate( elements( mesh ),cst( 1. ) ).evaluate()( 0,0 );
+    auto Xh = space_type::New(_mesh=mesh);
+    auto domain_measure = integrate( _range=elements( mesh ),_expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout <<"domain_measure= " << domain_measure << std::endl;
 
-
-    auto trace_mesh = createSubmesh( mesh,markedfaces( mesh,6 ) );
-
-    auto TXh = trace_space_type::New( trace_mesh );
-
-    auto trace_measure = integrate( elements( trace_mesh ),cst( 1. ) ).evaluate()( 0,0 );
+    auto TXh = Xh->trace( markedfaces( mesh,6 ) ) ;
+    auto trace_measure = integrate( _range=elements( TXh->mesh() ),_expr=cst( 1. ) ).evaluate()( 0,0 );
     std::cout <<"trace_measure= " << trace_measure << std::endl;
 
-
-    auto trace_trace_mesh = createSubmesh( trace_mesh,boundaryfaces( trace_mesh ) );
-
-    auto TTXh = trace_trace_space_type::New( trace_trace_mesh );
-
-    auto trace_trace_measure = integrate( elements( trace_trace_mesh ),cst( 1. ) ).evaluate()( 0,0 );
-    auto trace_trace_integrate_g = integrate( elements( trace_trace_mesh ),g ).evaluate()( 0,0 );
+    auto TTXh = TXh->trace();
+    auto trace_trace_measure = integrate( _range=elements( TTXh->mesh() ),_expr=cst( 1. ) ).evaluate()( 0,0 );
+    auto trace_trace_integrate_g = integrate( _range=elements( TTXh->mesh() ),_expr=g ).evaluate()( 0,0 );
     std::cout <<"trace_trace_measure= " << trace_trace_measure << std::endl;
 
     // projections
-
-    auto projection_g = vf::project( Xh, elements( mesh ), g );
-    auto trace_projection_g = vf::project( TXh, elements( trace_mesh ), g );
-    auto trace_trace_projection_g = vf::project( TTXh, elements( trace_trace_mesh ), g );
+    auto projection_g = vf::project( _space=Xh, _range=elements( mesh ),_expr=g );
+    auto trace_projection_g = vf::project( _space=TXh,_range=elements( TXh->mesh() ),_expr=g );
+    auto trace_trace_projection_g = vf::project( _space=TTXh,_range=elements( TTXh->mesh() ),_expr=g );
 
     // extensions
-
-    auto trace_trace_integrate = integrate( elements( trace_trace_mesh ),
-                                            idv( trace_trace_projection_g ) ).evaluate()( 0,0 );
+    auto trace_trace_integrate = integrate( _range=elements( TTXh->mesh() ),
+                                            _expr=idv( trace_trace_projection_g ) ).evaluate()( 0,0 );
     auto ttmean_g = trace_trace_integrate/trace_trace_measure;
     auto mean_g = trace_trace_integrate_g/trace_trace_measure;
     std::cout << "mean_g= " << mean_g << std::endl;
     std::cout << "ttmean_g= " << ttmean_g << std::endl;
 
 
-    auto zero_extension = vf::project( TXh, boundaryfaces( trace_mesh ), idv( trace_trace_projection_g ) );
-    auto const_extension = vf::project( TXh, boundaryfaces( trace_mesh ), idv( trace_trace_projection_g )-ttmean_g );
-    const_extension += vf::project( TXh, elements( trace_mesh ), cst( ttmean_g ) );
+    auto zero_extension = vf::project( _space=TXh,_range=boundaryfaces( TXh->mesh() ),_expr=idv( trace_trace_projection_g ) );
+    auto const_extension = vf::project( _space=TXh,_range=boundaryfaces( TXh->mesh() ),_expr=idv( trace_trace_projection_g )-ttmean_g );
+    const_extension += vf::project( _space=TXh, _range=elements( TXh->mesh() ), _expr=cst( ttmean_g ) );
     auto op_lift = opLift( _domainSpace=Xh,_backend=backend );
     auto glift = op_lift->project( _expr=idv( const_extension ), _range=markedfaces( mesh,6 ) );
 
 
-    auto boundary_error = integrate( markedfaces( mesh,6 ), idv( glift )-idv( const_extension ) ).evaluate()( 0,0 );
+    auto boundary_error = integrate( _range=markedfaces( mesh,6 ), _expr=idv( glift )-idv( const_extension ) ).evaluate()( 0,0 );
     //auto laplacian_error = integrate( elements( mesh ), trace( hessv( glift ) ) ).evaluate()( 0,0 );
 
-    auto const_extention_error1 = integrate( boundaryfaces( trace_mesh ),
-                                  idv( trace_trace_projection_g )-idv( const_extension ) ).evaluate()( 0,0 );
-    auto const_extention_error2 = integrate( elements( trace_mesh ), ttmean_g-idv( const_extension ) ).evaluate()( 0,0 );
+    auto const_extention_error1 = integrate( _range=boundaryfaces( TXh->mesh() ),
+                                             _expr=idv( trace_trace_projection_g )-idv( const_extension ) ).evaluate()( 0,0 );
+    auto const_extention_error2 = integrate( _range=elements( TXh->mesh() ), _expr=ttmean_g-idv( const_extension ) ).evaluate()( 0,0 );
 
 
 
@@ -200,35 +171,34 @@ void run( Application_ptrtype & theApp )
                                                 _substructuring=true
                                                 ) );
 
-    auto wirebasket = createSubmesh( mesh3D, markededges(mesh3D,"WireBasket") );
-    FEELPP_ASSERT( wirebasket->numElements() != 0 )( wirebasket->numElements() ).error( "invalid wirebasket mesh" );
-    auto Wh = trace_trace_space_type::New( _mesh=wirebasket );
+    //auto wirebasket = createSubmesh( mesh3D, markededges(mesh3D,"WireBasket") );
+    auto Xh3D = space_type::New(_mesh=mesh3D);
+    auto Wh = Xh3D->wireBasket();
+    FEELPP_ASSERT( Wh->mesh()->numElements() != 0 )( Wh->mesh()->numElements() ).error( "invalid wirebasket mesh" );
+
     auto w = Wh->element();
     auto z = Wh->element();
 
     auto M = backend->newMatrix( _test=Wh, _trial=Wh );
-    form2( _trial=Wh, _test=Wh, _matrix=M ) = integrate( _range=elements(wirebasket), _expr=idt(w)*id(z) );
+    form2( _trial=Wh, _test=Wh, _matrix=M ) = integrate( _range=elements(Wh->mesh()), _expr=idt(w)*id(z) );
     w.setOnes();
     z.setOnes();
-    //std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
+    std::cout << "measure from mass = " << M->energy( w, w ) << "\n";
     BOOST_CHECK_CLOSE( M->energy( w, w ), 12., 1e-12 );
 
-
-
     //-------------------------------------------------------------------------------------------------------
-
 
     exporter->step( 0 )->setMesh( mesh );
     exporter->step( 0 )->add( "g", projection_g );
     exporter->step( 0 )->add( "glift", glift );
     exporter->save();
 
-    trace_exporter->step( 0 )->setMesh( trace_mesh );
+    trace_exporter->step( 0 )->setMesh( TXh->mesh() );
     trace_exporter->step( 0 )->add( "traceg", trace_projection_g );
     trace_exporter->step( 0 )->add( "const_extension", const_extension );
     trace_exporter->save();
 
-    trace_trace_exporter->step( 0 )->setMesh( trace_trace_mesh );
+    trace_trace_exporter->step( 0 )->setMesh( TTXh->mesh() );
     trace_trace_exporter->step( 0 )->add( "tracetrace_g", trace_trace_projection_g );
     trace_trace_exporter->save();
 
@@ -279,4 +249,3 @@ main( int argc, char** argv )
 
 }
 #endif
-

@@ -23,40 +23,40 @@
 #
 include (FindPackageHandleStandardArgs)
 
-if(DEFINED ENV{GMSH_DIR})
-  find_program( GMSH_EXECUTABLE gmsh
-    PATH
-    $ENV{GMSH_DIR}/bin
-    NO_DEFAULT_PATH
-    DOC "GMSH mesh generator" )
-else(DEFINED ENV{GMSH_DIR})
-  find_program( GMSH_EXECUTABLE gmsh
-    PATH
-    ${CMAKE_SYSTEM_PREFIX_PATH}
-    PATH_SUFFIXES bin
-    DOC "GMSH mesh generator" )
-endif(DEFINED ENV{GMSH_DIR})
+# some of the find_* commands are duplicated with the first instance having NO_DEFAULT_PATH
+# this is to ensure that if GMSH_DIR is defined then cmake will pick the Gmsh version in GMSH_DIR
+# otherwise in the second instance it will pich the standard version installed on the system if
+# it is available
+
+find_program( GMSH_EXECUTABLE gmsh
+  PATH
+  $ENV{GMSH_DIR}/bin
+  NO_DEFAULT_PATH
+  DOC "GMSH mesh generator" )
+find_program( GMSH_EXECUTABLE gmsh
+  PATH
+  $ENV{GMSH_DIR}/bin
+  PATH_SUFFIXES bin
+  DOC "GMSH mesh generator" )
 
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
-  if(DEFINED ENV{GMSH_DIR})
-    FIND_PATH(GMSH_INCLUDE_DIR
-      Gmsh.h Context.h GModel.h
-      PATHS
-      $ENV{GMSH_DIR}
-      NO_DEFAULT_PATH
-      PATH_SUFFIXES include include/gmsh
-      DOC "Directory where GMSH header files are stored" )
-  else(DEFINED ENV{GMSH_DIR})
-    FIND_PATH(GMSH_INCLUDE_DIR
-      Gmsh.h Context.h GModel.h
-      PATHS
-      ${CMAKE_SYSTEM_PREFIX_PATH}
-      PATH_SUFFIXES include include/gmsh ../include ../include/gmsh
-      DOC "Directory where GMSH header files are stored" )
-  endif(DEFINED ENV{GMSH_DIR})
+
+  FIND_PATH(GMSH_INCLUDE_DIR
+    Gmsh.h Context.h GModel.h
+    PATHS
+    $ENV{GMSH_DIR}
+    NO_DEFAULT_PATH
+    PATH_SUFFIXES include include/gmsh
+    DOC "Directory where GMSH header files are stored" )
+  FIND_PATH(GMSH_INCLUDE_DIR
+    Gmsh.h Context.h GModel.h
+    PATHS
+    $ENV{GMSH_DIR}
+    PATH_SUFFIXES include include/gmsh
+    DOC "Directory where GMSH header files are stored" )
 
 
   include_directories(${GMSH_INCLUDE_DIR})
@@ -83,18 +83,15 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   #endif()
   #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
 
-  if(DEFINED ENV{GMSH_DIR})
-    FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-      PATH
-      $ENV{GMSH_DIR}/lib
-      NO_DEFAULT_PATH)
-  else(DEFINED ENV{GMSH_DIR})
-    FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-      PATH
-      ${CMAKE_SYSTEM_PREFIX_PATH}
-      PATH_SUFFIXES
-      lib )
-  endif(DEFINED ENV{GMSH_DIR})
+  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
+    PATH
+    $ENV{GMSH_DIR}/lib
+    NO_DEFAULT_PATH)
+  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
+    PATH
+    ${CMAKE_SYSTEM_PREFIX_PATH}
+    PATH_SUFFIXES
+    lib )
 
   if( NOT GMSH_LIBRARY )
     if(APPLE)
@@ -102,16 +99,13 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     else(APPLE)
       set( GMSHLIB libGmsh.so )
     endif(APPLE)
-    if(DEFINED ENV{GMSH_DIR})
-      FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
-        PATHS $ENV{GMSH_DIR}/lib
-	NO_DEFAULT_PATH)
-    else(DEFINED ENV{GMSH_DIR})
-      FIND_PATH(GMSH_LIBRARY_PATH
-        ${GMSHLIB}
-        PATHS
-        ${CMAKE_SYSTEM_PREFIX_PATH} )
-    endif(DEFINED ENV{GMSH_DIR})
+    FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
+      PATHS
+      $ENV{GMSH_DIR}/lib
+	  NO_DEFAULT_PATH)
+    FIND_PATH(GMSH_LIBRARY_PATH
+      ${GMSHLIB}
+      $ENV{GMSH_DIR}/lib )
 
     set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
   endif(NOT GMSH_LIBRARY)
@@ -123,14 +117,13 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     PATH_SUFFIXES
     lib  )
 
-IF ( FEELPP_ENABLE_OPENGL )
-  FIND_LIBRARY(GL_LIBRARY NAMES GL
-    PATH
+  IF ( FEELPP_ENABLE_OPENGL )
+    FIND_LIBRARY(GL_LIBRARY NAMES GL
+      PATH
       $ENV{GMSH_DIR}
-      ${CMAKE_SYSTEM_PREFIX_PATH}
-    PATH_SUFFIXES
-    lib  )
-ENDIF()
+      PATH_SUFFIXES
+      lib  )
+  ENDIF()
 
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
     GMSH_INCLUDE_DIR GMSH_LIBRARY GMSH_EXECUTABLE
@@ -141,7 +134,7 @@ ENDIF()
     MESSAGE( STATUS "GMSH found: header(${GMSH_INCLUDE_DIR}) lib(${GMSH_LIBRARY}) executable(${GMSH_EXECUTABLE})" )
     MESSAGE( STATUS "GL2PS found: lib(${GL2PS_LIBRARY})" )
     IF ( FEELPP_ENABLE_OPENGL )
-       MESSAGE( STATUS "GL found: lib(${GL_LIBRARY})" )
+      MESSAGE( STATUS "GL found: lib(${GL_LIBRARY})" )
     ENDIF()
   endif()
 
@@ -163,8 +156,3 @@ else(FEELPP_ENABLE_GMSH_LIBRARY)
   mark_as_advanced( GMSH_EXECUTABLE )
 
 endif(FEELPP_ENABLE_GMSH_LIBRARY)
-
-
-
-
-
