@@ -44,7 +44,9 @@
 // Gmsh
 #include <GModel.h>
 #include <MElement.h>
-#include <StringUtils.h>
+
+// from Gmsh
+void SwapBytes(char *array, int size, int n);
 
 namespace Feel
 {

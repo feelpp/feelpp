@@ -688,7 +688,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     this->addEdge( edg );
                 }
                 // set the process id from element (only active element)
-                if (!ifa->isGhostCell()) this->edges().modify( this->edgeIterator( edg.id() ), Feel::detail::UpdateProcessId(ifa->processId()) );
+                if (!ifa->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(ifa->processId()) );
             }
         }
     }
@@ -756,7 +756,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             }
 
             // set the process id from element (only active element)
-            if (!elt_it->isGhostCell()) this->edges().modify( this->edgeIterator( edg.id() ), Feel::detail::UpdateProcessId(elt_it->processId()) );
+            if (!elt_it->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(elt_it->processId()) );
 
             this->elements().modify( elt_it,
                                      detail::UpdateEdge<edge_type>( j, boost::cref( this->edge( _edgeit->second ) ) ) );
