@@ -223,6 +223,21 @@ public:
     typedef typename trace_mesh<Tag>::ptrtype trace_mesh_ptrtype;
 
 
+    template<int TheTag>
+    struct trace_trace_mesh
+    {
+        static const uint16_type nDim = (GeoShape::nDim==1)?GeoShape::nDim-1:GeoShape::nDim-2;
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                                  mpl::identity< Mesh< Simplex<nDim,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
+                                  mpl::identity< Mesh< Hypercube<nDim,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+
+        typedef boost::shared_ptr<type> ptrtype;
+        typedef boost::shared_ptr<const type> const_ptrtype;
+    };
+    typedef typename trace_trace_mesh<Tag>::type trace_trace_mesh_type;
+    typedef typename trace_trace_mesh<Tag>::ptrtype trace_trace_mesh_ptrtype;
+
+
     //@}
 
     /**
@@ -325,7 +340,7 @@ public:
     face_processor_type const& localFaceId( element_type const& e,
                                             size_type const n ) const
     {
-        return _M_e2f[std::make_pair(e.id(),n)];
+        return _M_e2f.find(std::make_pair(e.id(),n))->second;
     }
 
     /**
@@ -334,7 +349,7 @@ public:
     face_processor_type const& localFaceId( size_type const e,
                                             size_type const n ) const
     {
-        return _M_e2f[std::make_pair(e,n)];
+        return _M_e2f.find(std::make_pair(e,n))->second;
     }
 #if 0
     /**
@@ -507,6 +522,22 @@ public:
     template<typename RangeT>
     typename trace_mesh<Tag>::ptrtype
     trace( RangeT const& range ) const;
+
+
+    template<int TheTag=Tag>
+    typename trace_mesh<TheTag>::ptrtype
+    wireBasket() const
+    {
+        return wireBasket(boundaryfaces(this->shared_from_this()),mpl::int_<TheTag>());
+    }
+
+    template<typename RangeT, int TheTag>
+    typename trace_trace_mesh<TheTag>::ptrtype
+    wireBasket( RangeT const& range, mpl::int_<TheTag> ) const;
+
+    template<typename RangeT>
+    typename trace_trace_mesh<Tag>::ptrtype
+    wireBasket( RangeT const& range ) const;
 
 
     template<typename Iterator>
@@ -1346,12 +1377,35 @@ Mesh<Shape, T, Tag>::trace( RangeT const& range ) const
 
 }
 
+template<typename Shape, typename T, int Tag>
+template<typename RangeT>
+typename Mesh<Shape, T, Tag>::template trace_trace_mesh<Tag>::ptrtype
+Mesh<Shape, T, Tag>::wireBasket( RangeT const& range ) const
+{
+    DVLOG(2) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
+    return Feel::createSubmesh<const mesh_type,RangeT,Tag>( this->shared_from_this(), range );
+
+}
+
+
 template<int TheTag> struct Tag : public mpl::int_<TheTag>  {};
 
 template<typename Shape, typename T, int Tag>
 template<typename RangeT,int TheTag>
 typename Mesh<Shape, T, Tag>::template trace_mesh<TheTag>::ptrtype
 Mesh<Shape, T, Tag>::trace( RangeT const& range, mpl::int_<TheTag> ) const
+{
+    DVLOG(2) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
+    return Feel::createSubmesh<const mesh_type,RangeT,TheTag>( this->shared_from_this(), range );
+
+}
+
+template<typename Shape, typename T, int Tag>
+template<typename RangeT,int TheTag>
+typename Mesh<Shape, T, Tag>::template trace_trace_mesh<TheTag>::ptrtype
+Mesh<Shape, T, Tag>::wireBasket( RangeT const& range, mpl::int_<TheTag> ) const
 {
     DVLOG(2) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                   << std::distance(range.template get<1>(),range.template get<2>()) << "\n";

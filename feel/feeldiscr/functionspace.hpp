@@ -1594,6 +1594,19 @@ public:
             mpl::identity<FunctionSpace<trace_mesh_type, bases_list> >,
             mpl::identity<mpl::void_> >::type::type trace_functionspace_type;
     typedef typename boost::shared_ptr<trace_functionspace_type> trace_functionspace_ptrtype;
+
+    // wirebasket
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+            mpl::identity<typename mesh_type::trace_trace_mesh_type>,
+            mpl::identity<mpl::void_> >::type::type trace_trace_mesh_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+            mpl::identity<typename mesh_type::trace_trace_mesh_ptrtype>,
+            mpl::identity<mpl::void_> >::type::type trace_trace_mesh_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
+            mpl::identity<FunctionSpace<trace_trace_mesh_type, bases_list> >,
+            mpl::identity<mpl::void_> >::type::type trace_trace_functionspace_type;
+    typedef typename boost::shared_ptr<trace_trace_functionspace_type> trace_trace_functionspace_ptrtype;
+
 #if 0
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<1> >,
             mpl::identity<typename trace_functionspace_type::element_type>,
@@ -3990,6 +4003,23 @@ public:
 
 
     /**
+     * \return trace trace space
+     */
+    trace_trace_functionspace_ptrtype
+    wireBasket()  const
+    {
+        //return trace( mpl::greater<mpl::int_<nDim>,mpl::int_<1> >::type() )
+        return trace_trace_functionspace_type::New( mesh()->wireBasket( markededges( mesh(),"WireBasket" ) ) );
+    }
+    template<typename RangeT>
+    trace_trace_functionspace_ptrtype
+    wireBasket( RangeT range  )  const
+    {
+        return trace_trace_functionspace_type::New( mesh()->wireBasket( range ) );
+    }
+
+
+    /**
        \return true if Space has a region tree to localize points
     */
     bool hasRegionTree() const
@@ -4125,7 +4155,7 @@ private:
         }
         component_functionspace_ptrtype operator()( mpl::bool_<false> )
         {
-            return component_functionspace_type::NewPtr( _M_mesh );
+            return component_functionspace_type::New( _M_mesh );
         }
 
     private:
@@ -6551,10 +6581,10 @@ Pchv( boost::shared_ptr<MeshType> mesh )
  */
 template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>,Lagrange<Order,Scalar>>>>
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>>
 THch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>,Lagrange<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( mesh );
 }
 
 

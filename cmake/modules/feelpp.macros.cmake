@@ -33,7 +33,7 @@ macro(feelpp_add_application)
   elseif( FEELPP_APP_INCLUDE_IN_ALL)
     add_executable(${execname}  ${FEELPP_APP_SRCS}  )
   else()
-    add_executable(${execname}  EXCLUDE_FROM_ALL  ${FEELPP_APP_SRCS}  )
+    add_executable(${execname}  ${FEELPP_APP_SRCS}  )
   endif()
   if ( FEELPP_APP_DEPS )
     add_dependencies(${execname} ${FEELPP_APP_DEPS})
@@ -82,7 +82,7 @@ unset LC_CTYPE
     if ( FEELPP_APP_CFG )
       foreach(  cfg ${FEELPP_APP_CFG} )
         get_filename_component( CFG_NAME ${cfg} NAME )
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm " 
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm "
            mpirun --bind-to-core -x LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/${execname} --config-file=${cfg}  # add other fel++  options here")
       endforeach()
     else( FEELPP_APP_CFG )

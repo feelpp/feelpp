@@ -1,3 +1,4 @@
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 add_custom_target( doc )
 
@@ -6,5 +7,3 @@ ADD_SUBDIRECTORY( manual )
 #ADD_SUBDIRECTORY( snippets )
 
 set(FEELPP_INSTALL_APPS ${FEELPP_INSTALL_APPS} PARENT_SCOPE)
-
-

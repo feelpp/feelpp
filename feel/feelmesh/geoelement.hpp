@@ -850,6 +850,10 @@ public:
         return edge_permutation_type();
     }
 
+    point_type const& edge( uint16_type i ) const
+    {
+        return *M_vertices[i];
+    }
     point_type const& face( uint16_type i ) const
     {
         return *M_vertices[i];

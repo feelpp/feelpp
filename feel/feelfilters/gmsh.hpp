@@ -45,7 +45,6 @@
 #include <feel/feelfilters/gmshenums.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelmesh/meshmover.hpp>
-#include <feel/feelfilters/exporterquick.hpp>
 
 namespace Feel
 {
@@ -57,30 +56,6 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
-enum GMSH_PARTITIONER
-{
-    GMSH_PARTITIONER_CHACO = 1,
-    GMSH_PARTITIONER_METIS = 2
-
-};
-
-extern const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT;
-
-
-enum GMSH_ORDER
-{
-    GMSH_ORDER_ONE = 1,
-    GMSH_ORDER_TWO = 2,
-    GMSH_ORDER_THREE = 3,
-    GMSH_ORDER_FOUR = 4,
-    GMSH_ORDER_FIVE = 5
-};
-
-enum GMSH_FORMAT
-{
-    GMSH_FORMAT_ASCII = 0,
-    GMSH_FORMAT_BINARY = 1
-};
 
 /**
  * \class Gmsh
@@ -153,22 +128,7 @@ public:
      *
      * \return the newly generated Gmsh object
      */
-    Gmsh& operator=( Gmsh const& __g )
-        {
-            if (  this != &__g )
-            {
-                M_dimension = __g.M_dimension;
-                M_order = __g.M_order;
-                M_version = __g.M_version;
-                M_format = __g.M_format;
-                M_addmidpoint = __g.M_addmidpoint;
-                M_usePhysicalNames = __g.M_usePhysicalNames;
-                M_shear = __g.M_shear;
-                M_refine_levels = __g.M_refine_levels;
-            }
-
-            return *this;
-        }
+    Gmsh& operator=( Gmsh const& __g );
 
     static boost::shared_ptr<Gmsh> New( po::variables_map const& vm );
     static boost::shared_ptr<Gmsh> New( std::string const& shape, uint16_type d = 2, uint16_type o = 1, std::string const& ct = "simplex" );
@@ -671,7 +631,123 @@ typedef typename mpl::if_<is_shared_ptr<_type>,
                           mpl::identity<_type> >::type::type type;
 typedef boost::shared_ptr<type> ptrtype;
 };
-}
+
+template<typename Args, typename Tag=tag::geoentity>
+struct meshFromGeoEntity
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<Args, Tag>::type
+                >::type
+            >::type
+    >::type _type;
+
+    typedef typename _type::GeoShape GeoShape;
+    typedef typename mpl::if_< mpl::bool_<GeoShape::is_simplex>,
+                               mpl::identity< Mesh< Simplex< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >,
+                               mpl::identity< Mesh< Hypercube< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >
+                               >::type::type type;
+};
+
+
+template <typename ElementSpaceType>
+void
+straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<0> /**/ )
+{}
+template <typename ElementSpaceType>
+void
+straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<1> /**/ )
+{}
+template <typename ElementSpaceType>
+void
+straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<2> /**/ )
+{}
+template <typename ElementSpaceType>
+void
+straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<3> /**/ )
+{
+    typedef typename ElementSpaceType::functionspace_type space_type;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef typename space_type::dof_type::fe_type fe_type;
+
+    auto const ncdof = space_type::dof_type::nComponents;
+    auto const dofshift = fe_type::nDofPerVertex*mesh_type::element_type::numVertices;
+
+    auto mesh = straightener.mesh();
+    auto const myrank = mesh->worldComm().localRank();
+
+    std::set<size_type> edgeIdFoundToUpdate;
+
+    auto itedge = mesh->beginEdgeOnBoundary();
+    auto const enedge = mesh->endEdgeOnBoundary();
+    for ( ; itedge!=enedge ; ++itedge )
+    {
+        if (itedge->processId()!=myrank || itedge->numberOfElementsGhost()==0 ) continue;
+
+        auto const theedgeid = itedge->id();
+
+        std::set<size_type> ghostFaceIdFoundOnBoundary;
+
+        auto iteltghost = itedge->elementsGhost().begin();
+        auto const eneltghost = itedge->elementsGhost().end();
+        for ( ; iteltghost!=eneltghost ; ++iteltghost )
+        {
+            auto const& eltGhost = mesh->element(iteltghost->template get<1>(),iteltghost->template get<0>());
+            for ( uint16_type f = 0 ; f < mesh_type::element_type::numTopologicalFaces ; ++f )
+            {
+                auto const& theface = eltGhost.face(f);
+                if ( theface.isOnBoundary() )
+                {
+                    bool findEdge=false;
+                    for ( uint16_type e = 0; e < mesh_type::face_type::numEdges && !findEdge ; ++e )
+                    {
+                        if ( theface.edge(e).id() == theedgeid) { findEdge=true; ghostFaceIdFoundOnBoundary.insert(theface.id());}
+                    }
+                }
+            }
+        }
+
+        if (ghostFaceIdFoundOnBoundary.size()==2) edgeIdFoundToUpdate.insert(theedgeid);
+
+    } // for ( ; itedge!=enedge ; ++itedge )
+
+
+    if (edgeIdFoundToUpdate.size() > 0)
+        {
+            auto iteltactif = mesh->beginElementOnBoundary();
+            auto const eneltactif = mesh->endElementOnBoundary();
+            for ( ; iteltactif!=eneltactif ; ++iteltactif )
+            {
+                //if (iteltactif->processId()!=myrank) continue;
+
+                for ( uint16_type e = 0; e < mesh_type::element_type::numEdges ; ++e )
+                {
+                    if ( edgeIdFoundToUpdate.find(iteltactif->edge(e).id()) != edgeIdFoundToUpdate.end())
+                    {
+                        //std::cout << "find edge " << std::endl;
+                        auto const idEltFind = iteltactif->id();
+                        for ( uint16_type locdof = 0 ; locdof<fe_type::nDofPerEdge ; ++locdof )
+                            {
+                                auto const local_id = dofshift + e*fe_type::nDofPerEdge + locdof;
+
+                                for ( uint16_type comp = 0; comp < ncdof; ++comp )
+                                    {
+                                        auto const globdof = straightener.functionSpace()->dof()->localToGlobal( idEltFind, local_id, comp ).template get<0>();
+                                        //std::cout << straightener.functionSpace()->dof()->dofPoint( globdof ).template get<0>() << std::endl;
+                                        straightener(globdof) = 0;
+                                    }
+                            }
+                    }
+                }
+
+            } // for ( ; iteltactif!=eneltactif ; ++iteltactif )
+        } // if (edgeIdFoundToUpdate.size() > 0)
+
+
+} // straightenMeshUpdateEdgesOnBoundaryIsolated
+
+} // namespace detail
 /// \endcond
 
 /**
@@ -711,8 +787,12 @@ BOOST_PARAMETER_FUNCTION(
     auto xLo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
+
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );
+
+    Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
+
     double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate().norm();
 
     if ( norm_mean_value > 1e-12 )
@@ -764,7 +844,7 @@ BOOST_PARAMETER_FUNCTION(
         ) // 4. one required parameter, and
 
     ( optional
-      ( straighten,          *( boost::is_integral<mpl::_> ), 1 )
+      ( straighten,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,		   *,false )
@@ -782,27 +862,35 @@ BOOST_PARAMETER_FUNCTION(
 
     _mesh_ptrtype _mesh( mesh );
     _mesh->setWorldComm( worldcomm );
-    std::string fname = filename;
+
+    std::string filename_with_path = Environment::findFile( filename );
+    if ( filename_with_path.empty() )
+    {
+        std::vector<std::string> plist = Environment::geoPathList();
+        std::ostringstream ostr;
+        std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
+        CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
+    }
 
     if ( rebuild_partitions )
     {
         Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
         gmsh.setNumberOfPartitions( partitions );
-        gmsh.setPartitioner( partitioner );
+        gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
         gmsh.setMshFileByPartition( partition_file );
-        gmsh.rebuildPartitionMsh(filename,rebuild_partitions_filename);
+        gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
         // new mesh to load
-        fname=rebuild_partitions_filename;
+        filename_with_path=rebuild_partitions_filename;
     }
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
     {
         Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
-        fname = gmsh.refine( fname, refine );
+        filename_with_path = gmsh.refine( filename_with_path, refine );
     }
 
-    ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
+    ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
     // need to replace physical_region by elementary_region while reading
     if ( physical_are_elementary_regions )
@@ -858,7 +946,28 @@ BOOST_PARAMETER_FUNCTION(
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, mesh->worldComm() );
 #endif
     exporter.saveMesh( filename, mesh, parametricnodes );
+
 }
+
+BOOST_PARAMETER_FUNCTION(
+    ( void ),  // return type
+    saveGeoEntityAsGMSHMesh,    // 2. function name
+    tag,             // 3. namespace of tag types
+    ( required
+      ( geoentity, * )
+      ( filename, * ) ) // 4. one required parameter, and
+    )
+{
+    typedef typename Feel::detail::meshFromGeoEntity<Args>::type _mesh_type;
+
+#if BOOST_FILESYSTEM_VERSION == 3
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  Environment::worldComm().subWorldCommSeq() );
+#elif BOOST_FILESYSTEM_VERSION == 2
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
+#endif
+    exporter.gmshSaveOneElementAsMesh( filename, geoentity );
+}
+
 
 /**
  *
@@ -889,7 +998,7 @@ BOOST_PARAMETER_FUNCTION(
       ( format,         *, option(_name="gmsh.format").template as<int>() )
       ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
       ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
-      ( straighten,     *( boost::is_integral<mpl::_> ), 1 )
+      ( straighten,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), 0 )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
@@ -913,7 +1022,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setOrder( mesh->nOrder );
         desc->setWorldComm( worldcomm );
         desc->setNumberOfPartitions( partitions );
-        desc->setPartitioner( partitioner );
+        desc->setPartitioner( (GMSH_PARTITIONER) partitioner );
         desc->setMshFileByPartition( partition_file );
         desc->setRefinementLevels( refine );
         desc->setFileFormat( (GMSH_FORMAT)format );
@@ -1037,11 +1146,11 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
     ( optional
-      ( h,              *( boost::is_arithmetic<mpl::_> ), double( 0.1 ) )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), std::string( "" ) ) )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() ) )
     )
 
 {
@@ -1054,43 +1163,20 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setPrefix( fs::path( filename ).stem() );
 #endif
 
-    fs::path cp;
-
-    try
+    std::string filename_with_path = Environment::findFile( filename );
+    if ( filename_with_path.empty() )
     {
-        fs::current_path( cp );
-    }
-
-    catch ( ... )
-    {
-
-    }
-    // first try in the current path
-    if ( fs::exists( cp / filename ) )
-    {
-        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( ( cp/filename ).string() ) );
-    }
-
-    else if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
-    {
-        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( ( fs::path( Environment::localGeoRepository() ) / filename ).string() ) );
-    }
-
-    else if ( Environment::systemGeoRepository().template get<1>()  &&
-              fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
-    {
-        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string() ) );
-    }
-
-    else
-    {
+        std::vector<std::string> plist = Environment::geoPathList();
         std::ostringstream ostr;
-        ostr << "File " << filename << " was not found neither in current directory or in " << Environment::localGeoRepository() << " or in " << Environment::systemGeoRepository();
-        throw std::invalid_argument( ostr.str() );
+        std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
+        CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
     }
+
+    gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( filename_with_path ) );
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
+        fs::path cp = fs::current_path();
         std::vector<std::string> depends_on_files;
         if ( !depends.empty() )
             algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
@@ -1216,34 +1302,97 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 
+/**
+ *
+ * \brief load a mesh data structure (hold in a shared_ptr<>) using GMSH
+ *
+ * \arg mesh mesh data structure
+ * \arg filename filename string (with extension)
+ * \arg refine optionally refine with \p refine levels the mesh (default: 0)
+ * \arg update update the mesh data structure (build internal faces and edges) (default : true)
+ * \arg physical_are_elementary_regions boolean to load specific meshes formats (default : false)
+ */
+BOOST_PARAMETER_FUNCTION(
+    ( typename Feel::detail::mesh<Args>::ptrtype ), // return type
+    loadMesh,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( mesh, *)
+
+        ) // 4. one required parameter, and
+
+    ( optional
+      ( filename, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.filename").template as<std::string>() )
+      ( straighten,          (bool), option(_name="gmsh.straighten").template as<bool>() )
+      ( refine,          *( boost::is_integral<mpl::_> ), 0 )
+      ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
+      ( physical_are_elementary_regions,		   (bool), option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
+      ( worldcomm,       (WorldComm), Environment::worldComm() )
+      ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
+      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
+      ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
+      ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() )
+        )
+    )
+{
+    typedef typename Feel::detail::mesh<Args>::type _mesh_type;
+    typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
+
+    fs::path mesh_name=filename;
+    CHECK( mesh_name.extension() == ".geo" || mesh_name.extension() == ".msh" )
+        << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
+
+    if ( mesh_name.extension() == ".geo" )
+    {
+        return createGMSHMesh( _mesh=mesh,
+                               _desc=geo( _filename=mesh_name.string(),
+                                          _depends=depends ),
+                               _straighten=straighten,
+                               _refine=refine,
+                               _update=update,
+                               _physical_are_elementary_regions=physical_are_elementary_regions,
+                               _worldcomm=worldcomm,
+                               //_rebuild_partitions=rebuild_partitions,
+                               //_rebuild_partitions_filename=rebuild_partitions_filename,
+                               _partitions=partitions,
+                               _partitioner=partitioner,
+                               _partition_file=partition_file
+            );
+    }
+
+    if ( mesh_name.extension() == ".msh" )
+    {
+        return loadGMSHMesh( _mesh=mesh,
+                             _filename=mesh_name.string(),
+                             _straighten=straighten,
+                             _refine=refine,
+                             _update=update,
+                             _physical_are_elementary_regions=physical_are_elementary_regions,
+                             _worldcomm=worldcomm,
+                             _rebuild_partitions=rebuild_partitions,
+                             _rebuild_partitions_filename=rebuild_partitions_filename,
+                             _partitions=partitions,
+                             _partitioner=partitioner,
+                             _partition_file=partition_file
+            );
+    }
+    return _mesh_ptrtype( mesh );
+}
+
 
 /**
  * build a mesh of the unit segment [0,1]
  */
-inline
-boost::shared_ptr<Mesh<Simplex<1> > >
-unitSegment()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
-                          _desc=domain( _name="segment",
-                                        _shape="hypercube",
-                                        _dim=3,
-                                        _h=Environment::vm(_name="mesh1d.hsize").as<double>() ) );
-}
+boost::shared_ptr<Mesh<Simplex<1> > > unitSegment();
 
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
-inline
-boost::shared_ptr<Mesh<Simplex<2> > >
-unitSquare()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
-                          _desc=domain( _name="square",
-                                        _shape="hypercube",
-                                        _dim=2,
-                                        _h=Environment::vm(_name="mesh2d.hsize").as<double>() ) );
-}
+boost::shared_ptr<Mesh<Simplex<2> > > unitSquare();
 
 /**
  * build a mesh of the unit circle using triangles
@@ -1284,16 +1433,7 @@ unitSphere()
 /**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons
  */
-inline
-boost::shared_ptr<Mesh<Simplex<3> > >
-unitCube()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<3> >,
-                          _desc=domain( _name="cube",
-                                        _shape="hypercube",
-                                        _dim=3,
-                                        _h=Environment::vm(_name="mesh3d.hsize").as<double>() ) );
-}
+boost::shared_ptr<Mesh<Simplex<3> > > unitCube();
 
 template<int Dim>
 inline

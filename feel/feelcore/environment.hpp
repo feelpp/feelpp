@@ -265,6 +265,24 @@ public:
     //! \return the root repository (default: \c $HOME/feel)
     static std::string rootRepository();
 
+    /**
+     * Find a file. The lookup is as follows:
+     *  - look into current path
+     *  - look into paths that went through changeRepository(), it means that we look
+     *    for example into the path from which the executable was run
+     * If the file has an extension .geo or .msh, try also to
+     *  - look into \c localGeoRepository() which is usually $HOME/feel/geo
+     *  - look into \c systemGeoRepository() which is usually $FEELPP_DIR/share/feel/geo
+     * If \p filename is not found, then the empty string is returned.
+     * \return the string containing the filename path
+     */
+    static std::string findFile( std::string const& filename );
+
+    /**
+     * \return the list of paths where Feel++ looks into to find a Gmsh Geo file
+     */
+    static std::vector<std::string> geoPathList();
+
     //! \return the local geo files repository (default: \c $HOME/feel/geo)
     static std::string localGeoRepository();
 
@@ -352,6 +370,8 @@ private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
     mpi::environment M_env;
+
+    static std::vector<fs::path> S_paths;
 
     static  fs::path S_scratchdir;
 
