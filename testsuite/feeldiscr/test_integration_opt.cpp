@@ -72,7 +72,7 @@ makeOptions()
     ( "nlevels", po::value<int>( &nlevels )->default_value( 3 ), "number of refinement levels" )
     ( "shape", po::value<std::string>()->default_value( "pie" ), "pie,circle" )
     ;
-    return desc;
+    return desc.add( Feel::feel_options() );
 }
 #if USE_BOOST_TEST
 
