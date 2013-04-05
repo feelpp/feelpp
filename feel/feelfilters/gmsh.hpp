@@ -631,7 +631,123 @@ typedef typename mpl::if_<is_shared_ptr<_type>,
                           mpl::identity<_type> >::type::type type;
 typedef boost::shared_ptr<type> ptrtype;
 };
-}
+
+template<typename Args, typename Tag=tag::geoentity>
+struct meshFromGeoEntity
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<Args, Tag>::type
+                >::type
+            >::type
+    >::type _type;
+
+    typedef typename _type::GeoShape GeoShape;
+    typedef typename mpl::if_< mpl::bool_<GeoShape::is_simplex>,
+                               mpl::identity< Mesh< Simplex< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >,
+                               mpl::identity< Mesh< Hypercube< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >
+                               >::type::type type;
+};
+
+
+template <typename ElementSpaceType>
+void
+straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<0> /**/ )
+{}
+template <typename ElementSpaceType>
+void
+straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<1> /**/ )
+{}
+template <typename ElementSpaceType>
+void
+straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<2> /**/ )
+{}
+template <typename ElementSpaceType>
+void
+straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mpl::int_<3> /**/ )
+{
+    typedef typename ElementSpaceType::functionspace_type space_type;
+    typedef typename space_type::mesh_type mesh_type;
+    typedef typename space_type::dof_type::fe_type fe_type;
+
+    auto const ncdof = space_type::dof_type::nComponents;
+    auto const dofshift = fe_type::nDofPerVertex*mesh_type::element_type::numVertices;
+
+    auto mesh = straightener.mesh();
+    auto const myrank = mesh->worldComm().localRank();
+
+    std::set<size_type> edgeIdFoundToUpdate;
+
+    auto itedge = mesh->beginEdgeOnBoundary();
+    auto const enedge = mesh->endEdgeOnBoundary();
+    for ( ; itedge!=enedge ; ++itedge )
+    {
+        if (itedge->processId()!=myrank || itedge->numberOfElementsGhost()==0 ) continue;
+
+        auto const theedgeid = itedge->id();
+
+        std::set<size_type> ghostFaceIdFoundOnBoundary;
+
+        auto iteltghost = itedge->elementsGhost().begin();
+        auto const eneltghost = itedge->elementsGhost().end();
+        for ( ; iteltghost!=eneltghost ; ++iteltghost )
+        {
+            auto const& eltGhost = mesh->element(iteltghost->template get<1>(),iteltghost->template get<0>());
+            for ( uint16_type f = 0 ; f < mesh_type::element_type::numTopologicalFaces ; ++f )
+            {
+                auto const& theface = eltGhost.face(f);
+                if ( theface.isOnBoundary() )
+                {
+                    bool findEdge=false;
+                    for ( uint16_type e = 0; e < mesh_type::face_type::numEdges && !findEdge ; ++e )
+                    {
+                        if ( theface.edge(e).id() == theedgeid) { findEdge=true; ghostFaceIdFoundOnBoundary.insert(theface.id());}
+                    }
+                }
+            }
+        }
+
+        if (ghostFaceIdFoundOnBoundary.size()==2) edgeIdFoundToUpdate.insert(theedgeid);
+
+    } // for ( ; itedge!=enedge ; ++itedge )
+
+
+    if (edgeIdFoundToUpdate.size() > 0)
+        {
+            auto iteltactif = mesh->beginElementOnBoundary();
+            auto const eneltactif = mesh->endElementOnBoundary();
+            for ( ; iteltactif!=eneltactif ; ++iteltactif )
+            {
+                //if (iteltactif->processId()!=myrank) continue;
+
+                for ( uint16_type e = 0; e < mesh_type::element_type::numEdges ; ++e )
+                {
+                    if ( edgeIdFoundToUpdate.find(iteltactif->edge(e).id()) != edgeIdFoundToUpdate.end())
+                    {
+                        //std::cout << "find edge " << std::endl;
+                        auto const idEltFind = iteltactif->id();
+                        for ( uint16_type locdof = 0 ; locdof<fe_type::nDofPerEdge ; ++locdof )
+                            {
+                                auto const local_id = dofshift + e*fe_type::nDofPerEdge + locdof;
+
+                                for ( uint16_type comp = 0; comp < ncdof; ++comp )
+                                    {
+                                        auto const globdof = straightener.functionSpace()->dof()->localToGlobal( idEltFind, local_id, comp ).template get<0>();
+                                        //std::cout << straightener.functionSpace()->dof()->dofPoint( globdof ).template get<0>() << std::endl;
+                                        straightener(globdof) = 0;
+                                    }
+                            }
+                    }
+                }
+
+            } // for ( ; iteltactif!=eneltactif ; ++iteltactif )
+        } // if (edgeIdFoundToUpdate.size() > 0)
+
+
+} // straightenMeshUpdateEdgesOnBoundaryIsolated
+
+} // namespace detail
 /// \endcond
 
 /**
@@ -671,8 +787,12 @@ BOOST_PARAMETER_FUNCTION(
     auto xLo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
+
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );
+
+    Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
+
     double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate().norm();
 
     if ( norm_mean_value > 1e-12 )
@@ -828,6 +948,26 @@ BOOST_PARAMETER_FUNCTION(
     exporter.saveMesh( filename, mesh, parametricnodes );
 
 }
+
+BOOST_PARAMETER_FUNCTION(
+    ( void ),  // return type
+    saveGeoEntityAsGMSHMesh,    // 2. function name
+    tag,             // 3. namespace of tag types
+    ( required
+      ( geoentity, * )
+      ( filename, * ) ) // 4. one required parameter, and
+    )
+{
+    typedef typename Feel::detail::meshFromGeoEntity<Args>::type _mesh_type;
+
+#if BOOST_FILESYSTEM_VERSION == 3
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem().string(), 1,  Environment::worldComm().subWorldCommSeq() );
+#elif BOOST_FILESYSTEM_VERSION == 2
+    ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
+#endif
+    exporter.gmshSaveOneElementAsMesh( filename, geoentity );
+}
+
 
 /**
  *

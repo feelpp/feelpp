@@ -772,6 +772,74 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
 }
 
+
+
+template<typename MeshType, int N>
+void
+ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename, typename mesh_type::element_type::super const& elt ) const
+{
+    std::ofstream out( filename.c_str(), std::ios::app );
+
+    gmshSaveFormat( out );
+
+    out << "$Nodes\n";
+    out << elt.nPoints() << "\n";//number points
+
+    for ( int i = 0; i < elt.nPoints(); ++i )
+    {
+        out << i+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i).node()[0];
+        if ( mesh_type::nRealDim >= 2 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i).node()[1];
+        else
+            out << " 0";
+        if ( mesh_type::nRealDim >= 3 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i).node()[2];
+        else
+            out << " 0";
+        out << "\n";
+    }
+
+    out << "$EndNodes\n";
+
+    typedef typename MeshType::element_type element_type;
+    GmshOrdering<element_type> ordering;
+
+    out << "$Elements\n"
+        << "1\n";// number element
+    out << "1 "; // id element
+    out << ordering.type();
+
+    if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
+    {
+        out<<" 3 " << elt.marker().value() << " " << elt.marker2().value() << " " << elt.processId()+1;
+    }
+    else if ( FEELPP_GMSH_FORMAT_VERSION== std::string( "2.2" ) )
+    {
+        uint16_type nbTag = 3 + elt.numberOfPartitions();
+        out << " " << nbTag
+            << " " << elt.marker().value()
+            << " " << elt.marker2().value()
+            << " " << elt.numberOfPartitions()
+            << " " << elt.processId()+1;
+
+        for ( size_type i=0 ; i<elt.numberOfNeighborPartitions(); ++i )
+            out << " " << -( elt.neighborPartitionIds()[i]+1 );
+    }
+
+    for ( uint16_type p=0; p<element_type::numPoints; ++p )
+    {
+        out << " " << ordering.fromGmshId( p ) + 1;
+    }
+
+    out<<"\n";
+    out << "$EndElements\n";
+    out.close();
+
+}
+
+
+
 #if 0
 #if defined( FEELPP_INSTANTIATION_MODE )
 

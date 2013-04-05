@@ -1288,7 +1288,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
             {
                 auto const& theface = theelt.face( j );
                 idFacesWithBary[j].template get<0>() = theface.id();
-                auto const& theGj = theface.G();
+                //auto const& theGj = theface.G();
+                auto const& theGj = theface.vertices();
 #if 1
                 //compute face barycenter
                 typename Localization::matrix_node_type v( theGj.size1(), 1 );
@@ -1376,7 +1377,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                 {
 
                     auto const& thefacej2 = theelt.face( j2 );
-                    auto const& theGj2 = thefacej2.G();
+                    //auto const& theGj2 = thefacej2.G();
+                    auto const& theGj2 = thefacej2.vertices();
 #if 1
                     //compute face barycenter
                     typename Localization::matrix_node_type v( theGj2.size1(), 1 );
