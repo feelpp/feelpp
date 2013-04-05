@@ -137,8 +137,8 @@ public:
         typedef Shape<expr_shape::nDim,Scalar,false,false> shape;
 
 
-        typedef Eigen::Matrix<value_type,Shape::M,Shape::N> matrix_type;
-        typedef std::vector<matrix_type,1> inv_matrix_type;
+        typedef Eigen::Matrix<value_type,shape::M,shape::N> matrix_type;
+        typedef std::vector<matrix_type> inv_matrix_type;
 
 
         template <class Args> struct sig
