@@ -66,6 +66,7 @@ public:
     typedef MatrixEigenDense<value_type> eigen_dense_matrix_type;
     typedef boost::shared_ptr<eigen_dense_matrix_type> eigen_dense_matrix_ptrtype;
     typedef MatrixEigenSparse<value_type> eigen_sparse_matrix_type;
+    //typedef MatrixEigenDense<value_type> eigen_sparse_matrix_type;
     typedef boost::shared_ptr<eigen_sparse_matrix_type> eigen_sparse_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;

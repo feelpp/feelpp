@@ -67,6 +67,7 @@ BackendEigen<T>::solve( sparse_matrix_type const& _A,
     Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
     solver.compute(A.mat());
     x.vec() = solver.solve(b.vec());
+
     // if(solver.info()!=Eigen::Succeeded) {
     //     // solving failed
     //     return boost::make_tuple(false,1,1e-10);;
@@ -78,6 +79,7 @@ BackendEigen<T>::solve( sparse_matrix_type const& _A,
 // Instantiation
 //
 template class BackendEigen<double>;
+
 
 /**
  * \return the command lines options of the eigen backend
