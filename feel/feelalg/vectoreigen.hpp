@@ -39,6 +39,21 @@
 
 namespace Feel
 {
+template<typename T>
+struct get_real_type
+{};
+
+template<>
+struct get_real_type<double>
+{
+    typedef double value_type;
+};
+
+template<>
+struct get_real_type<std::complex<double> >
+{
+    typedef double value_type;
+};
 
 /*!
  * \class VectorEigen
@@ -67,7 +82,8 @@ public:
     //@{
 
     typedef T value_type;
-    typedef T real_type;
+    typedef typename get_real_type<T>::value_type real_type;
+
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
     typedef VectorEigen<value_type> this_type;
     typedef typename super1::clone_ptrtype clone_ptrtype;
@@ -492,7 +508,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_min = _M_vec.minCoeff();
+        real_type local_min = 0;//_M_vec.minCoeff();
 
         real_type global_min = local_min;
 
@@ -518,7 +534,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_max = _M_vec.maxCoeff();
+        real_type local_max = 0;//_M_vec.maxCoeff();
 
         real_type global_max = local_max;
 
@@ -612,9 +628,9 @@ public:
     value_type sum() const
     {
         checkInvariant();
-        double local_sum = _M_vec.array().sum();
+        value_type local_sum = _M_vec.array().sum();
 
-        double global_sum = local_sum;
+        value_type global_sum = local_sum;
 
 
 #ifdef FEELPP_HAS_MPI
