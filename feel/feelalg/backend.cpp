@@ -150,6 +150,11 @@ Backend<T>::build( BackendType bt, WorldComm const& worldComm )
         return backend_ptrtype( new BackendEigen<value_type>( worldComm ) );
     }
     break;
+    case BACKEND_EIGEN_DENSE:
+    {
+        return backend_ptrtype( new BackendEigen<value_type,1>( worldComm ) );
+    }
+    break;
 
 #if defined ( FEELPP_HAS_PETSC_H )
 
@@ -182,11 +187,14 @@ template <typename T>
 typename Backend<T>::backend_ptrtype
 Backend<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
 {
-    LOG(INFO) << "[Backend] backend " << vm["backend"].template as<std::string>() << "\n";
+    LOG(INFO) << "Loading backend " << vm["backend"].template as<std::string>();
     BackendType bt;
 
     if ( vm["backend"].template as<std::string>() == "eigen" )
         bt = BACKEND_EIGEN;
+
+    else if ( vm["backend"].template as<std::string>() == "eigen_dense" )
+        bt = BACKEND_EIGEN_DENSE;
 
     else if ( vm["backend"].template as<std::string>() == "petsc" )
         bt = BACKEND_PETSC;
@@ -199,10 +207,10 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
 
 #if defined( FEELPP_HAS_PETSC_H )
 
-        LOG(INFO) << "[Backend] use fallback backend petsc\n";
+        LOG(INFO) << "Falling back to backend petsc\n";
         bt = BACKEND_PETSC;
 #else
-        LOG(INFO) << "[Backend] backend " << vm["backend"].template as<std::string>() << " not available\n";
+        LOG(FATAL) << "Backend " << vm["backend"].template as<std::string>() << " not available";
 #endif
     }
 
@@ -211,8 +219,12 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     {
     case BACKEND_EIGEN:
     {
-        LOG(INFO) << "[Backend] Instantiate a Eigen backend\n";
         return backend_ptrtype( new BackendEigen<value_type>( vm, prefix, worldComm ) );
+    }
+    break;
+    case BACKEND_EIGEN_DENSE:
+    {
+        return backend_ptrtype( new BackendEigen<value_type,1>( vm, prefix, worldComm ) );
     }
     break;
 
@@ -221,7 +233,6 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     default:
     case BACKEND_PETSC:
     {
-        LOG(INFO) << "[Backend] Instantiate a Petsc backend\n";
         return backend_ptrtype( new BackendPetsc<value_type>( vm, prefix, worldComm ) );
     }
     break;
@@ -239,7 +250,6 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     break;
 #endif
     }
-
     // should never happen
     return backend_ptrtype();
 }
@@ -638,7 +648,7 @@ po::options_description backend_options( std::string const& prefix )
     po::options_description _options( "Linear and NonLinear Solvers Backend " + prefix + " options" );
     _options.add_options()
     // solver options
-    ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: Eigen, PETSc, trilinos" )
+    ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: petsc, eigen, eigen_dense" )
     ( prefixvm( prefix,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance" )
     ( prefixvm( prefix,"ksp-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
     ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )
