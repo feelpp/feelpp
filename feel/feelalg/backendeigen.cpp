@@ -33,52 +33,7 @@
 
 namespace Feel
 {
-// -- CONSTRUCTOR --
-template<typename T>
-BackendEigen<T>::BackendEigen( WorldComm const& )
-    :
-    super()
-{}
 
-template<typename T>
-BackendEigen<T>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const&  )
-    :
-    super( vm, prefix )
-{
-    std::string _prefix = prefix;
-
-    if ( !_prefix.empty() )
-        _prefix += "-";
-}
-
-
-template<typename T>
-typename BackendEigen<T>::solve_return_type
-BackendEigen<T>::solve( sparse_matrix_type const& _A,
-                      vector_type& _x,
-                      const vector_type& _b )
-{
-    bool reusePC = ( this->precMatrixStructure() == SAME_PRECONDITIONER );
-
-    eigen_sparse_matrix_type const& A( dynamic_cast<eigen_sparse_matrix_type const&>( _A ) );
-    eigen_vector_type      & x( dynamic_cast<eigen_vector_type      &>( _x ) );
-    eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
-    //x.vec()=A.mat().template fullPivLu().solve(b.vec());
-    Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
-    solver.compute(A.mat());
-    x.vec() = solver.solve(b.vec());
-
-    // if(solver.info()!=Eigen::Succeeded) {
-    //     // solving failed
-    //     return boost::make_tuple(false,1,1e-10);;
-    // }
-    return boost::make_tuple(true,1,1e-10);;
-} // BackendEigen::solve
-
-//
-// Instantiation
-//
-template class BackendEigen<double>;
 
 
 /**

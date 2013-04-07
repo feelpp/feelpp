@@ -41,17 +41,20 @@
 
 
 #include <feel/feelalg/backend.hpp>
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 
 namespace Feel
 {
 namespace po = boost::program_options;
+
 
 /**
  * \class BackendEigen
  *
  * this class provides an interface to the EIGEN linear algebra library
  */
-template<typename T>
+template<typename T, int _Options = 0>
 class BackendEigen : public Backend<T>
 {
     typedef Backend<T> super;
@@ -59,14 +62,17 @@ public:
 
     // -- TYPEDEFS --
     typedef typename super::value_type value_type;
+    typedef typename super::real_type real_type;
+
+    static const bool IsDense = (_Options == 1);
+    static const bool IsSparse = (_Options == 0);
 
     /* matrix */
     typedef typename super::sparse_matrix_type sparse_matrix_type;
     typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef MatrixEigenDense<value_type> eigen_dense_matrix_type;
-    typedef boost::shared_ptr<eigen_dense_matrix_type> eigen_dense_matrix_ptrtype;
-    typedef MatrixEigenSparse<value_type> eigen_sparse_matrix_type;
-    //typedef MatrixEigenDense<value_type> eigen_sparse_matrix_type;
+    typedef typename mpl::if_<mpl::bool_<IsDense>,
+                              mpl::identity<MatrixEigenDense<value_type> >,
+                              mpl::identity<MatrixEigenSparse<value_type> > >::type::type eigen_sparse_matrix_type;
     typedef boost::shared_ptr<eigen_sparse_matrix_type> eigen_sparse_matrix_ptrtype;
 
     typedef typename sparse_matrix_type::graph_type graph_type;
@@ -194,7 +200,10 @@ public:
 
     solve_return_type solve( sparse_matrix_type const& A,
                              vector_type& x,
-                             const vector_type& b );
+                             const vector_type& b )
+        {
+            return this->solve( A, x, b, mpl::bool_<IsDense>() );
+        }
 
     solve_return_type solve( sparse_matrix_ptrtype const& A,
                              vector_ptrtype& x,
@@ -212,17 +221,88 @@ public:
     }
 
 
-    value_type dot( const eigen_vector_type& f,
-                    const eigen_vector_type& x ) const
+    real_type dot( const vector_type& f,
+                   const vector_type& x ) const
     {
-        return f.vec().dot( x.vec() );
+        eigen_vector_type const& _f = dynamic_cast<eigen_vector_type const&>( f );
+        eigen_vector_type const& _x = dynamic_cast<eigen_vector_type const&>( x );
+        return _f.vec().dot( _x.vec() );
     }
 
-
-
 private:
+    solve_return_type solve( sparse_matrix_type const& A,
+                             vector_type& x,
+                             const vector_type& b,
+                             mpl::bool_<true> );
+    solve_return_type solve( sparse_matrix_type const& A,
+                             vector_type& x,
+                             const vector_type& b,
+                             mpl::bool_<false> );
 
 }; // class BackendEigen
+
+// -- CONSTRUCTOR --
+template<typename T, int _Options>
+BackendEigen<T,_Options>::BackendEigen( WorldComm const& )
+    :
+    super()
+{}
+
+template<typename T, int _Options>
+BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, WorldComm const&  )
+    :
+    super( vm, prefix )
+{
+    std::string _prefix = prefix;
+
+    if ( !_prefix.empty() )
+        _prefix += "-";
+}
+
+
+
+template<typename T, int _Options>
+typename BackendEigen<T,_Options>::solve_return_type
+BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
+                                 vector_type& _x,
+                                 const vector_type& _b,
+                                 mpl::bool_<true>)
+{
+    bool reusePC = ( this->precMatrixStructure() == SAME_PRECONDITIONER );
+
+    eigen_sparse_matrix_type const& A( dynamic_cast<eigen_sparse_matrix_type const&>( _A ) );
+    eigen_vector_type      & x( dynamic_cast<eigen_vector_type      &>( _x ) );
+    eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
+    x.vec() = A.mat().lu().solve(b.vec());
+
+    return boost::make_tuple(true,1,1e-10);
+} // BackendEigen::solve
+
+template<typename T, int _Options>
+typename BackendEigen<T,_Options>::solve_return_type
+BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
+                                 vector_type& _x,
+                                 const vector_type& _b,
+                                 mpl::bool_<false>)
+{
+    bool reusePC = ( this->precMatrixStructure() == SAME_PRECONDITIONER );
+
+    eigen_sparse_matrix_type const& A( dynamic_cast<eigen_sparse_matrix_type const&>( _A ) );
+    eigen_vector_type      & x( dynamic_cast<eigen_vector_type      &>( _x ) );
+    eigen_vector_type const& b( dynamic_cast<eigen_vector_type const&>( _b ) );
+
+    //x.vec()=A.mat().template fullPivLu().solve(b.vec());
+    Eigen::SimplicialLDLT<typename eigen_sparse_matrix_type::matrix_type> solver;
+    solver.compute(A.mat());
+    x.vec() = solver.solve(b.vec());
+
+    // if(solver.info()!=Eigen::Succeeded) {
+    //     // solving failed
+    //     return boost::make_tuple(false,1,1e-10);;
+    // }
+    return boost::make_tuple(true,1,1e-10);;
+} // BackendEigen::solve
+
 
 
 
