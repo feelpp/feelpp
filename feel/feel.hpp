@@ -57,11 +57,6 @@ namespace Feel
 {
 using GiNaC::symbol;
 using GiNaC::ex;
-
-#if !defined(STRICT_GINAC_PARSER_DEF)
-static bool strict_ginac_parser = true;
-#define STRICT_GINAC_PARSER_DEF 
-#endif
 }
 
 #include <feel/feelfilters/gmsh.hpp>
