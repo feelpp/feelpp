@@ -1302,6 +1302,73 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 
+
+/**
+ * build a mesh of the unit segment [0,1]
+ */
+boost::shared_ptr<Mesh<Simplex<1> > > unitSegment( double h = option(_name="gmsh.hsize").template as<double>() );
+
+/**
+ * build a mesh of the unit square [0,1]^2 using triangles
+ */
+boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").template as<double>() );
+
+/**
+ * build a mesh of the unit circle using triangles
+ */
+template<int Ngeo=1>
+inline
+boost::shared_ptr<Mesh<Simplex<2,Ngeo> > >
+unitCircle( double h = option(_name="gmsh.hsize").template as<double>() )
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<2,Ngeo> >,
+                          _desc=domain( _name="square",
+                                        _shape="ellipsoid",
+                                        _dim=2,
+                                        _xmin=-1,
+                                        _ymin=-1,
+                                        _h=h ) );
+}
+
+/**
+ * build a mesh of the unit circle using triangles
+ */
+template<int Ngeo=1>
+inline
+boost::shared_ptr<Mesh<Simplex<3,Ngeo> > >
+unitSphere( double h = option(_name="gmsh.hsize").template as<double>() )
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<3,Ngeo> >,
+                          _desc=domain( _name="sphere",
+                                        _shape="ellipsoid",
+                                        _dim=3,
+                                        _xmin=-1,
+                                        _ymin=-1,
+                                        _zmin=-1,
+                                        _h= h ) );
+}
+
+
+/**
+ * build a mesh of the unit square [0,1]^3 using tetrahedrons
+ */
+boost::shared_ptr<Mesh<Simplex<3> > > unitCube( double h = option(_name="gmsh.hsize").template as<double>() );
+
+template<int Dim, typename Convex=Simplex<Dim>>
+inline
+boost::shared_ptr<Mesh<Convex> >
+unitHypercube( double h = option(_name="gmsh.hsize").template as<double>() )
+{
+    return createGMSHMesh(_mesh=new Mesh<Convex>,
+                          _desc=domain( _name="hypercube",
+                                        _shape="hypercube",
+                                        _convex=Convex::type(),
+                                        _dim=Dim,
+                                        _h=h ) );
+}
+
+
+
 /**
  *
  * \brief load a mesh data structure (hold in a shared_ptr<>) using GMSH
@@ -1343,7 +1410,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     fs::path mesh_name=filename;
-    CHECK( mesh_name.extension() == ".geo" || mesh_name.extension() == ".msh" )
+    LOG_IF( WARNING, mesh_name.extension() == ".geo" || mesh_name.extension() == ".msh" )
         << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
 
     if ( mesh_name.extension() == ".geo" )
@@ -1380,73 +1447,8 @@ BOOST_PARAMETER_FUNCTION(
                              _partition_file=partition_file
             );
     }
-    return _mesh_ptrtype( mesh );
+    return unitHypercube<_mesh_type::nDim, typename _mesh_type::shape_type>();
 }
-
-
-/**
- * build a mesh of the unit segment [0,1]
- */
-boost::shared_ptr<Mesh<Simplex<1> > > unitSegment();
-
-/**
- * build a mesh of the unit square [0,1]^2 using triangles
- */
-boost::shared_ptr<Mesh<Simplex<2> > > unitSquare();
-
-/**
- * build a mesh of the unit circle using triangles
- */
-template<int Ngeo=1>
-inline
-boost::shared_ptr<Mesh<Simplex<2,Ngeo> > >
-unitCircle()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<2,Ngeo> >,
-                          _desc=domain( _name="square",
-                                        _shape="ellipsoid",
-                                        _dim=2,
-                                        _xmin=-1,
-                                        _ymin=-1,
-                                        _h=Environment::vm(_name="mesh2d.hsize").template as<double>() ) );
-}
-
-/**
- * build a mesh of the unit circle using triangles
- */
-template<int Ngeo=1>
-inline
-boost::shared_ptr<Mesh<Simplex<3,Ngeo> > >
-unitSphere()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<3,Ngeo> >,
-                          _desc=domain( _name="sphere",
-                                        _shape="ellipsoid",
-                                        _dim=3,
-                                        _xmin=-1,
-                                        _ymin=-1,
-                                        _zmin=-1,
-                                        _h=Environment::vm(_name="mesh2d.hsize").template as<double>() ) );
-}
-
-
-/**
- * build a mesh of the unit square [0,1]^3 using tetrahedrons
- */
-boost::shared_ptr<Mesh<Simplex<3> > > unitCube();
-
-template<int Dim>
-inline
-boost::shared_ptr<Mesh<Simplex<Dim> > >
-unitHypercube()
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<Dim> >,
-                          _desc=domain( _name="hypercube",
-                                        _shape="hypercube",
-                                        _dim=Dim,
-                                        _h=Environment::vm(_name=(boost::format("mesh%1%d.hsize")%Dim).str()).template as<double>() ) );
-}
-
 
 } // Feel
 
