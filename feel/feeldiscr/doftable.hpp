@@ -3031,20 +3031,25 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     {
         this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
     } // elements loop
-    boost::unordered_map<size_type,size_type> dof2dof;
-    size_type d = 0;
-    std::for_each( _M_dof_marker.right.begin(), _M_dof_marker.right.end(),
-                   [&dof2dof,&d]( typename dof_marker_type::right_value_type const& dm )
-                   {
-                       dof2dof[dm.second] = d++;
-                   });
-    std::for_each( _M_el_l2g.data(),
-                   _M_el_l2g.data()+_M_el_l2g.num_elements(),
-                   [&dof2dof]( global_dof_type& g )
-                   {
-                       g.id() = dof2dof[g.id()];
-                   } );
 
+    // renumber dofs if substructuring is set
+    if ( M.subStructuring() )
+    {
+        boost::unordered_map<size_type,size_type> dof2dof;
+        size_type d = 0;
+        std::for_each( _M_dof_marker.right.begin(), _M_dof_marker.right.end(),
+                       [&dof2dof,&d]( typename dof_marker_type::right_value_type const& dm )
+                       {
+                           dof2dof[dm.second] = d++;
+                           LOG(INFO) << "marker " << dm.first << " dof id " << dm.second << " new dof id " << dof2dof[dm.second];
+                       });
+        std::for_each( _M_el_l2g.data(),
+                       _M_el_l2g.data()+_M_el_l2g.num_elements(),
+                       [&dof2dof]( global_dof_type& g )
+                       {
+                           g.id() = dof2dof[g.id()];
+                       } );
+    }
     mpi::all_gather( M.worldComm().localComm(),
                      next_free_dof-1,
                      this->_M_last_df );

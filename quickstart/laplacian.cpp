@@ -13,8 +13,10 @@ int main(int argc, char**argv )
     //# endmarker1 #
 
     //# marker2 #
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-    auto Vh = Pch<1>( mesh );
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3>>);
+    boost::timer t;
+    auto Vh = Pch<3>( mesh );
+    std::cout << "time: " << t.elapsed() << "\n";
     auto u = Vh->element();
     auto v = Vh->element();
     //# endmarker2 #
