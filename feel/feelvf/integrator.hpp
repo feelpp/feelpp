@@ -2839,6 +2839,66 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 BOOST_PARAMETER_FUNCTION(
+    ( double ), // return type
+    normH1,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( range, *  )
+      ( expr,   * )
+      ( grad_expr, *)
+    ) // 4. one required parameter, and
+
+    ( optional
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( use_tbb,   ( bool ), false )
+      ( grainsize,   ( int ), 100 )
+      ( partitioner,   *, "auto" )
+      ( verbose,   ( bool ), false )
+    )
+)
+{
+    double a = integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
+                          _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+    double b = integrate( _range=range, _expr=grad_expr*trans(grad_expr), _quad=quad, _geomap=geomap,
+                          _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+    return math::sqrt( a + b );
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( double ), // return type
+    normSemiH1,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( range, *  )
+      ( grad_expr, *)
+    ) // 4. one required parameter, and
+
+    ( optional
+      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
+      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
+      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
+      ( use_tbb,   ( bool ), false )
+      ( grainsize,   ( int ), 100 )
+      ( partitioner,   *, "auto" )
+      ( verbose,   ( bool ), false )
+    )
+)
+{
+    double a = integrate( _range=range, _expr=grad_expr*trans(grad_expr), _quad=quad, _geomap=geomap,
+                          _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+    return math::sqrt( a );
+}
+
+BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::integrate_type<Args>::expr_type::expression_type::matrix_type ), // return type
     mean,    // 2. function name
 
