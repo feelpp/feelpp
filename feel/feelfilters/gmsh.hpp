@@ -1306,12 +1306,12 @@ BOOST_PARAMETER_FUNCTION(
 /**
  * build a mesh of the unit segment [0,1]
  */
-boost::shared_ptr<Mesh<Simplex<1> > > unitSegment( double h = option(_name="gmsh.hsize").template as<double>() );
+boost::shared_ptr<Mesh<Simplex<1> > > unitSegment( double h = option(_name="gmsh.hsize").as<double>() );
 
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
-boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").template as<double>() );
+boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").as<double>() );
 
 /**
  * build a mesh of the unit circle using triangles
@@ -1352,7 +1352,7 @@ unitSphere( double h = option(_name="gmsh.hsize").template as<double>() )
 /**
  * build a mesh of the unit square [0,1]^3 using tetrahedrons
  */
-boost::shared_ptr<Mesh<Simplex<3> > > unitCube( double h = option(_name="gmsh.hsize").template as<double>() );
+boost::shared_ptr<Mesh<Simplex<3> > > unitCube( double h = option(_name="gmsh.hsize").as<double>() );
 
 template<int Dim, typename Convex=Simplex<Dim>>
 inline
