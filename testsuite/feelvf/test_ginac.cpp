@@ -34,24 +34,24 @@
 #include <boost/range/algorithm/for_each.hpp>
 using namespace Feel;
 
-class my_visitor :
+class MyVisitor :
     public GiNaC::visitor,
     public GiNaC::symbol::visitor
 {
 public:
-    const std::list<std::string> & get_symbols()
+    const std::list<std::string> & symbols()
     {
-        symbols.sort();
-        symbols.unique();
-        return symbols;
+        syms.sort();
+        syms.unique();
+        return syms;
     }
 
 private:
-    std::list<std::string> symbols;
+    std::list<std::string> syms;
 
     void visit(const symbol & s)
     {
-        symbols.push_back(s.get_name());
+        syms.push_back(s.get_name());
     }
 
 };
@@ -137,11 +137,11 @@ int main( int argc, char* argv[] )
     //not working because ex is not mutable
     //boost::for_each(exact_parsed, [](GiNaC::ex const& e) {if (GiNaC::is_a<symbol>(e)) std::cout << "Found Symbol : " <<  GiNaC::ex_to<symbol>(e).get_name() << "\n";});
 
-    // Retrieve each symbols using viitor
+    // Retrieve each symbols using visitor
     std::cout << "Loading symbols from : " << exact_parsed << " (visitor)" << std::endl << std::flush;
-    my_visitor v;
+    MyVisitor v;
     exact_parsed.traverse(v);
-    std::list<std::string> symbols = v.get_symbols();
+    std::list<std::string> symbols = v.symbols();
     boost::for_each(symbols, [](std::string const& s) {std::cout << "Found Symbol :" << s << std::endl;});
     return 0;
 }
