@@ -47,7 +47,7 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     // create the mesh
-    auto mesh = unitSquare();
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
 
     // function space
     auto Vh = THch<2>( mesh );
@@ -65,13 +65,16 @@ int main(int argc, char**argv )
     a+= integrate(_range=elements(mesh),
                   _expr=-div(u)*idt(p)+divt(u)*id(p));
 
+    a+= integrate(_range=boundaryfaces(mesh),
+                  _expr=idt(p)*trans(vf::N())*id(u));
+
     // right hand side
     auto l = form1( _test=Vh );
 
     // boundary condition
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=Py()*(1-Py()) );
-
+                  _expr=Py()*(1-Py()));
+    
     // solve a(u,v)=l(v)
     a.solve(_rhs=l,_solution=U);
 
