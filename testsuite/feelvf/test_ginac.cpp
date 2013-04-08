@@ -50,8 +50,8 @@ private:
     std::list<std::string> symbols;
 
     void visit(const symbol & s)
-    { 
-        symbols.push_back(s.get_name()); 
+    {
+        symbols.push_back(s.get_name());
     }
 
 };
@@ -98,7 +98,7 @@ int main( int argc, char* argv[] )
     std::string exact;
     int dim;
 
-    std::cout << "strict_ginac_parser=" << strict_ginac_parser << std::endl << std::flush;
+    std::cout << "strict_ginac_parser=" << option(_name="ginac.strict-parser").as<bool>() << std::endl << std::flush;
     std::cout << "dim=" << std::flush; std::cin >> dim; std::cout << std::flush;
     std::cout << "exact=" << std::flush; std::cin >> exact; std::cout << std::flush;
     switch (dim) {
@@ -109,7 +109,7 @@ int main( int argc, char* argv[] )
     }
     case(2) : {
         vars = symbols<2>();
-        exact_parsed = parse(exact, vars); 
+        exact_parsed = parse(exact, vars);
         break;
     }
     case(3) : {
