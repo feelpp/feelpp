@@ -389,7 +389,7 @@ HeatSink<Dim, Order>::exportResults( double time, element_type& U )
 {
     if ( this->vm().count( "export" ) )
     {
-        M_exporter->step( time )->addRegions();
+        //M_exporter->step( time )->addRegions();
         M_exporter->step( time )->add( "Temperature", U );
         M_exporter->save();
     }
