@@ -1052,7 +1052,10 @@ BOOST_PARAMETER_FUNCTION(
         if ( update )
         {
             _mesh->components().reset();
-            _mesh->components().set( update );
+            if ( desc->subStructuring() )
+                _mesh->components().set( update|MESH_PROPAGATE_MARKERS );
+            else
+                _mesh->components().set( update );
             _mesh->updateForUse();
         }
 
@@ -1114,7 +1117,7 @@ BOOST_PARAMETER_FUNCTION(
       ( ymax,           *( boost::is_arithmetic<mpl::_> ), 1 )
       ( zmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
       ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( substructuring, *( boost::is_integral<mpl::_> ), 0 ) ) )
+      ( substructuring, *( boost::is_integral<mpl::_> ), option(_name="gmsh.substructuring").template as<bool>() ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 

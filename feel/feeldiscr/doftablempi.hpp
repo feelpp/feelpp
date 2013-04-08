@@ -82,8 +82,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
             {
                 int ind = FEType::nLocalDof*c1+i;
                 boost::tie( M_locglobOnCluster_indices[elid][ind],
-                            M_locglobOnCluster_signs[elid][ind], boost::tuples::ignore ) =
-                                localToGlobalOnCluster( elid, i, c1 );
+                            M_locglobOnCluster_signs[elid][ind],
+                            boost::tuples::ignore,
+                            boost::tuples::ignore ) =
+                    localToGlobalOnCluster( elid, i, c1 );
             }
         }
     }

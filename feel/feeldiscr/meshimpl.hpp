@@ -768,8 +768,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     //face.setWorldComm(this->worldComm());
     face.setProcessIdInPartition( this->worldComm().localRank() );
 
-    std::map<std::set<int>, size_type > _faces;
-    typename std::map<std::set<int>, size_type >::iterator _faceit;
+    boost::unordered_map<std::set<int>, size_type > _faces;
+    typename boost::unordered_map<std::set<int>, size_type >::iterator _faceit;
     int next_face = 0;
     element_type ele;
 
