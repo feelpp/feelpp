@@ -374,7 +374,7 @@ public:
     vector_type beta( parameter_type const& mu, size_type M  ) const;
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const;
 
-    std::vector<double> studyConvergence( parameter_type const & mu) const;
+    std::vector<double> studyConvergence( parameter_type const & mu, solution_type const & solution ) const;
 
     void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
     element_type residual ( size_type M ) const;
@@ -796,7 +796,7 @@ EIM<ModelType>::offline(  )
 
 template<typename ModelType>
 std::vector<double>
-EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
+EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type const & solution) const
 {
     LOG(INFO) << " Convergence study \n";
     int proc_number =  Environment::worldComm().globalRank();
@@ -818,6 +818,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
             conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
         }
 
+    bool use_expression = option(_name="eim.compute-error-with-truth-expression").template as<bool>();
     int max = this->mMax();
     for(int N=1; N<=max; N++)
     {
@@ -826,9 +827,28 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
         for ( int i=0; i<size-1; i++ ) LOG(INFO)<< mu[i] <<" , ";
         LOG(INFO)<< mu[size-1]<<" ]\n";
 
+#if 0
+        double exprl2norm , diffl2norm ;
+
+        if( use_expression )
+        {
+            double exprl2norm =M_model->expressionL2Norm( solution , mu );
+            auto eim_approximation = this->operator()(mu , N);
+            double diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
+        }
+        else
+        {
+            double exprl2norm =M_model->projExpressionL2Norm( solution , mu );
+            auto eim_approximation = this->operator()(mu , N);
+            double diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
+        }
+
+        double l2_error = diffl2norm / exprl2norm ;
+
+#else
+        //old version
         // Compute expression
         auto expression = M_model->operator()(mu);
-
         // Compute eim expansion
         auto eim_approximation = this->operator()(mu , N);
         //Compute l2error
@@ -839,7 +859,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu ) const
         LOG(INFO) << "norm_l2_approximation = " << norm_l2_approximation << "\n";
         auto l2_error = math::abs( norm_l2_expression - norm_l2_approximation ) / norm_l2_expression;
         LOG(INFO) << "norm l2 error = " << l2_error << "\n";
-
+#endif
         l2ErrorVec[N-1] = l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
 
         if( proc_number == Environment::worldComm().masterRank() )
@@ -954,8 +974,12 @@ public:
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual size_type  mMax() const = 0;
 
-    virtual std::vector<double> studyConvergence( parameter_type const & mu ) const = 0;
+    virtual std::vector<double> studyConvergence( parameter_type const & mu , solution_type const & solution ) const = 0;
     virtual void computationalTimeStatistics( std::string appname )  = 0;
+    virtual double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
+    virtual double diffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    //virtual double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
+    //virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
 
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
@@ -975,8 +999,8 @@ class EIMFunction
     typedef EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type> super;
 public:
     typedef ModelType model_type;
-    typedef ModelType* model_ptrtype;
-    typedef boost::shared_ptr<ModelType> boost_shared_model_ptrtype;
+    //typedef ModelType* model_ptrtype;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
 
     typedef SpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -1023,7 +1047,9 @@ public:
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
+#if !NDEBUG
             M_mu.check();
+#endif
             M_u = M_model->solve( mu );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -1031,20 +1057,83 @@ public:
     element_type operator()( solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
+#if !NDEBUG
             M_mu.check();
+#endif
             // no need to solve we have already an approximation (typically from
             // an nonlinear iteration procedure)
             M_u = T;
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
+    //Let g the expression that we want to have an eim expasion
+    //here is computed its l2 norm : || g ||_L2
+    double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const
+    {
+        M_mu = mu;
+#if !NDEBUG
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=M_expr*M_expr ).evaluate()( 0,0 ) );
+    }
+
+    //Let geim the eim expansion of g
+    //here is computed || g - geim ||_L2
+    double diffL2Norm(  solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
+    {
+        M_mu = mu;
+#if !NDEBUG
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto difference = M_expr - idv(eim_expansion);
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
+    }
+
+#if 0
+    //Let \pi_g the projection of g on the function space
+    //here is computed || \pi_g ||_L2
+    double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const
+    {
+        M_mu = mu;
+#if !NDEBUG
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        //auto expr_pi_g = idv( pi_g );
+        //return math::sqrt( integrate( _range=elements( mesh ), _expr=expr_pi_g*expr_pi_g ).evaluate()( 0,0 ) );
+    }
+
+    //here is computed || \pi_g - geim ||_L2
+    double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const 
+    {
+        M_mu = mu;
+#if !NDEBUG
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto diff = pi_g - eim_expansion;
+        //auto expr_diff = idv( diff );
+        //return math::sqrt( integrate( _range=elements( mesh ), _expr=expr_diff*expr_diff ).evaluate()( 0,0 ) );
+    }
+#endif
+
     void computationalTimeStatistics( std::string appname )
     {
-        auto model = crbmodel_ptrtype( new crbmodel_type( M_vm , CRBModelMode::CRB ) );
+        //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_vm , CRBModelMode::CRB ) );
+        auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
         //make sure that the CRB DB is already build
         M_crb = crb_ptrtype( new crb_type( appname,
                                            M_vm ,
-                                           model ) );
+                                           crbmodel ) );
+
         if ( !M_crb->isDBLoaded() || M_crb->rebuildDB() )
         {
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
@@ -1055,6 +1144,9 @@ public:
 
         int n_eval = option(_name="eim.computational-time-neval").template as<int>();
 
+        Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
+        time_crb.resize( n_eval );
+
         typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( M_model->parameterSpace() ) );
         Sampling->logEquidistribute( n_eval  );
 
@@ -1062,20 +1154,24 @@ public:
         int N =  option(_name="crb.dimension").template as<int>();
         //reduced basis approximation space
         auto WN = M_crb->wn();
+        int mu_number = 0;
         BOOST_FOREACH( auto mu, *Sampling )
         {
-            LOG( INFO ) << "[computational] mu = \n"<<mu;
+            //LOG( INFO ) << "[computational] mu = \n"<<mu;
+            boost::mpi::timer tcrb;
             auto o = M_crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
             auto uN = o.template get<4>();
             auto u_crb = M_crb->expansion( uN , N , WN );
 
-            boost::mpi::timer t;
+            boost::mpi::timer teim;
             this->beta( mu , u_crb );
-            double time_elapsed = t.elapsed();
-            this->addOnlineTime( time_elapsed );
+            this->addOnlineTime( teim.elapsed() );
+            time_crb( mu_number ) = tcrb.elapsed() ;
+            mu_number++;
         }
 
         M_model->computeStatistics( super::onlineTime() , super::name() );
+        M_model->computeStatistics( time_crb , super::name()+" - global crb timing" );
 
     }
 
@@ -1087,7 +1183,7 @@ public:
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
-    std::vector<double> studyConvergence( parameter_type const & mu ) const { return M_eim->studyConvergence( mu ) ; };
+    std::vector<double> studyConvergence( parameter_type const & mu , solution_type const & solution ) const { return M_eim->studyConvergence( mu , solution ) ; };
 
     size_type mMax() const { return M_eim->mMax(); }
 
@@ -1107,7 +1203,7 @@ namespace detail
 template<typename Args>
 struct compute_eim_return
 {
-    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type model1_type;
+    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
     typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
