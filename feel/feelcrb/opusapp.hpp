@@ -461,6 +461,7 @@ public:
             {
                 int size = mu.size();
 
+                element_type u_crb; // expansion of reduced solution
 #if !NDEBUG
                 if( proc_number == Environment::worldComm().masterRank() )
                 {
@@ -570,7 +571,7 @@ public:
                                 auto WN = crb->wn();
                                 //auto u_crb = crb->expansion( mu , N );
                                 auto uN_0 = o.template get<4>();
-                                element_type u_crb;
+
                                 //if( model->isSteady()) // Re-use uN given by lb in crb->run
                                     u_crb = crb->expansion( uN_0 , N , WN ); // Re-use uN given by lb in crb->run
                                 //else
@@ -701,17 +702,18 @@ public:
                                     {
                                         std::vector<double> l2error;
                                         auto eim = eim_sc_vector[i];
-                                        l2error = eim->studyConvergence( mu );
+                                        //take two parameters : the mu and the expansion of the reduced solution already computed
+                                        l2error = eim->studyConvergence( mu , u_crb );
 
                                         for(int j=0; j<l2error.size(); j++)
                                                 mapConvEIM[eim->name()][j][curpar-1] = l2error[j];
                                     }
- 
+
                                     for(int i=0; i<eim_sd_vector.size(); i++)
                                     {
                                         std::vector<double> l2error;
                                         auto eim = eim_sd_vector[i];
-                                        l2error = eim->studyConvergence( mu );
+                                        l2error = eim->studyConvergence( mu , u_crb );
 
                                        for(int j=0; j<l2error.size(); j++)
                                                 mapConvEIM[eim->name()][j][curpar-1] = l2error[j];
@@ -725,10 +727,10 @@ public:
                                     for( int N = 1; N < crb->dimension(); N++ )
                                     {
                                         LOG(INFO) << "N=" << N << "...\n";
-                                        auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
-                                        auto u_crb = crb->expansion( mu , N );
+                                        //auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+                                        auto u_crbN = crb->expansion( mu , N );
                                         auto u_error = model->functionSpace()->element();
-                                        u_error = u_fem - u_crb;
+                                        u_error = u_fem - u_crbN;
                                         double rel_err = std::abs( output_fem-o.template get<0>() ) /output_fem;
                                         double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
