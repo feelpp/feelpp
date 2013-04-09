@@ -53,6 +53,9 @@ int main(int argc, char**argv )
           _expr=constant(0.) );
     a.solve(_rhs=l,_solution=u);
 
+    std::cout << "values with marker WEST : " << u.extractValuesWithMarker( "WEST" ) << "\n";
+    std::cout << "values without marker WEST : " << u.extractValuesWithoutMarker( "WEST" ) << "\n";
+
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->save();

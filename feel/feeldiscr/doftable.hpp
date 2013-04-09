@@ -31,6 +31,8 @@
 
 #include <boost/foreach.hpp>
 #include <boost/bimap.hpp>
+#include <boost/bimap/support/lambda.hpp>
+
 #include <boost/bimap/multiset_of.hpp>
 #include <boost/multi_array.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -72,6 +74,10 @@ struct global_dof_type
         super( i, s, is_p, phys )
         {}
     global_dof_type ( global_dof_type const& g )
+        :
+        super( g )
+        {}
+    global_dof_type ( global_dof_type&& g )
         :
         super( g )
         {}
@@ -130,6 +136,10 @@ struct dof_type
         :
         super( g )
         {}
+    dof_type ( dof_type&& g )
+        :
+        super( g )
+        {}
     template<class U1, class U2>
     dof_type(const cons<U1, U2>& p) : super(p)
         {}
@@ -142,7 +152,7 @@ struct dof_type
 inline
 bool operator==(dof_type const& p1, dof_type const& p2)
 {
-    return p1.id() == p2.id() && p1.entityDim() == p2.entityDim() && p1.component() == p2.component();
+    return p1.id() == p2.id() && p1.entityDim() == p2.entityDim();// && p1.component() == p2.component();
 }
 
 inline
@@ -151,7 +161,7 @@ std::size_t hash_value(dof_type const& p)
     std::size_t seed = 0;
     boost::hash_combine(seed, p.id());
     boost::hash_combine(seed, p.entityDim());
-    boost::hash_combine(seed, p.component());
+    //boost::hash_combine(seed, p.component());
     return seed;
 }
 /**
@@ -1134,6 +1144,29 @@ public:
         map_gdof = mapdof;
     }
 
+    typename dof_marker_type::right_range_type
+    markerToDof( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return _M_dof_marker.right.range( id <= _key, _key<id+1 );
+        }
+
+    typename dof_marker_type::right_range_type
+    markerToDofLessThan( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return _M_dof_marker.right.range( unbounded, _key<id );
+        }
+    typename dof_marker_type::right_range_type
+    markerToDofGreaterThan( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return _M_dof_marker.right.range( id<_key, unbounded );
+        }
+
     void printDofMarker(std::string const& filename )
         {
             // std::ofstream ofs( filename.c_str() );
@@ -1165,7 +1198,7 @@ public:
     bool insertDof( size_type ie,
                     uint16_type l_dof,
                     uint16_type lc,
-                    dof_type gDof,
+                    dof_type&& gDof,
                     uint16_type processor,
                     size_type& pDof,
                     int32_type sign = 1,
@@ -1343,7 +1376,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            this->insertDof( ie, lc, l, dof_type( 1, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -1397,7 +1430,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                this->insertDof( ie, lc, i, dof_type( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
             }
         }
 
@@ -1452,7 +1485,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                this->insertDof( ie, lc, i, dof_type( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
             }
         }
 
@@ -1488,7 +1521,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            this->insertDof( ie, lc, l, dof_type( 2, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -1568,7 +1601,7 @@ private:
                     }
                 }
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
+                this->insertDof( ie, lc, i, dof_type( 2, 0, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
 
             }
         }
@@ -1601,7 +1634,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 3, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            this->insertDof( ie, lc, l, dof_type( 3, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -3036,20 +3069,39 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     {
         this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
     } // elements loop
-    boost::unordered_map<size_type,size_type> dof2dof;
-    size_type d = 0;
-    std::for_each( _M_dof_marker.right.begin(), _M_dof_marker.right.end(),
-                   [&dof2dof,&d]( typename dof_marker_type::right_value_type const& dm )
-                   {
-                       dof2dof[dm.second] = d++;
-                   });
-    std::for_each( _M_el_l2g.data(),
-                   _M_el_l2g.data()+_M_el_l2g.num_elements(),
-                   [&dof2dof]( global_dof_type& g )
-                   {
-                       g.id() = dof2dof[g.id()];
-                   } );
 
+    // renumber dofs if substructuring is set
+    if ( M.subStructuring() )
+    {
+        boost::unordered_map<size_type,size_type> dof2dof;
+        size_type d = 0;
+        std::for_each( _M_dof_marker.right.begin(), _M_dof_marker.right.end(),
+                       [&dof2dof,&d]( typename dof_marker_type::right_value_type const& dm )
+                       {
+                           dof2dof[dm.second] = d++;
+                           //LOG(INFO) << "marker " << dm.first << " dof id " << dm.second << " new dof id " << dof2dof[dm.second];
+                       });
+        std::for_each( _M_el_l2g.data(),
+                       _M_el_l2g.data()+_M_el_l2g.num_elements(),
+                       [&dof2dof]( global_dof_type& g )
+                       {
+                           g.id() = dof2dof[g.id()];
+                       } );
+
+        _M_dof_marker.clear();
+        std::for_each( _M_el_l2g.data(),
+                       _M_el_l2g.data()+_M_el_l2g.num_elements(),
+                       [this]( global_dof_type& g )
+                       {
+                           this->_M_dof_marker.insert( dof2marker( g.id(), g.physical() ) );
+                       });
+#if 0
+        for ( auto mit = _M_dof_marker.right.begin(), men = _M_dof_marker.right.end() ; mit != men ; ++mit )
+        {
+            LOG(INFO) << "marker " << mit->first << " dof id " << mit->second;
+        }
+#endif
+    }
     mpi::all_gather( M.worldComm().localComm(),
                      next_free_dof-1,
                      this->_M_last_df );

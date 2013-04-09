@@ -32,6 +32,7 @@
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/identity.hpp>
+#include <boost/spirit/home/phoenix/stl/algorithm.hpp>
 #include <feel/feelmesh/submeshdata.hpp>
 
 
@@ -58,18 +59,18 @@ public :
                               mpl::identity< Mesh< Simplex< mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
                               mpl::identity< Mesh< Hypercube<mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_faces_type;
 
-typedef boost::shared_ptr<mesh_faces_type> mesh_faces_ptrtype;
+    typedef boost::shared_ptr<mesh_faces_type> mesh_faces_ptrtype;
 
-typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
-                          mpl::identity< Mesh< Simplex< (mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
-                          mpl::identity< Mesh< Hypercube<(mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_edges_type;
-typedef boost::shared_ptr<mesh_edges_type> mesh_edges_ptrtype;
+    typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
+                              mpl::identity< Mesh< Simplex< (mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
+                              mpl::identity< Mesh< Hypercube<(mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_edges_type;
+    typedef boost::shared_ptr<mesh_edges_type> mesh_edges_ptrtype;
 
-typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
-                           mpl::identity<mesh_type>,
-                           typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_FACES> >,
-                                              mpl::identity<mesh_faces_type>,
-                                              mpl::identity<mesh_edges_type> >::type>::type::type mesh_build_type;
+    typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
+                               mpl::identity<mesh_type>,
+                               typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_FACES> >,
+                                                  mpl::identity<mesh_faces_type>,
+                                                  mpl::identity<mesh_edges_type> >::type>::type::type mesh_build_type;
 
     typedef boost::shared_ptr<mesh_build_type> mesh_build_ptrtype;
     typedef SubMeshData smd_type;
@@ -78,9 +79,19 @@ typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> 
     createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range )
         :
         M_mesh( inputMesh ),
-        M_range( range ),
+        M_listRange(),
+        M_smd( new smd_type( inputMesh ) )
+        {
+            M_listRange.push_back( range );
+        }
+
+    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,std::list<IteratorRange> const& range )
+        :
+        M_mesh( inputMesh ),
+        M_listRange( range ),
         M_smd( new smd_type( inputMesh ) )
         {}
+
 
     mesh_build_ptrtype
     build()
@@ -99,7 +110,7 @@ private:
     mesh_edges_ptrtype build( mpl::int_<MESH_EDGES> /**/ );
 
     mesh_ptrtype M_mesh;
-    range_type M_range;
+    std::list<range_type> M_listRange;
     smd_ptrtype M_smd;
 
 };
@@ -153,12 +164,18 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
     //-----------------------------------------------------------//
 
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = M_range;
-
     std::map<size_type,size_type> new_element_id;
 
     std::map<int,std::set<boost::tuple<size_type,size_type> > > ghostCellsFind;
+
+
+    auto itListRange = M_listRange.begin();
+    auto const enListRange = M_listRange.end();
+    for ( ; itListRange!=enListRange ; ++itListRange)
+    {
+    iterator_type it, en;
+    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
+
 
     for ( ; it != en; ++ it )
     {
@@ -349,7 +366,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 #endif
 
     } //  for( ; it != en; ++ it )
-
+    } // for ( ; itListRange!=enListRange ; ++itListRange)
 
     if ( nProc > 1 )
     {
@@ -652,8 +669,12 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
     //-----------------------------------------------------------//
 
+    auto itListRange = M_listRange.begin();
+    auto const enListRange = M_listRange.end();
+    for ( ; itListRange!=enListRange ; ++itListRange)
+    {
     iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = M_range;
+    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] extracting " << std::distance(it,en)  << " faces " << "\n";
     for ( ; it != en; ++ it )
@@ -724,6 +745,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         newMesh->addElement( newElem );
 
     } // end for it
+    } // for ( ; itListRange!=enListRange ; ++itListRange)
 
 
     newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
@@ -780,8 +802,12 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
     //-----------------------------------------------------------//
 
+    auto itListRange = M_listRange.begin();
+    auto const enListRange = M_listRange.end();
+    for ( ; itListRange!=enListRange ; ++itListRange)
+    {
     iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = M_range;
+    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] extracting " << std::distance(it,en)  << " edges " << "\n";
     for ( ; it != en; ++ it )
@@ -855,6 +881,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
         // Add an equivalent element type to the new_mesh
         newMesh->addElement( newElem );
     } // end for it
+    } // for ( ; itListRange!=enListRange ; ++itListRange)
 
 
     newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
@@ -869,13 +896,24 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
     return newMesh;
 }
 
+namespace detail
+{
+template <typename RangeType>
+struct submeshrangetype
+{
+    typedef typename mpl::if_< boost::is_std_list<RangeType>,
+                               mpl::identity<RangeType>,
+                               mpl::identity<std::list<RangeType> > >::type::type::value_type type;
+};
+}
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
-typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_build_ptrtype
+typename createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type/*IteratorRange*/,TheTag>::mesh_build_ptrtype
 createSubmesh( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range, size_type ctx = EXTRACTION_KEEP_MESH_RELATION )
 {
-    DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
-             << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
-    createSubmeshTool<MeshType,IteratorRange,TheTag> cSmT( inputMesh,range );
+    //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
+    //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
+
+    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range );
     auto m = cSmT.build();
     Context c( ctx );
     if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )
