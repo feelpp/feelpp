@@ -31,7 +31,10 @@
 
 #include <feel/feel.hpp>
 #include <feel/feelvf/ginac.hpp>
-#include <boost/range/algorithm/for_each.hpp>
+
+#include <boost/algorithm/string/split.hpp>
+#include <boost/foreach.hpp>
+
 using namespace Feel;
 
 class MyVisitor :
@@ -39,19 +42,40 @@ class MyVisitor :
     public GiNaC::symbol::visitor
 {
 public:
-    const std::list<std::string> & symbols()
+    const std::list<symbol> & symbols()
     {
-        syms.sort();
-        syms.unique();
         return syms;
     }
 
+    const std::list<std::string> & symbol_names()
+    {
+        sym_names.sort();
+        sym_names.unique();
+        return sym_names;
+    }
+
+    bool hassymbol(std::string const& s, symbol &found_symbol)
+    {
+        bool result = false;
+        boost::for_each(syms, [&s, &result, &found_symbol](symbol const& sym)
+                        {
+                            if (sym.get_name() == s)
+                                {
+                                    result = true;
+                                    found_symbol = sym;
+                                }
+                        });
+        return result;
+    }
+
 private:
-    std::list<std::string> syms;
+    std::list<symbol> syms;
+    std::list<std::string> sym_names;
 
     void visit(const symbol & s)
     {
-        syms.push_back(s.get_name());
+        syms.push_back(s);
+        sym_names.push_back(s.get_name());
     }
 
 };
@@ -61,8 +85,9 @@ makeOptions()
 {
     Feel::po::options_description ginacoptions("Ginac options");
     ginacoptions.add_options()
-        ("exact", Feel::po::value<std::string>()->default_value( "" ), "name of the input")
         ("dim", Feel::po::value<int>()->default_value( 0 ), "geometric dimension")
+        ("params", Feel::po::value<std::string>()->default_value( "" ), "name of parameters")
+        ("exact", Feel::po::value<std::string>()->default_value( "" ), "name of the input")
         ;
     return ginacoptions.add( Feel::feel_options() );
 }
@@ -94,28 +119,56 @@ int main( int argc, char* argv[] )
     using GiNaC::symbol;
 
     ex exact_parsed;
-    std::vector<symbol> vars;
+    std::vector<symbol> vars, parameters;
+    std::vector<std::string> lst_params;
     std::string exact;
+    std::string params;
     int dim;
 
-    std::cout << "strict_ginac_parser=" << option(_name="ginac.strict-parser").as<bool>() << std::endl << std::flush;
-    std::cout << "dim=" << std::flush; std::cin >> dim; std::cout << std::flush;
-    std::cout << "exact=" << std::flush; std::cin >> exact; std::cout << std::flush;
+    if ( option(_name="ginac.strict-parser").as<bool>() )
+        std::cout << "Strict Ginac Parser enabled\n";
+    if ( !env.vm()["dim"].template as<int>() )
+        {
+            std::cout << "dim=" << std::flush;
+            std::cin >> dim;
+            std::cout << std::flush;
+        }
+
+    // Load param list
+    if ( !env.vm()["params"].template as<std::string>().empty() )
+        {
+            boost::split(lst_params, params, boost::is_any_of(";"));
+            parameters = symbols(lst_params);
+        }
+
+    // load exact
+    if ( env.vm()["exact"].template as<std::string>().empty() )
+        {
+            // Load param list
+            std::cout << "params (eg params=\"a;b\")=" << std::flush; std::cin >> params;  std::cout << std::flush;
+            if ( !params.empty() )
+                {
+                    boost::split(lst_params, params, boost::is_any_of(";"));
+                    parameters = symbols(lst_params);
+                }
+            std::cout << parameters.size() << " params read\n";
+
+            std::cout << "exact=" << std::flush;
+            std::cin >> exact;
+            std::cout << std::flush;
+        }
+
     switch (dim) {
     case(1) : {
         vars = symbols<1>();
-        exact_parsed = parse(exact, vars);
         break;
     }
     case(2) : {
         vars = symbols<2>();
-        exact_parsed = parse(exact, vars);
         break;
     }
     case(3) : {
         vars = symbols<3>();
-        exact_parsed = parse(exact, vars);
-        auto f = expr(exact,vars);
         break;
     }
     default: {
@@ -124,6 +177,12 @@ int main( int argc, char* argv[] )
     }
     }
 
+    if ( !parameters.size() )
+        exact_parsed = parse(exact, vars);
+    else
+        exact_parsed = parse(exact, vars, parameters);
+
+#if 0
     // retrieve symbols - not working because nops is not "recursive"
     std::cout << "Loading symbols from : " << exact_parsed << std::endl << std::flush;
     std::cout << "Contains " << exact_parsed.GiNaC::ex::nops() << " Ginac:ex objects\n" << std::flush;
@@ -134,14 +193,73 @@ int main( int argc, char* argv[] )
                 std::cout << "Found Symbol : " << GiNaC::ex_to<symbol>(*i).get_name() << std::endl;
         }
     std::cout << std::flush;
+
     //not working because ex is not mutable
-    //boost::for_each(exact_parsed, [](GiNaC::ex const& e) {if (GiNaC::is_a<symbol>(e)) std::cout << "Found Symbol : " <<  GiNaC::ex_to<symbol>(e).get_name() << "\n";});
+    //boost::for_each(exact_parsed, [](GiNaC::ex const& e) 
+    //{
+    //if (GiNaC::is_a<symbol>(e)) std::cout << "Found Symbol : " <<  GiNaC::ex_to<symbol>(e).get_name() << "\n";
+    //});
+#endif
 
     // Retrieve each symbols using visitor
     std::cout << "Loading symbols from : " << exact_parsed << " (visitor)" << std::endl << std::flush;
     MyVisitor v;
     exact_parsed.traverse(v);
-    std::list<std::string> symbols = v.symbols();
+    std::list<std::string> symbols = v.symbol_names();
     boost::for_each(symbols, [](std::string const& s) {std::cout << "Found Symbol :" << s << std::endl;});
+
+    // Substitute expressions
+    std::cout << "Replace vars\n";
+    boost::for_each(vars, [&exact_parsed](symbol const& sym)
+                    {
+                        ex f = exact_parsed;
+                        std::cout << "Replace " << sym.get_name() << " in " << f << " :";
+                        std::cout << substitute(f, sym, 1.0) << std::endl;
+                    });
+
+    std::cout << "Replace params\n";
+    boost::for_each(parameters, [&exact_parsed](symbol const& sym)
+                    {
+                        ex f = exact_parsed;
+                        if (f.has(sym))
+                            {
+                                std::cout << "Replace " << sym.get_name() << " in " << f << " :";
+                                std::cout << substitute(f, sym, 1.0) << std::endl;
+                            }
+                    });
+
+    std::cout << "Replace params using strings\n";
+    boost::for_each(lst_params, [&exact_parsed](std::string const& s)
+                    {
+                        ex f = exact_parsed;
+                        symbol sym;
+                        //use MyVisitor class to find if symbol is present in f
+                        MyVisitor f_v;
+                        f.traverse(f_v);
+                        if ( f_v.hassymbol(s, sym) )
+                            {
+                                std::cout << "Replace " << s << " in " << f << " :";
+                                std::cout << substitute(f, sym, 1.0) << std::endl;
+                            }
+                    });
+
+    std::cout << "Replace params using strings by function g()\n";
+    boost::for_each(lst_params, [&exact_parsed, &exact, &vars, &parameters](std::string const& s)
+                    {
+                        ex f = exact_parsed;
+                        ex f1;
+                        symbol sym;
+                        //use MyVisitor class to find if symbol is present in f
+                        MyVisitor f_v;
+                        f.traverse(f_v);
+                        if ( f_v.hassymbol(s, sym) )
+                            {
+                                std::cout << "Replace " << s << " in " << f << " by :";
+                                std::cin >> exact;
+                                ex f1 = parse(exact, vars, parameters);
+                                std::cout << std::flush;
+                                std::cout << substitute(f, sym, f1) << std::endl;
+                            }
+                    });
     return 0;
 }
