@@ -49,6 +49,7 @@ eimOptions( std::string const& prefix )
         ( "eim.reuse-prec"   , Feel::po::value<bool>()->default_value( 0 ),       "reuse or not the preconditioner" )
         ( "eim.rebuild-database" , Feel::po::value<bool>()->default_value( 0 ), "rebuild database (if it already exists)" )
         ( "eim.cvg-study" , Feel::po::value<bool>()->default_value( 0 ), "for convergence study" )
+        ( "eim.compute-error-with-truth-expression" , Feel::po::value<bool>()->default_value( true ), "compute the error with the truth expression ( not its projection ) if true" )
         ( "eim.use-dimension-max-functions" , Feel::po::value<bool>()->default_value( 0 ), "force to use dimension-max basis functions" )
         ( "eim.computational-time-neval",Feel::po::value<int>()->default_value( 0 )," number of evaluation to perform to have the computational time of eim online step" )
         ;
