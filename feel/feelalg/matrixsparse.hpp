@@ -719,12 +719,13 @@ public:
         }
     }
 #endif
-    virtual void sqrt( MatrixSparse<value_type>& _m );
+    virtual void sqrt( MatrixSparse<value_type>& _m ) const;
 
-    void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m )
+    void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m ) const
     {
         sqrt(*_m);
     }
+
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -874,8 +875,12 @@ std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m )
 }
 
 template <typename T>
-void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m )
-{}
+void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m ) const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
 
 } // Feel
 

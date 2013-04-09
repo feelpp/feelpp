@@ -408,13 +408,9 @@ public:
     /**
      * Return the square root of the matrix
      */
-    //typename Eigen::MatrixSquareRootReturnValue<matrix_type> sqrt() const
-    void sqrt( MatrixSparse<value_type>& _m );
+    void sqrt( MatrixSparse<value_type>& _m ) const;
 
-    // void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m )
-    // {
-    //     this->sqrt(*_m);
-    // }
+    boost::shared_ptr<MatrixEigenDense<T>> sqrt() const;
 
     MatrixEigenDense<T>  operator * ( MatrixEigenDense<T> const& M )
     {
