@@ -2654,6 +2654,30 @@ public:
             return _M_functionspace->template functionSpace<i>();
         }
 
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1>
+        extractValuesWithMarker( std::string const& m )
+            {
+                auto r =  functionSpace()->dof()->markerToDof( m );
+                Eigen::Matrix<value_type, Eigen::Dynamic, 1> res( std::distance( r.first, r.second ) );
+                size_type i = 0;
+                for( auto it = r.first, en = r.second; it != en; ++it, ++i )
+                    res( i ) = this->operator[]( it->second );
+                return res;
+            }
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1>
+        extractValuesWithoutMarker( std::string const& m )
+            {
+                auto r1 =  functionSpace()->dof()->markerToDofLessThan( m );
+                auto r2 =  functionSpace()->dof()->markerToDofGreaterThan( m );
+                size_type s = std::distance( r1.first, r1.second ) + std::distance( r2.first, r2.second );
+                Eigen::Matrix<value_type, Eigen::Dynamic, 1> res( s );
+                size_type i = 0;
+                for( auto it = r1.first, en = r1.second; it != en; ++it, ++i )
+                    res( i ) = this->operator[]( it->second );
+                for( auto it = r2.first, en = r2.second; it != en; ++it, ++i )
+                    res( i ) = this->operator[]( it->second );
+                return res;
+            }
 
         template<int i>
         typename mpl::at_c<element_vector_type,i>::type
