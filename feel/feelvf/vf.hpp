@@ -101,6 +101,7 @@ struct ExtractGm
 #include <feel/feelvf/products.hpp>
 #include <feel/feelvf/norm.hpp>
 #include <feel/feelvf/ones.hpp>
+#include <feel/feelvf/inv.hpp>
 #include <feel/feelvf/twovalued.hpp>
 //#include <feel/feelvf/eye.hpp>
 #include <feel/feelvf/val.hpp>

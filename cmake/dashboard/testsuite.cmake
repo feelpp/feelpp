@@ -260,20 +260,22 @@ ctest_submit(PARTS Update Notes)
 
 message(WARNING "subprojects: ${CTEST_PROJECT_SUBPROJECTS}" )
 foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
-#foreach(subproject "opus")
+
   message(WARNING "testing subproject ${subproject}")
+
   set_property(GLOBAL PROPERTY SubProject ${subproject})
   set_property (GLOBAL PROPERTY Label ${subproject})
+
   ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND
     OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}" )
   ctest_submit(PARTS Configure)
+
   message(WARNING "build target ${subproject}")
-  #set(CTEST_BUILD_COMMAND "make ${FEELPP_MAKE_ARGS} -i ${subproject}")
-  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND TARGET "${subproject}"  )
-  # builds target ${CTEST_BUILD_TARGET}
+  set(CTEST_BUILD_TARGET “${subproject}”)
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
   ctest_submit(PARTS Build)
-  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND INCLUDE_LABEL "${subproject}"  )
+
   # runs only tests that have a LABELS property matching "${subproject}"
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
   ctest_submit(PARTS Test)
 endforeach()
-
