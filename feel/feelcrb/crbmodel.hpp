@@ -261,13 +261,19 @@ public:
 
         M_is_initialized=true;
 
+        if( ! M_model->isInitialized() )
+        {
+            LOG( INFO ) << "CRBModel Model is not initialized";
+            M_model->initModel();
+            M_model->setInitialized( true );
+        }
+
         if ( M_mode != CRBModelMode::CRB_ONLINE &&
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
             //the model is already initialized
             //std::cout << "  -- init FEM  model\n";
             //M_model->init();
-            this->initB();
         }
     }
 
@@ -538,6 +544,25 @@ public:
 
     element_type solveFemUsingOnlineEimPicard( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
+
+
+    /**
+     * initialize the model
+     */
+    void initModel()
+    {
+        return M_model->initModel();
+    }
+    void setInitialized( const bool & b)
+    {
+        return M_model->setInitialized( b );
+    }
+    bool isInitialized()
+    {
+        return M_model->isInitialized();
+    }
+
+
 
     /**
      * returns list of eim objects ( scalar continuous)

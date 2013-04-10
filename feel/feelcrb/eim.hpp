@@ -374,7 +374,7 @@ public:
     vector_type beta( parameter_type const& mu, size_type M  ) const;
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const;
 
-    std::vector<double> studyConvergence( parameter_type const & mu, solution_type const & solution ) const;
+    std::vector<double> studyConvergence( parameter_type const & mu, solution_type & solution ) const;
 
     void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
     element_type residual ( size_type M ) const;
@@ -796,7 +796,7 @@ EIM<ModelType>::offline(  )
 
 template<typename ModelType>
 std::vector<double>
-EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type const & solution) const
+EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & solution) const
 {
     LOG(INFO) << " Convergence study \n";
     int proc_number =  Environment::worldComm().globalRank();
@@ -974,7 +974,7 @@ public:
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual size_type  mMax() const = 0;
 
-    virtual std::vector<double> studyConvergence( parameter_type const & mu , solution_type const & solution ) const = 0;
+    virtual std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const = 0;
     virtual void computationalTimeStatistics( std::string appname )  = 0;
     virtual double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual double diffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
@@ -1183,7 +1183,7 @@ public:
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
-    std::vector<double> studyConvergence( parameter_type const & mu , solution_type const & solution ) const { return M_eim->studyConvergence( mu , solution ) ; };
+    std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const { return M_eim->studyConvergence( mu , solution ) ; };
 
     size_type mMax() const { return M_eim->mMax(); }
 
