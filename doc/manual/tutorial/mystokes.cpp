@@ -4,7 +4,7 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 	     Guillaume Dollé <guillaume.dolle@math.unistra.fr>
- 
+
   Date 2013-02-19
 
   Copyright (C) 2013 Université de Strasbourg
@@ -47,7 +47,7 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     // create the mesh
-    auto mesh = unitSquare();
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
 
     // function space
     auto Vh = THch<2>( mesh );
@@ -69,8 +69,10 @@ int main(int argc, char**argv )
     auto l = form1( _test=Vh );
 
     // boundary condition
-    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=Py()*(1-Py()) );
+    a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
+          _expr=vec(Py()*(1-Py()),cst(0.)));
+    a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
+          _expr=vec(cst(0.),cst(0.)));
 
     // solve a(u,v)=l(v)
     a.solve(_rhs=l,_solution=U);
@@ -83,4 +85,3 @@ int main(int argc, char**argv )
 }
 //# endmarker_main #
 //\endcode
-
