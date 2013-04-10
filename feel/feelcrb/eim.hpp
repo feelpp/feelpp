@@ -620,9 +620,33 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
         auto res = vf::project( _space=M_model->functionSpace(),
                                 _expr=idv(Z)-idv( expansion( M_q, rhs, __M ) ) );
-        auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
-        LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
-        maxerr( index++ ) = resmax.template get<0>();
+
+        std::string norm_used = option(_name="eim.norm-used-for-residual").template as<std::string>();
+        bool check_name_norm = false;
+        LOG( INFO ) << "[computeBestFit] norm used : "<<norm_used;
+        if( norm_used == "Linfty" )
+        {
+            check_name_norm=true;
+            auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
+            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+            maxerr( index++ ) = resmax.template get<0>();
+        }
+        if( norm_used == "L2" )
+        {
+            check_name_norm=true;
+            double norm = math::sqrt( integrate( _range=elements( M_model->mesh() ) ,_expr=idv(res)*idv(res) ).evaluate()( 0,0 ) );
+            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+            maxerr( index++ ) = norm;
+        }
+        if( norm_used == "LinftyVec" )
+        {
+            check_name_norm=true;
+            double norm = res.linftyNorm();
+            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+            maxerr( index++ ) = norm ;
+        }
+        CHECK( check_name_norm ) <<"[EIM] The name of the norm "<<norm_used<<" is not known\n";
+
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
         LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
