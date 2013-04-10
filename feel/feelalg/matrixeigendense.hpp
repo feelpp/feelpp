@@ -445,6 +445,7 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
         if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
             value = _M_mat( rows[i], rows[i] );
         _M_mat.row( rows[i] ).setZero();
+        //_M_mat.col( rows[i] ).setZero();
         // set diagonal
         _M_mat( rows[i], rows[i] ) = value;
 

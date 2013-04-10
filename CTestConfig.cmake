@@ -20,5 +20,4 @@ set(CTEST_PROJECT_SUBPROJECTS
   testsuite
   benchmarks
   crb
-  research/apee
   )
