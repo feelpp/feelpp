@@ -827,25 +827,24 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         for ( int i=0; i<size-1; i++ ) LOG(INFO)<< mu[i] <<" , ";
         LOG(INFO)<< mu[size-1]<<" ]\n";
 
-#if 0
-        double exprl2norm , diffl2norm ;
+        double exprl2norm = 0 , diffl2norm = 0 ;
 
         if( use_expression )
         {
-            double exprl2norm =M_model->expressionL2Norm( solution , mu );
+            exprl2norm =M_model->expressionL2Norm( solution , mu );
             auto eim_approximation = this->operator()(mu , N);
-            double diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
+            diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
         }
         else
         {
-            double exprl2norm =M_model->projExpressionL2Norm( solution , mu );
+            exprl2norm =M_model->projExpressionL2Norm( solution , mu );
             auto eim_approximation = this->operator()(mu , N);
-            double diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
+            diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
         }
 
         double l2_error = diffl2norm / exprl2norm ;
 
-#else
+#if 0
         //old version
         // Compute expression
         auto expression = M_model->operator()(mu);
@@ -978,8 +977,8 @@ public:
     virtual void computationalTimeStatistics( std::string appname )  = 0;
     virtual double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual double diffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
-    //virtual double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
-    //virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
+    virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
 
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
@@ -1093,7 +1092,7 @@ public:
         return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
     }
 
-#if 0
+
     //Let \pi_g the projection of g on the function space
     //here is computed || \pi_g ||_L2
     double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const
@@ -1105,12 +1104,11 @@ public:
         M_u = T;
         auto mesh = this->functionSpace()->mesh();
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
-        //auto expr_pi_g = idv( pi_g );
-        //return math::sqrt( integrate( _range=elements( mesh ), _expr=expr_pi_g*expr_pi_g ).evaluate()( 0,0 ) );
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(pi_g)*idv(pi_g) ).evaluate()( 0,0 ) );
     }
 
     //here is computed || \pi_g - geim ||_L2
-    double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const 
+    double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
         M_mu = mu;
 #if !NDEBUG
@@ -1120,10 +1118,9 @@ public:
         auto mesh = this->functionSpace()->mesh();
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto diff = pi_g - eim_expansion;
-        //auto expr_diff = idv( diff );
-        //return math::sqrt( integrate( _range=elements( mesh ), _expr=expr_diff*expr_diff ).evaluate()( 0,0 ) );
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(diff)*idv(diff) ).evaluate()( 0,0 ) );
     }
-#endif
+
 
     void computationalTimeStatistics( std::string appname )
     {
