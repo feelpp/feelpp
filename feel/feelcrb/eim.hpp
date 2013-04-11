@@ -817,7 +817,7 @@ EIM<ModelType>::offline(  )
 #endif
 
 
-        LOG(INFO) << "================================================================================\n";
+        VLOG(2) << "================================================================================\n";
         //if we want to impose the use of dimension-max functions, we don't want to stop here
         if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
         {
@@ -863,10 +863,6 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
     int max = this->mMax();
     for(int N=1; N<=max; N++)
     {
-        int size = mu.size();
-        LOG(INFO)<<" mu = [ ";
-        for ( int i=0; i<size-1; i++ ) LOG(INFO)<< mu[i] <<" , ";
-        LOG(INFO)<< mu[size-1]<<" ]\n";
 
         double exprl2norm = 0 , diffl2norm = 0 ;
 
@@ -884,8 +880,14 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         }
 
         double l2_error = diffl2norm / exprl2norm ;
-
+        //interpolation error : || projection_g - g ||_L2
+        double interpolation_error = M_model->interpolationError( solution , mu );
 #if 0
+        int size = mu.size();
+        LOG(INFO)<<" mu = [ ";
+        for ( int i=0; i<size-1; i++ ) LOG(INFO)<< mu[i] <<" , ";
+        LOG(INFO)<< mu[size-1]<<" ]\n";
+
         //old version
         // Compute expression
         auto expression = M_model->operator()(mu);
@@ -903,7 +905,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         l2ErrorVec[N-1] = l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
 
         if( proc_number == Environment::worldComm().masterRank() )
-            conv << N << "\t" << l2_error << "\n";
+            conv << N << "\t" << l2_error << "\t" << interpolation_error << "\n";
 
     }//loop over basis functions
 
@@ -992,10 +994,10 @@ public:
     virtual element_type interpolant( parameter_type const& ) = 0;
     value_type operator()( node_type const& x, parameter_type const& mu )
         {
-            LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
+            VLOG(2) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
             element_type v = this->operator()( mu );
             value_type res = v(x)(0,0,0);
-            LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
+            VLOG(2) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
 
@@ -1004,10 +1006,10 @@ public:
 
     value_type operator()( solution_type const& T, node_type const& x, parameter_type const& mu )
         {
-            LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
+            VLOG(2) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
             element_type v = this->operator()( T, mu );
             value_type res = v(x)(0,0,0);
-            LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
+            VLOG(2) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
 
@@ -1025,6 +1027,7 @@ public:
     virtual double diffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
     virtual double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double interpolationError( solution_type const& T , parameter_type const& mu ) const = 0;
 
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
@@ -1178,6 +1181,19 @@ public:
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto diff = pi_g - eim_expansion;
         return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(diff)*idv(diff) ).evaluate()( 0,0 ) );
+    }
+
+    double interpolationError( solution_type const& T , parameter_type const& mu ) const
+    {
+        M_mu = mu;
+#if !NDEBUG
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto difference = M_expr - idv(pi_g);
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
     }
 
     void computationalTimeStatistics( std::string appname )

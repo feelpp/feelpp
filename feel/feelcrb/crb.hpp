@@ -990,6 +990,11 @@ public:
 
     WorldComm const& worldComm() const { return Environment::worldComm() ; }
 
+    /**
+     * evaluate online time via the option crb.computational-time-neval
+     */
+    void computationalTimeStatistics( std::string appname );
+
     //@}
 
 
@@ -3327,7 +3332,7 @@ void
 CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const
 {
 
-    LOG(INFO) <<"Compute projection of initial guess\n";
+    VLOG(2) <<"Compute projection of initial guess\n";
     beta_vector_type betaMqm;
     beta_vector_type betaMFqm;
 
@@ -3344,17 +3349,13 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
         for(int m=0; m<M_model->mMaxM(q); m++)
             Mass += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
     }
-    LOG(INFO) << "Mass=" << Mass << "\n";
-    google::FlushLogFiles(google::GLOG_INFO);
+
     F.setZero( N );
     for ( size_type q = 0; q < M_model->Qmf(); ++q )
     {
         for(int m=0; m<M_model->mMaxMF(q); m++)
             F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
     }
-    LOG(INFO) << "F=" << F << "\n";
-
-    google::FlushLogFiles(google::GLOG_INFO);
 
     initial_guess = Mass.lu().solve( F );
 }
@@ -3409,7 +3410,10 @@ CRB<TruthModelType>::newton(  size_type N, parameter_type const& mu , vectorN_ty
     M_nlsolver->map_dense_residual = boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2  , mu , N );
     M_nlsolver->solve( map_J , map_uN , map_R, 1e-12, 100);
 
-    condition_number = computeConditioning( J );
+    condition_number=0;
+
+    if( option(_name="crb.compute-conditioning").template as<bool>() )
+        condition_number = computeConditioning( J );
 
     //compute output
 
@@ -3673,7 +3677,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         else
             boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N , M_WN ), mu ,time );
 
-        google::FlushLogFiles(google::GLOG_INFO);
+#if 0
         // compute initial guess for fixed point
         A.setZero( N,N );//A is used as mass matrix here
 
@@ -3682,30 +3686,26 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             for(int m=0; m<M_model->mMaxM(q); m++)
                 A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
         }
-        //LOG(INFO) << "Mass=" << A << "\n";
-        google::FlushLogFiles(google::GLOG_INFO);
         F.setZero( N );
         for ( size_type q = 0; q < M_model->Qmf(); ++q )
         {
             for(int m=0; m<M_model->mMaxMF(q); m++)
                 F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
         }
-        //LOG(INFO) << "F=" << F << "\n";
-
-        google::FlushLogFiles(google::GLOG_INFO);
         uN[time_index] = A.lu().solve( F );
+#endif
+        computeProjectionInitialGuess( mu , N , uN[time_index] );
+
         //vectorN_type error;
         //const element_type expansion_uN = this->expansion( uN[time_index] , N );
         //checkInitialGuess( expansion_uN , mu , error);
         //std::cout<<"***************************************************************error.sum : "<<error.sum()<<std::endl;
 
-        LOG(INFO) << "lb: start fix point\n";
+        VLOG(2) << "lb: start fix point\n";
 
         vectorN_type previous_uN( M_N );
 
-        google::FlushLogFiles(google::GLOG_INFO);
         int fi=0;
-        //for(int fi = 0;fi < 10; ++fi )
 
         double old_output;
 #if 0
@@ -3727,17 +3727,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         double fixedpoint_critical_value  = this->vm()["crb.fixedpoint-critical-value"].template as<double>();
         do
         {
+            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_WN ), mu ,time );
 
-            LOG(INFO) << "compute eim expansions\n";
-            google::FlushLogFiles(google::GLOG_INFO);
-
-            if( 0 )
-                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( mu ,time );
-            else
-                boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_WN ), mu ,time );
-
-            LOG(INFO) << "compute reduce matrices\n";
-            google::FlushLogFiles(google::GLOG_INFO);
             A.setZero( N,N );
             for ( size_type q = 0; q < M_model->Qa(); ++q )
             {
@@ -3761,21 +3752,14 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                 }
             }
 
-            LOG(INFO) << "solve reduced model\n";
-            google::FlushLogFiles(google::GLOG_INFO);
-
             // backup uN
             previous_uN = uN[time_index];
 
             // solve for new fix point iteration
             uN[time_index] = A.lu().solve( F );
-            //LOG(INFO) << "uold = " << uNold[time_index] << "\n";
-            //LOG(INFO) << "u = " << uN[time_index] << "\n";
 
             if ( time_index<number_of_time_step-1 )
-            {
                 uNold[time_index+1] = uN[time_index];
-            }
 
             L.setZero( N );
             for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
@@ -3790,18 +3774,22 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
             //output_vector.push_back( output );
             output_vector[time_index] = output;
-            LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";               google::FlushLogFiles(google::GLOG_INFO);
+            DVLOG(2) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";
             fi++;
 
             if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
-                std::cout<<"[CRB::lb] fixedpoint iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm()<<std::endl;
+                VLOG(2)<<"[CRB::lb] fixedpoint iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm()<<std::endl;
 
+            double residual_norm = (A * uN[time_index] - F).norm() ;
+            VLOG(2) << " $$$$$$$$$$$$$$$$ residual_norm :  "<<residual_norm;
         }
         while ( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol && fi<max_fixedpoint_iterations );
         //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
 
         if( (uN[time_index]-previous_uN).norm() > solution_fixedpoint_tol )
-            std::cout<<"[CRB::lb] fixed point, proc "<<this->worldComm().globalRank()<<" fixed point has no converged : norm(uN-uNold) = "<<(uN[time_index]-previous_uN).norm()<<" and tolerance : "<<solution_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done"<<std::endl;
+            DVLOG(2)<<"[CRB::lb] fixed point, proc "<<this->worldComm().globalRank()
+                    <<" fixed point has no converged : norm(uN-uNold) = "<<(uN[time_index]-previous_uN).norm()
+                    <<" and tolerance : "<<solution_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done"<<std::endl;
 
         if( (uN[time_index]-previous_uN).norm() > fixedpoint_critical_value )
             throw std::logic_error( "[CRB::lb] fixed point ERROR : norm(uN-uNold) > critical value " );
@@ -3810,7 +3798,9 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             time_index++;
     }
 
-    condition_number = computeConditioning( A );
+    condition_number = 0;
+    if( option(_name="crb.compute-conditioning").template as<bool>() )
+        condition_number = computeConditioning( A );
 }
 
 template<typename TruthModelType>
@@ -3867,7 +3857,6 @@ template<typename TruthModelType>
 boost::tuple<double,double>
 CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
 {
-    google::FlushLogFiles(google::GLOG_INFO);
 
     bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
 
@@ -6080,6 +6069,34 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_ptrtype & u , element_p
 
 
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
+{
+
+    int n_eval = option(_name="crb.computational-time-neval").template as<int>();
+
+    Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
+    time_crb.resize( n_eval );
+
+    sampling_ptrtype Sampling( new sampling_type( M_Dmu ) );
+    Sampling->logEquidistribute( n_eval  );
+
+    //dimension
+    int N =  option(_name="crb.dimension").template as<int>();
+    int mu_number = 0;
+    double tol = option(_name="crb.online-tolerance").template as<double>();
+    BOOST_FOREACH( auto mu, *Sampling )
+    {
+        boost::mpi::timer tcrb;
+        auto o = this->run( mu, tol , N);
+        auto uN = o.template get<4>();
+        time_crb( mu_number ) = tcrb.elapsed() ;
+        mu_number++;
+    }
+
+    M_model->computeStatistics( time_crb , appname );
+}
 
 
 template<typename TruthModelType>
