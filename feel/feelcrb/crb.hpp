@@ -990,6 +990,11 @@ public:
 
     WorldComm const& worldComm() const { return Environment::worldComm() ; }
 
+    /**
+     * evaluate online time via the option crb.computational-time-neval
+     */
+    void computationalTimeStatistics( std::string appname );
+
     //@}
 
 
@@ -6064,6 +6069,34 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_ptrtype & u , element_p
 
 
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
+{
+
+    int n_eval = option(_name="crb.computational-time-neval").template as<int>();
+
+    Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
+    time_crb.resize( n_eval );
+
+    sampling_ptrtype Sampling( new sampling_type( M_Dmu ) );
+    Sampling->logEquidistribute( n_eval  );
+
+    //dimension
+    int N =  option(_name="crb.dimension").template as<int>();
+    int mu_number = 0;
+    double tol = option(_name="crb.online-tolerance").template as<double>();
+    BOOST_FOREACH( auto mu, *Sampling )
+    {
+        boost::mpi::timer tcrb;
+        auto o = this->run( mu, tol , N);
+        auto uN = o.template get<4>();
+        time_crb( mu_number ) = tcrb.elapsed() ;
+        mu_number++;
+    }
+
+    M_model->computeStatistics( time_crb , appname );
+}
 
 
 template<typename TruthModelType>
