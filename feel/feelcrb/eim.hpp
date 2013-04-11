@@ -627,7 +627,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         if( norm_used == "Linfty" )
         {
             check_name_norm=true;
-            auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
+            auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<0>(), _expr=idv(res) );
             LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
             maxerr( index++ ) = resmax.template get<0>();
         }
