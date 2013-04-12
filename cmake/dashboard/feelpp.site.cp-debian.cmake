@@ -23,7 +23,7 @@
 #
 set(OS_VERSION debian-wheezy)
 set(ARCH x86_64)
-set(WORK_DIR /home/vhuber/feelpp)
+set(WORK_DIR /home/vhuber)
 set(MAKE_ARGS "-j4")
 set(PARALLEL "4")
 set(FEELPP_WORK_DIR ${WORK_DIR})
