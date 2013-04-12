@@ -328,6 +328,13 @@ public:
 
                 run_sampling_size = 0;
             }
+            n_eval_computational_time = option(_name="crb.computational-time-neval").template as<int>();
+            if( n_eval_computational_time > 0 )
+            {
+                std::string appname = this->about().appName();
+                crb->computationalTimeStatistics( appname );
+                run_sampling_size = 0;
+            }
 
 
             switch ( run_sampling_type )
