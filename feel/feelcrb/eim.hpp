@@ -39,6 +39,7 @@
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/math/special_functions/nonfinite_num_facets.hpp>
 
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
@@ -1110,7 +1111,7 @@ public:
     }
 
     //here is computed || \pi_g - geim ||_L2
-    double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const 
+    double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
         M_mu = mu;
 #if !NDEBUG
@@ -1250,18 +1251,27 @@ struct EimFunctionNoSolve
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename functionspace_type::value_type value_type;
 
-    EimFunctionNoSolve( ModelType* model ): M_model( model ) {}
+    EimFunctionNoSolve( ModelType* model )
+        :
+        M_model( model ),
+        M_elt( M_model->functionSpace()->element() )
+        {
+            value_type x = boost::lexical_cast<value_type>("inf");
+            M_elt = vf::project( _space=M_model->functionSpace(), _expr=cst(x) );
+        }
 
     element_type solve( parameter_type const& mu )
         {
-            LOG(INFO) << "no solve required\n";
-            return M_model->functionSpace()->element();
+            DVLOG(2) << "no solve required\n";
+            return M_elt;
         }
     std::string modelName() const { return M_model->modelName(); }
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
     parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
     ModelType* M_model;
+    element_type M_elt;
 };
 
 template<typename ModelType>
@@ -1275,4 +1285,3 @@ eim_no_solve( ModelType* model )
 po::options_description eimOptions( std::string const& prefix ="");
 }
 #endif /* _FEELPP_EIM_HPP */
-
