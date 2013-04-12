@@ -221,6 +221,13 @@ public:
                            InterpType const& interptype,
                            bool ddmethod=false);
 
+    OperatorInterpolation( domain_space_ptrtype const& domainspace,
+                           dual_image_space_ptrtype const& imagespace,
+                           std::list<IteratorRange> const& r,
+                           backend_ptrtype const& backend,
+                           InterpType const& interptype,
+                           bool ddmethod=false);
+
 
     /**
      * copy constructor
@@ -228,7 +235,7 @@ public:
     OperatorInterpolation( OperatorInterpolation const & oi )
         :
         super( oi ),
-        _M_range( oi._M_range ),
+        _M_listRange( oi._M_listRange ),
         _M_WorldCommFusion( oi._M_WorldCommFusion ),
         _M_interptype( oi._M_interptype )
     {}
@@ -328,7 +335,7 @@ private:
                                              extrapolation_memory_type & dof_extrapolationData);
 #endif // MPI_MODE
 
-    range_iterator _M_range;
+    std::list<range_iterator> _M_listRange;
     WorldComm _M_WorldCommFusion;
     InterpType _M_interptype;
 };
@@ -341,10 +348,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_range( elements( imagespace->mesh() ) ),
+    _M_listRange(),
     _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     _M_interptype(interptype)
 {
+    _M_listRange.push_back( elements( imagespace->mesh() ) );
     update();
 }
 
@@ -358,7 +366,24 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_range( r ),
+    _M_listRange(),
+    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    _M_interptype(interptype)
+{
+    _M_listRange.push_back( r );
+    update();
+}
+
+template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
+OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::OperatorInterpolation( domain_space_ptrtype const& domainspace,
+                                                                                                        dual_image_space_ptrtype const& imagespace,
+                                                                                                        std::list<IteratorRange> const& r,
+                                                                                                        backend_ptrtype const& backend,
+                                                                                                        InterpType const& interptype,
+                                                                                                        bool ddmethod )
+    :
+    super( domainspace, imagespace, backend, false ),
+    _M_listRange( r ),
     _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
     _M_interptype(interptype)
 {
@@ -461,12 +486,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     DVLOG(2) << "[interpolate] Same mesh but not same space\n";
 
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = _M_range;
-
     const bool image_related_to_domain = this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() );
     const bool domain_related_to_image = this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() );
 
+    auto itListRange = _M_listRange.begin();
+    auto const enListRange = _M_listRange.end();
+    for ( ; itListRange!=enListRange ; ++itListRange)
+    {
+    iterator_type it, en;
+    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
     for ( ; it != en; ++ it )
     {
         auto idElem = detailsup::idElt( *it,idim_type() );
@@ -531,7 +559,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                 }
             }
         }
-    }
+    } // for ( ; it != en; ++ it )
+    } // for ( ; itListRange!=enListRange ; ++itListRange)
+
 
     //-----------------------------------------
     // compute graph
@@ -604,11 +634,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     std::vector< std::list<std::pair<size_type,double> > > memory_valueInMatrix( this->dualImageSpace()->nLocalDof() );
 
     //-----------------------------------------
-    // for each element in range
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = _M_range;
     size_type eltIdLocalised = 0;
 
+    // for each element in range
+    auto itListRange = _M_listRange.begin();
+    auto const enListRange = _M_listRange.end();
+    for ( ; itListRange!=enListRange ; ++itListRange)
+    {
+    iterator_type it, en;
+    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
     for ( ; it != en; ++ it )
         {
             for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
@@ -668,6 +702,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                         } //  for ( uint16_type comp = 0; comp < image_basis_type::nComponents; ++comp )
                 } // for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
         } // for( ; it != en; ++ it )
+    } // for ( ; itListRange!=enListRange ; ++itListRange)
 
 
     //-----------------------------------------
@@ -1880,7 +1915,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     if ( this->dualImageSpace()->worldComm().isActive() )
         {
-            boost::tie( boost::tuples::ignore, it, en ) = _M_range;
+
+            auto itListRange = _M_listRange.begin();
+            auto const enListRange = _M_listRange.end();
+            for ( ; itListRange!=enListRange ; ++itListRange)
+            {
+            boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
             for ( ; it!=en;++it )
                 {
                     for ( uint16_type iloc = 0; iloc < nLocalDofInDualImageElt; ++iloc )
@@ -1927,6 +1967,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                 }
                         }
                 }
+            } //for ( ; itListRange!=enListRange ; ++itListRange)
         } // isActive
 
     // memory map (loc index pt) -> global dofs
@@ -1974,18 +2015,28 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 //-----------------------------------------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
 
+namespace detail
+{
+template <typename RangeType>
+struct opinterprangetype
+{
+    typedef typename mpl::if_< boost::is_std_list<RangeType>,
+                               mpl::identity<RangeType>,
+                               mpl::identity<std::list<RangeType> > >::type::type::value_type type;
+};
+}
 
 template<typename DomainSpaceType, typename ImageSpaceType, typename IteratorRange, typename InterpType >
-boost::shared_ptr<OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType> >
+boost::shared_ptr<OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType> >
 opInterp( boost::shared_ptr<DomainSpaceType> const& domainspace,
           boost::shared_ptr<ImageSpaceType> const& imagespace,
           IteratorRange const& r,
-          typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::backend_ptrtype const& backend,
+          typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType>::backend_ptrtype const& backend,
           InterpType const& interptype,
           bool ddmethod
         )
 {
-    typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType> operatorinterpolation_type;
+    typedef OperatorInterpolation<DomainSpaceType, ImageSpaceType,typename Feel::detail::opinterprangetype<IteratorRange>::type,InterpType> operatorinterpolation_type;
 
     boost::shared_ptr<operatorinterpolation_type> opI( new operatorinterpolation_type( domainspace,imagespace,r,backend,interptype,ddmethod ) );
 
@@ -2005,7 +2056,9 @@ struct compute_opInterpolation_return
     typename parameter::binding<Args,
              tag::range,
              typename OperatorInterpolation<domain_space_type, image_space_type>::range_iterator
-             >::type >::type >::type iterator_range_type;
+             >::type >::type >::type iterator_base_range_type;
+
+    typedef typename Feel::detail::opinterprangetype<iterator_base_range_type>::type iterator_range_type;
 
     typedef typename boost::remove_const<
     typename boost::remove_reference<
