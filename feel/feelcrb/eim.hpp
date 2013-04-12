@@ -1287,7 +1287,10 @@ struct EimFunctionNoSolve
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    EimFunctionNoSolve( ModelType* model ): M_model( model ) {}
+    typedef boost::shared_ptr<ModelType> model_ptrtype;
+
+    //EimFunctionNoSolve( ModelType* model ): M_model( model ) {}
+    EimFunctionNoSolve( model_ptrtype model ): M_model( model ) {}
 
     element_type solve( parameter_type const& mu )
         {
@@ -1297,12 +1300,15 @@ struct EimFunctionNoSolve
     std::string modelName() const { return M_model->modelName(); }
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
     parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
-    ModelType* M_model;
+    //ModelType* M_model;
+    model_ptrtype M_model;
+
 };
 
 template<typename ModelType>
-EimFunctionNoSolve<ModelType>*
-eim_no_solve( ModelType* model )
+//EimFunctionNoSolve<ModelType>*
+typename EimFunctionNoSolve<ModelType>::model_ptrtype
+eim_no_solve( boost::shared_ptr<ModelType> model )
 {
     return new EimFunctionNoSolve<ModelType>( model );
 }
