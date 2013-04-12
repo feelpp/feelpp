@@ -34,7 +34,85 @@
 
 namespace GiNaC
 {
-    ex parse( std::string const& str, std::vector<symbol> const& syms );
+    ex parse( std::string const& str, std::vector<symbol>  const& syms, std::vector<symbol> const& params = std::vector<symbol>() )
+    {
+        using namespace Feel;
+        LOG(INFO) << "Parsing " << str << " using GiNaC";
+
+        LOG(INFO) << "Number of symbols " << syms.size() << "\n";
+
+        for(int i =0; i < syms.size();++i)
+            LOG(INFO) <<" - symbol : "  << syms[i].get_name();
+
+        LOG(INFO) << "Number of params " << params.size() << "\n";
+
+        for(int i =0; i < params.size();++i)
+            LOG(INFO) <<" - param : "  << params[i].get_name();
+
+        using GiNaC::symbol;
+        using GiNaC::symtab;
+        using GiNaC::parser;
+        using GiNaC::parse_error;
+        symtab table;
+        LOG(INFO) <<"Inserting symbols in symbol table";
+
+        table["x"]=syms[0];
+        if ( syms.size() == 2 )
+            {
+                table["y"]=syms[1];
+            }
+        if ( syms.size() == 3 )
+            {
+                table["y"]=syms[1];
+                table["z"]=syms[2];
+            }
+
+        LOG(INFO) <<"Inserting params and in symbol table";
+        std::vector<symbol> total_syms = syms;
+        boost::for_each( params, [&table, &total_syms]( symbol const& param )
+                         {
+                             total_syms.push_back(symbol(param));
+                             LOG(INFO) << "adding param: " << param << std::endl;
+                             std::cout << "adding param: " << param << std::endl;
+                             table[param.get_name()] = param;
+                         } );
+
+        LOG(INFO) <<"Defining parser";
+        parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
+
+        LOG(INFO) <<"parse expression\n";
+        ex e; // = reader(str);
+        try
+            {
+                e = reader(str);
+#if 0
+                if (!reader.strict)
+                    {
+                        symtab table_symbols = reader.get_syms();
+                        boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s )
+                                         {
+                                             LOG(INFO) << "Symbol " << s.first << " added\n";
+                                         }
+                                         );
+                    }
+#endif
+            }
+        catch (std::invalid_argument& err)
+            {
+                reader.strict = false;
+                e =reader(str);
+
+                std::cerr << "GiNaC error parsing " << e << " : " << err.what() << std::endl;
+                exit(1);
+            }
+        catch ( ... )
+            {
+                std::cerr << "Exception of unknown type!\n";
+            }
+
+        LOG(INFO) << "e=" << e << "\n";
+        return e;
+    }
 
     matrix
     grad( ex const& f, std::vector<symbol> const& l )
@@ -47,7 +125,7 @@ namespace GiNaC
     matrix
     grad( std::string const& s, std::vector<symbol> const& l )
     {
-        return grad( parse( s, l),  l );
+        return grad( parse( s, l ),  l );
     }
 
     matrix
@@ -144,141 +222,5 @@ namespace GiNaC
         return f.subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g)));
     }
 
-    ex parse( std::string const& str, std::vector<symbol>  const& syms )
-    {
-        using namespace Feel;
-        LOG(INFO) << "Parsing " << str << " using GiNaC";
-
-        LOG(INFO) << "Number of symbols " << syms.size() << "\n";
-
-        for(int i =0; i < syms.size();++i)
-            LOG(INFO) <<" - symbol : "  << syms[i].get_name();
-
-        using GiNaC::symbol;
-        using GiNaC::symtab;
-        using GiNaC::parser;
-        using GiNaC::parse_error;
-        symtab table;
-        LOG(INFO) <<"Inserting symbols in symbol table";
-
-        table["x"]=syms[0];
-        if ( syms.size() == 2 )
-            {
-                table["y"]=syms[1];
-            }
-        if ( syms.size() == 3 )
-            {
-                table["y"]=syms[1];
-                table["z"]=syms[2];
-            }
-        //boost::for_each( syms, [&table]( symbol const& s ) { std::cerr << "adding symbol: " << s.get_name() << std::endl; table[s.get_name()] = s; } );
-        LOG(INFO) <<"Defining parser";
-        parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
-
-        LOG(INFO) <<"parse expression\n";
-        ex e; // = reader(str);
-        try
-            {
-                e = reader(str);
-#if 0
-                if (!reader.strict)
-                    {
-                        symtab table_symbols = reader.get_syms();
-                        boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s ) {LOG(INFO) << "Symbol " << s.first << " added\n";} );
-                    }
-#endif
-            }
-        catch (std::invalid_argument& err)
-            {
-                reader.strict = false;
-                e =reader(str);
-
-                std::cerr << "GiNaC error parsing " << e << " : " << err.what() << std::endl;
-                exit(1);
-            }
-        catch ( ... )
-            {
-                std::cerr << "Exception of unknown type!\n";
-            }
-
-        LOG(INFO) << "e=" << e << "\n";
-        return e;
-    }
-
-    ex parse( std::string const& str, std::vector<symbol>  const& syms, std::vector<symbol> const& params )
-    {
-        using namespace Feel;
-        LOG(INFO) << "Parsing " << str << " using GiNaC";
-
-        LOG(INFO) << "Number of symbols " << syms.size() << "\n";
-
-        for(int i =0; i < syms.size();++i)
-            LOG(INFO) <<" - symbol : "  << syms[i].get_name();
-
-        LOG(INFO) << "Number of params " << params.size() << "\n";
-
-        for(int i =0; i < params.size();++i)
-            LOG(INFO) <<" - param : "  << params[i].get_name();
-
-        using GiNaC::symbol;
-        using GiNaC::symtab;
-        using GiNaC::parser;
-        using GiNaC::parse_error;
-        symtab table;
-        LOG(INFO) <<"Inserting symbols in symbol table";
-
-        table["x"]=syms[0];
-        if ( syms.size() == 2 )
-            {
-                table["y"]=syms[1];
-            }
-        if ( syms.size() == 3 )
-            {
-                table["y"]=syms[1];
-                table["z"]=syms[2];
-            }
-
-        LOG(INFO) <<"Inserting params and in symbol table";
-        std::vector<symbol> total_syms = syms;
-        boost::for_each( params, [&table, &total_syms]( symbol const& param )
-                         {
-                             total_syms.push_back(symbol(param));
-                             LOG(INFO) << "adding param: " << param << std::endl;
-                             std::cout << "adding param: " << param << std::endl;
-                             table[param.get_name()] = param;
-                         } );
-
-        LOG(INFO) <<"Defining parser";
-        parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
-
-        LOG(INFO) <<"parse expression\n";
-        ex e; // = reader(str);
-        try
-            {
-                e = reader(str);
-#if 0
-                if (!reader.strict)
-                    {
-                        symtab table_symbols = reader.get_syms();
-                        boost::for_each( table_symbols, [](std::pair<std::string, ex> const& s ) {LOG(INFO) << "Symbol " << s.first << " added\n";} );
-                    }
-#endif
-            }
-        catch (std::invalid_argument& err)
-            {
-                reader.strict = false;
-                e =reader(str);
-
-                std::cerr << "GiNaC error parsing " << e << " : " << err.what() << std::endl;
-                exit(1);
-            }
-        catch ( ... )
-            {
-                std::cerr << "Exception of unknown type!\n";
-            }
-
-        LOG(INFO) << "e=" << e << "\n";
-        return e;
-    }
 
 }
