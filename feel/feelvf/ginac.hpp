@@ -30,9 +30,11 @@
 #define __Ginac_H 1
 
 #include <ginac/ginac.h>
+#include <boost/parameter/preprocessor.hpp>
 
 namespace GiNaC
 {
+
     matrix grad( ex const& f, std::vector<symbol> const& l );
     ex laplacian( ex const& f, std::vector<symbol> const& l );
     matrix grad( std::string const& s, std::vector<symbol> const& l );
@@ -47,10 +49,10 @@ namespace GiNaC
 
     ex substitute(ex const& f, symbol const& l, const double val );
     ex substitute(ex const& f, symbol const& l, ex const & g );
-    //ex subs(ex const& f, std::vector<symbol> const& l, std::vector<double> & val  );
 
-    ex parse( std::string const& str, std::vector<symbol> const& syms );
-    ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params );
+    //ex parse( std::string const& str, std::vector<symbol> const& syms );
+    ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
+
 } // GiNaC
 
 namespace Feel

@@ -177,9 +177,11 @@ int main( int argc, char* argv[] )
     }
     }
 
+#if 0
     if ( !parameters.size() )
         exact_parsed = parse(exact, vars);
     else
+#endif
         exact_parsed = parse(exact, vars, parameters);
 
 #if 0
