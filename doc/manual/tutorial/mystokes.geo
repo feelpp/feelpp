@@ -1,17 +1,4 @@
-Mesh.MshFileVersion = 2.2;
-Mesh.CharacteristicLengthExtendFromBoundary=1;
-Mesh.CharacteristicLengthFromPoints=1;
-Mesh.ElementOrder=1;
-Mesh.SecondOrderIncomplete = 0;
-Mesh.Algorithm = 6;
-Mesh.Algorithm3D = 1;
-//Mesh.OptimizeNetgen=1;
-// partitioning data
-Mesh.Partitioner=1;
-Mesh.NbPartitions=1;
-Mesh.MshFilePartitioned=0;
 h = 0.5;
-Mesh.RecombinationAlgorithm=0;
 a=0;
 b=4;
 c=0;
@@ -27,7 +14,6 @@ Line(4) = {3,4};
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
 Physical Line("inlet") = {1};
-Physical Line("wall_1") = {2};
+Physical Line("wall") = {2,4};
 Physical Line("outlet") = {3};
-Physical Line("wall_2") = {4};
-Physical Surface(6) = {6};
+Physical Surface("Omega") = {6};
