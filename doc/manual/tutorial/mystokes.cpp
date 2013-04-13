@@ -4,7 +4,7 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 	     Guillaume Dollé <guillaume.dolle@math.unistra.fr>
- 
+
   Date 2013-02-19
 
   Copyright (C) 2013 Université de Strasbourg
@@ -65,16 +65,15 @@ int main(int argc, char**argv )
     a+= integrate(_range=elements(mesh),
                   _expr=-div(u)*idt(p)+divt(u)*id(p));
 
-    a+= integrate(_range=boundaryfaces(mesh),
-                  _expr=idt(p)*trans(vf::N())*id(u));
-
     // right hand side
     auto l = form1( _test=Vh );
 
     // boundary condition
-    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-                  _expr=Py()*(1-Py()));
-    
+    a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
+          _expr=vec(Py()*(1-Py()),cst(0.)));
+    a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
+          _expr=vec(cst(0.),cst(0.)));
+
     // solve a(u,v)=l(v)
     a.solve(_rhs=l,_solution=U);
 
@@ -86,4 +85,3 @@ int main(int argc, char**argv )
 }
 //# endmarker_main #
 //\endcode
-
