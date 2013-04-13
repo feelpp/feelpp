@@ -293,7 +293,10 @@ public:
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
+        {
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
+            this->resizeOnline( M_N, uN, uNdu , uNold, uNduold );
+        }
     }
 
 
@@ -3675,7 +3678,10 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             for(int m=0; m<M; m++)
                 F += betaMFqm[q][m]*M_MFqm_pr[q][m].head( N );
         }
+        LOG(INFO) << "A=" << A;
+        LOG(INFO) << "F=" << F;
         uN[time_index] = A.lu().solve( F );
+        LOG(INFO) << "uN=" << uN[time_index];
 #else
         computeProjectionInitialGuess( mu , N , uN[time_index] );
 #endif
@@ -3740,13 +3746,14 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
                 }
             }
-
+            LOG(INFO) << "A=" << A;
+            LOG(INFO) << "F=" << F;
             // backup uN
             previous_uN = uN[time_index];
 
             // solve for new fix point iteration
             uN[time_index] = A.lu().solve( F );
-
+            LOG(INFO) << "uN=" << uN[time_index];
             if ( time_index<number_of_time_step-1 )
                 uNold[time_index+1] = uN[time_index];
 
@@ -3760,12 +3767,13 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
                 }
             }
+            LOG(INFO) << "L=" << L;
             old_output = output;
             output = L.dot( uN[time_index] );
 
             //output_vector.push_back( output );
             output_vector[time_index] = output;
-            DVLOG(2) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";
+            LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";
             fi++;
 
             if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
@@ -3854,7 +3862,7 @@ CRB<TruthModelType>::resizeOnline( size_type N,
 {
     double time_step, time_final;
     double time_for_output;
-    int number_of_time_step;
+    int number_of_time_step = 1;
     if ( M_model->isSteady() )
     {
         time_step = 1e30;
@@ -3881,6 +3889,9 @@ CRB<TruthModelType>::resizeOnline( size_type N,
     uNduold.resize( number_of_time_step );
 
     if ( N > M_N ) N = M_N;
+
+    LOG(INFO) << "Number of time steps : " << number_of_time_step;
+    LOG(INFO) << "Number of basis functions : " << N;
 
     int index=0;
     BOOST_FOREACH( auto elem, uN )
