@@ -12,7 +12,7 @@ Two examples are available to solve the Laplacian in two coordinate systems (car
  * `feelpp_doc_laplacian_polar` polar coodinate system
  * `feelpp_doc_laplacian_cartesian` cartesian coodinate system
 
-The default should work seamlessly.
+The default arguments(and configuration) should work seamlessly.
 
 
 ## Laplacian with holes
