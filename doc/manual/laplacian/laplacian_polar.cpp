@@ -36,10 +36,15 @@ main(int argc, char**argv )
     using namespace Feel;
     Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
+#if defined(FEELPP_POLAR)
                      _about=about(_name="laplacian_polar",
+#else
+                     _about=about(_name="laplacian_cartesian",
+#endif
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
-    typedef Mesh<Hypercube<2> > mesh_type;
+    //typedef Mesh<Hypercube<2> > mesh_type;
+    typedef Mesh<Simplex<2> > mesh_type;
 
     auto mesh =  loadMesh( _mesh=new mesh_type );
 
@@ -47,27 +52,36 @@ main(int argc, char**argv )
     auto u = Vh->element();
     auto v = Vh->element();
 
+#if FEELPP_POLAR
     auto eta1=Px();
     auto eta2=Py();
+
     auto Jacmat=mat<2,2> (cos(eta2),-eta1*sin(eta2),sin(eta2),eta1*cos(eta2));
-    auto Jac=eta1;
+    auto Jac=det(Jacmat);// it is eta1 but compute the det() anyway for the sake of demonstration;
+    //auto Jac=eta1;
+#else
+    auto eta1=sqrt(Px()*Px()+Py()*Py());
+    auto eta2=acos(Px()/eta1);
+    auto Jacmat=mat<2,2> (cst(1.),cst(0.),cst(0.), cst(1.));
+    auto Jac=det(Jacmat);
+#endif
     auto Jacmatinv=inv(Jacmat);
     auto Jacmattrans=trans(Jacmat);
     auto Jacmattransinv=inv(Jacmattrans);
 
+    auto uexact = pow(eta1,4./3.)*sin(4*eta2/3);
+
     auto l = form1( _test=Vh );
-    l = integrate(_range=elements(mesh),
-                  _expr=id(v)*Jac);
 
     auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(_range=elements(mesh),
                   _expr=trans(Jacmattransinv*trans(gradt(u)))*(Jacmattransinv*trans(grad(v)))*Jac );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=constant(0.) );
-    // a+=on(_range=markedfaces(mesh,20), _rhs=l, _element=u,
-    //       _expr=constant(1.) );
+          _expr=uexact );
 
     a.solve(_rhs=l,_solution=u);
+
+    LOG(INFO) << "Error L2 norm: " << normL2( _range=elements(mesh), _expr=uexact-idv(u));
 
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
