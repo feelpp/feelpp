@@ -1,13 +1,13 @@
-* Introduction
+## Introduction
 Feel++ is a C++ library for arbitrary order Galerkin methods (e.g. finite and spectral element methods ) continuous or discontinuous in 1D 2D and 3D. The objectives of this framework is quite ambitious; ambitions which could be express in various ways such as :
  - the creation of a versatile mathematical kernel solving easily problems using different techniques thus allowing testing and comparing methods, e.g. cG versus dG,
  - the creation of a small and manageable library which shall nevertheless encompass a wide range of numerical methods and techniques,
  - build mathematical software that follows closely the mathematical abstractions associated with partial differential equations (PDE)
  - the creation of a library entirely in C++ allowing to create C++ complex and typically multi-physics applications such as fluid-structure interaction or mass transport in haemodynamic
 
-SOme basic installation procedure are available in the INSTALL.org file.
+Some basic installation procedure are available in the INSTALL.org file.
 
-* Features
+## Features
  - 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
  - continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
  - domain specific embedded language in C++ for variational formulations
@@ -18,19 +18,19 @@ SOme basic installation procedure are available in the INSTALL.org file.
  - supports [http://www.geuz.org/gmsh Gmsh] for post-processing (including on high order geometries)
  - supports [http://www.paraview.org Paraview] for post-processing
 
-* Documentation
+## Documentation
 
  - [http://feelpp.googlecode.com/files/feel-manual.pdf Feel++ PDF Manual]
  - [http://docs.feelpp.googlecode.com/git/html/index.html Feel++ Online Reference Manual]
  - [http://code.google.com/p/feelpp/w/list Feel++ Wiki]
 
-* Examples
+## Examples
 
-** Laplacian in 2D using P3 Lagrange basis functions
+### Laplacian in 2D using P3 Lagrange basis functions
 
 Here is a full example to solve $-\Delta u = f in \Omega,\quad u=g on \partial \Omega$
 
-#+BEGIN_SRC C++
+```
 #include <feel/feel.hpp>
 
 int main(int argc, char**argv )
@@ -63,15 +63,15 @@ int main(int argc, char**argv )
     e->save();
     return 0;
 }
-#+END_SRC
+```
 
 
-** Bratu equation in 2D
+### Bratu equation in 2D
 
 Here is a full non-linear example - the Bratu equation - to solve $-\Delta u +
 e^u = 0 in \Omega,\quad u=0 on \partial \Omega$.
 
-#+BEGIN_SRC C++
+```
 #include <feel/feel.hpp>
 
 inline
@@ -140,5 +140,4 @@ main( int argc, char** argv )
     e->add( "u", u );
     e->save();
 }
-
-#+END_SRC
+```
