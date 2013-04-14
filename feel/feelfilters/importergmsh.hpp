@@ -963,10 +963,12 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
 
-    for(int i = 0; i < ptseen.size();  ++i )
-        if ( ptseen[i] == -1 )
-            LOG(WARNING) << "Point with id " << i << " not in element connectivity";
-
+    if (VLOG_IS_ON(4))
+    {
+        for(int i = 0; i < ptseen.size();  ++i )
+            if ( ptseen[i] == -1 )
+                LOG(WARNING) << "Point with id " << i << " not in element connectivity";
+    }
     CHECK( mesh->numElements() > 0 ) << "The mesh does not have any elements.\n"
                                      << "something was not right with GMSH mesh importation.\n"
                                      << "please check that there are elements of topological dimension "
