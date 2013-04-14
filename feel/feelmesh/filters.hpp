@@ -767,6 +767,25 @@ markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& f
     return list_elements;
 }
 
+template<typename MeshType>
+std::list<boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+                       typename MeshTraits<MeshType>::marker_element_const_iterator,
+                       typename MeshTraits<MeshType>::marker_element_const_iterator> >
+markedelements( MeshType const& mesh, std::list<std::string> const& flag )
+{
+    typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
+    std::list<boost::tuple<mpl::size_t<MESH_ELEMENTS>,
+                           typename MeshTraits<MeshType>::marker_element_const_iterator,
+                           typename MeshTraits<MeshType>::marker_element_const_iterator> > list_elements;
+    for( auto it = flag.begin(), en = flag.end(); it!=en; ++it )
+    {
+        flag_type theflag = mesh->markerId( *it );
+        VLOG(2) << "[markedelements] flag: " << theflag << "\n";
+        list_elements.push_back( detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+    }
+    return list_elements;
+}
+
 /**
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker2 \p flag
