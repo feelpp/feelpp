@@ -11,18 +11,17 @@ Some basic installation procedure are available in the INSTALL.org file.
  - 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
  - continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
  - domain specific embedded language in C++ for variational formulations
- - interfaced with [http://www.mcs.anl.gov/petsc/ PETSc] for linear and non-linear solvers
+ - interfaced with [PETSc](http://www.mcs.anl.gov/petsc/) for linear and non-linear solvers
  - seamless parallel computations using PETSc
- - interfaced with [http://www.grycap.upv.es/slepc/ SLEPc] for large-scale sparse standard and generalized eigenvalue  solvers
- - supports [http://www.geuz.org/gmsh Gmsh] for mesh generation
- - supports [http://www.geuz.org/gmsh Gmsh] for post-processing (including on high order geometries)
- - supports [http://www.paraview.org Paraview] for post-processing
+ - interfaced with [SLEPc](http://www.grycap.upv.es/slepc/) for large-scale sparse standard and generalized eigenvalue  solvers
+ - supports [Gmsh](http://www.geuz.org/gmsh) for mesh generation
+ - supports [Gmsh](http://www.geuz.org/gmsh) for post-processing (including on high order geometries)
+ - supports [Paraview](http://www.paraview.org) for post-processing
 
 ## Documentation
 
- - [http://feelpp.googlecode.com/files/feel-manual.pdf Feel++ PDF Manual]
- - [http://docs.feelpp.googlecode.com/git/html/index.html Feel++ Online Reference Manual]
- - [http://code.google.com/p/feelpp/w/list Feel++ Wiki]
+ - [Feel++ PDF Manual](http://feelpp.googlecode.com/files/feel-manual.pdf)
+ - [Feel++ Online Reference Manual](http://docs.feelpp.googlecode.com/git/html/index.html)
 
 ## Examples
 
