@@ -162,7 +162,7 @@ public:
             //BOOST_TEST_MESSAGE( "shared from this" );
 #if 1
             LOG(INFO) << "=== sin(cst_ref(mu(0))*idv(u)*idv(u)) === \n";
-            auto e = eim( _model=this,
+            auto e = eim( _model=this->shared_from_this(),
                           _options=this->vm(),
                           _element=u,
                           _space=this->functionSpace(),
@@ -175,7 +175,7 @@ public:
             M_funs.push_back( e );
 #endif
             LOG(INFO) << "=== mu(0) === \n";
-            auto e1 = eim( _model=eim_no_solve(this),
+            auto e1 = eim( _model=eim_no_solve(this->shared_from_this()),
                            _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
@@ -189,7 +189,7 @@ public:
                 BOOST_CHECK_EQUAL( e1->mMax(), 1 );
 
             LOG(INFO) << "=== mu(0) x === \n";
-            auto e2 = eim( _model=eim_no_solve(this),
+            auto e2 = eim( _model=eim_no_solve(this->shared_from_this()),
                            _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
@@ -200,7 +200,7 @@ public:
             BOOST_TEST_MESSAGE( "create e2 done" );
             M_funs.push_back( e2 );
             LOG(INFO) << "=== sin(2 pi mu(0) x) === \n";
-            auto e3 = eim( _model=eim_no_solve(this),
+            auto e3 = eim( _model=eim_no_solve(this->shared_from_this()),
                            _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
@@ -211,7 +211,7 @@ public:
             BOOST_TEST_MESSAGE( "create e3 done" );
             M_funs.push_back( e3 );
             LOG(INFO) << "=== exp(-((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5))/(2*mu(0)*mu(0))), === \n";
-            auto e5 = eim( _model=eim_no_solve(this),
+            auto e5 = eim( _model=eim_no_solve(this->shared_from_this()),
                            _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
@@ -249,6 +249,10 @@ public:
         }
     void run()
         {
+            //studyConvergence function takes an approximation of the solution as argument to avoid
+            //to solve the model to determine the unknown ( needed to evaluate the expression that we want the eim approximation )
+            auto solution = Xh->elementPtr();
+
             auto e = exporter( _mesh=mesh, _name=this->about().appName() );
             auto S = Dmu->sampling();
             int n = option("n-eval").as<int>();
@@ -273,7 +277,7 @@ public:
                     }
                     if( cvg_study )
                     {
-                        fun->studyConvergence( p );
+                        fun->studyConvergence( p , *solution );
                     }
                     boost::mpi::timer timer;
                     auto w = fun->interpolant( p );
@@ -382,7 +386,7 @@ public:
             //auto p = this->shared_from_this();
             //BOOST_CHECK( p );
             //BOOST_TEST_MESSAGE( "shared from this" );
-            auto e = eim( _model=this,
+            auto e = eim( _model=this->shared_from_this(),
                           _options=this->vm(),
                           _element=u,
                           _space=this->functionSpace(),
