@@ -152,7 +152,7 @@ public:
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_tensor_expr( expr.expression(), geom, fev, feu ),
-            M_det( geom->nPoints() )
+            M_det( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
 
@@ -160,14 +160,14 @@ public:
                 Geo_t const& geom, Basis_i_t const& fev )
             :
             M_tensor_expr( expr.expression(), geom, fev ),
-            M_det( geom->nPoints() )
+            M_det( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_tensor_expr( expr.expression(), geom ),
-            M_det( geom->nPoints() )
+            M_det( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
         template<typename IM>
@@ -177,21 +177,21 @@ public:
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
-            M_tensor_expr.update( geom );
+            update(geom);
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
         {
-            M_tensor_expr.update( geom );
+            update(geom);
         }
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-            computeDet( mpl::int_<shape::N>() );
+            computeDet( mpl::int_<expr_shape::nDim>() );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             M_tensor_expr.update( geom, face );
-            computeDet( mpl::int_<shape::N>() );
+            computeDet( mpl::int_<expr_shape::nDim>() );
         }
 
 
@@ -205,13 +205,13 @@ public:
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return evalq( c1, c2, q, mpl::int_<shape::N>() );
+            return evalq( c1, c2, q );
         }
 
         value_type
         evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return evalq( c1, c2, q, mpl::int_<shape::N>() );
+            return evalq( c1, c2, q );
         }
 
         value_type
@@ -238,12 +238,13 @@ public:
                     double b = M_tensor_expr.evalq( 0, 1, q );
                     double c = M_tensor_expr.evalq( 1, 0, q );
                     double d = M_tensor_expr.evalq( 1, 1, q );
-                    M_det(q) =  a*c-b*d;
+                    M_det(q) =  a*d-b*c;
                 }
             }
         void
         computeDet( mpl::int_<3> )
             {
+
                 for( int q = 0; q < M_det.rows(); ++q )
                 {
                     double a = M_tensor_expr.evalq( 0, 0, q );
@@ -254,8 +255,8 @@ public:
                     double f = M_tensor_expr.evalq( 1, 2, q );
                     double g = M_tensor_expr.evalq( 2, 0, q );
                     double h = M_tensor_expr.evalq( 2, 1, q );
-                    double l = M_tensor_expr.evalq( 2, 2, q );
-                    M_det(q) = a*(e*l-f*h)-b*(d*l-g*h)+c*(d*h-g*e);
+                    double i = M_tensor_expr.evalq( 2, 2, q );
+                    M_det(q) = a*e*i+b*f*g+c*d*h - (c*e*g+b*d*i+a*f*h);
                 }
             }
     private:
