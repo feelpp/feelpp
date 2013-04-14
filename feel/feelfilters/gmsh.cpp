@@ -261,7 +261,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
         LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
-        bool geochanged ( generateGeo( __name,__geo,modifGeo ) );
+        bool geochanged = generateGeo( __name,__geo,modifGeo );
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
 
@@ -350,6 +350,11 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
     LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
     LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
     //std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
+    CTX::instance()->partitionOptions.num_partitions =  M_partitions;
+    CTX::instance()->partitionOptions.partitioner =  M_partitioner;
+    CTX::instance()->partitionOptions.mesh_dims[0] = M_partitions;
+    CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
+    CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
 
     for ( int l = 0; l < level; ++l )
     {
@@ -444,9 +449,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GModel::current()->setFileName( _name );
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
-    for( int l = 0; l < M_refine_levels-1; ++l )
+    LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
+    for( int l = 0; l < M_refine_levels; ++l )
     {
-        LOG(INFO) << "Mesh refinement level : " << l << "\n";
         GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
     }
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
