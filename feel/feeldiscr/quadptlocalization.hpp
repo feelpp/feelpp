@@ -129,7 +129,7 @@ public :
         _M_im( ),
         _M_qm( ),
         _M_ppts( _M_qm( this->im() ) ),
-        _M_hasPrecomputeBF(false)
+        _M_hasPrecompute(false)
     {
         _M_listRange.push_back( elts );
     }
@@ -140,24 +140,10 @@ public :
         _M_im( ),
         _M_qm( ),
         _M_ppts( _M_qm( this->im() ) ),
-        _M_hasPrecomputeBF(false)
+        _M_hasPrecompute(false)
     {}
 
 
-
-#if 0
-    QuadPtLocalization( element_iterator_type  elts_it,
-                        element_iterator_type  elts_en
-                      )
-        :
-        _M_eltbegin( elts_it ),
-        _M_eltend( elts_en ),
-        _M_im( ),
-        _M_qm( ),
-        _M_ppts( _M_qm( this->im() ) ),
-        _M_hasPrecomputeBF(false)
-    {}
-#endif
     /**
      * get the integration method
      */
@@ -207,7 +193,7 @@ public :
     }
 
 
-    bool hasPrecomputeBF() const { return _M_hasPrecomputeBF; }
+    bool hasPrecompute() const { return _M_hasPrecompute; }
 
     //--------------------------------------------------------------------------------------//
 
@@ -475,7 +461,13 @@ public :
 
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
+        const auto nbNearNeighborAtStartTest = meshTestLocalization->kdtree()->nPtMaxNearNeighbor();
+        bool notUseOptLocTest = Mesh1Type::nDim!=Mesh1Type::nRealDim;
+        if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(Mesh1Type::element_type::numPoints);
 
+        matrix_node_type ptsReal( begin_elt_it->vertices().size1(), 1 );
+        size_type testIdElt=0;
+        node_type testNodeRef;
 
         element_iterator_type elt_it, elt_en;
 
@@ -495,13 +487,24 @@ public :
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
                     size_type idq = gmc->nPoints()*ide+q;
+#if 0
                     auto testAnalysis = meshTestLocalization->searchElement( gmc->xReal( q ) );
-                    auto testIdElt = testAnalysis.template get<1>();
-                    auto testNodeRef = testAnalysis.template get<2>();
+                    testIdElt = testAnalysis.template get<1>();
+                    testNodeRef = testAnalysis.template get<2>();
+#else
+                    ublas::column(ptsReal,0 ) = gmc->xReal( q );
+                    if (notUseOptLocTest) testIdElt=invalid_size_type_value;
+                    auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
+                    testIdElt = resLocalisationTest.template get<1>();
+                    testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
+#endif
                     testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
                 }
             }
         }
+
+        if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(nbNearNeighborAtStartTest);
+
     }
 
     //--------------------------------------------------------------------------------------//
@@ -521,15 +524,13 @@ public :
 
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
+        const auto nbNearNeighborAtStartTest = meshTestLocalization->kdtree()->nPtMaxNearNeighbor();
+        bool notUseOptLocTest = Mesh1Type::nDim!=Mesh1Type::nRealDim;
+        if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(Mesh1Type::element_type::numPoints);
 
-
-        //auto nQuadPtsInElt = this->im().nPoints();
-        //auto nElts = std::distance(elt_it,elt_en);
-        //auto nQuadPts = nElts*nQuadPtsInElt;
-
-        //auto nEltTest= meshTest->numElements();
-
-        //for ( size_type theIdEltTest = 0; theIdEltTest < nEltTest ; ++theIdEltTest ) {testEltToPtsQuad[theIdEltTest].clear();}
+        matrix_node_type ptsReal( begin_elt_it->vertices().size1(), 1 );
+        size_type testIdElt=0;
+        node_type testNodeRef;
 
         element_iterator_type elt_it, elt_en;
 
@@ -547,15 +548,24 @@ public :
                     // cpt of quad pt
                     size_type idq = gmc->nPoints()*ide+q;
                     // search in test mesh
+#if 0
                     auto testAnalysis = meshTestLocalization->searchElement( gmc->xReal( q ) );
-                    auto testIdElt = testAnalysis.template get<1>();
-                    auto testNodeRef = testAnalysis.template get<2>();
-                    testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
+                    testIdElt = testAnalysis.template get<1>();
+                    testNodeRef = testAnalysis.template get<2>();
+#else
+                    ublas::column(ptsReal,0 ) = gmc->xReal( q );
+                    if (notUseOptLocTest) testIdElt=invalid_size_type_value;
+                    auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
+                    testIdElt = resLocalisationTest.template get<1>();
+                    testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
+#endif
 
+                    testEltToPtsQuad[testIdElt].push_back( boost::make_tuple( idq,q,testNodeRef ) );
                 }
             }
         }
 
+        if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(nbNearNeighborAtStartTest);
 
     }
 
@@ -573,8 +583,6 @@ public :
         //std::cout << "[QuadPtLocalization] : localization<MESH_FACES>(bilinear form start" << std::endl;
 
         auto begin_elt_it = this->beginElement();
-        //auto elt_it = this->beginElement();
-        //auto elt_en = this->endElement();
 
         std::vector<std::map<permutation_type, pc_ptrtype> > __geopc( this->im().nFaces() );
 
@@ -598,9 +606,16 @@ public :
 
         auto meshTrialLocalization = meshTrial->tool_localization();
         meshTrialLocalization->updateForUse();
+        const auto nbNearNeighborAtStartTrial = meshTrialLocalization->kdtree()->nPtMaxNearNeighbor();
+        bool notUseOptLocTrial = Mesh2Type::nDim!=Mesh2Type::nRealDim;
+        if (notUseOptLocTrial) meshTrialLocalization->kdtree()->nbNearNeighbor(Mesh2Type::element_type::numPoints);
 
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
+        const auto nbNearNeighborAtStartTest = meshTestLocalization->kdtree()->nPtMaxNearNeighbor();
+        bool notUseOptLocTest = Mesh1Type::nDim!=Mesh1Type::nRealDim;
+        if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(Mesh1Type::element_type::numPoints);
+
 
         matrix_node_type ptsReal( begin_elt_it->vertices().size1(), 1 );
         size_type trialIdElt = 0, testIdElt=0;
@@ -631,6 +646,8 @@ public :
 
                 gmc->update( elt_it->element( 0 ), __face_id_in_elt_0 );
 
+                //std::cout << "\n quad gmc "<< gmc->xReal();
+
                 for ( int q = 0; q <  gmc->nPoints(); ++ q )
                 {
                     // cpt of quad pt
@@ -640,6 +657,7 @@ public :
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     if (!quadMeshIsSameThatTrialMesh)
                     {
+                        if (notUseOptLocTrial) trialIdElt=invalid_size_type_value;
                         auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,elt_it->vertices(),mpl::int_<0>());
                         trialIdElt = resLocalisationTrial.template get<1>();
                         trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -654,6 +672,7 @@ public :
                     // search in test mesh
                     if (!quadMeshIsSameThatTestMesh)
                     {
+                        if (notUseOptLocTest) testIdElt=invalid_size_type_value;
                         auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
                         testIdElt = resLocalisationTest.template get<1>();
                         testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -669,7 +688,10 @@ public :
                     if ( std::find( EltCoupled[testIdElt].begin(),EltCoupled[testIdElt].end(),trialIdElt )==EltCoupled[testIdElt].end() )
                     {
                         EltCoupled[testIdElt].push_back( trialIdElt );
-                        //std::cout << " testIdElt " << testIdElt << " trialIdElt " << trialIdElt << std::endl;
+                        /*std::cout << "gmc->xRef(q)" << gmc->xReal(q)
+                                  << " testIdElt " << testIdElt << " meshTest->element().G()" << meshTest->element(testIdElt).G()
+                                  << " trialIdElt " << trialIdElt << " meshTrial->element().G()" << meshTrial->element(trialIdElt).G()
+                                  << std::endl;*/
 #if FEELPP_EXPORT_QUADLOCALIZATION
                         mapBetweenMeshes_test[testIdElt].push_back( trialIdElt );
                         mapBetweenMeshes_trial[trialIdElt].push_back( testIdElt );
@@ -681,6 +703,10 @@ public :
 #if FEELPP_EXPORT_QUADLOCALIZATION
         this->exportQuadLocalization(meshTest,meshTrial,mapBetweenMeshes_test,mapBetweenMeshes_trial);
 #endif
+
+        if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(nbNearNeighborAtStartTest);
+        if (notUseOptLocTrial) meshTrialLocalization->kdtree()->nbNearNeighbor(nbNearNeighborAtStartTrial);
+
         //std::cout << "[QuadPtLocalization] : localization<MESH_FACES>(bilinear form finish" << std::endl;
 
     } // localization
@@ -707,9 +733,15 @@ public :
 
         auto meshTrialLocalization = meshTrial->tool_localization();
         meshTrialLocalization->updateForUse();
+        const auto nbNearNeighborAtStartTrial = meshTrialLocalization->kdtree()->nPtMaxNearNeighbor();
+        bool notUseOptLocTrial = Mesh2Type::nDim!=Mesh2Type::nRealDim;
+        if (notUseOptLocTrial) meshTrialLocalization->kdtree()->nbNearNeighbor(Mesh2Type::element_type::numPoints);
 
         auto meshTestLocalization = meshTest->tool_localization();
         meshTestLocalization->updateForUse();
+        const auto nbNearNeighborAtStartTest = meshTestLocalization->kdtree()->nPtMaxNearNeighbor();
+        bool notUseOptLocTest = Mesh1Type::nDim!=Mesh1Type::nRealDim;
+        if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(Mesh1Type::element_type::numPoints);
 
 #if FEELPP_EXPORT_QUADLOCALIZATION
         std::map<size_type,std::list<size_type> > mapBetweenMeshes_test;
@@ -753,6 +785,7 @@ public :
                     ublas::column(ptsReal,0 ) = gmc->xReal( q );
                     if (!quadMeshIsSameThatTrialMesh)
                     {
+                        if (notUseOptLocTrial) trialIdElt=invalid_size_type_value;
                         auto resLocalisationTrial = meshTrialLocalization->run_analysis(ptsReal,trialIdElt,elt_it->vertices(),mpl::int_<0>());
                         trialIdElt = resLocalisationTrial.template get<1>();
                         trialNodeRef = meshTrialLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -768,6 +801,7 @@ public :
                     // search in test mesh
                     if (!quadMeshIsSameThatTestMesh)
                     {
+                        if (notUseOptLocTest) testIdElt=invalid_size_type_value;
                         auto resLocalisationTest = meshTestLocalization->run_analysis(ptsReal,testIdElt,elt_it->vertices(),mpl::int_<0>());
                         testIdElt = resLocalisationTest.template get<1>();
                         testNodeRef = meshTestLocalization->result_analysis().begin()->second.begin()->template get<1>();
@@ -842,6 +876,9 @@ public :
 #if FEELPP_EXPORT_QUADLOCALIZATION
         this->exportQuadLocalization(meshTest,meshTrial,mapBetweenMeshes_test,mapBetweenMeshes_trial);
 #endif
+
+        if (notUseOptLocTest) meshTestLocalization->kdtree()->nbNearNeighbor(nbNearNeighborAtStartTest);
+        if (notUseOptLocTrial) meshTrialLocalization->kdtree()->nbNearNeighbor(nbNearNeighborAtStartTrial);
 
         //std::cout << "[QuadPtLocalization] : localization<MESH_ELEMENTS>(bilinear form finish" << std::endl;
     }
@@ -1120,30 +1157,8 @@ struct bilinearformContext
 
 template<typename FE1,typename FE2,typename ElemContType>
 void
-precompute(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form)
+precompute(vf::detail::BilinearForm<FE1,FE2,ElemContType>const& __form)
 {
-#if 0
-    typedef Expr expression_type;
-
-    // typedef on form (trial and test):
-    typedef vf::detail::BilinearForm<FE1,FE2,ElemContType> FormType;
-    // test
-    typedef typename FormType::gm_1_type gm_formTest_type;
-    typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
-    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
-    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
-    typedef typename gm_formTest_type::precompute_type pc_formTest_type;
-    typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
-    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
-    // trial
-    typedef typename FormType::gm_2_type gm_formTrial_type;
-    typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
-    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
-    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
-    typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
-    typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
-#endif
-
     typedef typename bilinearformContext<FE1,FE2,ElemContType>::gmc_formTest_type gmc_formTest_type;
     typedef typename bilinearformContext<FE1,FE2,ElemContType>::gmc_formTest_ptrtype gmc_formTest_ptrtype;
     typedef typename bilinearformContext<FE1,FE2,ElemContType>::pc_formTest_type pc_formTest_type;
@@ -1153,9 +1168,6 @@ precompute(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form)
     typedef typename bilinearformContext<FE1,FE2,ElemContType>::gmc_formTrial_ptrtype gmc_formTrial_ptrtype;
     typedef typename bilinearformContext<FE1,FE2,ElemContType>::pc_formTrial_type pc_formTrial_type;
     typedef typename bilinearformContext<FE1,FE2,ElemContType>::pc_formTrial_ptrtype pc_formTrial_ptrtype;
-
-
-    //typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
     auto meshTrial = __form.trialSpace()->mesh();
     auto meshTest = __form.testSpace()->mesh();
@@ -1197,16 +1209,90 @@ precompute(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form)
         }
     }
 
-    _M_precomputeBF = theres;
-    _M_hasPrecomputeBF=true;
+    _M_precompute = theres;
+    _M_hasPrecompute=true;
 
 }
 
+
+template<typename FE,typename VectorType,typename ElemContType>
+struct linearformContext
+{
+    typedef Expr expression_type;
+
+    //typedef on form test :
+    typedef vf::detail::LinearForm<FE,VectorType,ElemContType> FormType;
+    typedef typename FormType::gm_type gm_form_type;
+    typedef typename FormType::mesh_test_element_type geoelement_form_type;
+    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
+    typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+    typedef typename gm_form_type::precompute_type pc_form_type;
+    typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
+
+    typedef std::list<boost::tuple< std::vector<boost::tuple<size_type,size_type> >,
+                                    gmc_ptrtype,
+                                    gmc_form_ptrtype > > return_loc_type;
+    typedef std::list<return_loc_type> return_type;
+
+};
+
+template<typename FE,typename VectorType,typename ElemContType>
+void
+precompute(vf::detail::LinearForm<FE,VectorType,ElemContType> const& __form)
+{
+
+    typedef typename linearformContext<FE,VectorType,ElemContType>::gmc_form_type gmc_form_type;
+    typedef typename linearformContext<FE,VectorType,ElemContType>::gmc_form_ptrtype gmc_form_ptrtype;
+    typedef typename linearformContext<FE,VectorType,ElemContType>::pc_form_type pc_form_type;
+    typedef typename linearformContext<FE,VectorType,ElemContType>::pc_form_ptrtype pc_form_ptrtype;
+
+    auto meshTest = __form.testSpace()->mesh();
+
+    typename linearformContext<FE,VectorType,ElemContType>::return_type theres;
+
+    auto res_it = this->resultLinear().begin();
+    auto const res_en = this->resultLinear().end();
+    for ( ; res_it != res_en ; ++res_it )
+    {
+        auto const idEltTest = res_it->template get<0>();
+        auto const& eltTest = meshTest->element( idEltTest );
+
+        auto ptRefTest = res_it->template get<2>();
+        auto themapQuad = res_it->template get<1>();
+
+        auto vec_gmcExpr = this->getUsableDataInFormContext( themapQuad,ptRefTest );
+        auto gmcExpr_it = vec_gmcExpr.begin();
+        auto const gmcExpr_en = vec_gmcExpr.end();
+        typename linearformContext<FE,VectorType,ElemContType>::return_loc_type theresloc;
+        for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
+        {
+
+            pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), gmcExpr_it->template get<2>() /*this->im().points()*/ ) );
+            gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), eltTest, geopcForm ) );
+            theresloc.push_back(boost::make_tuple(gmcExpr_it->template get<0>(),gmcExpr_it->template get<1>(),gmcForm));
+        }
+        theres.push_back(theresloc);
+
+    }
+
+    _M_precompute = theres;
+    _M_hasPrecompute=true;
+
+}
+
+
 template<typename FE1,typename FE2,typename ElemContType>
 typename bilinearformContext<FE1,FE2,ElemContType>::return_type const&
-getPrecompute(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form) const
+getPrecompute(vf::detail::BilinearForm<FE1,FE2,ElemContType>const& __form) const
 {
-    return boost::any_cast<typename bilinearformContext<FE1,FE2,ElemContType>::return_type const&>( _M_precomputeBF);
+    return boost::any_cast<typename bilinearformContext<FE1,FE2,ElemContType>::return_type const&>( _M_precompute);
+}
+
+template<typename FE,typename VectorType,typename ElemContType>
+typename linearformContext<FE,VectorType,ElemContType>::return_type const&
+getPrecompute(vf::detail::LinearForm<FE,VectorType,ElemContType> const& __form) const
+{
+    return boost::any_cast<typename linearformContext<FE,VectorType,ElemContType>::return_type const&>( _M_precompute);
 }
 
 private :
@@ -1223,8 +1309,9 @@ private :
 
     result_container_linear_type _M_resLinear;
 
-    bool _M_hasPrecomputeBF;
-    boost::any _M_precomputeBF;
+    bool _M_hasPrecompute;
+    boost::any _M_precompute;
+
 
 }; // QuadPtLocalization
 
@@ -1250,6 +1337,16 @@ quadPtLocPtr( boost::shared_ptr<MeshTestType> meshTest, boost::shared_ptr<MeshTr
     typedef QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> quadptloc_type;
     boost::shared_ptr<quadptloc_type> res(new quadptloc_type(elts) );
     res->update( meshTest,meshTrial );
+    return res;
+}
+
+template<typename MeshTestType, typename IteratorRange,typename Im,typename Expr>
+boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> >
+quadPtLocPtr( boost::shared_ptr<MeshTestType> meshTest, IteratorRange const& elts,Im const& im,Expr const& expr )
+{
+    typedef QuadPtLocalization<typename Feel::detail::quadptlocrangetype<IteratorRange>::type,Im,Expr> quadptloc_type;
+    boost::shared_ptr<quadptloc_type> res(new quadptloc_type(elts) );
+    res->update( meshTest );
     return res;
 }
 
