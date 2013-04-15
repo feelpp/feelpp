@@ -36,6 +36,7 @@ namespace Feel
 {
 
 
+
 class ParameterDefinitionBase
 {
 public :
@@ -67,8 +68,10 @@ public :
 
 };
 
+
+
 template <typename ParameterDefinition = ParameterDefinitionBase, typename EimDefinition = EimDefinitionBase<ParameterDefinition> >
-class ModelCrbBase
+class ModelCrbBase : public ModelCrbBaseBase
 {
 
 public :
@@ -150,4 +153,3 @@ protected :
 
 }//Feel
 #endif /* __Model_H */
-

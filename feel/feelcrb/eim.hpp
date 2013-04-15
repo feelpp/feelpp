@@ -58,6 +58,8 @@
 
 namespace Feel
 {
+class ModelCrbBaseBase {};
+
 /**
   \class EIM
   \brief Empirical interpolation of a function to obtain an affine decomposition
@@ -1163,6 +1165,12 @@ public:
     }
 
     void computationalTimeStatistics( std::string appname )
+        {
+            computationalTimeStatistics( appname, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+        }
+    void computationalTimeStatistics( std::string appname, boost::mpl::bool_<false> )
+        {}
+    void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
     {
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_vm , CRBModelMode::CRB ) );
         auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
@@ -1260,9 +1268,9 @@ BOOST_PARAMETER_FUNCTION(
       ( in_out(expr),          * )
       ( name, * )
       ( space, *)
-      ( options, *)
         ) // required
     ( optional
+      ( options, *, Environment::vm())
       //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
       //( space, *, model->functionSpace() )
       ( sampling, *, model->parameterSpace()->sampling() )
@@ -1309,16 +1317,15 @@ struct EimFunctionNoSolve
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
     parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
 
-    element_type M_elt;
     model_ptrtype M_model;
+    element_type M_elt;
 };
 
 template<typename ModelType>
-//EimFunctionNoSolve<ModelType>*
-typename EimFunctionNoSolve<ModelType>::model_ptrtype
+boost::shared_ptr<EimFunctionNoSolve<ModelType>>
 eim_no_solve( boost::shared_ptr<ModelType> model )
 {
-    return new EimFunctionNoSolve<ModelType>( model );
+    return boost::shared_ptr<EimFunctionNoSolve<ModelType>>( new EimFunctionNoSolve<ModelType>( model ) );
 }
 
 
