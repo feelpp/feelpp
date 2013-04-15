@@ -73,7 +73,6 @@ namespace GiNaC
                          {
                              total_syms.push_back(symbol(param));
                              LOG(INFO) << "adding param: " << param << std::endl;
-                             std::cout << "adding param: " << param << std::endl;
                              table[param.get_name()] = param;
                          } );
 
