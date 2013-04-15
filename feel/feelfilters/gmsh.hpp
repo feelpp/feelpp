@@ -791,7 +791,8 @@ BOOST_PARAMETER_FUNCTION(
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );
 
-    Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
+    if (worldcomm.localSize()>1)
+        Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
 
     double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate().norm();
 
