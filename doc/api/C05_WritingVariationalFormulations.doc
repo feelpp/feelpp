@@ -3,7 +3,8 @@ namespace Feel
 {
 /*! \page WritingVariationalFormulations Writing Variational Formulations
 
-\ingroup Tutorial
+\tableofcontents
+
 \li \b Previous: \ref ManipulatingFunctionSpaces
 \li \b Next: \ref SolvingLinearAlgebra
 
