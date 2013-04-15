@@ -89,9 +89,9 @@ makeAbout()
  *
  */
 class EimModel:
-    public Simget,
-    public boost::enable_shared_from_this<EimModel>
+        public boost::enable_shared_from_this<EimModel>
 {
+    typedef boost::enable_shared_from_this<EimModel> super;
 public:
     typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -117,7 +117,7 @@ public:
 
     EimModel()
         :
-        Simget()
+        super()
         {
         }
     void init()
@@ -142,7 +142,7 @@ public:
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
 
             auto Pset = Dmu->sampling();
-            int sampling_size = this->vm()["eim.sampling-size"].as<int>();
+            int sampling_size = option(_name="eim.sampling-size").as<int>();
             Pset->randomize( sampling_size );
 
             BOOST_TEST_MESSAGE( "Allocation done" );
@@ -240,7 +240,7 @@ public:
             //to solve the model to determine the unknown ( needed to evaluate the expression that we want the eim approximation )
             auto solution = Xh->elementPtr();
 
-            auto e = exporter( _mesh=mesh, _name=this->about().appName() );
+            auto e = exporter( _mesh=mesh, _name=Environment::about().appName() );
             auto S = Dmu->sampling();
             int n = option("n-eval").as<int>();
             LOG(INFO)<<"will compute "<<n<<" evaluations\n";
@@ -444,22 +444,20 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
     BOOST_TEST_MESSAGE( "test_eim1 starts..." );
 
 
-    EimModel m;
-    auto p = m.shared_from_this;
-    //m.init();
-    //m.run();
+    boost::shared_ptr<EimModel> m( new EimModel);
+    m->init();
+    m->run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );
 
 }
-#if 0
 BOOST_AUTO_TEST_CASE( test_eim2 )
 {
     BOOST_TEST_MESSAGE( "test_eim2 starts..." );
 
-    EimModelCircle m;
-    m.init();
-    m.run();
+    boost::shared_ptr<EimModelCircle> m( new EimModelCircle );
+    m->init();
+    m->run();
 
     BOOST_TEST_MESSAGE( "test_eim2 done" );
 
