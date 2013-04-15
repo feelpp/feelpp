@@ -21,7 +21,7 @@ Some basic installation procedure are available in the INSTALL.org file.
 ## Documentation
 
  - [Feel++ PDF Manual](http://feelpp.googlecode.com/files/feel-manual.pdf)
- - [Feel++ Online Reference Manual](http://docs.feelpp.googlecode.com/git/html/index.html)
+ - [Feel++ Online Reference Manual](http://feelpp.github.io/feelpp/)
 
 ## Examples
 
