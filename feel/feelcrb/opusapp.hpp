@@ -37,6 +37,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
+#include <boost/regex.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -401,12 +402,19 @@ public:
             //Sampling->setElements( V );
             */
 
+            // Script write current mu in cfg => need to write in SamplingForTest
+            if( option(_name="crb.script-mode").template as<bool>() )
+                {
+                    // Sampling will be the parameter given by OT
+                    buildSamplingFromCfg();
+                }
+
             /**
              * note that in the file SamplingForTest we expect :
              * mu_0= [ value0 , value1 , ... ]
              * mu_1= [ value0 , value1 , ... ]
              **/
-            if( option(_name="crb.use-predefined-test-sampling").template as<bool>() )
+            if( option(_name="crb.use-predefined-test-sampling").template as<bool>() || option(_name="crb.script-mode").template as<bool>() )
             {
                 std::string file_name = ( boost::format("SamplingForTest") ).str();
                 std::ifstream file ( file_name );
@@ -580,7 +588,7 @@ public:
                                 auto uN_0 = o.template get<4>();
 
                                 //if( model->isSteady()) // Re-use uN given by lb in crb->run
-                                    u_crb = crb->expansion( uN_0 , N , WN ); // Re-use uN given by lb in crb->run
+                                u_crb = crb->expansion( uN_0 , N , WN ); // Re-use uN given by lb in crb->run
                                 //else
                                 //    u_crb = crb->expansion( mu , N , WN );
 
@@ -1054,6 +1062,63 @@ private:
         double l22 = integrate( elements(mesh), (vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
         double semih12 = integrate( elements(mesh), (vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
         return math::sqrt( l22+semih12 );
+    }
+
+    // Script write current mu in cfg => need to write it in SamplingForTest
+    void buildSamplingFromCfg()
+    {
+        auto mu_tmp = model->parameterSpace()->element();
+        int mu_size = mu_tmp.size();
+
+        // Clear SamplingForTest is exists, and open a new one
+        fs::path input_file ("SamplingForTest");
+        if( fs::exists(input_file) )
+            std::remove( "SamplingForTest" );
+        std::ofstream input( "SamplingForTest" );
+        input << "mu= [ ";
+
+        // Check cfg file is readable
+        std::ifstream cfg_file( option(_name="config-file").template as<std::string>() );
+        if(!cfg_file)
+            std::cout << "[Script-mode] Config file cannot be read" << std::endl;
+
+        // OT writes values of mu in config file => read it and copy in SamplingForTest with specific syntax
+        for(int i=1; i<=mu_size; i++)
+            {
+                // convert i into string
+                std::ostringstream oss;
+                oss << i;
+                std::string is = oss.str();
+
+                // Read cfg file, collect line with current mu_i
+                std::string cfg_line_mu, tmp_content;
+                std::ifstream cfg_file( option(_name="config-file").template as<std::string>() );
+                while(cfg_file)
+                    {
+                        std::getline(cfg_file, tmp_content);
+                        if(tmp_content.compare(0,2+is.size(),"mu"+is) == 0)
+                            cfg_line_mu += tmp_content;
+                    }
+
+                //Regular expression : corresponds to one set in xml file (mu<i>=<value>)
+                std::string expr_s = "mu"+is+"=[[:space:]]*([0-9]+(.?)[0-9]*(e(\\+|-)[0-9]+)?)[[:space:]]*";
+                boost::regex expression( expr_s );
+
+                //Match mu<i>=<value> in cfg file and copy to SamplingForTest
+                boost::smatch what;
+                auto is_match = boost::regex_match(cfg_line_mu, what, expression);
+                //std::cout << "is match ?" << is_match << std::endl;
+                if(is_match)
+                    {
+                        // what[0] is the complete string mu<i>=<value>
+                        // what[1] is the submatch <value>
+                        //std::cout << "what 1 = " << what[1] << std::endl;
+                        if( i!=mu_size )
+                            input << what[1] << " , ";
+                        else
+                            input << what[1] << " ]";
+                    }
+            }
     }
 
 private:
