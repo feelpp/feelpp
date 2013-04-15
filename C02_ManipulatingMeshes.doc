@@ -3,7 +3,9 @@
 namespace Feel
 {
 /*! \page ManipulatingMeshes Manipulating Meshes
-\ingroup Tutorial
+
+
+\tableofcontents
 
 \li \b Previous: \ref CreatingApplications
 \li \b Next: \ref ManipulatingFunctionSpaces
