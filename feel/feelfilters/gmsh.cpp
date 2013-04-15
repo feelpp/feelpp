@@ -214,7 +214,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
         // Split the variable string to get the `key=value` token list.
         boost::char_separator<char> separator1( ":" );
         boost::tokenizer< boost::char_separator<char> > tok(
-                    option(_name="gmsh.geo-variables-list").template as<std::string>(),
+                    option(_name="gmsh.geo-variables-list").as<std::string>(),
                     separator1 );
        
         // Split each token to get the key and the value and put them into a vector.
