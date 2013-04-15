@@ -791,7 +791,8 @@ BOOST_PARAMETER_FUNCTION(
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );
 
-    Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
+    if (worldcomm.localSize()>1)
+        Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
 
     double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate().norm();
 
@@ -845,14 +846,14 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( straighten,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
-      ( refine,          *( boost::is_integral<mpl::_> ), 0 )
+      ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
-      ( physical_are_elementary_regions,		   *,false )
+      ( physical_are_elementary_regions,		   *, option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
       ( worldcomm,       *, Environment::worldComm() )
-      ( rebuild_partitions,	(bool), false )
+      ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename,	*, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_DEFAULT )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
         )
     )
@@ -872,22 +873,22 @@ BOOST_PARAMETER_FUNCTION(
         CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
     }
 
-    if ( rebuild_partitions )
-    {
-        Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
-        gmsh.setNumberOfPartitions( partitions );
-        gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
-        gmsh.setMshFileByPartition( partition_file );
-        gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
-        // new mesh to load
-        filename_with_path=rebuild_partitions_filename;
-    }
+    Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
+    gmsh.setRefinementLevels( refine );
+    gmsh.setNumberOfPartitions( partitions );
+    gmsh.setPartitioner( (GMSH_PARTITIONER)partitioner );
+    gmsh.setMshFileByPartition( partition_file );
+
 
     // refinement if option is enabled to a value greater or equal to 1
     if ( refine )
     {
-        Gmsh gmsh( _mesh_type::nDim,_mesh_type::nOrder, worldcomm );
         filename_with_path = gmsh.refine( filename_with_path, refine );
+    }
+    else if ( rebuild_partitions )
+    {
+        gmsh.rebuildPartitionMsh(filename_with_path,rebuild_partitions_filename);
+        filename_with_path=rebuild_partitions_filename;
     }
 
     ImporterGmsh<_mesh_type> import( filename_with_path, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
@@ -999,7 +1000,7 @@ BOOST_PARAMETER_FUNCTION(
       ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
       ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
       ( straighten,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
-      ( refine,          *( boost::is_integral<mpl::_> ), 0 )
+      ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
@@ -1029,15 +1030,12 @@ BOOST_PARAMETER_FUNCTION(
 
         std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
-#if !defined(FEELPP_HAS_GMSH_LIBRARY)
         // refinement if option is enabled to a value greater or equal to 1
         if ( refine )
         {
             VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
-            Gmsh gmsh;
-            fname = gmsh.refine( fname, refine, parametricnodes );
+            fname = desc->refine( fname, refine, parametricnodes );
         }
-#endif
 
         ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
@@ -1393,7 +1391,7 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.filename").template as<std::string>() )
       ( straighten,          (bool), option(_name="gmsh.straighten").template as<bool>() )
-      ( refine,          *( boost::is_integral<mpl::_> ), 0 )
+      ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( physical_are_elementary_regions,		   (bool), option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
       ( worldcomm,       (WorldComm), Environment::worldComm() )
@@ -1410,7 +1408,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
     fs::path mesh_name=filename;
-    LOG_IF( WARNING, mesh_name.extension() == ".geo" || mesh_name.extension() == ".msh" )
+    LOG_IF( WARNING, mesh_name.extension() != ".geo" && mesh_name.extension() != ".msh" )
         << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
 
     if ( mesh_name.extension() == ".geo" )

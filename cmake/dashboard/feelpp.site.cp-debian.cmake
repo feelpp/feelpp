@@ -1,6 +1,7 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
+
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
-#       Date: 2012-02-03
+#       Date: 2012-05-03
 #
 #  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
 #
@@ -20,21 +21,16 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set(OS_VERSION debian-wheezy)
+set(ARCH x86_64)
+set(WORK_DIR /home/vhuber)
+set(MAKE_ARGS "-j4")
+set(PARALLEL "4")
+set(FEELPP_WORK_DIR ${WORK_DIR})
+set(FEELPP_ENABLE_CRB_ALL ON)
+set(FEELPP_ENABLE_BENCHMARKS ON)
+set(FEELPP_MAKE_ARGS ${MAKE_ARGS})
+set(CTEST_BUILD_FLAGS -j${PARALLEL})
+set(CTEST_PARALLEL_LEVEL ${PARALLEL})
 
-add_custom_target(
-  loadmesh
-  ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/gmsh/feel.geo
-                                   ${FEELPP_BUILD_DIR}/doc/manual/tutorial
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-)
 
-foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacian myadvection)
-
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${app}.cfg )
-    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc CFG ${app}.cfg)
-  else()
-    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
-  endif()
-endforeach()
-feelpp_add_application( doc_mystokes SRCS mystokes.cpp LABEL doc CFG mystokes.cfg GEO mystokes.geo)
