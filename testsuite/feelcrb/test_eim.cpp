@@ -462,5 +462,5 @@ BOOST_AUTO_TEST_CASE( test_eim2 )
     BOOST_TEST_MESSAGE( "test_eim2 done" );
 
 }
-#endif
+
 BOOST_AUTO_TEST_SUITE_END()
