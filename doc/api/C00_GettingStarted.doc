@@ -1,7 +1,8 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
-/*! \page ProgEnv Getting started
-  \ingroup Tutorial
+/*! \page GettingStarted Getting started
+
+\tableofcontents
 
 \li \b Next: \ref CreatingApplications
 
@@ -207,3 +208,5 @@ Here is the list of libraries
 
 */
 }
+
+

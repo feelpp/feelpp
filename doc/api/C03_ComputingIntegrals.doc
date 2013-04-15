@@ -3,7 +3,9 @@ namespace Feel
 {
 /*! \page ComputingIntegrals Computing integrals
 
-\ingroup Tutorial
+
+\talbeofcontents
+
 \li \b Previous: \ref ManipulatingMeshes
 \li \b Next: \ref ManipulatingFunctionSpaces
 
