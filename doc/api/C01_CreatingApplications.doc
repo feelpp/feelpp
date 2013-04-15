@@ -1,8 +1,9 @@
 namespace Feel
 {
 /*! \page CreatingApplications Creating applications
-    \ingroup Tutorial
 
+
+\tableofcontents
 
 \li \b Previous: \ref GettingStarted
 \li \b Next: \ref ManipulatingMeshes
