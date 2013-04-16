@@ -160,10 +160,13 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( geomap )
     BOOST_PARAMETER_NAME( straighten )
     BOOST_PARAMETER_NAME( expr )
+    BOOST_PARAMETER_NAME( grad_expr)
     BOOST_PARAMETER_NAME( pset )
     BOOST_PARAMETER_NAME( quad )
     BOOST_PARAMETER_NAME( quad1 )
     BOOST_PARAMETER_NAME( arg )
+
+    BOOST_PARAMETER_NAME( quadptloc )
 
 
 // orders

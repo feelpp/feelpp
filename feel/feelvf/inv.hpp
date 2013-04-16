@@ -134,7 +134,7 @@ public:
 
         typedef typename tensor_expr_type::shape expr_shape;
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>,mpl::int_<expr_shape::N> >::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, ( mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N> ) );
-        typedef Shape<expr_shape::nDim,Scalar,false,false> shape;
+        typedef Shape<expr_shape::nDim,Tensor2,false,false> shape;
 
 
         typedef Eigen::Matrix<value_type,shape::M,shape::N> matrix_type;
@@ -155,7 +155,7 @@ public:
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_tensor_expr( expr.expression(), geom, fev, feu ),
-            M_inv( geom->nPoints() )
+            M_inv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
 
@@ -163,14 +163,14 @@ public:
                 Geo_t const& geom, Basis_i_t const& fev )
             :
             M_tensor_expr( expr.expression(), geom, fev ),
-            M_inv( geom->nPoints() )
+            M_inv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
             M_tensor_expr( expr.expression(), geom ),
-            M_inv( geom->nPoints() )
+            M_inv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
         {
         }
         template<typename IM>
@@ -180,11 +180,11 @@ public:
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
-            M_tensor_expr.update( geom );
+            update( geom );
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
         {
-            M_tensor_expr.update( geom );
+            update( geom );
         }
         void update( Geo_t const& geom )
         {
