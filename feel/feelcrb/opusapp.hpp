@@ -37,6 +37,7 @@
 #include <feel/feelcrb/crbmodel.hpp>
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
+#include <boost/regex.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -311,6 +312,9 @@ public:
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
 
             int n_eval_computational_time = option(_name="eim.computational-time-neval").template as<int>();
+            bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+            bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
+
             if( n_eval_computational_time > 0 )
             {
                 auto eim_sc_vector = model->scalarContinuousEim();
@@ -326,6 +330,13 @@ public:
                 for(int i=0; i<size2; i++)
                     eim_sd_vector[i]->computationalTimeStatistics(appname);
 
+                run_sampling_size = 0;
+            }
+            n_eval_computational_time = option(_name="crb.computational-time-neval").template as<int>();
+            if( n_eval_computational_time > 0 )
+            {
+                std::string appname = this->about().appName();
+                crb->computationalTimeStatistics( appname );
                 run_sampling_size = 0;
             }
 
@@ -394,22 +405,38 @@ public:
             //Sampling->setElements( V );
             */
 
+            // Script write current mu in cfg => need to write in SamplingForTest
+            if( option(_name="crb.script-mode").template as<bool>() )
+                {
+                    // Sampling will be the parameter given by OT
+                    if( proc_number == Environment::worldComm().masterRank() )
+                            buildSamplingFromCfg();
+
+                    Environment::worldComm().barrier();
+
+                    compute_fem = false;
+                    compute_stat = false;
+                }
+
             /**
              * note that in the file SamplingForTest we expect :
              * mu_0= [ value0 , value1 , ... ]
              * mu_1= [ value0 , value1 , ... ]
              **/
-            if( option(_name="crb.use-predefined-test-sampling").template as<bool>() )
+            if( option(_name="crb.use-predefined-test-sampling").template as<bool>() || option(_name="crb.script-mode").template as<bool>() )
             {
                 std::string file_name = ( boost::format("SamplingForTest") ).str();
                 std::ifstream file ( file_name );
-                if( file  )
+                if( file )
                 {
                     Sampling->clear();
                     Sampling->readFromFile( file_name ) ;
                 }
                 else
+                {
+                    VLOG(2) << "proc number : " << proc_number << "can't find file \n";
                     throw std::logic_error( "[OpusApp] file SamplingForTest was not found" );
+                }
 
             }
 
@@ -461,6 +488,7 @@ public:
             {
                 int size = mu.size();
 
+                element_type u_crb; // expansion of reduced solution
 #if !NDEBUG
                 if( proc_number == Environment::worldComm().masterRank() )
                 {
@@ -570,9 +598,9 @@ public:
                                 auto WN = crb->wn();
                                 //auto u_crb = crb->expansion( mu , N );
                                 auto uN_0 = o.template get<4>();
-                                element_type u_crb;
+
                                 //if( model->isSteady()) // Re-use uN given by lb in crb->run
-                                    u_crb = crb->expansion( uN_0 , N , WN ); // Re-use uN given by lb in crb->run
+                                u_crb = crb->expansion( uN_0 , N , WN ); // Re-use uN given by lb in crb->run
                                 //else
                                 //    u_crb = crb->expansion( mu , N , WN );
 
@@ -590,7 +618,7 @@ public:
                                 double output_fem = -1;
                                 double time_fem = -1;
 
-                                bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+                                // bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
                                 element_type u_fem;
 
                                 if ( compute_fem )
@@ -701,17 +729,18 @@ public:
                                     {
                                         std::vector<double> l2error;
                                         auto eim = eim_sc_vector[i];
-                                        l2error = eim->studyConvergence( mu );
+                                        //take two parameters : the mu and the expansion of the reduced solution already computed
+                                        l2error = eim->studyConvergence( mu , u_crb );
 
                                         for(int j=0; j<l2error.size(); j++)
                                                 mapConvEIM[eim->name()][j][curpar-1] = l2error[j];
                                     }
- 
+
                                     for(int i=0; i<eim_sd_vector.size(); i++)
                                     {
                                         std::vector<double> l2error;
                                         auto eim = eim_sd_vector[i];
-                                        l2error = eim->studyConvergence( mu );
+                                        l2error = eim->studyConvergence( mu , u_crb );
 
                                        for(int j=0; j<l2error.size(); j++)
                                                 mapConvEIM[eim->name()][j][curpar-1] = l2error[j];
@@ -725,10 +754,10 @@ public:
                                     for( int N = 1; N < crb->dimension(); N++ )
                                     {
                                         LOG(INFO) << "N=" << N << "...\n";
-                                        auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
-                                        auto u_crb = crb->expansion( mu , N );
+                                        //auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+                                        auto u_crbN = crb->expansion( mu , N );
                                         auto u_error = model->functionSpace()->element();
-                                        u_error = u_fem - u_crb;
+                                        u_error = u_fem - u_crbN;
                                         double rel_err = std::abs( output_fem-o.template get<0>() ) /output_fem;
                                         double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
@@ -804,8 +833,8 @@ public:
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
-            bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
-            bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
+            //bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+            // bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
             if( n_eval_computational_time )
             {
                 //if we want stat on computational time on EIM online step
@@ -1045,6 +1074,64 @@ private:
         double l22 = integrate( elements(mesh), (vf::idv(u_femT))*(vf::idv(u_femT)) ).evaluate()(0,0);
         double semih12 = integrate( elements(mesh), (vf::gradv(u_femT))*trans(vf::gradv(u_femT))).evaluate()(0,0);
         return math::sqrt( l22+semih12 );
+    }
+
+    // Script write current mu in cfg => need to write it in SamplingForTest
+    void buildSamplingFromCfg()
+    {
+        // Size of mu
+        int mu_size = model->parameterSpace()->dimension();
+
+        // Clear SamplingForTest is exists, and open a new one
+        fs::path input_file ("SamplingForTest");
+        if( fs::exists(input_file) )
+            std::remove( "SamplingForTest" );
+
+        std::ofstream input( "SamplingForTest" );
+        input << "mu= [ ";
+
+        // Check if cfg file is readable
+        std::ifstream cfg_file( option(_name="config-file").template as<std::string>() );
+        if(!cfg_file)
+            std::cout << "[Script-mode] Config file cannot be read" << std::endl;
+
+        // OT writes values of mu in config file => read it and copy in SamplingForTest with specific syntax
+        for(int i=1; i<=mu_size; i++)
+            {
+                // convert i into string
+                std::ostringstream oss;
+                oss << i;
+                std::string is = oss.str();
+
+                // Read cfg file, collect line with current mu_i
+                std::string cfg_line_mu, tmp_content;
+                std::ifstream cfg_file( option(_name="config-file").template as<std::string>() );
+                while(cfg_file)
+                    {
+                        std::getline(cfg_file, tmp_content);
+                        if(tmp_content.compare(0,2+is.size(),"mu"+is) == 0)
+                            cfg_line_mu += tmp_content;
+                    }
+
+                //Regular expression : corresponds to one set in xml file (mu<i>=<value>)
+                std::string expr_s = "mu"+is+"=[[:space:]]*([0-9]+(.?)[0-9]*(e(\\+|-)[0-9]+)?)[[:space:]]*";
+                boost::regex expression( expr_s );
+
+                //Match mu<i>=<value> in cfg file and copy to SamplingForTest
+                boost::smatch what;
+                auto is_match = boost::regex_match(cfg_line_mu, what, expression);
+                //std::cout << "is match ?" << is_match << std::endl;
+                if(is_match)
+                    {
+                        // what[0] is the complete string mu<i>=<value>
+                        // what[1] is the submatch <value>
+                        //std::cout << "what 1 = " << what[1] << std::endl;
+                        if( i!=mu_size )
+                            input << what[1] << " , ";
+                        else
+                            input << what[1] << " ]";
+                    }
+            }
     }
 
 private:
