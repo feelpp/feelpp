@@ -855,13 +855,13 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         if( use_expression )
         {
             exprl2norm =M_model->expressionL2Norm( solution , mu );
-            auto eim_approximation = this->operator()(mu , N);
+            auto eim_approximation = this->operator()(mu , solution, N);
             diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
         }
         else
         {
             exprl2norm =M_model->projExpressionL2Norm( solution , mu );
-            auto eim_approximation = this->operator()(mu , N);
+            auto eim_approximation = this->operator()(mu , solution, N);
             diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
         }
 
