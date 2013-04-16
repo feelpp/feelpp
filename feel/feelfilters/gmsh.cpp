@@ -191,21 +191,25 @@ Gmsh::getDescriptionFromFile( std::string const& file ) const
     __geoin.close();
     return  __geostream.str();
 }
+
 bool
-Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool const modifGeo ) const
+Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool const modifGeo ) const
 {
     std::string _geo;
 
+    _geo = __geo;
+
     if ( modifGeo )
     {
+        // Get the 'h' for hsize and modify its value in the geo file.
         boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
 
-        LOG(INFO) << __name << ".geo  hsize was  " << regex_search(__geo, regex, boost::match_default)
+        LOG(INFO) << __name << ".geo  hsize was  " << regex_search(_geo, regex, boost::match_default)
                   << " and is now "  << hstr.str();
 
-        _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all );
+        _geo = boost::regex_replace( _geo, regex, hstr.str(), boost::match_default | boost::format_all );
 
         // Split the variable string to get the `key=value` token list.
         boost::char_separator<char> separator1( ":" );
@@ -241,12 +245,12 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
 
     }
 
-    // generate geo
     std::ostringstream __geoname;
     __geoname << __name << ".geo";
     fs::path __path( __geoname.str() );
     bool geochanged = false;
 
+    // Create a new .geo.
     if ( !fs::exists( __path ) )
     {
         LOG(INFO) << "Creating " << __geoname.str();
@@ -256,6 +260,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
         geochanged = true;
     }
 
+    // Overwrite .geo if it exists and differs.
     else
     {
         std::string s = this->getDescriptionFromFile( __geoname.str() );
@@ -276,6 +281,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
 
     return geochanged;
 }
+
 std::string
 Gmsh::generate( std::string const& name ) const
 {
@@ -291,7 +297,7 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
         LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
-        bool geochanged ( generateGeo( __name,__geo,modifGeo ) );
+        bool geochanged = generateGeo( __name,__geo,modifGeo );
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
 
@@ -494,9 +500,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     GModel::current()->setFileName( _name );
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
-    for( int l = 0; l < M_refine_levels-1; ++l )
+    LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
+    for( int l = 0; l < M_refine_levels; ++l )
     {
-        LOG(INFO) << "Mesh refinement level : " << l << "\n";
         GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
     }
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );

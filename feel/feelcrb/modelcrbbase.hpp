@@ -36,6 +36,7 @@ namespace Feel
 {
 
 
+
 class ParameterDefinitionBase
 {
 public :
@@ -67,8 +68,10 @@ public :
 
 };
 
+
+
 template <typename ParameterDefinition = ParameterDefinitionBase, typename EimDefinition = EimDefinitionBase<ParameterDefinition> >
-class ModelCrbBase
+class ModelCrbBase : public ModelCrbBaseBase
 {
 
 public :
@@ -81,6 +84,22 @@ public :
     typedef boost::shared_ptr<fund_type> fund_ptrtype;
     typedef std::vector<fund_ptrtype> funsd_type;
 
+    ModelCrbBase()
+        :
+        M_is_initialized( false )
+    {
+    }
+
+    void setInitialized( const bool & b )
+    {
+        M_is_initialized = b ;
+    }
+
+    bool isInitialized()
+    {
+        return M_is_initialized;
+    }
+
     virtual funs_type scalarContinuousEim () const
     {
         return M_funs;
@@ -90,6 +109,8 @@ public :
     {
         return M_funs_d;
     }
+
+    virtual void initModel() = 0;
 
     void computeStatistics( Eigen::VectorXd vector , std::string name )
     {
@@ -127,9 +148,8 @@ protected :
 
     funs_type M_funs;
     funsd_type M_funs_d;
-
+    bool M_is_initialized;
 };
 
 }//Feel
 #endif /* __Model_H */
-

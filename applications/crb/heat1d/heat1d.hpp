@@ -229,7 +229,7 @@ public:
     virtual ~Heat1D() {}
 
     //! initialisation of the model
-    void init();
+    void initModel();
     //@}
 
     /** @name Operator overloads
@@ -539,7 +539,6 @@ Heat1D::Heat1D()
     exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 
 
@@ -552,10 +551,9 @@ Heat1D::Heat1D( po::variables_map const& vm )
     exporter( Exporter<mesh_type>::New( vm, "heat1d" ) ),
     M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 void
-Heat1D::init()
+Heat1D::initModel()
 {
     /*
      * First we create the mesh
@@ -769,7 +767,7 @@ Heat1D::run( const double * X, unsigned long N, double * Y, unsigned long P )
     if ( do_init )
     {
         meshSize = X[4];
-        this->init();
+        this->initModel();
         do_init = false;
     }
 
