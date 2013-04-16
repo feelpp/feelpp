@@ -201,14 +201,44 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool cons
         boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
+
         LOG(INFO) << __name << ".geo  hsize was  " << regex_search(__geo, regex, boost::match_default)
                   << " and is now "  << hstr.str();
-        _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all );
-    }
 
-    else
-    {
-        _geo = __geo;
+        _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all );
+
+        // Split the variable string to get the `key=value` token list.
+        boost::char_separator<char> separator1( ":" );
+        boost::tokenizer< boost::char_separator<char> > tok(
+            option(_name="gmsh.geo-variables-list").as<std::string>(),
+            separator1 );
+
+        // Split each token to get the key and the value and put them into a vector.
+        boost::char_separator<char> separator2( "=" );
+        for( auto iSep = tok.begin(); iSep != tok.end(); ++iSep )
+        {
+            boost::tokenizer< boost::char_separator<char> > tok2( *iSep, separator2 );
+
+            assert( distance( tok2.begin(), tok2.end() ) == 2 ); //! TODO modify message !
+
+            std::vector<std::string> keyvalVec;
+            for( auto iSep2 = tok2.begin(); iSep2 != tok2.end(); ++iSep2 )
+                keyvalVec.push_back(*iSep2);
+
+            // Get the `key` and modify its `value` in the geo file.
+            boost::regex _regex( "(?:(" + keyvalVec.at(0) + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
+            std::ostringstream _ostr;
+            _ostr << "(?1$1) = " << keyvalVec.at(1) << ";";
+
+            LOG(INFO) << "Modify " << __name << ".geo : "
+                      << "Key " << keyvalVec.at(0)
+                      << ( ( regex_search( __geo, _regex, boost::match_default) )?
+                           ( " found ! "+ keyvalVec.at(0) + "=" + keyvalVec.at(1) + " now." ) : " not found ! " )
+                      << std::endl;
+
+            _geo = boost::regex_replace( _geo, _regex, _ostr.str(), boost::match_default | boost::format_all );
+        }
+
     }
 
     // generate geo
@@ -311,34 +341,33 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
-
-	#if BOOST_FILESYSTEM_VERSION == 3
+#if BOOST_FILESYSTEM_VERSION == 3
 		filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
 		boost::system::error_code ec;
 		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
-	#elif BOOST_FILESYSTEM_VERSION == 2
+#elif BOOST_FILESYSTEM_VERSION == 2
 		filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
 		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
-	#endif
+#endif
 
-	#if !defined(FEELPP_HAS_GMSH_LIBRARY)
-		    // generate mesh
-		    std::ostringstream __str;
+#if !defined(FEELPP_HAS_GMSH_LIBRARY)
+        // generate mesh
+        std::ostringstream __str;
 
-		    if ( parametric )
-		        __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
-		              << " -parametric -refine " << filename.str();
+        if ( parametric )
+            __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+                  << " -parametric -refine " << filename.str();
 
-		    else
-		        __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
-		              << " -refine " << filename.str();
+        else
+            __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+                  << " -refine " << filename.str();
 
 		for ( int l = 0; l < level; ++l )
 		{
 		    auto err = ::system( __str.str().c_str() );
 		}
 
-	#else
+#else
 		//// Initializing
 		//GmshInitialize();
 		GModel* newGmshModel = new GModel();
@@ -377,7 +406,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		newGmshModel->destroy();
 		delete newGmshModel;
 		//GmshFinalize();
-	#endif
+#endif
 
 	}
 
@@ -388,8 +417,6 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
         LOG(INFO) << "[Gmsh::refine] broadcast mesh filename : " << _name << " to all other processes\n";
     }
 
-	// For everybody except the master : wait til the broadcasting has been done
-	MPI_Barrier(MPI_COMM_WORLD);
     return _name;
 
 #else

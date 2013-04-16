@@ -1200,12 +1200,12 @@ BOOST_PARAMETER_FUNCTION(
                              }
 
                              catch ( const fs::filesystem_error& e )
-                                 {
-                                     std::cerr << "Error: " << e.what() << std::endl;
-                                 }
+                             {
+                                 std::cerr << "Error: " << e.what() << std::endl;
+                             }
                          } );
     }
-   Environment::worldComm().barrier();
+    Environment::worldComm().barrier();
 
 
     return gmsh_ptr;
