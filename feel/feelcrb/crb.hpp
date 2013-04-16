@@ -1655,6 +1655,7 @@ CRB<TruthModelType>::offline()
 
     InitialGuessV = M_model->computeInitialGuessVAffineDecomposition();
 
+
     if( M_use_newton )
         boost::tie( Mqm , Jqm, Rqm ) = M_model->computeAffineDecomposition();
     else
@@ -2258,14 +2259,7 @@ CRB<TruthModelType>::offline()
             {
                 M_InitialGuessV_pr[q][m].conservativeResize( M_N );
                 for ( size_type j = 0; j < M_N; ++j )
-                {
-                    InitialGuessV[q][m]->close();
-                    //element_ptrtype elt( new element_type( M_model->functionSpace() ) );
-                    //*elt = *InitialGuessV[q][m];
                     M_InitialGuessV_pr[q][m]( j ) = inner_product( *InitialGuessV[q][m] , M_WN[j] );
-                    //M_InitialGuessV_pr[q][m]( j ) = inner_product( *elt , M_WN[j] );
-                    //std::cout<<"M_InitialGuessV_pr["<<q<<"]["<<m<<"]("<< j <<") = "<<M_InitialGuessV_pr[q][m]( j )<<" - InitialGuessV["<<q<<"]["<<m<<"] : "<<InitialGuessV[q][m]->l2Norm()<<" - M_WN["<<j<<"]"<<M_WN[j].l2Norm()<<std::endl;
-                }
             }
         }
 
