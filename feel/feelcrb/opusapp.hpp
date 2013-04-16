@@ -312,6 +312,9 @@ public:
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
 
             int n_eval_computational_time = option(_name="eim.computational-time-neval").template as<int>();
+            bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+            bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
+
             if( n_eval_computational_time > 0 )
             {
                 auto eim_sc_vector = model->scalarContinuousEim();
@@ -406,7 +409,13 @@ public:
             if( option(_name="crb.script-mode").template as<bool>() )
                 {
                     // Sampling will be the parameter given by OT
-                    buildSamplingFromCfg();
+                    if( proc_number == Environment::worldComm().masterRank() )
+                            buildSamplingFromCfg();
+
+                    Environment::worldComm().barrier();
+
+                    compute_fem = false;
+                    compute_stat = false;
                 }
 
             /**
@@ -418,13 +427,16 @@ public:
             {
                 std::string file_name = ( boost::format("SamplingForTest") ).str();
                 std::ifstream file ( file_name );
-                if( file  )
+                if( file )
                 {
                     Sampling->clear();
                     Sampling->readFromFile( file_name ) ;
                 }
                 else
+                {
+                    VLOG(2) << "proc number : " << proc_number << "can't find file \n";
                     throw std::logic_error( "[OpusApp] file SamplingForTest was not found" );
+                }
 
             }
 
@@ -606,7 +618,7 @@ public:
                                 double output_fem = -1;
                                 double time_fem = -1;
 
-                                bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+                                // bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
                                 element_type u_fem;
 
                                 if ( compute_fem )
@@ -821,8 +833,8 @@ public:
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
-            bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
-            bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
+            //bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
+            // bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
             if( n_eval_computational_time )
             {
                 //if we want stat on computational time on EIM online step
@@ -1067,17 +1079,18 @@ private:
     // Script write current mu in cfg => need to write it in SamplingForTest
     void buildSamplingFromCfg()
     {
-        auto mu_tmp = model->parameterSpace()->element();
-        int mu_size = mu_tmp.size();
+        // Size of mu
+        int mu_size = model->parameterSpace()->dimension();
 
         // Clear SamplingForTest is exists, and open a new one
         fs::path input_file ("SamplingForTest");
         if( fs::exists(input_file) )
             std::remove( "SamplingForTest" );
+
         std::ofstream input( "SamplingForTest" );
         input << "mu= [ ";
 
-        // Check cfg file is readable
+        // Check if cfg file is readable
         std::ifstream cfg_file( option(_name="config-file").template as<std::string>() );
         if(!cfg_file)
             std::cout << "[Script-mode] Config file cannot be read" << std::endl;

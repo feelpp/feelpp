@@ -7,6 +7,11 @@ Feel++ is a C++ library for arbitrary order Galerkin methods (e.g. finite and sp
 
 Some basic installation procedure are available in the INSTALL.org file.
 
+## Documentation
+
+ - [Feel++ PDF Manual](http://feelpp.googlecode.com/files/feel-manual.pdf)
+ - [Feel++ Online Reference Manual](http://feelpp.github.io/feelpp/)
+
 ## Features
  - 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
  - continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
@@ -18,10 +23,6 @@ Some basic installation procedure are available in the INSTALL.org file.
  - supports [Gmsh](http://www.geuz.org/gmsh) for post-processing (including on high order geometries)
  - supports [Paraview](http://www.paraview.org) for post-processing
 
-## Documentation
-
- - [Feel++ PDF Manual](http://feelpp.googlecode.com/files/feel-manual.pdf)
- - [Feel++ Online Reference Manual](http://docs.feelpp.googlecode.com/git/html/index.html)
 
 ## Examples
 
