@@ -1178,7 +1178,9 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , element_
     //assemble the initial guess for the given mu
     u = M_model->assembleInitialGuess( mu ) ;
     auto uold = M_model->functionSpace()->element();
-    auto un = *u;
+    //auto un = *u; //doesn't compile with gcc4.6 (but ok with clang3.1)
+    auto un = M_model->functionSpace()->element();
+    un = *u;
 
     do
     {
@@ -3642,33 +3644,16 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             uNold[0]( n ) = M_coeff_pr_ini_online[n];
     }
 
+
+    int max_fixedpoint_iterations  = option("crb.max-fixedpoint-iterations").template as<int>();
+    double increment_fixedpoint_tol  = option("crb.increment-fixedpoint-tol").template as<double>();
+    double output_fixedpoint_tol  = option("crb.output-fixedpoint-tol").template as<double>();
+    bool fixedpoint_verbose  = option("crb.fixedpoint-verbose").template as<bool>();
+    double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
     for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     {
-        //solution (from model with no affine decompostion)
-        //auto ufem_no_ad = M_model->solve( mu );
-        //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( ufem , mu ,time );
-#if 0
-        beta_initial_guess = M_model->computeBetaInitialGuess( mu );
 
-        // compute initial guess for fixed point
-        A.setZero( N,N );//A is used as mass matrix here
-
-        for ( size_type q = 0; q < M_model->Qm(); ++q )
-        {
-            for(int m=0; m<M_model->mMaxM(q); m++)
-                //A += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N );
-                A += M_Mqm_pr[q][m].block( 0,0,N,N );
-        }
-        F.setZero( N );
-        for ( size_type q = 0; q < M_model->QInitialGuess(); ++q )
-        {
-            for(int m=0; m<M_model->mMaxInitialGuess(q); m++)
-                F += beta_initial_guess[q][m]*M_InitialGuessV_pr[q][m].head( N );
-        }
-        uN[time_index] = A.lu().solve( F );
-#else
         computeProjectionInitialGuess( mu , N , uN[time_index] );
-#endif
 
         //vectorN_type error;
         //const element_type expansion_uN = this->expansion( uN[time_index] , N , M_WN);
@@ -3694,15 +3679,10 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         }
         old_output = L.dot( uN[time_index] );
 #endif
-        int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
-        double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
-        double output_fixedpoint_tol  = this->vm()["crb.output-fixedpoint-tol"].template as<double>();
-        bool fixedpoint_verbose  = this->vm()["crb.fixedpoint-verbose"].template as<bool>();
-        double fixedpoint_critical_value  = this->vm()["crb.fixedpoint-critical-value"].template as<double>();
+
         do
         {
-            //auto ufem_no_ad = M_model->solve( mu );
-            //boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( ufem_no_ad , mu ,time );
+
             boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_WN ), mu ,time );
 
             A.setZero( N,N );
