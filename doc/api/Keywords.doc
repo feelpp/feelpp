@@ -15,7 +15,7 @@ In all following tables we use the notations :<br>
 \f$f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}\f$  with \f$n=1,2,3\f$, \f$m=1,2,3\f$, \f$p=1,2,3\f$<br>
 \f$\Omega^e\f$ current mesh element
 
-\section Keywords_Array Points, Vectors and Matrix
+\section Keywords_Array Points and  Vectors
 
 Current Point :
 <table class="manual">
@@ -44,11 +44,43 @@ Normal at Current Point :
 <tr><td>\code{.cpp} Nz()\endcode</td><td>\f$N_z\f$</td><td>\f$z\f$ coordinate of \f$\overrightarrow{N}\f$<br>(value is 0 in 1D and 2D)</td><td>\f$1 \times 1\f$</td></tr>
 </table>
 
-Vector and Matrix :
+Vectors :
 <table class="manual">
-<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th>Description <th>Dimension</th></tr>
-<tr><td>\code{.cpp} vec<N>(v_1,v_2,...,v_N)\endcode</td><td>\f$\begin{pmatrix} v_1\\v_2\\ \vdots \\v_N \end{pmatrix}\f$</td><td>Column Vector with \f$N\f$ rows<br>entries being expressions</td><td>\f$N \times 1\f$</td></tr>
-<tr><td>\code{.cpp} mat<M,N>(m_11,m_12,...,m_MN)\endcode</td><td>\f$\begin{pmatrix} m_{11} & m_{12} & ...\\ m_{21} & m_{22} & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$M\times N\f$ Matrix<br> entries beeing expressions </td><td>\f$M \times N\f$</td></tr>
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} vec<n>(v_1,v_2,...,v_n)\endcode</td><td>\f$\begin{pmatrix} v_1\\v_2\\ \vdots \\v_n \end{pmatrix}\f$</td><td>Column Vector with \f$n\f$ rows<br>entries being expressions</td><td>\f$n \times 1\f$</td></tr>
+</table>
+
+<a href="#" class="top">top</a>
+<hr>
+<br>
+\section Keywords_Matrix Matrix
+\subsection Matrix_Building Building Matrix
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} mat<m,n>(m_11,m_12,...,m_mn)\endcode</td><td>\f$\begin{pmatrix} m_{11} & m_{12} & ...\\ m_{21} & m_{22} & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix<br> entries beeing expressions </td><td>\f$m \times n\f$</td></tr>
+<tr><td>\code{.cpp} ones<m,n>()\endcode</td><td>\f$\begin{pmatrix} 1 & 1 & ...\\ 1 & 1 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix <br>Filled with 1 </td><td>\f$m \times n\f$</td></tr>
+<tr><td>\code{.cpp} zero<m,n>()\endcode</td><td>\f$\begin{pmatrix} 0 & 0 & ...\\ 0 & 0 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix <br>Filled with 0 </td><td>\f$m \times n\f$</td></tr>
+<tr><td>\code{.cpp} constant<m,n>(c)\endcode</td><td>\f$\begin{pmatrix} c & c & ...\\ c & c & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix <br>Filled with a constant c </td><td>\f$m \times n\f$</td></tr>
+<tr><td>\code{.cpp} eye<n>()\endcode</td><td>\f$\begin{pmatrix} 1 & 0 & ...\\ 0 & 1 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>Unit diagonal Matrix <br> of size\f$n\times n\f$ </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\code{.cpp} Id<n>()\endcode</td><td>\f$\begin{pmatrix} 1 & 0 & ...\\ 0 & 1 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>Unit diagonal Matrix <br> of size\f$n\times n\f$ </td><td>\f$n \times n\f$</td></tr>
+</table>
+
+\subsection Matrix_Manipulating Manipulating Matrix
+Let \f$A\f$ a square matrix of size \f$n\f$.
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} inv(A)\endcode</td><td>\f$A^{-1}\f$</td><td>Inverse of matrix \f$A\f$ </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\code{.cpp} det(A)\endcode</td><td>\f$\det (A)\f$</td><td>Determinant of matrix \f$A\f$ </td><td>\f$1 \times 1\f$</td></tr>
+</table>
+
+\subsection Matrix_Jacobian Jacobian Matrix
+You can access to the jacobian matrix, \f$J\f$, of the geometric transformation, usign the keyword :
+\co J() \eco
+There are some tools to manipulate this jacobian.
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th></tr>
+<tr><td>\code{.cpp} detJ()\endcode</td><td>\f$\det(J)\f$</td><td>Determinant of jacobian matrix </td></tr>
+<tr><td>\code{.cpp} invJT()\endcode</td><td>\f$(J^{-1})^T\f$</td><td>Transposed inverse of jacobian matrix </td></tr>
 </table>
 
 
