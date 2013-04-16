@@ -179,6 +179,7 @@ public:
         :
         M_Aqm(),
         M_InitialGuessV(),
+        M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
         M_is_initialized( false ),
@@ -198,6 +199,7 @@ public:
         :
         M_Aqm(),
         M_InitialGuessV(),
+        M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
         M_is_initialized( false ),
@@ -214,6 +216,7 @@ public:
         :
         M_Aqm(),
         M_InitialGuessV(),
+        M_InitialGuessVector(),
         M_Mqm(),
         M_Fqm(),
         M_is_initialized( false ),
@@ -233,6 +236,7 @@ public:
         :
         M_Aqm( o.M_Aqm ),
         M_InitialGuessV( o.M_InitialGuessV ),
+        M_InitialGuessVector( o.M_InitialGuessVector ),
         M_Mqm( o.M_Mqm ),
         M_Fqm( o.M_Fqm ),
         M_is_initialized( o.M_is_initialized ),
@@ -671,6 +675,11 @@ public:
         initial_guess_type initial_guess_v;
         initial_guess_v = M_model->computeInitialGuessAffineDecomposition();
         this->assembleInitialGuessV( initial_guess_v);
+        for(int q=0; q<M_InitialGuessVector.size(); q++)
+        {
+            for(int m=0; m<M_InitialGuessVector[q].size(); m++)
+                *M_InitialGuessV[q][m] = *M_InitialGuessVector[q][m];
+        }
         return M_InitialGuessV;
     }
 
@@ -768,14 +777,14 @@ public:
         return M_Mqm[q][m];
     }
 
-    const vector_ptrtype InitialGuessV( uint16_type q, uint16_type m ) const
+    const vector_ptrtype InitialGuessVector( uint16_type q, uint16_type m ) const
     {
-        return M_InitialGuessV[q][m];
+        return M_InitialGuessVector[q][m];
     }
 
-    vector_ptrtype InitialGuessV( uint16_type q, uint16_type m )
+    vector_ptrtype InitialGuessVector( uint16_type q, uint16_type m )
     {
-        return M_InitialGuessV[q][m];
+        return M_InitialGuessVector[q][m];
     }
 
 
@@ -1189,6 +1198,7 @@ protected:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
 
     mutable std::vector< std::vector<element_ptrtype> > M_InitialGuessV;
+    mutable std::vector< std::vector<vector_ptrtype> > M_InitialGuessVector;
 
     //! affine decomposition terms ( time dependent )
     mutable std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
@@ -1339,7 +1349,7 @@ struct AssembleInitialGuessVInCompositeCase
             int m_max = M_crb_model->mMaxInitialGuess(q);
             for( int m = 0; m < m_max ; m++)
             {
-                auto initial_guess_qm = M_crb_model->InitialGuessV(q,m);
+                auto initial_guess_qm = M_crb_model->InitialGuessVector(q,m);
                 auto view = M_composite_initial_guess[q][m]->template element< T::value >();
                 form1( _test=Xh, _vector=initial_guess_qm ) +=
                     integrate ( _range=elements( mesh ), _expr=trans( Feel::vf::idv( view ) )*Feel::vf::id( v ) );
@@ -1485,12 +1495,17 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
 
     int q_max= this->QInitialGuess();
     M_InitialGuessV.resize( q_max );
+    M_InitialGuessVector.resize( q_max );
     for(int q = 0; q < q_max; q++ )
     {
         int m_max= this->mMaxInitialGuess(q);
         M_InitialGuessV[q].resize( m_max );
+        M_InitialGuessVector[q].resize( m_max );
         for(int m = 0; m < m_max; m++ )
+        {
             M_InitialGuessV[q][m] = Xh->elementPtr();
+            M_InitialGuessVector[q][m] = M_model->newVector();
+        }
     }
 
     index_vector_type index_vector;
@@ -1501,7 +1516,7 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
     {
         int m_max = this->mMaxInitialGuess(q) ;
         for(int m = 0; m < m_max; m++ )
-            M_InitialGuessV[q][m]->close();
+            M_InitialGuessVector[q][m]->close();
     }
 
 }
@@ -1517,16 +1532,19 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
 
     int q_max= this->QInitialGuess();
     M_InitialGuessV.resize( q_max );
+    M_InitialGuessVector.resize( q_max );
     for(int q = 0; q < q_max; q++ )
     {
         int m_max= this->mMaxInitialGuess(q);
         M_InitialGuessV[q].resize( m_max );
+        M_InitialGuessVector[q].resize( m_max );
         for(int m = 0; m < m_max; m++ )
         {
             M_InitialGuessV[q][m] = Xh->elementPtr();
-            form1( _test=Xh, _vector=M_InitialGuessV[q][m]) =
+            M_InitialGuessVector[q][m] = M_model->newVector();
+            form1( _test=Xh, _vector=M_InitialGuessVector[q][m]) =
                 integrate( _range=elements( mesh ), _expr=idv( initial_guess[q][m] )*id( v )  );
-            M_InitialGuessV[q][m]->close();
+            M_InitialGuessVector[q][m]->close();
         }
     }
 }
