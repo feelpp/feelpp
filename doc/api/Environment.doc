@@ -6,7 +6,7 @@ namespace Feel {
 \tableofcontents
 
 \li \b Previous: \ref Keywords
-\li \b Next:
+\li \b Next: \ref Mesh
 
 <hr>
 
@@ -22,7 +22,7 @@ To initialize Feel++ you use the Environment class, the usual interface is as fo
 
 \endcode
 
-
+\section Todo Todo : first section
 
 <a href="#" class="top">top</a>
 <hr>
