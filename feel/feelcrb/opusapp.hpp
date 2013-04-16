@@ -1114,7 +1114,7 @@ private:
                     }
 
                 //Regular expression : corresponds to one set in xml file (mu<i>=<value>)
-                std::string expr_s = "mu"+is+"=[[:space:]]*([0-9]+(.?)[0-9]*(e(\\+|-)[0-9]+)?)[[:space:]]*";
+                std::string expr_s = "mu"+is+"[[:space:]]*=[[:space:]]*([0-9]+(.?)[0-9]*(e(\\+|-)[0-9]+)?)[[:space:]]*";
                 boost::regex expression( expr_s );
 
                 //Match mu<i>=<value> in cfg file and copy to SamplingForTest
