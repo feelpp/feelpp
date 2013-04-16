@@ -613,6 +613,7 @@ public:
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
 
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
+                                        //use affine decomposition
                                         u_fem = model->solveFemUsingOnlineEimPicard( mu );
                                     else
                                         u_fem = model->solve( mu );
@@ -704,7 +705,32 @@ public:
                                 }//end of else (errorType==2)
 
                                 if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
-                                    this->studyEimConvergence( mu , u_crb , curpar );
+                                {
+                                    bool check_name = false;
+                                    std::string how_compute_unknown = option(_name=_o( this->about().appName(),"how-compute-unkown-for-eim" )).template as<std::string>();
+                                    if( how_compute_unknown == "CRB-with-ad")
+                                    {
+                                        LOG( INFO ) << "convergence eim with CRB-with-ad ";
+                                        check_name = true;
+                                        this->studyEimConvergence( mu , u_crb , curpar );
+                                    }
+                                    if( how_compute_unknown == "FEM-with-ad")
+                                    {
+                                        LOG( INFO ) << "convergence eim with FEM-with-ad ";
+                                        check_name = true;
+                                        //fem computed via solveFemUsingOnlineEim use the affine decomposition
+                                        this->studyEimConvergence( mu , u_fem , curpar );
+                                    }
+                                    if( how_compute_unknown == "FEM-without-ad")
+                                    {
+                                        LOG( INFO ) << "convergence eim with FEM-without-ad ";
+                                        check_name = true;
+                                        auto fem_without_ad = model->solve( mu );
+                                        this->studyEimConvergence( mu , fem_without_ad , curpar );
+                                    }
+                                    if( ! check_name )
+                                        throw std::logic_error( "OpusApp error with option how-compute-unknown-for-eim, please use CRB-with-ad, FEM-with-ad or FEM-without-ad" );
+                                }
 
                                 if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
                                 {
