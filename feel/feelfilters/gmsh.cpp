@@ -307,73 +307,91 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 {
 #if FEELPP_HAS_GMSH
     std::ostringstream filename;
+	std::string _name;
 
-#if BOOST_FILESYSTEM_VERSION == 3
-    filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
-    boost::system::error_code ec;
-    fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
-#elif BOOST_FILESYSTEM_VERSION == 2
-    filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
-    fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
-#endif
-
-#if !defined(FEELPP_HAS_GMSH_LIBRARY)
-        // generate mesh
-        std::ostringstream __str;
-
-        if ( parametric )
-            __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
-                  << " -parametric -refine " << filename.str();
-
-        else
-            __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
-                  << " -refine " << filename.str();
-
-    for ( int l = 0; l < level; ++l )
+    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
-        auto err = ::system( __str.str().c_str() );
+
+	#if BOOST_FILESYSTEM_VERSION == 3
+		filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
+		boost::system::error_code ec;
+		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
+	#elif BOOST_FILESYSTEM_VERSION == 2
+		filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
+		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
+	#endif
+
+	#if !defined(FEELPP_HAS_GMSH_LIBRARY)
+		    // generate mesh
+		    std::ostringstream __str;
+
+		    if ( parametric )
+		        __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+		              << " -parametric -refine " << filename.str();
+
+		    else
+		        __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
+		              << " -refine " << filename.str();
+
+		for ( int l = 0; l < level; ++l )
+		{
+		    auto err = ::system( __str.str().c_str() );
+		}
+
+	#else
+		//// Initializing
+		//GmshInitialize();
+		GModel* newGmshModel = new GModel();
+		newGmshModel->readMSH(filename.str());
+
+		CTX::instance()->mesh.order = M_order;
+		CTX::instance()->mesh.secondOrderIncomplete = 0;
+		CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
+
+
+		LOG(INFO) << "[Gmsh::refine] Original mesh : " << filename.str() << "\n";
+		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
+		LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
+		//std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
+		CTX::instance()->partitionOptions.num_partitions =  M_partitions;
+		CTX::instance()->partitionOptions.partitioner =  M_partitioner;
+		CTX::instance()->partitionOptions.mesh_dims[0] = M_partitions;
+		CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
+		CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
+
+		for ( int l = 0; l < level; ++l )
+		{
+		    newGmshModel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+		}
+
+		PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
+		newGmshModel->writeMSH( filename.str() );
+		LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
+		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
+		LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
+
+		_name = filename.str();
+
+		newGmshModel->destroy();
+		delete newGmshModel;
+		//GmshFinalize();
+	#endif
+
+	}
+
+	if ( mpi::environment::initialized() )
+    {
+		_name = filename.str();
+        mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
+        LOG(INFO) << "[Gmsh::refine] broadcast mesh filename : " << _name << " to all other processes\n";
     }
 
-#else
-    //// Initializing
-    //GmshInitialize();
-    GModel* newGmshModel = new GModel();
-    newGmshModel->readMSH(filename.str());
+	// For everybody except the master : wait til the broadcasting has been done
+	MPI_Barrier(MPI_COMM_WORLD);
+    return _name;
 
-    CTX::instance()->mesh.order = M_order;
-    CTX::instance()->mesh.secondOrderIncomplete = 0;
-    CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
-
-
-    LOG(INFO) << "[Gmsh::refine] Original mesh : " << filename.str() << "\n";
-    LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
-    LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
-    LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
-    //std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
-    CTX::instance()->partitionOptions.num_partitions =  M_partitions;
-    CTX::instance()->partitionOptions.partitioner =  M_partitioner;
-    CTX::instance()->partitionOptions.mesh_dims[0] = M_partitions;
-    CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
-    CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
-
-    for ( int l = 0; l < level; ++l )
-    {
-        newGmshModel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
-    }
-
-    PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-    newGmshModel->writeMSH( filename.str() );
-    LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
-    LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
-    LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
-    LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
-
-    newGmshModel->destroy();
-    delete newGmshModel;
-    //GmshFinalize();
-#endif
-
-    return filename.str();
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
 #endif
@@ -482,8 +500,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
-
-        std::string _name = fs::path( nameMshInput ).stem().string();
+		std::string _name = fs::path( nameMshInput ).stem().string();
 
         GModel* newGmshModel=new GModel();
         newGmshModel->readMSH( nameMshInput );
