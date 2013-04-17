@@ -166,6 +166,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( quad1 )
     BOOST_PARAMETER_NAME( arg )
 
+    BOOST_PARAMETER_NAME( quadptloc )
+
 
 // orders
     BOOST_PARAMETER_NAME( order_u )

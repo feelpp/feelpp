@@ -1,7 +1,8 @@
 namespace Feel
 {
 /*! \page SolvingLinearAlgebra Solving Linear Algebra Problems
-\ingroup Tutorial
+
+\tableofcontents
 
 \li \b Previous: \ref WritingVariationalFormulations
 
