@@ -230,10 +230,8 @@ div.groupText {
 }
 
 body {
-    background-color: #CCCCCC;
+    background-color: white;
 	color: black;
-    background-image:url('http://www.clipart-fr.com/data/texture/gris/gris_046.jpg ');
-    background-repeat;
     margin: 0;
 }
 
@@ -1084,12 +1082,11 @@ dl.section dd {
 
 #titlearea
 {
+    background-color:white;
 	padding: 0px;
 	margin: 0px;
 	width: 100%;
 	border-bottom: 1px solid #848484;
-        visibility: hidden;
-	height: 0px;
 }
 
 .image

@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
-/*! \page Mesh Manipulating Meshes
+/*! \page Mesh Meshes
 
 
 \tableofcontents

@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
-/*! \page Environment Initialize Feel++ : Environment
+/*! \page Environment Environment
 
 
 \tableofcontents
@@ -11,22 +11,158 @@ namespace Feel {
 <hr>
 
 
-To initialize Feel++ you use the Environment class, the usual interface is as follows :
-\code
-
+\section Initialize Initialize Feel++
+Environment class is necessary to initialize your application, as seen in \ref FirstApp. Interface is as follow :
+\co
+Environment env( _argc, _argv, _desc, _about );
+\eco
+No one of those parameters are required but it is highly recomanded to use the minimal declaration :
+\co
   Environment env( _argc=argc, _argv=argv,
-                   _desc=feel_options(),
-                   _about=about(_name="mylaplacian",
-                                _author="Feel++ Consortium",
-                                _email="feelpp-devel@feelpp.org"));
+                   _desc=feel_option(),
+                   _about=about(_name="name_of_your_app",
+                                _author="your_name",
+                                _email="your_email_adress") );
+\eco
 
-\endcode
+\li \c _argc and \c argv are the arguments of your main function.
+\li \c _desc is a description of your options.
+\li \c _about is a brief description of your application.
 
-\section Todo Todo : first section
+\section Options Feel++ Options Description
+\subsection Options_Custom Todo: Custom Options
+TODO : This paragraph
+\co
+  inline
+  Feel::po::options_description
+  makeOptions()
+  {
+  ...
+  }
+\eco
+
+
+\subsection Options_Accessors Accessors
+Youc can access to the parameters of your application environment using the following function :
+\co
+  Environment::vm(_name);
+\eco
+\c _name is the name of the parameter as seen is previous paragraph.<br>
+Use template methode to cast the parameter into the appropriate type.<br>
+Examples :<br>
+From "doc/manual/solid/beam.cpp" :
+\co
+  const double E = Environment::vm(_name="E").template as<double>();
+  const double nu = Environment::vm(_name="nu").template as<double>();
+\eco
+From "doc/manual/fd/penalisation.cpp" :
+\co
+  Tfinal =  Environment::vm( _name="test" ).template as<int>()*dt;
+\eco
+
 
 <a href="#" class="top">top</a>
 <hr>
+\section Repository Repository
+\subsection Repository_Accessors Accessors
+There is a list of functions you can use to get information about the Repository Environment.
+<table class="manual">
+<tr><th>Feel++ function</th><th>Return</th></tr>
+<tr><td>\co Environment::rootRepository();\eco</td><td>Repository where the results are stored.<br> Default : <tt>$HOME/feel</tt>.</td></tr>
+<tr><td>\co Environment::geoPathList();\eco</td><td>The list of paths where Feel++ looks into to find a Gmsh Geo file</td></tr>
+<tr><td>\co Environment::localGeoRepository();\eco</td><td>The local geo files repository <br>Default : \c $HOME/feel/geo</td></tr>
+<tr><td>\co Environment::systemGeoRepository();\eco</td><td>A tuple : the system geo files repository<br>and \c true or \c false whether the directory exists or not <br>Default: \c /usr/share/feel/geo or \c /usr/local/share/feel/geo</td></tr>
+<tr><td>\co Environment::localConfigRepository();\eco</td><td>The local config files repository<br>Default : \c $HOME/feel/config</td></tr>
+<tr><td>\co Environment::systemConfigRepository();\eco</td><td>A tuple : the system config files repository<br>and \c true or \c false whether the directory exists or not<br>Default : \c /usr/share/feel/config or /usr/local/share/feel/config</td></tr>
+<tr><td>\co Environment::scratchDirectory();\eco</td><td>The scratch directory</td></tr>
+</table>
 
+\subsection Repository_Change Change Repository
+You can change the default repository, using the following function :
+\co
+Environment::changeRepository( _directory, _subdir, _filename );
+\eco
+Required Parameters :
+\li <tt>_directory</tt> : new directory
+
+Optional Parameters :
+\li <tt>_subdir</tt> : Default = <tt>true</tt>
+\li <tt>_filename</tt> : Default = <tt>"logfile"</tt>
+
+You can use \c boost::format to custom the path. <br>
+There is an example from "doc/manual/laplacian/laplacian.cpp" :
+\co
+    Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % Order
+                                   % meshSize );
+\eco
+Then results will be store in : "/doc/manual/laplacian/<appName>/<shape>-<Dim>/P<Order>/h_<meshSize>/"
+
+
+\subsection Repository_Find Find File
+\co Environment::findFile( std::string const& filename );\eco
+Returns the string containing the filename path
+
+Find a file. The lookup is as follows:
+\li look into current path
+\li look into paths that went through changeRepository(), it means that we look for example into the path from which the executable was run
+
+If the file has an extension .geo or .msh, try also to
+\li look into \c localGeoRepository() which is usually $HOME/feel/geo
+\li look into \c systemGeoRepository() which is usually $FEELPP_DIR/share/feel/geo
+
+If <tt>filename</tt> is not found, then the empty string is returned.
+
+
+\subsection Repository_LogFiles Set Log Files
+\co
+  Environment::setLogs( std::string const& prefix );
+\eco
+Required Parameter :
+\li \c prefix : prefix for log filenames.
+
+
+
+<a href="#" class="top">top</a>
+<hr>
+\section MPI MPI Environment
+\subsection MPI_Accessors Accesors
+There is a list of functions you can use to get information about the MPI Environment.
+<table class="manual">
+<tr><th>Feel++ function</th><th>Description</th><th>Return</th></tr>
+<tr><td>\co Environment::initialized();\eco</td><td>Determine if the MPI environment has already been initialized.</td><td> \c boolean <br> \c true if the MPI environment has been initialized.</td></tr>
+<tr><td>\co Environment::finalized();\eco</td><td>Determine if the MPI environment has already been finalized.</td><td>\c boolean<br> \c trueif the MPI environment has been finalized.</td></tr>
+<tr><td>\co Environment::worldComm()\eco</td><td></td><td>The world communicators.</td></tr>
+<tr><td>\co Environment::worldsComm(int n);\eco</td><td></td><td> n sub world communicators</td></tr>
+<tr><td>\co Environment::masterWorldComm(int n)\eco</td><td></td><td>Master world comm associated with a color map of size n</td></tr>
+<tr><td>\co Environment::numberOfProcessors();\eco</td><td></td><td>Number of processors</td></tr>
+<tr><td>\co Environment::rank();\eco</td><td></td><td>The rank in global mpi communicators</td></tr>
+</table>
+
+
+<br>
+Todo:
+\co setWordlComm( WordlComm& worldcomm);\eco
+
+
+
+
+<a href="#" class="top">top</a>
+<hr>
+\section TODO TODO
+
+\li \co Environment::about();\eco
+
+\li \co Environment::optionsDescription();\eco
+
+\li \co Environment::addDeleteObserver(Observer const& obs );\eco
+
+\li \co Environment::option;\eco
+
+\li \co Environment::optionT;\eco
 
 
 
