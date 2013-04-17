@@ -1,8 +1,8 @@
-h = 0.1;
-Point(1) = {1., 1., 0, h};
-Point(2) = {2., 1., 0, h};
-Point(3) = {2., 2., 0, h};
-Point(4) = {1., 2., 0, h};
+h = 0.05;
+Point(1) = {0., 0., 0, h};
+Point(2) = {1., 0., 0, h};
+Point(3) = {1., 3*Pi/4., 0, h};
+Point(4) = {0., 3*Pi/4, 0, h};
 Line(1) = {4, 1};
 Line(2) = {1, 2};
 Line(3) = {2, 3};
@@ -14,9 +14,11 @@ Physical Line("Dirichlet") = {1,2,4};
 //Physical Line(9) = {2};
 Physical Line(20) = {3};
 Physical Surface(11) = {6};
+/*
 Recombine Surface {6};
 Transfinite Line {4} = 10 Using Progression 1;
 Transfinite Line {1} = 10 Using Progression 1;
 Transfinite Line {2} = 10 Using Progression 1;
 Transfinite Line {3} = 10 Using Progression 1;
 Transfinite Surface {6};
+*/

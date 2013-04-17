@@ -312,10 +312,10 @@ public:
     //! \return true if the mesh is related to the mesh \p m
     bool isSubMeshFrom( MeshBase const* m ) const
         {
-            VLOG(2) << "isSubMeshFrom<mesh_ptrtype> called\n";
+            DVLOG(4) << "isSubMeshFrom<mesh_ptrtype> called\n";
             if ( !M_smd ) return false;
             bool res= (M_smd->mesh.get() == m);
-            VLOG(2) << "this isSubMeshFrom m: " << res << "\n";
+            DVLOG(4) << "this isSubMeshFrom m: " << res << "\n";
             return res;
         }
     //! \return true if the mesh is related to the mesh \p m
@@ -327,17 +327,17 @@ public:
     //! \return true if the mesh is related to the mesh \p m
     bool isParentMeshOf( boost::shared_ptr<MeshBase> m ) const
         {
-            VLOG(2) << "isParentMeshOf<mesh_ptrtype> called\n";
+            DVLOG(4) << "isParentMeshOf<mesh_ptrtype> called\n";
             bool res = m->isSubMeshFrom( this );
             if ( res == false ) return res;
-            VLOG(2) << "this isParentMeshOf m: " << res << "\n";
+            DVLOG(4) << "this isParentMeshOf m: " << res << "\n";
             return res;
         }
 #if 0
     template<typename M>
     bool isSubMeshFrom( boost::shared_ptr<M> m ) const
         {
-            VLOG(2) << "isSubMeshFrom<M> called\n";
+            DVLOG(4) << "isSubMeshFrom<M> called\n";
             return false;
         }
 #endif
@@ -358,11 +358,11 @@ public:
     bool isRelatedTo( boost::shared_ptr<M> m ) const
         {
             bool same_mesh = isSameMesh(m);
-            VLOG(2) << "same_mesh: " << same_mesh << "\n";
+            DVLOG(4) << "same_mesh: " << same_mesh << "\n";
             bool is_submesh_from = isSubMeshFrom( m );
-            VLOG(2) << "isSubMeshFrom: " << is_submesh_from << "\n";
+            DVLOG(4) << "isSubMeshFrom: " << is_submesh_from << "\n";
             bool is_parentmesh_of = isParentMeshOf( m );
-            VLOG(2) << "is_parentmesh_of: " << is_parentmesh_of << "\n";
+            DVLOG(4) << "is_parentmesh_of: " << is_parentmesh_of << "\n";
             return same_mesh || is_submesh_from || is_parentmesh_of;
         }
 
