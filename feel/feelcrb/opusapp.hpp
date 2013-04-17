@@ -454,29 +454,9 @@ public:
 
             crb->setOfflineStep( false );
 
-            // For EIM convergence study
-            std::map<std::string, std::vector<vectorN_type> > mapConvEIM;
-            auto eim_sc_vector = model->scalarContinuousEim();
-            auto eim_sd_vector = model->scalarDiscontinuousEim();
 
             if (option(_name="eim.cvg-study").template as<bool>())
-                {
-                    for(int i=0; i<eim_sc_vector.size(); i++)
-                        {
-                            auto eim = eim_sc_vector[i];
-                            mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
-                            for(int j=0; j<eim->mMax(); j++)
-                                mapConvEIM[eim->name()][j].resize(Sampling->size());
-                        }
-
-                    for(int i=0; i<eim_sd_vector.size(); i++)
-                        {
-                            auto eim = eim_sd_vector[i];
-                            mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
-                            for(int j=0; j<eim->mMax(); j++)
-                                mapConvEIM[eim->name()][j].resize(Sampling->size());
-                        }
-                }
+                this->initializeConvergenceEimMap( Sampling->size() );
 
             int crb_dimension = option(_name="crb.dimension").template as<int>();
             int crb_dimension_max = option(_name="crb.dimension-max").template as<int>();
@@ -633,6 +613,7 @@ public:
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
 
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
+                                        //use affine decomposition
                                         u_fem = model->solveFemUsingOnlineEimPicard( mu );
                                     else
                                         u_fem = model->solve( mu );
@@ -725,26 +706,30 @@ public:
 
                                 if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
                                 {
-                                    for(int i=0; i<eim_sc_vector.size(); i++)
+                                    bool check_name = false;
+                                    std::string how_compute_unknown = option(_name=_o( this->about().appName(),"how-compute-unkown-for-eim" )).template as<std::string>();
+                                    if( how_compute_unknown == "CRB-with-ad")
                                     {
-                                        std::vector<double> l2error;
-                                        auto eim = eim_sc_vector[i];
-                                        //take two parameters : the mu and the expansion of the reduced solution already computed
-                                        l2error = eim->studyConvergence( mu , u_crb );
-
-                                        for(int j=0; j<l2error.size(); j++)
-                                                mapConvEIM[eim->name()][j][curpar-1] = l2error[j];
+                                        LOG( INFO ) << "convergence eim with CRB-with-ad ";
+                                        check_name = true;
+                                        this->studyEimConvergence( mu , u_crb , curpar );
                                     }
-
-                                    for(int i=0; i<eim_sd_vector.size(); i++)
+                                    if( how_compute_unknown == "FEM-with-ad")
                                     {
-                                        std::vector<double> l2error;
-                                        auto eim = eim_sd_vector[i];
-                                        l2error = eim->studyConvergence( mu , u_crb );
-
-                                       for(int j=0; j<l2error.size(); j++)
-                                                mapConvEIM[eim->name()][j][curpar-1] = l2error[j];
+                                        LOG( INFO ) << "convergence eim with FEM-with-ad ";
+                                        check_name = true;
+                                        //fem computed via solveFemUsingOnlineEim use the affine decomposition
+                                        this->studyEimConvergence( mu , u_fem , curpar );
                                     }
+                                    if( how_compute_unknown == "FEM-without-ad")
+                                    {
+                                        LOG( INFO ) << "convergence eim with FEM-without-ad ";
+                                        check_name = true;
+                                        auto fem_without_ad = model->solve( mu );
+                                        this->studyEimConvergence( mu , fem_without_ad , curpar );
+                                    }
+                                    if( ! check_name )
+                                        throw std::logic_error( "OpusApp error with option how-compute-unknown-for-eim, please use CRB-with-ad, FEM-with-ad or FEM-without-ad" );
                                 }
 
                                 if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
@@ -844,70 +829,7 @@ public:
             }
 
             if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
-                {
-                    for(int i=0; i<eim_sc_vector.size(); i++)
-                        {
-                            auto eim = eim_sc_vector[i];
-
-                            std::ofstream conv;
-                            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
-
-                            if( proc_number == Environment::worldComm().masterRank() )
-                                {
-                                    conv.open(file_name, std::ios::app);
-                                    conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
-                                }
-
-
-                            for(int j=0; j<eim->mMax(); j++)
-                                {
-                                    double mean = mapConvEIM[eim->name()][j].mean();
-                                    double variance = 0.0;
-                                    for( int k=0; k < Sampling->size(); k++)
-                                        {
-                                            variance += (mapConvEIM[eim->name()][j](k) - mean)*(mapConvEIM[eim->name()][j](k) - mean)/Sampling->size();
-                                        }
-
-                                    if( proc_number == Environment::worldComm().masterRank() )
-                                        {
-                                            conv << j+1 << "\t"
-                                                 << mapConvEIM[eim->name()][j].minCoeff() << "\t"
-                                                 << mapConvEIM[eim->name()][j].maxCoeff() << "\t"
-                                                 << mean << "\t" << variance << "\n";
-                                        }
-                                }
-                            conv.close();
-                        }
-
-                    for(int i=0; i<eim_sd_vector.size(); i++)
-                        {
-                            auto eim = eim_sd_vector[i];
-
-                            std::ofstream conv;
-                            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
-                            conv.open(file_name, std::ios::app);
-                            conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
-
-                            for(int j=0; j<eim->mMax(); j++)
-                                {
-                                    double mean = mapConvEIM[eim->name()][j].mean();
-                                    double variance = 0.0;
-                                    for( int k=0; k < Sampling->size(); k++)
-                                        {
-                                            variance += (mapConvEIM[eim->name()][j](k) - mean)*(mapConvEIM[eim->name()][j](k) - mean)/Sampling->size();
-                                        }
-
-                                    if( proc_number == Environment::worldComm().masterRank() )
-                                        {
-                                            conv << j+1 << "\t"
-                                                 << mapConvEIM[eim->name()][j].minCoeff() << "\t"
-                                                 << mapConvEIM[eim->name()][j].maxCoeff() << "\t"
-                                                 << mean << "\t" << variance << "\n";
-                                        }
-                                }
-                            conv.close();
-                        }
-                }
+                this->doTheEimConvergenceStat( Sampling->size() );
 
             if ( compute_stat && compute_fem )
             {
@@ -1076,6 +998,123 @@ private:
         return math::sqrt( l22+semih12 );
     }
 
+
+    void initializeConvergenceEimMap( int sampling_size )
+    {
+        auto eim_sc_vector = model->scalarContinuousEim();
+        auto eim_sd_vector = model->scalarDiscontinuousEim();
+
+        for(int i=0; i<eim_sc_vector.size(); i++)
+        {
+            auto eim = eim_sc_vector[i];
+            M_mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
+            for(int j=0; j<eim->mMax(); j++)
+                M_mapConvEIM[eim->name()][j].resize(sampling_size);
+        }
+
+        for(int i=0; i<eim_sd_vector.size(); i++)
+        {
+            auto eim = eim_sd_vector[i];
+            M_mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
+            for(int j=0; j<eim->mMax(); j++)
+                M_mapConvEIM[eim->name()][j].resize(sampling_size);
+        }
+    }
+
+    void studyEimConvergence( typename ModelType::parameter_type const& mu , element_type & model_solution , int mu_number)
+    {
+        auto eim_sc_vector = model->scalarContinuousEim();
+        auto eim_sd_vector = model->scalarDiscontinuousEim();
+
+        for(int i=0; i<eim_sc_vector.size(); i++)
+        {
+            std::vector<double> l2error;
+            auto eim = eim_sc_vector[i];
+            //take two parameters : the mu and the solution of the model
+            l2error = eim->studyConvergence( mu , model_solution );
+
+            for(int j=0; j<l2error.size(); j++)
+                M_mapConvEIM[eim->name()][j][mu_number-1] = l2error[j];
+        }
+
+        for(int i=0; i<eim_sd_vector.size(); i++)
+        {
+            std::vector<double> l2error;
+            auto eim = eim_sd_vector[i];
+            l2error = eim->studyConvergence( mu , model_solution );
+
+            for(int j=0; j<l2error.size(); j++)
+                M_mapConvEIM[eim->name()][j][mu_number-1] = l2error[j];
+        }
+    }
+
+    void doTheEimConvergenceStat( int sampling_size )
+    {
+        auto eim_sc_vector = model->scalarContinuousEim();
+        auto eim_sd_vector = model->scalarDiscontinuousEim();
+
+        for(int i=0; i<eim_sc_vector.size(); i++)
+        {
+            auto eim = eim_sc_vector[i];
+
+            std::ofstream conv;
+            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
+
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                conv.open(file_name, std::ios::app);
+                conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+            }
+
+            for(int j=0; j<eim->mMax(); j++)
+            {
+                double mean = M_mapConvEIM[eim->name()][j].mean();
+                double variance = 0.0;
+                for( int k=0; k < sampling_size ; k++)
+                {
+                    variance += (M_mapConvEIM[eim->name()][j](k) - mean)*(M_mapConvEIM[eim->name()][j](k) - mean)/sampling_size;
+                }
+
+                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                {
+                    conv << j+1 << "\t"
+                         << M_mapConvEIM[eim->name()][j].minCoeff() << "\t"
+                         << M_mapConvEIM[eim->name()][j].maxCoeff() << "\t"
+                         << mean << "\t" << variance << "\n";
+                }
+            }
+            conv.close();
+        }
+
+        for(int i=0; i<eim_sd_vector.size(); i++)
+        {
+            auto eim = eim_sd_vector[i];
+
+            std::ofstream conv;
+            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
+            conv.open(file_name, std::ios::app);
+            conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+
+            for(int j=0; j<eim->mMax(); j++)
+            {
+                double mean = M_mapConvEIM[eim->name()][j].mean();
+                double variance = 0.0;
+                for( int k=0; k < sampling_size; k++)
+                    variance += (M_mapConvEIM[eim->name()][j](k) - mean)*(M_mapConvEIM[eim->name()][j](k) - mean)/sampling_size;
+
+                if( Environment::worldComm().globalRank()  == Environment::worldComm().masterRank() )
+                {
+                    conv << j+1 << "\t"
+                         << M_mapConvEIM[eim->name()][j].minCoeff() << "\t"
+                         << M_mapConvEIM[eim->name()][j].maxCoeff() << "\t"
+                         << mean << "\t" << variance << "\n";
+                }
+            }
+            conv.close();
+        }
+    }
+
+
     // Script write current mu in cfg => need to write it in SamplingForTest
     void buildSamplingFromCfg()
     {
@@ -1138,6 +1177,9 @@ private:
     CRBModelMode M_mode;
     crbmodel_ptrtype model;
     crb_ptrtype crb;
+
+    // For EIM convergence study
+    std::map<std::string, std::vector<vectorN_type> > M_mapConvEIM;
 
     fs::path M_current_path;
 }; // OpusApp
