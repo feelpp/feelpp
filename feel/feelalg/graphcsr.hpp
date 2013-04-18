@@ -41,6 +41,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelalg/datamap.hpp>
+#include <feel/feelvf/block.hpp>
 
 namespace Feel
 {
@@ -91,6 +92,10 @@ public:
               size_type first_col_entry_on_proc = 0,
               size_type last_col_entry_on_proc = 0,
               WorldComm const& worldcomm = Environment::worldComm() );
+
+    GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
+              bool diagIsNonZero=true,
+              bool close=true );
 
     /**
      * copy constructor
@@ -355,6 +360,10 @@ public:
 
     //@}
 
+private :
+
+    void mergeBlockGraph( self_ptrtype const& g,
+                          size_type start_i, size_type start_j );
 
 
 protected:
@@ -378,6 +387,34 @@ private:
 
     self_ptrtype M_graphT;
 };
+
+
+class BlocksBaseGraphCSR : public vf::BlocksBase<boost::shared_ptr<GraphCSR> >
+{
+public :
+    typedef vf::BlocksBase<boost::shared_ptr<GraphCSR> > super_type;
+    typedef BlocksBaseGraphCSR self_type;
+    typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
+
+    BlocksBaseGraphCSR(uint16_type nr,uint16_type nc)
+        :
+        super_type(nr,nc)
+    {}
+
+    BlocksBaseGraphCSR(super_type const & b)
+        :
+        super_type(b)
+    {}
+
+    self_type
+    operator<<( graph_ptrtype const& g ) const
+    {
+        return super_type::operator<<( g );
+    }
+
+};
+
+
 
 } // Feel
 #endif /* __GraphCSR_H */

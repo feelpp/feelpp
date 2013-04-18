@@ -10,10 +10,12 @@
     </tab>
     <tab type="usergroup" title="Quick Reference">
       <tab type="user" url="\ref Keywords" title="Keywords"/>
-      <tab type="user" url="\ref Environment" title="Initialize Feel : Environment"/>
-      <tab type="user" url="\ref Mesh" title="Manipulatin Meshes"/>
-      <tab type="user" url="\ref Spaces" title="Manipulatin Function Spaces"/>
+      <tab type="user" url="\ref Environment" title="Environment"/>
+      <tab type="user" url="\ref Mesh" title="Meshes"/>
+      <tab type="user" url="\ref Spaces" title="Function Spaces"/>
       <tab type="user" url="\ref Integrals" title="Integrations, Operators and Norms"/>
+      <tab type="user" url="\ref Solver" title="Solver"/>
+      <tab type="user" url="\ref Exporter" title="Exporter"/>
     </tab>
     <tab type="classlist" visible="yes" title="" intro=""/>
   </navindex>

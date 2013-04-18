@@ -35,8 +35,8 @@ int main( int argc, char* argv[] )
   Environment env( _argc=argc, _argv=argv,
                    _desc=app_options,
                    _about=about( _name="myapp",
-                   _author="Feel++ Consortium",
-                   _email="feelpp-devel@feelpp.org") );
+                                 _author="Feel++ Consortium",
+                                 _email="feelpp-devel@feelpp.org") );
 
   // create a log and write inside
   LOG(INFO) << "value = " << option(_name="value").as<double>()
