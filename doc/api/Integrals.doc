@@ -6,7 +6,7 @@ namespace Feel {
 \tableofcontents
 
 \li \b Previous: \ref Spaces
-\li \b Next: \ref
+\li \b Next: \ref Solver
 
 <hr>
 
@@ -265,7 +265,6 @@ Let \f$f\f$ a bounded function on domain \f$\Omega\f$. You can evaluate the infi
 <a href="#" class="top">top</a>
 <hr>
 
-
-
+\li \b Next: \ref Solver
 */
 }
