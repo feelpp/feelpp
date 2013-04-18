@@ -73,16 +73,6 @@ Let \f$A\f$ a square matrix of size \f$n\f$.
 <tr><td>\code{.cpp} det(A)\endcode</td><td>\f$\det (A)\f$</td><td>Determinant of matrix \f$A\f$ </td><td>\f$1 \times 1\f$</td></tr>
 </table>
 
-\subsection Matrix_Jacobian Jacobian Matrix
-You can access to the jacobian matrix, \f$J\f$, of the geometric transformation, usign the keyword :
-\co J() \eco
-There are some tools to manipulate this jacobian.
-<table class="manual">
-<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th></tr>
-<tr><td>\code{.cpp} detJ()\endcode</td><td>\f$\det(J)\f$</td><td>Determinant of jacobian matrix </td></tr>
-<tr><td>\code{.cpp} invJT()\endcode</td><td>\f$(J^{-1})^T\f$</td><td>Transposed inverse of jacobian matrix </td></tr>
-</table>
-
 
 
 <a href="#" class="top">top</a>
@@ -198,10 +188,26 @@ You can use the usual operations and logical operators.
 <tr><td>\code{.cpp} minfacet(f)\endcode </td><td>  \f$\min(f_0,f_1)\f$ </td><td>minimum of right and left<br>trial function</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times p \f$</td></tr>
 <tr><td>\code{.cpp} minfacev(f)\endcode </td><td>  \f$\min(f_0,f_1)\f$ </td><td>minimum of right and left<br>function evaluation</td><td>\f$\mathrm{rank}( f(\overrightarrow{x}))\f$</td><td> \f$n \times p \f$</td></tr>
 </table>
+
+
 <a href="#" class="top">top</a>
+<hr>
+<br>
+\section Kyewords_Geometric Geometric Transformations
+\subsection Matrix_Jacobian Jacobian Matrix
+You can access to the jacobian matrix, \f$J\f$, of the geometric transformation, using the keyword :
+\co J() \eco
+There are some tools to manipulate this jacobian.
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th></tr>
+<tr><td>\code{.cpp} detJ()\endcode</td><td>\f$\det(J)\f$</td><td>Determinant of jacobian matrix </td></tr>
+<tr><td>\code{.cpp} invJT()\endcode</td><td>\f$(J^{-1})^T\f$</td><td>Transposed inverse of jacobian matrix </td></tr>
+</table>
 
+<a href="#" class="top">top</a>
+<hr>
 
-
+\li \b Next: \ref Environment
 
 
 

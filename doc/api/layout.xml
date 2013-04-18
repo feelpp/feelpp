@@ -14,6 +14,8 @@
       <tab type="user" url="\ref Mesh" title="Meshes"/>
       <tab type="user" url="\ref Spaces" title="Function Spaces"/>
       <tab type="user" url="\ref Integrals" title="Integrations, Operators and Norms"/>
+      <tab type="user" url="\ref Solver" title="Solver"/>
+      <tab type="user" url="\ref Exporter" title="Exporter"/>
     </tab>
     <tab type="classlist" visible="yes" title="" intro=""/>
   </navindex>
