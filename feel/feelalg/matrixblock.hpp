@@ -144,6 +144,10 @@ public:
     void mergeBlockGraph( graph_ptrtype & globGraphb, matrix_ptrtype m,
                           size_type start_i, size_type start_j );
 
+    MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & graph,
+                     backend_type &backend,
+                     bool diag_is_nonzero=true );
+
     MatrixBlockBase( MatrixBlockBase const & mb )
         :
         super( mb ),
