@@ -38,6 +38,7 @@
 #include <boost/serialization/version.hpp>
 #include <boost/range/join.hpp>
 #include <boost/regex.hpp>
+#include <boost/assign/list_of.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -317,6 +318,7 @@ public:
 
             if( n_eval_computational_time > 0 )
             {
+                compute_fem = false;
                 auto eim_sc_vector = model->scalarContinuousEim();
                 auto eim_sd_vector = model->scalarDiscontinuousEim();
                 int size1 = eim_sc_vector.size();
@@ -335,6 +337,7 @@ public:
             n_eval_computational_time = option(_name="crb.computational-time-neval").template as<int>();
             if( n_eval_computational_time > 0 )
             {
+                compute_fem = false;
                 std::string appname = this->about().appName();
                 crb->computationalTimeStatistics( appname );
                 run_sampling_size = 0;
@@ -457,6 +460,9 @@ public:
 
             if (option(_name="eim.cvg-study").template as<bool>())
                 this->initializeConvergenceEimMap( Sampling->size() );
+
+            if (option(_name="crb.cvg-study").template as<bool>())
+                this->initializeConvergenceCrbMap( Sampling->size() );
 
             int crb_dimension = option(_name="crb.dimension").template as<int>();
             int crb_dimension_max = option(_name="crb.dimension-max").template as<int>();
@@ -736,13 +742,14 @@ public:
                                 {
                                     LOG(INFO) << "start convergence study...\n";
                                     std::map<int, boost::tuple<double,double,double,double> > conver;
-                                    for( int N = 1; N < crb->dimension(); N++ )
+                                    for( int N = 1; N <= crb->dimension(); N++ )
                                     {
                                         LOG(INFO) << "N=" << N << "...\n";
                                         //auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         auto u_crbN = crb->expansion( mu , N );
                                         auto u_error = model->functionSpace()->element();
                                         u_error = u_fem - u_crbN;
+                                        auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         double rel_err = std::abs( output_fem-o.template get<0>() ) /output_fem;
                                         double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
@@ -751,6 +758,9 @@ public:
                                         LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
                                             std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<std::endl;
+                                        M_mapConvCRB["L2"][N-1](curpar - 1) = l2_error;
+                                        M_mapConvCRB["H1"][N-1](curpar - 1) = h1_error;
+                                        M_mapConvCRB["Rel"][N-1](curpar - 1) = rel_err;
                                         LOG(INFO) << "N=" << N << " done.\n";
                                     }
                                     if( proc_number == Environment::worldComm().masterRank() )
@@ -830,6 +840,9 @@ public:
 
             if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
                 this->doTheEimConvergenceStat( Sampling->size() );
+
+            if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
+                this->doTheCrbConvergenceStat( Sampling->size() );
 
             if ( compute_stat && compute_fem )
             {
@@ -1021,6 +1034,21 @@ private:
         }
     }
 
+    void initializeConvergenceCrbMap( int sampling_size )
+    {
+        auto N = crb->dimension();
+        M_mapConvCRB["L2"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["H1"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["Rel"] = std::vector<vectorN_type>(N);
+
+        for(int j=0; j<N; j++)
+            {
+                M_mapConvCRB["L2"][j].resize(sampling_size);
+                M_mapConvCRB["H1"][j].resize(sampling_size);
+                M_mapConvCRB["Rel"][j].resize(sampling_size);
+            }
+    }
+
     void studyEimConvergence( typename ModelType::parameter_type const& mu , element_type & model_solution , int mu_number)
     {
         auto eim_sc_vector = model->scalarContinuousEim();
@@ -1063,7 +1091,7 @@ private:
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
                 conv.open(file_name, std::ios::app);
-                conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+                conv << "Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
             }
 
             for(int j=0; j<eim->mMax(); j++)
@@ -1092,8 +1120,12 @@ private:
 
             std::ofstream conv;
             std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
-            conv.open(file_name, std::ios::app);
-            conv << "#Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                conv.open(file_name, std::ios::app);
+                conv << "Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+            }
 
             for(int j=0; j<eim->mMax(); j++)
             {
@@ -1112,6 +1144,41 @@ private:
             }
             conv.close();
         }
+    }
+
+    void doTheCrbConvergenceStat( int sampling_size )
+    {
+        auto N = crb->dimension();
+        //std::list<std::string> list_error_type;
+        std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("Rel");
+        BOOST_FOREACH( auto error_name, list_error_type)
+            {
+                std::ofstream conv;
+                std::string file_name = "cvg-crb-"+ error_name +"-stats.dat";
+
+                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    {
+                        conv.open(file_name, std::ios::app);
+                        conv << "Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+                    }
+
+                for(int j=0; j<N; j++)
+                    {
+                        double mean = M_mapConvCRB[error_name][j].mean();
+                        double variance = 0.0;
+                        for( int k=0; k < sampling_size; k++)
+                            variance += (M_mapConvCRB[error_name][j](k) - mean)*(M_mapConvCRB[error_name][j](k) - mean)/sampling_size;
+
+                        if( Environment::worldComm().globalRank()  == Environment::worldComm().masterRank() )
+                            {
+                                conv << j+1 << "\t"
+                                     << M_mapConvCRB[error_name][j].minCoeff() << "\t"
+                                     << M_mapConvCRB[error_name][j].maxCoeff() << "\t"
+                                     << mean << "\t" << variance << "\n";
+                            }
+                    }
+                conv.close();
+            }
     }
 
 
@@ -1180,6 +1247,8 @@ private:
 
     // For EIM convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvEIM;
+    // For EIM convergence study
+    std::map<std::string, std::vector<vectorN_type> > M_mapConvCRB;
 
     fs::path M_current_path;
 }; // OpusApp
