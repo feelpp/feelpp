@@ -1,0 +1,87 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+/*! \page Mesh Meshes
+
+
+\tableofcontents
+
+\li \b Previous: \ref Environment
+\li \b Next: \ref Spaces
+
+<hr>
+In this section, we present some of the mesh definition and manipulation tools provided by \feel.<br>
+Feel supports only the Gmsh mesh file format. It provides also some classes to manipulate Gmsh \c .geo files and generate \c .msh files.
+
+The \c Gmsh class helps with the generation of meshes using the program \c gmsh.
+
+You can visualize the geometry files \c .geo and \c .msh using the \c gmsh application :
+\verbatim
+  gmsh <entity_name>.msh
+\endverbatim
+
+
+\section Basic Basic Meshes
+There is a list of basic geometries you can automatically generate with \feel library.
+<table class="manual">
+<tr><th>Feel++ function</th><th>Dim</th><th>Description</th</tr>
+<tr><td> \c unitSegment();</td><td>1</td><td>Build a mesh of the unit segment \f$[0,1]\f$</td></tr>
+<tr><td> \c unitSquare();</td><td>2</td><td>Build a mesh of the unit square \f$[0,1]^2\f$ using triangles</td></tr>
+<tr><td> \c unitCircle();</td><td>2</td><td>Build a mesh of the unit circle using triangles</td></tr>
+<tr><td> \c unitHypercube();</td><td>3</td><td>Build a mesh of the unit hypercube \f$[0,1]^3\f$ using tetrahedrons</td></tr>
+<tr><td> \c unitSphere();</td><td>3</td><td>Build a mesh of the unit sphere using tetrahedrons</td></tr>
+</table>
+
+
+
+<b>Examples :</b><br>
+From "doc/manual/tutorial/myfunctionspace.cpp
+\co auto mesh = unitSquare();\eco
+
+From 
+
+<a href="#" class="top">top</a>
+<hr>
+\section Load Load Mesh
+TODO
+
+
+<a href="#" class="top">top</a>
+<hr>
+\section Creat Creat Mesh
+TODO
+
+
+<a href="#" class="top">top</a>
+<hr>
+\section Accessors Accessors
+There is a list of functions you can use to get information about your mesh.
+<table class="manual">
+<tr><th>Feel++ function</th><th>Return</th></tr>
+<tr><td>\co dimension() \eco</td><td> \c int <br> Mesh dimension</td></tr>
+<tr><td>\co order() \eco</td><td> \c GMSH_ORDER <br> The order of the elements of the mesh</td></tr>
+<tr><td>\co version()\eco</td><td> \c std::string <br>The file format version</td></tr>
+<tr><td>\co format()\eco</td><td> \c GMSH_FORMAT <br> The file format</td></tr>
+<tr><td>\co isASCIIFormat()\eco</td><td> \c bool <br> \c true if gmsh format is ascii</td></tr>
+<tr><td>\co isBinaryFormat()\eco</td><td> \c bool  <br> \c true if gmsh format is binary</td></tr>
+<tr><td>\co prefix()\eco</td><td> \c std::string <br> The name of the file</td></tr>
+<tr><td>\co boundingBox()\eco</td><td> \c std::vector<std::pair<double,double>>  <br> Bounding box</td></tr>
+<tr><td>\co xmin()\eco</td><td> \c double  <br> The \c x minimal value (same syntax for \c or \c z )</td></tr>
+<tr><td>\co xmax()\eco</td><td> \c double <br> The \c maximal value (smae syntax for \c y or \cz )</td></tr>
+<tr><td>\co h()\eco</td><td> \c double  <br>Characteristic lenght</td></tr>
+<tr><td>\co description()\eco</td><td> \c std::string <br> The geometry description</td></tr>
+<tr><td>\co addMidPoint()\eco</td><td> \c bool  <br>Add the mid point of the domain</td></tr>
+<tr><td>\co usePhysicalNames()\eco</td><td> \c bool <br>\c true if use the physical name</td></tr>
+<tr><td>\co worldComm() \eco</td><td> \c WorldComm <br>The world communicator</td></tr>
+<tr><td>\co numberOfPartitions()\eco</td><td> \c int <br>The number of partitions</td></tr>
+<tr><td>\co mshFileByPartition()\eco</td><td> \c bool  <br>\true if save msh file by partitions</td></tr>
+<tr><td>\co partitioner()\eco</td><td> \c GMSH_PARTITIONER <br> The partitionner</td></tr>
+<tr><td>\co shear()\eco</td><td> \c double <br> The shear</td></tr>
+<tr><td>\co recombine()\eco</td><td> \c bool  <br>\c true if recombine </td></tr>
+<tr><td>\co refinementLevels()\eco</td><td> \c int <br>The refinement levels</td></tr>
+</table>
+
+<a href="#" class="top">top</a>
+<hr>
+\li \b Next: \ref Spaces
+*/
+}

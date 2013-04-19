@@ -55,6 +55,110 @@ GraphCSR::GraphCSR( size_type n,
     //std::cout << "creating graph " << this << "\n";
 }
 
+GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
+                    bool diagIsNonZero, bool close )
+    :
+    M_is_closed( false ),
+    M_worldComm( Environment::worldComm() ),
+    M_first_row_entry_on_proc( 0 ),
+    M_last_row_entry_on_proc( 0 ),
+    M_first_col_entry_on_proc( 0 ),
+    M_last_col_entry_on_proc( 0 ),
+    M_max_nnz( 0 ),
+    M_n_total_nz( /*n*/0, 0 ),
+    M_n_nz( /*n*/0, 0 ),
+    M_n_oz( /*n*/0, 0 ),
+    M_storage()
+{
+
+    auto v = blockSet.getSetOfBlocks();
+
+    M_worldComm = v[0]->worldComm();
+
+    auto nRow = blockSet.nRow();
+    auto nCol = blockSet.nCol();
+
+    size_type _size2 = 0;
+    for ( uint i=0; i<nCol; ++i )
+        _size2 += v[i]->lastColEntryOnProc()+1;
+
+    size_type _size1 =0;
+    for ( uint i=0; i<nRow; ++i )
+        _size1 += v[i*nCol]->lastRowEntryOnProc()+1;
+
+    M_last_row_entry_on_proc = _size1-1;
+    M_last_col_entry_on_proc = _size2-1;
+
+    size_type start_i=0;
+    size_type start_j=0;
+    for ( uint i=0; i<nRow; ++i )
+    {
+        start_j=0;
+
+        for ( uint j=0; j<nCol; ++j )
+        {
+            v[i*nCol+j]->close();
+            this->mergeBlockGraph( v[i*nCol+j],start_i,start_j );
+
+            start_j += v[i*nCol+j]->lastColEntryOnProc()+1;
+        }
+
+        start_i += v[i*nCol]->lastRowEntryOnProc()+1;
+    }
+
+    if ( diagIsNonZero ) this->addMissingZeroEntriesDiagonal();
+
+    if ( close ) this->close();
+
+}
+
+void
+GraphCSR::mergeBlockGraph( self_ptrtype const& g,
+                           size_type start_i, size_type start_j )
+{
+
+    auto it = g->begin();
+    auto en = g->end();
+    for ( ; it != en; ++it )
+    {
+        int theglobalrow = start_i + it->first;
+        row_type & row = this->row( theglobalrow );
+
+        row.get<0>() = it->second.get<0>();//rank
+
+        int thelocalrow = start_i + it->second.get<1>();
+        row.get<1>() = thelocalrow;
+
+        auto nbDof = it->second.get<2>().size();
+
+        if ( nbDof>0 )
+        {
+            // Get the row of the sparsity pattern
+#if 0
+            std::vector<size_type> ivec(  it->second.template get<2>().begin(),  it->second.template get<2>().end() );
+            std::for_each( ivec.begin(), ivec.end(), boost::phoenix::arg_names::arg1 += start_j );
+#else
+            std::vector<size_type> ivec( nbDof );
+            auto itDof=it->second.get<2>().begin();
+
+            for ( int i=0; i<( int )nbDof; ++i,++itDof )
+                ivec[i]=*itDof+start_j;
+#endif
+            //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
+            //std::set<size_type> iout( ivec.begin(), ivec.end() );
+            //iout.insert( globGraph->row(theglobalrow).template get<2>().begin(),
+            //             globGraph->row(theglobalrow).template get<2>().end() );
+            //globGraph->row(theglobalrow).template get<2>() = iout;
+            //globGraph->row(theglobalrow).template get<2>().insert(ivec.begin(), ivec.end());
+            row.get<2>().insert( ivec.begin(), ivec.end() );
+        }
+
+    }
+
+
+}
+
+
 GraphCSR::GraphCSR( GraphCSR const & g )
     :
     M_is_closed( g.M_is_closed ),

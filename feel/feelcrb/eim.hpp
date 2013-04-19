@@ -58,6 +58,8 @@
 
 namespace Feel
 {
+class ModelCrbBaseBase {};
+
 /**
   \class EIM
   \brief Empirical interpolation of a function to obtain an affine decomposition
@@ -853,13 +855,13 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         if( use_expression )
         {
             exprl2norm =M_model->expressionL2Norm( solution , mu );
-            auto eim_approximation = this->operator()(mu , N);
+            auto eim_approximation = this->operator()(mu , solution, N);
             diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
         }
         else
         {
             exprl2norm =M_model->projExpressionL2Norm( solution , mu );
-            auto eim_approximation = this->operator()(mu , N);
+            auto eim_approximation = this->operator()(mu , solution, N);
             diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
         }
 
@@ -1163,6 +1165,12 @@ public:
     }
 
     void computationalTimeStatistics( std::string appname )
+        {
+            computationalTimeStatistics( appname, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+        }
+    void computationalTimeStatistics( std::string appname, boost::mpl::bool_<false> )
+        {}
+    void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
     {
         //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_vm , CRBModelMode::CRB ) );
         auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
@@ -1260,9 +1268,9 @@ BOOST_PARAMETER_FUNCTION(
       ( in_out(expr),          * )
       ( name, * )
       ( space, *)
-      ( options, *)
         ) // required
     ( optional
+      ( options, *, Environment::vm())
       //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
       //( space, *, model->functionSpace() )
       ( sampling, *, model->parameterSpace()->sampling() )
@@ -1289,32 +1297,79 @@ struct EimFunctionNoSolve
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
     typedef typename functionspace_type::value_type value_type;
 
-    EimFunctionNoSolve( ModelType* model )
+    typedef boost::shared_ptr<ModelType> model_ptrtype;
+
+    static const int nb_spaces = functionspace_type::nSpaces;
+    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
+                       typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
+                                  typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
+                                                     fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
+                                                     >::type >::type >::type index_vector_type;
+
+    EimFunctionNoSolve( model_ptrtype model )
         :
         M_model( model ),
         M_elt( M_model->functionSpace()->element() )
-        {
-            value_type x = boost::lexical_cast<value_type>("inf");
-            M_elt = vf::project( _space=M_model->functionSpace(), _expr=cst(x) );
-        }
+        {}
 
     element_type solve( parameter_type const& mu )
-        {
-            DVLOG(2) << "no solve required\n";
-            return M_elt;
-        }
+    {
+        DVLOG(2) << "no solve required\n";
+        static const bool is_composite = functionspace_type::is_composite;
+        return solve( mu , mpl::bool_< is_composite >() );
+    }
+    element_type solve( parameter_type const& mu , mpl::bool_<false> )
+    {
+        value_type x = boost::lexical_cast<value_type>("inf");
+        M_elt = vf::project( _space=M_model->functionSpace(), _expr=cst(x) );
+        return M_elt;
+    }
+    element_type solve( parameter_type const& mu , mpl::bool_<true> )
+    {
+        ProjectInfCompositeCase project_inf_composite_case( M_elt );
+        index_vector_type index_vector;
+        fusion::for_each( index_vector, project_inf_composite_case );
+        return project_inf_composite_case.element();
+    }
+
     std::string modelName() const { return M_model->modelName(); }
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
     parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
-    ModelType* M_model;
+
+    struct ProjectInfCompositeCase
+    {
+        ProjectInfCompositeCase( element_type & composite_element)
+            :
+            M_element( composite_element )
+        {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+        {
+            auto view = M_element.template element< T::value >();
+            auto space = view.functionSpace();
+            view = vf::project( _space=space, _expr=cst( boost::lexical_cast<value_type>("inf") ) );
+        }
+
+        element_type element()
+        {
+            return M_element;
+        }
+
+        element_type M_element;
+
+    }; //struct ProjectInfOnSubspace
+
+    model_ptrtype M_model;
     element_type M_elt;
 };
 
 template<typename ModelType>
-EimFunctionNoSolve<ModelType>*
-eim_no_solve( ModelType* model )
+boost::shared_ptr<EimFunctionNoSolve<ModelType>>
+eim_no_solve( boost::shared_ptr<ModelType> model )
 {
-    return new EimFunctionNoSolve<ModelType>( model );
+    return boost::shared_ptr<EimFunctionNoSolve<ModelType>>( new EimFunctionNoSolve<ModelType>( model ) );
 }
 
 
