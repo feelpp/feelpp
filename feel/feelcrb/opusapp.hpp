@@ -337,10 +337,13 @@ public:
             n_eval_computational_time = option(_name="crb.computational-time-neval").template as<int>();
             if( n_eval_computational_time > 0 )
             {
-                compute_fem = false;
+                if( ! option(_name="crb.cvg-study").template as<bool>() )
+                {
+                    compute_fem = false;
+                    run_sampling_size = 0;
+                }
                 std::string appname = this->about().appName();
                 crb->computationalTimeStatistics( appname );
-                run_sampling_size = 0;
             }
 
 
@@ -604,7 +607,6 @@ public:
                                 double output_fem = -1;
                                 double time_fem = -1;
 
-                                // bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
                                 element_type u_fem;
 
                                 if ( compute_fem )
@@ -744,7 +746,6 @@ public:
                                     std::map<int, boost::tuple<double,double,double,double> > conver;
                                     for( int N = 1; N <= crb->dimension(); N++ )
                                     {
-                                        LOG(INFO) << "N=" << N << "...\n";
                                         //auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         auto u_crbN = crb->expansion( mu , N );
                                         auto u_error = model->functionSpace()->element();
@@ -827,16 +828,6 @@ public:
 
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
-
-            //bool compute_fem = option(_name="crb.compute-fem-during-online").template as<bool>();
-            // bool compute_stat =  option(_name="crb.compute-stat").template as<bool>();
-            if( n_eval_computational_time )
-            {
-                //if we want stat on computational time on EIM online step
-                //we are not interested in errors statistics
-                compute_stat = false;
-                compute_fem = false;
-            }
 
             if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
                 this->doTheEimConvergenceStat( Sampling->size() );
