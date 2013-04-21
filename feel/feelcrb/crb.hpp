@@ -3632,10 +3632,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
     for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     {
-        if( M_model->isSteady() )
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uN[0] , N , M_WN ), mu ,time );
-        else
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) = M_model->computeBetaQm( this->expansion( uNold[time_index] , N , M_WN ), mu ,time );
 
         computeProjectionInitialGuess( mu , N , uN[time_index] );
 
@@ -3651,7 +3647,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
         int fi=0;
 
         double old_output;
-#if 1
+#if 0
         //in the case were we want to control output error for fixed point
         L.setZero( N );
         for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
@@ -3667,8 +3663,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         do
         {
-            boost::tie( betaMqm, betaAqm, betaFqm, betaMFqm ) =
-                M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_WN ), mu ,time );
+            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_WN ), mu ,time );
 
             A.setZero( N,N );
             for ( size_type q = 0; q < M_model->Qa(); ++q )
