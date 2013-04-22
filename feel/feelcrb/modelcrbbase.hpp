@@ -84,6 +84,8 @@ public :
     typedef boost::shared_ptr<fund_type> fund_ptrtype;
     typedef std::vector<fund_ptrtype> funsd_type;
 
+    typedef Eigen::VectorXd vectorN_type;
+
     ModelCrbBase()
         :
         M_is_initialized( false )
@@ -112,9 +114,9 @@ public :
 
     virtual void initModel() = 0;
 
-    void computeStatistics( Eigen::VectorXd vector , std::string name )
+    vectorN_type computeStatistics( Eigen::VectorXd vector , std::string name )
     {
-        double min,max,mean,mean1,mean2,standard_deviation,variance;
+        double min=0,max=0,mean=0,mean1=0,mean2=0,standard_deviation=0,variance=0;
         Eigen::MatrixXf::Index index;
         Eigen::VectorXd square;
 
@@ -141,6 +143,12 @@ public :
             standard_deviation = math::sqrt( mean2 - mean1 );
             LOG(INFO)<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation;
         }
+        vectorN_type result(4);
+        result(0)=min;
+        result(1)=max;
+        result(2)=mean;
+        result(3)=standard_deviation;
+        return result;
     }
 
 
