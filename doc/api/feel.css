@@ -1054,6 +1054,18 @@ dl.section dd {
 	border-collapse: separate;
 }
  
+#projectlinks
+{
+	text-align: center;
+	vertical-align: bottom;
+	border-collapse: separate;
+}
+
+#projectlinks img
+{
+    border: 0px none;
+}
+
 #projectlogo img
 { 
 	border: 0px none;
