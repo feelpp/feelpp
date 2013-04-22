@@ -6031,6 +6031,8 @@ void
 CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
 {
 
+    double min=0,max=0,mean=0,standard_deviation=0;
+
     int n_eval = option(_name="crb.computational-time-neval").template as<int>();
 
     Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
@@ -6039,20 +6041,52 @@ CRB<TruthModelType>::computationalTimeStatistics(std::string appname)
     sampling_ptrtype Sampling( new sampling_type( M_Dmu ) );
     Sampling->logEquidistribute( n_eval  );
 
-    //dimension
-    int N =  option(_name="crb.dimension").template as<int>();
-    int mu_number = 0;
+    bool cvg = option(_name="crb.cvg-study").template as<bool>();
+    int dimension = this->dimension();
     double tol = option(_name="crb.online-tolerance").template as<double>();
-    BOOST_FOREACH( auto mu, *Sampling )
+
+    int N=dimension;//by default we perform only one time statistics
+
+    if( cvg ) //if we want to compute time statistics for every crb basis then we start at 1
+        N=1;
+
+    int proc_number =  Environment::worldComm().globalRank();
+    int master =  Environment::worldComm().masterRank();
+
+    //write on a file
+    std::string file_name = "cvg-timing-crb.dat";
+
+    std::ofstream conv;
+    if( proc_number == master )
     {
-        boost::mpi::timer tcrb;
-        auto o = this->run( mu, tol , N);
-        auto uN = o.template get<4>();
-        time_crb( mu_number ) = tcrb.elapsed() ;
-        mu_number++;
+        conv.open(file_name, std::ios::app);
+        conv << "NbBasis" << "\t" << "min" <<"\t"<< "max" <<"\t"<< "mean"<<"\t"<<"standard_deviation" << "\n";
     }
 
-    M_model->computeStatistics( time_crb , appname );
+    //loop over basis functions (if cvg option)
+    for(; N<=dimension; N++)
+    {
+
+        int mu_number = 0;
+        BOOST_FOREACH( auto mu, *Sampling )
+        {
+            boost::mpi::timer tcrb;
+            auto o = this->run( mu, tol , N);
+            time_crb( mu_number ) = tcrb.elapsed() ;
+            mu_number++;
+        }
+
+        auto stat = M_model->computeStatistics( time_crb , appname );
+
+        min=stat(0);
+        max=stat(1);
+        mean=stat(2);
+        standard_deviation=stat(3);
+
+        if( proc_number == master )
+            conv << N << "\t" << min << "\t" << max<< "\t"<< mean<< "\t"<< standard_deviation<<"\n";
+    }//loop over basis functions
+    conv.close();
 }
 
 

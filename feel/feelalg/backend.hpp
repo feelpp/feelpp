@@ -342,13 +342,21 @@ public:
     /**
      * instantiate a new block matrix sparse
      */
-    template < typename BlockType=sparse_matrix_ptrtype >
-    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<BlockType> const & b,
-            bool copy_values=true,
-            bool diag_is_nonzero=true )
+    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<sparse_matrix_ptrtype> const & b,
+                                              bool copy_values=true,
+                                              bool diag_is_nonzero=true )
     {
-        typedef MatrixBlockBase<typename BlockType::element_type::value_type> matrix_block_type;
+        typedef MatrixBlockBase<typename sparse_matrix_ptrtype::element_type::value_type> matrix_block_type;
         boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, copy_values, diag_is_nonzero ) );
+        return mb->getSparseMatrix();
+    }
+
+    sparse_matrix_ptrtype newBlockMatrixImpl( vf::BlocksBase<boost::shared_ptr<GraphCSR> > const & b,
+                                              bool copy_values=true,
+                                              bool diag_is_nonzero=true )
+    {
+        typedef MatrixBlockBase<value_type> matrix_block_type;
+        boost::shared_ptr<matrix_block_type> mb( new matrix_block_type( b, *this, diag_is_nonzero ) );
         return mb->getSparseMatrix();
     }
 
