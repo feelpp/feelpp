@@ -46,7 +46,7 @@ PROJECT_BRIEF          = "Finite Element Embedded Library and Language in C++"
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           =
+PROJECT_LOGO           =  "@CMAKE_CURRENT_SOURCE_DIR@/feel_logo_small.png"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -198,7 +198,9 @@ TAB_SIZE               = 4
 
 ALIASES                = "feel=<a href="http://www.feelpp.org">Feel++</a>"\
                        " co=\code{.cpp}"\
-                       " eco=\endcode"
+                       " eco=\endcode" \
+                       " Interface=<b>Interface :</b><br>"\
+                       " Examples=<b>Examples :</b><br>"
                        
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
@@ -763,7 +765,8 @@ EXAMPLE_RECURSIVE      = YES
 # the \image command).
 
 IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/tutorial/pngs/"\
-                         "@CMAKE_CURRENT_BINARY_DIR@/../tutorial/"
+                         "@CMAKE_CURRENT_BINARY_DIR@/../tutorial/"\
+                         .
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program

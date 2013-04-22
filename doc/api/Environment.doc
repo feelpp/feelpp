@@ -39,7 +39,7 @@ You can also add a list of options, using a routine as follows :
 \co
   using namespace Feel;
 
- 
+
   inline
   po::options_description
   makeOptions()
@@ -136,6 +136,59 @@ From "doc/manual/fd/penalisation.cpp" :
 <a href="#" class="top">top</a>
 <hr>
 \section Repository Repository
+\subsection Change changeRepository
+You can change the default repository.
+
+\Interface
+\co
+void changeRepository( _directory, _subdir, _filename );
+\eco
+Required Parameters :
+\li <tt>_directory</tt> : new directory
+
+Optional Parameters :
+\li <tt>_subdir</tt> : Default = <tt>true</tt>
+\li <tt>_filename</tt> : Default = <tt>"logfile"</tt>
+
+You can use \c boost::format to custom the path. <br>
+<b>Example :</b><br>
+From \c "doc/manual/laplacian/laplacian.cpp" :
+\co
+    Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % shape
+                                   % Dim
+                                   % Order
+                                   % meshSize );
+\eco
+Then results will be store in : "/doc/manual/laplacian/<appName>/<shape>-<Dim>/P<Order>/h_<meshSize>/"
+
+
+\subsection Find findFile
+\Interface
+\co
+std::string findFile( std::string const& filename );\eco
+Returns the string containing the filename path.
+
+The lookup is as follows:
+\li look into current path
+\li look into paths that went through changeRepository(), it means that we look for example into the path from which the executable was run
+
+If the file has an extension .geo or .msh, try also to
+\li look into \c localGeoRepository() which is usually $HOME/feel/geo
+\li look into \c systemGeoRepository() which is usually $FEELPP_DIR/share/feel/geo
+
+If <tt>filename</tt> is not found, then the empty string is returned.
+
+
+\subsection SetLogs setLogs
+\Interface
+\co
+void setLogs( std::string const& prefix );
+\eco
+Required Parameters :
+\li \c prefix : prefix for log filenames.
+
 \subsection Repository_Accessors Accessors
 There is a list of functions you can use to get information about the repositories used by \feel.
 <table class="manual">
@@ -148,55 +201,6 @@ There is a list of functions you can use to get information about the repositori
 <tr><td>\co Environment::systemConfigRepository();\eco</td><td>\c boost::tuple<std::string,bool> <br>A tuple : the system config files repository<br>and \c true or \c false whether the directory exists or not<br>Default : \c /usr/share/feel/config or /usr/local/share/feel/config</td></tr>
 <tr><td>\co Environment::scratchDirectory();\eco</td><td>\c fs::path <br>The scratch directory</td></tr>
 </table>
-
-\subsection Repository_Change Change Repository
-You can change the default repository, using the following function :
-\co
-Environment::changeRepository( _directory, _subdir, _filename );
-\eco
-Required Parameters :
-\li <tt>_directory</tt> : new directory
-
-Optional Parameters :
-\li <tt>_subdir</tt> : Default = <tt>true</tt>
-\li <tt>_filename</tt> : Default = <tt>"logfile"</tt>
-
-You can use \c boost::format to custom the path. <br>
-<b>Example :</b><br>
-From "doc/manual/laplacian/laplacian.cpp" :
-\co
-    Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/%2%-%3%/P%4%/h_%5%/" )
-                                   % this->about().appName()
-                                   % shape
-                                   % Dim
-                                   % Order
-                                   % meshSize );
-\eco
-Then results will be store in : "/doc/manual/laplacian/<appName>/<shape>-<Dim>/P<Order>/h_<meshSize>/"
-
-
-\subsection Repository_Find Find File
-\co Environment::findFile( std::string const& filename );\eco
-Returns the string containing the filename path (\c std::string ).
-
-Find a file. The lookup is as follows:
-\li look into current path
-\li look into paths that went through changeRepository(), it means that we look for example into the path from which the executable was run
-
-If the file has an extension .geo or .msh, try also to
-\li look into \c localGeoRepository() which is usually $HOME/feel/geo
-\li look into \c systemGeoRepository() which is usually $FEELPP_DIR/share/feel/geo
-
-If <tt>filename</tt> is not found, then the empty string is returned.
-
-
-\subsection Repository_LogFiles Set Log Files
-\co
-  Environment::setLogs( std::string const& prefix );
-\eco
-Required Parameter :
-\li \c prefix : prefix for log filenames.
-
 
 
 <a href="#" class="top">top</a>
