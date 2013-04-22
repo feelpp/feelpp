@@ -34,10 +34,12 @@
 #include <list>
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelalg/matrixsparse.hpp>
 
 namespace Feel
 {
+
+    //template<typename T> class MatrixSparse;
+
 namespace vf
 {
 /// \cond detail
@@ -184,7 +186,7 @@ operator<<( std::ostream& __os, Block const& __b )
 /// \endcond
 
 
-template <typename T= boost::shared_ptr< MatrixSparse<double> > >
+template <typename T>
 struct BlocksBase
 {
     typedef T block_type;
@@ -316,7 +318,7 @@ private :
 
 
 
-template <int NR, int NC, typename T= boost::shared_ptr< MatrixSparse<double> > >
+template <int NR, int NC, typename T>
 struct Blocks : public BlocksBase<T>
 {
     static const uint16_type NBLOCKROWS = NR;

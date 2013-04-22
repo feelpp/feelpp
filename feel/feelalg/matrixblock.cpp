@@ -194,6 +194,24 @@ MatrixBlockBase<T>::mergeBlockGraph( graph_ptrtype & globGraph,
 }
 
 
+template <typename T>
+MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & blockgraph, backend_type &backend,
+                                     bool diag_is_nonzero )
+    :
+    super(),
+    M_mat()
+{
+    graph_ptrtype graph( new graph_type( blockgraph,diag_is_nonzero,true) );
+
+    size_type size1 = graph->lastRowEntryOnProc()-graph->firstRowEntryOnProc()+1;
+    size_type size2 = graph->lastColEntryOnProc()-graph->firstColEntryOnProc()+1;
+    M_mat = backend.newMatrix( size1,size2,size1,size2,graph );
+    M_mat->zero();
+
+    //TODO : index split
+}
+
+
 
 template <typename T>
 void

@@ -1092,7 +1092,7 @@ public:
         return 1;
     }
 
-    void computeStatistics ( Eigen::VectorXd vector , std::string name )
+    vectorN_type computeStatistics ( Eigen::VectorXd vector , std::string name )
     {
         return M_model->computeStatistics( vector , name );
     }
