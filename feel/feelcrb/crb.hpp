@@ -3634,7 +3634,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     {
 
         computeProjectionInitialGuess( mu , N , uN[time_index] );
-
         //vectorN_type error;
         //const element_type expansion_uN = this->expansion( uN[time_index] , N , M_WN);
         //checkInitialGuess( expansion_uN , mu , error);
@@ -3690,17 +3689,14 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     F += betaMqm[q][m]*M_Mqm_pr[q][m].block( 0,0,N,N )*uNold[time_index]/time_step;
                 }
             }
-            LOG(INFO) << "A=" << A;
-            LOG(INFO) << "F=" << F;
             // backup uN
             previous_uN = uN[time_index];
 
             // solve for new fix point iteration
             uN[time_index] = A.lu().solve( F );
-            LOG(INFO) << "uN=" << uN[time_index];
+
             if ( time_index<number_of_time_step-1 )
                 uNold[time_index+1] = uN[time_index];
-
 
             L.setZero( N );
             for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
@@ -3711,13 +3707,12 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
                     L += betaFqm[M_output_index][q][m]*M_Lqm_pr[q][m].head( N );
                 }
             }
-            LOG(INFO) << "L=" << L;
             old_output = output;
             output = L.dot( uN[time_index] );
 
             //output_vector.push_back( output );
             output_vector[time_index] = output;
-            LOG(INFO) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";
+            DVLOG(2) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";
             fi++;
 
             if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
@@ -3739,6 +3734,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
         if ( time_index<number_of_time_step-1 )
             time_index++;
+
     }
 
     condition_number = 0;
