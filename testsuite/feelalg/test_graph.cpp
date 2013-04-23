@@ -142,7 +142,7 @@ void run( Application_ptrtype & theApp )
                                      _diag_is_nonzero=false );
     A_2_2->graph()->printPython( "A_2_2.py" );
 
-    auto BlockA = vf::Blocks<2,2>() << A_1_1 << A_1_2
+    auto BlockA = BlocksSparseMatrix<2,2>() << A_1_1 << A_1_2
                   << A_2_1 << A_2_2;
     auto A = backend->newBlockMatrix( _block=BlockA,
                                       _copy_values=false,
