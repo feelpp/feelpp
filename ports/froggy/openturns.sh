@@ -21,8 +21,9 @@ pushd ${HOME}/packages/build
 #apply patches if any
 if [ -d "${HOME}/packages/patches/openturns-1.1" ]; then
  pushd ${HOME}/packages/openturns-1.1
- for in $( ls ${HOME}/packages/patches/openturns-1.1/*.patch ); do
-      patch -p1 < ${HOME}/packages/patches/openturns-1.1/$patch || exit
+ for patch in $( ls ${HOME}/packages/patches/openturns-1.1/*.patch ); do
+      patch -p1 < $patch || exit
+ done
  popd
 fi
 
