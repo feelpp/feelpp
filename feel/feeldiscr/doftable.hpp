@@ -276,6 +276,11 @@ public:
         return ind;
     }
 
+    std::vector<size_type> getIndices( size_type id_el, mpl::size_t<MESH_ELEMENTS> /**/ ) const
+    {
+        return getIndices( id_el );
+    }
+
     void getIndicesSet( size_type id_el, std::vector<size_type>& ind ) const
     {
         const size_type s = getIndicesSize();
@@ -283,6 +288,21 @@ public:
         for ( size_type i = 0; i < s; ++i )
             ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
     }
+
+    std::vector<size_type> getIndices( size_type id_el, mpl::size_t<MESH_FACES> /**/ ) const
+    {
+        const size_type nDofF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                                  face_type::numEdges * fe_type::nDofPerEdge +
+                                  face_type::numFaces * fe_type::nDofPerFace );
+        const size_type ntdof = is_product?nComponents*nDofF:nDofF;
+        std::vector<size_type> ind( ntdof );
+
+        for ( size_type i = 0; i < ntdof; ++i )
+            ind[i] = boost::get<0>( _M_face_l2g[ id_el][ i ] );
+
+        return ind;
+    }
+
 
     void getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
     {
