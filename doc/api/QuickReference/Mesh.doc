@@ -2,21 +2,48 @@
 namespace Feel {
 /*! \page Mesh Meshes
 
-
 \tableofcontents
 
 \li \b Previous: \ref Environment
 \li \b Next: \ref Spaces
 
 <hr>
-In this section, we present some of the mesh definition and manipulation tools provided by \feel.<br>
-Feel supports only the Gmsh mesh file format. It provides also some classes to manipulate Gmsh \c .geo files and generate \c .msh files.
+\section Mesh_Introduction Introduction
+Feel++ provides some tools to manipulate mesh.<br>
+Here is a basic example that shows you how to generate a mesh for a square geometry (source \c "doc/manual/tutorial/mymesh.cpp").
+\co
+int main( int argc, char** argv )
+{
+  // initialize Feel++ Environment
+  Environment env( _argc=argc, _argv=argv,
+                   _desc=feel_options(),
+                   _about=about( _name="mymesh" ,
+                                 _author="Feel++ Consortium",
+                                 _email="feelpp-devel@feelpp.org" ) );
 
+  // create a mesh with GMSH using Feel++ geometry tool
+  auto mesh = unitSquare();
 
-You can visualize the geometry files \c .geo and \c .msh using the \c gmsh application :
+  // export results for post processing
+  auto e = exporter( _mesh=mesh );
+  e->addRegions();
+  e->save();
+}
+// main
+\eco
+
+As always, we initialise the \feel environment (see section \ref FirstApp ).<br>
+The \c unitSquare() will generate a mesh for a square geometry. \feel provides several functions to automate the GMSH mesh generation for different topologies. These functions will create a geometry file \c .geo and a mesh file \c .msh. We can visualize them in GMSH.
 \verbatim
   gmsh <entity_name>.msh
 \endverbatim
+
+Finally we use the \c exporter() (see \ref Exporter ) function to export the mesh for post processing. It will create by default a Paraview format file \c .sos and an Ensight format file \c .case.
+\verbatim
+  paraview <app_name>.sos
+\endverbatim
+
+In this section, we present some of the mesh definition and manipulation tools provided by \feel. For more information you can also see \ref Gmsh.<br>
 
 
 \section Basic Basic Meshes
@@ -107,16 +134,16 @@ The file you want to load has to be in an appropriate repository. See \ref LoadM
 From \c "doc/manual/heatns.cpp" :
 \co
  mesh_ptrtype mesh = loadGMSHMesh( _mesh=new mesh_type,
-                                      _filename="piece.msh",
-                                      _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
+                                   _filename="piece.msh",
+                                   _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
 \eco
 
 From \c "applications/check/check.cpp" :
 \co
 mesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=this->vm()["filename"].template as<std::string>(),
-                             _rebuild_partitions=(Environment::worldComm().size() > 1),
-                             _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+                     _filename=this->vm()["filename"].template as<std::string>(),
+                     _rebuild_partitions=(Environment::worldComm().size() > 1),
+                     _update=MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
 \eco
 
 
@@ -243,76 +270,9 @@ mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
 
 <a href="#" class="top">top</a>
 <hr>
-\section Accessors Accessors
-There is a list of functions you can use to get information about your mesh.
-<table class="manual">
-<tr><th>Feel++ function</th><th>Return</th></tr>
-<tr><td>\co dimension() \eco</td><td> \c int <br> Mesh dimension</td></tr>
-<tr><td>\co order() \eco</td><td> \c GMSH_ORDER <br> The order of the elements of the mesh</td></tr>
-<tr><td>\co version()\eco</td><td> \c std::string <br>The file format version</td></tr>
-<tr><td>\co format()\eco</td><td> \c GMSH_FORMAT <br> The file format</td></tr>
-<tr><td>\co isASCIIFormat()\eco</td><td> \c bool <br> \c true if gmsh format is ascii</td></tr>
-<tr><td>\co isBinaryFormat()\eco</td><td> \c bool  <br> \c true if gmsh format is binary</td></tr>
-<tr><td>\co prefix()\eco</td><td> \c std::string <br> The name of the file</td></tr>
-<tr><td>\co boundingBox()\eco</td><td> \c std::vector<std::pair<double,double>>  <br> Bounding box</td></tr>
-<tr><td>\co xmin()\eco</td><td> \c double  <br> The \c x minimal value (same syntax for \c or \c z )</td></tr>
-<tr><td>\co xmax()\eco</td><td> \c double <br> The \c maximal value (smae syntax for \c y or \cz )</td></tr>
-<tr><td>\co h()\eco</td><td> \c double  <br>Characteristic lenght</td></tr>
-<tr><td>\co description()\eco</td><td> \c std::string <br> The geometry description</td></tr>
-<tr><td>\co addMidPoint()\eco</td><td> \c bool  <br>Add the mid point of the domain</td></tr>
-<tr><td>\co usePhysicalNames()\eco</td><td> \c bool <br>\c true if use the physical name</td></tr>
-<tr><td>\co worldComm() \eco</td><td> \c WorldComm <br>The world communicator</td></tr>
-<tr><td>\co numberOfPartitions()\eco</td><td> \c int <br>The number of partitions</td></tr>
-<tr><td>\co mshFileByPartition()\eco</td><td> \c bool  <br>\true if save msh file by partitions</td></tr>
-<tr><td>\co partitioner()\eco</td><td> \c GMSH_PARTITIONER <br> The partitionner</td></tr>
-<tr><td>\co shear()\eco</td><td> \c double <br> The shear</td></tr>
-<tr><td>\co recombine()\eco</td><td> \c bool  <br>\c true if recombine </td></tr>
-<tr><td>\co refinementLevels()\eco</td><td> \c int <br>The refinement levels</td></tr>
-</table>
-
-
-<a href="#" class="top">top</a>
-<hr>
-\section Mutators Mutators
-There is a list of functions you can use to edit your mesh.
-<table class="manual">
-<tr><th>Feel++ function</th><th>Description</th></tr>
-<tr><td>\co Gmsh& setDimension( int dim )\eco</td><td>Set the dimension</td></tr>
-<tr><td>\co Gmsh& ref()\eco</td><td>The gmsh generator to generate a reference domain</td></tr>
-<tr><td>\co Gmsh& h( double _h )\eco</td><td>Set the characteristic length</td></tr>
-<tr><td>\co void setOrder( int o )\eco</td><td>Set the order of the elements of the mesh<br>It can be either GMSH_ORDER_ONE (order 1/linear)<br>or GMSH_ORDER_TWO(order 2/quadratic)</td></tr>
-<tr><td>\co void setVersion( std::string version )\eco</td><td>Set the file format \p version</td></tr>
-<tr><td>\co void setFileFormat( GMSH_FORMAT format )\eco</td><td>Set file \p format: ascii or binary</td></tr>
-<tr><td>\co void setDescription( std::string const& desc )\eco</td><td>Set the description of the geometry</td></tr>
-<tr><td>\co void setSubStructuring( bool substruct )\eco</td><td></td></tr>
-<tr><td>\co void setPrefix( std::string const& name )\eco</td><td>Set the prefix of the Gmsh files</td></tr>
-<tr><td>\co void setReferenceDomain()\eco</td><td>The gmsh generator to generate a reference domain</td></tr>
-<tr><td>\co void setCharacteristicLength( double _h )\eco</td><td>Set the characteristic length to \p h</td></tr>
-<tr><td>\co void setAddMidPoint( bool add )\eco</td><td>If add is true, set \c M_addmidpoint to \c true<br>\c false otherwise</td></tr>
-<tr><td>\co void usePhysicalNames( bool option )\eco</td><td>Set the use of physical names to describe the boundaries of the domain :<br> if \p option is set to true then the generator will generate a PhysicalNames Section and replace numerical id by strings for the Physical boundaries</td></tr>
-<tr><td>\co void setWorldComm( WorldComm const& _worldcomm )\eco</td><td>Set the communicator</td></tr>
-<tr><td>\co void setNumberOfPartitions( int n )\eco</td><td>Set the number of partitions</td></tr>
-<tr><td>\co void setMshFileByPartition( bool p )\eco</td><td>Set save msh file by partitions</td></tr>
-<tr><td>\co void setRefinementLevels( int levels )\eco</td><td>Set the refinements levels</td></tr>
-<tr><td>\co void setPartitioner( GMSH_PARTITIONER const& p )\eco</td><td>Set the partitioner</td></tr>
-<tr><td>\co void setShear( double _shear )\eco</td><td>Shear the domain</td></tr>
-<tr><td>\co void setRecombine( bool _recombine )\eco</td><td>Recombine simplices into quads</td></tr>
-</table>
-
-
-<a href="#" class="top">top</a>
-<hr>
 \section MeshTodo Todo
 \co
-std::string refine( std::string const& name, int level = 1, bool const parametric = false ) const;
-std::string preamble() const;
-std::string getDescriptionFromFile( std::string const& file ) const;
-void rebuildPartitionMsh( std::string const& nameMshInput,std::string const& nameMshOutput ) const;
 straightenMesh
-saveGMSHMesh
-saveGeoEntityAsGMSHMesh
-mshconvert
-img2msh
 \eco
 
 
