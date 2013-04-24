@@ -119,13 +119,15 @@ public :
     PreAssembleMatrixObject( range_type range ,
                              expr_type expr   ,
                              test_functionspace_type test ,
-                             trial_functionspace_type trial )
+                             trial_functionspace_type trial,
+                             size_type pattern = Pattern::COUPLED )
         :
         super(),
         M_range( range ),
         M_expr( expr ),
         M_test( test ),
-        M_trial( trial )
+        M_trial( trial ),
+        M_pattern( pattern )
     {}
 
     range_type range()
@@ -151,14 +153,14 @@ public :
     virtual sparse_matrix_ptrtype assembleMatrix()
     {
         auto backend = super::backend();
-        auto matrix = backend->newMatrix( _test=M_test , _trial=M_trial );
-        form2( _test=M_test, _trial=M_trial , _matrix=matrix ) = integrate( _range=M_range, _expr=M_expr );
+        auto matrix = backend->newMatrix( _test=M_test , _trial=M_trial , _pattern=M_pattern );
+        form2( _test=M_test, _trial=M_trial , _matrix=matrix , _pattern=M_pattern ) = integrate( _range=M_range, _expr=M_expr );
         return matrix;
     }
 
-    static preassemble_ptrtype New ( range_type const& range , expr_type const& expr , test_functionspace_type const& test, trial_functionspace_type const& trial )
+    static preassemble_ptrtype New ( range_type const& range , expr_type const& expr , test_functionspace_type const& test, trial_functionspace_type const& trial, size_type pattern)
     {
-        return preassemble_ptrtype( new PreAssembleMatrixObject( range , expr , test , trial ) );
+        return preassemble_ptrtype( new PreAssembleMatrixObject( range , expr , test , trial ,  pattern ) );
     }
 
 
@@ -168,6 +170,7 @@ private :
     expr_type M_expr;
     test_functionspace_type M_test;
     trial_functionspace_type M_trial;
+    size_type M_pattern;
 };//PreAssembleMatrixObject class
 
 
@@ -248,9 +251,10 @@ boost::shared_ptr< PreAssembleMatrixObject<RangeType, ExprType, TestFunctionSpac
 PreAssembleMatrix( RangeType const& range ,
                    ExprType const& expr ,
                    TestFunctionSpaceType const& test,
-                   TrialFunctionSpaceType const& trial )
+                   TrialFunctionSpaceType const& trial,
+                   size_type pattern = Pattern::COUPLED )
 {
-    return PreAssembleMatrixObject< RangeType , ExprType , TestFunctionSpaceType , TrialFunctionSpaceType >::New( range , expr , test , trial );
+    return PreAssembleMatrixObject< RangeType , ExprType , TestFunctionSpaceType , TrialFunctionSpaceType >::New( range , expr , test , trial , pattern);
 }
 
 template< typename RangeType, typename ExprType, typename TestFunctionSpaceType >
