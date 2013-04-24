@@ -456,7 +456,8 @@ private:
 #endif
 
 //     *********** Geometrical Elements *****************
-//! \defgroup GeoEle Geometry Element classes
+/** \defgroup GeoEle Geometry Element classes
+    \ingroup Obsolet_Groups */
 /*@{*/
 
 /**

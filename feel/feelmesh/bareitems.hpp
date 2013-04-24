@@ -205,8 +205,8 @@ struct BareFace
 };
 
 
-//! \defgroup BareItemsBuilder Global functions to build Bare Items.
-
+    /** \defgroup BareItemsBuilder Global functions to build Bare Items.
+        \ingroup Obsolet_Groups */
 inline
 std::pair<BarePoint, bool>
 makeBarePoint( size_type const i )
@@ -338,6 +338,7 @@ makeBareItem( size_type i, size_type j, size_type k, size_type l )
 }
 
 /*! \defgroup comparison Comparison Operators
+  \ingroup Obsolet_Groups
   Operators for comparing BareItems
 */
 
@@ -473,7 +474,7 @@ struct cmpBareItem<BareFace>
 };
 
 /**
- * \class BareItemHandler
+ * \class BareItemsHandler
  * \brief Bare Items Handler
  *
  * This class handles mesh bare edges and faces construction. Used
@@ -536,7 +537,7 @@ private:
 *********************************************************************************/
 //
 /*! \defgroup Helper Some helper functions
-*/
+  \ingroup Obsolet_Groups */
 
 //!\ingroup Helper
 template <typename BareItem>
