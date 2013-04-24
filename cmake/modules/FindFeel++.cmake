@@ -133,13 +133,13 @@ SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
 FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization)
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
-    add_definitions(-DBOOST_RESULT_OF_USE_TR1) 
+    add_definitions(-DBOOST_RESULT_OF_USE_TR1)
     message(STATUS "added -DBOOST_RESULT_OF_USE_TR1" )
   ENDIF()
   IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     # ensures that boost.signals2 compiles with clang++ >= 3.1
     IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "52")
-      add_definitions(-DBOOST_NO_CXX11_VARIADIC_TEMPLATES) 
+      add_definitions(-DBOOST_NO_CXX11_VARIADIC_TEMPLATES)
       message(STATUS "added -DBOOST_NO_CXX11_VARIADIC_TEMPLATES" )
     ELSE()
       add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
@@ -194,6 +194,9 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   set(DL_LIBS ${CMAKE_DL_LIBS})
   add_subdirectory(contrib/ginac)
 endif()
+
+add_subdirectory(contrib/exodus-5.24/exodus)
+#add_subdirectory(contrib/exodus-5.24/nemesis)
 
 #
 # Eigen
