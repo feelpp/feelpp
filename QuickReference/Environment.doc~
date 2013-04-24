@@ -9,7 +9,7 @@ namespace Feel {
 \li \b Next: \ref Mesh
 
 <hr>
-
+In this section, we present some tools to initialize and manipulate \feel environment. For more information, see \ref detail::Environment "Environment".
 
 \section Initialize Initialize Feel++
 Environment class is necessary to initialize your application, as seen in \ref FirstApp. Interface is as follow :
@@ -201,50 +201,6 @@ There is a list of functions you can use to get information about the repositori
 <tr><td>\co Environment::systemConfigRepository();\eco</td><td>\c boost::tuple<std::string,bool> <br>A tuple : the system config files repository<br>and \c true or \c false whether the directory exists or not<br>Default : \c /usr/share/feel/config or /usr/local/share/feel/config</td></tr>
 <tr><td>\co Environment::scratchDirectory();\eco</td><td>\c fs::path <br>The scratch directory</td></tr>
 </table>
-
-
-<a href="#" class="top">top</a>
-<hr>
-\section MPI MPI Environment
-\subsection MPI_Accessors Accesors
-There is a list of functions you can use to get information about the MPI Environment.
-<table class="manual">
-<tr><th>Feel++ function</th><th>Description</th><th>Return</th></tr>
-<tr><td>\co Environment::initialized();\eco</td><td>Determine if the MPI environment has already been initialized.</td><td> \c bool <br> \c true if the MPI environment has been initialized.</td></tr>
-<tr><td>\co Environment::finalized();\eco</td><td>Determine if the MPI environment has already been finalized.</td><td>\c bool<br> \c true if the MPI environment has been finalized.</td></tr>
-<tr><td>\co Environment::worldComm()\eco</td><td></td><td>\c WorldComm <br>The world communicators.</td></tr>
-<tr><td>\co Environment::worldsComm(int n);\eco</td><td></td><td>std::vector<WorldComm> <br> n sub world communicators</td></tr>
-<tr><td>\co Environment::masterWorldComm(int n);\eco</td><td></td><td>\c WorldComm <br> Master world comm associated with a color map of size n</td></tr>
-<tr><td>\co Environment::numberOfProcessors();\eco</td><td></td><td>\c int <br> Number of processors</td></tr>
-<tr><td>\co Environment::rank();\eco</td><td></td><td>\c int <br>The rank in global mpi communicators</td></tr>
-</table>
-
-
-<br>
-Todo:
-\co setWordlComm( WordlComm& worldcomm);\eco
-
-
-<a href="#" class="top">top</a>
-<hr>
-\section Description Miscellaneous
-\subsection Miscellaneous_About About
-\co
-Environment::about();
-\eco
-Is an accessor to the AboutData of your application. Frequently used to get the application name.
-
-<b>Example :</b><br>
-\co
-std::cout<< "Name of my application : " << Environment::about().appName() << std::endl;
-\eco
-
-
-<a href="#" class="top">top</a>
-<hr>
-\section TODO TODO
-
-\li \co Environment::addDeleteObserver(Observer const& obs );\eco
 
 <hr>
 
