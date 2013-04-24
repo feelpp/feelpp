@@ -38,22 +38,19 @@ namespace Feel
 {
 namespace mpl = boost::mpl;
 using boost::mpl::_;
-
+    /// @cond DETAIL
 namespace detail
 {
 struct bases_base {};
 struct meshes_base {};
 struct periodic_base {};
 /**
- * \class bases
+ *
  * \brief classes that store sequences of basis functions to define function spaces
  *
  * @author Christophe Prud'homme
  * @see
  */
-
-
-
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct bases
         :
@@ -71,7 +68,7 @@ struct bases
 };
 
 } // namespace detail
-
+/// @endcond
 #if FEELPP_CLANG_AT_LEAST(3,1) || FEELPP_GNUC_AT_LEAST(4,7)
 
 struct ChangeBasisTag
