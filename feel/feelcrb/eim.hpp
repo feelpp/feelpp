@@ -1076,7 +1076,7 @@ public:
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
             M_mu.check();
 #endif
             M_u = M_model->solve( mu );
@@ -1086,7 +1086,7 @@ public:
     element_type operator()( solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
             M_mu.check();
 #endif
             // no need to solve we have already an approximation (typically from
@@ -1100,7 +1100,7 @@ public:
     double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1113,7 +1113,7 @@ public:
     double diffL2Norm(  solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1128,7 +1128,7 @@ public:
     double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1141,7 +1141,7 @@ public:
     double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1154,7 +1154,7 @@ public:
     double interpolationError( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
