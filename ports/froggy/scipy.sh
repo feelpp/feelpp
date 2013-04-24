@@ -9,12 +9,14 @@ module load swig/2.0.9_gcc-4.6.2
 
 pushd ${HOME}/packages/scipy-0.12.0
 
-export BLAS=/home/chabannes/packages/blas/BLAS/blas_LINUX.a
+export BLAS=/home/chabannes/packages/blas/BLAS/libblas.a
 export LAPACK=/applis/ciment/v2/stow/x86_64/gcc_4.6.2/lapack_3.4.0/liblapack.a
 
-export PYTHONPATH=${HOME}/python/lib/python2.7/site-packages/
+export PYTHONPATH=${HOME}/packages/lib/python2.7/site-packages/
 
-python setup.py config_fc --noarch build
+unset LDFLAGS
+unset CFLAGS
+python setup.py build
 python setup.py install --prefix= ${HOME}/packages
 
 popd
