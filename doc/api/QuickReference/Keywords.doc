@@ -15,7 +15,7 @@ In all following tables we use the notations :<br>
 \f$f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}\f$  with \f$n=1,2,3\f$, \f$m=1,2,3\f$, \f$p=1,2,3\f$<br>
 \f$\Omega^e\f$ current mesh element
 
-\section Keywords_Array Points and  Vectors
+\section Keywords_Points Points
 
 Current Point :
 <table class="manual">
@@ -44,17 +44,27 @@ Normal at Current Point :
 <tr><td>\code{.cpp} Nz()\endcode</td><td>\f$N_z\f$</td><td>\f$z\f$ coordinate of \f$\overrightarrow{N}\f$<br>(value is 0 in 1D and 2D)</td><td>\f$1 \times 1\f$</td></tr>
 </table>
 
-Vectors :
-<table class="manual">
-<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
-<tr><td>\code{.cpp} vec<n>(v_1,v_2,...,v_n)\endcode</td><td>\f$\begin{pmatrix} v_1\\v_2\\ \vdots \\v_n \end{pmatrix}\f$</td><td>Column Vector with \f$n\f$ rows<br>entries being expressions</td><td>\f$n \times 1\f$</td></tr>
-</table>
 
 <a href="#" class="top">top</a>
 <hr>
 <br>
-\section Keywords_Matrix Matrix
-\subsection Matrix_Building Building Matrix
+\section Keywords_Array Vectors and Matrix
+\subsection BuildingVectors Building Vectors
+Usual syntax to create vectors :
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\code{.cpp} vec<n>(v_1,v_2,...,v_n)\endcode</td><td>\f$\begin{pmatrix} v_1\\v_2\\ \vdots \\v_n \end{pmatrix}\f$</td><td>Column Vector with \f$n\f$ rows<br>entries being expressions</td><td>\f$n \times 1\f$</td></tr>
+</table>
+You can also use expressions and the unit base vectors :
+<table class="example">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th></tr>
+<tr><td>\c oneX() </td><td> \f$\begin{pmatrix} 1\\0\\0 \end{pmatrix}\f$</td><td>Unit vector \f$\overrightarrow{i}\f$</td></tr>
+<tr><td>\c oneY() </td><td> \f$\begin{pmatrix} 0\\1\\0 \end{pmatrix}\f$</td><td>Unit vector \f$\overrightarrow{j}\f$</td></tr>
+<tr><td>\c oneZ() </td><td> \f$\begin{pmatrix} 0\\0\\1 \end{pmatrix}\f$</td><td>Unit vector \f$\overrightarrow{k}\f$</td></tr>
+</table>
+
+
+\subsection BuildingMatrix Building Matrix
 <table class="manual">
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
 <tr><td>\code{.cpp} mat<m,n>(m_11,m_12,...,m_mn)\endcode</td><td>\f$\begin{pmatrix} m_{11} & m_{12} & ...\\ m_{21} & m_{22} & ...\\ \vdots & & \end{pmatrix}\f$</td><td>\f$m\times n\f$ Matrix<br> entries beeing expressions </td><td>\f$m \times n\f$</td></tr>
@@ -71,6 +81,10 @@ Let \f$A\f$ a square matrix of size \f$n\f$.
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
 <tr><td>\code{.cpp} inv(A)\endcode</td><td>\f$A^{-1}\f$</td><td>Inverse of matrix \f$A\f$ </td><td>\f$n \times n\f$</td></tr>
 <tr><td>\code{.cpp} det(A)\endcode</td><td>\f$\det (A)\f$</td><td>Determinant of matrix \f$A\f$ </td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\co trace(A)\eco</td><td>\f$\tr (A)\f$</td><td>Trace of matrix \f$A\f$<br>Can be used on non-squared Matrix<br>Can be used on Vectors </td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\co trans(A)\eco</td><td>\f$A^T\f$</td><td>Transpose of matrix \f$A\f$<br>Can be used on non-squared Matrix<br>Can be used on Vectors </td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\co sym(A)\eco</td><td>\f$ Sym (A)\f$</td><td>Symmetric part of matrix \f$A\f$<br>Can be used on non-squared Matrix<br>Can be used on Vectors </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\co antisym(A)\eco</td><td>\f$ Asym (A)\f$</td><td>Antisymmetric part of matrix \f$A\f$<br>Can be used on non-squared Matrix<br>Can be used on Vectors </td><td>\f$n \times n\f$</td></tr>
 </table>
 
 
@@ -83,9 +97,9 @@ Following tables present tools to declare and manipulate expressions.
 <table class="example">
 <tr><th>\feel Keyword</th><th>Description</th></tr>
 <tr><td>\code{.cpp}
-oneX()
-oneY()
-oneZ()
+Px()
+Py()
+Pz()
 cst( c )
 \endcode</td><td>
 Variable \f$x\f$<br>

@@ -52,7 +52,7 @@ namespace Feel
 namespace posix_time = boost::posix_time;
 
 /*!
-  \class Debug
+  
   *\ingroup Core
   *\brief Area debugging tool
 

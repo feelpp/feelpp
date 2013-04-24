@@ -50,7 +50,7 @@ namespace Feel
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * \class MatrixEigen
+ * 
  * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
