@@ -64,7 +64,9 @@ makeAbout( char* name )
     return about;
 }
 
-/** @brief Initialize, finalize, and query the Feel++ environment.
+/**
+ *  @class Environment "Environment"
+ *  @brief Initialize, finalize, and query the Feel++ environment.
  *
  *  The @c Environment class is used to initialize, finalize, and
  *  query the Feel++ environment. It will typically be used in the @c

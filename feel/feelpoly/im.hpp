@@ -66,7 +66,7 @@ struct IntegrationDegree
 
 
 /**
- * \class IM
+ * 
  * \brief integration method interface class
  *
  * \code
