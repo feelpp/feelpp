@@ -37,7 +37,7 @@ namespace Feel
 {
 
 /**
- * \class PreAssembleObject
+ * 
  * \brief Pre Assemble Object class
  *
  * @author Christophe Prud'homme
