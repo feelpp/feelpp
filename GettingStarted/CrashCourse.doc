@@ -139,9 +139,11 @@ conditions and solve the discretized (linear) system.
 auto l = form1( _test=Vh );
 l = integrate(_range=elements(mesh),
               _expr=id(v));
+                                  
 auto a = form2( _trial=Vh, _test=Vh );
 a = integrate(_range=elements(mesh),
               _expr=gradt(u)*trans(grad(v)) );
+                                 
 a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
       _expr=constant(0.) );
 a.solve(_rhs=l,_solution=u);

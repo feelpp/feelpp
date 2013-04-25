@@ -2,7 +2,7 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
 /**
-\page Integrals Integration, Operators and Norms
+\page Integrals Integrations, Operators and Norms
 \ingroup grIntegrals
 
 \tableofcontents
@@ -115,25 +115,25 @@ main( int argc, char** argv )
                      _about=about( _name="myintegrals" ,
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );
-
+                                 
     // create the mesh (specify the dimension of geometric entity)
     auto mesh = unitHypercube<3>();
-
+                                 
     // our function to integrate
     auto f = Px()*Px() + Py()*Py() + Pz()*Pz();
-
+                                 
     // compute integral of f (global contribution)
     double intf_1 = integrate( _range = elements( mesh ),
                                _expr = f ).evaluate()( 0,0 );
-
+                                 
     // compute integral of f (local contribution)
     double intf_2 = integrate( _range = elements( mesh ),
                                _expr = f ).evaluate(false)( 0,0 );
-
+                                 
     // compute integral f on boundary
     double intf_3 = integrate( _range = boundaryfaces( mesh ),
                                _expr = f ).evaluate()( 0,0 );
-
+                                 
     std::cout << "int global ; local ; boundary" << std::endl
               << intf_1 << ";" << intf_2 << ";" << intf_3 << std::endl;
 }

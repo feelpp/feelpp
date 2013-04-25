@@ -75,17 +75,25 @@ You can also use expressions and the unit base vectors :
 <tr><td>\code{.cpp} Id<n>()\endcode</td><td>\f$\begin{pmatrix} 1 & 0 & ...\\ 0 & 1 & ...\\ \vdots & & \end{pmatrix}\f$</td><td>Unit diagonal Matrix <br> of size\f$n\times n\f$ </td><td>\f$n \times n\f$</td></tr>
 </table>
 
-\subsection Matrix_Manipulating Manipulating Matrix
-Let \f$A\f$ be a square matrix of size \f$n\f$ and \f$B\f$ be a matrix of size \f$m \times n\f$.
+\subsection Matrix_Manipulating Manipulating Vectors and Matrix
+Let \f$A\f$ be a square matrix of size \f$n\f$.
 <table class="manual">
 <tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
 <tr><td>\code{.cpp} inv(A)\endcode</td><td>\f$A^{-1}\f$</td><td>Inverse of matrix \f$A\f$ </td><td>\f$n \times n\f$</td></tr>
 <tr><td>\code{.cpp} det(A)\endcode</td><td>\f$\det (A)\f$</td><td>Determinant of matrix \f$A\f$ </td><td>\f$1 \times 1\f$</td></tr>
-<tr><td>\co trace(A)\eco</td><td>\f$\tr (A)\f$</td><td>Trace of matrix \f$A\f$<br>Can be used on non-squared Matrix<br>Can be used on Vectors </td><td>\f$1 \times 1\f$</td></tr>
-<tr><td>\co trans(B)\eco</td><td>\f$B^T\f$</td><td>Transpose of matrix \f$B\f$<br>Can be used on non-squared Matrix<br>Can be used on Vectors </td><td>\f$n \times m\f$</td></tr>
-<tr><td>\co sym(A)\eco</td><td>\f$ Sym (A)\f$</td><td>Symmetric part of matrix \f$A\f$ : \f$\frac{1}{2}(A+A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
-<tr><td>\co antisym(A)\eco</td><td>\f$ Asym (A)\f$</td><td>Antisymmetric part of  \f$A\f$ : \f$\frac{1}{2}(A-A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\co sym(A)\eco</td><td>\f$\text{Sym}(A)\f$</td><td>Symmetric part of matrix \f$A\f$ : \f$\frac{1}{2}(A+A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
+<tr><td>\co antisym(A)\eco</td><td>\f$ \text{Asym}(A)\f$</td><td>Antisymmetric part of  \f$A\f$ : \f$\frac{1}{2}(A-A^T)\f$<br> </td><td>\f$n \times n\f$</td></tr>
 </table>
+
+Let A and B be two matrix (or two vectors) of same dimension \f$m \times n\f$.
+<table class="manual">
+<tr><th>\feel Keyword</th><th>Math Object</th><th>Description</th><th>Dimension</th></tr>
+<tr><td>\co trace(A)\eco</td><td>\f$\text{tr}(A)\f$</td><td>Trace of matrix \f$A\f$<br>Generalized on non-squared Matrix<br>Generalized on Vectors </td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\co trans(B)\eco</td><td>\f$B^T\f$</td><td>Transpose of matrix \f$B\f$<br>Can be used on non-squared Matrix<br>Can be used on Vectors </td><td>\f$n \times m\f$</td></tr>
+<tr><td>\co inner(A,B)\eco</td><td>\f$ A.B \\ A:B = \text{tr}(A*B^T)\f$</td><td>Scalar product of two vectors<br>Generalized scalar product of two matrix </td><td>\f$1 \times 1\f$</td></tr>
+<tr><td>\co cross(A,B)\eco</td><td>\f$ A\times B\f$</td><td>Cross product of two vectors</td><td>\f$n \times 1\f$</td></tr>
+</table>
+
 
 
 
