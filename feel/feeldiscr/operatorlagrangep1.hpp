@@ -50,7 +50,7 @@ struct SpaceToLagrangeP1Space
     typedef typename domain_space_type::fe_type::convex_type convex_type;
     typedef typename domain_space_type::mesh_type domain_mesh_type;
 
-    typedef typename mpl::if_<mpl::or_<mpl::equal_to<mpl::bool_<convex_type::is_simplex>, mpl::bool_<true> >,
+    typedef typename mpl::if_<mpl::and_<mpl::equal_to<mpl::bool_<convex_type::is_simplex>, mpl::bool_<true> >,
                                        mpl::equal_to<mpl::int_<convex_type::nDim>, mpl::int_<1> > >,
                               mpl::identity<Hypercube<convex_type::nDim,convex_type::nOrder,convex_type::nRealDim > >,
                               mpl::identity<convex_type> >::type::type domain_reference_convex_type;
