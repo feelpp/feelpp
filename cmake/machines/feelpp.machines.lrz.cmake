@@ -27,7 +27,7 @@ OPTION(FEELPP_ENABLE_SCHED_LOADLEVELER ON)
 option(FEELPP_ENABLE_MANUAL OFF)
 option(FEELPP_ENABLE_BENCHMARKS OFF)
 option(FEELPP_ENABLE_OPENGL OFF)
-
+set(ENV{FEELPP_SCRATCHDIR} "$ENV{SCRATCH}")
 set(BLAS_blas_LIBRARY $ENV{packagesBaseDir}/blas/BLAS-gcc$ENV{gccVersion}/blas_LINUX.a)
 
 # find the gfortran library
