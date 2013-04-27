@@ -23,7 +23,7 @@
 #
 
 # enable the CCC script generation
-OPTION(FEELPP_ENABLE_CCC "Enable Feel++ tgcc/ccc submission scripts generation" ON)
+OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" ON)
 
 # find the gfortran library
 FIND_LIBRARY(GFORTRAN_LIBRARY
