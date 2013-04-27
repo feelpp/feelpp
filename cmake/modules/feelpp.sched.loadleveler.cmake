@@ -26,15 +26,16 @@ if ( FEELPP_ENABLE_SCHED_LOADLEVELER )
 #@ job_type = MPICH
 #@ environment = COPY_ALL
 #@ island_count=1
-#@ job_name = ${FEELPP_APP_NAME}
+#@ energy_policy_tag = NONE
+#@ job_name = ${execname}
 #@ class = test
 #@ node_usage = not_shared
 #@ wall_clock_limit = 00:40:00
 #@ network.mpi = sn_all,,us,,
 #@ notification = never
 #@ initialdir = ${CMAKE_CURRENT_BINARY_DIR}
-#@ output = ${FEELPP_APP_NAME}.$(jobid).out
-#@ error =  ${FEELPP_APP_NAME}.$(jobid).err
+#@ output = ${execname}.$(jobid).out
+#@ error =  ${execname}.$(jobid).err
 #@ node = 4
 #@ total_tasks =  64
 #@ queue
