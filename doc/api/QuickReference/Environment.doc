@@ -78,10 +78,10 @@ So you can change this parameter when you execute your app :
 
 
 <b>Example :</b><br>
-From "doc/manual/laplacian/laplacian.cpp" :
+From \c "/doc/manual/laplacian/laplacian.cpp" :
 \co
   using namespace Feel;
- 
+
   inline
   po::options_description
   makeOptions()

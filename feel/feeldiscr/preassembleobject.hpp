@@ -37,7 +37,7 @@ namespace Feel
 {
 
 /**
- * \class PreAssembleObject
+ * 
  * \brief Pre Assemble Object class
  *
  * @author Christophe Prud'homme
@@ -51,7 +51,8 @@ public :
 
     PreAssembleObjectBase()
     :
-        M_backend ( backend_type::build( BACKEND_PETSC ) )
+        M_backend ( backend_type::build( BACKEND_PETSC ) ),
+        M_pattern( Pattern::COUPLED )
     {}
 
     typedef double value_type;
@@ -85,10 +86,15 @@ public :
         return M_vector;
     }
 
+    virtual size_type pattern()
+    {
+        return M_pattern;
+    }
 private :
     vector_ptrtype M_vector;
     sparse_matrix_ptrtype M_matrix;
     backend_ptrtype M_backend;
+    size_type M_pattern;
 };//PreAssembleObjectBase
 
 template< typename RangeType , typename ExprType , typename TestFunctionSpaceType , typename TrialFunctionSpaceType >
@@ -156,6 +162,11 @@ public :
         auto matrix = backend->newMatrix( _test=M_test , _trial=M_trial , _pattern=M_pattern );
         form2( _test=M_test, _trial=M_trial , _matrix=matrix , _pattern=M_pattern ) = integrate( _range=M_range, _expr=M_expr );
         return matrix;
+    }
+
+    virtual size_type pattern()
+    {
+        return M_pattern;
     }
 
     static preassemble_ptrtype New ( range_type const& range , expr_type const& expr , test_functionspace_type const& test, trial_functionspace_type const& trial, size_type pattern)

@@ -46,7 +46,7 @@ PROJECT_BRIEF          = "Finite Element Embedded Library and Language in C++"
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           =  "@CMAKE_CURRENT_SOURCE_DIR@/feel_logo_small.png"
+PROJECT_LOGO           =  "@CMAKE_CURRENT_SOURCE_DIR@/pngs/feel_logo_small.png"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -674,15 +674,10 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = "@FEELPP_HOME_DIR@/feel/feelcore" \
-                         "@FEELPP_HOME_DIR@/feel/feelalg" \
-                         "@FEELPP_HOME_DIR@/feel/feelfilters" \
-                         "@FEELPP_HOME_DIR@/feel/feelmesh" \
-                         "@FEELPP_HOME_DIR@/feel/feelpoly" \
-                         "@FEELPP_HOME_DIR@/feel/feeltiming" \
-                         "@FEELPP_HOME_DIR@/feel/feelcrb" \
-                         "@FEELPP_HOME_DIR@/feel/feeldiscr" \                        
-                         "@FEELPP_HOME_DIR@/doc/api"\
+INPUT                  = "@FEELPP_HOME_DIR@/feel/" \                        
+                         "@FEELPP_HOME_DIR@/doc/api"
+                  
+
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -743,7 +738,7 @@ EXCLUDE_SYMBOLS        = "BOOST_*"
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/tutorial" \
+EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../"
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
@@ -764,9 +759,9 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/tutorial/pngs/"\
-                         "@CMAKE_CURRENT_BINARY_DIR@/../tutorial/"\
-                         .
+IMAGE_PATH             = "@CMAKE_CURRENT_SOURCE_DIR@/pngs/"
+   
+                         
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
