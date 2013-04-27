@@ -22,15 +22,20 @@
 #
 #
 
-# enable the CCC script generation
-OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" ON)
+OPTION(FEELPP_ENABLE_SCHED_LOADLEVELER ON)
+
+option(FEELPP_ENABLE_MANUAL OFF)
+option(FEELPP_ENABLE_BENCHMARKS OFF)
+option(FEELPP_ENABLE_OPENGL OFF)
+
+set(BLAS_blas_LIBRARY $ENV{packagesBaseDir}/blas/BLAS-gcc$ENV{gccVersion}/blas_LINUX.a)
 
 # find the gfortran library
 FIND_LIBRARY(GFORTRAN_LIBRARY
     NAMES
     gfortran
     PATHS
-    /usr/local/gcc-4.6.3/lib
+    /lrz/sys/compilers/gcc/$ENV{gccVersion}/lib64/
     $ENV{LIBRARY_PATH}
 )
-message(STATUS "curie gfortran lib: ${GFORTRAN_LIBRARY} ")
+message(STATUS "lrz gfortran lib: ${GFORTRAN_LIBRARY} ")

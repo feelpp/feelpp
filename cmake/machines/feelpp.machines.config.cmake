@@ -29,3 +29,12 @@ if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.${FEELPP_MACHINE
   message( STATUS "Configuration found for : ${FEELPP_MACHINE_NAME}" )
   include( feelpp.machines.${FEELPP_MACHINE_NAME} )
 endif()
+# try harder by looking elsewhere to ensure we are on the proper machine
+# we are more specific now
+STRING(REGEX MATCH "login(.*)" FEELPP_NAME_LOGIN ${FEELPP_MACHINE_NAME} )
+if( ${FEELPP_NAME_LOGIN} AND IS_DIRECTORY /lrz )
+  if ( EXISTS ${FEELPP_SOURCE_DIR}/cmake/machines/feelpp.machines.lrz.cmake )
+    message( STATUS "Configuration found for : lrz(supermuc)" )
+    include( feelpp.machines.lrz )
+  endif()
+endif()
