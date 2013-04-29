@@ -22,6 +22,15 @@
 #
 #
 
+set(FEELPP_SCHEDULER "None")
+if ( FEELPP_ENABLE_SCHED_LOADLEVELER )
+   set( FEELPP_SCHEDULER "LoadLeveler" )
+elseif ( FEELPP_ENABLE_SCHED_SLURM )
+     set( FEELPP_SCHEDULER "Slurm"  )
+elseif ( FEELPP_ENABLE_SCHED_CCC )
+     set( FEELPP_SCHEDULER "CCC"  )
+endif()
+
 ################################################################################
 # Display a post-configuration installation directives list
 ################################################################################
@@ -53,6 +62,8 @@ MESSAGE(STATUS "     FEELPP_ENABLE_MPI_MODE: ${FEELPP_ENABLE_MPI_MODE} Nprocs: $
 MESSAGE(STATUS "      FEELPP_MESH_MAX_ORDER: ${FEELPP_MESH_MAX_ORDER}")
 MESSAGE(STATUS "  FEELPP_INSTANTIATION_MODE: ${FEELPP_INSTANTIATION_MODE}")
 MESSAGE(STATUS "     FEELPP_ENABLED_OPTIONS: ${FEELPP_ENABLED_OPTIONS}")
+MESSAGE(STATUS "                  SCHEDULER: ${FEELPP_SCHEDULER}")
+
 MESSAGE(STATUS "================================================================================")
 
 string(TOLOWER "${CMAKE_GENERATOR}" cmake_generator_tolower)
