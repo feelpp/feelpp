@@ -1,0 +1,40 @@
+namespace Feel
+{
+/** \page GettingStarted Getting Started
+   - \subpage CrashCourse
+   - \subpage Building
+   - \subpage FirstApp
+*/
+
+/** \page QuickRef Quick Reference
+   - \subpage Keywords
+   - \subpage Environment
+   - \subpage Mesh
+   - \subpage Spaces
+   - \subpage Integrals
+   - \subpage Forms
+   - \subpage Exporter
+*/
+
+/** \page Learning Learning by Examples
+   - \subpage Laplacian
+   - \subpage Stokes
+   - \subpage Advection
+   - \subpage Linear
+*/
+
+/** \page Miscellaneous Miscellaneous
+   - \subpage Macros
+   - \subpage Types
+   - \subpage todo
+   - \subpage bug
+*/
+
+
+
+
+
+
+
+
+}
