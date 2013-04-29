@@ -154,6 +154,11 @@ static const char* DefaultLogDir() {
   if (env != NULL && env[0] != '\0') {
       return env;
   }
+  env = getenv("SCRATCH");
+  if (env != NULL && env[0] != '\0') {
+      return env;
+  }
+
   env = getenv("SCRATCHDIR");
   if (env != NULL && env[0] != '\0') {
       return env;

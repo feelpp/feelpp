@@ -1,9 +1,9 @@
 ###  TEMPLATE.txt.tpl; coding: utf-8 ---
 
-#  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 2012-04-12
+#  Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
+#       Date: 2013-04-26
 #
-#  Copyright (C) 2013 Feel++ Consortium
+#  Copyright (C) 2013 Université de Strasbourg
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,15 +22,7 @@
 #
 #
 
-# enable the CCC script generation
-OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" ON)
+include( feelpp.sched.slurm )
+include( feelpp.sched.loadleveler )
+include( feelpp.sched.ccc )
 
-# find the gfortran library
-FIND_LIBRARY(GFORTRAN_LIBRARY
-    NAMES
-    gfortran
-    PATHS
-    /usr/local/gcc-4.6.3/lib
-    $ENV{LIBRARY_PATH}
-)
-message(STATUS "curie gfortran lib: ${GFORTRAN_LIBRARY} ")
