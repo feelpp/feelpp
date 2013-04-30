@@ -117,7 +117,7 @@ public:
 
     ~OperatorLinear() {}
 
-    void
+    virtual void
     init( domain_space_ptrtype     domainSpace,
           dual_image_space_ptrtype dualImageSpace,
           backend_ptrtype          backend,
@@ -148,7 +148,7 @@ public:
         ie.container() = *_v2;
     }
 
-    void
+    virtual void
     apply( const domain_element_type& de,
            image_element_type&        ie ) const
     {
@@ -164,7 +164,7 @@ public:
         ie.container() = *_v2;
     }
 
-    double
+    virtual double
     energy( const typename domain_space_type::element_type & de,
             const typename dual_image_space_type::element_type & ie ) const
     {
@@ -183,7 +183,7 @@ public:
     }
 
 
-    void
+    virtual void
     apply( const typename domain_space_type::element_type & de,
            typename dual_image_space_type::element_type & ie )
     {
@@ -200,7 +200,7 @@ public:
     }
 
 
-    void
+    virtual void
     //apply( const typename domain_space_type::template Element<typename domain_space_type::value_type,
     //       typename VectorUblas<typename domain_space_type::value_type>::range::type > & de,
     apply( const domain_element_range_type & de,
@@ -218,7 +218,7 @@ public:
         ie.container() = *_v2;
     }
 
-    void
+    virtual void
     apply( const typename domain_space_type::element_type & de,
            dual_image_element_range_type & ie )
     {
@@ -235,7 +235,7 @@ public:
     }
 
 
-    void
+    virtual void
     apply( const domain_element_range_type & de,
            dual_image_element_range_type & ie )
     {
@@ -252,7 +252,7 @@ public:
     }
 
 
-    void
+    virtual void
     apply( const domain_element_slice_type & de,
            typename dual_image_space_type::element_type & ie )
     {
@@ -268,7 +268,7 @@ public:
         ie.container() = *_v2;
     }
 
-    void
+    virtual void
     apply( const typename domain_space_type::element_type & de,
            dual_image_element_slice_type & ie )
     {
@@ -285,7 +285,7 @@ public:
     }
 
 
-    void
+    virtual void
     apply( /*const*/ domain_element_slice_type /*&*/ de,
                      dual_image_element_slice_type /*&*/ ie )
     {
@@ -321,7 +321,7 @@ public:
 
 
 
-    void
+    virtual void
     apply( const domain_element_range_type & de,
            dual_image_element_slice_type & ie )
     {
@@ -337,7 +337,7 @@ public:
         ie.container() = *_v2;
     }
 
-    void
+    virtual void
     apply( const domain_element_slice_type & de,
            dual_image_element_range_type & ie )
     {
@@ -451,7 +451,6 @@ public:
     }
 
 
-
     // fill underlying matrix
     template<class ExprT>
     this_type& operator=( ExprT const& e )
@@ -514,6 +513,11 @@ public:
         return M_matrix;
     }
 
+    virtual void matPtr( matrix_ptrtype & matrix )
+    {
+        matrix = M_matrix;
+    }
+
     template<typename T>
     OperatorLinear& add( T const& scalar, OperatorLinear const& ol )
     {
@@ -555,6 +559,8 @@ private:
 
 
 }; // class Operator
+
+
 
 template<typename Args>
 struct compute_opLinear_return
