@@ -23,12 +23,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file ExporterEnsight.hpp
+   \file ExporterEnsightGold.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-26
  */
-#ifndef __ExporterEnsight_H
-#define __ExporterEnsight_H 1
+#ifndef __ExporterEnsightGold_H
+#define __ExporterEnsightGold_H 1
 
 #include <iostream>
 #include <fstream>
@@ -46,14 +46,14 @@ namespace Feel
 namespace fs = boost::filesystem;
 
 /**
- * \class ExporterEnsight
- * \brief exporter to Ensight format
+ * \class ExporterEnsightGold
+ * \brief exporter to EnsightGold format
  *
  * \ingroup Exporter
  * @author Christophe Prud'homme
  */
 template<typename MeshType, int N>
-class ExporterEnsight
+class ExporterEnsightGold
     :
 public Exporter<MeshType, N>
 {
@@ -120,13 +120,13 @@ public:
      \endhtmlonly
 
     */
-    ExporterEnsight( WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsight( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
-    ExporterEnsight( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsightGold( WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsightGold( std::string const& __p = "default", int freq = 1, WorldComm const& worldComm = Environment::worldComm() );
+    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", WorldComm const& worldComm = Environment::worldComm() );
 
-    ExporterEnsight( ExporterEnsight const & __ex );
+    ExporterEnsightGold( ExporterEnsightGold const & __ex );
 
-    ~ExporterEnsight();
+    ~ExporterEnsightGold();
 
 
     //@}
@@ -237,4 +237,4 @@ private:
 # include <feel/feelfilters/exporterensight.cpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
-#endif /* __ExporterEnsight_H */
+#endif /* __ExporterEnsightGold_H */
