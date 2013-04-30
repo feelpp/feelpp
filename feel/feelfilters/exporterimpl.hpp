@@ -37,11 +37,13 @@
 
 #include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
+#include <feel/feelfilters/exporterensightgold.hpp>
 #include <feel/feelfilters/exporterexodus.hpp>
 
 namespace Feel
 {
 template<typename MeshType, int N> class ExporterEnsight;
+template<typename MeshType, int N> class ExporterEnsightGold;
 template<typename MeshType, int N> class ExporterGmsh;
 
 template<typename MeshType, int N>
@@ -126,8 +128,10 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 {
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
 
-if ( N == 1 && ( exportername == "ensight" || Environment::numberOfProcessors() > 1 ) )
+    if ( N == 1 && ( exportername == "ensight" || Environment::numberOfProcessors() > 1 ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+    else if ( N == 1 && ( exportername == "ensightgold" || Environment::numberOfProcessors() > 1 ) )
+        exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
     else if ( N == 1 && ( exportername == "exodus" || Environment::numberOfProcessors() > 1 ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
     else if ( N > 1 || ( exportername == "gmsh" ) )
@@ -149,6 +153,8 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 
     if ( N == 1 && ( estr == "ensight"  || Environment::numberOfProcessors() > 1 ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
+    else if ( N == 1 && ( estr == "ensightgold"  || Environment::numberOfProcessors() > 1 ) )
+        exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
     else if ( N == 1 && ( estr == "exodus"  || Environment::numberOfProcessors() > 1 ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
     else if ( N > 1 || estr == "gmsh" )
