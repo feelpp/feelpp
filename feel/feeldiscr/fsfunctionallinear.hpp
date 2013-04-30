@@ -78,6 +78,7 @@ public:
     virtual value_type
     operator()( const element_type& x ) const
     {
+        M_vector->close();
         return M_backend->dot( *M_vector, x.container() );
     }
 
@@ -91,15 +92,26 @@ public:
     {
         return *M_vector;
     }
+
     // get the representation vector
-    vector_ptrtype const& containerPtr() const
+    virtual vector_ptrtype const& containerPtr() const
     {
         return M_vector;
     }
 
-    vector_ptrtype& containerPtr()
+    virtual vector_ptrtype& containerPtr()
     {
         return M_vector;
+    }
+
+    virtual void containerPtr( vector_ptrtype & vector )
+    {
+        vector = M_vector;
+    }
+
+    virtual void container( vector_type & vector )
+    {
+        vector = *M_vector;
     }
 
     // fill linear functional from linear form
@@ -124,8 +136,8 @@ public:
         {
             M_vector->close();
         }
-
     }
+
     void
     add( this_type const& f )
     {
@@ -137,6 +149,39 @@ private:
     vector_ptrtype M_vector;
 
 }; // class FsFunctionalLinear
+
+namespace detail
+{
+
+template<typename Args>
+struct compute_functionalLinear_return
+{
+    typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
+
+    typedef FsFunctionalLinear<space_type> type;
+    typedef boost::shared_ptr<FsFunctionalLinear<space_type> > ptrtype;
+};
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename Feel::detail::compute_functionalLinear_return<Args>::ptrtype ), // 1. return type
+    functionalLinear,                        // 2. name of the function template
+    tag,                                        // 3. namespace of tag types
+    ( required
+      ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
+    ) // required
+    ( optional
+      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinear_return<Args>::domain_space_type::value_type>::build() )
+    ) // optionnal
+)
+{
+
+    Feel::detail::ignore_unused_variable_warning( args );
+    typedef typename Feel::detail::compute_functionalLinear_return<Args>::type functional_type;
+    typedef typename Feel::detail::compute_functionalLinear_return<Args>::ptrtype functional_ptrtype;
+    return functional_ptrtype ( new functional_type( space , backend ) );
+
+} // functionalLinear
 
 } // Feel
 
