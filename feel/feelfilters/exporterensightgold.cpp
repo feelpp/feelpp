@@ -40,7 +40,7 @@
 namespace Feel
 {
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( WorldComm const& worldComm )
+ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( WorldComm const& worldComm )
 :
 super( worldComm ),
 _M_element_type()
@@ -49,15 +49,15 @@ _M_element_type()
     init();
 }
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq, WorldComm const& worldComm )
+ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( std::string const& __p, int freq, WorldComm const& worldComm )
     :
-    super( "ensight", __p, freq, worldComm ),
+    super( "ensightgold", __p, freq, worldComm ),
     _M_element_type()
 {
     init();
 }
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
+ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( po::variables_map const& vm, std::string const& exp_prefix, WorldComm const& worldComm )
     :
     super( vm, exp_prefix, worldComm )
 {
@@ -65,7 +65,7 @@ ExporterEnsight<MeshType,N>::ExporterEnsight( po::variables_map const& vm, std::
 }
 
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::ExporterEnsight( ExporterEnsight const & __ex )
+ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( ExporterEnsightGold const & __ex )
     :
     super( __ex ),
     _M_element_type( __ex._M_element_type )
@@ -73,12 +73,12 @@ ExporterEnsight<MeshType,N>::ExporterEnsight( ExporterEnsight const & __ex )
 }
 
 template<typename MeshType, int N>
-ExporterEnsight<MeshType,N>::~ExporterEnsight()
+ExporterEnsightGold<MeshType,N>::~ExporterEnsightGold()
 {}
 
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::init()
+ExporterEnsightGold<MeshType,N>::init()
 {
     if ( mesh_type::nDim == 1 )
         if ( mesh_type::Shape == SHAPE_LINE )
@@ -104,13 +104,13 @@ ExporterEnsight<MeshType,N>::init()
 }
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::save() const
+ExporterEnsightGold<MeshType,N>::save() const
 {
     if ( !this->worldComm().isActive() ) return;
 
     //static int freq = 0;
 
-    DVLOG(2) << "[ExporterEnsight::save] checking if frequency is ok\n";
+    DVLOG(2) << "checking if frequency is ok\n";
 
 
     if ( this->cptOfSave() % this->freq()  )
@@ -120,36 +120,36 @@ ExporterEnsight<MeshType,N>::save() const
     }
 
     boost::timer ti;
-    DVLOG(2) << "[ExporterEnsight::save] export in ensight format\n";
+    DVLOG(2) << "export in ensight format\n";
 
-    DVLOG(2) << "[ExporterEnsight::save] export sos\n";
+    DVLOG(2) << "export sos\n";
     _F_writeSoSFile();
-    DVLOG(2) << "[ExporterEnsight::save] export sos ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "export sos ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export case file\n";
+    DVLOG(2) << "export case file\n";
     _F_writeCaseFile();
-    DVLOG(2) << "[ExporterEnsight::save] export case file ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "export case file ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export geo(mesh) file\n";
+    DVLOG(2) << "export geo(mesh) file\n";
     _F_writeGeoFiles();
-    DVLOG(2) << "[ExporterEnsight::save] export geo(mesh) file ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "export geo(mesh) file ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export variable file\n";
+    DVLOG(2) << "export variable file\n";
     _F_writeVariableFiles();
-    DVLOG(2) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "export variable files ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export time set\n";
+    DVLOG(2) << "export time set\n";
     this->saveTimeSet();
-    DVLOG(2) << "[ExporterEnsight::save] export time set ok, time " << ti.elapsed() << "\n";
+    DVLOG(2) << "export time set ok, time " << ti.elapsed() << "\n";
 }
 
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
+ExporterEnsightGold<MeshType,N>::_F_writeSoSFile() const
 {
     // only on proc 0
     if ( this->worldComm().rank() == this->worldComm().masterRank() )
@@ -182,7 +182,7 @@ ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
 }
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
+ExporterEnsightGold<MeshType,N>::_F_writeCaseFile() const
 {
     std::ostringstream filestr;
     filestr << this->path() << "/"
@@ -409,7 +409,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
 
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
+ExporterEnsightGold<MeshType,N>::_F_writeGeoFiles() const
 {
     namespace lambda = boost::lambda;
 
@@ -434,9 +434,9 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
             _M_filename =  __geofname.str();
             CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
             if ( __ts->hasMesh() )
-                __ts->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                __ts->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
             if ( (*__it)->hasMesh() && !__ts->hasMesh() )
-                (*__it)->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                (*__it)->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
         }
 
         while ( __it != __end )
@@ -460,7 +460,7 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
                     //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
                     //, __ts->name(), __geofname.str() );
                     _M_filename =  __geofname.str();
-                    __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+                    __step->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
                 }
             }
             ++__it;
@@ -472,7 +472,7 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
 
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::_F_writeVariableFiles() const
+ExporterEnsightGold<MeshType,N>::_F_writeVariableFiles() const
 {
     namespace lambda = boost::lambda;
 
@@ -515,7 +515,7 @@ ExporterEnsight<MeshType,N>::_F_writeVariableFiles() const
 template<typename MeshType, int N>
 template<typename Iterator>
 void
-ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
+ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
 {
     while ( __var != en )
     {
@@ -527,7 +527,7 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
                    << "-" << this->worldComm().globalSize() << "_" << __var->second.worldComm().localRank(); // important localRank
         if ( !this->useSingleTransientFile() )
             __varfname << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-        DVLOG(2) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
+        DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "...\n";
         std::fstream __out;
         if ( this->useSingleTransientFile() )
             __out.open( __varfname.str().c_str(), std::ios::out | std::ios::app | std::ios::binary );
@@ -614,14 +614,14 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
             strcpy(buffer,"END TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
         }
-        DVLOG(2) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "done\n";
+        DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
         ++__var;
     }
 }
 template<typename MeshType, int N>
 template<typename Iterator>
 void
-ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const
+ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const
 {
     while ( __evar != __evaren )
     {
@@ -632,7 +632,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
         __evarfname << this->path() << "/" << __evar->first
                     << "-" << this->worldComm().globalSize() << "_" << __evar->second.worldComm().localRank() // important localRank
                     << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-        DVLOG(2) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "...\n";
+        DVLOG(2) << "[ExporterEnsightGold::saveElement] saving " << __evarfname.str() << "...\n";
         std::fstream __out( __evarfname.str().c_str(), std::ios::out | std::ios::binary );
 
         char buffer[ 80 ];
@@ -740,14 +740,14 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
        }
 
 
-        DVLOG(2) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "done\n";
+        DVLOG(2) << "[ExporterEnsightGold::saveElement] saving " << __evarfname.str() << "done\n";
         ++__evar;
     }
 }
 
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
+ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 {
     char buffer[ 80 ];
     std::vector<int> idnode, idelem;
@@ -889,23 +889,23 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 //
 // explicit instances
 //
-template class ExporterEnsight<Mesh<Simplex<1,1,1> > >;
-template class ExporterEnsight<Mesh<Simplex<1,1,2> > >;
-template class ExporterEnsight<Mesh<Simplex<2,1,2> > >;
-template class ExporterEnsight<Mesh<Simplex<2,2,2> > >;
-template class ExporterEnsight<Mesh<Simplex<2,1,3> > >;
-template class ExporterEnsight<Mesh<Simplex<3,1,3> > >;
+template class ExporterEnsightGold<Mesh<Simplex<1,1,1> > >;
+template class ExporterEnsightGold<Mesh<Simplex<1,1,2> > >;
+template class ExporterEnsightGold<Mesh<Simplex<2,1,2> > >;
+template class ExporterEnsightGold<Mesh<Simplex<2,2,2> > >;
+template class ExporterEnsightGold<Mesh<Simplex<2,1,3> > >;
+template class ExporterEnsightGold<Mesh<Simplex<3,1,3> > >;
 
-template class ExporterEnsight<Mesh<Simplex<3,2,3> > >;
+template class ExporterEnsightGold<Mesh<Simplex<3,2,3> > >;
 
-template class ExporterEnsight<Mesh<Hypercube<1,1,1> > >;
-template class ExporterEnsight<Mesh<Hypercube<2,1,2> > >;
-template class ExporterEnsight<Mesh<Hypercube<3,1,3> > >;
-template class ExporterEnsight<Mesh<Hypercube<3,2,3> > >;
+template class ExporterEnsightGold<Mesh<Hypercube<1,1,1> > >;
+template class ExporterEnsightGold<Mesh<Hypercube<2,1,2> > >;
+template class ExporterEnsightGold<Mesh<Hypercube<3,1,3> > >;
+template class ExporterEnsightGold<Mesh<Hypercube<3,2,3> > >;
 
-template class ExporterEnsight<Mesh<Simplex<2,3,2> > >;
-template class ExporterEnsight<Mesh<Hypercube<2,2> > >;
-template class ExporterEnsight<Mesh<Hypercube<2,3> > >;
+template class ExporterEnsightGold<Mesh<Simplex<2,3,2> > >;
+template class ExporterEnsightGold<Mesh<Hypercube<2,2> > >;
+template class ExporterEnsightGold<Mesh<Hypercube<2,3> > >;
 
 #endif // FEELPP_INSTANTIATION_MODE
 #endif
