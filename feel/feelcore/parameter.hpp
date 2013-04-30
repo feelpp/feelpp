@@ -109,6 +109,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( transform )
 // parameter for exporter
     BOOST_PARAMETER_NAME( geo )
+    BOOST_PARAMETER_NAME( fileset )
 // parameter for description of geometries
     BOOST_PARAMETER_NAME( h )
     BOOST_PARAMETER_NAME( dim )
