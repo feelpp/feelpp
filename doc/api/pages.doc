@@ -21,13 +21,16 @@ namespace Feel
    - \subpage Stokes
    - \subpage Advection
    - \subpage Linear
+   - \subpage NonLinear
+   - \subpage HeatSink
+   - \subpage NaturalConvection
+   - \subpage Maxwell
+   - \subpage Decomposition
 */
 
 /** \page Miscellaneous Miscellaneous
    - \subpage Macros
    - \subpage Types
-   - \subpage todo
-   - \subpage bug
 */
 
 
