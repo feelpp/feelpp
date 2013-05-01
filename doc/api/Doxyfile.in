@@ -46,7 +46,7 @@ PROJECT_BRIEF          = "Finite Element Embedded Library and Language in C++"
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           =  "@CMAKE_CURRENT_SOURCE_DIR@/pngs/feel_logo_small.png"
+PROJECT_LOGO           =  "@CMAKE_CURRENT_SOURCE_DIR@/pngs/logos/feel_logo_small.png"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -732,7 +732,7 @@ EXCLUDE_PATTERNS       = */.svn/* */.git/* */research/* */.tex/*
 # wildcard * is used, a substring. Examples: ANamespace, AClass,
 # AClass::ANamespace, ANamespace::*Test
 
-EXCLUDE_SYMBOLS        = "BOOST_*"
+EXCLUDE_SYMBOLS        = "BOOST_P*"
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or
 # directories that contain example code fragments that are included (see
