@@ -48,6 +48,12 @@ makeOptions()
 
 namespace Feel
 {
+/**
+   \page LinearElasticity Linear Elasticity : a Beam example
+   \author Christophe Prud'homme
+
+   This is the documentation for the beam example
+*/
 template<int nDim, int nOrder>
 class Beam
     :
@@ -292,7 +298,3 @@ main( int argc, char** argv )
     beam.add( new Feel::Beam<3,3>() );
     beam.run();
 }
-
-
-
-
