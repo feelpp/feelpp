@@ -23,6 +23,7 @@ namespace Feel
    - \subpage Linear
    - \subpage NonLinear
    - \subpage HeatSink
+   - \subpage SolidMechanics
    - \subpage NaturalConvection
    - \subpage Maxwell
    - \subpage Decomposition
