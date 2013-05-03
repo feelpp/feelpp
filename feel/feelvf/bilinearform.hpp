@@ -931,6 +931,16 @@ public:
     template <class ExprT>
     BilinearForm& operator+=( Expr<ExprT> const& expr );
 
+    BilinearForm& operator+=( BilinearForm& a )
+        {
+            if ( this == &a )
+                return *this;
+
+            _M_matrix->addMatrix( 1.0, a._M_matrix );
+
+            return *this;
+        }
+
     /**
      * Computes the energy norm associated with the bilinear form
      *
@@ -1589,4 +1599,3 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
 #include <feel/feelvf/bilinearformcontext.hpp>
 
 #endif /* __BilinearForm_H */
-
