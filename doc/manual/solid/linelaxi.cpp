@@ -67,8 +67,8 @@ namespace Feel
 /**
    \page LinElasAxi Axisymmetric Linear Elasticity
    \author Christophe Prud'homme
-
-   \see \file beamaxi2D.cpp
+   
+   \see beamaxi2D.cpp
  */
 template<int Order>
 class LinElAxi

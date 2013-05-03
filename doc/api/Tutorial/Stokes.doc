@@ -1,9 +1,0 @@
-/* -*- mode: c++; coding: utf-8 -*- */
-namespace Feel {
-/** \page Stokes Stokes Problem
-
-    - \subpage StokesTutorial
-    - \subpage StokesCurl
-
-*/
-}

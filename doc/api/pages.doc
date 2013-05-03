@@ -6,6 +6,7 @@ namespace Feel
    - \subpage FirstApp
 */
 
+
 /** \page QuickRef Quick Reference
    - \subpage Keywords
    - \subpage Environment
@@ -16,16 +17,45 @@ namespace Feel
    - \subpage Exporter
 */
 
+
 /** \page Learning Learning by Examples
    - \subpage NumericalMethods
-   - \subpage Laplacian
-   - \subpage Advection
-   - \subpage Stokes
-   - \subpage HeatSink
+   - \subpage Generic
+   - \subpage HeatTransfer
+   - \subpage FluidMechanics
    - \subpage SolidMechanics
-   - \subpage Maxwell
+   - \subpage ElectroMagnetism
    - \subpage MultiPhysics
 */
+/** \page NumericalMethods Numerical Method
+   - \subpage Linear
+   - \subpage NonLinear
+   - \subpage Decomposition
+*/
+/** \page Generic Generic Partial Differential Equation
+   - \subpage Laplacian
+   - \subpage StokesTutorial
+   - \subpage Advection
+*/
+/** \page HeatTransfer Heat Transfer
+   - \subpage HeatSink
+*/ 
+/** \page FluidMechanics Fluid Mechanics
+   - \subpage StokesCurl
+*/
+/** \page SolidMechanics Solid Mechanics
+    - \subpage LinearElasticity
+    - \subpage LinElasAxi
+    - \subpage StVenantKirchhoff
+*/
+/** \page ElectroMagnetism Electro Magnetism
+   - \subpage Diode
+*/
+/** \page MultiPhysics MultiPhysics
+   - \subpage NaturalConvection
+*/
+
+
 
 /** \page Miscellaneous Miscellaneous
    - \subpage Macros
