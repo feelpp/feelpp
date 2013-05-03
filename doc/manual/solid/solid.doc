@@ -1,0 +1,9 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+/** \page SolidMechanics Solid Mechanics
+
+    - \subpage LinearElasticity
+    - \subpage StVenantKirchhoff
+
+*/
+}
