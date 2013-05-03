@@ -49,6 +49,9 @@ po::options_description exporter_options( std::string const& prefix )
         // exporter type
         ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter (ensight or gmsh)" )
 
+        //  single
+        ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
+
         //  geometry
         ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<int>()->default_value( (int)EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY ), "type of geometry" )
 

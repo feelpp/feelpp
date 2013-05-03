@@ -8,7 +8,39 @@
 #+OPTIONS: toc:t
 #+LATEX_class: cparticle
 
+* New in 0.93.0
 
+** Programming environment
+
+ - support for Boost 1.53
+ - support for PETSc 3.3
+
+*** LRZ/SuperMuc
+  - port to LRZ/SuperMUC thanks to PRACE 6th-call and HP-FEEL++ project
+*** Mesocenters
+  - port to Strasbourg and Grenoble Mesocenters  
+
+** Library
+
+*** feelcore
+  - 
+*** feelalg
+  -
+*** feelmesh
+  -   
+*** feeldiscr
+ - 
+
+*** feelfilters
+  - 
+
+*** feelvf
+  - 
+** Documentation
+ - major update of the feel++ online manual using Doxygen
+   see http://feelpp.github.io/feelpp/ 
+
+
 * New in 0.92.0
 
 ** Programming environment

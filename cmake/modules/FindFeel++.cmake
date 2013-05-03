@@ -31,6 +31,7 @@ OPTION(FEELPP_ENABLE_SCHED_LOADLEVELER "Enable Feel++ ibm(supermuc) submission s
 OPTION(FEELPP_ENABLE_TBB "enable feel++ TBB support" OFF)
 OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
 OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
+OPTION(FEELPP_ENABLE_EXODUS "enable feel++ Exodus support" OFF)
 if ( APPLE )
   OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
 else()
@@ -194,6 +195,14 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
   set(DL_LIBS ${CMAKE_DL_LIBS})
   add_subdirectory(contrib/ginac)
+endif()
+
+if ( FEELPP_ENABLE_EXODUS )
+  include_directories(${FEELPP_SOURCE_DIR}/contrib/exodus-5.24/exodus/cbind/include/)
+  add_subdirectory(contrib/exodus-5.24/exodus)
+  #add_subdirectory(contrib/exodus-5.24/nemesis)
+  set(FEELPP_HAS_EXODUS 1)
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Exodus" )
 endif()
 
 #
