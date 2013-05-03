@@ -21,18 +21,17 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file stokes_curl.cpp
-   \author Christophe Prud'homme <prudhomme@unistra.fr>
-   \date 2013-05-01
- */
+
 #include <feel/feel.hpp>
 using namespace Feel;
 
 /**
    \page StokesCurl
+   \author Christophe Prud'homme
+   \date 2013-05-01
+
    \tableofcontents
-   \section stokescurlform Stokes Curl Formulation
+   \section StokesCurl_Theory Theory
 
    We are interested in solving
    \f$ -\nu \Delta \bvec{u} + \nabla p  = \bvec{f},\quad \nabla \cdot \bvec{u} = 0 \f$
@@ -51,10 +50,10 @@ using namespace Feel;
    \nabla \times \psi  = \frac{\partial \psi}{\partial x_1} -\frac{\partial \psi}{\partial x_2}
    \f]
 
-   \section implementation Implementation
-   \file stokes_curl.cpp
+   \section StokesCurl_Implementation Implementation
+   \snippet stokes/stokes_curl.cpp marker
 */
-//\code
+/// [marker]
 int main(int argc, char**argv )
 {
     Environment env( _argc=argc, _argv=argv,
@@ -112,4 +111,4 @@ int main(int argc, char**argv )
     e->add( "p", p );
     e->save();
 }
-//\endcode
+/// [marker]
