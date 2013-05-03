@@ -22,29 +22,22 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file mystokes.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>,
-                 Guillaume Dollé <guillaume.dolle@math.unistra.fr>
-   \date 2013-02-19
-   This program show how to solve Poiseuille flow equations (stokes).
- */
+
 
 #include <feel/feel.hpp>
 using namespace Feel;
 
 /**
  \page StokesTutorial Stokes Tutorial
-\author Vincent Huber
-\author Christophe Prud'homme
-\author Guillaume Dolle
+\author Feel++ Consortium
+\date 2013-02-19
 
 \tableofcontents
 <br>
 <hr>
 <br>
 
-\section Stokes_Math Mathematical Problem
+\section Stokes_Theory Theory
 Let solve the stokes equation considering a Poiseuille flow profile. <br>
 We have the following system of equations,
 <br><center>\f$
@@ -118,7 +111,7 @@ We have an equation which can be rewritten as find \f$(\mathbf u,p)\in [H_g^1(\O
 \f$</center><br>
 where \f$a\f$ is a bilinear form, continuous, coercive and where \f$l\f$ is a linear form.
 
-\section Stokes_Code Feel++ Code
+\section Stokes_Implementation Implementation
 Let's see the \feel code corresponding to this mathematical statement (source \c "doc/manual/tutorial/mystokes.cpp").<br>
 We suppose for this example the viscosity \f$\mu=1\f$ and \f$\mathbf f = 0\f$.
 
@@ -138,9 +131,10 @@ We take an element
 \f$
 in this space. Then we define the integrals of the variationnal formulation for the left and the right hand side. Finally, we apply the Poiseuille profile on the boundary.<br>
 We call the solver to resolve the problem (\ref Solver).
- */
-//\code
-//# marker_main #
+\snippet mystokes.cpp marker_main
+
+*/
+/// [marker_main]
 int main(int argc, char**argv )
 {
     Environment env( _argc=argc, _argv=argv,
@@ -186,5 +180,5 @@ int main(int argc, char**argv )
     e->add( "p", p );
     e->save();
 }
-//# endmarker_main #
-//\endcode
+/// [marker_main]
+
