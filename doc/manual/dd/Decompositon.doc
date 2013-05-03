@@ -110,7 +110,7 @@ and \f$\Omega_2\f$ at \f$n^{th}\f$ iteration is given by
   \end{aligned}
 \f}
 
-\subsubsection Overlapping_Implementation Implementation}
+\subsubsection Overlapping_Implementation Implementation
 \co
 //  Implementation of the local problem
 template<Expr>
@@ -330,7 +330,7 @@ solve the eigenvalue problem \f$ Av =  \lambda B v \f$
 <tr>
   <td>\image html mode-0.png</td>
   <td>\image html mode-1.png</td>
-  <td>\image html mode-2.png</td>	
+  <td>\image html mode-2.png</td>
 </tr>
 <tr>
   <td><center>first mode</center></td>
