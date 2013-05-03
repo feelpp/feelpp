@@ -3,6 +3,7 @@ namespace Feel {
 /** \page SolidMechanics Solid Mechanics
 
     - \subpage LinearElasticity
+    - \subpage LinElasAxi
     - \subpage StVenantKirchhoff
 
 */
