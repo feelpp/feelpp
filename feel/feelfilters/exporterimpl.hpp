@@ -128,11 +128,11 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 {
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( exportername  );
 
-    if ( N == 1 && ( exportername == "ensight" || Environment::numberOfProcessors() > 1 ) )
+    if ( N == 1 && ( exportername == "ensight" ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
-    else if ( N == 1 && ( exportername == "ensightgold" || Environment::numberOfProcessors() > 1 ) )
+    else if ( N == 1 && ( exportername == "ensightgold"  ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
-    else if ( N == 1 && ( exportername == "exodus" || Environment::numberOfProcessors() > 1 ) )
+    else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>;
@@ -151,11 +151,11 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
 
-    if ( N == 1 && ( estr == "ensight"  || Environment::numberOfProcessors() > 1 ) )
+    if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
-    else if ( N == 1 && ( estr == "ensightgold"  || Environment::numberOfProcessors() > 1 ) )
+    else if ( N == 1 && ( estr == "ensightgold"   ) )
         exporter = new ExporterEnsightGold<MeshType, N>( worldComm );
-    else if ( N == 1 && ( estr == "exodus"  || Environment::numberOfProcessors() > 1 ) )
+    else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
     else if ( N > 1 || estr == "gmsh" )
         exporter = new ExporterGmsh<MeshType,N>;

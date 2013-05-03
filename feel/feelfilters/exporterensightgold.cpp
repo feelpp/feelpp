@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-21
  */
-#ifndef __EXPORTERENSIGHT_CPP
-#define __EXPORTERENSIGHT_CPP
+#ifndef __EXPORTERENSIGHTGOLD_CPP
+#define __EXPORTERENSIGHTGOLD_CPP
 
 #include <feel/feelcore/feel.hpp>
 
@@ -389,7 +389,9 @@ ExporterEnsightGold<MeshType,N>::_F_writeCaseFile() const
 
     __out << "\n";
 
-    if ( Environment::numberOfProcessors() > 2  && ( this->worldComm().rank() == this->worldComm().masterRank() ) )
+    LOG(INFO) << "rank : " << this->worldComm().globalRank();
+    LOG(INFO) << "gg"  << (( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 )) << "\n";
+    if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
     {
         __out << "APPENDED_CASEFILES\n"
               << "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
@@ -545,69 +547,90 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         strcpy( buffer, __var->second.name().c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
-        uint16_type nComponents = __var->second.nComponents;
+        typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
+        typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
 
-        if ( __var->second.is_vectorial )
-            nComponents = 3;
-
-        /**
-         * BE CAREFUL HERE some points in the mesh may not be present in the
-         * mesh element connectivity, we really need to have an array of the
-         * size of the number of points in the mesh even though if some are not
-         * in the connectivity and not an array of the dimension of the function
-         * space which has the "right" size.
-         */
-        size_type __field_size = __step->mesh()->numPoints();
-        if ( __var->second.is_vectorial )
-            __field_size *= 3;
-        ublas::vector<float> __field( __field_size );
-
-        __field.clear();
-        typename mesh_type::element_const_iterator elt_it, elt_en;
-        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( *__step->mesh() );
-        size_type e = 0;
-
-        if ( !__var->second.areGlobalValuesUpdated() )
-            __var->second.updateGlobalValues();
-
-        for ( ; elt_it != elt_en; ++elt_it )
+        for ( ; p_it != p_en; ++p_it )
         {
-            for ( uint16_type c = 0; c < nComponents; ++c )
-            {
-                for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
-                {
-                    size_type ptid = elt_it->point( p ).id();
-                    size_type global_node_id = nComponents * ptid + c ;
-                    DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
-                                                                 << " local pt:" << p
-                                                                 << " mesh numPoints: " << __step->mesh()->numPoints();
-                    DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
+            strcpy( buffer, "part" );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            int partid = p_it->first;
+            __out.write( ( char * ) & partid, sizeof(int) );
+            DVLOG(2) << "part " << buffer << "\n";
+            strcpy( buffer, "coordinates" );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            uint16_type nComponents = __var->second.nComponents;
 
-                    if ( c < __var->second.nComponents )
+            if ( __var->second.is_vectorial )
+                nComponents = 3;
+
+            /**
+             * BE CAREFUL HERE some points in the mesh may not be present in the
+             * mesh element connectivity, we really need to have an array of the
+             * size of the number of points in the mesh even though if some are not
+             * in the connectivity and not an array of the dimension of the function
+             * space which has the "right" size.
+             */
+            size_type __field_size = __step->mesh()->numPoints();
+            if ( __var->second.is_vectorial )
+                __field_size *= 3;
+            ublas::vector<float> __field( __field_size );
+
+            __field.clear();
+            //typename mesh_type::element_const_iterator elt_it, elt_en;
+            //boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( *__step->mesh() );
+
+            typename mesh_type::marker_element_const_iterator elt_it;
+            typename mesh_type::marker_element_const_iterator elt_en;
+            boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
+                                                                               __var->second.worldComm().localRank() ); // important localRank!!!!
+
+
+            size_type e = 0;
+
+            if ( !__var->second.areGlobalValuesUpdated() )
+                __var->second.updateGlobalValues();
+
+            for ( ; elt_it != elt_en; ++elt_it )
+            {
+                for ( uint16_type c = 0; c < nComponents; ++c )
+                {
+                    for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {
-                        size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->id(),p, c ) );
+                        size_type ptid = elt_it->point( p ).id();
+                        size_type global_node_id = nComponents * ptid + c ;
+                        DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
+                                                                     << " local pt:" << p
+                                                                     << " mesh numPoints: " << __step->mesh()->numPoints();
+                        DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
+
+                        if ( c < __var->second.nComponents )
+                        {
+                            size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->id(),p, c ) );
 
 #if 0
 
-                        if ( dof_id >= __var->second.firstLocalIndex() &&
-                                dof_id < __var->second.lastLocalIndex()  )
-                            __field[global_node_id] = __var->second( dof_id );
+                            if ( dof_id >= __var->second.firstLocalIndex() &&
+                                 dof_id < __var->second.lastLocalIndex()  )
+                                __field[global_node_id] = __var->second( dof_id );
+
+                            else
+                                __field[global_node_id] = 0;
+
+#else
+                            __field[global_node_id] = __var->second.globalValue( dof_id );
+#endif
+                        }
 
                         else
                             __field[global_node_id] = 0;
-
-#else
-                        __field[global_node_id] = __var->second.globalValue( dof_id );
-#endif
                     }
-
-                    else
-                        __field[global_node_id] = 0;
                 }
             }
-        }
 
-        __out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
+            __out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
+
+        } // parts loop
 
         if ( this->useSingleTransientFile() )
         {
@@ -815,19 +838,19 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         {
             size_type __id = pt_it->id();
             idnode[__count] = __id+1;
-            __coords[3*__count+0] = ( float ) pt_it->node()[0];
+            __coords[__count] = ( float ) pt_it->node()[0];
 
         if ( mesh_type::nRealDim >= 2 )
-            __coords[3*__count+1] = ( float ) pt_it->node()[1];
+            __coords[__nv+__count] = ( float ) pt_it->node()[1];
 
         else
-            __coords[3*__count+1] = float( 0 );
+            __coords[__nv+__count] = float( 0 );
 
         if ( mesh_type::nRealDim >= 3 )
-            __coords[3*__count+2] = float( pt_it->node()[2] );
+            __coords[2*__nv+__count] = float( pt_it->node()[2] );
 
         else
-            __coords[3*__count+2] = float( 0 );
+            __coords[2*__nv+__count] = float( 0 );
         }
 
         __out.write( ( char * ) & idnode.front(), idnode.size() * sizeof( int ) );
