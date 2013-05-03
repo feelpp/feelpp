@@ -17,17 +17,19 @@ namespace Feel
 */
 
 /** \page Learning Learning by Examples
+   - \subpage NumericalMethods
    - \subpage Laplacian
-   - \subpage Stokes
    - \subpage Advection
-   - \subpage Linear
+   - \subpage Stokes
+   - \subpage HeatSink
+   - \subpage SolidMechanics
+   - \subpage Maxwell
+   - \subpage MultiPhysics
 */
 
 /** \page Miscellaneous Miscellaneous
    - \subpage Macros
    - \subpage Types
-   - \subpage todo
-   - \subpage bug
 */
 
 
