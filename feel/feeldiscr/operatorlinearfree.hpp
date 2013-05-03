@@ -87,7 +87,7 @@ public:
                         expr_type                expr,
                         size_type                pattern=Pattern::COUPLED )
         :
-        super( domainSpace,dualImageSpace,backend , false ),
+        super( domainSpace , dualImageSpace , backend , false , pattern ),
         M_backend( backend ),
         M_expr( expr ),
         M_pattern( pattern )
@@ -97,11 +97,13 @@ public:
     init( domain_space_ptrtype     domainSpace,
           dual_image_space_ptrtype dualImageSpace,
           backend_ptrtype          backend,
-          bool buildMatrix = false )
+          bool buildMatrix = false ,
+          size_type pattern = Pattern::COUPLED )
     {
         this->setDomainSpace( domainSpace );
         this->setDualImageSpace( dualImageSpace );
         M_backend = backend;
+        M_pattern = pattern;
     }
 
 
