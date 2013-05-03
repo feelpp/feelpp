@@ -204,6 +204,20 @@ public:
     }//sumAllVectors
 
 
+    super_ptrtype& functionallinear( int q )
+    {
+        int q_max = M_functionals1.size();
+        FEELPP_ASSERT( q < q_max )( q_max )( q ).error( "FsFunctionalLinearComposite has not enough elements" );
+        return M_functionals1.template at(q);
+    }
+
+    super_ptrtype& functionallinear( int q , int m)
+    {
+        auto tuple = boost::make_tuple( q , m );
+        return M_functionals2.template at(tuple);
+    }
+
+
     //Access to a specific vector
     void vecPtr( int q , vector_ptrtype& vector )
     {
@@ -283,7 +297,7 @@ BOOST_PARAMETER_FUNCTION(
       ( space,    *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ) )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinearComposite_return<Args>::domain_space_type::value_type>::build() )
+      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinearComposite_return<Args>::space_type::value_type>::build() )
     ) // optionnal
 )
 {

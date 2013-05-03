@@ -87,13 +87,15 @@ public:
         :
         super_type(),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
-        M_matrix()
+        M_matrix(),
+        M_pattern( Pattern::COUPLED )
     {}
     OperatorLinear( OperatorLinear const& ol, bool deep_copy = false )
         :
         super_type( ol ),
         M_backend( ol.M_backend ),
-        M_matrix()
+        M_matrix(),
+        M_pattern( ol.M_pattern )
     {
         if ( deep_copy )
         {
@@ -108,11 +110,13 @@ public:
     OperatorLinear( domain_space_ptrtype     domainSpace,
                     dual_image_space_ptrtype dualImageSpace,
                     backend_ptrtype          backend,
-                    bool buildMatrix = true ) :
+                    bool buildMatrix = true ,
+                    size_type pattern=Pattern::COUPLED ) :
         super_type( domainSpace, dualImageSpace ),
-        M_backend( backend )
+        M_backend( backend ),
+        M_pattern( pattern )
     {
-        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
+        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
 
     ~OperatorLinear() {}
@@ -121,13 +125,14 @@ public:
     init( domain_space_ptrtype     domainSpace,
           dual_image_space_ptrtype dualImageSpace,
           backend_ptrtype          backend,
-          bool buildMatrix = true )
+          bool buildMatrix = true ,
+          size_type pattern = Pattern::COUPLED )
     {
         this->setDomainSpace( domainSpace );
         this->setDualImageSpace( dualImageSpace );
         M_backend = backend;
-
-        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
+        M_pattern = pattern;
+        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
 
     // apply the operator: ie := Op de
@@ -467,6 +472,7 @@ public:
         M_backend = m.M_backend;
         M_matrix->zero();
         M_matrix->addMatrix( 1.0, m.M_matrix );
+        M_pattern = m.M_pattern;
 
         return *this;
     }
@@ -531,6 +537,11 @@ public:
         return M_backend;
     }
 
+    size_type pattern()
+    {
+        return M_pattern;
+    }
+
     template<typename T>
     OperatorLinear& add( T const& scalar, boost::shared_ptr<OperatorLinear> ol )
     {
@@ -556,7 +567,7 @@ private:
 
     backend_ptrtype M_backend;
     matrix_ptrtype M_matrix;
-
+    size_type M_pattern;
 
 }; // class Operator
 
@@ -581,6 +592,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // required
     ( optional
       ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build() )
+      ( pattern,        *, (size_type)Pattern::COUPLED  )
     ) // optionnal
 )
 {
@@ -588,7 +600,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
             typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
 
-    boost::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend ) );
+    boost::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend,pattern ) );
 
     return opI;
 

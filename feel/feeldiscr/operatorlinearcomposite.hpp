@@ -226,22 +226,32 @@ public :
     }
 
     //Access to a specific matrix
-    //matrix_ptrtype matPtr(int q, int m)
     void matrixPtr(int q, int m , matrix_ptrtype& matrix)
     {
-        //auto matrix = M_backend->newMatrix( _test=this->dualImageSpace() ,
-        //                                    _trial=this->domainSpace(),
-        //                                   _pattern=M_pattern );
         //fill matrix
         auto tuple = boost::make_tuple(q,m);
         M_operators2.template at(tuple)->matPtr(matrix);
-        //return matrix;
     }
 
     void matrixPtr(int q, int m , matrix_ptrtype& matrix) const
     {
         auto tuple = boost::make_tuple(q,m);
         M_operators2.template at(tuple)->matPtr(matrix);
+    }
+
+
+    //Acces to operator
+    super_ptrtype & operatorlinear(int q)
+    {
+        int q_max = M_operators1.size();
+        FEELPP_ASSERT( q < q_max )( q_max )( q ).error( "OperatorLinearComposite has not enough elements" );
+        return M_operators1.template at(q);
+    }
+
+    super_ptrtype & operatorlinear(int q, int m)
+    {
+        auto tuple = boost::make_tuple(q,m);
+        return M_operators2.template at(tuple);
     }
 
 

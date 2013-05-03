@@ -146,7 +146,7 @@ BOOST_PARAMETER_FUNCTION(
       ( expr ,   * )
     ) // required
     ( optional
-      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinearFree_return<Args>::domain_space_type::value_type>::build() )
+      ( backend,        *, Backend<typename Feel::detail::compute_functionalLinearFree_return<Args>::space_type::value_type>::build() )
     ) // optionnal
 )
 {

@@ -13,7 +13,9 @@ One of \feel assets is it finite element embedded language. The language follows
 
 In all following tables we use the notations :<br>
 \f$f: \mathbb{R}^n \mapsto \mathbb{R}^{m\times p}\f$  with \f$n=1,2,3\f$, \f$m=1,2,3\f$, \f$p=1,2,3\f$<br>
-\f$\Omega^e\f$ current mesh element
+\f$\Omega^e\f$ current mesh element.
+
+The genesis of the language can be found in \cite prudhomme05:_domain_specif_embed_languag_c and an update on Feel++ is available in \cite PRUDHOMME:2012:HAL-00662868:3.
 
 \section Keywords_Points Points
 
