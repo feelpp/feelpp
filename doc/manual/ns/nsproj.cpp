@@ -71,7 +71,9 @@ int main(int argc, char**argv )
 
     for(int i=0; i<Niter; i++)
     {
+        LOG(INFO) << "Iteration " << i << "/" << Niter << " Time = " << i*dt << "s";
 
+        LOG(INFO) << "Velocity...";
         lVit = integrate(_range=elements(mesh),
                          _expr=
                          dt*inner(id(V),fn1)
@@ -97,15 +99,9 @@ int main(int argc, char**argv )
         //            aVit+=on(_range=markedfaces(mesh,"outlet"), _rhs=lVit, _element=UTn1,
         //                   _expr=vec(cst(0.),cst(0.)) );
         aVit.solve( _solution=UTn1, _rhs=lVit, _name="velocity" );
-
-
-        if ( Environment::rank() == 0 )
-        {
-            std::cout << " End velocity resolution " << std::endl;
-            std::cout << " Begin pressure resolution " << std::endl;
-        }
+        LOG(INFO) << "Velocity problem done.";
         // Pressure
-
+        LOG(INFO) << "Pressure...";
         lPre = integrate(_range=elements(mesh),
                          _expr=
                          -(1./dt)*id(q)*divv(UTn1)
@@ -121,34 +117,38 @@ int main(int argc, char**argv )
                  _expr=cst(0.) );
 
         aPre.solve( _solution=pn1, _rhs=lPre, _name="pressure" );
-
+        LOG(INFO) << "Pressure problem done.";
+        LOG(INFO) << "Velocity correction...";
         auto gradPn1Proj = vf::project(_space=Vh,_range=elements(mesh), _expr=trans(gradv(pn1)));
         auto gradPnProj = vf::project(_space=Vh,_range=elements(mesh), _expr=trans(gradv(pn)));
-        Un1 = UTn1 - dt*gradPn1Proj + dt*gradPnProj;
+        //Un1 = UTn1 - dt*gradPn1Proj + dt*gradPnProj;
+        Un1 = vf::project(_space=Vh,_range=elements(mesh), _expr=idv(UTn1) + dt*trans(gradv(pn)-gradv(pn1) ) );
 
         auto divUn = vf::project(_space=Ph,_range=elements(mesh), _expr=divv(Un1) );
-
+        LOG(INFO) << "Velocity correction done.";
 
         double time = i*dt;
 
-        exp->step( time )->setMesh( mesh );
-        //exp->step( time )->addRegions();
-        exp->step( time )->add( "p", pn1 );
-        exp->step( time )->add( "u", Un1 );
-        exp->step( time )->add( "uT", UTn1 );
-        exp->step( time )->add( "divu", divUn );
-        exp->save();
+        if ( exp->doExport() )
+        {
+            exp->step( time )->setMesh( mesh );
+            //exp->step( time )->addRegions();
+            exp->step( time )->add( "p", pn1 );
+            exp->step( time )->add( "u", Un1 );
+            exp->step( time )->add( "uT", UTn1 );
+            exp->step( time )->add( "divu", divUn );
+            exp->save();
+        }
+
 
         UTn = UTn1;
         pnm1 = pn;
         pn = pn1;
 
-        if ( Environment::rank() == 0 )
-        {
-            std::cout << "----> pn(aa)-pn(bb) =  " << pn1(aa)(0,0,0)-pn1(bb)(0,0,0) << std::endl;
-            std::cout << "----> Un(aa) =  " << Un1(aa)(0,0,0) << " , " << Un1(aa)(1,0,0) << std::endl;
-            std::cout << "----> Un(bb) =  " << Un1(bb)(0,0,0) << " , " << Un1(bb)(1,0,0) << std::endl;
-        }
+
+        LOG(INFO) << "----> pn(aa)-pn(bb) =  " << pn1(aa)(0,0,0)-pn1(bb)(0,0,0);
+        LOG(INFO) << "----> Un(aa) =  " << Un1(aa)(0,0,0) << " , " << Un1(aa)(1,0,0);
+        LOG(INFO) << "----> Un(bb) =  " << Un1(bb)(0,0,0) << " , " << Un1(bb)(1,0,0);
     }
 
 }
