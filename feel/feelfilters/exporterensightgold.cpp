@@ -785,7 +785,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
     strcpy( buffer, "element id given" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
-    LOG(INFO) << "header done";
+
     typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
     typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
 
