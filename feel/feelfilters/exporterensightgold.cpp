@@ -382,20 +382,19 @@ ExporterEnsightGold<MeshType,N>::_F_writeCaseFile() const
     if ( this->useSingleTransientFile() )
     {
         __out << "FILE\n";
-        __out << "file set : 1\n";
+        __out << "file set: 1\n";
         auto ts = *this->beginTimeSet();
         __out << "number of steps: " << ts->numberOfSteps() << "\n";
     }
 
     __out << "\n";
 
-    LOG(INFO) << "rank : " << this->worldComm().globalRank();
-    LOG(INFO) << "gg"  << (( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 )) << "\n";
     if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
     {
         __out << "APPENDED_CASEFILES\n"
               << "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
-              << "cfiles global path: " << fs::current_path().string() << "\n"
+            // no need for that
+            // << "cfiles global path: " << fs::current_path().string() << "\n"
               << "cfiles: ";
         for(int p = 1; p < Environment::numberOfProcessors(); ++p )
         {
@@ -542,6 +541,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         {
             strcpy(buffer,"BEGIN TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
+            LOG(INFO) << "out: " << buffer;
         }
 
         strcpy( buffer, __var->second.name().c_str() );
@@ -625,6 +625,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         {
             strcpy(buffer,"END TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
+            LOG(INFO) << "out: " << buffer;
         }
         DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
         ++__var;
@@ -769,6 +770,8 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     {
         strcpy(buffer,"BEGIN TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
+        LOG(INFO) << "out : " << buffer;
+
     }
 
 
@@ -782,7 +785,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
     strcpy( buffer, "element id given" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
-
+    LOG(INFO) << "header done";
     typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
     typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
 
@@ -884,6 +887,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     {
         strcpy(buffer,"END TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
+        LOG(INFO) << "out : " << buffer;
     }
 }
 
