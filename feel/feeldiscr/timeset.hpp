@@ -159,8 +159,8 @@ public:
         typedef typename vector_p1_space_type::element_type nodal_vector_type;
         typedef typename tensor2_p1_space_type::element_type nodal_tensor2_type;
 
-        typedef std::map<std::string, scalar_type> map_scalar_type;
-        typedef std::map<std::string, complex_type> map_complex_type;
+        typedef std::map<std::string, std::pair<scalar_type,bool> > map_scalar_type;
+        typedef std::map<std::string, std::pair<complex_type,bool> > map_complex_type;
         typedef std::map<std::string, nodal_scalar_type> map_nodal_scalar_type;
         typedef std::map<std::string, nodal_vector_type> map_nodal_vector_type;
         typedef std::map<std::string, nodal_tensor2_type> map_nodal_tensor2_type;
@@ -287,6 +287,16 @@ public:
         }
 
         /**
+         * @return the begin iterator for scalars
+         */
+        scalar_const_iterator beginScalar() const { return _M_scalar.begin(); }
+
+        /**
+         * @return the end iterator for scalars
+         */
+        scalar_const_iterator endScalar() const { return _M_scalar.end(); }
+
+        /**
          * get the scalar with name n
          * @param __n name of the nodal scalar field
          * @return the scalar value
@@ -300,7 +310,7 @@ public:
                 throw std::logic_error( __err.str() );
             }
 
-            return _M_scalar.find( __n )->second;
+            return _M_scalar.find( __n )->second.first;
         }
 
 
@@ -318,7 +328,7 @@ public:
                 throw std::logic_error( __err.str() );
             }
 
-            return _M_nodal_scalar.find( __n )->second;
+            return _M_nodal_scalar.find( __n )->second.first;
         }
 
         /**
@@ -427,9 +437,9 @@ public:
             DVLOG(2) << "[TimeSet::setMesh] setMesh start\n";
         }
 
-        void addScalar( std::string const& name, scalar_type const& __s )
+        void addScalar( std::string const& name, scalar_type const& __s, bool cst = false )
         {
-            _M_scalar[name] =  __s;
+            _M_scalar[name] =  std::make_pair( __s, cst );
             _M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             _M_state.clear( STEP_ON_DISK );
         }
@@ -909,8 +919,8 @@ public:
             for ( ; __itc!= __enc; ++__itc )
             {
                 ar & boost::serialization::make_nvp( "complex", ( std::string const& )__itc->first );
-                ar & boost::serialization::make_nvp( "real", ( scalar_type const& )__itc->second.real() );
-                ar & boost::serialization::make_nvp( "imaginary", ( scalar_type const& )__itc->second.imag() );
+                ar & boost::serialization::make_nvp( "real", ( scalar_type const& )__itc->second.first.real() );
+                ar & boost::serialization::make_nvp( "imaginary", ( scalar_type const& )__itc->second.first.imag() );
             }
 
             s = _M_nodal_scalar.size();

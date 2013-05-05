@@ -147,7 +147,7 @@ public:
      */
     std::string const& elementType() const
     {
-        return _M_element_type;
+        return M_element_type;
     }
 
 
@@ -201,22 +201,22 @@ private:
     /**
        write the '' file for ensight
     */
-    void _F_writeSoSFile() const;
+    void writeSoSFile() const;
 
     /**
        write the 'case' file for ensight
     */
-    void _F_writeCaseFile() const;
+    void writeCaseFile() const;
 
     /**
        write the 'geo' file for ensight
     */
-    void _F_writeGeoFiles() const;
+    void writeGeoFiles() const;
 
     /**
        write the variables file for ensight
     */
-    void _F_writeVariableFiles() const;
+    void writeVariableFiles() const;
 
     template<typename Iterator>
     void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
@@ -226,8 +226,9 @@ private:
 
 private:
 
-    mutable std::string _M_filename;
-    std::string _M_element_type;
+    mutable std::string M_filename;
+    std::string M_element_type;
+    std::string M_face_type;
 };
 
 
