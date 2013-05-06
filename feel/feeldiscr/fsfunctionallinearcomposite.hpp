@@ -71,6 +71,18 @@ public:
     {}
 
 
+    virtual void setName( std::string name ) { M_name = name; }
+    virtual std::string name() const { return M_name ; }
+
+
+    int size()
+    {
+        int size1 = M_functionals1.size();
+        int size2 = M_functionals2.size();
+        return size1+size2;
+    }
+
+
     //if we have a list of functionals
     //i.e. \sum_{q=0}^Q Fq(.)
     void addElement( super_ptrtype const& functional )
@@ -273,7 +285,7 @@ private:
     backend_ptrtype M_backend;
     std::vector< double > M_scalars1;
     std::vector< std::vector<double> > M_scalars2;
-
+    std::string M_name;
 };
 
 namespace detail
