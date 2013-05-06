@@ -124,6 +124,22 @@ public :
     static const uint16_type ParameterSpaceDimension = 4;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
+class FunctionSpaceDefinition
+{
+public :
+    static const uint16_type Order = 5;
+
+    typedef double value_type;
+
+    /*mesh*/
+    typedef Simplex<1,1> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    /*basis*/
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
+
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+};
 
 /**
  * \class Heat1D
@@ -132,20 +148,17 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class Heat1D : public ModelCrbBase<ParameterDefinition>
+class Heat1D : public ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition>
 {
 public:
 
-
-    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
-
 
     /** @name Constants
      */
     //@{
-
     static const uint16_type Order = 5;
     static const uint16_type ParameterSpaceDimension = 4;
     static const bool is_time_dependent = false;
@@ -156,6 +169,11 @@ public:
     //@{
 
     typedef double value_type;
+
+    typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef typename FunctionSpaceDefinition::mesh_type basis_type;
 
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -170,19 +188,11 @@ public:
     typedef eigen_matrix_type ematrix_type;
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
-    /*mesh*/
-    typedef Simplex<1,1> entity_type;
-    typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef p0_space_type::element_type p0_element_type;
 
-    /*basis*/
-    typedef bases<Lagrange<Order, Scalar> > basis_type;
-
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef typename FunctionSpaceDefinition::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
@@ -207,8 +217,8 @@ public:
 
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
 
     //@}
 
@@ -294,11 +304,6 @@ public:
         return 1;
     }
 
-    int mMaxInitialGuess( int q )
-    {
-        return 1;
-    }
-
 
     /**
      * \brief Returns the function space
@@ -318,13 +323,13 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
     {
         return computeBetaQm( mu , time );
     }
 
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type >
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( parameter_type const& mu, double time=0 )
     {
         M_betaAqm.resize( Qa() );
@@ -345,11 +350,7 @@ public:
         M_betaFqm[0][1][0] = mu( 3 ); // phi
         M_betaFqm[1][0][0] = 1;
 
-        M_betaInitialGuessQm.resize( QInitialGuess() );
-        M_betaInitialGuessQm[0].resize( 1 );
-        M_betaInitialGuessQm[0][0] = 0;
-
-        return boost::make_tuple( M_betaAqm, M_betaFqm, M_betaInitialGuessQm);
+        return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
     /**
@@ -375,11 +376,6 @@ public:
     value_type betaAqm( int q , int m ) const
     {
         return M_betaAqm[q][m];
-    }
-
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_betaInitialGuessQm[q][m];
     }
 
     /**
@@ -432,6 +428,8 @@ public:
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
+
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition();
 
     /**
      * \brief solve the model for parameter \p mu
@@ -522,10 +520,8 @@ private:
     std::vector < std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector < std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector < std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
     beta_vector_type M_betaAqm;
-    beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
 
     parameterspace_ptrtype M_Dmu;
@@ -587,12 +583,6 @@ Heat1D::initModel()
             M_Fqm[l][q][0] = backend->newVector( Xh );
         }
     }
-
-    auto ini_cond = Xh->elementPtr();
-    ini_cond->setZero();
-    M_InitialGuessQm.resize( 1 );
-    M_InitialGuessQm[0].resize( 1 );
-    M_InitialGuessQm[0][0] = ini_cond;
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
@@ -657,9 +647,19 @@ Heat1D::newVector() const
 Heat1D::affine_decomposition_type
 Heat1D::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Aqm, M_Fqm, M_InitialGuessQm );
+    return boost::make_tuple( M_Aqm, M_Fqm );
 }
 
+std::vector< std::vector< Heat1D::element_ptrtype > >
+Heat1D::computeInitialGuessAffineDecomposition()
+{
+    std::vector< std::vector<element_ptrtype> > q;
+    q.resize(1);
+    q[0].resize(1);
+    element_ptrtype elt ( new element_type ( Xh ) );
+    q[0][0] = elt;
+    return q;
+}
 
 void
 Heat1D::solve( sparse_matrix_ptrtype& D,

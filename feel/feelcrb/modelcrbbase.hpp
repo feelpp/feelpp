@@ -43,15 +43,9 @@ public :
     typedef ParameterSpace<1> parameterspace_type ;
 };
 
-template <typename ParameterDefinition>
-class EimDefinitionBase
+class FunctionSpaceDefinitionBase
 {
-
 public :
-    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
-    //warning
-    //mesh, basis, space and eim objects are here only to have fun_type and fund_type
-
     /*mesh*/
     typedef Simplex<1> entity_type ;
     typedef Mesh<entity_type > mesh_type ;
@@ -61,6 +55,15 @@ public :
 
     /*space*/
     typedef FunctionSpace<mesh_type , basis_type > space_type ;
+};
+
+template <typename ParameterDefinition, typename FunctionSpaceDefinition>
+class EimDefinitionBase
+{
+
+public :
+    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
+    typedef typename FunctionSpaceDefinition::space_type space_type;
 
     /* EIM */
     typedef EIMFunctionBase<space_type , space_type  , parameterspace_type > fun_type ;
@@ -70,7 +73,7 @@ public :
 
 
 
-template <typename ParameterDefinition = ParameterDefinitionBase, typename EimDefinition = EimDefinitionBase<ParameterDefinition> >
+template <typename ParameterDefinition, typename FunctionSpaceDefinition, typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition> >
 class ModelCrbBase : public ModelCrbBaseBase
 {
 
@@ -78,11 +81,18 @@ public :
     typedef typename EimDefinition::fun_type fun_type;
     typedef typename EimDefinition::fund_type fund_type;
 
+    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
+    typedef typename parameterspace_type::element_type parameter_type;
+
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
     typedef boost::shared_ptr<fund_type> fund_ptrtype;
     typedef std::vector<fund_ptrtype> funsd_type;
+
+    typedef Eigen::VectorXd vectorN_type;
+
+    typedef std::vector< std::vector< double > > beta_vector_type;
 
     ModelCrbBase()
         :
@@ -112,9 +122,41 @@ public :
 
     virtual void initModel() = 0;
 
-    void computeStatistics( Eigen::VectorXd vector , std::string name )
+    /**
+     * note about the initial guess :
+     * by default, if the model doesn't give an initial guess
+     * then the initial guess is zero
+     */
+    virtual int QInitialGuess() const
     {
-        double min,max,mean,mean1,mean2,standard_deviation,variance;
+        return 1;
+    }
+
+    virtual int mMaxInitialGuess( int q ) const
+    {
+        if( q == 0 )
+            return 1;
+        else
+            throw std::logic_error( "[ModelCrbBase::mMaxInitialGuess(q)] ERROR wrong index q, should be 0" );
+    }
+
+    virtual beta_vector_type computeBetaInitialGuess( parameter_type const& mu )
+    {
+        beta_vector_type beta;
+        beta.resize(1); //q=1
+        beta[0].resize(1); //m=1
+        beta[0][0]=0;
+        return beta;
+    }
+
+    /**
+     * compute statistics on vectors
+     * arguments : vectors of double and associated names
+     * results : statistics on data
+     */
+    vectorN_type computeStatistics( Eigen::VectorXd vector , std::string name )
+    {
+        double min=0,max=0,mean=0,mean1=0,mean2=0,standard_deviation=0,variance=0;
         Eigen::MatrixXf::Index index;
         Eigen::VectorXd square;
 
@@ -141,6 +183,12 @@ public :
             standard_deviation = math::sqrt( mean2 - mean1 );
             LOG(INFO)<<"min : "<<min<<" - max : "<<max<<" mean : "<<mean<<" standard deviation : "<<standard_deviation;
         }
+        vectorN_type result(4);
+        result(0)=min;
+        result(1)=max;
+        result(2)=mean;
+        result(3)=standard_deviation;
+        return result;
     }
 
 
@@ -149,6 +197,7 @@ protected :
     funs_type M_funs;
     funsd_type M_funs_d;
     bool M_is_initialized;
+
 };
 
 }//Feel
