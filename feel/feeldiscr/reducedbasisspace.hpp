@@ -65,46 +65,110 @@ class ReducedBasisSpace : public FunctionSpace<MeshType,A1,A2,A3,A4>
 
 public :
 
+    typedef double value_type;
+
     typedef ModelType model_type;
     typedef boost::shared_ptr<model_type> model_ptrtype;
 
-    typedef typename super::element_type space_element_type;
+    typedef MeshType mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef decltype( super::context() ) super_ctx_type;
+    typedef typename super::element_type space_element_type;
+    typedef boost::shared_ptr<space_element_type> space_element_ptrtype;
+
+    typedef std::vector< space_element_type > basis_type;
+    typedef boost::shared_ptr<basis_type> basis_ptrtype;
+
+    typedef typename super::Context  ctx_type;
+    typedef boost::shared_ptr<ctx_type> ctx_ptrtype;
+
+    typedef ReducedBasisSpace<ModelType, MeshType, A1, A2, A3, A4> this_type;
+    typedef boost::shared_ptr<this_type> this_ptrtype;
+
 
     ReducedBasisSpace( boost::shared_ptr<ModelType> model , boost::shared_ptr<MeshType> mesh )
         :
-        super ( mesh )
+        super ( mesh ),
+        M_mesh( mesh )
     {
         LOG( INFO ) <<" ReducedBasisSpace constructor " ;
     }
 
-    void setContext( super_ctx_type ctx)
+    //copy constructor
+    ReducedBasisSpace( ReducedBasisSpace const& rb )
+        :
+        super( rb.M_mesh ),
+        M_ctx( rb.M_ctx ),
+        M_basis( rb.M_basis ),
+        M_mesh( rb.M_mesh )
+    {}
+
+    ReducedBasisSpace( this_ptrtype const& rb )
+        :
+        super ( rb->M_mesh ),
+        M_ctx( rb->M_ctx ),
+        M_basis( rb->M_basis ),
+        M_mesh( rb->M_mesh )
+    {}
+
+
+    /*
+     * Get the mesh
+     */
+    mesh_ptrtype mesh()
     {
+        return M_mesh;
+    }
+    /*
+     * add a context from FunctionSpace
+     */
+    void addContext( ctx_type ctx)
+    {
+        M_ctx.push_back( ctx );
         LOG( INFO ) <<"add an existing context from EIM ( for example )";
     }
 
-    class Basis
+    /*
+     * add a new basis
+     */
+    void addBasisElement( space_element_type const & e )
     {
-        Basis() {}
-        ~Basis() {}
+        M_basis->push_back( e );
+    }
 
-        /*
-         * add a new basis
-         */
-        void add( space_element_type const & e )
-        {
-        }
+    void addBasisElement( space_element_ptrtype const & e )
+    {
+        M_basis->push_back( *e );
+    }
 
-        /*
-         * visualize basis of rb space
-         */
-        void visualize ()
-        {
-        }
-    private :
-        std::vector< space_element_type > M_basis;
-    };//Basis
+    /*
+     * Get basis of the reduced basis space
+     */
+    basis_ptrtype basis()
+    {
+        return M_basis;
+    }
+
+    /*
+     * size of the reduced basis space : number of basis functions
+     */
+    int size()
+    {
+        return M_basis->size();
+    }
+
+    /*
+     * visualize basis of rb space
+     */
+    void visualize ()
+    {
+    }
+
+    static this_ptrtype New ( boost::shared_ptr<ModelType>  const& model, mesh_ptrtype const& mesh)
+    {
+        return this_ptrtype ( new this_type( model ,  mesh) );
+    }
+
 
     /*
      *  contains coefficients in the RB expression
@@ -118,11 +182,54 @@ public :
         public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
     {
     public:
+        typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
+        typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
+
         typedef T value_type;
-    };
+
+        friend class ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4>;
+
+        Element()
+        {}
+
+        Element( rbspace_ptrtype const& rbspace , std::string const& name="u")
+            :
+            M_rbspace( rbspace ),
+            M_name( name )
+        {}
+
+        void setReducedBasisSpace( rbspace_ptrtype rbspace )
+        {
+            M_rbspace = rbspace;
+        }
+
+        private:
+        rbspace_type M_rbspace;
+        std::string M_name;
+    };//Element of the reduced basis space
+
+    typedef Element<value_type> element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
+
+    //Access to an element of the reduced basis space
+    element_type element( std::string const& name="u" )
+    {
+        element_type u(boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >(this->shared_from_this() ), name );
+        u.setZero();
+        return u;
+    }
+
+    element_ptrtype elementPtr( std::string const& name="u" )
+    {
+        element_ptrtype u( new element_type( boost::dynamic_pointer_cast<ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >(this->shared_from_this() ) , name ) );
+        u->setZero();
+        return u;
+    }
 
 private :
-    decltype( super::context() ) M_ctx ;
+    std::vector< ctx_type > M_ctx ;
+    basis_ptrtype M_basis;
+    mesh_ptrtype M_mesh;
 
 };//ReducedBasisSpace
 
