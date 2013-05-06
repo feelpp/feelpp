@@ -1419,13 +1419,13 @@ BOOST_PARAMETER_FUNCTION(
                                _straighten=straighten,
                                _refine=refine,
                                _update=update,
-                               _physical_are_elementary_regions=physical_are_elementary_regions,
-                               _worldcomm=worldcomm,
+                               _physical_are_elementary_regions=physical_are_elementary_regions//,
+                               //_worldcomm=worldcomm,
                                //_rebuild_partitions=rebuild_partitions,
                                //_rebuild_partitions_filename=rebuild_partitions_filename,
-                               _partitions=partitions,
-                               _partitioner=partitioner,
-                               _partition_file=partition_file
+                               //_partitions=partitions,
+                               //_partitioner=partitioner,
+                               //_partition_file=partition_file
             );
     }
 
