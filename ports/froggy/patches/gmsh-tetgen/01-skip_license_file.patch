@@ -1,0 +1,26 @@
+Description: skips LICENSE.txt during installation. All information is in debian/copyright.
+Author: Anton Gladky <gladky.anton@gmail.com>
+Last-Update: 2011-12-09
+
+Index: gmsh-tetgen-2.6.2~svn13116/CMakeLists.txt
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13116.orig/CMakeLists.txt	2012-09-05 11:18:34.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13116/CMakeLists.txt	2012-09-05 11:18:36.000000000 +0200
+@@ -1114,7 +1114,7 @@
+ endif(UNIX)
+ 
+ set(WELCOME_FILE ${CMAKE_CURRENT_SOURCE_DIR}/doc/WELCOME.txt)
+-set(LICENSE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE.txt)
++#set(LICENSE_FILE ${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE.txt)
+ set(CREDITS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/doc/CREDITS.txt)
+ file(GLOB TUTORIAL_FILES ${CMAKE_CURRENT_SOURCE_DIR}/tutorial/?*.*)
+ file(GLOB DEMO_FILES ${CMAKE_CURRENT_SOURCE_DIR}/demos/?*.*)
+@@ -1214,7 +1214,7 @@
+ if(MAKEINFO AND TEXI2PDF)
+   add_custom_target(doc COMMAND ${CMAKE_COMMAND} -E tar zcf 
+                     ${CMAKE_CURRENT_BINARY_DIR}/gmsh-${GMSH_VERSION}-doc.tgz
+-                    doc/CREDITS.txt doc/LICENSE.txt doc/VERSIONS.txt
++                    doc/CREDITS.txt doc/VERSIONS.txt
+                     doc/gmsh.1 doc/texinfo/gmsh.html doc/texinfo/gmsh.info 
+                     doc/texinfo/gmsh.pdf doc/texinfo/gmsh.txt
+                     COMMAND ${CMAKE_COMMAND} -E remove ${TEX_OBJ}

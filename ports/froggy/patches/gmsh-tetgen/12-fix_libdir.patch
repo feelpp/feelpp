@@ -1,0 +1,30 @@
+Description: install libs into ${INSTALL_LIB_DIR}, needed for multiarch
+Author: Anton Gladky <gladk@debian.org>
+Last-Update: 2013-03-15
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1208,10 +1208,10 @@
+ # (e.g. "make lib" or "make shared" followed by "make install/fast")
+ install(TARGETS gmsh DESTINATION ${GMSH_BIN} OPTIONAL)
+ if(ENABLE_BUILD_LIB)
+-  install(TARGETS lib DESTINATION lib OPTIONAL)
++  install(TARGETS lib DESTINATION ${INSTALL_LIB_DIR} OPTIONAL)
+ endif(ENABLE_BUILD_LIB)
+ if(ENABLE_BUILD_SHARED)
+-  install(TARGETS shared DESTINATION lib OPTIONAL)
++  install(TARGETS shared DESTINATION ${INSTALL_LIB_DIR} OPTIONAL)
+ endif(ENABLE_BUILD_SHARED)
+ install(FILES ${GMSH_API} DESTINATION include/gmsh)
+ install(FILES ${WELCOME_FILE} DESTINATION ${GMSH_DOC} RENAME README.txt)
+--- a/wrappers/java/CMakeLists.txt
++++ b/wrappers/java/CMakeLists.txt
+@@ -73,6 +73,6 @@
+   COMMAND ${CMAKE_COMMAND} -E copy 
+     ${CMAKE_CURRENT_SOURCE_DIR}/WrappingJava/build.xml 
+     ${CMAKE_CURRENT_BINARY_DIR}/WrappingJava/)
+-install(TARGETS WrapGmsh DESTINATION lib OPTIONAL)
++install(TARGETS WrapGmsh DESTINATION ${INSTALL_LIB_DIR} OPTIONAL)
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/WrappingJava/WrapGmsh.jar 
+-        DESTINATION lib)
++  DESTINATION ${INSTALL_LIB_DIR})
