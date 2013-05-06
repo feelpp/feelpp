@@ -46,7 +46,7 @@ PROJECT_BRIEF          = "Finite Element Embedded Library and Language in C++"
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           =
+PROJECT_LOGO           =  "@CMAKE_CURRENT_SOURCE_DIR@/pngs/logos/feel_logo_small.png"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -198,8 +198,10 @@ TAB_SIZE               = 4
 
 ALIASES                = "feel=<a href="http://www.feelpp.org">Feel++</a>"\
                        " co=\code{.cpp}"\
-                       " eco=\endcode"
-                       
+                       " eco=\endcode" \
+                       " Interface=<b>Interface :</b><br>"\
+                       " Examples=<b>Examples :</b><br>"
+
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
 # A mapping has the form "name=value". For example adding
@@ -331,7 +333,7 @@ INLINE_SIMPLE_STRUCTS  = NO
 # be useful for C code in case the coding convention dictates that all compound
 # types are typedef'ed and only the typedef is referenced, never the tag name.
 
-TYPEDEF_HIDES_STRUCT   = NO
+TYPEDEF_HIDES_STRUCT   = YES
 
 # The SYMBOL_CACHE_SIZE determines the size of the internal cache use to
 # determine which symbols to keep in memory and which to flush to disk.
@@ -413,7 +415,7 @@ EXTRACT_ANON_NSPACES   = NO
 # various overviews, but no documentation section is generated.
 # This option has no effect if EXTRACT_ALL is enabled.
 
-HIDE_UNDOC_MEMBERS     = YES
+HIDE_UNDOC_MEMBERS     = NO
 
 # If the HIDE_UNDOC_CLASSES tag is set to YES, Doxygen will hide all
 # undocumented classes that are normally visible in the class hierarchy.
@@ -486,7 +488,7 @@ SORT_MEMBER_DOCS       = YES
 # by member name. If set to NO (the default) the members will appear in
 # declaration order.
 
-SORT_BRIEF_DOCS        = NO
+SORT_BRIEF_DOCS        = YES
 
 # If the SORT_MEMBERS_CTORS_1ST tag is set to YES then doxygen
 # will sort the (brief and detailed) documentation of class members so that
@@ -527,7 +529,7 @@ STRICT_PROTO_MATCHING  = NO
 # disable (NO) the todo list. This list is created by putting \todo
 # commands in the documentation.
 
-GENERATE_TODOLIST      = YES
+GENERATE_TODOLIST      = NO
 
 # The GENERATE_TESTLIST tag can be used to enable (YES) or
 # disable (NO) the test list. This list is created by putting \test
@@ -580,7 +582,7 @@ SHOW_FILES             = YES
 # This will remove the Namespaces entry from the Quick Index
 # and from the Folder Tree View (if specified). The default is YES.
 
-SHOW_NAMESPACES        = YES
+SHOW_NAMESPACES        = NO
 
 # The FILE_VERSION_FILTER tag can be used to specify a program or script that
 # doxygen should invoke to get the current version for each file (typically from
@@ -610,7 +612,9 @@ LAYOUT_FILE            ="@CMAKE_CURRENT_SOURCE_DIR@/layout.xml"
 # feature you need bibtex and perl available in the search path. Do not use
 # file names with spaces, bibtex cannot handle them.
 
-CITE_BIB_FILES         =
+CITE_BIB_FILES         = @FEELPP_HOME_DIR@/doc/biblio/feelpp.bib \
+                         @FEELPP_HOME_DIR@/doc/biblio/feelpp-manual.bib \
+                         @FEELPP_HOME_DIR@/doc/biblio/feelpp-thesis.bib \
 
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
@@ -672,15 +676,11 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = "@FEELPP_HOME_DIR@/feel/feelcore" \
-                         "@FEELPP_HOME_DIR@/feel/feelalg" \
-                         "@FEELPP_HOME_DIR@/feel/feelfilters" \
-                         "@FEELPP_HOME_DIR@/feel/feelmesh" \
-                         "@FEELPP_HOME_DIR@/feel/feelpoly" \
-                         "@FEELPP_HOME_DIR@/feel/feeltiming" \
-                         "@FEELPP_HOME_DIR@/feel/feelcrb" \
-                         "@FEELPP_HOME_DIR@/doc/api"\
-                         "@FEELPP_HOME_DIR@/doc/manual"
+INPUT                  = "@FEELPP_HOME_DIR@/feel/" \
+                         "@FEELPP_HOME_DIR@/doc/manual/" \
+                         "@FEELPP_HOME_DIR@/doc/api"
+
+
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -735,13 +735,14 @@ EXCLUDE_PATTERNS       = */.svn/* */.git/* */research/* */.tex/*
 # wildcard * is used, a substring. Examples: ANamespace, AClass,
 # AClass::ANamespace, ANamespace::*Test
 
-EXCLUDE_SYMBOLS        =
+EXCLUDE_SYMBOLS        = "BOOST_P*"
 
 # The EXAMPLE_PATH tag can be used to specify one or more files or
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/tutorial" \
+EXAMPLE_PATH           = "@FEELPP_HOME_DIR@/doc/manual/tutorial" \
+                         "@FEELPP_HOME_DIR@/doc/" \
                          "@CMAKE_CURRENT_BINARY_DIR@/../"
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
@@ -762,8 +763,9 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/tutorial/pngs/"\
-                         "@CMAKE_CURRENT_BINARY_DIR@/../tutorial/"
+IMAGE_PATH             = "@CMAKE_CURRENT_SOURCE_DIR@/pngs/"
+
+
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -919,13 +921,13 @@ HTML_FILE_EXTENSION    = .html
 # have to redo this when upgrading to a newer version of doxygen or when
 # changing the value of configuration settings such as GENERATE_TREEVIEW!
 
-HTML_HEADER            = 
+HTML_HEADER            = "@CMAKE_CURRENT_SOURCE_DIR@/header.html"
 
 # The HTML_FOOTER tag can be used to specify a personal HTML footer for
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard footer.
 
-HTML_FOOTER            = 
+HTML_FOOTER            =
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading
 # style sheet that is used by each HTML page. It can be used to
@@ -934,7 +936,7 @@ HTML_FOOTER            =
 # HTML_EXTRA_STYLESHEET instead of this one, as it is more robust and this
 # tag will in the future become obsolete.
 
-HTML_STYLESHEET        = 
+HTML_STYLESHEET        = "@CMAKE_CURRENT_SOURCE_DIR@/feel.css"
 
 # The HTML_EXTRA_STYLESHEET tag can be used to specify an additional
 # user-defined cascading style sheet that is included after the standard
@@ -944,7 +946,7 @@ HTML_STYLESHEET        =
 # robust against future updates. Doxygen will copy the style sheet file to
 # the output directory.
 
-HTML_EXTRA_STYLESHEET  = "@CMAKE_CURRENT_SOURCE_DIR@/feel.css"
+HTML_EXTRA_STYLESHEET  =
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -953,7 +955,7 @@ HTML_EXTRA_STYLESHEET  = "@CMAKE_CURRENT_SOURCE_DIR@/feel.css"
 # files. In the HTML_STYLESHEET file, use the file name only. Also note that
 # the files will be copied as-is; there are no commands or markers available.
 
-HTML_EXTRA_FILES       = 
+HTML_EXTRA_FILES       =
 
 # The HTML_COLORSTYLE_HUE tag controls the color of the HTML output.
 # Doxygen will adjust the colors in the style sheet and background images

@@ -22,5 +22,6 @@
 #
 
 feelpp_add_application( doc_stokes SRCS stokes.cpp LABEL doc )
+feelpp_add_application( doc_stokes_curl SRCS stokes_curl.cpp LABEL doc GEO curvedtube.geo straighttube.geo)
 feelpp_add_application( doc_stokes_lm SRCS stokes.cpp LABEL doc DEFS FEELPP_USE_LM )
 feelpp_add_application( doc_stokes_periodic SRCS stokes_periodic.cpp LABEL doc  )

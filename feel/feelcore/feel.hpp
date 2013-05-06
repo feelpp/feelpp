@@ -142,7 +142,7 @@ namespace detail
 template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 }
 
-/*!  \page types_page Feel Types
+/*!  \page Types Feel Types
   \section types Types
   \subsection real Real Numbers
 

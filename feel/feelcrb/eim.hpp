@@ -39,8 +39,9 @@
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
+#if BOOST_VERSION >= 104700
 #include <boost/math/special_functions/nonfinite_num_facets.hpp>
-
+#endif
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/export.hpp>
@@ -855,13 +856,13 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         if( use_expression )
         {
             exprl2norm =M_model->expressionL2Norm( solution , mu );
-            auto eim_approximation = this->operator()(mu , N);
+            auto eim_approximation = this->operator()(mu , solution, N);
             diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
         }
         else
         {
             exprl2norm =M_model->projExpressionL2Norm( solution , mu );
-            auto eim_approximation = this->operator()(mu , N);
+            auto eim_approximation = this->operator()(mu , solution, N);
             diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
         }
 
@@ -1076,7 +1077,7 @@ public:
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
             M_mu.check();
 #endif
             M_u = M_model->solve( mu );
@@ -1086,7 +1087,7 @@ public:
     element_type operator()( solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
             M_mu.check();
 #endif
             // no need to solve we have already an approximation (typically from
@@ -1100,7 +1101,7 @@ public:
     double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1113,7 +1114,7 @@ public:
     double diffL2Norm(  solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1128,7 +1129,7 @@ public:
     double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1141,7 +1142,7 @@ public:
     double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1154,7 +1155,7 @@ public:
     double interpolationError( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1299,23 +1300,67 @@ struct EimFunctionNoSolve
 
     typedef boost::shared_ptr<ModelType> model_ptrtype;
 
+    static const int nb_spaces = functionspace_type::nSpaces;
+    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
+                       typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
+                                  typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
+                                                     fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
+                                                     >::type >::type >::type index_vector_type;
+
     EimFunctionNoSolve( model_ptrtype model )
         :
         M_model( model ),
         M_elt( M_model->functionSpace()->element() )
-        {
-            value_type x = boost::lexical_cast<value_type>("inf");
-            M_elt = vf::project( _space=M_model->functionSpace(), _expr=cst(x) );
-        }
+        {}
 
     element_type solve( parameter_type const& mu )
-        {
-            DVLOG(2) << "no solve required\n";
-            return M_elt;
-        }
+    {
+        DVLOG(2) << "no solve required\n";
+        static const bool is_composite = functionspace_type::is_composite;
+        return solve( mu , mpl::bool_< is_composite >() );
+    }
+    element_type solve( parameter_type const& mu , mpl::bool_<false> )
+    {
+        value_type x = boost::lexical_cast<value_type>("inf");
+        M_elt = vf::project( _space=M_model->functionSpace(), _expr=cst(x) );
+        return M_elt;
+    }
+    element_type solve( parameter_type const& mu , mpl::bool_<true> )
+    {
+        ProjectInfCompositeCase project_inf_composite_case( M_elt );
+        index_vector_type index_vector;
+        fusion::for_each( index_vector, project_inf_composite_case );
+        return project_inf_composite_case.element();
+    }
+
     std::string modelName() const { return M_model->modelName(); }
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
     parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
+
+    struct ProjectInfCompositeCase
+    {
+        ProjectInfCompositeCase( element_type & composite_element)
+            :
+            M_element( composite_element )
+        {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+        {
+            auto view = M_element.template element< T::value >();
+            auto space = view.functionSpace();
+            view = vf::project( _space=space, _expr=cst( boost::lexical_cast<value_type>("inf") ) );
+        }
+
+        element_type element()
+        {
+            return M_element;
+        }
+
+        element_type M_element;
+
+    }; //struct ProjectInfOnSubspace
 
     model_ptrtype M_model;
     element_type M_elt;

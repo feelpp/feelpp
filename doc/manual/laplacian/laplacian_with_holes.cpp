@@ -6,7 +6,10 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelfilters/exporter.hpp>
 
-
+/**
+ * \example LaplacianWithHoles
+ * \f$-Delta u = 0 \f$ with $\f$u= 0 \f$
+ */
 int main(int argc, char**argv )
 {
     using namespace Feel;
@@ -51,4 +54,3 @@ int main(int argc, char**argv )
 
     return 0;
 }
-

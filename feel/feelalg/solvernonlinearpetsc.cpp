@@ -662,8 +662,17 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESSetJacobian ( M_snes, jac->mat(), jac->mat(), __feel_petsc_snes_jacobian, this );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-    KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
-                     PetscGetMatStructureEnum(this->precMatrixStructure()) );
+    ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
+                            PetscGetMatStructureEnum(this->precMatrixStructure()) );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    ierr = KSPSetTolerances ( M_ksp,
+                              this->rtoleranceKSP(),
+                              this->atoleranceKSP(),
+                              this->dtoleranceKSP(),
+                              this->maxitKSP() );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
         {
