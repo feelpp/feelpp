@@ -60,6 +60,7 @@ namespace Feel
 /** \page Miscellaneous Miscellaneous
    - \subpage Macros
    - \subpage Types
+   - \subpage Layout
 */
 
 
