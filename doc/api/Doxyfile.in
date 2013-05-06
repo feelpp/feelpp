@@ -765,7 +765,9 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = "@CMAKE_CURRENT_SOURCE_DIR@/pngs/"
+IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/manual/pngs/ \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/pngs/" \
+                         "@FEELPP_HOME_DIR@/doc/figures/
 
 
 
