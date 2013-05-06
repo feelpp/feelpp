@@ -384,10 +384,11 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
 
 
+        int partitions = newGmshModel->getMeshPartitions().size();
 		LOG(INFO) << "[Gmsh::refine] Original mesh : " << filename.str() << "\n";
 		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
 		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
-		LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
+		LOG(INFO) << "[Gmsh::refine] partitions : " << partitions << "\n";
 		//std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
 		CTX::instance()->partitionOptions.num_partitions =  M_partitions;
 		CTX::instance()->partitionOptions.partitioner =  M_partitioner;
@@ -400,8 +401,12 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		    newGmshModel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
 		}
 
-		PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-		newGmshModel->writeMSH( filename.str() );
+		if ( partitions )
+            {
+                LOG(INFO) << "[Gmsh::refine] Repartioning mesh : " << filename.str() << "\n";
+                PartitionMesh( GModel::current(), CTX::instance()->partitionOptions ); 
+            }
+        newGmshModel->writeMSH( filename.str() );
 		LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
 		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
 		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
@@ -418,7 +423,9 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 
 	if ( mpi::environment::initialized() )
     {
-		_name = filename.str();
+		this->worldComm().barrier();
+
+        _name = filename.str();
         mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
         LOG(INFO) << "[Gmsh::refine] broadcast mesh filename : " << _name << " to all other processes\n";
     }
@@ -534,7 +541,11 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
+#if BOOST_FILESYSTEM_VERSION == 3
 		std::string _name = fs::path( nameMshInput ).stem().string();
+#elif BOOST_FILESYSTEM_VERSION == 2
+        std::string _name = fs::path( nameMshInput ).stem();
+#endif
 
         GModel* newGmshModel=new GModel();
         newGmshModel->readMSH( nameMshInput );
@@ -560,6 +571,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     if ( mpi::environment::initialized() )
     {
+        this->worldComm().barrier();
         mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
         LOG(INFO) << "[Gmsh::rebuildPartitionMsh] broadcast mesh filename : " << _name << " to all other processes\n";
     }
