@@ -111,7 +111,7 @@ Typically, this parameter is linked with constructor's standards. This parameter
 \li Heat flux<br>
 It represents the heat flux brought by the electronic component at the bottom of the base. Here it's typically the heat brought by the processor.
 \li Thermal coefficient<br>
-The thermal coefficient \f$h\f$ named \f$therm_coeff\f$ in the application is representative of the heat transfer between the fin and the air flow. 
+The thermal coefficient \f$h\f$ named \f$therm_coeff\f$ in the application is representative of the heat transfer between the fin and the air flow.
 \li Ambien temperature}<br>
 This parameter called \f$T_{amb}\f$ represents the temperature around the heat sink at the beginning. That means the ambient temperature before the computer is turned on.
 
@@ -227,7 +227,7 @@ Finally we obtain :
 \f{equation*}
 \color{red}
    \begin{split}
- \displaystyle{ h \int_{\Gamma_1}{v T} + \sum_{i=1}^{2} \rho_i C_i \int_{\varOmega_i} v\frac{T^{n+1}}{\delta t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}} & =  
+ \displaystyle{ h \int_{\Gamma_1}{v T} + \sum_{i=1}^{2} \rho_i C_i \int_{\varOmega_i} v\frac{T^{n+1}}{\delta t} + \kappa_i \int_{\varOmega_i} {\nabla v \cdot \nabla T}} & =
 	\displaystyle{ \int_{\Gamma_4} {vQ(1-e^{-t})} +  hT_{amb}\int_{\Gamma_1}{v}	+  \sum_{i=1}^{2}  \rho_i C_i \int_{\varOmega_i} v \frac{T^n}{\delta t}  }
   \end{split}
 \f}
@@ -280,27 +280,27 @@ We have created \f$3\f$ typical \c cfg files such as :
 # spreader and fin in copper
 # 2D simulation
 hsize=1e-4
-                                             
+
 kappa_s=386 # W/m/K
 c_s=385
 rho_s=8940
-                                             
+
 kappa_f=386 # W/m/K
 c_f=385 #J/kg/K
 rho_f=8940
-                                             
+
 L=15e-3
 width=5e-4
-                                             
+
 therm_coeff=1000  #W/(m2K)
 heat_flux=1e6
-                                             
+
 [bdf]
 order=2
 time-step=0.05
 time-final=100
 steady=0
-                                             
+
 [exporter]
 format=gmsh
 \eco
@@ -314,24 +314,24 @@ hsize=3e-4
 kappa_s=386 # W/m/K
 c_s=385
 rho_s=8940
-                                                 
+
 kappa_f=386 # W/m/K
 c_f=385 #J/kg/K
 ho_f=8940
-                                                 
+
 L=15e-3
 width=5e-4
 deep=4e-2
-                                                 
+
 therm_coeff=1000  #W/(m2K)
 heat_flux=1e6
-                                                 
+
 [bdf]
 order=2
 time-step=0.05
 time-final=100
 steady=0
-                                                 
+
 [exporter]
 format=gmsh
 \eco
@@ -490,15 +490,6 @@ public:
     // -- TYPEDEFS --
     typedef double value_type;
 
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-    /*matrix*/
-    typedef backend_type::sparse_matrix_type sparse_matrix_type;
-    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef backend_type::vector_type vector_type;
-    typedef backend_type::vector_ptrtype vector_ptrtype;
-
     /*mesh*/
     typedef Entity<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
@@ -537,8 +528,6 @@ private:
 
 private:
 
-    backend_ptrtype M_backend;
-
     /* mesh parameters */
     double meshSize;
     double depth;
@@ -571,9 +560,6 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
-    sparse_matrix_ptrtype D;
-    vector_ptrtype F;
-
     /* time management */
     bdf_ptrtype M_bdf;
     bool steady;
@@ -590,11 +576,10 @@ template<int Dim, int Order>
 HeatSink<Dim,Order>::HeatSink()
     :
     super(),
-    M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
-    depth( this->vm()["deep"].template as<double>() ),
-    L( this->vm()["L"].template as<double>() ),
-    width( this->vm()["width"].template as <double>() ),
+    meshSize( option(_name="hsize").template as<double>() ),
+    depth( option(_name="deep").template as<double>() ),
+    L( option(_name="L").template as<double>() ),
+    width( option(_name="width").template as <double>() ),
     kappa_s( this-> vm()["kappa_s"].template as<double>() ),
     kappa_f( this-> vm()["kappa_f"].template as<double>() ),
     rho_s( this-> vm()["rho_s"].template as<int>() ),
@@ -604,15 +589,14 @@ HeatSink<Dim,Order>::HeatSink()
     therm_coeff( this-> vm()["therm_coeff"].template as <double>() ),
     Tamb( this-> vm()["Tamb"].template as <double>() ),
     heat_flux( this-> vm()["heat_flux"].template as <double>() ),
-    steady( this->vm()["steady"].template as<bool>() ),
+    steady( option(_name="steady").template as<bool>() ),
     M_exporter()
 {
     this->changeRepository( boost::format( "%1%/%2%/%3%/" )
                             % this->about().appName()
                             % entity_type::name()
-                            % this->vm()["hsize"].template as<double>()
+                            % meshSize
                           );
-    using namespace Feel::vf;
 
     /*
      * First we create the mesh
@@ -620,7 +604,7 @@ HeatSink<Dim,Order>::HeatSink()
     mesh = createGMSHMesh ( _mesh = new mesh_type,
                             _desc = makefin( meshSize, width, depth , L ) );
     // build exporter
-    M_exporter = exporter( _mesh=mesh );
+    M_exporter = exporter( _mesh=mesh, _geo=EXPORTER_GEOMETRY_STATIC );
 
     /// [marker2]
     /*
@@ -635,16 +619,6 @@ HeatSink<Dim,Order>::HeatSink()
      */
     Xh = space_type::New( mesh );
     M_bdf = bdf( _space=Xh, _name="Temperature" );
-
-    /*
-     * Right hand side
-     */
-    F = M_backend->newVector( Xh );
-
-    /*
-     * Left hand side
-     */
-    D = M_backend->newMatrix( Xh, Xh );
 
 }
 
@@ -687,14 +661,18 @@ HeatSink<Dim, Order>::run()
     /*
      * Right hand side construction (steady state)
      */
-    form1( _test=Xh, _vector=F, _init=true ) = integrate( _range= markedfaces( mesh, "gamma1" ), _expr= therm_coeff*Tamb*id( v ) );
+    auto l = form1( _test=Xh );
+    auto lt = form1( _test=Xh );
+    l = integrate( _range= markedfaces( mesh, "gamma1" ), _expr= therm_coeff*Tamb*id( v ) );
 
     /*
      * Left hand side construction (steady state)
      */
-    form2( Xh, Xh, D, _init=true ) = integrate( _range= markedelements( mesh,"spreader_mesh" ), _expr= kappa_s*gradt( T )*trans( grad( v ) ) );
-    form2( Xh, Xh, D ) += integrate( _range= markedelements( mesh,"fin_mesh" ), _expr= kappa_f*gradt( T )*trans( grad( v ) ) );
-    form2 ( Xh, Xh, D ) += integrate( _range= markedfaces( mesh, "gamma1" ), _expr= therm_coeff*idt( T )*id( v ) );
+    auto a = form2( Xh, Xh );
+    a = integrate( _range= markedelements( mesh,"spreader_mesh" ), _expr= kappa_s*gradt( T )*trans( grad( v ) ) );
+    a += integrate( _range= markedelements( mesh,"fin_mesh" ), _expr= kappa_f*gradt( T )*trans( grad( v ) ) );
+    a += integrate( _range= markedfaces( mesh, "gamma1" ), _expr= therm_coeff*idt( T )*id( v ) );
+
 
     M_bdf->start();
 
@@ -704,12 +682,10 @@ HeatSink<Dim, Order>::run()
         M_bdf->setSteady();
     }
 
-    form2( Xh, Xh, D ) +=
+    a +=
         integrate( _range=markedelements( mesh, "spreader_mesh" ), _expr=rho_s*c_s*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) )
         + integrate( _range=markedelements( mesh, "fin_mesh" ), _expr=rho_f*c_f*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
     /// [marker3]
-    D->close();
-
 
     /*
      * Left and right hand sides construction (non-steady state) with BDF
@@ -725,23 +701,22 @@ HeatSink<Dim, Order>::run()
 
     // average file which contains: time Tavg_base Tavg_gamma1
     out.open( "averages", std::ios::out );
-    auto Ft = M_backend->newVector( Xh );
 
     /// [marker4]
     for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
     {
+        lt.zero();
+
         // update right hand side with time dependent terms
         auto bdf_poly = M_bdf->polyDeriv();
-        form1( _test=Xh, _vector=Ft ) =
+        lt =
             integrate( _range=markedelements( mesh, "spreader_mesh" ), _expr=rho_s*c_s*idv( bdf_poly )*id( v ) ) +
             integrate( _range=markedelements( mesh, "fin_mesh" ), _expr=rho_f*c_f*idv( bdf_poly )*id( v ) );
-        form1( _test=Xh, _vector=Ft ) +=
+        lt +=
             integrate( _range= markedfaces( mesh,"gamma4" ), _expr= heat_flux*( 1-math::exp( -M_bdf->time() ) )*id( v ) );
+        lt += l;
 
-        // add contrib from time independent terms
-        Ft->add( 1., F );
-
-        M_backend->solve( _matrix=D, _solution=T, _rhs=Ft );
+        a.solve( _solution=T, _rhs=lt );
 
         Tavg = integrate( _range=markedfaces( mesh,"gamma4" ), _expr=( 1/surface_base )*idv( T ) ).evaluate()( 0,0 );
         Tgamma1 = integrate( _range=markedfaces( mesh,"gamma1" ), _expr=( 1/surface_fin )*idv( T ) ).evaluate()( 0,0 );
@@ -753,7 +728,7 @@ HeatSink<Dim, Order>::run()
     }
     /// [marker4]
 
-    std::cout << "Resolution ended, export done \n";
+    LOG(INFO) << "Resolution ended, export done \n";
 
 } // HeatSink::run
 
@@ -762,12 +737,9 @@ template<int Dim, int Order>
 void
 HeatSink<Dim, Order>::exportResults( double time, element_type& U )
 {
-    if ( this->vm().count( "export" ) )
-    {
-        //M_exporter->step( time )->addRegions();
-        M_exporter->step( time )->add( "Temperature", U );
-        M_exporter->save();
-    }
+    //M_exporter->step( time )->addRegions();
+    M_exporter->step( time )->add( "Temperature", U );
+    M_exporter->save();
 } // HeatSink::exportResults
 
 } // Feel
@@ -794,8 +766,3 @@ main( int argc, char** argv )
     /* run */
     heatsink.run();
 }
-
-
-
-
-
