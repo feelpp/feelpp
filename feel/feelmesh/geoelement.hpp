@@ -456,14 +456,12 @@ private:
 #endif
 
 //     *********** Geometrical Elements *****************
-//! \defgroup GeoEle Geometry Element classes
+/** \defgroup GeoEle Geometry Element classes
+    \ingroup Obsolet_Groups */
 /*@{*/
 
 /**
  * Class for Points and Vertices
- *
- * \bug: in the 1D mesh case the points are subfaces of the segments
- *       but this is not handled yet, fixes in regionmesh1D needed
  */
 template <uint16_type Dim,
          typename SubFace = SubFaceOfNone,

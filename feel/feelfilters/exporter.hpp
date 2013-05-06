@@ -329,10 +329,18 @@ public:
         return M_ts_set.front();
     }
     timeset_ptrtype timeSet( int ts )
-    {
-        return M_ts_set[ts];
-    }
+        {
+            return M_ts_set[ts];
+        }
 
+    bool useSingleTransientFile() const
+        {
+            return M_use_single_transient_file;
+        }
+    void setUseSingleTransientFile( bool s )
+        {
+            M_use_single_transient_file = s;
+        }
     void
     setMesh( mesh_ptrtype mesh, ExporterGeometry exgeo = EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
         {
@@ -447,6 +455,7 @@ protected:
     WorldComm M_worldComm;
 
     bool M_do_export;
+    bool M_use_single_transient_file;
     std::string M_type;
     std::string M_prefix;
     int M_freq;
@@ -489,15 +498,17 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( mesh, * )
                           ) // required
                           ( optional                                  // 4. one required parameter, and
+                            ( fileset, *, option(_name="exporter.fileset").template as<bool>() )
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
-                            ( geo,   *, Environment::vm(_name="exporter.geometry").template as<int>() )
+                            ( geo,   *, option(_name="exporter.geometry").template as<int>() )
                             ( worldcomm, *, Environment::worldComm() )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
     auto e =  exporter_type::New(Environment::vm(),name,worldcomm);
     e->setPrefix( name );
+    e->setUseSingleTransientFile( fileset );
     e->setMesh( mesh, (ExporterGeometry) geo );
     // addRegions not work with transient simulation!
     //e->addRegions();
