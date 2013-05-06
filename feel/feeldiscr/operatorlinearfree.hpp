@@ -90,8 +90,10 @@ public:
         super( domainSpace , dualImageSpace , backend , false , pattern ),
         M_backend( backend ),
         M_expr( expr ),
-        M_pattern( pattern )
+        M_pattern( pattern ),
+        M_name( "operatorlinearfree" )
     {}
+
 
     virtual void
     init( domain_space_ptrtype     domainSpace,
@@ -111,6 +113,9 @@ public:
     {
         return M_expr;
     }
+
+    virtual void setName( std::string name ) { M_name = name; }
+    virtual std::string name() const { return M_name ; }
 
     virtual void
     apply( const domain_element_type& de,
@@ -404,20 +409,19 @@ public:
     // retrieve underlying matrix
     virtual void matPtr( matrix_ptrtype & matrix )
     {
-
         form2( _trial=this->domainSpace(),
                _test=this->dualImageSpace(),
                _matrix=matrix,
                _pattern=M_pattern) = M_expr;
 
         matrix->close();
-
     }
 
 private:
     backend_ptrtype M_backend;
     expr_type M_expr;
     size_type M_pattern;
+    std::string M_name;
 };//OperatorLinearFree
 
 

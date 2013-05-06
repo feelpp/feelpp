@@ -63,16 +63,21 @@ public:
     FsFunctionalLinear( space_ptrtype space ) :
         super_type( space ),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
-        M_vector( M_backend->newVector( space ) )
+        M_vector( M_backend->newVector( space ) ),
+        M_name( "functionallinear" )
     {
     }
 
     FsFunctionalLinear( space_ptrtype space, backend_ptrtype backend ) :
         super_type( space ),
         M_backend( backend ),
-        M_vector( M_backend->newVector( space ) )
+        M_vector( M_backend->newVector( space ) ),
+        M_name( "functionallinear" )
     {
     }
+
+    virtual void setName( std::string name ) { M_name = name; }
+    virtual std::string name() const { return M_name ; }
 
     // apply the functional
     virtual value_type
@@ -147,7 +152,7 @@ private:
 
     backend_ptrtype M_backend;
     vector_ptrtype M_vector;
-
+    std::string M_name;
 }; // class FsFunctionalLinear
 
 namespace detail

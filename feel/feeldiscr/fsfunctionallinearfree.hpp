@@ -60,23 +60,29 @@ public:
 
     typedef ExprType expr_type;
 
-    FsFunctionalLinearFree( space_ptrtype space , expr_type expr) :
+    FsFunctionalLinearFree( space_ptrtype space , expr_type expr ) :
         super_type( space ),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
-        M_expr( expr )
+        M_expr( expr ),
+        M_name( "functionallinearfree" )
     {}
 
-    FsFunctionalLinearFree( space_ptrtype space, backend_ptrtype backend , expr_type expr) :
+    FsFunctionalLinearFree( space_ptrtype space, backend_ptrtype backend , expr_type expr ) :
         super_type( space ),
         M_backend( backend ),
-        M_expr( expr )
-    {}
+        M_expr( expr ),
+        M_name( "functionallinearfree" )
+    {
+    }
 
     //return the expression
     expr_type expr()
     {
         return M_expr;
     }
+
+    virtual void setName(std::string name){ M_name = name ;}
+    virtual std::string name()const { return M_name;}
 
     // apply the functional
     virtual value_type
@@ -95,7 +101,6 @@ public:
         auto vector = M_backend->newVector( this->space() );
         form1( _test=this->space(),_vector=vector) = M_expr;
         vector->close();
-
         vector_to_fill = vector;
     }
 
@@ -120,6 +125,7 @@ public:
 private:
     backend_ptrtype M_backend;
     expr_type M_expr;
+    std::string M_name;
 };//FsFunctionalLinearFree
 
 
