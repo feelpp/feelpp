@@ -382,20 +382,19 @@ ExporterEnsightGold<MeshType,N>::_F_writeCaseFile() const
     if ( this->useSingleTransientFile() )
     {
         __out << "FILE\n";
-        __out << "file set : 1\n";
+        __out << "file set: 1\n";
         auto ts = *this->beginTimeSet();
         __out << "number of steps: " << ts->numberOfSteps() << "\n";
     }
 
     __out << "\n";
 
-    LOG(INFO) << "rank : " << this->worldComm().globalRank();
-    LOG(INFO) << "gg"  << (( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 )) << "\n";
     if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
     {
         __out << "APPENDED_CASEFILES\n"
               << "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
-              << "cfiles global path: " << fs::current_path().string() << "\n"
+            // no need for that
+            // << "cfiles global path: " << fs::current_path().string() << "\n"
               << "cfiles: ";
         for(int p = 1; p < Environment::numberOfProcessors(); ++p )
         {
@@ -542,6 +541,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         {
             strcpy(buffer,"BEGIN TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
+            LOG(INFO) << "out: " << buffer;
         }
 
         strcpy( buffer, __var->second.name().c_str() );
@@ -591,14 +591,14 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
 
-            for ( ; elt_it != elt_en; ++elt_it )
+            for ( uint16_type c = 0; c < nComponents; ++c )
             {
-                for ( uint16_type c = 0; c < nComponents; ++c )
+                for ( ; elt_it != elt_en; ++elt_it )
                 {
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {
                         size_type ptid = elt_it->point( p ).id();
-                        size_type global_node_id = nComponents * ptid + c ;
+                        size_type global_node_id = __step->mesh()->numPoints()*c + ptid ;
                         DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
                                                                      << " local pt:" << p
                                                                      << " mesh numPoints: " << __step->mesh()->numPoints();
@@ -608,18 +608,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                         {
                             size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->id(),p, c ) );
 
-#if 0
-
-                            if ( dof_id >= __var->second.firstLocalIndex() &&
-                                 dof_id < __var->second.lastLocalIndex()  )
-                                __field[global_node_id] = __var->second( dof_id );
-
-                            else
-                                __field[global_node_id] = 0;
-
-#else
                             __field[global_node_id] = __var->second.globalValue( dof_id );
-#endif
                         }
 
                         else
@@ -636,6 +625,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         {
             strcpy(buffer,"END TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
+            LOG(INFO) << "out: " << buffer;
         }
         DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
         ++__var;
@@ -680,8 +670,8 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             int partid = p_it->first;
             __out.write( ( char * ) & partid, sizeof(int) );
             DVLOG(2) << "part " << buffer << "\n";
-            //strcpy( buffer, this->elementType().c_str() );
-            strcpy( buffer, "coordinates" );
+            strcpy( buffer, this->elementType().c_str() );
+            //strcpy( buffer, "coordinates" );
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
             DVLOG(2) << "element type " << buffer << "\n";
 
@@ -705,47 +695,38 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             DVLOG(2) << "[saveElement] lastLocalIndex = " << __evar->second.lastLocalIndex() << "\n";
             DVLOG(2) << "[saveElement] field.size = " << __field_size << "\n";
             size_type e = 0;
-
-            for ( ; elt_it != elt_en; ++elt_it, ++e )
+            size_type ncells = __evar->second.size()/__evar->second.nComponents;
+            for ( int c = 0; c < nComponents; ++c )
             {
-                DVLOG(2) << "pid : " << this->worldComm().globalRank()
-                              << " elt_it :  " << elt_it->id()
-                              << " e : " << e << "\n";
 
-                for ( int c = 0; c < nComponents; ++c )
+                for ( ; elt_it != elt_en; ++elt_it, ++e )
                 {
-                    size_type global_node_id = nComponents * e + c ;
+                    DVLOG(2) << "pid : " << this->worldComm().globalRank()
+                             << " elt_it :  " << elt_it->id()
+                             << " e : " << e << "\n";
+
+                    size_type global_node_id = c*ncells+e ;
 
                     if ( c < __evar->second.nComponents )
                     {
                         size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt_it->id(),0, c ) );
 
                         DVLOG(2) << "c : " << c
-                                      << " gdofid: " << global_node_id
-                                      << " dofid : " << dof_id
-                                      << " f.size : " <<  __field.size()
-                                      << " e.size : " <<  __evar->second.size()
-                                      << "\n";
+                                 << " gdofid: " << global_node_id
+                                 << " dofid : " << dof_id
+                                 << " f.size : " <<  __field.size()
+                                 << " e.size : " <<  __evar->second.size()
+                                 << "\n";
 
                         __field[global_node_id] = __evar->second.globalValue( dof_id );
-#if 0
-
-                        if ( dof_id >= __evar->second.firstLocalIndex() &&
-                                dof_id < __evar->second.lastLocalIndex()  )
-                            __field[global_node_id] = __evar->second( dof_id );
-
-                        else
-                            __field[global_node_id] = 0;
-
-#endif
 
 #if 1
                         //__field[global_node_id] = __evar->second.globalValue(dof_id);
                         DVLOG(2) << "c : " << c
-                                      << " gdofid: " << global_node_id
-                                      << " dofid : " << dof_id
-                                      << " field :  " << __field[global_node_id]
-                                      << " evar: " << __evar->second.globalValue( dof_id ) << "\n";
+                                 << " gdofid: " << global_node_id
+                                 << " dofid : " << dof_id
+                                 << " field :  " << __field[global_node_id]
+                                 << " evar: " << __evar->second.globalValue( dof_id ) << "\n";
 #endif
                     }
 
@@ -756,11 +737,11 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
 
             __out.write( ( char * ) __field.data().begin(), nComponents * e * sizeof( float ) );
         }
-       if ( this->useSingleTransientFile() )
-       {
+        if ( this->useSingleTransientFile() )
+        {
             strcpy(buffer,"END TIME STEP");
             __out.write((char*)&buffer,sizeof(buffer));
-       }
+        }
 
 
         DVLOG(2) << "[ExporterEnsightGold::saveElement] saving " << __evarfname.str() << "done\n";
@@ -789,6 +770,8 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     {
         strcpy(buffer,"BEGIN TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
+        LOG(INFO) << "out : " << buffer;
+
     }
 
 
@@ -904,6 +887,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     {
         strcpy(buffer,"END TIME STEP");
         __out.write((char*)&buffer,sizeof(buffer));
+        LOG(INFO) << "out : " << buffer;
     }
 }
 
