@@ -70,11 +70,12 @@ public :
     OperatorLinearComposite (domain_space_ptrtype     domainSpace,
                              dual_image_space_ptrtype dualImageSpace,
                              backend_ptrtype          backend,
-                             size_type                pattern=Pattern::COUPLED )
+                             size_type                pattern=Pattern::COUPLED)
         :
         super( domainSpace,dualImageSpace,backend , false ),
         M_backend( backend ),
-        M_pattern( pattern )
+        M_pattern( pattern ),
+        M_name( "operatorlinearcomposite" )
     {}
 
 
@@ -85,6 +86,7 @@ public :
         int size = M_operators1.size();
         M_operators1.insert( std::make_pair( size , op ) ) ;
     }
+
 
     void addElement( int q, super_ptrtype const& op )
     {
@@ -98,6 +100,36 @@ public :
             this->addElement( q , vec[q] );
     }
 
+    virtual void setName( std::string name ) { M_name = name; }
+    virtual std::string name() const { return M_name ; }
+
+    void displayOperatorsNames()
+    {
+        int size1 = M_operators1.size();
+        int size2 = M_operators2.size();
+
+        LOG( INFO ) << " the composite operator linear "<<this->name()<<" has following operators : ";
+
+        if( size1  > 0 )
+        {
+            auto end = M_operators1.end();
+            for(auto it=M_operators1.begin(); it!=end; it++)
+                LOG(INFO)<<it->second->name();
+        }
+        else
+        {
+            auto end = M_operators2.end();
+            for(auto it=M_operators2.begin(); it!=end; it++)
+                LOG(INFO)<<it->second->name();
+        }
+    }
+
+    int size()
+    {
+        int size1 = M_operators1.size();
+        int size2 = M_operators2.size();
+        return size1+size2;
+    }
 
     //if we have a list of list of operators
     //i.e. \sum_{q=0}^Q \sum_{m=0}^M A_{qm}(.,.)
@@ -119,7 +151,6 @@ public :
             }
         }
     }
-
 
     void setScalars( std::vector<double> scalars )
     {
@@ -459,11 +490,7 @@ private :
     size_type M_pattern;
     std::vector< double > M_scalars1;
     std::vector< std::vector<double> > M_scalars2;
-    //contient un vecteur de OperatorLinear
-    //le model fourinra un vecteur de OperatorLinearComposite
-    //Soit un OperatorLinearComposite par Aq ( qui va représenter les Aqm )
-    //et cette classe contient également un deleteMatrix pour qu'à chaque q on puisse supprimer la matrice
-
+    std::string M_name;
 };//class OperatorLinearComposite
 
 
@@ -499,7 +526,7 @@ BOOST_PARAMETER_FUNCTION(
     Feel::detail::ignore_unused_variable_warning( args );
     typedef typename Feel::detail::compute_opLinearComposite_return<Args>::type oplincomposite_type;
     typedef typename Feel::detail::compute_opLinearComposite_return<Args>::ptrtype oplincomposite_ptrtype;
-    return oplincomposite_ptrtype ( new oplincomposite_type( domainSpace,imageSpace,backend,pattern ) );
+    return oplincomposite_ptrtype ( new oplincomposite_type( domainSpace,imageSpace,backend,pattern) );
 
 } // opLinearComposite
 
