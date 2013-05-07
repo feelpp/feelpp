@@ -271,8 +271,8 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   ctest_submit(PARTS Configure)
 
   message(WARNING "build target ${subproject}")
-  set(CTEST_BUILD_TARGET “${subproject}”)
-  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
+  #set(CTEST_BUILD_TARGET “${subproject}”)
+  ctest_build(BUILD \"${CTEST_BINARY_DIRECTORY}\"  )
   ctest_submit(PARTS Build)
 
   # runs only tests that have a LABELS property matching "${subproject}"
