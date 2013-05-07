@@ -88,14 +88,16 @@ public:
         super_type(),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
         M_matrix(),
-        M_pattern( Pattern::COUPLED )
+        M_pattern( Pattern::COUPLED ),
+        M_name("operatorlinear")
     {}
     OperatorLinear( OperatorLinear const& ol, bool deep_copy = false )
         :
         super_type( ol ),
         M_backend( ol.M_backend ),
         M_matrix(),
-        M_pattern( ol.M_pattern )
+        M_pattern( ol.M_pattern ),
+        M_name(ol.M_name )
     {
         if ( deep_copy )
         {
@@ -111,10 +113,12 @@ public:
                     dual_image_space_ptrtype dualImageSpace,
                     backend_ptrtype          backend,
                     bool buildMatrix = true ,
-                    size_type pattern=Pattern::COUPLED ) :
+                    size_type pattern=Pattern::COUPLED)
+        :
         super_type( domainSpace, dualImageSpace ),
         M_backend( backend ),
-        M_pattern( pattern )
+        M_pattern( pattern ),
+        M_name( "operatorlinear" )
     {
         if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
@@ -134,6 +138,10 @@ public:
         M_pattern = pattern;
         if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
+
+    virtual void setName( std::string name ) { M_name = name; }
+    virtual std::string name() const { return M_name ; }
+
 
     // apply the operator: ie := Op de
     template<typename Storage>
@@ -568,7 +576,7 @@ private:
     backend_ptrtype M_backend;
     matrix_ptrtype M_matrix;
     size_type M_pattern;
-
+    std::string M_name;
 }; // class Operator
 
 
