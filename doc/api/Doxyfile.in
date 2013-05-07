@@ -612,9 +612,9 @@ LAYOUT_FILE            ="@CMAKE_CURRENT_SOURCE_DIR@/layout.xml"
 # feature you need bibtex and perl available in the search path. Do not use
 # file names with spaces, bibtex cannot handle them.
 
-CITE_BIB_FILES         = @FEELPP_HOME_DIR@/doc/biblio/feelpp.bib \
-                         @FEELPP_HOME_DIR@/doc/biblio/feelpp-manual.bib \
-                         @FEELPP_HOME_DIR@/doc/biblio/feelpp-thesis.bib \
+CITE_BIB_FILES         = "@FEELPP_HOME_DIR@/doc/biblio/feelpp.bib" \
+                         "@FEELPP_HOME_DIR@/doc/biblio/feelpp-manual.bib" \
+                         "@FEELPP_HOME_DIR@/doc/biblio/feelpp-thesis.bib" \
 
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
@@ -678,7 +678,8 @@ WARN_LOGFILE           =
 
 INPUT                  = "@FEELPP_HOME_DIR@/feel/" \
                          "@FEELPP_HOME_DIR@/doc/manual/" \
-                         "@FEELPP_HOME_DIR@/doc/api"
+                         "@FEELPP_HOME_DIR@/doc/api" \
+                         "@FEELPP_HOME_DIR@/doc/biblio/"
 
 
 
@@ -699,7 +700,8 @@ INPUT_ENCODING         = UTF-8
 # *.f90 *.f *.for *.vhd *.vhdl
 
 FILE_PATTERNS          = *.*pp \
-                         *.doc
+                         *.doc \
+                         *.bib
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories
 # should be searched for input files as well. Possible values are YES and NO.
@@ -763,7 +765,9 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = "@CMAKE_CURRENT_SOURCE_DIR@/pngs/"
+IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/manual/pngs/" \
+                         "@CMAKE_CURRENT_SOURCE_DIR@/pngs/" \
+                         "@FEELPP_HOME_DIR@/doc/figures/"
 
 
 
