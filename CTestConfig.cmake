@@ -15,7 +15,7 @@ set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_UPDATE_TYPE "git")
 
 set(CTEST_PROJECT_SUBPROJECTS
-  #  feel++
+  feel++
   doc
   testsuite
   benchmarks
