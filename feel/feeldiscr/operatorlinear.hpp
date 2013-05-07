@@ -139,8 +139,8 @@ public:
         if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
 
-    virtual void setName( std::string name ) { M_name = name; }
-    virtual std::string name() const { return M_name ; }
+    void setName( std::string name ) { M_name = name; }
+    std::string name() const { return M_name ; }
 
 
     // apply the operator: ie := Op de
