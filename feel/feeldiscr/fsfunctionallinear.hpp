@@ -76,8 +76,8 @@ public:
     {
     }
 
-    virtual void setName( std::string name ) { M_name = name; }
-    virtual std::string name() const { return M_name ; }
+    void setName( std::string name ) { M_name = name; }
+    std::string name() const { return M_name ; }
 
     // apply the functional
     virtual value_type

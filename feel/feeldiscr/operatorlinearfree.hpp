@@ -90,8 +90,7 @@ public:
         super( domainSpace , dualImageSpace , backend , false , pattern ),
         M_backend( backend ),
         M_expr( expr ),
-        M_pattern( pattern ),
-        M_name( "operatorlinearfree" )
+        M_pattern( pattern )
     {}
 
 
@@ -113,9 +112,6 @@ public:
     {
         return M_expr;
     }
-
-    virtual void setName( std::string name ) { M_name = name; }
-    virtual std::string name() const { return M_name ; }
 
     virtual void
     apply( const domain_element_type& de,
@@ -421,7 +417,6 @@ private:
     backend_ptrtype M_backend;
     expr_type M_expr;
     size_type M_pattern;
-    std::string M_name;
 };//OperatorLinearFree
 
 

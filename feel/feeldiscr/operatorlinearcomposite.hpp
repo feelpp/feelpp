@@ -74,8 +74,7 @@ public :
         :
         super( domainSpace,dualImageSpace,backend , false ),
         M_backend( backend ),
-        M_pattern( pattern ),
-        M_name( "operatorlinearcomposite" )
+        M_pattern( pattern )
     {}
 
 
@@ -99,9 +98,6 @@ public :
         for(int q=0; q<q_max; q++)
             this->addElement( q , vec[q] );
     }
-
-    virtual void setName( std::string name ) { M_name = name; }
-    virtual std::string name() const { return M_name ; }
 
     void displayOperatorsNames()
     {
@@ -490,7 +486,6 @@ private :
     size_type M_pattern;
     std::vector< double > M_scalars1;
     std::vector< std::vector<double> > M_scalars2;
-    std::string M_name;
 };//class OperatorLinearComposite
 
 
