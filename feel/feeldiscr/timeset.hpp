@@ -1002,19 +1002,19 @@ public:
 
             for ( size_type __i = 0; __i < s; ++__i )
             {
-                std::pair<std::string, scalar_type> v;
+                std::pair<std::string, std::pair<scalar_type,bool> > v;
                 ar & v;
 
                 DVLOG(2) << "(loading) dserialized scalar  " << v.first
-                              << " with value " << v.second << "\n";
+                              << " with value " << v.second.first << "\n";
 
                 std::pair<scalar_iterator,bool> __it = _M_scalar.insert( v );
 
                 if ( __it.second )
-                    DVLOG(2) << v.first << " loaded and inserted (value: " << v.second << ")\n";
+                    DVLOG(2) << v.first << " loaded and inserted (value: " << v.second.first << ")\n";
 
                 else
-                    DVLOG(2) << v.first << " was loaded but not inserted (value: " << v.second << ")\n";
+                    DVLOG(2) << v.first << " was loaded but not inserted (value: " << v.second.first << ")\n";
             }
 
             ar & boost::serialization::make_nvp( "map_complex_size", s );
@@ -1022,7 +1022,7 @@ public:
 
             for ( size_type __i = 0; __i < s; ++__i )
             {
-                std::pair<std::string, complex_type> v;
+                std::pair<std::string, std::pair<complex_type,bool> > v;
                 scalar_type v_real;
                 scalar_type v_imag;
 
@@ -1030,7 +1030,7 @@ public:
                 ar & boost::serialization::make_nvp( "real", v_real );
                 ar & boost::serialization::make_nvp( "imaginary", v_imag );
 
-                v.second = complex_type( v_real, v_imag );
+                v.second.first = complex_type( v_real, v_imag );
 
                 //                     DVLOG(2) << "(loading) dserialized complex  " << v.first
                 //                                   << " with value " << v.second << "\n";
