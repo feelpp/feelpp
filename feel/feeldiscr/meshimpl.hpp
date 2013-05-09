@@ -794,7 +794,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
-                s.insert( __it->point( f ).id() );
+                s.insert( __it->point( f ).masterId() );
             }
 
             bool faceinserted = false;
@@ -874,9 +874,9 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             for ( int f = 0; f < face_type::numVertices; ++f )
             {
                 uint16_type pt_localid = ( nDim==1 )?j:iv->fToP( j, f );
-                s.insert( iv->point( pt_localid ).id() );
+                s.insert( iv->point( pt_localid ).masterId() );
                 VLOG(2) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
-                        << " global id " << iv->point( pt_localid ).id() << "\n";
+                        << " global id " << iv->point( pt_localid ).masterId() << "\n";
             }
 
             bool faceinserted = false;
@@ -906,7 +906,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
                 // set the vertices of the face
                 for ( size_type k = 0; k < face_type::numPoints; ++k )
-                    face.setPoint( k, iv->point( ele.fToP( j, k ) ) );
+                {
+                    if ( iv->point( ele.fToP( j, k ) ).isPeriodic() )
+                        face.setPoint( k, *iv->point( ele.fToP( j, k )  ).masterVertex() );
+                    else
+                        face.setPoint( k, iv->point( ele.fToP( j, k )  ) );
+                }
 
                 // set the connection with the element
                 face.setConnection0( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );

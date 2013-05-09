@@ -160,6 +160,7 @@ GmshHypercubeDomain::getDescription2D() const
     std::ostringstream ostr;
     ostr << this->preamble();
 
+    LOG(INFO) << "periodic: " << this->periodic().size();
 
     ostr << "a=" << this->M_I[0].first << ";\n"
          << "b=" << this->M_I[0].second << ";\n"

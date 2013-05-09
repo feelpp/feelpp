@@ -216,15 +216,11 @@ public:
         return M_master_id;
     }
 
-    self_type const* masterVertex() const
-    {
-        return M_master_vertex;
-    }
 
     /**
      * @return true if the entity is periodic, false otherwise
      */
-    bool isPeriodic() const { return M_master_id != this->M_id; }
+    bool isPeriodic() const { return M_master_id != this->id(); }
 
     /**
      * \return \p true if point is a vertex, \p false otherwise
@@ -384,10 +380,6 @@ public:
     {
         M_master_id = id;
     }
-    void setMasterVertex( self_type const* m )
-    {
-        M_master_vertex = m;
-    }
 
     /**
      * set the point coordinates. This will typically be called when
@@ -533,7 +525,6 @@ private:
 private:
 
     size_type M_master_id;
-    self_type const* M_master_vertex;
 
     bool M_is_vertex;
     bool M_is_parametric;

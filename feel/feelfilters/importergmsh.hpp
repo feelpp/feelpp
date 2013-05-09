@@ -811,7 +811,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 int v1,v2;
                 __is >> v1 >> v2;
-                e.correspondingVertices[v1] = v2;
+                e.correspondingVertices[itoii[v1]] = itoii[v2];
             }
             CHECK( e.correspondingVertices.size() == numv ) << "Invalid number of vertices in periodic entity"
                                                             << " dim: " << e.dim
@@ -933,7 +933,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             auto p2 = *pit2;
             p1.setMasterId( p2.id() );
             p1.setMasterVertex( boost::addressof( *pit2 ) );
-
+            LOG(INFO) << "Adding Periodic nodes : " << p1.id() << " slave/master:" << p1.masterId() << " master vertex: " << p1.masterVertex()->id() << " is periodic: " << p1.isPeriodic();
+            mesh->points().replace( pit1, p1 );
         }
     }
 
@@ -1281,6 +1282,8 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
         {
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
+            if ( mesh->point( __e.indices[jj] ).isPeriodic() )
+                LOG(INFO ) << "add periodic point : " << mesh->point( __e.indices[jj] ).id();
         }
     }
 

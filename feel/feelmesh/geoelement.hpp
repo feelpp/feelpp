@@ -557,6 +557,11 @@ public:
         return super::id();
     }
 
+    self_type const* masterVertex() const
+    {
+        return M_master_vertex;
+    }
+
     /**
      * \return process id
      */
@@ -649,6 +654,11 @@ public:
         return super::marker3();
     }
 
+    void setMasterVertex( self_type const* m )
+    {
+        M_master_vertex = m;
+    }
+
 //private:
     geo0d_type M_facept;
 
@@ -661,6 +671,8 @@ private:
             ar & boost::serialization::base_object<super>( *this );
             ar & boost::serialization::base_object<super2>( *this );
         }
+
+    self_type const* M_master_vertex;
 
 
 };

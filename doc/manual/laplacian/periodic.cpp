@@ -44,9 +44,7 @@ int main(int argc, char**argv )
     auto Vh = Pch<1>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
-    //# endmarker2 #
 
-    //# marker3 #
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
@@ -57,13 +55,12 @@ int main(int argc, char**argv )
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
           _expr=constant(0.) );
     a.solve(_rhs=l,_solution=u);
-    //# endmarker3 #
 
-    //# marker4 #
+    v = project( _space=Vh, _expr=Px() );
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
+    e->add( "v", v );
     e->save();
     return 0;
-    //# endmarker4 #
 }
 

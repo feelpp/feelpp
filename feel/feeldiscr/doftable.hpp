@@ -1195,7 +1195,10 @@ private:
             for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
             {
                 //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-                const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
+
+                const size_type gDof = ( __elt.point( i ).masterId() ) * fe_type::nDofPerVertex + l;
+                if ( __elt.point( i ).isPeriodic() )
+                    LOG(INFO) << "Adding periodic dof " << gDof;
                 this->insertDof( ie, lc, i, boost::make_tuple( 0, 0, gDof ),
                                  processor, next_free_dof, 1, false, global_shift, __elt.point( i ).marker() );
             }
