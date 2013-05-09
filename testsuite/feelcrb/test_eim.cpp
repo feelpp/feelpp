@@ -88,10 +88,10 @@ makeAbout()
 /**
  *
  */
-class model:
-    public Simget,
-    public boost::enable_shared_from_this<model>
+class EimModel:
+        public boost::enable_shared_from_this<EimModel>
 {
+    typedef boost::enable_shared_from_this<EimModel> super;
 public:
     typedef Mesh<Simplex<2> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
@@ -115,23 +115,15 @@ public:
 
     typedef Eigen::VectorXd vectorN_type;
 
-    model()
+    EimModel()
         :
-        Simget(),
-        meshSize( option("hsize").as<double>() )
+        super()
         {
-
-
+        }
+    void init()
+        {
+            //to modify hsize use --gmsh.hsize in command line
             mesh = unitSquare();
-            //to modify hsize use --mesh2d.hsize in command line
-#if 0
-            mesh = createGMSHMesh( _mesh=new mesh_type,
-                                   _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % 2 ).str() ,
-                                                 _usenames=true,
-                                                 _shape="hypercube",
-                                                 _dim=2,
-                                                 _h=0.025 ) );
-#endif
 
             Xh =  space_type::New( mesh );
             LOG(INFO) << " nb dofs : "<<Xh->nDof()<<"\n";
@@ -150,7 +142,7 @@ public:
             BOOST_CHECK_EQUAL( mu.parameterSpace(), Dmu );
 
             auto Pset = Dmu->sampling();
-            int sampling_size = this->vm()["eim.sampling-size"].as<int>();
+            int sampling_size = option(_name="eim.sampling-size").as<int>();
             Pset->randomize( sampling_size );
 
             BOOST_TEST_MESSAGE( "Allocation done" );
@@ -163,11 +155,10 @@ public:
 #if 1
             LOG(INFO) << "=== sin(cst_ref(mu(0))*idv(u)*idv(u)) === \n";
             auto e = eim( _model=this->shared_from_this(),
-                          _options=this->vm(),
                           _element=u,
                           _space=this->functionSpace(),
                           _parameter=mu,
-                          _expr=sin(cst_ref(mu(0))*idv(u)*idv(u)),
+                          _expr=sin(cst_ref(mu(0))*_e1*_e1),
                           _sampling=Pset,
                           _name="q1" );
             BOOST_TEST_MESSAGE( "create e done" );
@@ -176,7 +167,6 @@ public:
 #endif
             LOG(INFO) << "=== mu(0) === \n";
             auto e1 = eim( _model=eim_no_solve(this->shared_from_this()),
-                           _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
                            _parameter=mu,
@@ -190,7 +180,6 @@ public:
 
             LOG(INFO) << "=== mu(0) x === \n";
             auto e2 = eim( _model=eim_no_solve(this->shared_from_this()),
-                           _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
                            _parameter=mu,
@@ -201,7 +190,6 @@ public:
             M_funs.push_back( e2 );
             LOG(INFO) << "=== sin(2 pi mu(0) x) === \n";
             auto e3 = eim( _model=eim_no_solve(this->shared_from_this()),
-                           _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
                            _parameter=mu,
@@ -212,7 +200,6 @@ public:
             M_funs.push_back( e3 );
             LOG(INFO) << "=== exp(-((Px()-0.5)*(Px()-0.5)+(Py()-0.5)*(Py()-0.5))/(2*mu(0)*mu(0))), === \n";
             auto e5 = eim( _model=eim_no_solve(this->shared_from_this()),
-                           _options=this->vm(),
                            _element=u,
                            _space=this->functionSpace(),
                            _parameter=mu,
@@ -253,7 +240,7 @@ public:
             //to solve the model to determine the unknown ( needed to evaluate the expression that we want the eim approximation )
             auto solution = Xh->elementPtr();
 
-            auto e = exporter( _mesh=mesh, _name=this->about().appName() );
+            auto e = exporter( _mesh=mesh, _name=Environment::about().appName() );
             auto S = Dmu->sampling();
             int n = option("n-eval").as<int>();
             LOG(INFO)<<"will compute "<<n<<" evaluations\n";
@@ -319,9 +306,9 @@ private:
 
 
 //model circle
-class model_circle:
+class EimModelCircle:
     public Simget,
-    public boost::enable_shared_from_this<model_circle>
+    public boost::enable_shared_from_this<EimModelCircle>
 {
 public:
     typedef Mesh<Simplex<2> > mesh_type;
@@ -343,19 +330,15 @@ public:
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
-    model_circle()
+    EimModelCircle()
         :
-        Simget(),
-        meshSize( this->vm()["hsize"].as<double>() )
+        Simget()
         {
-
-            mesh = createGMSHMesh( _mesh=new mesh_type,
-                                   _desc=domain( _name=( boost::format( "%1%-%2%" ) % "hypercube" % 2 ).str() ,
-                                                 _usenames=true,
-                                                 _shape="hypercube",
-                                                 _dim=2,
-                                                 _h=0.1 ) );
-
+        }
+    void init()
+        {
+            //mesh = unitCircle();
+            mesh = unitSquare();
 
             Xh =  space_type::New( mesh );
             BOOST_CHECK( Xh );
@@ -387,7 +370,6 @@ public:
             //BOOST_CHECK( p );
             //BOOST_TEST_MESSAGE( "shared from this" );
             auto e = eim( _model=this->shared_from_this(),
-                          _options=this->vm(),
                           _element=u,
                           _space=this->functionSpace(),
                           _parameter=mu,
@@ -417,7 +399,7 @@ public:
         }
     void run()
         {
-            auto e = exporter( _mesh=mesh, _name="model_circle" );
+            auto e = exporter( _mesh=mesh, _name="EimModelCircle" );
             auto S = Dmu->sampling();
             S->logEquidistribute(10);
             BOOST_FOREACH( auto fun, M_funs )
@@ -461,9 +443,10 @@ BOOST_AUTO_TEST_CASE( test_eim1 )
 {
     BOOST_TEST_MESSAGE( "test_eim1 starts..." );
 
-    Application app;
-    app.add( new model );
-    app.run();
+
+    boost::shared_ptr<EimModel> m( new EimModel);
+    m->init();
+    m->run();
 
     BOOST_TEST_MESSAGE( "test_eim1 done" );
 
@@ -472,14 +455,12 @@ BOOST_AUTO_TEST_CASE( test_eim2 )
 {
     BOOST_TEST_MESSAGE( "test_eim2 starts..." );
 
-    Application app;
-    app.add( new model_circle );
-    app.run();
+    boost::shared_ptr<EimModelCircle> m( new EimModelCircle );
+    m->init();
+    m->run();
 
     BOOST_TEST_MESSAGE( "test_eim2 done" );
 
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-

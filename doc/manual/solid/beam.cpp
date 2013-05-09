@@ -21,11 +21,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file beam.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2007-02-18
- */
+
 #include <feel/feel.hpp>
 
 inline
@@ -48,6 +44,13 @@ makeOptions()
 
 namespace Feel
 {
+/**
+   \page LinearElasticity Linear Elasticity : a Beam example
+   \author Christophe Prud'homme
+   \date 2007-02-18
+
+   This is the documentation for the beam example
+*/
 template<int nDim, int nOrder>
 class Beam
     :
@@ -292,7 +295,3 @@ main( int argc, char** argv )
     beam.add( new Feel::Beam<3,3>() );
     beam.run();
 }
-
-
-
-
