@@ -1668,12 +1668,14 @@ public:
                                 _M_div[i][q]( 0,0 ) =  _M_grad[i][q].trace();
                             }
 
-                            // update divergence if needed
+                            // update curl if needed
                             if ( vm::has_curl<context>::value )
                             {
                                 if ( NDim == 2 )
                                 {
-                                    _M_curl[i][q]( 2 ) =  _M_grad[i][q]( 1,0 ) - _M_grad[i][q]( 0,1 );
+                                    _M_curl[i][q]( 0 ) =  _M_grad[i][q]( 1,0 ) - _M_grad[i][q]( 0,1 );
+                                    _M_curl[i][q]( 1 ) =  _M_curl[i][q]( 0 );
+                                    _M_curl[i][q]( 2 ) =  _M_curl[i][q]( 0 );
                                 }
 
                                 else if ( NDim == 3 )

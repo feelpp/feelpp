@@ -1,0 +1,11 @@
+h = 0.05;
+Point(1) = {0., 0., 0, h};
+Point(2) = {1., 0., 0, h};
+Point(3) = {-Sqrt(2)/2, Sqrt(2)/2, 0, h};
+Circle(1) = {2, 1, 3};
+Line(2) = {1, 2};
+Line(3) = {3, 1};
+Line Loop(4) = {2, 1, 3};
+Plane Surface(5) = {4};
+Physical Line(6) = {2, 1, 3};
+Physical Surface(7) = {5};

@@ -45,6 +45,10 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_rtolerance( 1e-13 ),
     M_dtolerance( 1e5 ),
     M_atolerance( 1e-50 ),
+    M_rtoleranceSNES( 1e-8 ),
+    M_stoleranceSNES( 1e-8 ),
+    M_atoleranceSNES( 1e-50 ),
+    M_rtoleranceKSPinSNES( 1e-5 ),
     M_reuse_prec( false ),
     M_reuse_jac( false ),
     M_reusePrecIsBuild(false),
@@ -78,6 +82,10 @@ Backend<T>::Backend( Backend const& backend )
     M_rtolerance( backend.M_rtolerance ),
     M_dtolerance( backend.M_dtolerance ),
     M_atolerance( backend.M_atolerance ),
+    M_rtoleranceSNES( backend.M_rtoleranceSNES ),
+    M_stoleranceSNES( backend.M_stoleranceSNES ),
+    M_atoleranceSNES( backend.M_atoleranceSNES ),
+    M_rtoleranceKSPinSNES( backend.M_rtoleranceKSPinSNES ),
     M_reuse_prec( backend.M_reuse_prec ),
     M_reuse_jac( backend.M_reuse_jac ),
     M_reusePrecIsBuild( backend.M_reusePrecIsBuild) ,
@@ -110,6 +118,10 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_rtolerance( vm[prefixvm( prefix,"ksp-rtol" )].template as<double>() ),
     M_dtolerance( vm[prefixvm( prefix,"ksp-dtol" )].template as<double>() ),
     M_atolerance( vm[prefixvm( prefix,"ksp-atol" )].template as<double>() ),
+    M_rtoleranceSNES( vm[prefixvm( prefix,"snes-rtol" )].template as<double>() ),
+    M_stoleranceSNES( vm[prefixvm( prefix,"snes-stol" )].template as<double>() ),
+    M_atoleranceSNES( vm[prefixvm( prefix,"snes-atol" )].template as<double>() ),
+    M_rtoleranceKSPinSNES( vm[prefixvm( prefix,"snes-ksp-rtol" )].template as<double>() ),
     M_reuse_prec( vm[prefixvm( prefix,"reuse-prec" )].template as<bool>() ),
     M_reuse_jac(  vm[prefixvm( prefix,"reuse-jac" )].template as<bool>() ),
     M_reusePrecIsBuild( false ) ,
@@ -324,7 +336,6 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 {
     MatrixStructure matStructInitial = this->precMatrixStructure();
 
-    M_nlsolver->init();
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
@@ -334,6 +345,15 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
     M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
     M_nlsolver->setNbItMax( this->maxIterationsSNES() );
+    M_nlsolver->setRelativeResidualTol( this->rToleranceSNES() );
+    M_nlsolver->setAbsoluteResidualTol( this->aToleranceSNES() );
+    M_nlsolver->setAbsoluteSolutionTol( this->sToleranceSNES() );
+    M_nlsolver->setRtoleranceKSP( this->rtoleranceKSPinSNES() );
+    M_nlsolver->setAtoleranceKSP( this->aTolerance() );
+    M_nlsolver->setDtoleranceKSP( this->dTolerance() );
+    M_nlsolver->setMaxitKSP( this->maxIterations() );
+
+    M_nlsolver->init();
 
     //vector_ptrtype x_save = x->clone();
     vector_ptrtype x_save;
@@ -411,18 +431,25 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
                      const double tol, const int its )
 {
 
-    M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
-
-    M_nlsolver->init();
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
+    M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
     M_nlsolver->setPrecMatrixStructure( this->precMatrixStructure() );
-    M_nlsolver->setReuse( 1, 1 );
     M_nlsolver->setShowSNESMonitor( this->showSNESMonitor() );
     M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
     M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
     M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
     M_nlsolver->setNbItMax( this->maxIterationsSNES() );
+    M_nlsolver->setRelativeResidualTol( this->rToleranceSNES() );
+    M_nlsolver->setAbsoluteResidualTol( this->aToleranceSNES() );
+    M_nlsolver->setAbsoluteSolutionTol( this->sToleranceSNES() );
+    M_nlsolver->setRtoleranceKSP( this->rtoleranceKSPinSNES() );
+    M_nlsolver->setAtoleranceKSP( this->aTolerance() );
+    M_nlsolver->setDtoleranceKSP( this->dTolerance() );
+    M_nlsolver->setMaxitKSP( this->maxIterations() );
+
+    M_nlsolver->init();
+    M_nlsolver->setReuse( 1, 1 );
 
     auto ret = M_nlsolver->solve( A, x, b, tol, its );
 
@@ -664,8 +691,12 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
     ( prefixvm( prefix,"ksp-converged-reason" ).c_str() , "converged reason ksp" )
 
+    ( prefixvm( prefix,"snes-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "relative tolerance" )
+    ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
+    ( prefixvm( prefix,"snes-stol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "step length tolerance" )
     ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
-        ( prefixvm( prefix,"snes-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor snes" )
+    ( prefixvm( prefix,"snes-ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-5 ), "relative tolerance" )
+    ( prefixvm( prefix,"snes-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor snes" )
     ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )
 
 
