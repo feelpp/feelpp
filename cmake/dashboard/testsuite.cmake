@@ -1,4 +1,3 @@
-
 ####################################################################
 #
 # Usage:
@@ -160,7 +159,7 @@ endif(NOT CTEST_SOURCE_DIRECTORY)
 if(NOT CTEST_BINARY_DIRECTORY)
   SET (CTEST_BINARY_DIRECTORY "${FEELPP_WORK_DIR}/${FEELPP_MODE}_${FEELPP_CXXNAME}")
 endif(NOT CTEST_BINARY_DIRECTORY)
-
+MESSAGE(WARNING "ICI "${CTEST_BINARY_DIRECTORY})
 if(NOT FEELPP_MODE)
   set(FEELPP_MODE Nightly)
 endif(NOT FEELPP_MODE)
@@ -270,11 +269,13 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
     OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}" )
   ctest_submit(PARTS Configure)
 
-  message(WARNING "build target ${subproject}")
-  set(CTEST_BUILD_TARGET “${subproject}”)
+  message(WARNING "build target "${subproject})
+  #set(CTEST_BUILD_TARGET “${subproject}”)
+  set(CTEST_BUILD_TARGET ${subproject})
   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
   ctest_submit(PARTS Build)
 
+  message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
   # runs only tests that have a LABELS property matching "${subproject}"
   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
   ctest_submit(PARTS Test)

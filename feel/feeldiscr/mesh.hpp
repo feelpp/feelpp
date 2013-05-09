@@ -109,7 +109,6 @@ std::vector<MeshMarkerName> markerMap( int Dim );
 template<typename Mesh> class Partitioner;
 
 /*!
-  \class mesh
   \brief unifying mesh class
 
   @author Christophe Prud'homme
