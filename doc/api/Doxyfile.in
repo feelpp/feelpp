@@ -676,10 +676,13 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = "@FEELPP_HOME_DIR@/feel/" \
-                         "@FEELPP_HOME_DIR@/doc/manual/" \
-                         "@FEELPP_HOME_DIR@/doc/api" \
-                         "@FEELPP_HOME_DIR@/doc/biblio/"
+INPUT                  = \
+ "@FEELPP_HOME_DIR@/feel/" \
+ "@FEELPP_HOME_DIR@/doc/manual/" \
+ "@FEELPP_HOME_DIR@/doc/api" \
+ "@FEELPP_HOME_DIR@/ChangeLog" \
+ "@FEELPP_HOME_DIR@/COPYING.md" \
+ "@FEELPP_HOME_DIR@/doc/biblio/"
 
 
 
@@ -701,6 +704,7 @@ INPUT_ENCODING         = UTF-8
 
 FILE_PATTERNS          = *.*pp \
                          *.doc \
+                         *.md \
                          *.bib
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories

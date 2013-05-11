@@ -28,9 +28,58 @@
  */
 #include <feel/feel.hpp>
 #include <feel/feelmesh/meshmover.hpp>
+
+/**
+   \page LaplacianHarmonic Harmonic extension of a boundary displacement
+   \author Christophe Prud'homme
+   \date 2013-03-13
+   \tableofcontents
+
+   <br>
+   <br>
+
+   \section LaplacianHarmonicProblem Problem
+
+   This  program `feelpp_doc_harmonic`  shows how to solve for the harmonic
+   extension of a displacement given at a boundary of a domain.
+   Given \f$\eta\f$ on \f$\partial \Omega\f$, find \f$\eta^H\f$ such that
+
+   \f[
+   \begin{split}
+   -\Delta \eta^H &= 0 \mbox{ in } \Omega\\
+   \eta^H &=\eta \mbox{ on } \partial \Omega.
+   \end{split}
+   \f]
+
+   \f$\eta^H\f$ is the \b harmonic \b extension of \f$\eta\f$ in \f$\Omega\f$,
+   then we move the mesh vertices using \f$\eta^H\f$.
+
+   \remark Note that the degrees of freedom of \f$\eta^H\f$ must coincide with
+   the mesh vertices which implies that the mesh order (the order of the
+   geometric transformation) should be the same as \f$\eta^H\f$. If \f$\eta^H\f$
+   is piecewise polynomial of degree \f$N\f$ then the geometric transformation
+   associated to the mesh should be of degree \f$N\f$ too, i.e. \c Mesh<Simplex<2,N>>.
+
+   \section LaplacianHarmonicResults Results
+
+   We consider the following displacement
+
+   \f[
+   \eta = ( 0, 0.08 (x+0.5) (x-1) (x^2-1) )^T
+   \f]
+
+   on the bottom boundary and \f$\eta\f$ being 0 on the remaining borders and we
+   look for \f$\eta^H\f$ as a \f$P_2\f$ piecewise polynomial function in
+   \f$\Omega\f$ and the mesh associated is of the same order i.e. \c Mesh<Simplex<2,2>>.
+
+   \section LaplacianHarmonicImplementation Implementation
+
+   The implementation is as follows
+   \snippet harmonic.cpp marker1
+ */
 int main(int argc, char**argv )
 {
-    //# marker1 #
+    /// [marker1]
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
@@ -39,10 +88,10 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<2,2> >,
-                                _desc=domain( _name="kovaznay",
+                                _desc=domain( _name="harmonic",
                                               _usenames=false,
                                               _shape="hypercube",
-                                              _h=option(_name="mesh2d.hsize").as<double>(),
+                                              _h=option(_name="gmsh.hsize").as<double>(),
                                               _xmin=-0.5, _xmax=1,
                                               _ymin=-0.5, _ymax=1.5 ) );
     auto Vh = Pchv<2>( mesh );
@@ -54,6 +103,8 @@ int main(int argc, char**argv )
     auto a = form2( _trial=Vh, _test=Vh );
     a = integrate(_range=elements(mesh),
                   _expr=trace(gradt(u)*trans(grad(v))) );
+
+    // boundary conditions
     a+=on(_range=markedfaces(mesh,1), _rhs=l, _element=u,
           _expr=zero<2,1>() );
     a+=on(_range=markedfaces(mesh,3), _rhs=l, _element=u,
@@ -64,8 +115,6 @@ int main(int argc, char**argv )
           _expr=vec(cst(0.),0.08*(Px()+0.5)*(Px()-1)*(Px()*Px()-1)));
 
     a.solve(_rhs=l,_solution=u);
-    std::cout<<"coucou3" << "\n";
-
 
     auto m1 = lagrangeP1(_space=Vh)->mesh();
     auto XhVisu = Pchv<1>(m1);
@@ -74,24 +123,28 @@ int main(int argc, char**argv )
                                    _imageSpace=XhVisu,
                                    _type=InterpolationNonConforme(false,true,false) );
     auto uVisu = opIVisu->operator()(u);
+
+    // exporter mesh and harmonic extension
     auto e = exporter( _mesh=m1, _name="initial" );
     e->step(0)->setMesh( m1 );
     e->step(0)->add( "u", uVisu );
     e->save();
 
+    // move the mesh vertices
     meshMove( m1, uVisu );
 
+    // export mesh after moving the vertices
     auto e1 = exporter( _mesh=m1, _name="moved" );
     e1->step(0)->setMesh( m1  );
     e1->step(0)->add( "u", uVisu );
     e1->save();
+    /// [marker1]
 
 #if 0
 	auto e = exporter( _mesh=m1, _name="initial" );
     e->step(0)->setMesh( m1 );
     e->step(0)->add( "u", u );
     e->save();
-    std::cout<<"coucou6" << "\n";
 
     meshMove( mesh, u );
 
@@ -106,5 +159,3 @@ int main(int argc, char**argv )
 
     return 0;
 }
-
-
