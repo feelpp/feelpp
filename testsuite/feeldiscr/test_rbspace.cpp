@@ -90,9 +90,12 @@ public :
     {
         auto mesh=unitHypercube<Dim>();
         auto Xh = Pch<Order>( mesh );
-        LOG(INFO)<<"nDof : "<<Xh->nDof();
 
-        auto RbSpace = RbSpacePch<Order>( this , mesh );
+        auto RbSpace = RbSpacePch<Order>( this->shared_from_this() , mesh );
+        auto u = RbSpace->element();
+        auto u_ptr = RbSpace->elementPtr();
+
+        int rbspace_size = RbSpace->size();
     }
 
 
@@ -108,9 +111,8 @@ BOOST_AUTO_TEST_SUITE( rbspace )
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {
-    Application app;
-    app.add( new Model<2,1>() );
-    app.run();
+    boost::shared_ptr<Model<2,1> > model ( new Model<2,1>() );
+    model->run();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
