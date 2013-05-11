@@ -53,7 +53,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     _M_test_dof( __form.functionSpace()->dof().get() ),
     _M_lb( __form.blockList() ),
 
-    _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im.points() ) ),
+    _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
     _M_test_pc_face( precomputeTestBasisAtPoints( im ) ),
 
     _M_gmc( _gmcTest ),

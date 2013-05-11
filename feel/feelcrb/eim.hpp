@@ -39,8 +39,9 @@
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
+#if BOOST_VERSION >= 104700
 #include <boost/math/special_functions/nonfinite_num_facets.hpp>
-
+#endif
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/export.hpp>
@@ -754,8 +755,8 @@ EIM<ModelType>::offline(  )
         auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
         auto gmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(g_bestfit) );
 
-        LOG(INFO) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
-                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
+        DVLOG(2) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
+                 << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
         if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
@@ -792,7 +793,7 @@ EIM<ModelType>::offline(  )
         // add in precompute object the last magic point
         M_ctx.add( no );
 
-        std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
+        std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
         // update interpolation matrix
         // TODO: update only the new line and eventually the new column rather than recomputing everything
         M_B.conservativeResize( M_M, M_M );
@@ -800,8 +801,8 @@ EIM<ModelType>::offline(  )
         {
             this->M_B.col( __j ) = M_q[__j].evaluate( M_ctx );
         }
+        DVLOG(2) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
 
-        LOG(INFO) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
 #if 0
         for( int __i = 0; __i < M_M; ++__i )
         {
@@ -1098,7 +1099,7 @@ public:
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
             M_mu.check();
 #endif
             M_u = M_model->solve( mu );
@@ -1108,7 +1109,7 @@ public:
     element_type operator()( solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
             M_mu.check();
 #endif
             // no need to solve we have already an approximation (typically from
@@ -1135,7 +1136,7 @@ public:
     double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1148,7 +1149,7 @@ public:
     double diffL2Norm(  solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1163,7 +1164,7 @@ public:
     double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1176,7 +1177,7 @@ public:
     double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
@@ -1189,7 +1190,7 @@ public:
     double interpolationError( solution_type const& T , parameter_type const& mu ) const
     {
         M_mu = mu;
-#if !NDEBUG
+#if !defined(NDEBUG)
         M_mu.check();
 #endif
         M_u = T;
