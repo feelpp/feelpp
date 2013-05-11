@@ -92,6 +92,7 @@ public :
         M_mesh( mesh )
     {
         LOG( INFO ) <<" ReducedBasisSpace constructor " ;
+        this->init();
     }
 
     //copy constructor
@@ -111,6 +112,11 @@ public :
         M_mesh( rb->M_mesh )
     {}
 
+    void init()
+    {
+        M_basis = basis_ptrtype( new basis_type() );
+        M_ctx.clear();
+    }
 
     /*
      * Get the mesh
@@ -149,6 +155,14 @@ public :
         return M_basis;
     }
 
+
+    /*
+     * return true if the function space is composite
+     */
+    bool isComposite()
+    {
+        return super::is_composite;
+    }
     /*
      * size of the reduced basis space : number of basis functions
      */
@@ -236,7 +250,7 @@ private :
 template<int Order, typename ModelType , typename MeshType>
 inline
 boost::shared_ptr<ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>>>
-RbSpacePch(  boost::shared_ptr<ModelType> model , boost::shared_ptr<MeshType> mesh  )
+RbSpacePch(  boost::shared_ptr<ModelType> const& model , boost::shared_ptr<MeshType> const& mesh  )
 {
     return ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>>::New( model , mesh );
 }
