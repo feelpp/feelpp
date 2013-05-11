@@ -22,21 +22,93 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file myadvection.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>,
-                 Guillaume Dollé <guillaume.dolle@math.unistra.fr>
-   \date 2013-02-25
-   This program show how to solve the advection problem.
- */
+
 #include <feel/feel.hpp>
 using namespace Feel;
 
 /**
- * Entry point
+\page Advection Diffusion Advection Reaction Problem
+\author Feel++ Consortium
+\date 2013-02-25
+
+\tableofcontents
+<br>
+<hr>
+
+The diffusion advection reaction equation is a classical partial differential equation which can be found in many processes for example in chemistry or biology. This can be described by an equation containing a diffusion, an advection and a reaction term as follows,
+<br><center>\f$
+\left\{
+\begin{aligned}
+      -\epsilon\Delta  u + \bbeta \cdot \nabla  u + \mu u & =  f & \text{on}\; \Omega \;, \\
+      u  & =  0 & \text{on}\; \partial\Omega \;, \\
+\end{aligned}
+\right
+\f$</center><br>
+We use here homogeneous Dirichlet boundary conditions.
+
+
+\section Advection_Theory Theory
+To establish the variationnal formulation, as always we mutiply the first equation by a test function \f$v\in H_0^1(\Omega)\f$ such that,
+\f[
+    H_0^1(\Omega) = \{ v\in H^1(\Omega),\; v=0 \; \text{on} \; \partial\Omega \} \;.
+\f]
+
+Then we integrate on the domain \f$\Omega\f$,
+<br><center>\f$
+\begin{aligned}
+- \int_\Omega \epsilon \Delta u\ v
++ \int_\Omega \bbeta \cdot \nabla u\ v
++ \int_\Omega \mu\ u\ v
+= \int_\Omega f\ v \;.
+\end{aligned}
+\f$</center><br>
+We establish the variationnal formulation from the previous equation and using the Green formula, find \f$u \in \in H_0^1(\Omega)\f$
+<br><center>\f$
+\begin{aligned}
+  \int_\Omega \epsilon \nabla u \cdot \nabla v
+  - \underbrace{\int_{\partial\Omega} \epsilon (\nabla u \cdot \mathbf n)\ v}_{=0}
+  + \int_\Omega (\beta \cdot \nabla u)\ v
+  + \int_\Omega \mu\ u\ v
+  = \int_\Omega f v \; \quad \forall v \in H_0^1(\Omega),
+\end{aligned}
+\f$</center><br>
+where \f$\mathbf n\f$ is a unit outward normal vector. We can rewrite the problem, find \f$u \in \in H_0^1(\Omega)\f$
+\f[
+a(u,v) = l(v) \quad \forall v \in H_0^1(\Omega),
+\f]
+where \f$a\f$ is a bilinear form, continuous, coercive and \f$l\f$ is a linear form.
+
+\section Advection_Implementation Implementation
+We choose for our example \f$\mu = 1 \f$, \f$\epsilon = 1\f$, \f$f=1\f$, and \f$\bbeta=(1,1)^T\f$.
+\snippet myadvection.cpp marker_main
+
+Again the implementation is close to the mathematical formulation.<br>
+Here again, we create the mesh for an unit square geometry.<br>
+Then we define the function space \f$X_h\f$ we choose as order 1 Lagrange basis function using \c Pch<Order>().  Note that here, the function space is the same for "trial" and "test" functions.<br>
+We declare the left and the right hand side integrals expressions for the equation (\ref Advection_Math ). <br>
+Finally we add the Dirichlet boundary condition and we use the default solver to solve. We export the solution \f$u\f$ for post processing.
+
+\section Advection_Results Results
+There are various solutions of this problem displayed with Paraview for \f$\epsilon= 1, 0.01, 0.0001\f$.<br>
+Notice how the solution gets unstable for\f$\epsilon = 0.0001\f$, this is classical and requires stabilisation methods to handle this issue.
+
+<center>
+<table border=0px>
+<tr>
+  <td>\image html sol-dar-1.png</td>
+  <td>\image html sol-dar-2.png</td>
+  <td>\image html sol-dar-3.png</td>
+</tr>
+<tr>
+  <td><center>\f$\epsilon=1\f$</center></td>
+  <td><center>\f$\epsilon=0.01\f$</center></td>
+  <td><center>\f$\epsilon=0.0001\f$</center></td>
+</tr>
+</table>
+</center>
  */
-//\code
-//# marker_main #
+
+/// [marker_main]
 int
 main( int argc, char** argv )
 {
@@ -91,8 +163,8 @@ main( int argc, char** argv )
     e->add("u",u);
     e->save();
 } // end main
-//# endmarker_main #
-//\endcode
+/// [marker_main]
+
 
 
 

@@ -542,6 +542,14 @@ public:
     }
 
     /**
+     * \return the relative tolerance SNES
+     */
+    value_type rToleranceSNES() const
+    {
+        return M_rtoleranceSNES;
+    }
+
+    /**
      * \return the divergence tolerance
      */
     value_type dTolerance() const
@@ -550,11 +558,27 @@ public:
     }
 
     /**
+     * \return the SNES step length tolerance
+     */
+    value_type sToleranceSNES() const
+    {
+        return M_stoleranceSNES;
+    }
+
+    /**
      * \return the absolute tolerance
      */
     value_type aTolerance() const
     {
         return M_atolerance;
+    }
+
+    /**
+     * \return the SNES absolute tolerance
+     */
+    value_type aToleranceSNES() const
+    {
+        return M_atoleranceSNES;
     }
 
     /**
@@ -572,6 +596,15 @@ public:
     {
         return M_maxitSNES;
     }
+
+    /**
+     * \return the KSP relative tolerance in SNES
+     */
+    value_type rtoleranceKSPinSNES() const
+    {
+        return M_rtoleranceKSPinSNES;
+    }
+
 
     bool converged() const
     {
@@ -635,6 +668,24 @@ public:
         M_dtolerance = dtolerance;
         M_atolerance = atolerance;
         M_maxit = maxit;
+    }
+
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+                                     setTolerancesSNES,
+                                     tag,
+                                     ( required
+                                       ( rtolerance, ( double ) )
+                                     )
+                                     ( optional
+                                       ( maxit,      ( size_type ), 50 )
+                                       ( atolerance, ( double ),    1e-50 )
+                                       ( stolerance, ( double ),    1e-8 )
+                                     ) )
+    {
+        M_rtoleranceSNES = rtolerance;
+        M_stoleranceSNES = stolerance;
+        M_atoleranceSNES = atolerance;
+        M_maxitSNES = maxit;
     }
 
     /**
@@ -868,10 +919,10 @@ public:
                                        //(prec,(sparse_matrix_ptrtype), jacobian )
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_pc=this->pcEnumType()/*LU_PRECOND*/,_backend=this->shared_from_this(),
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType() ) )
-                                       ( maxit,( size_type ), M_maxit/*1000*/ )
-                                       ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
-                                       ( atolerance,( double ), M_atolerance/*1e-50*/ )
-                                       ( dtolerance,( double ), M_dtolerance/*1e5*/ )
+                                       ( maxit,( size_type ), M_maxitSNES/*50*/ )
+                                       ( rtolerance,( double ), M_rtoleranceSNES/*1e-8*/ )
+                                       ( atolerance,( double ), M_atoleranceSNES/*1e-50*/ )
+                                       ( stolerance,( double ), M_stoleranceSNES/*1e-8*/ )
                                        ( reuse_prec,( bool ), M_reuse_prec )
                                        ( reuse_jac,( bool ), M_reuse_jac )
                                        ( transpose,( bool ), false )
@@ -881,10 +932,10 @@ public:
                                      )
                                    )
     {
-        this->setTolerances( _dtolerance=dtolerance,
-                             _rtolerance=rtolerance,
-                             _atolerance=atolerance,
-                             _maxit=maxit );
+        this->setTolerancesSNES( _stolerance=stolerance,
+                                 _rtolerance=rtolerance,
+                                 _atolerance=atolerance,
+                                 _maxit=maxit );
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
         vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
@@ -1007,6 +1058,8 @@ private:
     double M_rtolerance;
     double M_dtolerance;
     double M_atolerance;
+    double M_rtoleranceSNES, M_stoleranceSNES, M_atoleranceSNES;
+    double M_rtoleranceKSPinSNES;
 
     bool M_reuse_prec;
     bool M_reuse_jac;

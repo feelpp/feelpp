@@ -50,6 +50,11 @@ struct SpaceToLagrangeP1Space
     typedef typename domain_space_type::fe_type::convex_type convex_type;
     typedef typename domain_space_type::mesh_type domain_mesh_type;
 
+    typedef typename mpl::if_<mpl::and_<mpl::equal_to<mpl::bool_<convex_type::is_simplex>, mpl::bool_<true> >,
+                                       mpl::equal_to<mpl::int_<convex_type::nDim>, mpl::int_<1> > >,
+                              mpl::identity<Hypercube<convex_type::nDim,convex_type::nOrder,convex_type::nRealDim > >,
+                              mpl::identity<convex_type> >::type::type domain_reference_convex_type;
+
     template< template<uint16_type Dim> class PsetType>
     struct SelectConvex
     {
@@ -123,10 +128,11 @@ public:
     typedef std::vector<std::list<size_type> > el2el_type;
 
     typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::convex_type domain_convex_type;
+    typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::domain_reference_convex_type domain_reference_convex_type;
     typedef typename detailOpLagP1::SpaceToLagrangeP1Space<SpaceType>::image_convex_type image_convex_type;
     //typedef PointSetWarpBlend<domain_convex_type, domain_space_type::basis_type::nOrder, value_type> pset_type;
-    typedef PointSetFekete<domain_convex_type, domain_space_type::basis_type::nOrder, value_type> pset_type;
-    typedef PointSetToMesh<domain_convex_type, value_type> p2m_type;
+    typedef PointSetFekete<domain_reference_convex_type/*domain_convex_type*/, domain_space_type::basis_type::nOrder, value_type> pset_type;
+    typedef PointSetToMesh<domain_reference_convex_type/*domain_convex_type*/, value_type> p2m_type;
 
     typedef typename domain_mesh_type::gm_type gm_type;
     typedef typename domain_mesh_type::element_type element_type;
@@ -509,7 +515,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                 auto const& theFaceBase = itl->face( s );
                 //size_type global_face_id = theFaceBase.id();
 
-                face_type new_face = theFaceBase;
+                face_type new_face;// = theFaceBase;
                 new_face.disconnect();
                 new_face.setOnBoundary( true );
                 new_face.setProcessId( it->processId() );

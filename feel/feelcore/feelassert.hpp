@@ -30,7 +30,7 @@
 #ifndef FEELASSERT_HPP
 #define FEELASSERT_HPP 1
 
-/*!  \page macros_page Feel Macros
+/*!  \page Macros Feel Macros
   \section assert_macros Assertion Macros
 
   \subsection assertions Assertions

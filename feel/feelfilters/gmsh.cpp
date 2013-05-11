@@ -455,6 +455,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
               << " -" << dim << " -part " << M_partitions  << " " << __geoname;
 
+
     LOG(INFO) << "[Gmsh::generate] execute '" <<  __str.str() << "\n";
     LOG(INFO) << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
     LOG(INFO) << "[Gmsh::generate] partitioner: " <<  M_partitioner << "\n";
