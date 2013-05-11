@@ -158,6 +158,7 @@ if (CLN_INCLUDE_DIR AND CLN_LIBRARIES AND NOT CMAKE_CROSSCOMPILING)
 		_cl_version_matches)
 	set(CMAKE_REQUIRED_LIBRARIES ${_save_required_libraries})
 	set(CMAKE_REQUIRED_INCLUDES ${_save_required_includes})
+# below is causing problem with Debian packaging, need to investigate
 # 	if (NOT _cl_version_matches)
 #		if (NOT CLN_FIND_QUIETLY)
 #			message(ERROR "header (version differs from the library one, "
