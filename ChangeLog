@@ -1,0 +1,220 @@
+/* -*- mode: c++ -*- */
+/**
+   \page ChangeLog
+
+   \tableofcontents
+
+   \section feelpp0930 Feel++ Release 0.93.0
+   release date xx-yy-2013
+
+   \subsection changes0930 Changes
+
+   - Feel++ is now hosted on GitHub : https://github.com/feelpp/feelpp
+   - port to LRZ/SuperMUC thanks to PRACE 6th-call and HP-FEEL++ project
+   - port to Strasbourg and Grenoble Mesocenters
+   - major update of the feel++ online manual using Doxygen
+   see [Feel++ Online Document](http://feelpp.github.io/feelpp/)
+
+
+   \subsection features0930 Features
+
+   - retrieving command line/config options
+   \code
+   option(_name="",_prefix="",_sub="").as<xxx>()
+   // for example retrieve the option gmsh.hsize
+   option(_name="gmsh.hsize").as<double>()
+   \endcode
+   - \c Environment::findFile(std::string) : look for a file in the list of
+     directories known to Feel++ (current directory, previous directories stored
+     via \c changeRepository(), and for .geo/.mshg files also \c localGeoRepository()
+     and \c systemGeoRepository()
+   - support for Boost 1.53
+   - support for PETSc 3.4
+   - support for loadleveler, slurm and ccc: automatic generation of scheduling scripts
+   - new feel++ snes options
+     - snes-{r,a,s}tol
+     - snes-maxit
+     - snes-ksp-rtol
+     - ksp-maxit
+     - ksp-{a,d}tol
+   - Nonlinear solves with lambda function, see \ref bratu.cpp and \ref nonlinearpow.cpp
+   - added \ref LoadMesh function that can load either a .geo or a .msh file
+   see \ref StokesTutorial
+   - support for Gmsh mesh file binary format use \c --gmsh.format=1 (binary)
+   - in bi/linear forms,
+     - no need for specifying the algebraic representation for bi/linear forms anymore
+     \code
+     auto a = form2( Xh, Xh ); auto l=form1(Xh)
+     a.solve( _solution=u, _rhs=l);
+     \endcode
+     - support for +=
+     \code
+     auto a = form2( Xh, Xh ), at = form2( Xh, Xh); a += at (sum matrices)
+     auto l = form1( Xh ), lt = form1( Xh ); l += lt (sum vectors)
+     \endcode
+     useful for example for time dependent and time independent terms handling.
+   - The language now supports the following \ref Keywords
+     - \c cross(u,v) (cross product)
+     - \c eye<m,n>(), \c Id<m,n>() identity matrix (if non square, 1 on main diagonal, 0 elsewhere)
+     - \c constant<m,n>(value) constant matrix with entries set to  "value"
+     - \c zero<m,n>() matrix of zeros
+     - \c inv() and \ det(): inverse and determinant, e.g. for change of variable (see \ref laplacian_polar.cpp)
+     - \c sym(A) and \c antisym(A)
+   - In exporters,
+     - support for static, change_coords_only, remesh \ref ExporterGeometry
+     - Ensight Gold support
+       - support filesets
+       - support scalars
+       - support for markedfaces (mesh and fields)
+     - options (with prefix)
+       - \c exporter.format = ensight, ensightgold, gmsh
+       - \c exporter.geo = 0 (static), 1(change_coords_only), 2(remesh)
+
+
+
+
+
+   \subsection issues0930 Issues
+
+   - #103 Off by one error in mesh point indices
+   - #109 Load Gmsh supported file format seamlessly
+   - #15 Reorder dof with respect to interior, face, edge and vertex dof of the domain
+   - #38 support for gmsh binary format enhancement
+   - #45 problem with dot function in parallel when using vectors
+   - #56 use multVector directly with element_type
+   - #79 improve export when same mesh reused enhancement
+   - #91 GFlags not used
+   - #95 Port Feel++ on SUPERMUC
+   - #99 (Re)Moving libmatheval Usability Component-Progenv
+
+   \section feelpp0920 Feel++ Release 0.92.0
+
+   \subsection changes0920 Changes
+
+   - support for Boost 1.49, 1.50, 1.51 and 1.52
+   - imported for Eigen 3.1 in contrib/eigen
+   - port to gcc4.7, clang 3.1 and clang 3.2
+   - added cmake macro feelpp_add application, see http://code.google.com/p/feelpp/issues/detail?id=11&can=1
+   - support Gmsh from both executable and library(preferred and more powerful)
+   - support for PETSc 3.3
+   - port to Marseille mesocenter supercomputer (thx to CEMRACS'12)
+   - port on the TGCC
+   - added scotch Portfile from macport and use esmumps variant for mumps support
+   - added PETSc 3.3-p1 support and use suitesparse as well as scotch directly
+   from macport instead of downloading/compiling them
+   - improved benchmarking framework and in particular the handling of the
+   statistics provided by the benchmark with views per key and flat views. In
+   the last case various files are automatically generated for each benchmark
+   - added eigen(3.1) backend with support for dense and sparse eigen matrices
+   Fixes issue #36
+   - added 2D and 3D mesh adaptation using Gmsh
+   - seamless parallelisation of the FunctionSpace data structure in the case of
+   product of function spaces
+   - lift operator merged with projection operator
+   - support for mesh generation directly from Gmsh library
+   - support for element splitting (Fixes issue #40)
+   - many new keywords
+     - mean value of a function: mean(_range=elements(mesh),_expr=sin(pi Px()));
+     - norm L_2 of a function: normL2(_range=elements(mesh),_expr=sin(pi Px()));
+     - norm L_2 of a function squared: normL2Squared(_range=elements(mesh),_expr=sin(pi Px()));
+     - infinity norm of a function: normLinf(_range=elements(mesh),_expr=sin(pi Px()));
+     - inner(a,b): a . b
+     - cross(a,b): a x b
+     - sym(a): .5 (a + aT )
+     - zero<m,n>(): matrix of zeros of size m x n
+     - ones<m,n>(): matrix of ones of size m x n
+     - constant<m,n>(a): matrix of constant value a of size m x n
+     - eye<m,n>(), Id<m,n>(): unit diagonal matrix of size m x n
+    - support for symbolic computing using Ginac
+    - support for meta-expression
+    \code
+    auto I = integrate(_range=elements(mesh),_expr=_e1 );
+    auto v1 = I( idv(v) ).evaluate();
+    auto v2 = I( cst(1) ).evaluate();
+    \endcode
+   - update manual and tutorial, see #61 and #70
+
+   \subsection bugs0920 Bugs
+
+   - fixed issue 1: http://code.google.com/p/feelpp/issues/detail?id=1&can=1
+   - fixed issue 2: http://code.google.com/p/feelpp/issues/detail?id=2&can=1
+   - fixed issue 6: http://code.google.com/p/feelpp/issues/detail?id=6&can=1
+   - fixed issue 9: http://code.google.com/p/feelpp/issues/detail?id=9&can=1
+
+
+   \section feelpp0911 Feel++ Release 0.91.1
+
+   - overall cleanup in C++ preprocessor macros
+   - cleanup in cmake
+   - fix some compilation issues and added more stringent compiler flags
+   - port to boost1.49
+   - Fix issues 1, 2 and 9 (see Google Code, http://code.google.com/p/feelpp/issues/list)
+
+   \section feelpp0910 Feel++ Release 0.91.0
+
+   \subsection changes0910 Developer changes
+
+   - Feel++ is now seamlessly parallel
+   - Feel++ supports seamlessly interpolation in its variational formulation
+   language
+   - cmake: overall cleanup of cmake feel++ variables which are now prefixed
+   FEELPP
+    - cmake: in-source builds forbidden
+    - cmake: guards againts invalid CMAKE_BUILD_TYPE
+    - cmake: added sse, altivec and neon optimizations
+    - cmake: fix bug in make_directory
+    - cmake: even more minimal configuration in doc/tutorial
+    - fix compilation in APPLE and s390 platforms
+   - added macport port for feel++ with support for snow leopard and lion
+   - Eigen code has been updated to 3.0.5
+   - added a config file with extension .cfg based on Boost.program_options in
+   Application classes
+   - provide systemConfigRepository() and localConfigRepository() in Environment
+   class which return respectively the local and system location of the config
+   file
+   - merge the two implementations of aitken relaxation method and provide a
+   simplified interface
+   - added interface nlSolve interface to backend similar to solve allowing to
+   order-free and optional parameters
+   - added interface to external solver libraries via petsc such as mumps or
+   umfpack. This is configurable via the config file (.cfg)
+   - various fixes in geometric mapping (and inverse) and polynomialset to handle
+   objects of topoligical dimension d-1 living in dimension d space.
+   - added implementation of $L_2$ and $H_1$ projector which renders rather
+   seamless these projection.
+   - fix copy/paste bug in bdf extrapolation, the coefficient were divided by dt
+   - support for interpolating functions living on meshes of different
+   topoligical dimension
+   - added mesh elements and faces extraction using createSubmesh() based on mesh
+   filters
+   - added lift and trace operator, interface might change
+   - BDF:
+     - new bdf() free function to generate a new bdf `shared_ptr` object and
+     configure it
+     \code
+     // vm is the variable map provided by program options
+     // note that by default most option get their value from the command line
+     // or config files
+     auto mybdf = bdf( _space=Xh, _vm=this->vm(), _order=2, _time_step=0.1 );
+     \endcode
+   - changed options for bdf: now use . to separate  bdf from rest of option in
+     order to be able to create section in config files
+   - can pass a prefix to handle several bdf in application
+   - GeoTool:
+    - update geotool to support markers for 1D meshes
+    - added a new Cube object
+    - added a pie object
+   - added mshconvert() which allows to generate a gmsh mesh out of mesh formats
+   supported by gmsh
+   - support for passing shared_ptr<> to the differential operators and to on()
+   - support in the language for test and trial functions not being defined on the
+   same mesh
+   - Language:
+     - added sym() and antisym() to compute the symmetric and antisymmetric parts of
+     a matrix expression
+     - added access to expression components via () operator
+     - allow integration of test and/or trial functions which are defined  on different
+     meshes as well as integrating on a different mesh.
+   - reorganized completely and updated/corrected the manual
+   - updated doxygen documentation
+*/

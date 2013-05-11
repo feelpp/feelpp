@@ -1,5 +1,8 @@
-# -*- mode: org -*-
-#+TITLE: Credits
+<!-- -*- mode: markdown -*- -->
+Credits
+=======
+
+[TOC]
 
 Feel++ is Copyright (C) 2005-2013 by
  - Université Joseph Fourier (Grenoble, France)
@@ -11,13 +14,13 @@ Feel++ is Copyright (C) 2011-2013 by
 Feel++ is Copyright (C) 2005-2006 by
  - Ecole Polytechnique Fédérale de Lausanne (EPFL, Switzerland)
 
-* Developers
+# Developers
 
-** Main Author:
+## Main Author:
 
  - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 
-** Current Developers:
+## Current Developers:
 
  - Vincent Chabannes <vincent.chabannes@imag.fr>
  - Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
@@ -25,16 +28,17 @@ Feel++ is Copyright (C) 2005-2006 by
  - Goncalo Pena <goncalo.pena@epfl.ch>
  - Abdoulaye Samake <samakeablo@gmail.com>
  - Stéphane Veys <stephane.veys@imag.fr>
+ - Ranine Tarabay
 
-** Past Developers and Contributors:
+## Past Developers and Contributors:
 
  - Benjamn Stamm <benjamin.stamm@epfl.ch>
  - Gilles Steiner <gilles.steiner@epfl.ch>
  - Christoph Winkelmann <christoph.winkelmann@epfl.ch>
 
-* Funding
+# Funding
 
-** Current funding
+## Current funding
 
 Feel++ is supported by
  - two ANR[fn:1] projects:
@@ -43,12 +47,12 @@ Feel++ is supported by
  - one FNRAE[fn:4] project
    - RB4FASTSIM - 2010-2014
 
-** Past funding
+## Past funding
  - OPUS - http://www.opus-project.fr (TLOG call - 2008-2011)
  - the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project
    CHPID[fn:3] since 2009
 
-* Footnotes
+# Footnotes
 
 [fn:1] http://www.agence-nationale-recherche.fr/
 
