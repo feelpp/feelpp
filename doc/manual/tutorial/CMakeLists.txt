@@ -36,5 +36,7 @@ foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacia
   else()
     feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
   endif()
+  install(TARGETS feelpp_doc_${app} DESTINATION bin/ COMPONENT Bin )
 endforeach()
 feelpp_add_application( doc_mystokes SRCS mystokes.cpp LABEL doc CFG mystokes.cfg GEO mystokes.geo)
+install(TARGETS feelpp_doc_mystokes DESTINATION bin/ COMPONENT Bin )
