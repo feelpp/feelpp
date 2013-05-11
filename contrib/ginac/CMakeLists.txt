@@ -112,7 +112,7 @@ if (NOT CMAKE_SKIP_RPATH)
 endif()
 
 configure_file(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac.pc.cmake ${CMAKE_BINARY_DIR}/ginac.pc @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/ginac.pc DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
+#install(FILES ${CMAKE_BINARY_DIR}/ginac.pc DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
 
 # rpath for libginac.so itself, ginsh, and friends
 set(_ginac_rpath ${_ginac_rpath_reloc})
@@ -176,4 +176,3 @@ endif()
 #if (MAKEINFO)
 #	add_subdirectory(doc)
 #endif()
-
