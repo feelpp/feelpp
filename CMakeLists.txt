@@ -30,7 +30,7 @@ if ( DOXYGEN )
    include(UseDoxygen OPTIONAL)
 
    # make sure that doxygen is not run byt default
-   set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
+   #set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
    configure_file(
      ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
