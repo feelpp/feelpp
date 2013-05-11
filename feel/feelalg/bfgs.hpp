@@ -44,16 +44,16 @@ namespace ublas = boost::numeric::ublas;
 enum BFGSType { BFGS = 0,  DFP };
 
 /**
-   delta[k] = x[k+1] - x[k]
-   gamma[k] = grad f(x[k+1]) - grad f(x[k])
-   H[0] = I
-   BFGS : zeta[k] = delta[k] - H[k] gamma[k]
-   DFP  : zeta[k] = H[k] gamma[k]
-   tau[k] = gamma[k]^T zeta[k]
-   rho[k] = 1 / gamma[k]^T delta[k]
-   BFGS : H[k+1] = H[k] + rho[k](zeta[k] delta[k]^T + delta[k] zeta[k]^T)
-   - rho[k]^2 tau[k] delta[k] delta[k]^T
-   DFP  : H[k+1] = H[k] + rho[k] delta[k] delta[k]^T
+   delta[k] = x[k+1] - x[k]<br>
+   gamma[k] = grad f(x[k+1]) - grad f(x[k])<br>
+   H[0] = I<br>
+   BFGS : zeta[k] = delta[k] - H[k] gamma[k]<br>
+   DFP  : zeta[k] = H[k] gamma[k]<br>
+   tau[k] = gamma[k]^T zeta[k]<br>
+   rho[k] = 1 / gamma[k]^T delta[k]<br>
+   BFGS : H[k+1] = H[k] + rho[k](zeta[k] delta[k]^T + delta[k] zeta[k]^T)<br>
+   - rho[k]^2 tau[k] delta[k] delta[k]^T<br>
+   DFP  : H[k+1] = H[k] + rho[k] delta[k] delta[k]^T<br>
    - (1/tau[k])zeta[k] zeta[k]^T
 */
 // Object representing the inverse of the Hessian

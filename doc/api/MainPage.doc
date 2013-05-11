@@ -41,7 +41,38 @@ Fourier (Grenoble), University of Coimbra (Portugal) and CNRS.
 See the Credits.org file for proper credits attribution.
 
 <hr>
+\htmlonly
+<center>
+<b>FEEL++ Consortium</b>
+<table border=0px">
+<tr>
+  <td><a href="http://www.unistra.fr/"><img alt="UDS" src="logo_uds.png" width="100"/></a></td>
+  <td><a href="http://www.ujf-grenoble.fr/"><img alt="UJF" src="logo_ujf.jpg" width="100"/></a></td>
+  <td><a href="http://www.uc.pt/"><img alt="UC" src="logo_uc.png" width="100"/></a></td>
+  <td><a href="http://www.cnrs.fr/"><img alt="CNRS" src="logo_cnrs.png" width="100"/></a></td>
+  <td><a href="http://www.imati.cnr.it/"><img alt="IMATI" src="logo_imati.jpg" width="100"/></a></td>
+</tr>
+</table>
+</center>
+\endhtmlonly
 
+
+<hr>
+\htmlonly
+<center>
+<b>Sponsors</b>
+<table border=0px">
+<tr>
+  <td><a href="http://www.agence-nationale-recherche.fr/ "><img alt="ANR" src="logo_anr.png" width="100"/></a></td>
+  <td><a href="http://cluster-isle.grenoble-inp.fr/ "><img alt="ISLE" src="logo_isle.jpeg" width="100"/></a></td>
+  <td><a href="http://www.rhonealpes.fr/ "><img alt="RA" src="logo_ra.png" width="100"/></a></td>
+</tr>
+</table>
+</center>
+\endhtmlonly
+
+
+<hr>
 \htmlonly
 <center>
 <a href="http://creativecommons.org/licenses/LGPL/2.1/"><img alt="CC-GNU LGPL" border="0" src="http://creativecommons.org/images/public/cc-LGPL-a.png" /></a>

@@ -3,21 +3,8 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
-    <tab type="usergroup" title="Getting Started">
-      <tab type="user" url="\ref CrashCourse" title="Crash Course"/>
-      <tab type="user" url="\ref Building" title="Building Feel++"/>
-      <tab type="user" url="\ref FirstApp" title="First Feel++ Application"/>
-    </tab>
-    <tab type="usergroup" title="Quick Reference">
-      <tab type="user" url="\ref Keywords" title="Keywords"/>
-      <tab type="user" url="\ref Environment" title="Environment"/>
-      <tab type="user" url="\ref Mesh" title="Meshes"/>
-      <tab type="user" url="\ref Spaces" title="Function Spaces"/>
-      <tab type="user" url="\ref Integrals" title="Integrations, Operators and Norms"/>
-      <tab type="user" url="\ref Solver" title="Solver"/>
-      <tab type="user" url="\ref Exporter" title="Exporter"/>
-    </tab>
-    <tab type="classlist" visible="yes" title="" intro=""/>
+    <tab type="pages" visible="yes" title="" intro=""/>
+    <tab type="classlist" visible="yes" title="Feel Objects" intro=""/>
   </navindex>
 
   <!-- Layout definition for a class page -->
