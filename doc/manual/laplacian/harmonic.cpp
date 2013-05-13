@@ -127,7 +127,7 @@ int main(int argc, char**argv )
     // exporter mesh and harmonic extension
     auto e = exporter( _mesh=m1, _name="initial" );
     e->step(0)->setMesh( m1 );
-    e->step(0)->add( "u", uVisu );
+    e->step(0)->add( "uinit", uVisu );
     e->save();
 
     // move the mesh vertices
@@ -136,7 +136,7 @@ int main(int argc, char**argv )
     // export mesh after moving the vertices
     auto e1 = exporter( _mesh=m1, _name="moved" );
     e1->step(0)->setMesh( m1  );
-    e1->step(0)->add( "u", uVisu );
+    e1->step(0)->add( "umoved", uVisu );
     e1->save();
     /// [marker1]
 
