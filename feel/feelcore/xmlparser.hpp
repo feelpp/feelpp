@@ -183,7 +183,7 @@ public:
 };
 
 /**
- * \class Ouput
+ * \class Output
  * \brief output class to describe code outputs
  */
 class Output : public Output_impl

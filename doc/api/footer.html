@@ -1,36 +1,14 @@
-<!-- start footer part -->
-<!--BEGIN GENERATE_TREEVIEW-->
-<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
-  <ul>
-    $navpath
-    <li class="footer">$generatedby
-    <a href="http://www.doxygen.org/index.html">
-    <img class="footer" src="$relpath$doxygen.png" alt="doxygen"/></a> $doxygenversion </li>
-  </ul>
-</div>
-<!--END GENERATE_TREEVIEW-->
-<!--BEGIN !GENERATE_TREEVIEW-->
-<hr class="footer"/><address class="footer"><small>
-$generatedby &#160;<a href="http://www.doxygen.org/index.html">
-<img class="footer" src="$relpath$doxygen.png" alt="doxygen"/>
-</a> $doxygenversion
-</small></address>
-<!--END !GENERATE_TREEVIEW-->
+<hr size="1"><address style="text-align: right;"><small>
+Generated on $datetime for $projectname by&nbsp;<a href="http://www.doxygen.org/index.html"><img src="doxygen.png" alt="doxygen" align="middle" border="0"></a> $doxygenversion</small></address>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-<!-- Piwik --> 
-<!--
-<script type="text/javascript">
-var pkBaseURL = (("https:" == document.location.protocol) ? "https://stats.sylphide-consulting.com/piwik/" : "http://stats.sylphide-consulting.com/piwik/");
-document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
-</script><script type="text/javascript">
-try {
-var piwikTracker = Piwik.getTracker(pkBaseURL + "piwik.php", 20);
-piwikTracker.trackPageView();
-piwikTracker.enableLinkTracking();
-} catch( err ) {}
-</script><noscript><p><img src="http://stats.sylphide-consulting.com/piwik/piwik.php?idsite=20" style="border:0" alt="" /></p></noscript>
--->
-<!-- End Piwik Tracking Code -->
+  ga('create', 'UA-40726726-1', 'github.io');
+  ga('send', 'pageview');
 
+</script>
 </body>
 </html>

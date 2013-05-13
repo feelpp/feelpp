@@ -462,8 +462,10 @@ public:
 
 
             if (option(_name="eim.cvg-study").template as<bool>())
+            {
                 this->initializeConvergenceEimMap( Sampling->size() );
-
+                compute_fem=false;
+            }
             if (option(_name="crb.cvg-study").template as<bool>())
                 this->initializeConvergenceCrbMap( Sampling->size() );
 
@@ -615,7 +617,6 @@ public:
 
                                     ti.restart();
                                     LOG(INFO) << "solve u_fem\n";
-                                    google::FlushLogFiles(google::GLOG_INFO);
 
                                     //auto u_fem = model->solveRB( mu );
                                     //auto u_fem = model->solveFemUsingOfflineEim( mu );
@@ -712,7 +713,7 @@ public:
                                     }//end of proc==master
                                 }//end of else (errorType==2)
 
-                                if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
+                                if (option(_name="eim.cvg-study").template as<bool>() )
                                 {
                                     bool check_name = false;
                                     std::string how_compute_unknown = option(_name=_o( this->about().appName(),"how-compute-unkown-for-eim" )).template as<std::string>();
@@ -727,7 +728,8 @@ public:
                                         LOG( INFO ) << "convergence eim with FEM-with-ad ";
                                         check_name = true;
                                         //fem computed via solveFemUsingOnlineEim use the affine decomposition
-                                        this->studyEimConvergence( mu , u_fem , curpar );
+                                        auto fem_with_ad = model->solveFemUsingOnlineEimPicard( mu );
+                                        this->studyEimConvergence( mu , fem_with_ad , curpar );
                                     }
                                     if( how_compute_unknown == "FEM-without-ad")
                                     {
@@ -829,7 +831,7 @@ public:
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
-            if (option(_name="eim.cvg-study").template as<bool>() && compute_fem )
+            if (option(_name="eim.cvg-study").template as<bool>() )
                 this->doTheEimConvergenceStat( Sampling->size() );
 
             if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
@@ -1082,7 +1084,7 @@ private:
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
                 conv.open(file_name, std::ios::app);
-                conv << "Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+                conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
             }
 
             for(int j=0; j<eim->mMax(); j++)
@@ -1115,7 +1117,7 @@ private:
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             {
                 conv.open(file_name, std::ios::app);
-                conv << "Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+                conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
             }
 
             for(int j=0; j<eim->mMax(); j++)

@@ -196,6 +196,8 @@ int main( int argc, char** argv )
       CFG ${CRB_MODEL_CFG} )
   endif()
 
+  # include schedulers
+  include( feelpp.schedulers )
 
   foreach( wrapper pfem scm crb )
     set(pycpp "${CRB_MODEL_SHORT_NAME}${wrapper}_pywrapper.cpp")
@@ -208,6 +210,7 @@ int main( int argc, char** argv )
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
     configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
 
+    
     if ( CRB_MODEL_DEFS )
       set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${CRB_MODEL_DEFS})
     endif()

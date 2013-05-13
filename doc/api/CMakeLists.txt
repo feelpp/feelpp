@@ -41,5 +41,10 @@ if ( DOXYGEN )
      ${CMAKE_CURRENT_SOURCE_DIR}/latexheader.tex.in
      ${CMAKE_CURRENT_BINARY_DIR}/latexheader.tex
      )
+   file(GLOB LOGOS "${CMAKE_CURRENT_SOURCE_DIR}/pngs/logos/*")
+   file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
+   foreach(logo ${LOGOS})
+     GET_FILENAME_COMPONENT(logoname ${logo} NAME)
+     configure_file( ${logo} "${CMAKE_CURRENT_BINARY_DIR}/html/${logoname}" COPYONLY)
+   endforeach()
 endif()
-
