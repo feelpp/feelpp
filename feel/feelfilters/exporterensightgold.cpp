@@ -632,10 +632,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 }
             }
             std::vector<float> field( nComponents*nv );
-            for ( uint16_type c = 0; c < nComponents; ++c )
+            for( ; fit != fen; ++fit )
             {
-                for( ; fit != fen; ++fit )
+                for ( uint16_type c = 0; c < nComponents; ++c )
                 {
+
                     for ( size_type j = 0; j < nverts; j++ )
                     {
                         int pid = fit->point( j ).id();
@@ -669,8 +670,13 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
             uint16_type nComponents = __var->second.nComponents;
 
+            LOG(INFO) << "nComponents field: " << nComponents;
             if ( __var->second.is_vectorial )
+            {
                 nComponents = 3;
+                LOG(INFO) << "nComponents field(is_vectorial): " << nComponents;
+            }
+
 
             /**
              * BE CAREFUL HERE some points in the mesh may not be present in the
@@ -682,7 +688,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             size_type __field_size = __step->mesh()->numPoints();
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
-            ublas::vector<float> __field( __field_size );
+            ublas::vector<float> __field( __field_size, 0. );
 
             __field.clear();
             //typename mesh_type::element_const_iterator elt_it, elt_en;
@@ -699,9 +705,9 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
 
-            for ( uint16_type c = 0; c < nComponents; ++c )
+            for ( ; elt_it != elt_en; ++elt_it )
             {
-                for ( ; elt_it != elt_en; ++elt_it )
+                for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
                 {
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {
