@@ -507,10 +507,12 @@ EEG::initModel()
     /*
      * Loading mesh
      */
-    ImporterGmsh<mesh_type> import( "real.msh" );
-    mesh->accept( import );
-    mesh->setComponents( MESH_CHECK | MESH_UPDATE_FACES );
-    mesh->updateForUse();
+
+    loadMesh( _mesh=mesh , _filename="real.msh");
+    //ImporterGmsh<mesh_type> import( "real.msh" );
+    //mesh->accept( import );
+    //mesh->setComponents( MESH_CHECK | MESH_UPDATE_FACES );
+    //mesh->updateForUse();
 
     // Loading anisotropy tensor
 
