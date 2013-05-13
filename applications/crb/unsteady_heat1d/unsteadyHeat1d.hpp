@@ -131,6 +131,22 @@ public :
     static const uint16_type ParameterSpaceDimension = 4;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
+class FunctionSpaceDefinition
+{
+public :
+    static const uint16_type Order = 1;
+
+    typedef double value_type;
+
+    /*mesh*/
+    typedef Simplex<1,1> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    /*basis*/
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
+
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+};
 
 
 /**
@@ -140,12 +156,12 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class UnsteadyHeat1D : public ModelCrbBase<ParameterDefinition>
+class UnsteadyHeat1D : public ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition>
 {
 public:
 
 
-    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -223,8 +239,7 @@ public:
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< element_ptrtype > >
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
         > affine_decomposition_type;
 
     //@}
@@ -246,7 +261,7 @@ public:
     ~UnsteadyHeat1D() {}
 
     //! initialisation of the model
-    void init();
+    void initModel();
     //@}
 
     /** @name Operator overloads
@@ -334,16 +349,6 @@ public:
             throw std::logic_error( "[Model heat1d] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
     }
 
-    int QInitialGuess() const
-    {
-        return 1;
-    }
-
-    int mMaxInitialGuess( int q )
-    {
-        return 1;
-    }
-
     /**
      * \brief Returns the function space
      */
@@ -364,13 +369,13 @@ public:
      */
 
 
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
     {
         return computeBetaQm( mu , time );
     }
 
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( parameter_type const& mu , double time=0 )
     {
         M_betaAqm.resize( Qa() );
@@ -396,70 +401,9 @@ public:
         M_betaMqm[0].resize(1);
         M_betaMqm[0][0] = 1;
 
-        M_betaInitialGuessQm.resize( QInitialGuess() );
-        M_betaInitialGuessQm[0].resize( 1 );
-        M_betaInitialGuessQm[0][0] = 0;
-
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm, M_betaInitialGuessQm );
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
     }
 
-    /**
-     * \brief return the coefficient vector
-     */
-    beta_vector_type const& betaAqm() const
-    {
-        return M_betaAqm;
-    }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    beta_vector_type const& betaMqm() const
-    {
-        return M_betaMqm;
-    }
-
-
-    /**
-     * \brief return the coefficient vector
-     */
-    std::vector<beta_vector_type> const& betaFqm() const
-    {
-        return M_betaFqm;
-    }
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaAqm( int q , int m) const
-    {
-        return M_betaAqm[q][m];
-    }
-
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaMqm( int q , int m) const
-    {
-        return M_betaMqm[q][m];
-    }
-
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_betaInitialGuessQm[q][m];
-    }
-
-
-    /**
-     * \return the \p q -th term of the \p l -th output
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_betaFqm[l][q][m];
-    }
 
     //@}
 
@@ -497,6 +441,7 @@ public:
      */
     affine_decomposition_type computeAffineDecomposition();
 
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition();
     /**
      * \brief solve the model for parameter \p mu
      * \param mu the model parameter
@@ -632,12 +577,10 @@ private:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
     std::vector<beta_vector_type> M_betaFqm;
-    beta_vector_type M_betaInitialGuessQm;
 
     bdf_ptrtype M_bdf;
 
@@ -651,7 +594,6 @@ UnsteadyHeat1D::UnsteadyHeat1D()
     meshSize( 0.01 ),
     M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 
 
@@ -664,10 +606,9 @@ UnsteadyHeat1D::UnsteadyHeat1D( po::variables_map const& vm )
     meshSize( vm["hsize"].as<double>() ),
     M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 void
-UnsteadyHeat1D::init()
+UnsteadyHeat1D::initModel()
 {
 
 
@@ -794,13 +735,6 @@ UnsteadyHeat1D::assemble()
     form2( Xh, Xh, M_Aqm[2][0] ) += integrate( markedelements( mesh,"k2_2" ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aqm[2][0]->close();
 
-    auto ini_cond = Xh->elementPtr();
-    ini_cond->setZero();
-    M_InitialGuessQm.resize( 1 );
-    M_InitialGuessQm[0].resize( 1 );
-    M_InitialGuessQm[0][0] = ini_cond;
-
-
 }
 
 
@@ -820,10 +754,21 @@ UnsteadyHeat1D::newVector() const
 }
 
 
+std::vector< std::vector< UnsteadyHeat1D::element_ptrtype > >
+UnsteadyHeat1D::computeInitialGuessAffineDecomposition()
+{
+    std::vector< std::vector<element_ptrtype> > q;
+    q.resize(1);
+    q[0].resize(1);
+    element_ptrtype elt ( new element_type ( Xh ) );
+    q[0][0] = elt;
+    return q;
+}
+
 UnsteadyHeat1D::affine_decomposition_type
 UnsteadyHeat1D::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm , M_InitialGuessQm );
+    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
 }
 
 
@@ -1043,7 +988,7 @@ UnsteadyHeat1D::run( const double * X, unsigned long N, double * Y, unsigned lon
     if ( do_init )
     {
         meshSize = X[4];
-        this->init();
+        this->initModel();
         do_init = false;
     }
 
@@ -1081,10 +1026,10 @@ UnsteadyHeat1D::output( int output_index, parameter_type const& mu, bool export_
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                element_ptrtype eltF( new element_type( Xh ) );
-                *eltF = *M_Fqm[output_index][q][m];
-                output += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
-                //output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+                //element_ptrtype eltF( new element_type( Xh ) );
+                //*eltF = *M_Fqm[output_index][q][m];
+                //output += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
+                output += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m], *pT );
             }
         }
 

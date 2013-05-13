@@ -54,9 +54,11 @@ makeOptions()
 namespace Feel
 {
 /**
- * StVenant_Kirchhoff Model
- *
- */
+   \page StVenantKirchhoff The StVenant_Kirchhoff Model
+   \author Christophe Prud'homme
+
+   This is the documentation for the StVenant-Kirchhoff model
+*/
 template<int Dim, int Order>
 class StVenantKirchhoff
     :
@@ -411,8 +413,3 @@ main( int argc, char** argv )
 
     solid.run();
 }
-
-
-
-
-

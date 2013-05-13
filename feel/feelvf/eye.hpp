@@ -36,7 +36,7 @@ namespace Feel
 {
 namespace vf
 {
-/// \cond detail
+/// \cond DETAIL
 namespace detail
 {
 /**
@@ -247,7 +247,7 @@ private:
 /// \endcond
 
 /**
- * \class Eye
+ *
  * \brief Return an identity matrix
  *
  * @author Christophe

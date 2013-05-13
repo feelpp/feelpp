@@ -1,0 +1,21 @@
+Description: Drop SONAME from Python modules
+ dpkg-shlibdeps spits out many similar warnings:
+  dpkg-shlibdeps: warning: debian/python-openturns/usr/lib/python2.7/dist-packages/openturns/_algo.so contains an unresolvable reference to symbol PyObject_IsTrue: it's probably a plugin
+ It seems reasonable to drop SONAME from plugins.
+Author: Denis Barbier <bouzim@gmail.com
+Origin: Debian
+Forwarded: no
+Last-Update: 2013-02-04
+
+Index: openturns/python/src/CMakeLists.txt
+===================================================================
+--- openturns.orig/python/src/CMakeLists.txt
++++ openturns/python/src/CMakeLists.txt
+@@ -69,6 +69,7 @@ macro ( ot_add_python_module MODULENAME
+     swig_link_libraries ( ${MODULENAME} ${PYTHON_LIBRARIES} )
+   endif ()
+   
++  set_target_properties ( ${SWIG_MODULE_${MODULENAME}_REAL_NAME} PROPERTIES NO_SONAME ON)
+   if ( MINGW )
+     set_target_properties ( ${SWIG_MODULE_${MODULENAME}_REAL_NAME} PROPERTIES
+                                                                    LINK_FLAGS "-shared -Wl,--enable-auto-import" )
