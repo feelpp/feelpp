@@ -23,6 +23,6 @@
 #
 
 crb_add_executable(eegpfem eegpfem.cpp LINK_LIBRARIES feel++_crb_crb )
-
+crb_add_model(eeg EEG HDRS eeg.hpp LINK_LIBRARIES ${FEELPP_LIBRARIES} CFG eeg.cfg XML eeg.xml SCRIPTS eeg.m)
 crb_add_executable(eegscm eegscm.cpp LINK_LIBRARIES ${FEELPP_LIBRARIES} )
 
