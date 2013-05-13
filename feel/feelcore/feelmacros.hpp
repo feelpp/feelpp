@@ -30,7 +30,7 @@
 #ifndef FEELMACROS_HPP
 #define FEELMACROS_HPP 1
 
-/*!  \page macros_page Feel Macros
+/*!  \page Macros Feel Macros
   \section macros Macros
 
    \subsection hints Feel C++ Compiler Hints

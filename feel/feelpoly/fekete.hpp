@@ -1243,7 +1243,7 @@ private :
 };
 
 /**
- * \class Fekete point set class for simplices and simplex products
+ * Fekete point set class for simplices and simplex products
  */
 template< class Convex,
           uint16_type Order,

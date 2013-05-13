@@ -13,7 +13,7 @@ $treeview
 $search
 $mathjax
 <link href="$relpath$$stylesheet"   rel="stylesheet" type="text/css" />
-<link href="$relpath$eigendoxy.css" rel="stylesheet" type="text/css">
+<link href="$relpath$feel.css" rel="stylesheet" type="text/css">
 <!-- $extrastylesheet -->
 <script type="text/javascript" src="$relpath$eigen_navtree_hacks.js"></script>
 <!-- <script type="text/javascript"> -->
@@ -30,28 +30,26 @@ $mathjax
  <tbody>
  <tr style="height: 56px;">
   <!--BEGIN PROJECT_LOGO-->
-  <td id="projectlogo"><img alt="Logo" src="http://www.feelpp.org/_/rsrc/1306098844590/config/customLogo.gif?revision=2"/></td>
+
   <!--END PROJECT_LOGO-->
   <!--BEGIN PROJECT_NAME-->
   <td style="padding-left: 0.5em;">
-   <div id="projectname"><a href="http://www.feelpp.org/">$projectname</a>
+    <div id="projectname"><a href="http://www.feelpp.org/"><img alt="Logo" src="$projectlogo"/></a>
    <!--BEGIN PROJECT_NUMBER-->&#160;<span id="projectnumber">$projectnumber</span><!--END PROJECT_NUMBER-->
    </div>
    <!--BEGIN PROJECT_BRIEF--><div id="projectbrief">$projectbrief</div><!--END PROJECT_BRIEF-->
   </td>
+  <td width="500px" align="center" valign="bottom">
+    <a href="http://www.feelpp.org/"><img alt="Feel++" src="$relpath$home.png"/></a>
+    <a href="https://github.com/feelpp/feelpp"><img alt="Feel++ on Github" src="http://sciactive.github.io/pnotify/includes/github-icon.png"/></a>
+    <a href="https://plus.google.com/communities/104696212880173187475"><img alt="Feel++ community" src="$relpath$google.png"/></a>
+  </td>
   <!--END PROJECT_NAME-->
-  <!--BEGIN !PROJECT_NAME-->
-   <!--BEGIN PROJECT_BRIEF-->
-    <td style="padding-left: 0.5em;">
-    <div id="projectbrief">$projectbrief</div>
-    </td>
-   <!--END PROJECT_BRIEF-->
-  <!--END !PROJECT_NAME-->
   <!--BEGIN DISABLE_INDEX-->
-   <!--BEGIN SEARCHENGINE-->
+  <!--BEGIN SEARCHENGINE-->
    <td>$searchbox</td>
    <!--END SEARCHENGINE-->
-  <!--END DISABLE_INDEX-->
+   <!--END DISABLE_INDEX-->
  </tr>
  </tbody>
 </table>
