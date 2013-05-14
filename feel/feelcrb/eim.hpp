@@ -615,51 +615,28 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         LOG(INFO) << "compute best fit check mu...\n";
         mu.check();
         LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
-        // evaluate model at mu
-        auto Z = M_model->operator()( mu );
 
-        rhs = Z.evaluate( M_ctx );
-        DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
+        auto proj_g = M_model->operator()( mu );
+        rhs = M_model->computeExpansionCoefficients( mu ,  M_B , M_ctx , proj_g , __M );
+        auto z = expansion( M_q, rhs, __M );
+        auto resmax = M_model->computeMaximumOfResidual( mu , z , proj_g );
 
-        this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
-        auto res = vf::project( _space=M_model->functionSpace(),
-                                _expr=idv(Z)-idv( expansion( M_q, rhs, __M ) ) );
+        //DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
 
-        std::string norm_used = option(_name="eim.norm-used-for-residual").template as<std::string>();
-        bool check_name_norm = false;
-        LOG( INFO ) << "[computeBestFit] norm used : "<<norm_used;
-        if( norm_used == "Linfty" )
-        {
-            check_name_norm=true;
-            auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<0>(), _expr=idv(res) );
-            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
-            maxerr( index++ ) = resmax.template get<0>();
-        }
-        if( norm_used == "L2" )
-        {
-            check_name_norm=true;
-            double norm = math::sqrt( integrate( _range=elements( M_model->mesh() ) ,_expr=idv(res)*idv(res) ).evaluate()( 0,0 ) );
-            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
-            maxerr( index++ ) = norm;
-        }
-        if( norm_used == "LinftyVec" )
-        {
-            check_name_norm=true;
-            double norm = res.linftyNorm();
-            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
-            maxerr( index++ ) = norm ;
-        }
-        CHECK( check_name_norm ) <<"[EIM] The name of the norm "<<norm_used<<" is not known\n";
+        LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+        maxerr( index++ ) = resmax.template get<0>();
 
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
         LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
     }
+
     LOG_ASSERT( index == trainset->size() ) << "Invalid index " << index << " should be equal to trainset size = " << trainset->size() << "\n";
     auto err = maxerr.array().abs().maxCoeff( &index );
     LOG(INFO)<< "err=" << err << " reached at index " << index << " and mu=" << trainset->at(index) << "\n";
     return boost::make_tuple( err, trainset->at(index) );
 }
+
 template<typename ModelType>
 void
 EIM<ModelType>::offline(  )
@@ -703,7 +680,9 @@ EIM<ModelType>::offline(  )
 
     LOG(INFO) << "compute T^" << 0 << "...\n";
     // Build T^0
-    auto zmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(M_g[0]) );
+
+    auto zmax = M_model->computeMaximumOfExpression( mu , M_g[0] );
+    //auto zmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(M_g[0]) );
     // store space coordinate where max absolute value occurs
     M_t.push_back( zmax.template get<1>() );
     LOG(INFO) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
@@ -743,7 +722,7 @@ EIM<ModelType>::offline(  )
 
     LOG(INFO) << "start greedy algorithm...\n";
     //for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
-    for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
+    for(  ; M_M < option(_name="eim.dimension-max").template as<int>(); ++M_M ) //err >= this->M_tol )
     {
 
         LOG(INFO) << "M=" << M_M << "...\n";
@@ -753,13 +732,15 @@ EIM<ModelType>::offline(  )
         auto bestfit = computeBestFit( M_trainset, this->M_M-1 );
 
         auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
-        auto gmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(g_bestfit) );
+        //auto gmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(g_bestfit) );
+
+        auto gmax = M_model->computeMaximumOfExpression( bestfit.template get<1>() , g_bestfit );
 
         DVLOG(2) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
-        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
+        if ( (bestfit.template get<0>()/gmax.template get<0>()) < option(_name="eim.error-max").template as<double>() &&  ! option(_name="eim.use-dimension-max-functions").template as<bool>() )
             break;
 
         /**
@@ -775,11 +756,19 @@ EIM<ModelType>::offline(  )
 
         // build T^m such that T^m-1 \subset T^m
         LOG(INFO) << "[offline] compute residual M="<< M_M << "..." <<"\n";
-        res = this->residual(M_M-1);
+        //res = this->residual(M_M-1);
+
         //LOG(INFO) << "residual = " << res << "\n";
         LOG(INFO) << "[offline] compute arg sup |residual|..." <<"\n";
-        auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
+        //auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
+        auto coeff = M_model->computeExpansionCoefficients( mu ,  M_B , M_ctx , g_bestfit , M_M-1 );
+        auto z = expansion( M_q, coeff , M_M-1 );
+        auto resmax = M_model->computeMaximumOfResidual( bestfit.template get<1>() , z , g_bestfit );
+        res = M_model->residual( bestfit.template get<1>() , z , g_bestfit );
         LOG(INFO) << "[offline] store coordinates where max absolute value is attained " << resmax.template get<1>() << "..." <<"\n";
+
+        //auto patate = M_model->computeMaximumOfResidualWithExpression( bestfit.template get<1>(), M_B, M_t, M_ctx , q );
+
         // store space coordinate where max absolute value occurs
         M_t.push_back( resmax.template get<1>() );
 
@@ -950,6 +939,10 @@ public:
     //typedef typename eim_type::betam_type betam_type;
     //typedef typename eim_type::qm_type qm_type;
 
+    typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
+    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef boost::tuple<double,parameter_type> parameter_residual_type;
+
 
     EIMFunctionBase( po::variables_map const& vm,
                      functionspace_ptrtype fspace,
@@ -1033,6 +1026,11 @@ public:
     virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
     virtual double interpolationError( solution_type const& T , parameter_type const& mu ) const = 0;
 
+    virtual vector_type computeExpansionCoefficients( parameter_type const& mu, matrix_type const& B, context_type const& ctx, element_type const& g, int M)=0;
+    virtual boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, element_type const& g )=0;
+    virtual boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, element_type const& z, element_type const& g )=0;
+    virtual element_type residual( parameter_type const& mu, element_type const& z, element_type const& g )=0;
+
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
@@ -1077,6 +1075,11 @@ public:
     typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
     typedef CRB<crbmodel_type> crb_type;
     typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
+    typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
+    typedef boost::shared_ptr<matrix_type> matrix_ptrtype;
+    typedef boost::tuple<double,parameter_type> parameter_residual_type;
+    typedef typename super::node_type node_type;
 
     EIMFunction( po::variables_map const& vm,
                  model_ptrtype model,
@@ -1130,6 +1133,175 @@ public:
             M_u = T;
             return evaluateFromContext( _context=ctx, _expr=M_expr );
         }
+
+    vector_type computeExpansionCoefficients( parameter_type const& mu, matrix_type const& B, context_type const& ctx, element_type const& g, int M)
+    {
+        vector_type rhs( M );
+
+        if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+        {
+            rhs = this->operator()( ctx , mu );
+        }
+        else
+        {
+            rhs = g.evaluate( ctx );
+        }
+
+        B.block(0,0,M,M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
+        LOG(INFO) << "solve B sol = rhs with rhs = \n" << rhs <<"\n";
+
+        return rhs;
+    }
+
+    // compute the maximum of the residual using either real expression
+    // or its projection on the functionspace
+    // mu : parameter
+    // z  : expansion in the EIM basis
+    // g  : projection of the expression
+    boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, element_type const& z, element_type const& g)
+    {
+        double max=0;
+        node_type node;
+
+        M_mu=mu;
+
+        auto residual_expr = M_expr - idv(z);
+        auto residual_projected_expr = idv(g)-idv(z);
+
+        std::string norm_used = option(_name="eim.norm-used-for-residual").template as<std::string>();
+        bool check_name_norm = false;
+        LOG( INFO ) << "[computeMaximalResidual] norm used : "<<norm_used;
+        if( norm_used == "Linfty" )
+        {
+            check_name_norm=true;
+            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            {
+                auto resmax = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= residual_expr );
+                max = resmax.template get<0>();
+                node = resmax.template get<1>();
+            }
+            else
+            {
+                auto resmax = normLinf( _range=elements( this->mesh()), _pset=_Q<0>(), _expr= residual_projected_expr );
+                max = resmax.template get<0>();
+                node = resmax.template get<1>();
+
+            }
+        }
+        if( norm_used == "L2" )
+        {
+            check_name_norm=true;
+            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            {
+                double norm = math::sqrt( integrate( _range=elements( this->mesh() ) ,_expr=residual_expr*residual_expr ).evaluate()( 0,0 ) );
+                max = norm;
+            }
+            else
+            {
+                double norm = math::sqrt( integrate( _range=elements( this->mesh() ) ,_expr=residual_projected_expr*residual_projected_expr ).evaluate()( 0,0 ) );
+                max = norm;
+            }
+        }
+        if( norm_used == "LinftyVec" )
+        {
+            check_name_norm=true;
+            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            {
+                auto projection = vf::project( _space=this->functionSpace(),_expr=residual_expr );
+                double norm = projection.linftyNorm();
+                max = norm ;
+            }
+            else
+            {
+                auto projection = vf::project( _space=this->functionSpace(),_expr=residual_projected_expr );
+                double norm = projection.linftyNorm();
+                max = norm ;
+            }
+        }
+        CHECK( check_name_norm ) <<"[EIM options] The name of the norm "<<norm_used<<" is not known\n";
+
+        return boost::make_tuple( max , node );
+    }
+
+    boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, element_type const& g)
+    {
+        double max=0;
+        node_type node;
+
+        M_mu = mu;
+        auto expr = M_expr;
+        auto projected_expr = idv( g );
+
+        std::string norm_used = option(_name="eim.norm-used-for-residual").template as<std::string>();
+        bool check_name_norm = false;
+        LOG( INFO ) << "[computeMaximalResidual] norm used : "<<norm_used;
+        if( norm_used == "Linfty" )
+        {
+            check_name_norm=true;
+            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            {
+                auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr= expr );
+                max = exprmax.template get<0>();
+                node = exprmax.template get<1>();
+            }
+            else
+            {
+                auto exprmax = normLinf( _range=elements(this->mesh()), _pset=_Q<0>(), _expr=projected_expr);
+                max = exprmax.template get<0>();
+                node = exprmax.template get<1>();
+            }
+        }
+        if( norm_used == "L2" )
+        {
+            check_name_norm=true;
+            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            {
+                double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=expr*expr).evaluate()( 0,0 ) );
+                max = norm;
+            }
+            else
+            {
+                double norm = math::sqrt( integrate( _range=elements(this->mesh() ) ,_expr=projected_expr*projected_expr).evaluate()( 0,0 ) );
+                max = norm;
+            }
+        }
+        if( norm_used == "LinftyVec" )
+        {
+            check_name_norm=true;
+            if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            {
+                auto projection = vf::project( _space=this->functionSpace(),_expr=expr );
+                double norm = projection.linftyNorm();
+                max = norm ;
+            }
+            else
+            {
+                auto projection = vf::project( _space=this->functionSpace(),_expr=projected_expr );
+                double norm = projection.linftyNorm();
+                max = norm ;
+            }
+        }
+        CHECK( check_name_norm ) <<"[EIM options] The name of the norm "<<norm_used<<" is not known\n";
+
+        return boost::make_tuple( max , node );
+    }
+
+    element_type residual( parameter_type const& mu, element_type const& z, element_type const& g )
+    {
+        M_mu = mu;
+        auto residual_expr = M_expr - idv(z);
+        auto residual_projected_expr = idv(g) - idv(z);
+
+        element_type projection;
+
+        if( option(_name="eim.compute-expansion-of-expression").template as<bool>() )
+            projection = vf::project( _space=this->functionSpace(),_expr=residual_expr );
+        else
+            projection = vf::project( _space=this->functionSpace(),_expr=residual_projected_expr );
+
+        return projection;
+    }
+
 
     //Let g the expression that we want to have an eim expasion
     //here is computed its l2 norm : || g ||_L2
