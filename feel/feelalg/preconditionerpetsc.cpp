@@ -214,6 +214,40 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         ierr = PCFactorSetFill( pc, Environment::vm(_name="pc-factor-fill",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<double>() );
         CHKERRABORT( worldComm.globalComm(),ierr );
     }
+    if ( std::string(pctype) == "ml" || std::string(pctype) == "mg")
+    {
+#if 1
+        int nLevels= option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
+        //std::vector<MPI_Comm> comms(levels,worldComm.globalComm());
+        ierr = PCMGSetLevels( pc, nLevels, /*comms.data()*/ PETSC_NULL);
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        int smoothdown= option(_name="pc-mg-smoothdown",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
+        ierr = PCMGSetNumberSmoothDown( pc, smoothdown );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        if ( std::string(pctype) == "ml" )
+        {
+            std::string option_pc_ml_maxNlevels = ( boost::format("-pc_ml_maxNlevels %1%") %nLevels ).str();
+            ierr = PetscOptionsClearValue( "-pc_ml_maxNlevels" );
+            ierr = PetscOptionsInsertString( (option_pc_ml_maxNlevels).c_str() );
+
+            std::string option_pc_ml_reuse_interpolation = "-pc_ml_reuse_interpolation";
+            bool mlReuseInterp = option(_name="pc-ml-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<bool>();
+            std::string mlReuseInterpStr = (mlReuseInterp)?"true":"false";
+            ierr = PetscOptionsClearValue( option_pc_ml_reuse_interpolation.c_str() );
+            ierr = PetscOptionsInsertString( (option_pc_ml_reuse_interpolation+" "+mlReuseInterpStr).c_str() );
+        }
+
+        std::string name = (!sub.empty())?sub+"-"+prefix:prefix;
+        PreconditionerPetsc<double>::setPetscMGCoarsePreconditionerType( pc, worldComm, name );
+        PreconditionerPetsc<double>::setPetscMGLevelsPreconditionerType( pc, worldComm, name );
+
+        ierr = PCSetFromOptions( pc );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+#endif
+    }
+
 
     if ( Environment::vm(_name="pc-view",_sub=sub,_prefix=prefix).as<bool>() )
         PCView( pc, PETSC_VIEWER_STDOUT_SELF );
@@ -372,7 +406,6 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
-
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
                   << preconditioner_type       << std::endl
@@ -400,6 +433,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
          preconditioner_type == GASM_PRECOND ||
          preconditioner_type == BLOCK_JACOBI_PRECOND )
         setPetscSubpreconditionerType( pc, worldComm, name );
+
 }
 
 
@@ -569,6 +603,125 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
 
 }
 
+
+template <typename T>
+void
+PreconditionerPetsc<T>::setPetscMGCoarsePreconditionerType( PC& pc,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& prefix )
+{
+    // For catching PETSc error return codes
+    int ierr = 0;
+
+    KSP coarseksp;
+    ierr = PCMGGetCoarseSolve( pc, &coarseksp);
+    CHKERRABORT( worldComm.globalComm(),ierr );
+
+    PC coarsepc;
+    ierr = KSPGetPC( coarseksp, &coarsepc );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+
+    std::string prefixMGCoarse = ( boost::format( "%1%mg-coarse" ) %prefixvm( prefix,"" ) ).str();
+    std::string mgCoarsePCtype =  Environment::vm(_name="pc-type",_prefix=prefixMGCoarse).template as<std::string>();
+
+    ierr = PCSetType( coarsepc, mgCoarsePCtype.c_str() );
+    CHKERRABORT( worldComm.globalComm(),ierr );
+
+    configurePC( coarsepc, worldComm, "", prefixMGCoarse );
+    //ierr = PCSetUp( coarsepc );
+}
+
+template <typename T>
+void
+PreconditionerPetsc<T>::setPetscMGLevelsPreconditionerType( PC& pc,
+                                                            WorldComm const& worldComm,
+                                                            std::string const& prefix )
+{
+    // For catching PETSc error return codes
+    int ierr = 0;
+
+    // get number of levels
+    int nLevels = 1;
+    ierr = PCMGGetLevels( pc, &nLevels);
+    CHKERRABORT( worldComm.globalComm(),ierr );
+
+    //std::cout << " nlevel "<< nLevels << std::endl;
+
+    // Loop over ksp objects
+    for ( int k=1; k<nLevels; ++k )
+    {
+        //std::cout << " configure level k "<< k << std::endl;
+#if 0
+        KSP levelksp;
+        ierr = PCMGGetSmoother( pc, k, &levelksp );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        ierr = KSPSetType(levelksp,KSPRICHARDSON);
+        //ierr = KSPSetType(levelksp,KSPGMRES);
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        PC levelpc;
+        ierr = KSPGetPC( levelksp, &levelpc );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        std::string prefixMGLevels = ( boost::format( "%1%mg-levels%2%" ) %prefixvm( prefix,"" ) %k ).str();
+        std::string mgLevelsPCtype =  Environment::vm(_name="pc-type",_prefix=prefixMGLevels).template as<std::string>();
+
+        ierr = PCSetType( levelpc, mgLevelsPCtype.c_str() );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        configurePC( levelpc, worldComm, "", prefixMGLevels );
+        //ierr = PCSetUp( levelpc );
+        //ierr = PCSetFromOptions( levelpc );
+#else
+
+        std::string prefixMGLevels = ( boost::format( "%1%mg-levels%2%" ) %prefixvm( prefix,"" ) %k ).str();
+
+        std::string mgLevelsKSPtype =  Environment::vm(_name="ksp-type",_prefix=prefixMGLevels).template as<std::string>();
+        std::string mgLevelsPCtype =  Environment::vm(_name="pc-type",_prefix=prefixMGLevels).template as<std::string>();
+
+        std::string option_ksp_type = ( boost::format( "-mg_levels_%1%_ksp_type") %k ).str();
+        std::string option_pc_type = ( boost::format( "-mg_levels_%1%_pc_type") %k ).str();
+
+        ierr = PetscOptionsClearValue( option_ksp_type.c_str() );
+        ierr = PetscOptionsInsertString( (option_ksp_type+" "+mgLevelsKSPtype).c_str() );
+
+        ierr = PetscOptionsClearValue( option_pc_type.c_str() );
+        ierr = PetscOptionsInsertString( (option_pc_type+" "+mgLevelsPCtype).c_str() );
+
+        if (mgLevelsPCtype=="lu")
+        {
+            std::string mgLevelsPCFMSPtype =  Environment::vm(_name="pc-factor-mat-solver-package-type",_prefix=prefixMGLevels).template as<std::string>();
+            std::string option_pc_factor_mat_solver_package = ( boost::format( "-mg_levels_%1%_pc_factor_mat_solver_package") %k ).str();
+            ierr = PetscOptionsClearValue( option_pc_factor_mat_solver_package.c_str() );
+            ierr = PetscOptionsInsertString( (option_pc_factor_mat_solver_package+" "+mgLevelsPCFMSPtype).c_str() );
+        }
+        if (mgLevelsPCtype=="gasm")
+        {
+            int gasmoverlap = Environment::vm(_name="pc-gasm-overlap",_prefix=prefixMGLevels).template as<int>();
+
+            std::string option_pc_gasm_overlap = ( boost::format( "-mg_levels_%1%_pc_gasm_overlap") %k ).str();
+            std::string optionval_pc_gasm_overlap = ( boost::format( "-mg_levels_%1%_pc_gasm_overlap %2%") %k %gasmoverlap ).str();
+            ierr = PetscOptionsClearValue( option_pc_gasm_overlap.c_str() );
+            ierr = PetscOptionsInsertString( optionval_pc_gasm_overlap.c_str() );
+
+            std::string option_sub_pc_type = ( boost::format( "-mg_levels_%1%_sub_pc_type") %k ).str();
+            std::string subpctype =  Environment::vm(_name="pc-type",_sub="sub",_prefix=prefixMGLevels).template as<std::string>();
+            ierr = PetscOptionsClearValue( option_sub_pc_type.c_str() );
+            ierr = PetscOptionsInsertString( (option_sub_pc_type+" "+subpctype).c_str() );
+
+            if (subpctype=="lu")
+            {
+                std::string option_sub_pc_factor_mat_solver_package = ( boost::format( "-mg_levels_%1%_sub_pc_factor_mat_solver_package") %k ).str();
+                std::string t =  Environment::vm(_name="pc-factor-mat-solver-package-type",_sub="sub",_prefix=prefixMGLevels).template as<std::string>();
+                ierr = PetscOptionsClearValue( option_sub_pc_factor_mat_solver_package.c_str() );
+                ierr = PetscOptionsInsertString( (option_sub_pc_factor_mat_solver_package+" "+t).c_str() );
+            }
+
+        }
+
+#endif
+    }
+}
 
 
 
