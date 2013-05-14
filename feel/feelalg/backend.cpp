@@ -667,6 +667,42 @@ Backend<T>::matSolverPackageEnumType() const
  */
 template class Backend<double>;
 
+
+void updateBackendPreconditionerOptions( po::options_description & _options, std::string const& prefix )
+{
+    _options.add_options()
+    ( prefixvm( prefix,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
+    ( prefixvm( prefix,"sub-pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of sub-preconditioners (lu, ilut, ilutp, diag, id,...)" )
+    ( prefixvm( prefix,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display preconditioner information" )
+    ( prefixvm( prefix,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
+    ( prefixvm( prefix,"constant-null-space" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "set the null space to be the constant values" )
+
+    ( prefixvm( prefix,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
+    ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+    ( prefixvm( prefix,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
+    ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+#if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
+    ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+    ( prefixvm( prefix,"sub-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+
+#else
+    ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+    ( prefixvm( prefix,"sub-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+#endif
+
+    ( prefixvm( prefix,"ilu-threshold" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners" )
+    ( prefixvm( prefix,"ilu-fillin" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners" )
+    ( prefixvm( prefix,"pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu" )
+    ( prefixvm( prefix,"sub-pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
+    ( prefixvm( prefix,"pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+    ( prefixvm( prefix,"sub-pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+        ;
+}
+
 /**
  * \return the command lines options of the petsc backend
  */
@@ -732,7 +768,7 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"sub-pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
 
     // solver control options
-    ( prefixvm( prefix,"gmres-restart" ).c_str(), Feel::po::value<int>()->default_value( 20 ), "number of iterations before solver restarts (gmres)" )
+    ( prefixvm( prefix,"gmres-restart" ).c_str(), Feel::po::value<int>()->default_value( 30 ), "number of iterations before solver restarts (gmres)" )
     ( prefixvm( prefix,"ksp-verbose" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations" )
     ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, schur)" )
     ( prefixvm( prefix,"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
@@ -773,7 +809,29 @@ po::options_description backend_options( std::string const& prefix )
        ( prefixvm( prefixfieldsplit,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
        ( prefixvm( prefixfieldsplit,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
         ;
+    }
 
+    // mg or ml preconditioner
+    _options.add_options()
+        ( prefixvm( prefix,"pc-mg-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of levels including finest" )
+        ( prefixvm( prefix,"pc-mg-smoothdown" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of smoothing steps before applying restriction operator" )
+        ( prefixvm( prefix,"pc-ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
+        ( prefixvm( prefix,"pc-ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
+        ( prefixvm( prefix,"pc-ml-reusable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Store intermedaiate data structures so that the multilevel hierarchy is reusable" )
+        ( prefixvm( prefix,"pc-ml-old-hierarchy" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Use old routine to generate hierarchy" )
+        ;
+
+    std::string prefixMGCoarse = ( boost::format( "%1%mg-coarse" ) %prefixvm( prefix,"" ) ).str();
+    updateBackendPreconditionerOptions( _options, prefixMGCoarse );
+
+    for ( uint16_type i=1; i<6; ++i )
+    {
+        std::string prefixMGLevels = ( boost::format( "%1%mg-levels%2%" ) %prefixvm( prefix,"" ) %i ).str();
+        updateBackendPreconditionerOptions( _options, prefixMGLevels );
+
+        _options.add_options()
+            ( prefixvm( prefixMGLevels,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
+            ;
     }
 
     return _options;
