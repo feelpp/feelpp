@@ -11,24 +11,34 @@ Feel++ is Copyright (C) 2005-2013 by
 Feel++ is Copyright (C) 2011-2013 by
  - Université de Strasbourg (France)
 
+Feel++ is Copyright (C) 2011-2013 by
+ - CNRS (France)
+
 Feel++ is Copyright (C) 2005-2006 by
  - Ecole Polytechnique Fédérale de Lausanne (EPFL, Switzerland)
 
 # Developers
 
-## Main Author:
-
- - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-
-## Current Developers:
+## Main Developers:
 
  - Vincent Chabannes <vincent.chabannes@imag.fr>
- - Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
- - Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
- - Goncalo Pena <goncalo.pena@epfl.ch>
- - Abdoulaye Samake <samakeablo@gmail.com>
+ - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  - Stéphane Veys <stephane.veys@imag.fr>
- - Ranine Tarabay
+
+
+## Current Developers and Contributors:
+
+ - Abdoulaye Samake <samakeablo@gmail.com>
+ - Cecile Daversin <Cecile.Daversin@lncmi.cnrs.fr>
+ - Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+ - Goncalo Pena <goncalo.pena@epfl.ch>
+ - Guillaume Dollé <dolleg@gmail.com>
+ - Jean-Baptiste Wahl <wahl.jb@gmail.com>
+ - Mourad Ismail <Mourad.Ismail@ujf-grenoble.fr>
+ - Ranine Tarabay <ranine.tarbay@math.unistra.fr>
+ - Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
+ - Vincent Huber <vincent.huber@cemosis.fr>
+
 
 ## Past Developers and Contributors:
 
@@ -46,6 +56,8 @@ Feel++ is supported by
    - VIVABRAIN (MN call - 2013-2017)
  - one FNRAE[fn:4] project
    - RB4FASTSIM - 2010-2014
+ - IDEX CeMoSiS http://www.cemosis.fr
+ - LABEX IRMIA http://labex-irmia.u-strasbg.fr/
 
 ## Past funding
  - OPUS - http://www.opus-project.fr (TLOG call - 2008-2011)
