@@ -4,6 +4,8 @@ Credits
 
 [TOC]
 
+# Copyright
+
 Feel++ is Copyright (C) 2005-2013 by
  - Université Joseph Fourier (Grenoble, France)
  - University of Coimbra (Portugal)
@@ -17,17 +19,17 @@ Feel++ is Copyright (C) 2011-2013 by
 Feel++ is Copyright (C) 2005-2006 by
  - Ecole Polytechnique Fédérale de Lausanne (EPFL, Switzerland)
 
-# Developers
+# People
 
-## Main Developers:
+## Management
+
+ - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+
+## Current Developers and Contributors:
 
  - Vincent Chabannes <vincent.chabannes@imag.fr>
  - Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  - Stéphane Veys <stephane.veys@imag.fr>
-
-
-## Current Developers and Contributors:
-
  - Abdoulaye Samake <samakeablo@gmail.com>
  - Cecile Daversin <Cecile.Daversin@lncmi.cnrs.fr>
  - Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
