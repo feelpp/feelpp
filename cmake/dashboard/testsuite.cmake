@@ -1,4 +1,3 @@
-
 ####################################################################
 #
 # Usage:
@@ -173,14 +172,16 @@ find_program(CTEST_SVN_COMMAND NAMES svn)
 #SET (CTEST_GIT_COMMAND "git")
 #SET (CTEST_SVN_CHECKOUT   "${CTEST_GIT_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
 #SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
+#SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://github.com/feelpp/feelpp.git")
 set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
-  #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
+#SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
 #endif(NOT FEELPP_NO_UPDATE)
 foreach(module ${FEELPP_MODULES})
   # update the modules using svn update
   execute_process(
-    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update"
+    #COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update" 
+    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_GIT_COMMAND} pull" 
     OUTPUT_VARIABLE MODULE_OUTPUT)
   message(STATUS "updated ${module} : ${MODULE_OUTPUT}")
 endforeach()
@@ -270,11 +271,13 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
     OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}" )
   ctest_submit(PARTS Configure)
 
-  message(WARNING "build target ${subproject}")
-  set(CTEST_BUILD_TARGET “${subproject}”)
+  message(WARNING "build target "${subproject})
+  #set(CTEST_BUILD_TARGET “${subproject}”)
+  set(CTEST_BUILD_TARGET ${subproject})
   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
   ctest_submit(PARTS Build)
 
+  message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
   # runs only tests that have a LABELS property matching "${subproject}"
   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
   ctest_submit(PARTS Test)
