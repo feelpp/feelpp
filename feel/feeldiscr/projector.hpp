@@ -380,6 +380,22 @@ private :
 
         }
         break;
+
+        case CIP:
+        {
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
+                           trans( idt( this->domainSpace()->element() ) ) /*trial*/
+                           *id( this->dualImageSpace()->element() ) /*test*/
+                           );
+
+            a = integrate( internalfaces( this->dualImageSpace()->mesh() ),
+                           M_gamma * hFace() * hFace()
+                           * trans(jumpt( gradt(this->domainSpace()->element()) ))
+                           * jump( grad(this->dualImageSpace()->element()) )
+                           );
+        }
+        break;
+
         case NODAL:
             break;
         }
