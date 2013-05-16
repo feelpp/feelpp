@@ -30,16 +30,41 @@
  */
 #include <feel/feel.hpp>
 
+namespace Feel
+{
+/**
+   \page LaplacianCoordinateSystem Laplacian in polar and cartesian coordinate systems
+   \author Feel++ Consortium
+
+   <br>
+   <br>
+
+   Two examples are available to solve the Laplacian in two coordinate systems (cartesian and polar) having the same solution.
+
+   - `feelpp_doc_laplacian_polar` polar coodinate system
+   - `feelpp_doc_laplacian_cartesian` cartesian coodinate system
+
+   The default arguments(and configuration) should work seamlessly.
+
+   \section LaplacianCoordinateSystem_Implementation
+
+   the implementation is available in \ref doc/manual/laplacian/laplacian_polar.cpp
+   \snippet laplacian_polar.cpp marker1
+
+ */
+}
 int
 main(int argc, char**argv )
 {
+    /// [marker1]
     using namespace Feel;
     Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
+                     _about=about(_name=
 #if defined(FEELPP_POLAR)
-                     _about=about(_name="laplacian_polar",
+                                  "laplacian_polar",
 #else
-                     _about=about(_name="laplacian_cartesian",
+                                  "laplacian_cartesian",
 #endif
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -86,5 +111,5 @@ main(int argc, char**argv )
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->save();
-
+    /// [marker1]
 }

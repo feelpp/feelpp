@@ -36,6 +36,7 @@ OPTION(FEELPP_ENABLE_CRB_THERMALBLOCK "enable THERMALBLOCK(many parameters) test
 OPTION(FEELPP_ENABLE_CRB_HELMHOLTZ "enable Helmholtz testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_HEATSINK "enable Heatsink testcases" ON)
 OPTION(FEELPP_ENABLE_CRB_HEATSHIELD "enable Heatshield testcases" ON)
+OPTION(FEELPP_ENABLE_CRB_EEG "enable EEG testcase" OFF)
 
 OPTION(FEELPP_ENABLE_CRB_ALL "enable all crb testcase" ON)
 if (FEELPP_ENABLE_CRB_ALL)
@@ -49,6 +50,7 @@ if (FEELPP_ENABLE_CRB_ALL)
   set(FEELPP_ENABLE_CRB_THERMALBLOCK ON)
   set(FEELPP_ENABLE_CRB_HELMHOLTZ ON)
   set(FEELPP_ENABLE_CRB_HEATSHIELD ON)
+  set(FEELPP_ENABLE_CRB_EEG OFF)
 endif()
 
 
@@ -95,6 +97,10 @@ ENDIF()
 
 if ( FEELPP_ENABLE_CRB_HEATSHIELD )
   add_subdirectory(heatshield)
+ENDIF()
+
+IF ( FEELPP_ENABLE_CRB_EEG )
+  add_subdirectory(eeg)
 ENDIF()
 
 

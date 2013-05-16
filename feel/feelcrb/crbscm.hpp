@@ -1450,7 +1450,7 @@ CRBSCM<TruthModelType>::run( const double * X, unsigned long N, double * Y, unsi
     for ( unsigned long i=0; i<N; i++ ) std::cout<<"X["<<i<<"] = "<<X[i]<<std::endl;
 
     double meshSize  = X[N-3];
-    M_model->setMeshSize( meshSize );
+    //M_model->setMeshSize( meshSize );
 
     size_type K = this->KMax();
     double alpha_lb,lbti;

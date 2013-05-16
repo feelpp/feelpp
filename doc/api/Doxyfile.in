@@ -612,9 +612,11 @@ LAYOUT_FILE            ="@CMAKE_CURRENT_SOURCE_DIR@/layout.xml"
 # feature you need bibtex and perl available in the search path. Do not use
 # file names with spaces, bibtex cannot handle them.
 
-CITE_BIB_FILES         = "@FEELPP_HOME_DIR@/doc/biblio/feelpp.bib" \
-                         "@FEELPP_HOME_DIR@/doc/biblio/feelpp-manual.bib" \
-                         "@FEELPP_HOME_DIR@/doc/biblio/feelpp-thesis.bib" \
+CITE_BIB_FILES         = \
+"@FEELPP_HOME_DIR@/doc/biblio/feelpp.bib" \
+"@FEELPP_HOME_DIR@/doc/biblio/biblio.bib" \
+"@FEELPP_HOME_DIR@/doc/biblio/feelpp-manual.bib" \
+"@FEELPP_HOME_DIR@/doc/biblio/feelpp-thesis.bib" \
 
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
@@ -676,10 +678,13 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = "@FEELPP_HOME_DIR@/feel/" \
-                         "@FEELPP_HOME_DIR@/doc/manual/" \
-                         "@FEELPP_HOME_DIR@/doc/api" \
-                         "@FEELPP_HOME_DIR@/doc/biblio/"
+INPUT                  = \
+ "@FEELPP_HOME_DIR@/feel/" \
+ "@FEELPP_HOME_DIR@/doc/manual/" \
+ "@FEELPP_HOME_DIR@/doc/api" \
+ "@FEELPP_HOME_DIR@/ChangeLog" \
+ "@FEELPP_HOME_DIR@/COPYING.md" \
+ "@FEELPP_HOME_DIR@/doc/biblio/"
 
 
 
@@ -701,6 +706,7 @@ INPUT_ENCODING         = UTF-8
 
 FILE_PATTERNS          = *.*pp \
                          *.doc \
+                         *.md \
                          *.bib
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories
@@ -765,9 +771,9 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/manual/pngs/ \
+IMAGE_PATH             = "@FEELPP_HOME_DIR@/doc/manual/pngs/" \
                          "@CMAKE_CURRENT_SOURCE_DIR@/pngs/" \
-                         "@FEELPP_HOME_DIR@/doc/figures/
+                         "@FEELPP_HOME_DIR@/doc/figures/"
 
 
 
@@ -931,7 +937,7 @@ HTML_HEADER            = "@CMAKE_CURRENT_SOURCE_DIR@/header.html"
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard footer.
 
-HTML_FOOTER            =
+HTML_FOOTER            = "@CMAKE_CURRENT_SOURCE_DIR@/footer.html"
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading
 # style sheet that is used by each HTML page. It can be used to
@@ -1346,7 +1352,7 @@ PAPER_TYPE             =
 # The EXTRA_PACKAGES tag can be to specify one or more names of LaTeX
 # packages that should be included in the LaTeX output.
 
-EXTRA_PACKAGES         = amsmath amssymb amsthm
+EXTRA_PACKAGES         = amsmath amssymb amsthm @FEELPP_HOME_DIR@/doc/api/feelppmacros
 
 # The LATEX_HEADER tag can be used to specify a personal LaTeX header for
 # the generated latex document. The header should contain everything until
