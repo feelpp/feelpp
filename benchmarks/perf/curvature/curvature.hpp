@@ -289,6 +289,8 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     auto l2pVec = opProjection(Xh_Vec, Xh_Vec, _type=L2);
     auto smooth = projector(Xh , Xh, backend_l2Smooth, DIFF, diffnum, 20);
     auto smoothVec = projector(Xh_Vec, Xh_Vec, backend_l2SmoothVec, DIFF, diffnum, 20);
+    auto cip = opProjection(Xh , Xh, _type=CIP);
+    auto cipVec = opProjection(Xh_Vec , Xh_Vec, _type=CIP);
 
     t.restart();
     if ( prepare ) return;
@@ -415,6 +417,15 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
 
     auto Radius_expr = sqrt( Px() * Px() + Py() * Py() );
 
+
+    /* ------------------ projection L2 with CIP stabilization ---------------- */
+    auto n_cip = cipVec->project( gradv(init_shape) / modgradphi );
+    auto k_cip = cip->project( divv(n_cip) );
+    auto nk_cip = cipVec->project( gradv(k_cip) /
+                                 vf::max(sqrt( gradv(k_cip) * trans(gradv(k_cip))), max_modgradphi) );
+    auto kk_cip = cip->project( divv(nk_cip) );
+
+
     // +++++++++++++++++++ error computation ++++++++++++++++++++++
     double perimeter = integrate( _range=marked2elements(mesh, 1.), _expr=Delta ).evaluate()(0,0);
     LOG(INFO) << "perimeter = " << perimeter << "\n";
@@ -535,6 +546,13 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     LOG(INFO) << "e.opt.kk = " << error_opt_kk << "\n";
 
 
+    /* CIP */
+    double error_cip = integrate(marked2elements(mesh, 1.),
+                                    (idv(k_cip) - 1 / Radius_expr) * (idv(k_cip) - 1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
+    error_cip = std::sqrt(error_cip);
+    M_stats.put( "e.ci.k", error_cip);
+    LOG(INFO) << "e.ci.k = " << error_cip << "\n";
+
     std::cout<<"exporting ...\n";
 
     if ( exporter->doExport() )
@@ -568,13 +586,14 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 auto k_hess_p1 = Xh_P1->element();
                 auto k_int_p1 = Xh_P1->element();
                 auto k_opt_p1 = Xh_P1->element();
-
+                auto k_cip_p1 = Xh_P1->element();
 
                 auto nk_l2_p1 = Xh_P1_Vec->element();
                 auto nk_nod_p1 = Xh_P1_Vec->element();
                 auto nk_smooth_p1 = Xh_P1_Vec->element();
                 auto nk_int_p1 = Xh_P1_Vec->element();
                 auto nk_opt_p1 = Xh_P1_Vec->element();
+                auto nk_cip_p1 = Xh_P1_Vec->element();
 
 
                 op_inte_N_to_P1->apply(Delta_proj, delta_p1);
@@ -584,13 +603,14 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 op_inte_N_to_P1->apply(k_hess, k_hess_p1);
                 op_inte_N_to_P1->apply(k_int, k_int_p1);
                 op_inte_N_to_P1->apply(k_opt, k_opt_p1);
-
+                op_inte_N_to_P1->apply(k_cip, k_cip_p1);
 
                 op_inte_N_to_P1_Vec->apply( nk_l2, nk_l2_p1);
                 op_inte_N_to_P1_Vec->apply( nk_nod, nk_nod_p1);
                 op_inte_N_to_P1_Vec->apply( nk_smooth, nk_smooth_p1);
                 op_inte_N_to_P1_Vec->apply( nk_int, nk_int_p1);
                 op_inte_N_to_P1_Vec->apply( nk_opt, nk_opt_p1);
+                op_inte_N_to_P1_Vec->apply( nk_cip, nk_cip_p1);
 
                 exporter->step( 0 )->setMesh( opLagP1->mesh() );
                 exporter->step( 0 )->add( "Delta", delta_p1 );
@@ -600,12 +620,14 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 exporter->step( 0 )->add("k_hess", k_hess_p1);
                 exporter->step( 0 )->add("k_int", k_int_p1);
                 exporter->step( 0 )->add("k_opt", k_opt_p1);
+                exporter->step( 0 )->add("k_cip", k_cip_p1);
 
                 exporter->step( 0 )->add("nk_l2", nk_l2_p1);
                 exporter->step( 0 )->add("nk_nod", nk_nod_p1);
                 exporter->step( 0 )->add("nk_smooth", nk_smooth_p1);
                 exporter->step( 0 )->add("nk_int", nk_int_p1);
                 exporter->step( 0 )->add("nk_opt", nk_opt_p1);
+                exporter->step( 0 )->add("nk_cip", nk_cip_p1);
 
                 exporter->step( 0 )->add("marker_delta", marker_delta);
                 exporter->step( 0 )->add("n_l2", n_l2);
@@ -625,6 +647,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 exporter->step( 0 )->add("k_nod", k_nod);
                 exporter->step( 0 )->add("k_hess", k_hess);
                 exporter->step( 0 )->add("k_int", k_int);
+                exporter->step( 0 )->add("k_cip", k_cip);
                 exporter->step( 0 )->add("marker_delta", marker_delta);
 
                 exporter->step( 0 )->add("n_l2", n_l2);
@@ -632,7 +655,6 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 exporter->step( 0 )->add("init_shape", init_shape);
                 exporter->save();
             }
-
     }
 
 } // Curvature::run
