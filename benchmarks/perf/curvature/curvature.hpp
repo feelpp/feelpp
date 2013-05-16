@@ -225,11 +225,11 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                                               _shape="hypercube",
                                               _usenames=true,
                                               _dim=Dim,
-                                              _h=meshSizeInit(),
+                                              _h= meshSizeInit()/(std::pow(2, level())) ,
                                               _shear=shear,
                                               _xmin=-1.,_xmax=1.,
                                               _ymin=-1.,_ymax=1. ),
-                                _refine=level(),
+                           //                                _refine=level(),
                                 _partitions=nparts );
 
     M_stats.put( "t.init.mesh",t.elapsed() );t.restart();
@@ -630,6 +630,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 exporter->step( 0 )->add("marker_delta", marker_delta);
 
                 exporter->step( 0 )->add("n_l2", n_l2);
+                exporter->step( 0 )->add("n_smooth", n_smooth);
 
                 exporter->step( 0 )->add("init_shape", init_shape);
                 exporter->save();
