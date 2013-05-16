@@ -442,7 +442,9 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     double error_nod_kk = integrate(marked2elements(mesh, 1.),
                                (idv(kk_nod) -  1 / Radius_expr) * (idv(kk_nod) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_nod_kk = std::sqrt(error_nod_kk);
-    if (error_nod_kk == error_nod_kk) // for P1 error_nod_kk = Nan and put crashes (get<double>)
+    if (error_nod_kk != error_nod_kk) // for P1 error_nod_kk = Nan and put crashes (get<double>)
+        M_stats.put( "e.nod.kk", 1.);
+    else
         M_stats.put( "e.nod.kk", error_nod_kk);
     LOG(INFO) << "e.nod.kk = " << error_nod_kk << "\n";
 
