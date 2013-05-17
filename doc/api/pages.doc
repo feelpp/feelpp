@@ -19,6 +19,7 @@ namespace Feel
    - \subpage Mesh
    - \subpage Spaces
    - \subpage Integrals
+   - \subpage Projection
    - \subpage Forms
    - \subpage Exporter
 */
