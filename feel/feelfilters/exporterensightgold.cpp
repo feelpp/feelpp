@@ -175,6 +175,7 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
             exit( 0 );
         }
 
+#if 0
         __out << "FORMAT:\n"
               << "type: master_server gold \n"
               << "SERVERS\n"
@@ -189,6 +190,18 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
                   << "data_path: " << fs::current_path().string() << "\n"
                   << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
         }
+#else
+        __out << "FORMAT:\n"
+              << "type: master_server gold \n\n"
+              << "MULTIPLE_CASEFILES\n"
+              << "total number of cfiles: " << this->worldComm().globalSize() << "\n"
+              << "cfiles global path: " << fs::current_path().string() << "\n"
+              << "cfiles pattern: "<<this->prefix() << "-" << this->worldComm().globalSize() << "_*.case\n"
+              << "cfiles start number: 0\n"
+              << "cfiles increment: 1\n\n"
+              << "SERVERS\n"
+              << "number of servers: "<< (this->worldComm().globalSize()/100)+1 <<" repeat\n";
+#endif
     }
 }
 template<typename MeshType, int N>
@@ -426,7 +439,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
     }
 
     __out << "\n";
-
+#if 0
     if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
     {
         __out << "APPENDED_CASEFILES\n"
@@ -442,6 +455,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             __out << filestr.str() << "\n        ";
         }
     }
+#endif
     __out.close();
 
 }
