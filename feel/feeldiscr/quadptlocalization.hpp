@@ -223,7 +223,7 @@ public :
                                mpl::int_<MESH_ELEMENTS> )
     {
 #if 1
-        element_iterator_type elt_it, elt_en;
+        element_iterator_type elt_it = this->beginElement(), elt_en = this->beginElement();
         auto itListRange = _M_listRange.begin();
         auto const enListRange = _M_listRange.end();
         bool findElt=false;

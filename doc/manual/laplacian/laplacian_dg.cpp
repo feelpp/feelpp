@@ -28,8 +28,26 @@
  */
 #include <feel/feel.hpp>
 
+namespace Feel
+{
+/**
+   \page LaplacianDG Laplacian using Discontinous Galerkin
+   \author Feel++ Consortium
+
+   <br>
+   <br>
+
+   `feelpp_doc_laplacian_dg` solves for the Laplacian in a square using a modal
+   basis (Dubiner) using a DG formulation.
+
+   \section LaplacianDG_Implementation
+   the implementation is available in \ref doc/manual/laplacian/laplacian_dg.cpp
+   \snippet laplacian_dg.cpp marker1
+ */
+}
 int main(int argc, char**argv )
 {
+    /// [marker1]
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _about=about(_name="laplacian_dg",
@@ -65,7 +83,6 @@ int main(int argc, char**argv )
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->save();
+    /// [marker1]
     return 0;
 }
-
-
