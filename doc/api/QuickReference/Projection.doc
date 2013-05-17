@@ -12,9 +12,9 @@ namespace Feel {
 \tableofcontents
 
 
-\subsection Projection Projection
+\section NodalProjection Nodal Projection
 
-Another important keyword is \c project which allows to compute the
+An important keyword is \c project which allows to compute the
 interpolant of an expression with respect to a nodal function space over a part
 of the mesh  or the whole mesh. The interface is as follows
 \code
@@ -36,6 +36,13 @@ auto coord = project( _space=Xhv, _range=elements(mesh), _expr=P() );
 auto dx_coord = project( _space=Xhv, _range=elements(mesh), _expr=dxv(coord) );
 auto dy_coord = project( _space=Xhv, _range=elements(mesh), _expr=dyv(coord) );
 \endcode
+
+\section ProjectionProjector  Projection Operator
+
+A projection operator is available that supports
+
+ - \f$L_2\f$ projection
+ - \f$H_1\f$ projection
 
 <a href="#" class="top">top</a>
 <hr>
