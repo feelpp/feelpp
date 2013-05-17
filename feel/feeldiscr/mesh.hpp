@@ -745,14 +745,16 @@ public:
             std::ostringstream os1;
             os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
-            std::cout << "try loading " << p.native()  << "\n";
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "try loading " << p.native()  << "\n";
             if ( !fs::exists( p ) )
             {
                 LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                 std::ostringstream os2;
                 os2 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
-                std::cout << " now try loading " << p.native()  << "\n";
+                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    std::cout << " now try loading " << p.native()  << "\n";
 
                 if ( !fs::exists( p ) )
                 {

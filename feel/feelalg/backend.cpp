@@ -814,6 +814,7 @@ po::options_description backend_options( std::string const& prefix )
     // mg or ml preconditioner
     _options.add_options()
         ( prefixvm( prefix,"pc-mg-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of levels including finest" )
+        ( prefixvm( prefix,"pc-mg-type" ).c_str(), Feel::po::value<std::string>()->default_value( "kaskade" ), "Determines the form of multigrid to use: multiplicative, additive, full, kaskade " )
         ( prefixvm( prefix,"pc-mg-smoothdown" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of smoothing steps before applying restriction operator" )
         ( prefixvm( prefix,"pc-ml-reuse-interpolation" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Reuse the interpolation operators when possible (cheaper, weaker when matrix entries change a lot)" )
         ( prefixvm( prefix,"pc-ml-keep-agg-info" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Allows the preconditioner to be reused, or auxilliary matrices to be generated" )
@@ -831,6 +832,9 @@ po::options_description backend_options( std::string const& prefix )
 
         _options.add_options()
             ( prefixvm( prefixMGLevels,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
+            ( prefixvm( prefixMGLevels,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
+            ( prefixvm( prefixMGLevels,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "relative tolerance" )
+            ( prefixvm( prefixMGLevels,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
             ;
     }
 

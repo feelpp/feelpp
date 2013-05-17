@@ -159,7 +159,7 @@ endif(NOT CTEST_SOURCE_DIRECTORY)
 if(NOT CTEST_BINARY_DIRECTORY)
   SET (CTEST_BINARY_DIRECTORY "${FEELPP_WORK_DIR}/${FEELPP_MODE}_${FEELPP_CXXNAME}")
 endif(NOT CTEST_BINARY_DIRECTORY)
-MESSAGE(WARNING "ICI "${CTEST_BINARY_DIRECTORY})
+
 if(NOT FEELPP_MODE)
   set(FEELPP_MODE Nightly)
 endif(NOT FEELPP_MODE)
@@ -172,14 +172,16 @@ find_program(CTEST_SVN_COMMAND NAMES svn)
 #SET (CTEST_GIT_COMMAND "git")
 #SET (CTEST_SVN_CHECKOUT   "${CTEST_GIT_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
 #SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
+#SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://github.com/feelpp/feelpp.git")
 set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
-  #SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
+#SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
 #endif(NOT FEELPP_NO_UPDATE)
 foreach(module ${FEELPP_MODULES})
   # update the modules using svn update
   execute_process(
-    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update"
+    #COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update" 
+    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_GIT_COMMAND} pull" 
     OUTPUT_VARIABLE MODULE_OUTPUT)
   message(STATUS "updated ${module} : ${MODULE_OUTPUT}")
 endforeach()
