@@ -60,13 +60,13 @@ public:
 
     typedef ExprType expr_type;
 
-    FsFunctionalLinearFree( space_ptrtype space , expr_type expr) :
+    FsFunctionalLinearFree( space_ptrtype space , expr_type expr ) :
         super_type( space ),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
         M_expr( expr )
     {}
 
-    FsFunctionalLinearFree( space_ptrtype space, backend_ptrtype backend , expr_type expr) :
+    FsFunctionalLinearFree( space_ptrtype space, backend_ptrtype backend , expr_type expr ) :
         super_type( space ),
         M_backend( backend ),
         M_expr( expr )
@@ -95,7 +95,6 @@ public:
         auto vector = M_backend->newVector( this->space() );
         form1( _test=this->space(),_vector=vector) = M_expr;
         vector->close();
-
         vector_to_fill = vector;
     }
 
