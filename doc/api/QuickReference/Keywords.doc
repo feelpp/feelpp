@@ -118,8 +118,6 @@ Variable \f$z\f$<br>
 Constant function equal to \f$c\f$
 </td></tr>
 </table>
-You can custom your constant function :
-\code{.cpp} auto f=cst(option(_name="betax").as<double>() )\endcode
 
 You can of course use all current operators ( + - / * ) and the usual following functions :
 <table class="example">

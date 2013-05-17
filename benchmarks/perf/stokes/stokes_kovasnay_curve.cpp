@@ -305,7 +305,7 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::init()
     //-------------------
 
 
-    //mesh=StraightenMesh(mesh);
+    mesh=straightenMesh(_mesh=mesh);
 
     /* //********************** Rectangle ***************************************
     mesh = createGMSHMesh( _mesh=new mesh_type,
@@ -359,16 +359,15 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
 
 
     //# marker5 #
-    auto deft = gradt( u );
-    auto def = grad( v );
+    auto deft = gradt( u );//sym
+    auto def = grad( v );//sym
     //# endmarker5 #
 
     //# marker6 #
     // total stress tensor (trial)
-    auto SigmaNt = -idt( p )*N()+mu*deft*N();
-
+    auto SigmaNt = -idt( p )*N()+mu*deft*N();//*2
     // total stress tensor (test)
-    auto SigmaN = -id( p )*N()+mu*def*N();
+    auto SigmaN = -id( p )*N()+mu*def*N();//*2
     //# endmarker6 #
 
 
@@ -395,10 +394,10 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
     //auto p_exact = val( ( -exp( 2.*lambdaa*Px() ) )/2.0-0.125*( exp( -1.0*lambdaa )-1.0*exp( 3.0*lambdaa ) )/lambdaa );
     auto p_exact = val( ( -0.5*exp( 2.*lambdaa*Px() ) ) );
 
-    auto f1 = (exp( lambdaa * Px() )*((lambdaa*lambdaa - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambdaa*exp( lambdaa * Px() )));
-    //auto f1 = ( -mu*( -lambdaa*lambdaa*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambdaa*exp( 2.0*lambdaa*Px() ) );
+    //auto f1 = (exp( lambdaa * Px() )*((lambdaa*lambdaa - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambdaa*exp( lambdaa * Px() )));
+    auto f1 = ( -mu*( -lambdaa*lambdaa*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambdaa*exp( 2.0*lambdaa*Px() ) );
 
-     //auto f2 = (exp( lambdaa * Px() )*mu*sin(2.*pi*Py())*(-lambdaa*lambdaa +4*pi*pi));
+    //auto f2 = (exp( lambdaa * Px() )*mu*sin(2.*pi*Py())*(-lambdaa*lambdaa +4*pi*pi));
     auto f2 = ( -mu*( lambdaa*lambdaa*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )*pi ) );
 
     auto f = val( vec( f1,f2 ) ); //+ convection;
@@ -409,7 +408,7 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
 
     std::cout<< "number of dof in Xh: " << Xh->nDof() << "\n";
     auto taille=5.5+1.503061665;
-    auto mean_p_exact =integrate( elements( mesh ),  p_exact ).evaluate()(0,0) /mesh->measure();//taille;
+    auto mean_p_exact =integrate( elements( mesh ),  p_exact,_quad=_Q<20>() ).evaluate()(0,0) /mesh->measure();//taille;
     std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
 
     // right hand side
@@ -426,11 +425,11 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
     //# marker7 #
     auto stokes = form2( _test=Xh, _trial=Xh, _matrix=D );
     boost::timer chrono;
-    stokes += integrate( elements( mesh ), mu*inner( deft,def ) );//*2
+    stokes += integrate( elements( mesh ), mu*inner( deft,def ) ,_quad=_Q<20>());//*2
     chrono.restart();
-    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) );
+    stokes +=integrate( elements( mesh ), - div( v )*idt( p ) + divt( u )*id( q ) ,_quad=_Q<20>());
     //#if defined( FEELPP_USE_LM )
-    stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ));
+    stokes +=integrate( elements( mesh ), id( q )*idt( lambda ) + idt( p )*id( nu ),_quad=_Q<20>());
     chrono.restart();
     //#endif
 
@@ -441,29 +440,29 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
     // stokes.solve( _rhs=stokes_rhs, _solution=U);
 
 
-size_type nnz = 0 ;
-auto nNz = D->graph()->nNz() ;
-for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
-    nnz += ( *iter ) ;
-size_type gnnz=0;
-mpi::all_reduce( this->comm(), nnz, gnnz, [] ( size_type x, size_type y ) {return x + y;} );
-LOG(INFO) << "[nnz]       number of local nnz: " << nnz << " global: "  << gnnz << "\n";
-LOG(INFO) << "[dof]             number of dof in Xh: " << Xh->nDof() << "\n";
-LOG(INFO) << "[dof]        number of dof/proc: " << Xh->nLocalDof() << "\n";
-LOG(INFO) << "[dof]          number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-LOG(INFO) << "[dof]     number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-LOG(INFO) << "[dof]          number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-LOG(INFO) << "[dof]     number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+    size_type nnz = 0 ;
+    auto nNz = D->graph()->nNz() ;
+    for ( auto iter = nNz.begin(); iter!=nNz.end(); ++iter )
+        nnz += ( *iter ) ;
+    size_type gnnz=0;
+    mpi::all_reduce( this->comm(), nnz, gnnz, [] ( size_type x, size_type y ) {return x + y;} );
+    LOG(INFO) << "[nnz]       number of local nnz: " << nnz << " global: "  << gnnz << "\n";
+    LOG(INFO) << "[dof]             number of dof in Xh: " << Xh->nDof() << "\n";
+    LOG(INFO) << "[dof]        number of dof/proc: " << Xh->nLocalDof() << "\n";
+    LOG(INFO) << "[dof]          number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    LOG(INFO) << "[dof]     number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    LOG(INFO) << "[dof]          number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    LOG(INFO) << "[dof]     number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
-std::cout << "[nnz]       number of local nnz: " << nnz << " global: "  << gnnz << "\n";
-std::cout << "[dof]             number of dof: " << Xh->nDof() << "\n";
-std::cout << "[dof]        number of dof/proc: " << Xh->nLocalDof() << "\n";
-std::cout << "[dof]          number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
-std::cout << "[dof]     number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
-std::cout << "[dof]          number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
-std::cout << "[dof]     number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
+    std::cout << "[nnz]       number of local nnz: " << nnz << " global: "  << gnnz << "\n";
+    std::cout << "[dof]             number of dof: " << Xh->nDof() << "\n";
+    std::cout << "[dof]        number of dof/proc: " << Xh->nLocalDof() << "\n";
+    std::cout << "[dof]          number of dof(U): " << Xh->template functionSpace<0>()->nDof()  << "\n";
+    std::cout << "[dof]     number of dof/proc(U): " << Xh->template functionSpace<0>()->nLocalDof()  << "\n";
+    std::cout << "[dof]          number of dof(P): " << Xh->template functionSpace<1>()->nDof()  << "\n";
+    std::cout << "[dof]     number of dof/proc(P): " << Xh->template functionSpace<1>()->nLocalDof()  << "\n";
 
- this->exportResults( u_exact, p_exact, U, V );
+    this->exportResults( u_exact, p_exact, U, V );
 } // Stokes::run
 
 
@@ -471,27 +470,26 @@ template<int POrder, int GeoOrder>
 template<typename ExprUExact, typename ExprPExact>
 void
 Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_exact,
-                       element_type& U, element_type& V )
+                                                       element_type& U, element_type& V )
 {
     auto u = U.template element<0>();
     auto p = U.template element<1>();
-
     auto v = V.template element<0>();
     auto q = V.template element<1>();
     //#if defined( FEELPP_USE_LM )
-         auto lambda = U.template element<2>();
-         auto nu = V.template element<2>();
-         LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
-         std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    auto lambda = U.template element<2>();
+    auto nu = V.template element<2>();
+    LOG(INFO) << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
+    std::cout << "value of the Lagrange multiplier lambda= " << lambda( 0 ) << "\n";
     //#endif
 
     auto u_exact_proj=vf::project(Uh,elements(mesh),u_exact);
 
-    double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
+    double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ,_quad=_Q<20>()).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
     LOG(INFO) <<"||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
 
-    double meas = integrate( elements( u.mesh() ), cst( 1.0 )).evaluate()( 0, 0 );
+    double meas = integrate( elements( u.mesh() ), cst( 1.0 ),_quad=_Q<20>()).evaluate()( 0, 0 );
 #if (STOKESPRESSMESHTYPE ==2)
     LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to "<< 4*math::atan(1.)*5 << ")\n";
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to "<< 4*math::atan(1.)*5 << ")\n";
@@ -500,30 +498,29 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprP
     std::cout << "[stokes] measure(Omega)=" << meas << " (should be equal to  1)\n";
 #endif
 
-    double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
+    double mean_p = integrate( elements( u.mesh() ), idv( p ), _quad=_Q<20>()).evaluate()( 0, 0 )/meas;
     LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
 
     std::cout << "[stokes] mean(p)=" << mean_p << "\n";
 
-
-    // double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ), _quad=_Q<QuadOrder>() ).evaluate()( 0, 0 );
-    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact )).evaluate()( 0, 0 );
+    // double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p )+mean_p_exact - p_exact )*( idv( p )+mean_p_exact-p_exact ), _quad=_Q<QuadOrder>() _quad=_Q<20>()).evaluate()( 0, 0 );
+    double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact ),_quad=_Q<20>()).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
     LOG(INFO) <<"||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
     LOG(INFO) << "[stokes] solve for D done\n";
 
 
 
-    double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact )).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )) ).evaluate()( 0, 0 );
+    double u_errorH1 = integrate( elements( u.mesh() ),  trans( idv( u )-u_exact )*( idv( u )-u_exact ),_quad=_Q<20>()).evaluate()( 0, 0 ) +  integrate( elements( u.mesh() ),  trans( gradv( u ) -  gradv ( u_exact_proj ) )*( gradv( u ) -  gradv ( u_exact_proj )), _quad=_Q<20>()).evaluate()( 0, 0 );
     double H1_u=math::sqrt( u_errorH1 );
     std::cout << "||u_errorH1||_2 = " <<H1_u<< "\n";
     LOG(INFO) << "||u_errorH1||_2 = " <<H1_u<< "\n";
 
-    double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ).evaluate()( 0, 0 );
+    double mean_div_u = integrate( elements( u.mesh() ), divv( u ) ,_quad=_Q<20>()).evaluate()( 0, 0 );
     LOG(INFO) << "[stokes] mean_div(u)=" << mean_div_u << "\n";
     std::cout << "[stokes] mean_div(u)=" << mean_div_u << "\n";
 
-    double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ).evaluate()( 0, 0 );
+    double div_u_error_L2 = integrate( elements( u.mesh() ), divv( u )*divv( u ) ,_quad=_Q<20>()).evaluate()( 0, 0 );
     LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
 
     std::cout << "[stokes] ||div(u)||=" << math::sqrt( div_u_error_L2 ) << "\n";
@@ -534,20 +531,56 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprP
     v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), vv );
     auto Du= gradv(u);//sym
     auto Dv= gradv(v);//sym
-    auto SigmaNN =(-idv(p)*vf::N()+mu*Du*vf::N());//*2
+    auto SigmaNN =-idv(p)*vf::N()+mu*Du*vf::N();//*2
 
     //**************  F ******************
-    auto FappCur = integrate(markedfaces( mesh,2) , inner(SigmaNN,idv(v))).evaluate()(0,0);
+    auto FappCur = integrate(markedfaces( mesh,2) , inner(SigmaNN,idv(v)), _quad=_Q<20>()).evaluate();
+    std::cout.precision(17);
     std::cout << "FappCur = "<<FappCur << "\n" ;
-    LOG(INFO) << "FappCur = "<<math::abs(2.486163775- FappCur) << "\n" ;
+    std::cout << "||Fex-Fappcur|| = "<< math::abs(-0.6709310448-FappCur(0,0)) << "\n" ;
+    // LOG(INFO) << "FappCur = "<<math::abs(2.486163775- FappCur) << "\n" ;
+
+
+    auto pI = integrate(markedfaces( mesh,2) , -idv(p)*vf::N(), _quad=_Q<20>()).evaluate();
+    std::cout.precision(17);
+    std::cout << "pI1 = "<<pI(0,0) << "\n" ;
+    std::cout << "pI2 = "<<pI(1,0) << "\n" ;
+    auto gradient = integrate(markedfaces( mesh,2) , mu*Du*vf::N(), _quad=_Q<20>()).evaluate();
+    std::cout.precision(17);
+    std::cout << "mu*Gradu.n1 = "<<gradient(0,0) << "\n" ;
+    std::cout << "mu*Gradu.n2 = "<<gradient(1,0) << "\n" ;
+
+    auto SigmaN = integrate(markedfaces( mesh,2) , SigmaNN, _quad=_Q<20>()).evaluate();
+    std::cout.precision(17);
+    std::cout << " SigmaN1 = "<< SigmaN(0,0) << "\n" ;
+    std::cout << " SigmaN2 = "<< SigmaN(1,0) << "\n" ;
+
+
+
+
+
+
 
 
     //**************  Somme des integrales  ******************
-    auto sum=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p)).evaluate();//*2
-    sum+=integrate( markedfaces( mesh,1 ),inner(idv(p)*vf::N()-2*mu*Du*vf::N(),idv(v))).evaluate();
-    sum+=integrate( markedfaces( mesh,3 ),inner(idv(p)*vf::N()-2*mu*Du*vf::N(),idv(v))).evaluate();
+    double lambda2 = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
+    auto f11 = (exp( lambda2 * Px() )*((lambda2*lambda2 - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambda2*exp( lambda2 * Px() )));
+
+
+    //auto f22 = ( -mu*( lambda2*lambda2*lambda2*exp( lambda2*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambda2*exp( lambda2*Px() )*sin( 2.0*pi*Py() )*pi ) );
+    auto f22 = (lambda2/2*pi)*(exp( lambda2 * Px() )*mu*sin(2.*pi*Py())*(-lambda2*lambda2 +4*pi*pi));
+
+  
+    auto ff = val( vec( f11,f22 ) ); //+ convection;
+
+    auto sum=integrate( elements( mesh ),inner( -ff,idv( v ) ), _quad=_Q<20>()).evaluate();
+    sum+=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p), _quad=_Q<20>()).evaluate();//*2
+    sum+=integrate( markedfaces( mesh,1 ),inner(idv(p)*vf::N()-mu*Du*vf::N(),idv(v)), _quad=_Q<20>()).evaluate();//*2
+    sum+=integrate( markedfaces( mesh,3 ),inner(idv(p)*vf::N()-mu*Du*vf::N(),idv(v)),_quad=_Q<20>()).evaluate();//*2
+    std::cout.precision(17);
     std::cout << "Sum = "<< sum(0,0) << "\n" ;
-    LOG(INFO) << "Sum = "<<  2.486163775-sum(0,0) << "\n" ;
+    std::cout << "||Fex-Sum|| = "<< math::abs(-0.6709310448-sum(0,0)) << "\n" ;
+    //LOG(INFO) << "Sum = "<<  2.486163775-sum(0,0) << "\n" ;
     // #endif*/
 
     auto u_ex = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
@@ -608,6 +641,6 @@ main( int argc, char** argv )
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
-    Feel::Stokes_Kovasnay_Curve<2,4> Stokes_Kovasnay_Curve;
+    Feel::Stokes_Kovasnay_Curve<4,4> Stokes_Kovasnay_Curve;
     Stokes_Kovasnay_Curve.run();
 }

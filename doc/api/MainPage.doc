@@ -5,7 +5,9 @@ namespace Feel
 /*! \mainpage Introduction
 
 
-\feel is a unified C++ implementation of Galerkin methods (finite and spectral element methods) in 1D, 2D And 3D to solve partial differential equations.
+\feel is a unified C++ implementation of Galerkin methods (finite and
+spectral element methods) in 1D, 2D And 3D to solve partial
+differential equations.
 
 <hr>
 The objectives of this framework is quite ambitious; ambitions which
@@ -32,13 +34,12 @@ could be express in various ways such as :
  as python would not be satisfying though in many simpler cases that
  would simplify and accelerate the development.)
 
+Feel++ was initially developed at École Polytechnique Fédérale de
+Lausanne(Suisse) and is now a joint effort between Université de
+Strasbourg, Université Joseph Fourier (Grenoble), University of
+Coimbra (Portugal) and CNRS.
 
-
-Feel was initially developed at École Polytechnique Fédérale de Lausanne(Suisse)
-and is now a joint effort between Université de Strasbourg, Université Joseph
-Fourier (Grenoble), University of Coimbra (Portugal) and CNRS.
-
-See the Credits.org file for proper credits attribution.
+See the \ref md_Credits page for proper credits attribution.
 
 <hr>
 \htmlonly

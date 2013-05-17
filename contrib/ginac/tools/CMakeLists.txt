@@ -3,7 +3,7 @@ add_definitions(-DIN_GINAC)
 
 add_executable(viewgar viewgar.cpp)
 target_link_libraries(viewgar feelpp_ginac)
-install(TARGETS viewgar RUNTIME DESTINATION "${BIN_INSTALL_DIR}")
+#install(TARGETS viewgar RUNTIME DESTINATION "${BIN_INSTALL_DIR}")
 
 configure_file(ginac-excompiler.in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/ginac-excompiler)
 file(COPY ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/ginac-excompiler

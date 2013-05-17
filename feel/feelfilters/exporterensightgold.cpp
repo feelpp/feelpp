@@ -43,7 +43,7 @@ template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( WorldComm const& worldComm )
 :
 super( worldComm ),
-_M_element_type()
+M_element_type()
 
 {
     init();
@@ -52,7 +52,7 @@ template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( std::string const& __p, int freq, WorldComm const& worldComm )
     :
     super( "ensightgold", __p, freq, worldComm ),
-    _M_element_type()
+    M_element_type()
 {
     init();
 }
@@ -68,7 +68,7 @@ template<typename MeshType, int N>
 ExporterEnsightGold<MeshType,N>::ExporterEnsightGold( ExporterEnsightGold const & __ex )
     :
     super( __ex ),
-    _M_element_type( __ex._M_element_type )
+    M_element_type( __ex.M_element_type )
 {
 }
 
@@ -82,24 +82,35 @@ ExporterEnsightGold<MeshType,N>::init()
 {
     if ( mesh_type::nDim == 1 )
         if ( mesh_type::Shape == SHAPE_LINE )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
+        {
+            M_element_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
+            M_face_type = "point";
+        }
 
     if ( mesh_type::nDim == 2 )
     {
         if ( mesh_type::Shape == SHAPE_TRIANGLE )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
+            M_element_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
 
         else if ( mesh_type::Shape == SHAPE_QUAD )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
+            M_element_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
+
+        M_face_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
     }
 
     if ( mesh_type::nDim == 3 )
     {
         if ( mesh_type::Shape == SHAPE_TETRA )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"tetra4":"tetra10";
+        {
+            M_element_type = ( mesh_type::nOrder == 1 )?"tetra4":"tetra10";
+            M_face_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
+        }
 
         else if ( mesh_type::Shape == SHAPE_HEXA )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"hexa8":"hexa20";
+        {
+            M_element_type = ( mesh_type::nOrder == 1 )?"hexa8":"hexa20";
+            M_face_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
+        }
     }
 }
 template<typename MeshType, int N>
@@ -123,22 +134,22 @@ ExporterEnsightGold<MeshType,N>::save() const
     DVLOG(2) << "export in ensight format\n";
 
     DVLOG(2) << "export sos\n";
-    _F_writeSoSFile();
+    writeSoSFile();
     DVLOG(2) << "export sos ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
     DVLOG(2) << "export case file\n";
-    _F_writeCaseFile();
+    writeCaseFile();
     DVLOG(2) << "export case file ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
     DVLOG(2) << "export geo(mesh) file\n";
-    _F_writeGeoFiles();
+    writeGeoFiles();
     DVLOG(2) << "export geo(mesh) file ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
     DVLOG(2) << "export variable file\n";
-    _F_writeVariableFiles();
+    writeVariableFiles();
     DVLOG(2) << "export variable files ok, time " << ti.elapsed() << "\n";
 
     ti.restart();
@@ -149,7 +160,7 @@ ExporterEnsightGold<MeshType,N>::save() const
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::_F_writeSoSFile() const
+ExporterEnsightGold<MeshType,N>::writeSoSFile() const
 {
     // only on proc 0
     if ( this->worldComm().rank() == this->worldComm().masterRank() )
@@ -164,6 +175,7 @@ ExporterEnsightGold<MeshType,N>::_F_writeSoSFile() const
             exit( 0 );
         }
 
+#if 0
         __out << "FORMAT:\n"
               << "type: master_server gold \n"
               << "SERVERS\n"
@@ -178,11 +190,23 @@ ExporterEnsightGold<MeshType,N>::_F_writeSoSFile() const
                   << "data_path: " << fs::current_path().string() << "\n"
                   << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
         }
+#else
+        __out << "FORMAT:\n"
+              << "type: master_server gold \n\n"
+              << "MULTIPLE_CASEFILES\n"
+              << "total number of cfiles: " << this->worldComm().globalSize() << "\n"
+              << "cfiles global path: " << fs::current_path().string() << "\n"
+              << "cfiles pattern: "<<this->prefix() << "-" << this->worldComm().globalSize() << "_*.case\n"
+              << "cfiles start number: 0\n"
+              << "cfiles increment: 1\n\n"
+              << "SERVERS\n"
+              << "number of servers: "<< (this->worldComm().globalSize()/100)+1 <<" repeat\n";
+#endif
     }
 }
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::_F_writeCaseFile() const
+ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 {
     std::ostringstream filestr;
     filestr << this->path() << "/"
@@ -243,6 +267,33 @@ ExporterEnsightGold<MeshType,N>::_F_writeCaseFile() const
     while ( __ts_it != __ts_en )
     {
         timeset_ptrtype __ts = *__ts_it;
+
+        // treat constant per case
+        auto s_it = ( *__ts->rbeginStep() )->beginScalar();
+        auto s_en = ( *__ts->rbeginStep() )->endScalar();
+        for ( ; s_it != s_en; ++s_it )
+        {
+            if ( s_it->second.second )
+            {
+                // constant over time
+                __out << "constant per case: " << s_it->first << " " << s_it->second.first << "\n";
+            }
+            else
+            {
+                __out << "constant per case: " << __ts->index() << " " << s_it->first << " ";
+                // loop over time
+                auto stepit = __ts->beginStep();
+                auto stepen = __ts->endStep();
+
+                for ( ; stepit != stepen; ++stepit )
+                {
+                    auto step = *stepit;
+                    __out << step->scalar( s_it->first ) << " ";
+
+                }
+                __out << "\n";
+            }
+        }
 
         typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__ts->rbeginStep() )->beginNodalScalar();
         typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__ts->rbeginStep() )->endNodalScalar();
@@ -388,7 +439,7 @@ ExporterEnsightGold<MeshType,N>::_F_writeCaseFile() const
     }
 
     __out << "\n";
-
+#if 0
     if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
     {
         __out << "APPENDED_CASEFILES\n"
@@ -404,13 +455,14 @@ ExporterEnsightGold<MeshType,N>::_F_writeCaseFile() const
             __out << filestr.str() << "\n        ";
         }
     }
+#endif
     __out.close();
 
 }
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::_F_writeGeoFiles() const
+ExporterEnsightGold<MeshType,N>::writeGeoFiles() const
 {
     namespace lambda = boost::lambda;
 
@@ -432,7 +484,7 @@ ExporterEnsightGold<MeshType,N>::_F_writeGeoFiles() const
                        << __ts->name()
                        << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
                        << ".geo";
-            _M_filename =  __geofname.str();
+            M_filename =  __geofname.str();
             CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
             if ( __ts->hasMesh() )
                 __ts->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
@@ -460,7 +512,7 @@ ExporterEnsightGold<MeshType,N>::_F_writeGeoFiles() const
                 {
                     //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
                     //, __ts->name(), __geofname.str() );
-                    _M_filename =  __geofname.str();
+                    M_filename =  __geofname.str();
                     __step->mesh()->accept( const_cast<ExporterEnsightGold<MeshType,N>&>( *this ) );
                 }
             }
@@ -473,7 +525,7 @@ ExporterEnsightGold<MeshType,N>::_F_writeGeoFiles() const
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::_F_writeVariableFiles() const
+ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
 {
     namespace lambda = boost::lambda;
 
@@ -547,6 +599,77 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
         strcpy( buffer, __var->second.name().c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
+        auto __mesh = __step->mesh();
+
+        BOOST_FOREACH( auto m, __mesh->markerNames() )
+        {
+            if ( m.second[1] != __mesh->nDim-1 )
+                continue;
+            LOG(INFO) << "writing face with marker " << m.first << " with id " << m.second[0];
+            auto pairit = __mesh->facesWithMarker( m.second[0], __mesh->worldComm().localRank() );
+            auto fit = pairit.first;
+            auto fen = pairit.second;
+            int __ne = std::distance( fit, fen );
+            int nverts = fit->numLocalVertices;
+            DVLOG(2) << "Faces : " << __ne << "\n";
+
+            strcpy( buffer, "part" );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+            int partid = m.second[0];
+            __out.write( ( char * ) & partid, sizeof(int) );
+
+            strcpy( buffer, "coordinates" );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+
+            // write values
+            fit = pairit.first;
+            fen = pairit.second;
+
+            uint16_type nComponents = __var->second.nComponents;
+            if ( __var->second.is_vectorial )
+                nComponents = 3;
+
+
+            std::set<int> nodeset;
+            fit = pairit.first;
+            size_type nv = 0;
+            for( ; fit != fen; ++fit )
+            {
+                for ( size_type j = 0; j < nverts; j++ )
+                {
+                    int pid = fit->point( j ).id();
+                    auto ins = nodeset.insert( pid );
+                    if ( ins.second )
+                    {
+                        ++nv;
+                    }
+                }
+            }
+            std::vector<float> field( nComponents*nv );
+            for( ; fit != fen; ++fit )
+            {
+                for ( uint16_type c = 0; c < nComponents; ++c )
+                {
+
+                    for ( size_type j = 0; j < nverts; j++ )
+                    {
+                        int pid = fit->point( j ).id();
+                        size_type global_node_id = nv*c + pid ;
+                        if ( c < __var->second.nComponents )
+                        {
+                            size_type thedof =  __var->second.start() +
+                                boost::get<0>( __var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ) );
+
+                            field[global_node_id] = __var->second.globalValue( thedof );
+                        }
+                        else
+                            field[global_node_id] = 0;
+                    }
+                }
+            }
+            __out.write( ( char * ) field.data(), field.size() * sizeof( float ) );
+        } // boundaries loop
+
         typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
         typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
 
@@ -561,8 +684,13 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
             uint16_type nComponents = __var->second.nComponents;
 
+            LOG(INFO) << "nComponents field: " << nComponents;
             if ( __var->second.is_vectorial )
+            {
                 nComponents = 3;
+                LOG(INFO) << "nComponents field(is_vectorial): " << nComponents;
+            }
+
 
             /**
              * BE CAREFUL HERE some points in the mesh may not be present in the
@@ -574,7 +702,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             size_type __field_size = __step->mesh()->numPoints();
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
-            ublas::vector<float> __field( __field_size );
+            ublas::vector<float> __field( __field_size, 0. );
 
             __field.clear();
             //typename mesh_type::element_const_iterator elt_it, elt_en;
@@ -591,9 +719,9 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
 
-            for ( uint16_type c = 0; c < nComponents; ++c )
+            for ( ; elt_it != elt_en; ++elt_it )
             {
-                for ( ; elt_it != elt_en; ++elt_it )
+                for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
                 {
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {
@@ -758,9 +886,9 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 
     std::fstream __out;
     if ( this->useSingleTransientFile() )
-        __out.open( _M_filename.c_str(), std::ios::out |  std::ios::app | std::ios::binary );
+        __out.open( M_filename.c_str(), std::ios::out |  std::ios::app | std::ios::binary );
     else
-        __out.open( _M_filename.c_str(), std::ios::out | std::ios::binary );
+        __out.open( M_filename.c_str(), std::ios::out | std::ios::binary );
 
 
     strcpy( buffer, "C Binary" );
@@ -777,7 +905,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
 
 
 
-    strcpy( buffer, _M_filename.c_str() );
+    strcpy( buffer, M_filename.c_str() );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
     strcpy( buffer, "elements" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
@@ -786,6 +914,119 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
     strcpy( buffer, "element id given" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
+    BOOST_FOREACH( auto m, __mesh->markerNames() )
+    {
+        if ( m.second[1] != __mesh->nDim-1 )
+            continue;
+        LOG(INFO) << "writing face with marker " << m.first << " with id " << m.second[0];
+        auto pairit = __mesh->facesWithMarker( m.second[0], __mesh->worldComm().localRank() );
+        auto fit = pairit.first;
+        auto fen = pairit.second;
+        int __ne = std::distance( fit, fen );
+        int nverts = fit->numLocalVertices;
+        DVLOG(2) << "Faces : " << __ne << "\n";
+
+        strcpy( buffer, "part" );
+        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        int partid = m.second[0];
+        __out.write( ( char * ) & partid, sizeof(int) );
+
+        sprintf( buffer, "%s", m.first.c_str() );
+        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+
+        strcpy( buffer, "coordinates" );
+        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+
+        // write points coordinates
+        fit = pairit.first;
+        fen = pairit.second;
+
+        std::set<int> nodeset;
+        std::map<int,int> nodemap;
+        std::vector<int> idnodes;
+        fit = pairit.first;
+        size_type p = 0;
+        for( ; fit != fen; ++fit )
+        {
+            for ( size_type j = 0; j < nverts; j++ )
+            {
+                int pid = fit->point( j ).id();
+                auto ins = nodeset.insert( pid );
+                if ( ins.second )
+                {
+                    idnodes.push_back( pid+1 );
+                    nodemap[pid+1] = p+1;
+                    ++p;
+                }
+            }
+        }
+        CHECK( p == idnodes.size() ) << "Invalid number of points in part " << m.first;
+        // write number of points in part
+        int nv = idnodes.size();
+        __out.write( ( char * ) &nv, sizeof( int ) );
+
+        // write node ids
+
+        __out.write( ( char * ) & idnodes.front(), idnodes.size() * sizeof( int ) );
+
+        // writes coordinates
+        ublas::vector<float> coords( 3*nv );
+
+        for( auto i = 0; i < nv; ++i )
+        {
+            auto const& p = __mesh->point( idnodes[i]-1 );
+            coords[i] = ( float ) p.node()[0];
+
+        if ( mesh_type::nRealDim >= 2 )
+            coords[nv+i] = ( float ) p.node()[1];
+
+        else
+            coords[nv+i] = float( 0 );
+
+        if ( mesh_type::nRealDim >= 3 )
+            coords[2*nv+i] = float( p.node()[2] );
+
+        else
+            coords[2*nv+i] = float( 0 );
+
+        }
+        __out.write( ( char * ) coords.data().begin(), coords.size() * sizeof( float ) );
+
+        // write connectivity
+        fit = pairit.first;
+        fen = pairit.second;
+
+        strcpy( buffer, M_face_type.c_str() );
+        __out.write( ( char * ) & buffer, sizeof( buffer ) );
+        LOG(INFO) << "face type " << buffer;
+
+        __out.write( ( char * ) &__ne, sizeof( int ) );
+        LOG(INFO) << "n faces " << __ne;
+
+        idelem.resize( __ne );
+        fit = pairit.first;
+        size_type e = 0;
+        for ( ; fit != fen; ++fit, ++e )
+        {
+            idelem[e] = fit->id() + 1;
+        }
+        CHECK( e == idelem.size() ) << "Invalid number of face id for part " << m.first;
+        __out.write( ( char * ) & idelem.front(), idelem.size() * sizeof( int ) );
+
+        idelem.resize( __ne*nverts );
+        fit = pairit.first;
+        e = 0;
+        for( ; fit != fen; ++fit, ++e )
+        {
+            for ( size_type j = 0; j < nverts; j++ )
+            {
+                // ensight id start at 1
+                idelem[e*nverts+j] = nodemap[fit->point( j ).id()+1];
+            }
+        }
+        CHECK( e*nverts == idelem.size() ) << "Invalid number of faces " << e*nverts << " != " << idelem.size() << " in connectivity for part " << m.first;
+        __out.write( ( char * ) &idelem.front() , __ne*nverts*sizeof( int ) );
+    }
     typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
     typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
 
@@ -872,16 +1113,17 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
                                                                    __mesh->worldComm().localRank() ); // important localRank!!!!
         //elt_it = __mesh->beginElementWithMarker(p_it->first);
-
-        for ( ; elt_it != elt_en; ++elt_it )
+        idelem.resize( __ne*__mesh->numLocalVertices() );
+        for ( size_type e=0 ; elt_it != elt_en; ++elt_it, ++e )
         {
             for ( size_type j = 0; j < __mesh->numLocalVertices(); j++ )
             {
                 // ensight id start at 1
-                int __id = elt_it->point( j ).id()+1;
-                __out.write( ( char * ) & __id , sizeof( int ) );
+                idelem[e*__mesh->numLocalVertices()+j] = elt_it->point( j ).id()+1;
             }
         }
+        __out.write( ( char * ) &idelem.front() , __ne*__mesh->numLocalVertices()*sizeof( int ) );
+
     }
     if ( this->useSingleTransientFile() )
     {

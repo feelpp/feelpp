@@ -70,6 +70,13 @@ public:
         M_backend( backend )
     {}
 
+    int size()
+    {
+        int size1 = M_functionals1.size();
+        int size2 = M_functionals2.size();
+        return size1+size2;
+    }
+
 
     //if we have a list of functionals
     //i.e. \sum_{q=0}^Q Fq(.)
@@ -273,7 +280,6 @@ private:
     backend_ptrtype M_backend;
     std::vector< double > M_scalars1;
     std::vector< std::vector<double> > M_scalars2;
-
 };
 
 namespace detail

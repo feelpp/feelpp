@@ -741,8 +741,8 @@ EIM<ModelType>::offline(  )
         auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
         auto gmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(g_bestfit) );
 
-        LOG(INFO) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
-                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
+        DVLOG(2) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
+                 << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
 
         //if we want to impose the use of dimension-max functions, we don't want to stop here
         if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
@@ -774,7 +774,7 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
 
-        std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
+        std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
         // update interpolation matrix
         M_B.conservativeResize( M_M, M_M );
         for( int __i = 0; __i < M_M; ++__i )
@@ -785,7 +785,7 @@ EIM<ModelType>::offline(  )
 
             }
         }
-        LOG(INFO) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
+        DVLOG(2) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
 #if 0
         for( int __i = 0; __i < M_M; ++__i )
         {
