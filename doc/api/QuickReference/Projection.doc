@@ -1,0 +1,43 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+/*! \page Projection Projection
+
+
+
+\li \b Previous: \ref Spaces
+\li \b Next: \ref Forms
+
+<hr>
+
+\tableofcontents
+
+
+\subsection Projection Projection
+
+Another important keyword is \c project which allows to compute the
+interpolant of an expression with respect to a nodal function space over a part
+of the mesh  or the whole mesh. The interface is as follows
+\code
+project( _space=<nodal function space in which the interpolant lives>
+         _range=<domain range iterators>,
+         _expr=<expression to be interpolated>, .... )
+\endcode
+
+Here are some examples
+
+\code
+typedef FunctionSpace<Mesh<Simplex<$d$>,
+                      bases<Lagrange<1,Vectorial> > > Xhv_type;
+auto Xhv = Xhv_type::New( mesh );
+// build a piecewise $\P_1$ vectorial function in Xhv containing the
+// coordinates of the vertices the mesh.
+auto coord = project( _space=Xhv, _range=elements(mesh), _expr=P() );
+// compute the x derivative of the coord function
+auto dx_coord = project( _space=Xhv, _range=elements(mesh), _expr=dxv(coord) );
+auto dy_coord = project( _space=Xhv, _range=elements(mesh), _expr=dyv(coord) );
+\endcode
+
+<a href="#" class="top">top</a>
+<hr>
+*/
+}

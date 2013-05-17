@@ -49,6 +49,7 @@ namespace Feel
 /** \page FluidMechanics Fluid Mechanics
    - \subpage StokesTutorial
    - \subpage StokesCurl
+   - \subpage FictitiousDomainPenalisationParticle
 */
 /** \page SolidMechanics Solid Mechanics
     - \subpage LinearElasticity
