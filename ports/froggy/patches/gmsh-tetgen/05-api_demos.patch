@@ -1,0 +1,538 @@
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainAntTweakBar.cpp
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13566.orig/utils/api_demos/mainAntTweakBar.cpp	2012-10-19 15:26:39.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainAntTweakBar.cpp	2012-10-19 15:40:40.000000000 +0200
+@@ -14,6 +14,7 @@
+ #include "GModel.h"
+ #include "MElement.h"
+ #include "drawContext.h"
++#include <cstring>
+ 
+ static drawContext *ctx = 0;
+ static mousePosition clickPos, prevPos;
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainOcc.cpp
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13566.orig/utils/api_demos/mainOcc.cpp	2012-10-19 15:26:39.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainOcc.cpp	2012-10-19 15:40:40.000000000 +0200
+@@ -19,7 +19,7 @@
+ #include "MElement.h"
+ 
+ #if !defined(HAVE_NO_OCC_CONFIG_H)
+-#include "config.h"
++#include "oce-config.h"
+ #endif
+ #include <TopoDS_Shape.hxx>
+ #include <BRep_Tool.hxx>
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/CMakeLists.txt
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13566.orig/utils/api_demos/CMakeLists.txt	2012-10-19 15:26:39.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/CMakeLists.txt	2012-10-19 15:40:40.000000000 +0200
+@@ -11,46 +11,81 @@
+ 
+ project(api_demos CXX)
+ 
+-add_subdirectory(../.. "${CMAKE_CURRENT_BINARY_DIR}/gmsh")
++macro(set_config_option VARNAME STRING)
++  set(${VARNAME} TRUE)
++  list(APPEND CONFIG_OPTIONS ${STRING})
++  message(STATUS "Found " ${STRING})
++endmacro(set_config_option)
++
++SET( CMAKE_MODULE_PATH  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules )
++
++FIND_PACKAGE(Gmsh REQUIRED)
++if ( GMSH_FOUND )
++  if ( GL2PS_LIBRARY )
++   if ( GL_LIBRARY )
++     SET(GMSH_EXTERNAL_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${GMSH_EXTERNAL_LIBRARIES})
++   else()
++     SET(GMSH_EXTERNAL_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${GMSH_EXTERNAL_LIBRARIES})
++   endif()
++ else()
++   SET(GMSH_EXTERNAL_LIBRARIES ${GMSH_LIBRARY} ${GMSH_EXTERNAL_LIBRARIES})
++ endif()
++ include_directories(${GMSH_INCLUDE_DIR})
++endif()
++
++FIND_PACKAGE(ANN REQUIRED)
++if ( ANN_FOUND )
++  INCLUDE_DIRECTORIES( ${ANN_INCLUDE_DIR} )
++  SET(GMSH_EXTERNAL_LIBRARIES ${ANN_LIBRARIES} ${GMSH_EXTERNAL_LIBRARIES})
++endif()
++
++FIND_PACKAGE(Anttweakbar REQUIRED)
++if ( ANTTWEAKBAR_FOUND )
++  INCLUDE_DIRECTORIES( ${ANTTWEAKBAR_INCLUDE_DIR} )
++  SET_CONFIG_OPTION(HAVE_ANTTWEAKBAR "AntTweakBar")
++endif()
+ 
+-include_directories(../../Common ../../Numeric ../../Geo ../../Mesh 
+-   ../../Solver ../../Post ../../Plugin ../../Graphics ../../contrib/ANN/include
+-   ../../contrib/DiscreteIntegration ${GMSH_EXTERNAL_INCLUDE_DIRS}
+-   ${CMAKE_CURRENT_BINARY_DIR}/gmsh/Common)
+-
+-if(APPLE)
+-  set(glut "-framework GLUT")
+-else(APPLE)
+-  set(glut "glut")
+-endif(APPLE)
+ 
+ add_executable(mainVertexArray mainVertexArray.cpp)
+-target_link_libraries(mainVertexArray shared)
++target_link_libraries(mainVertexArray ${GMSH_EXTERNAL_LIBRARIES})
+ 
+-add_executable(mainAntTweakBar mainAntTweakBar.cpp)
+-target_link_libraries(mainAntTweakBar shared AntTweakBar ${glut})
++FIND_PACKAGE(GLUT REQUIRED)
++if ( ANTTWEAKBAR_FOUND AND GLUT_FOUND)
++   INCLUDE_DIRECTORIES( ${ANTTWEAKBAR_INCLUDE_DIR} )
++   SET_CONFIG_OPTION(HAVE_ANTTWEAKBAR "AntTweakBar")
++
++   add_executable(mainAntTweakBar mainAntTweakBar.cpp)
++   target_link_libraries(mainAntTweakBar ${GMSH_EXTERNAL_LIBRARIES} ${ANTTWEAKBAR_LIBRARIES} ${GLUT_LIBRARY} -lX11)
++endif()
+ 
+ add_executable(mainCartesian mainCartesian.cpp)
+-target_link_libraries(mainCartesian shared)
++target_link_libraries(mainCartesian ${GMSH_EXTERNAL_LIBRARIES})
+ 
+ add_executable(mainElasticity mainElasticity.cpp)
+-target_link_libraries(mainElasticity shared)
++target_link_libraries(mainElasticity ${GMSH_EXTERNAL_LIBRARIES})
+ 
+-add_executable(mainGlut mainGlut.cpp)
+-target_link_libraries(mainGlut lib ${GMSH_EXTERNAL_LIBRARIES} ${glut})
++if ( GLUT_FOUND )
++   add_executable(mainGlut mainGlut.cpp)
++   target_link_libraries(mainGlut  ${glut} ${GMSH_EXTERNAL_LIBRARIES} ${GLUT_LIBRARY} ${GLU_LIBRARY})
++endif ( GLUT_FOUND )
+ 
+ add_executable(mainHomology mainHomology.cpp)
+-target_link_libraries(mainHomology shared)
++target_link_libraries(mainHomology ${GMSH_EXTERNAL_LIBRARIES})
+ 
+-add_executable(mainLevelset mainLevelset.cpp)
+-target_link_libraries(mainLevelset shared)
+-
+-add_executable(mainOcc mainOcc.cpp)
+-target_link_libraries(mainOcc shared)
++# No DILevelset.h file in gmsh source
++#add_executable(mainLevelset mainLevelset.cpp)
++#target_link_libraries(mainLevelset ${GMSH_EXTERNAL_LIBRARIES})
++
++find_package(OCC)
++if ( OCC_FOUND )
++   INCLUDE_DIRECTORIES( ${OCC_INCLUDE_DIR} )
++   add_executable(mainOcc mainOcc.cpp)
++   target_link_libraries(mainOcc ${GMSH_EXTERNAL_LIBRARIES} ${OCC_LIBRARIES})
++endif ( OCC_FOUND )
+ 
+ add_executable(mainPost mainPost.cpp)
+-target_link_libraries(mainPost shared)
++target_link_libraries(mainPost ${GMSH_EXTERNAL_LIBRARIES})
+ 
+ add_executable(mainSimple mainSimple.cpp)
+-target_link_libraries(mainSimple shared)
++target_link_libraries(mainSimple ${GMSH_EXTERNAL_LIBRARIES})
+ 
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainCartesian.cpp
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13566.orig/utils/api_demos/mainCartesian.cpp	2012-10-19 15:26:39.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainCartesian.cpp	2012-10-19 15:40:40.000000000 +0200
+@@ -12,7 +12,7 @@
+ #include "GmshMessage.h"
+ #include "cartesian.h"
+ 
+-static void insertActiveCells(double x, double y, double z, double rmax,
++static void my_insertActiveCells(double x, double y, double z, double rmax,
+                               cartesianBox<double> &box)
+ {
+   int id1 = box.getCellContainingPoint(x - rmax, y - rmax, z - rmax);
+@@ -27,7 +27,7 @@
+         box.insertActiveCell(box.getCellIndex(i, j, k));
+ }
+ 
+-static void computeLevelset(GModel *gm, cartesianBox<double> &box)
++static void my_computeLevelset(GModel *gm, cartesianBox<double> &box)
+ {
+   // tolerance for desambiguation
+   const double tol = box.getLC() * 1.e-12;
+@@ -82,10 +82,10 @@
+   for (unsigned int j = 0; j < dist.size(); j++)
+     box.setNodalValue(indices[j], dist[j]);
+ 
+-  if(box.getChildBox()) computeLevelset(gm, *box.getChildBox());
++  if(box.getChildBox()) my_computeLevelset(gm, *box.getChildBox());
+ }
+ 
+-static void fillPointCloud(GEdge *ge, double sampling, std::vector<SPoint3> &points)
++static void my_fillPointCloud(GEdge *ge, double sampling, std::vector<SPoint3> &points)
+ {
+   Range<double> t_bounds = ge->parBounds(0);
+   double t_min = t_bounds.low();
+@@ -99,7 +99,7 @@
+   }
+ }
+ 
+-static int removeBadChildCells(cartesianBox<double> *parent)
++static int my_removeBadChildCells(cartesianBox<double> *parent)
+ {
+   cartesianBox<double> *child = parent->getChildBox();
+   if(!child) return 0;
+@@ -135,10 +135,10 @@
+             (k != K - 1 && !parent->activeCellExists(parent->getCellIndex(i, j, k + 1)))))
+             for(int ii = 0; ii < 8; ii++) child->eraseActiveCell(idx[ii]);
+       }
+-  return removeBadChildCells(child);
++  return my_removeBadChildCells(child);
+ }
+ 
+-static void removeParentCellsWithChildren(cartesianBox<double> *box)
++static void my_removeParentCellsWithChildren(cartesianBox<double> *box)
+ {
+   if(!box->getChildBox()) return;
+   for(int i = 0; i < box->getNxi(); i++)
+@@ -157,7 +157,7 @@
+           }
+         }
+       }
+-  removeParentCellsWithChildren(box->getChildBox());
++  my_removeParentCellsWithChildren(box->getChildBox());
+ }
+ 
+ static void removeOutsideCells(cartesianBox<double> *box)
+@@ -226,7 +226,7 @@
+     double s = sampling / pow(2., levels - 1);
+     Msg::Info("Filling refined point cloud on curves and curved surfaces");
+     for (GModel::eiter eit = gm->firstEdge(); eit != gm->lastEdge(); eit++)
+-      fillPointCloud(*eit, s, refinePoints);
++      my_fillPointCloud(*eit, s, refinePoints);
+ 
+     // FIXME: refine this by computing e.g. "mean" curvature
+     if(refineCurvedSurfaces){
+@@ -263,13 +263,13 @@
+   Msg::Info("Inserting active cells in the cartesian grid");
+   Msg::Info("  level %d", box.getLevel());
+   for (unsigned int i = 0; i < points.size(); i++)
+-    insertActiveCells(points[i].x(), points[i].y(), points[i].z(), rmax, box);
++    my_insertActiveCells(points[i].x(), points[i].y(), points[i].z(), rmax, box);
+ 
+   cartesianBox<double> *parent = &box, *child;
+   while((child = parent->getChildBox())){
+     Msg::Info("  level %d", child->getLevel());
+     for(unsigned int i = 0; i < refinePoints.size(); i++)
+-      insertActiveCells(refinePoints[i].x(), refinePoints[i].y(), refinePoints[i].z(),
++      my_insertActiveCells(refinePoints[i].x(), refinePoints[i].y(), refinePoints[i].z(),
+                         rtube / pow(2., (levels - child->getLevel())), *child);
+     parent = child;
+   }
+@@ -278,8 +278,8 @@
+   // which there is no parent neighbor; then remove parent cells that
+   // have children
+   Msg::Info("Removing cells to match X-FEM mesh topology constraints");
+-  removeBadChildCells(&box);
+-  removeParentCellsWithChildren(&box);
++  my_removeBadChildCells(&box);
++  my_removeParentCellsWithChildren(&box);
+ 
+   // we generate duplicate nodes at this point so we can easily access
+   // cell values at each level; we will clean up by renumbering after
+@@ -288,7 +288,7 @@
+   box.createNodalValues();
+ 
+   Msg::Info("Computing levelset on the cartesian grid");
+-  computeLevelset(gm, box);
++  my_computeLevelset(gm, box);
+ 
+   Msg::Info("Removing cells outside the structure");
+   removeOutsideCells(&box);
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainElasticity.cpp
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13566.orig/utils/api_demos/mainElasticity.cpp	2012-10-19 15:26:39.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainElasticity.cpp	2012-10-19 15:40:40.000000000 +0200
+@@ -3,6 +3,7 @@
+ #include "elasticitySolver.h"
+ #include "PView.h"
+ #include "PViewData.h"
++#include <cstring>
+ 
+ void Info (int i, char* c){
+   printf("%d %s\n",i,c);
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainHomology.cpp
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13566.orig/utils/api_demos/mainHomology.cpp	2012-10-19 15:26:39.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/mainHomology.cpp	2012-10-19 15:40:40.000000000 +0200
+@@ -8,6 +8,7 @@
+ 
+ #include <stdio.h>
+ #include <sstream>
++#include "GmshConfig.h"
+ #include "Gmsh.h"
+ #include "GModel.h"
+ #include "MElement.h"
+@@ -28,9 +29,10 @@
+   // (relative to subdomain).
+   std::vector<int> domain;
+   std::vector<int> subdomain;
++  std::vector<int> im;
+ 
+   // initialize
+-  Homology* homology = new Homology(m, domain, subdomain);
++  Homology* homology = new Homology(m, domain, subdomain, im);
+ 
+   // find homology basis elements
+   homology->findHomologyBasis();
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindGmsh.cmake
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindGmsh.cmake	2012-10-19 15:40:40.000000000 +0200
+@@ -0,0 +1,119 @@
++# -*- mode: cmake -*-
++#
++#  This file is part of the Feel library
++#
++#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
++#       Date: 2010-07-28
++#
++#  Copyright (C) 2010 Université de Grenoble 1 (Joseph Fourier)
++#
++#  This library is free software; you can redistribute it and/or
++#  modify it under the terms of the GNU Lesser General Public
++#  License as published by the Free Software Foundation; either
++#  version 3.0 of the License, or (at your option) any later version.
++#
++#  This library is distributed in the hope that it will be useful,
++#  but WITHOUT ANY WARRANTY; without even the implied warranty of
++#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++#  Lesser General Public License for more details.
++#
++#  You should have received a copy of the GNU Lesser General Public
++#  License along with this library; if not, write to the Free Software
++#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
++#
++include (FindPackageHandleStandardArgs)
++
++find_program( GMSH_EXECUTABLE gmsh DOC "GMSH mesh generator" )
++
++
++option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
++if ( FEELPP_ENABLE_GMSH_LIBRARY )
++  INCLUDE(CheckIncludeFileCXX)
++  FIND_PATH(GMSH_INCLUDE_DIR
++    Gmsh.h Context.h GModel.h
++    PATHS ${CMAKE_SYSTEM_PREFIX_PATH} $ENV{GMSH_DIR}/include/gmsh
++    PATH_SUFFIXES include include/gmsh
++    DOC "Directory where GMSH header files are stored" )
++  include_directories(${GMSH_INCLUDE_DIR})
++  if ( GMSH_INCLUDE_DIR )
++	set( FEELPP_HAS_GMSH_H 1 )
++    FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
++      Openfile.h Field.h
++      PATHS ${GMSH_INCLUDE_DIR}
++      DOC "Directory where GMSH header files are stored" )
++      if ( GMSH_ADAPTMESH_INCLUDE_DIR )
++	set( FEELPP_HAS_GMSH_H 1 )
++      else ( GMSH_ADAPTMESH_INCLUDE_DIR )
++	message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
++	message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
++      endif( GMSH_ADAPTMESH_INCLUDE_DIR )
++  endif()
++  #include(CheckIncludeFiles)
++  #set(CMAKE_REQUIRED_INCLUDES "${GMSH_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
++  #check_include_file(Gmsh.h FEELPP_HAS_GMSH_GMSH_H )
++  ##check_include_file(Context.h FEELPP_HAS_GMSH_CONTEXT_H )
++  #check_include_file(GModel.h FEELPP_HAS_GMSH_GMODEL_H )
++  #if ( FEELPP_HAS_GMSH_GMODEL_H AND FEELPP_HAS_GMSH_CONTEXT_H and FEELPP_HAS_GMSH_GMSH_H )
++  #  set( FEELPP_HAS_GMSH_H 1 )
++  #endif()
++  #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
++
++  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
++    PATH
++    ${CMAKE_SYSTEM_PREFIX_PATH}
++    $ENV{GMSH_DIR}
++    PATH_SUFFIXES
++    lib  )
++  if( NOT GMSH_LIBRARY )
++    FIND_PATH(GMSH_LIBRARY_PATH
++      libGmsh.so
++      PATHS ${CMAKE_SYSTEM_PREFIX_PATH} $ENV{GMSH_DIR}/
++      PATH_SUFFIXES lib )
++    set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/libGmsh.so" )
++  endif()
++
++  FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
++    PATH
++    ${CMAKE_SYSTEM_PREFIX_PATH}
++    $ENV{GMSH_DIR}/lib
++    PATH_SUFFIXES
++    lib  )
++  FIND_LIBRARY(GL_LIBRARY NAMES GL
++    PATH
++    ${CMAKE_SYSTEM_PREFIX_PATH}
++    $ENV{GMSH_DIR}/lib
++    PATH_SUFFIXES
++    lib  )
++
++  FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
++    GMSH_INCLUDE_DIR GMSH_LIBRARY GMSH_EXECUTABLE
++    )
++
++  if ( GMSH_FOUND )
++    set(FEELPP_HAS_GMSH_LIBRARY 1)
++    MESSAGE( STATUS "GMSH found: header(${GMSH_INCLUDE_DIR}) lib(${GMSH_LIBRARY}) executable(${GMSH_EXECUTABLE})" )
++    MESSAGE( STATUS "GL2PS found: lib(${GL2PS_LIBRARY})" )
++    MESSAGE( STATUS "GL found: lib(${GL_LIBRARY})" )
++  endif()
++
++  mark_as_advanced( GMSH_INCLUDE_DIR )
++  mark_as_advanced( GMSH_LIBRARY )
++  mark_as_advanced( GL2PS_LIBRARY )
++  mark_as_advanced( GL_LIBRARY )
++  mark_as_advanced( GMSH_EXECUTABLE )
++
++else(FEELPP_ENABLE_GMSH_LIBRARY)
++
++  FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG GMSH_EXECUTABLE )
++
++  if ( GMSH_FOUND )
++    MESSAGE( STATUS "GMSH found: executable(${GMSH_EXECUTABLE})" )
++  endif()
++  mark_as_advanced( GMSH_EXECUTABLE )
++
++endif(FEELPP_ENABLE_GMSH_LIBRARY)
++
++
++
++
++
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindAnttweakbar.cmake
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindAnttweakbar.cmake	2012-10-19 15:40:40.000000000 +0200
+@@ -0,0 +1,12 @@
++FIND_LIBRARY(ANTTWEAKBAR_LIB AntTweakBar PATHS /usr/lib /opt/local/lib  $ENV{ANTTWEAKBAR_DIR}/lib)
++SET(ANTTWEAKBAR_LIBRARIES ${ANTTWEAKBAR_LIB} )
++
++find_path(ANTTWEAKBAR_INCLUDE_DIR 
++  AntTweakBar.h
++  PATH_SUFFIXES src include AntTweakBar
++  DOC "Directory where ANTTWEAKBAR header files are stored" )
++  
++
++FIND_PACKAGE_HANDLE_STANDARD_ARGS(ANTTWEAKBAR "Could not find ANTTWEAKBAR " ANTTWEAKBAR_INCLUDE_DIR ANTTWEAKBAR_LIB)
++# show the BERKELEY_DB_INCLUDE_DIR and BERKELEY_DB_LIBRARIES variables only in the advanced view
++MARK_AS_ADVANCED(ANTTWEAKBAR_INCLUDE_DIR ANTTWEAKBAR_LIBRARIES )
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindOCC.cmake
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindOCC.cmake	2012-10-19 15:40:40.000000000 +0200
+@@ -0,0 +1,34 @@
++set(OCC_LIBS_REQUIRED
++    # subset of DataExchange
++    TKSTEP TKSTEP209 TKSTEPAttr TKSTEPBase TKIGES TKXSBase
++    # ModelingAlgorithms
++    TKOffset TKFeat TKFillet TKBool TKShHealing TKMesh TKHLR TKBO TKPrim
++    TKTopAlgo TKGeomAlgo
++    # ModelingData
++    TKBRep TKGeomBase TKG3d TKG2d
++    # FoundationClasses
++    TKAdvTools TKMath TKernel)
++    
++list(LENGTH OCC_LIBS_REQUIRED NUM_OCC_LIBS_REQUIRED)
++set(OCC_LIBS)
++foreach(OCC ${OCC_LIBS_REQUIRED})
++  find_library(OCC_LIB ${OCC} HINTS ENV CASROOT PATH_SUFFIXES lib 
++               ${OCC_SYS_NAME}/lib ${OCC_SYS_NAME}/vc8/lib)
++  if(OCC_LIB)
++    list(APPEND OCC_LIBS ${OCC_LIB})
++  else(OCC_LIB)
++    message(STATUS "OCC lib " ${OCC} " not Found")
++  endif(OCC_LIB)
++  unset(OCC_LIB CACHE)
++endforeach(OCC)
++SET(OCC_LIBRARIES ${OCC_LIBS} )
++
++find_path(OCC_INCLUDE_DIR "BRep_Tool.hxx" 
++  PATHS $ENV{CASROOT} 
++  PATH_SUFFIXES inc include include/oce opencascade
++  DOC "Directory where OCC headers files are stored" )
++ 
++
++FIND_PACKAGE_HANDLE_STANDARD_ARGS(OCC "Could not find OCC " OCC_INCLUDE_DIR OCC_LIBRARIES)
++# show the BERKELEY_DB_INCLUDE_DIR and BERKELEY_DB_LIBRARIES variables only in the advanced view
++MARK_AS_ADVANCED(OCC_INCLUDE_DIR OCC_LIBRARIES )
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindGLUT.cmake
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindGLUT.cmake	2012-10-19 15:40:40.000000000 +0200
+@@ -0,0 +1,20 @@
++include (FindPackageHandleStandardArgs)
++
++FIND_LIBRARY(GLUT_LIB NAMES glut
++    PATH
++    ${CMAKE_SYSTEM_PREFIX_PATH}
++    PATH_SUFFIXES
++    lib  )
++SET(GLUT_LIBRARY ${GLUT_LIB} )
++    
++FIND_LIBRARY(GLU_LIB NAMES GLU
++    PATH
++    ${CMAKE_SYSTEM_PREFIX_PATH}
++    PATH_SUFFIXES
++    lib  )
++SET(GLU_LIBRARY ${GLU_LIB} )
++
++FIND_PACKAGE_HANDLE_STANDARD_ARGS(GLUT "Could not find GLUT " GLUT_LIBRARY GLU_LIBRARY)
++# show the BERKELEY_DB_INCLUDE_DIR and BERKELEY_DB_LIBRARIES variables only in the advanced view
++MARK_AS_ADVANCED(GLUT_LIBRARY )
++MARK_AS_ADVANCED(GLU_LIBRARY )
+Index: gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindANN.cmake
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ gmsh-tetgen-2.6.2~svn13566/utils/api_demos/cmake/modules/FindANN.cmake	2012-10-19 15:40:40.000000000 +0200
+@@ -0,0 +1,44 @@
++# -*- mode: cmake -*-
++#
++#  This file is part of the Feel++ library
++#
++#  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
++#       Date: 2010-02-10
++#
++#  Copyright (C) 2010 Université Joseph Fourier
++#
++#  This library is free software; you can redistribute it and/or
++#  modify it under the terms of the GNU Lesser General Public
++#  License as published by the Free Software Foundation; either
++#  version 3.0 of the License, or (at your option) any later version.
++#
++#  This library is distributed in the hope that it will be useful,
++#  but WITHOUT ANY WARRANTY; without even the implied warranty of
++#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++#  Lesser General Public License for more details.
++#
++#  You should have received a copy of the GNU Lesser General Public
++#  License along with this library; if not, write to the Free Software
++#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
++#
++# this files defines
++#  - ANN_INCLUDE_DIR
++#  - ANN_LIBRARIES
++#  - ANN_FOUND
++
++INCLUDE(CheckIncludeFileCXX)
++# CHECK_INCLUDE_FILE_CXX(ANN/ANN.h FEELPP_HAS_ANN_H)
++
++
++FIND_LIBRARY( ANN_LIB ann ANN PATHS /usr/lib /opt/local/lib  $ENV{ANN_DIR}/lib)
++SET(ANN_LIBRARIES ${ANN_LIB} )
++
++FIND_PATH(ANN_INCLUDE_DIR
++  ANN.h
++  PATHS /usr/include/ /usr/include/ANN /opt/local/include/ANN /usr/local/include/ANN  $ENV{ANN_DIR}/include/ANN
++  DOC "Directory where ANN header files are stored" )
++
++include(FindPackageHandleStandardArgs)
++find_package_handle_standard_args(ANN "Could not find ANN " ANN_INCLUDE_DIR ANN_LIBRARIES)
++# show the BERKELEY_DB_INCLUDE_DIR and BERKELEY_DB_LIBRARIES variables only in the advanced view
++MARK_AS_ADVANCED(ANN_INCLUDE_DIR ANN_LIBRARIES )

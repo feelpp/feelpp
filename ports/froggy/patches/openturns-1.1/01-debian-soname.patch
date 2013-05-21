@@ -1,0 +1,24 @@
+Description: Set a Debian specific SONAME
+ Upstream does not yet use library versioning.
+ We will use 0.1, 0.2, etc. to not conflict with
+ future upstream SONAMEs.
+Author: Denis Barbier <bouzim@gmail.com>
+Origin: Debian
+Forwarded: not-needed
+Last-Update: 2012-05-13
+
+Index: openturns/lib/src/CMakeLists.txt
+===================================================================
+--- openturns.orig/lib/src/CMakeLists.txt
++++ openturns/lib/src/CMakeLists.txt
+@@ -72,8 +72,8 @@ if ( MINGW )
+                                   LINK_FLAGS "-Wl,--out-implib,libOTbind.dll.a" )
+ endif ( MINGW )
+ add_library ( OT SHARED ${SOURCEFILES} ${BUILT_SOURCEFILES} )
+-set_target_properties ( OT OTbind PROPERTIES SOVERSION 0 )
+-set_target_properties ( OT OTbind PROPERTIES VERSION 0.0.0 )
++set_target_properties ( OT OTbind PROPERTIES SOVERSION 0.2 )
++set_target_properties ( OT OTbind PROPERTIES VERSION 0.2.0 )
+ if ( BISON_FOUND )
+   add_dependencies ( OT generate_csv_parser )
+ endif ( BISON_FOUND )
