@@ -1,0 +1,261 @@
+Index: gmsh-tetgen-2.5.1~beta2~svn12051/Mesh/Field.cpp
+===================================================================
+--- gmsh-tetgen-2.5.1~beta2~svn12051.orig/Mesh/Field.cpp	2012-05-10 21:50:05.000000000 +0200
++++ gmsh-tetgen-2.5.1~beta2~svn12051/Mesh/Field.cpp	2012-05-10 21:53:21.439618616 +0200
+@@ -467,6 +467,55 @@
+   }
+ };
+ 
++class SphereField : public Field
++{
++  double v_in, v_out;
++  double xc,yc,zc;
++  double R;
++
++ public:
++  std::string getDescription()
++  {
++    return "The value of this field is VIn inside a sphere, VOut outside. "
++      "The sphere is given by\n\n"
++      "  ||dX||^2 < R^2 &&\n"
++      "  dX = (X - XC)^2 + (Y-YC)^2 + (Z-ZC)^2";
++  }
++  SphereField()
++  {
++    v_in = v_out = xc = yc = zc = R = 0;
++
++    options["VIn"] = new FieldOptionDouble
++      (v_in, "Value inside the sphere");
++    options["VOut"] = new FieldOptionDouble
++      (v_out, "Value outside the sphere");
++
++    options["XCenter"] = new FieldOptionDouble
++      (xc, "X coordinate of the sphere center");
++    options["YCenter"] = new FieldOptionDouble
++      (yc, "Y coordinate of the sphere center");
++    options["ZCenter"] = new FieldOptionDouble
++      (zc, "Z coordinate of the sphere center");
++
++
++    options["Radius"] = new FieldOptionDouble
++      (R,"Radius");
++
++  }
++  const char *getName()
++  {
++    return "Sphere";
++  }
++  double operator() (double x, double y, double z, GEntity *ge=0)
++  {
++    double dx = x-xc;
++    double dy = y-yc;
++    double dz = z-zc;
++
++    return ( (dx*dx + dy*dy + dz*dz < R*R) ) ? v_in : v_out;
++  }
++};
++
+ class FrustumField : public Field
+ {
+   double x1,y1,z1;
+@@ -1268,17 +1317,21 @@
+   }
+   virtual void operator() (double x, double y, double z, SMetric3 &metr, GEntity *ge=0)
+   {
++    //std::cout << "MinAnisoField idlist=" << idlist.size() << "\n";
+     SMetric3 v (1./MAX_LC);
+     for(std::list<int>::iterator it = idlist.begin(); it != idlist.end(); it++) {
+       Field *f = (GModel::current()->getFields()->get(*it));
++      //std::cout << "Field[" << *it << "]\n";
+       SMetric3 ff;
+       if(f && *it != id) {
+ 	if (f->isotropic()){
+ 	  double l = (*f) (x, y, z, ge);
+ 	  ff = SMetric3(1./(l*l));
++	  //printf("ff=[%g %g %g %g %g %g]\n",ff(0,0),ff(1,1),ff(2,2),ff(0,1),ff(0,2),ff(1,2));
+ 	}
+ 	else{
+ 	  (*f) (x, y, z, ff, ge);
++	  //printf("ff_iso=[%g %g %g %g %g %g]\n",ff(0,0),ff(1,1),ff(2,2),ff(0,1),ff(0,2),ff(1,2));
+ 	}
+ 	v = intersection_conserve_mostaniso(v,ff);
+       }
+@@ -1316,6 +1369,77 @@
+   }
+ };
+ 
++class IntersectAnisoField : public Field
++{
++  std::list<int> idlist;
++ public:
++  IntersectAnisoField()
++  {
++    options["FieldsList"] = new FieldOptionList
++      (idlist, "Field indices", &update_needed);
++  }
++  virtual bool isotropic () const {return false;}
++  std::string getDescription()
++  {
++    return "Take the intersection of 2 anisotropic fields according to Alauzet.";
++  }
++  virtual void operator() (double x, double y, double z, SMetric3 &metr, GEntity *ge=0)
++  {
++    // check if idlist contains 2 elements other error message    
++    SMetric3 v;
++    for(std::list<int>::iterator it = idlist.begin(); it != idlist.end(); it++) {
++      Field *f = (GModel::current()->getFields()->get(*it));
++      SMetric3 ff;
++      if(f && *it != id) {
++	if (f->isotropic()){
++	  double l = (*f) (x, y, z, ge);
++	  ff = SMetric3(1./(l*l));
++	}
++	else{
++	  (*f) (x, y, z, ff, ge);
++	}
++	if (it == idlist.begin()) 
++	   v = ff;
++	else
++	   v = intersection_alauzet(v,ff);
++      }
++    }
++    metr = v;
++  }
++  double operator() (double x, double y, double z, GEntity *ge=0)
++  {
++    // check if idlist contains 2 elements other error message
++    SMetric3 metr;
++    double v = MAX_LC;
++    for(std::list<int>::iterator it = idlist.begin(); it != idlist.end(); it++) {
++      Field *f = (GModel::current()->getFields()->get(*it));
++      SMetric3 m;
++      if(f && *it != id){
++        if (!f->isotropic()){
++          (*f)(x, y, z, m, ge);
++        }
++	else {
++          double L = (*f)(x, y, z, ge);
++          for (int i = 0; i < 3; i++)
++            m(i,i) = 1. / (L*L);
++	}
++      }
++	if (it == idlist.begin()) 
++	   metr = m;
++	else
++	   metr = intersection_alauzet(metr,m);
++    }
++    fullMatrix<double> V(3,3);
++    fullVector<double> S(3);
++    metr.eig(V, S, 1);
++    return sqrt(1./S(2)); //S(2) is largest eigenvalue
++  }
++  const char *getName()
++  {
++    return "IntersectAniso";
++  }
++};
++
+ class MinField : public Field
+ {
+   std::list<int> idlist;
+@@ -1334,7 +1458,18 @@
+     double v = MAX_LC;
+     for(std::list<int>::iterator it = idlist.begin(); it != idlist.end(); it++) {
+       Field *f = (GModel::current()->getFields()->get(*it));
+-      if(f && *it != id) v = std::min(v, (*f) (x, y, z, ge));
++      if(f && *it != id) {
++        if (f->isotropic())
++	   v = std::min(v, (*f) (x, y, z, ge));
++	else{
++	   SMetric3 ff;
++	   (*f) (x, y, z, ff, ge);
++	   fullMatrix<double> V(3,3);
++	   fullVector<double> S(3);
++	   ff.eig(V, S, 1);
++	   v = std::min(v, sqrt(1./S(2))); //S(2) is largest eigenvalue
++	}
++      }	
+     }
+     return v;
+   }
+@@ -1362,7 +1497,18 @@
+     double v = -MAX_LC;
+     for(std::list<int>::iterator it = idlist.begin(); it != idlist.end(); it++) {
+       Field *f = (GModel::current()->getFields()->get(*it));
+-      if(f && *it != id) v = std::max(v, (*f) (x, y, z, ge));
++      if(f && *it != id) {
++        if (f->isotropic())
++	   v = std::max(v, (*f) (x, y, z, ge));
++	else{
++	   SMetric3 ff;
++	   (*f) (x, y, z, ff, ge);
++	   fullMatrix<double> V(3,3);
++	   fullVector<double> S(3);
++	   ff.eig(V, S, 1);
++	   v = std::max(v, sqrt(1./S(0))); //S(0) is smallest eigenvalue
++	}
++      }
+     }
+     return v;
+   }
+@@ -2017,6 +2163,7 @@
+ #endif
+   map_type_name["Box"] = new FieldFactoryT<BoxField>();
+   map_type_name["Cylinder"] = new FieldFactoryT<CylinderField>();
++  map_type_name["Sphere"] = new FieldFactoryT<SphereField>();
+   map_type_name["Frustum"] = new FieldFactoryT<FrustumField>();
+   map_type_name["LonLat"] = new FieldFactoryT<LonLatField>();
+ #if defined(HAVE_POST)
+@@ -2026,6 +2173,7 @@
+   map_type_name["Restrict"] = new FieldFactoryT<RestrictField>();
+   map_type_name["Min"] = new FieldFactoryT<MinField>();
+   map_type_name["MinAniso"] = new FieldFactoryT<MinAnisoField>();
++  map_type_name["IntersectAniso"] = new FieldFactoryT<IntersectAnisoField>();
+   map_type_name["Max"] = new FieldFactoryT<MaxField>();
+   map_type_name["UTM"] = new FieldFactoryT<UTMField>();
+   map_type_name["Laplacian"] = new FieldFactoryT<LaplacianField>();
+Index: gmsh-tetgen-2.5.1~beta2~svn12051/Geo/STensor3.h
+===================================================================
+--- gmsh-tetgen-2.5.1~beta2~svn12051.orig/Geo/STensor3.h	2012-05-10 21:50:43.000000000 +0200
++++ gmsh-tetgen-2.5.1~beta2~svn12051/Geo/STensor3.h	2012-05-10 21:53:21.439618616 +0200
+@@ -171,6 +171,8 @@
+ // compute the largest inscribed ellipsoid...
+ SMetric3 intersection (const SMetric3 &m1,
+                        const SMetric3 &m2);
++SMetric3 intersection_alauzet (const SMetric3 &m1,
++                       const SMetric3 &m2);
+ SMetric3 interpolation (const SMetric3 &m1,
+                         const SMetric3 &m2,
+                         const double t);
+Index: gmsh-tetgen-2.5.1~beta2~svn12051/Geo/STensor3.cpp
+===================================================================
+--- gmsh-tetgen-2.5.1~beta2~svn12051.orig/Geo/STensor3.cpp	2012-05-10 21:50:43.000000000 +0200
++++ gmsh-tetgen-2.5.1~beta2~svn12051/Geo/STensor3.cpp	2012-05-10 21:53:21.439618616 +0200
+@@ -82,6 +82,27 @@
+   return iv;
+ }
+ 
++SMetric3 intersection_alauzet (const SMetric3 &m1, const SMetric3 &m2)
++{
++  SMetric3 im1 = m1.invert();
++  fullMatrix<double> V(3,3);
++  fullVector<double> S(3);
++  im1 *= m2;
++  im1.eig(V,S,true);
++  SVector3 v0(V(0,0),V(1,0),V(2,0));
++  SVector3 v1(V(0,1),V(1,1),V(2,1));
++  SVector3 v2(V(0,2),V(1,2),V(2,2));
++  // is this required??
++  v0.normalize();
++  v1.normalize();
++  v2.normalize();
++  double l0 = std::max(dot(v0,m1,v0),dot(v0,m2,v0));
++  double l1 = std::max(dot(v1,m1,v1),dot(v1,m2,v1));
++  double l2 = std::max(dot(v2,m1,v2),dot(v2,m2,v2));
++  SMetric3 iv(l0,l1,l2,v0,v1,v2);
++  return iv;
++}
++
+ // preserve orientation of m1 !!!
+ SMetric3 intersection_conserveM1 (const SMetric3 &m1, const SMetric3 &m2)
+ {
