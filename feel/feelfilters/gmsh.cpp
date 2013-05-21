@@ -242,6 +242,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
 
             _geo = boost::regex_replace( _geo, _regex, _ostr.str(), boost::match_default | boost::format_all );
         }
+
     }
 
     std::ostringstream __geoname;
@@ -332,9 +333,12 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     }
     google::FlushLogFiles(INFO);
 
-    LOG(INFO) << "Broadcast mesh file " << fname << " to all other mpi processes\n";
-    mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
-
+	if ( mpi::environment::initialized() )
+    {
+		this->worldComm().barrier();
+        LOG(INFO) << "Broadcast mesh file " << fname << " to all other mpi processes\n";
+        mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
+    }
     return fname;
 }
 std::string

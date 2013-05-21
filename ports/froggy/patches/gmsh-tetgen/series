@@ -1,0 +1,13 @@
+change_shared_library_name.patch
+skip_license_file.patch
+fix_spelling_errors.patch
+delete_gl2ps_from_source.patch
+switch_from_opencascade_to_oce.patch
+api_demos.patch
+fix_FTBFS_linking.patch
+cgns.patch
+metis.patch
+alauzet.patch
+add-missing-headers.patch
+fix_gmshpy_import.patch
+fix_libdir.patch
