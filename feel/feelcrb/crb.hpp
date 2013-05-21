@@ -447,15 +447,15 @@ public:
         M_Dmu = M_model->parameterSpace();
         M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
 
-	if ( ! loadDB() )
-	    M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
-    else
-    {
-        LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
-    }
+        if ( ! loadDB() )
+            M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
+        else
+        {
+            LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
+        }
 
-    //M_scmA->setTruthModel( M_model );
-    //M_scmM->setTruthModel( M_model );
+        //M_scmA->setTruthModel( M_model );
+        //M_scmM->setTruthModel( M_model );
     }
 
     //! set max iteration number
@@ -686,7 +686,7 @@ public:
      */
     void newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number, double& output) const ;
 
-    void offlineFixedPointPrimal( parameter_type const& mu , element_ptrtype & u) const;
+    void offlineFixedPointPrimal( parameter_type const& mu , sparse_matrix_ptrtype & A, std::vector< vector_ptrtype > & F, element_ptrtype & u) const;
 
     /*
      * fixed point ( primal problem )
@@ -1149,18 +1149,12 @@ po::options_description crbOptions( std::string const& prefix = "" );
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , element_ptrtype & u ) const
+CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_matrix_ptrtype & A, std::vector< vector_ptrtype > & F, element_ptrtype & u ) const
 {
 
 #if 0
     *u = M_model->solve( mu );
 #else
-    sparse_matrix_ptrtype A = M_model->newMatrix();
-    //vector_ptrtype F = M_model->newVector();
-    int nl = M_model->Nl();
-    std::vector< vector_ptrtype > F( nl );
-    for(int l=0; l<nl; l++)
-        F[l]=M_model->newVector();
 
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
@@ -1213,7 +1207,8 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , element_
         uold = un;
 
         //solve
-        M_backend->solve( _matrix=A , _solution=un, _rhs=F[0]);
+        //M_backend->solve( _matrix=A , _solution=un, _rhs=F[0]);
+        backend()->solve( _matrix=A , _solution=un, _rhs=F[0]);
 
         //on each subspace the norme of the increment is computed and then we perform the sum
         increment_norm = M_model->computeNormL2( un , uold );
@@ -1635,10 +1630,10 @@ CRB<TruthModelType>::offline()
         LOG(INFO) <<"there are "<<M_N<<" elements in the database"<<std::endl;
     }//end of else associated to if ( rebuild_databse )
 
-    sparse_matrix_ptrtype M,A,Adu,At;
+    sparse_matrix_ptrtype M,Adu,At;
     element_ptrtype InitialGuess;
     //vector_ptrtype MF;
-    std::vector<vector_ptrtype> F,L;
+    std::vector<vector_ptrtype> L;
 
     LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
@@ -1651,6 +1646,11 @@ CRB<TruthModelType>::offline()
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
+    sparse_matrix_ptrtype A = M_model->newMatrix();
+    int nl = M_model->Nl();
+    std::vector< vector_ptrtype > F( nl );
+    for(int l=0; l<nl; l++)
+        F[l]=M_model->newVector();
 
     std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Rqm;
@@ -1741,7 +1741,7 @@ CRB<TruthModelType>::offline()
 
             //we need to treat nonlinearity also in offline step
             //because in online step we have to treat nonlinearity ( via a fixed point for example )
-            offlineFixedPointPrimal( mu , u );
+            offlineFixedPointPrimal( mu , A , F , u );
 
             if( solve_dual_problem )
             {
