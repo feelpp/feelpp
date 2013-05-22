@@ -97,7 +97,7 @@ if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   CDR(CRB_PYTHON_SOURCES ${CRB_PYTHON_DEFAULT_ARGS})
 
   add_library( ${CRB_PYTHON_NAME} MODULE  ${CRB_PYTHON_SOURCES}  )
-  target_link_libraries( ${CRB_PYTHON_NAME} ${CRB_PYTHON_LINK_LIBRARIES}  )
+  target_link_libraries( ${CRB_PYTHON_NAME} ${CRB_PYTHON_LINK_LIBRARIES}  ${OpenTURNS_LIBRARIES} )
   set_target_properties( ${CRB_PYTHON_NAME} PROPERTIES PREFIX "" )
   set_property(TARGET ${CRB_PYTHON_NAME} PROPERTY LABELS crb)
   #configure_file(${CRB_PYTHON_NAME}.xml.in ${CRB_PYTHON_NAME}.xml)
@@ -196,6 +196,8 @@ int main( int argc, char** argv )
       CFG ${CRB_MODEL_CFG} )
   endif()
 
+  # include schedulers
+  include( feelpp.schedulers )
 
   foreach( wrapper pfem scm crb )
     set(pycpp "${CRB_MODEL_SHORT_NAME}${wrapper}_pywrapper.cpp")
@@ -208,6 +210,7 @@ int main( int argc, char** argv )
     configure_file(${FEELPP_SOURCE_DIR}/applications/crb/templates/octave_wrapper.cpp ${octcpp})
     configure_file(${CRB_MODEL_SHORT_NAME}.xml.in ${xml})
 
+    
     if ( CRB_MODEL_DEFS )
       set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${CRB_MODEL_DEFS})
     endif()

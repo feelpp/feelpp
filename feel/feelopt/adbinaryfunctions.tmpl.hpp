@@ -66,7 +66,7 @@ namespace detail
 #
 
 /**
-   \class AdBinaryFunctions
+   
    \brief brief description
 
    @author Christophe Prud'homme

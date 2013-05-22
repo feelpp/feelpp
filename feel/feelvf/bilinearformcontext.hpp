@@ -249,6 +249,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         map_geometric_mapping_expr_context_type const& _gmcExpr,
         std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
 {
+    _M_test_gmc = _gmcTest;
+    _M_trial_gmc = _gmcTrial;
     precomputeBasisAtPoints( fusion::at_key<gmc<0> >( _gmcTest )->xRefs(),
                              fusion::at_key<gmc<0> >( _gmcTrial )->xRefs() );///!!!!!!!
     //updateInCaseOfInterpolate( _gmcTest, _gmcTrial, _gmcExpr, boost::is_same<map_test_fecontext_type, map_trial_fecontext_type>() );

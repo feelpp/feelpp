@@ -3,7 +3,8 @@
 mkdir -p $1
 cd $1
 if [ ! -d $1/feelpp/.git ]; then
-    git clone https://code.google.com/p/feelpp feelpp
+    #git clone https://code.google.com/p/feelpp feelpp
+    git clone https://github.com/feelpp/feelpp.git feelpp
 fi
 
 echo "Feel++ is now setup in $1 and ready for CDash dashboard"

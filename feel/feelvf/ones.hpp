@@ -37,7 +37,7 @@ namespace Feel
 {
 namespace vf
 {
-/// \cond detail
+    /// \cond DETAIL
 namespace detail
 {
 /**
@@ -277,7 +277,7 @@ private:
 /// \endcond
 
 /**
- * \class Ones
+ *
  * \brief Return a matrix expression or N-dimensional array whose elements are all 1
  *
  *If you need to create a matrix whose values are all the same, you

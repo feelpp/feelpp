@@ -55,7 +55,11 @@ SolverNonLinear<T>::SolverNonLinear (WorldComm const& worldComm)
     M_reuse_jac( 0 ),
     M_reuse_prec( 0 ),
     M_showKSPMonitor(false), M_showSNESMonitor(false),
-    M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false )
+    M_showKSPConvergedReason( false ), M_showSNESConvergedReason( false ),
+    M_rtoleranceKSP( 1e-13 ),
+    M_dtoleranceKSP( 1e5 ),
+    M_atoleranceKSP( 1e-50 ),
+    M_maxitKSP( 1000 )
 {
 }
 
@@ -82,7 +86,11 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     M_reuse_prec( snl.M_reuse_prec ),
     M_showKSPMonitor( snl.M_showKSPMonitor ),
     M_showSNESMonitor( snl.M_showSNESMonitor ),
-    M_showKSPConvergedReason( snl.M_showKSPConvergedReason ), M_showSNESConvergedReason( snl.M_showSNESConvergedReason )
+    M_showKSPConvergedReason( snl.M_showKSPConvergedReason ), M_showSNESConvergedReason( snl.M_showSNESConvergedReason ),
+    M_rtoleranceKSP( snl.M_rtoleranceKSP ),
+    M_dtoleranceKSP( snl.M_dtoleranceKSP ),
+    M_atoleranceKSP( snl.M_atoleranceKSP ),
+    M_maxitKSP( snl.M_maxitKSP )
 {
 }
 

@@ -461,7 +461,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 #else
 
                         // only the real dof ( not the ghosts )
-                        if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                        //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
                         {
                             dofs.push_back( thedof );
                             values.push_back( __value );
@@ -486,6 +486,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     } // __face_it != __face_en
 
+    if ( __form.rowStartInMatrix()!=0)
+    {
+        auto const thedofshift = __form.rowStartInMatrix();
+        for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
+            *itd+=thedofshift;
+    }
     __form.zeroRows( dofs, values, *_M_rhs, _M_on_strategy );
 }
 
