@@ -283,6 +283,8 @@ public:
      */
     convergence_type offline();
 
+    void computationalTimeStatistics( std::string );
+
     /**
      * \param mu : parameters
      * \param N : dimension of the reduced basis used
@@ -363,7 +365,7 @@ public:
      * \phi_i\f$ where $\phi_i, i=1...N$ are the basis function of the reduced
      * basis space
      */
-    element_type expansion( vectorN_type const& u , int const N) const;
+    element_type expansion( vectorN_type const& u , int const N, wn_type const & WN ) const;
 
 
     /**
@@ -389,6 +391,17 @@ public:
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
         }
         M_scm->setTruthModel( M_model );
+    }
+
+    //! set boolean indicates if we are in offline_step or not
+    void setOfflineStep( bool b )
+    {
+        M_offline_step = b;
+    }
+
+    wn_type wn() const
+    {
+        return M_WN;
     }
 
 
@@ -499,6 +512,7 @@ private:
     parameter_type M_current_mu;
     int M_no_residual_index;
 
+    bool M_offline_step;
 
 };
 
@@ -516,8 +530,8 @@ CRBTrilinear<TruthModelType>::offline()
     if( proc_number == 0 ) std::cout << "Offline CRB starts, this may take a while until Database is computed...\n";
     LOG(INFO) << "[CRB::offline] Starting offline for output " << M_output_index << "\n";
     LOG(INFO) << "[CRB::offline] initialize underlying finite element model\n";
-    M_model->init();
-    if( proc_number == 0 ) std::cout << " -- model init done in " << ti.elapsed() << "s\n";
+    //M_model->initModel();
+    LOG( INFO )<< " -- model init done in " << ti.elapsed() << "s";
 
     parameter_type mu( M_Dmu );
 
@@ -550,9 +564,9 @@ CRBTrilinear<TruthModelType>::offline()
 
         M_WNmu->setSuperSampling( M_Xi );
 
-        if( proc_number == 0 ) std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
+        LOG( INFO )<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
 
-        std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
+        LOG(INFO) << " -- sampling init done in " << ti.elapsed() << "s";
         ti.restart();
 
         // empty sets
@@ -567,12 +581,6 @@ CRBTrilinear<TruthModelType>::offline()
 
 
         int size = mu.size();
-        if( proc_number == 0 )
-        {
-            std::cout << "  -- start with mu = [ ";
-            for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
-            std::cout<<mu( size-1 )<<" ]"<<std::endl;
-        }
         //std::cout << " -- WN size :  " << M_WNmu->size() << "\n";
 
         // dimension of reduced basis space
@@ -624,7 +632,7 @@ CRBTrilinear<TruthModelType>::offline()
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm_tril;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
 
-    boost::tie( boost::tuples::ignore, Aqm, Fqm , boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+    boost::tie( boost::tuples::ignore, Aqm, Fqm ) = M_model->computeAffineDecomposition();
 
     element_ptrtype u( new element_type( M_model->functionSpace() ) );
 
@@ -645,7 +653,40 @@ CRBTrilinear<TruthModelType>::offline()
         std::ifstream file ( file_name );
         if( ! file )
         {
-            throw std::logic_error( "[CRBTrilinear::offline] ERROR the file SamplingWNmu doesn't exist so it's impossible to known which parameters you want to use to build the database" );
+            M_WNmu->clear();
+            std::vector< parameter_type > V;
+            parameter_type __mu;
+            __mu = M_Dmu->element();
+            __mu(0)= 1      ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 111112 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 222223 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 333334 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 444445 , __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 555556 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 666667 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 777778 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 888889 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 1e+06  ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 8123   ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)= 9123   ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=1.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=2.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=4.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=912     ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=1.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=4.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=7.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=2123    ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=6.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=3.123e3 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=3.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=5.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=9.123e4 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=812     ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=5.111e3 ; __mu(1)= 1  ; V.push_back( __mu );
+            __mu(0)=5.124e2 ; __mu(1)= 1  ; V.push_back( __mu );
+            M_WNmu->setElements( V );
+            M_iter_max = M_WNmu->size();
         }
         else
         {
@@ -656,8 +697,7 @@ CRBTrilinear<TruthModelType>::offline()
         mu = M_WNmu->at( M_N ); // first element
         //std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
 
-        if( proc_number == this->worldComm().masterRank() )
-            std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
+        LOG( INFO )<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )";
 
     }
 
@@ -669,20 +709,15 @@ CRBTrilinear<TruthModelType>::offline()
 
 
     LOG(INFO) << "[CRBTrilinear::offline] strategy "<< M_error_type <<"\n";
-    if( proc_number == 0 ) std::cout << "[CRBTrilinear::offline] strategy "<< M_error_type <<"\n";
 
     while ( M_maxerror > M_tolerance && M_N < M_iter_max )
     {
 
         boost::timer timer, timer2;
         LOG(INFO) <<"========================================"<<"\n";
-
-        if( proc_number == 0 )
-        {
-            std::cout << "============================================================"<<std::endl;
-            std::cout << "N=" << M_N << "/"  << M_iter_max <<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
-        }
-        LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << "\n";
+        if( proc_number == this->worldComm().masterRank() )
+            std::cout<<"construction of "<<M_N<<"/"<<M_iter_max<<" basis "<<std::endl;
+        LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << "( nb proc : "<<worldComm().globalSize()<<")";
 
         // for a given parameter \p mu assemble the left and right hand side
         u->setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
@@ -695,7 +730,7 @@ CRBTrilinear<TruthModelType>::offline()
         LOG(INFO) << "[CRB::offline] solving primal" << "\n";
         *u = M_model->solve( mu );
 
-        if( proc_number == this->worldComm().masterRank() ) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
+        //if( proc_number == this->worldComm().masterRank() ) std::cout << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
         timer2.restart();
 
 
@@ -821,7 +856,6 @@ CRBTrilinear<TruthModelType>::offline()
 
         timer2.restart();
         LOG(INFO) << "time: " << timer.elapsed() << "\n";
-        if( proc_number == 0 ) std::cout << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
 
         //save DB after adding an element
@@ -829,8 +863,7 @@ CRBTrilinear<TruthModelType>::offline()
     }
 
 
-    if( proc_number == 0 )
-        std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
+    LOG( INFO )<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")";
     LOG(INFO) << " index choosen : ";
     BOOST_FOREACH( auto id, M_index )
     LOG(INFO)<<id<<" ";
@@ -846,12 +879,10 @@ CRBTrilinear<TruthModelType>::offline()
         exportBasisFunctions( boost::make_tuple( wn ,names ) );
 
         if ( orthonormalize_primal )
-        {
-            std::cout<<"[CRB::offline] Basis functions have been exported but warning elements have been orthonormalized"<<std::endl;
-        }
+            LOG(INFO)<<"[CRB::offline] Basis functions have been exported but warning elements have been orthonormalized";
     }
 
-    if( proc_number == 0 ) std::cout << "Offline CRB is done\n";
+    LOG( INFO ) << "Offline CRB is done";
 
     return M_rbconv;
 
@@ -874,9 +905,6 @@ boost::tuple<double,double>
 CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN_type & uN ) const
 {
 
-    std::cout<<"\nCRBTrilinear::lb starts with N = "<<N<<std::endl;
-    google::FlushLogFiles(google::GLOG_INFO);
-
     if ( N > M_N ) N = M_N;
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
@@ -886,9 +914,7 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     //vector containing outputs from time=time_step until time=time_for_output
     double output;
 
-    boost::tie( boost::tuples::ignore,  betaAqm, betaFqm  , boost::tuples::ignore ) = M_model->computeBetaQm( mu );
-
-    google::FlushLogFiles(google::GLOG_INFO);
+    boost::tie( boost::tuples::ignore,  betaAqm, betaFqm  ) = M_model->computeBetaQm( mu );
 
     /*
      ------> Here add Newton Method and continuous Gr,Pr
@@ -916,7 +942,6 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     }
     else
         uN( index ) = 1;
-
     double *r_data = R.data();
     double *j_data = J.data();
     double *uN_data = uN.data();
@@ -944,9 +969,9 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
             int denom = ( Nmax==1 )?1:Nmax-1;
             current_Grashofs = math::exp( math::log( 1. )+i*( math::log( gr )-math::log( 1. ) )/denom );
             current_Prandtl = math::exp( math::log( 1.e-2 )+i*( math::log( pr )-math::log( 1.e-2 ) )/denom );
-            std::cout << "[CRBTrilinear::lb] i/N = " << i+1 << "/" << Nmax <<std::endl;
-            std::cout << "[CRBTrilinear::lb] intermediary Grashof = " << current_Grashofs<<std::endl;
-            std::cout << "[CRBTrilinear::lb] and Prandtl = " << current_Prandtl <<" \n" <<std::endl;
+            LOG( INFO ) << "[CRBTrilinear::lb] i/N = " << i+1 << "/" << Nmax ;
+            LOG( INFO ) << "[CRBTrilinear::lb] intermediary Grashof = " << current_Grashofs;
+            LOG( INFO ) << "[CRBTrilinear::lb] and Prandtl = " << current_Prandtl ;
         }
         else
         {
@@ -967,29 +992,9 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
 
     LOG(INFO) << "[CRBTrilinear::lb] solve with Newton done";
 
-    //compute conditioning of matrix J
-    Eigen::SelfAdjointEigenSolver< matrixN_type > eigen_solver;
-    eigen_solver.compute( map_J );
-    int number_of_eigenvalues =  eigen_solver.eigenvalues().size();
-    //we copy eigenvalues in a std::vector beacause it's easier to manipulate it
-    std::vector<double> eigen_values( number_of_eigenvalues );
-    for ( int i=0; i<number_of_eigenvalues; i++ )
-    {
-        if ( imag( eigen_solver.eigenvalues()[i] )>1e-12 )
-        {
-            throw std::logic_error( "[CRBTrilinear::lb] ERROR : complex eigenvalues were found" );
-        }
+    double condition_number = 0;
 
-        eigen_values[i]=real( eigen_solver.eigenvalues()[i] );
-    }
-    int position_of_largest_eigenvalue=number_of_eigenvalues-1;
-    int position_of_smallest_eigenvalue=0;
-    double eig_max = eigen_values[position_of_largest_eigenvalue];
-    double eig_min = eigen_values[position_of_smallest_eigenvalue];
-    double condition_number = eig_max / eig_min;
-    //end of computation of conditionning
-
-    LOG( INFO ) <<"[CRBTrilinear::lb] compute condition number of jacobian done\n";
+    LOG( INFO ) <<"[CRBTrilinear::lb] The condition number of jacobian done is not computed ";
     vectorN_type L ( ( int )N );
     L.setZero( N );
 
@@ -999,8 +1004,6 @@ CRBTrilinear<TruthModelType>::lb( size_type N, parameter_type const& mu, vectorN
     }
     output = L.dot( uN );
     LOG(INFO) << "[CRBTrilinear::lb] computation of the output done";
-
-    google::FlushLogFiles(google::GLOG_INFO);
 
     //std::cout<<"[CRBTrilinear uN] : \n"<<uN<<std::endl;
 
@@ -1017,9 +1020,7 @@ CRBTrilinear<TruthModelType>::updateLinearTerms( parameter_type const& mu , int 
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
 
-    boost::tie( boost::tuples::ignore,  betaAqm, betaFqm , boost::tuples::ignore  ) = M_model->computeBetaQm( mu );
-
-    google::FlushLogFiles(google::GLOG_INFO);
+    boost::tie( boost::tuples::ignore,  betaAqm, betaFqm ) = M_model->computeBetaQm( mu );
 
     M_bilinear_terms.setZero( N , N );
 
@@ -1062,7 +1063,7 @@ CRBTrilinear<TruthModelType>::updateJacobian( const map_dense_vector_type& map_X
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
         //bring the jacobian matrix from the model and then project it into the reduced basis
-        auto expansionX = expansion( map_X , N);
+        auto expansionX = expansion( map_X , N , M_WN);
         auto J = M_model->jacobian( expansionX );
         matrixN_type model_reduced_jacobian( N , N );
         for(int i=0; i<N; i++)
@@ -1116,7 +1117,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     if ( this->vm()["crb.compute-error-on-reduced-residual-jacobian"].template as<bool>() )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
-        auto expansionX = expansion( map_X , N);
+        auto expansionX = expansion( map_X , N , M_WN);
         auto R = M_model->residual( expansionX );
         vectorN_type model_reduced_residual( N );
         element_ptrtype eltR( new element_type( M_model->functionSpace() ) );
@@ -1324,20 +1325,6 @@ CRBTrilinear<TruthModelType>::printMuSelection( void )
             LOG(INFO)<<_mu(i)<<" , ";
         LOG(INFO)<<_mu( _mu.size()-1 )<<" ] \n";
     }
-
-    if( this->worldComm().globalRank() == this->worldComm().masterRank() )
-    {
-        std::cout<<" List of parameter selectionned during the offline algorithm"<<std::endl;
-        for(int k=0;k<M_WNmu->size();k++)
-        {
-            std::cout<<" mu "<<k<<" = [ ";
-            parameter_type const& _mu = M_WNmu->at( k );
-            for( int i=0; i<_mu.size()-1; i++ )
-                std::cout<<_mu(i)<<" , ";
-            std::cout<<_mu( _mu.size()-1 )<<" ] "<<std::endl;
-        }
-    }
-
 }
 
 template<typename TruthModelType>
@@ -1393,7 +1380,7 @@ CRBTrilinear<TruthModelType>::expansion( parameter_type const& mu , int N)
 
 template<typename TruthModelType>
 typename CRBTrilinear<TruthModelType>::element_type
-CRBTrilinear<TruthModelType>::expansion( vectorN_type const& u , int const N) const
+CRBTrilinear<TruthModelType>::expansion( vectorN_type const& u , int const N,  wn_type const & WN) const
 {
     int Nwn;
 
@@ -1403,11 +1390,75 @@ CRBTrilinear<TruthModelType>::expansion( vectorN_type const& u , int const N) co
         Nwn = M_N;
 
     //FEELPP_ASSERT( N == u.size() )( N )( u.size() ).error( "invalid expansion size");
-    FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
-    return Feel::expansion( M_WN, u, N );
+    //FEELPP_ASSERT( Nwn == u.size() )( Nwn )( u.size() ).error( "invalid expansion size");
+    //int size = uN.size();
+    FEELPP_ASSERT( Nwn <= M_WN.size() )( Nwn )( M_WN.size() ).error( "invalid expansion size ( N and M_WN ) ");
+    return Feel::expansion( WN, u, Nwn );
 }
 
 
+template<typename TruthModelType>
+void
+CRBTrilinear<TruthModelType>::computationalTimeStatistics(std::string appname)
+{
+
+    double min=0,max=0,mean=0,standard_deviation=0;
+
+    int n_eval = option(_name="crb.computational-time-neval").template as<int>();
+
+    Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
+    time_crb.resize( n_eval );
+
+    sampling_ptrtype Sampling( new sampling_type( M_Dmu ) );
+    Sampling->logEquidistribute( n_eval  );
+
+    bool cvg = option(_name="crb.cvg-study").template as<bool>();
+    int dimension = this->dimension();
+    double tol = option(_name="crb.online-tolerance").template as<double>();
+
+    int N=dimension;//by default we perform only one time statistics
+
+    if( cvg ) //if we want to compute time statistics for every crb basis then we start at 1
+        N=1;
+
+    int proc_number =  Environment::worldComm().globalRank();
+    int master =  Environment::worldComm().masterRank();
+
+    //write on a file
+    std::string file_name = "cvg-timing-crb.dat";
+
+    std::ofstream conv;
+    if( proc_number == master )
+    {
+        conv.open(file_name, std::ios::app);
+        conv << "NbBasis" << "\t" << "min" <<"\t"<< "max" <<"\t"<< "mean"<<"\t"<<"standard_deviation" << "\n";
+    }
+
+    //loop over basis functions (if cvg option)
+    for(; N<=dimension; N++)
+    {
+
+        int mu_number = 0;
+        BOOST_FOREACH( auto mu, *Sampling )
+        {
+            boost::mpi::timer tcrb;
+            auto o = this->run( mu, tol , N);
+            time_crb( mu_number ) = tcrb.elapsed() ;
+            mu_number++;
+        }
+
+        auto stat = M_model->computeStatistics( time_crb , appname );
+
+        min=stat(0);
+        max=stat(1);
+        mean=stat(2);
+        standard_deviation=stat(3);
+
+        if( proc_number == master )
+            conv << N << "\t" << min << "\t" << max<< "\t"<< mean<< "\t"<< standard_deviation<<"\n";
+    }//loop over basis functions
+    conv.close();
+}
 
 template<typename TruthModelType>
 template<class Archive>

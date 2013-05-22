@@ -43,6 +43,7 @@ message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
 if (NOT GLOG_INCLUDE_DIR )
   if(${CMAKE_SOURCE_DIR}/contrib/glog/configure.ac IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog-compile/configure)
     message(STATUS "Building glog in ${CMAKE_BINARY_DIR}/contrib/glog-compile...")
+    message(STATUS "   - using gflags ${GFLAGS_DIR}...")
     execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/glog-compile)
     execute_process(
       COMMAND ${FEELPP_HOME_DIR}/contrib/glog/configure --prefix=${CMAKE_BINARY_DIR}/contrib/glog --with-gflags=${GFLAGS_DIR}

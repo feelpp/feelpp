@@ -120,4 +120,10 @@ stencilManagerPrint()
     std::cout << "********************************************************************************\n";
 }
 
+stencilRangeMap0Type
+stencilRangeMap( )
+{
+    return stencilRangeMap0Type();
+}
+
 }

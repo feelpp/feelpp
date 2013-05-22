@@ -437,6 +437,7 @@ Mesh<Shape, T, Tag>::propagateMarkers( mpl::int_<3> )
 
                            }
                        } } );
+
     // then propagate top-down marker from face if edge has not been marked
     std::for_each( this->beginFace(), this->endFace(),
                    [this]( face_type const& f )
@@ -676,7 +677,6 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_<3> )
 {
-
     for ( auto elt = this->beginEdge();
             elt != this->endEdge(); ++elt )
     {
@@ -703,7 +703,6 @@ Mesh<Shape, T, Tag>::renumber( std::vector<size_type> const& node_map, mpl::int_
 
         }
     }
-
 }
 template<typename Shape, typename T, int Tag>
 void
@@ -838,7 +837,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 __f.setId( _faceit->second );
 
                 // set the id for this partition
-                __f.setIdInPartition( this->worldComm().localRank(),__f.id() );
+                //__f.setIdInPartition( this->worldComm().localRank(),__f.id() );
 
                 DVLOG(2) << "set face id " << __f.id()
                          << " iterator id = " << __it->id()
@@ -902,7 +901,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                 face.setProcessId( __element.processId() );
 
                 // set the id for this partition
-                face.setIdInPartition( this->worldComm().localRank(),face.id() );
+                //face.setIdInPartition( this->worldComm().localRank(),face.id() );
 
                 // set the vertices of the face
                 for ( size_type k = 0; k < face_type::numPoints; ++k )
@@ -1220,11 +1219,15 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
 {
-    //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start on god rank "<< this->worldComm().godRank() << std::endl;
+    typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_type;
+
+    VLOG(2) << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start on god rank "<< this->worldComm().godRank() << "\n";
+
     std::vector<int> nbMsgToSend( this->worldComm().localSize() );
     std::fill( nbMsgToSend.begin(),nbMsgToSend.end(),0 );
 
     std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
+
 
     auto iv = this->beginGhostElement();
     auto en = this->endGhostElement();
@@ -1232,8 +1235,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;
-        int IdProcessOfGhost = __element.processId();
-        int idInPartition = __element.idInPartition( IdProcessOfGhost );
+        const int IdProcessOfGhost = __element.processId();
+        const size_type idInPartition = __element.idInOthersPartitions( IdProcessOfGhost );
+
+        this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
+        if ( nDim==3 )
+            this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectEdgeToElement() );
+
         // send
         this->worldComm().localComm().send( IdProcessOfGhost , nbMsgToSend[IdProcessOfGhost], idInPartition );
 #if 0
@@ -1262,24 +1270,26 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     {
         for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
         {
-            int idRecv;
             //recv
+            size_type idRecv;
             this->worldComm().localComm().recv( proc, cpt, idRecv );
 #if 0
             std::cout<< "I am the proc" << this->worldComm().localRank()<<" I receive to proc " << proc
-                     <<" with tag "<< cpt
-                     << " idRecv " << idRecv
+                     <<" with tag "<< cpt << " idRecv " << idRecv
                      << " it_ghost->G() " << this->element( idRecv ).G()
                      << std::endl;
 #endif
-            // get faces id
-            std::vector<double/*int*/> idFaces( ( 1+nDim )*this->numLocalFaces() );
+            auto const& theelt = this->element( idRecv );
 
+
+            // get faces id and bary
+            resultghost_type idFacesWithBary(this->numLocalFaces(),boost::make_tuple(0, std::vector<double>(nRealDim) ));
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
-                idFaces[( 1+nDim )*j]=this->element( idRecv ).face( j ).id();
-                auto const& theface = this->element( idRecv ).face( j );
-                auto const& theGj = theface.G();
+                auto const& theface = theelt.face( j );
+                idFacesWithBary[j].template get<0>() = theface.id();
+                //auto const& theGj = theface.G();
+                auto const& theGj = theface.vertices();
 #if 1
                 //compute face barycenter
                 typename Localization::matrix_node_type v( theGj.size1(), 1 );
@@ -1296,15 +1306,31 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
 #endif
 
                 // save facebarycenter by components
-                for ( uint16_type comp = 0; comp<nDim; ++comp )
+                for ( uint16_type comp = 0; comp<nRealDim; ++comp )
                 {
-                    //idFaces[(1+nDim)*j+comp+1]=this->element(idRecv).faceBarycenter(j)[comp];
-                    idFaces[( 1+nDim )*j+comp+1]=baryFace[comp];
+                    idFacesWithBary[j].template get<1>()[comp]=baryFace[comp];
                 }
             }
 
-            // response
-            this->worldComm().localComm().send( proc, cpt, idFaces );
+            // get points id and nodes
+            resultghost_type idPointsWithNode(element_type::numLocalVertices,boost::make_tuple(0, std::vector<double>(nRealDim) ));
+            for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
+            {
+                auto const& thepoint = theelt.point( j );
+                idPointsWithNode[j].template get<0>() = thepoint.id();
+                for ( uint16_type comp = 0; comp<nRealDim; ++comp )
+                {
+                    idPointsWithNode[j].template get<1>()[comp]=thepoint(comp);
+                }
+            }
+
+            std::vector<resultghost_type> theresponse(2);
+            theresponse[0] = idPointsWithNode;
+            theresponse[1] = idFacesWithBary;
+            //auto theresponse = boost::make_tuple( idPointsWithNode, idFacesWithBary );
+            // send response
+            //this->worldComm().localComm().send( proc, cpt, idFacesWithBary );
+            this->worldComm().localComm().send( proc, cpt, theresponse );
         }
     }
 
@@ -1314,29 +1340,45 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     {
         for ( int cpt=0; cpt<nbMsgToSend[proc]; ++cpt )
         {
-            std::vector<double/*int*/> idFacesRecv( ( 1+nDim )*this->numLocalFaces() );
             //recv
-            this->worldComm().localComm().recv( proc, cpt, idFacesRecv );
+#if 0
+            std::vector< boost::tuple<size_type, std::vector<double> > > idFacesWithBaryRecv(this->numLocalFaces());
+            this->worldComm().localComm().recv( proc, cpt, idFacesWithBaryRecv );
+#elif 0
+            typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_face_type;
+            typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_point_type;
+            boost::tuple<resultghost_point_type,resultghost_face_type> requestRecv;
+            this->worldComm().localComm().recv( proc, cpt, requestRecv );
+            auto const& idPointsWithNodeRecv = requestRecv.template get<0>();
+            auto const& idFacesWithBaryRecv = requestRecv.template get<1>();
+#else
+            std::vector<resultghost_type> requestRecv;
+            this->worldComm().localComm().recv( proc, cpt, requestRecv );
+            auto const& idPointsWithNodeRecv = requestRecv[0];
+            auto const& idFacesWithBaryRecv = requestRecv[1];
+#endif
+
 #if 0
             std::cout<< "I am the proc " << this->worldComm().localRank()<<" I receive to proc " << proc
-                     <<" with tag "<< cpt
-                     << " idFacesRecv " << idFacesRecv[0] << " " << idFacesRecv[1] << " "<< idFacesRecv[2]
-                     << std::endl;
+                     <<" with tag "<< cpt << std::endl;
 #endif
-            //update data
             auto const& theelt = this->element( mapMsg[proc][cpt],proc );
 
+            //update faces data
             for ( size_type j = 0; j < this->numLocalFaces(); j++ )
             {
+                auto const& idFaceRecv = idFacesWithBaryRecv[j].template get<0>();
+                auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<1>();
+
                 //objective : find  face_it (hence jBis in theelt ) (permutations would be necessary)
                 uint16_type jBis = invalid_uint16_type_value;
                 bool hasFind=false;
-
-                for ( uint16_type/*size_type*/ j2 = 0; j2 < this->numLocalFaces(); j2++ )
+                for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
                 {
 
                     auto const& thefacej2 = theelt.face( j2 );
-                    auto const& theGj2 = thefacej2.G();
+                    //auto const& theGj2 = thefacej2.G();
+                    auto const& theGj2 = thefacej2.vertices();
 #if 1
                     //compute face barycenter
                     typename Localization::matrix_node_type v( theGj2.size1(), 1 );
@@ -1351,54 +1393,56 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
                     auto const& thefacej2 =theelt.face( j2 );
                     auto baryFace = ublas::column( glas::average( thefacej2.G() ),0 );
 #endif
-
-                    if ( nRealDim==1 )
-                    {
-                        if ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-8 )
+                    // compare barycenters
+                    bool find2=true;
+                    for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            hasFind=true;
-                            jBis=j2;
+                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<1e-9 );
                         }
-                    }
+                    if (find2) { hasFind=true;jBis=j2; }
 
-                    else if ( nRealDim==2 )
-                    {
-#if 0
-                        std::cout << "rank " << this->worldComm().localRank() << " bary j2 "<< j2 << " " << theelt.barycenter() << " " << theelt.faceBarycenter( j2 ) << " "
-                                  << ublas::column( glas::average( hola.G() ),0 ) << " "
-                                  << hola/*theelt.face(j2)*/.barycenter()[0] << " " << idFacesRecv[( 1+nDim )*j+1] << " "
-                                  << theelt.face( j2 ).barycenter()[1] << " " << idFacesRecv[( 1+nDim )*j+2] << std::endl;
-#endif
+                } //for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
 
-                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-9 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-9 ) )
-                        {
-                            hasFind=true;
-                            jBis=j2;
-                        }
-                    }
-
-                    else if ( nRealDim==3 )
-                    {
-                        if ( ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[0] - idFacesRecv[( 1+nDim )*j+1] ) < 1e-9 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[1] - idFacesRecv[( 1+nDim )*j+2] ) < 1e-9 ) &&
-                                ( std::abs( /*theelt.faceBarycenter(j2)*/baryFace[2] - idFacesRecv[( 1+nDim )*j+3] ) < 1e-9 ) )
-                        {
-                            hasFind=true;
-                            jBis=j2;
-                        }
-                    }
-                }
-
-                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost cells are not available\n";
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost face cells are not available\n";
 
                 // get the good face
-                //auto face_it = faceIterator(theelt.face(j).id());
                 auto face_it = this->faceIterator( theelt.face( jBis ).id() );
                 //update the face
-                this->faces().modify( face_it, detail::update_id_in_partition_type( proc, idFacesRecv[( 1+nDim )*j] ) );
+                this->faces().modify( face_it, detail::updateIdInOthersPartitions( proc, idFaceRecv ) );
 
             } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+
+
+            for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
+            {
+                auto const& idPointRecv = idPointsWithNodeRecv[j].template get<0>();
+                auto const& nodePointRecv = idPointsWithNodeRecv[j].template get<1>();
+
+                uint16_type jBis = invalid_uint16_type_value;
+                bool hasFind=false;
+                for ( uint16_type j2 = 0; j2 < element_type::numLocalVertices && !hasFind; j2++ )
+                {
+                    auto const& thepointj2 = theelt.point( j2 );
+                    // compare barycenters
+                    bool find2=true;
+                    for (uint16_type d=0;d<nRealDim;++d)
+                        {
+                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<1e-9 );
+                        }
+                    if (find2) { hasFind=true;jBis=j2; }
+                }
+
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost point cells are not available\n";
+                // get the good face
+                auto point_it = this->pointIterator( theelt.point( jBis ).id() );
+                //update the face
+                this->points().modify( point_it, detail::updateIdInOthersPartitions( proc, idPointRecv ) );
+            } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
+
+            /*for ( size_type j = 0; j < element_type::numLocalEdges; j++ )
+            {
+            }*/
+
         } // for ( int cpt=0;cpt<nbMsgToSend[proc];++cpt)
     } // for (int proc=0; proc<M_comm.size();++proc)
 
@@ -1656,7 +1700,7 @@ Mesh<Shape, T, Tag>::recv(int p, int tag)
 {
     VLOG(1) << "receiving markername\n";
     //this->comm().recv( p, tag, M_markername );
-    int s;
+    int s = 0;
     //this->comm().recv( p, tag, s );
     VLOG(1) << "receiving markername size: "<< s << "\n";
     for( int i = 0; i < s; ++i )
@@ -1832,7 +1876,7 @@ Mesh<Shape, T, Tag>::decode()
         pf.setId( this->numFaces() );
         pf.setProcessIdInPartition( this->worldComm().localRank() );
         pf.setProcessId( this->worldComm().localRank() );
-        pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
+        //pf.setIdInPartition( this->worldComm().localRank(),pf.id() );
 
         const int shift = face_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
@@ -1854,7 +1898,7 @@ Mesh<Shape, T, Tag>::decode()
         pv.setTags(  tags  );
         pv.setProcessIdInPartition( this->worldComm().localRank() );
         pv.setProcessId( this->worldComm().localRank() );
-        pv.setIdInPartition( this->worldComm().localRank(),pv.id() );
+        //pv.setIdInPartition( this->worldComm().localRank(),pv.id() );
 
         const int shift = elt_it->second[1]+1;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
@@ -1865,7 +1909,7 @@ Mesh<Shape, T, Tag>::decode()
 #if 0
         __idGmshToFeel=pv.id();
         auto theelt = mesh->elementIterator( pv.id(), pv.partitionId() );
-        mesh->elements().modify( theelt, detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
+        mesh->elements().modify( theelt, detail::updateIdInOthersPartitions( this->worldComm().localRank(), pv.id() ) );
 #endif
     }
     LOG(INFO) << "distance  elts: "<< std::distance( this->beginElement(), this->endElement() ) << "\n";

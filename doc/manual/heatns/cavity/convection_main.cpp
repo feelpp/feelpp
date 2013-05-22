@@ -158,9 +158,8 @@ main( int argc, char** argv )
                            _about=makeAbout() );
 
     if ( Environment::worldComm().rank() == 0 )
-        std::cout << " number of processors : "  << Environment::numberOfProcessors() << "\n";
 
-        std::cout << "CRB_SOLVER = " << CRB_SOLVER << std::endl;
+        LOG( INFO ) << "CRB_SOLVER = " << CRB_SOLVER ;
         Convection myconvection( argc, argv, makeAbout(), makeOptions() );
         myconvection.run();
 #else

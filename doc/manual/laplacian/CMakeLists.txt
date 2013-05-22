@@ -19,8 +19,16 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 feelpp_add_application( doc_laplacian SRCS laplacian.cpp LABEL doc CFG laplacian.cfg SCRIPTS laplacian.py ADD_OT )#
 feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc)
 feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
 feelpp_add_application( doc_laplacian_periodic SRCS periodic.cpp LABEL doc  )
+feelpp_add_application( doc_laplacian_harmonic SRCS harmonic.cpp LABEL doc  )
+feelpp_add_application( doc_laplacian_dg SRCS laplacian_dg.cpp LABEL doc  )
+feelpp_add_application( doc_laplacian_quad SRCS laplacian_quad.cpp LABEL doc  )
+feelpp_add_application( doc_laplacian_with_holes SRCS laplacian_with_holes.cpp LABEL doc  )
+
+feelpp_add_application( doc_laplacian_polar SRCS laplacian_polar.cpp LABEL doc GEO polar.geo  CFG laplacian_polar.cfg DEFS FEELPP_POLAR)
+feelpp_add_application( doc_laplacian_cartesian SRCS laplacian_polar.cpp LABEL doc GEO cartesian.geo CFG laplacian_cartesian.cfg )

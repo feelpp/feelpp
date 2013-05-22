@@ -29,32 +29,37 @@
 #include <boost/math/constants/constants.hpp>
 
 #include <feel/options.hpp>
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/application.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
+
+#include <feel/feelcore/environment.hpp>
+
+#include <feel/feelcore/application.hpp>
+
+#include <feel/feelalg/backend.hpp>
+
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
 
+#include <feel/feelvf/vf.hpp>
+
 #include <feel/feeldiscr/operatorlinear.hpp>
+
 #include <feel/feeldiscr/bdf2.hpp>
+
 #include <feel/feeldiscr/projector.hpp>
+
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
-
-#include <feel/feelfilters/geotool.hpp>
-
-#include <feel/feelvf/vf.hpp>
 
 #include <ginac/ginac.h>
 namespace Feel
 {
 using GiNaC::symbol;
 using GiNaC::ex;
-
-
 }
 
+#include <feel/feelfilters/gmsh.hpp>
+
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/geotool.hpp>

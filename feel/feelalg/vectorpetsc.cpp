@@ -384,6 +384,36 @@ VectorPetsc<T>::dot( Vector<T> const& __v )
     return e;
 }
 
+template <typename T>
+void
+VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
+                            const MatrixSparse<value_type>& A_in )
+
+    {
+        const VectorPetsc<T>* V = dynamic_cast<const VectorPetsc<T>*>( &V_in );
+        const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
+
+        CHECK ( A != 0 ) << "Invalid PETSc matrix\n";
+        A->close();
+        int ierr=0;
+
+
+        if ( !V )
+        {
+            VectorPetsc<T> tmp( V_in.map(), true );
+            dynamic_cast<Vector<T>&>( tmp ) = V_in;
+            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp._M_vec, _M_vec, _M_vec );
+        }
+        else
+        {
+            // The const_cast<> is not elegant, but it is required since PETSc
+            // is not const-correct.
+            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), V->_M_vec, _M_vec, _M_vec );
+
+        }
+        CHKERRABORT( this->comm(),ierr );
+    }
+
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//
@@ -950,6 +980,20 @@ VectorPetscMPI<T>::dot( Vector<T> const& __v )
     return e;
 }
 
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+size_type
+VectorPetscMPI<T>::localSize() const
+{
+    FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
+
+    int petsc_size=0;
+    int ierr = VecGetLocalSize( _M_vecLocal, &petsc_size );
+    CHKERRABORT( this->comm(),ierr );
+
+    return static_cast<size_type>( petsc_size );
+}
 
 
 template class VectorPetsc<double>;

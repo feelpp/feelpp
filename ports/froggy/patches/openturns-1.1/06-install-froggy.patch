@@ -1,0 +1,61 @@
+Description: Set path for installation
+ Setup install path for perifx != /usr
+Author: Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+Origin: Debian
+Forwarded: not-needed
+Last-Update: 2013-04-23
+
+Index: openturns/CMakeLists.txt
+===================================================================
+--- openturns.orig/CMakeLists.txt	2013-01-03 15:36:50.000000000 +0000
++++ openturns/CMakeLists.txt	2013-04-23 09:38:15.661862456 +0000
+@@ -358,19 +359,19 @@
+       CACHE PATH "The directory where the wrapper files are installed"
+     )
+ set ( OPENTURNS_EXAMPLE_PATH
+-      share/openturns/examples
++      ${OPENTURNS_DATA_PATH}/openturns/examples
+       CACHE PATH "The directory where the example files are installed"
+     )
+ set ( OPENTURNS_SAMPLE_PATH
+-      share/openturns/examples
++      ${OPENTURNS_DATA_PATH}/openturns/examples
+       CACHE PATH "The directory where the sample files are installed"
+     )
+ set ( OPENTURNS_VALIDATION_PATH
+-      share/openturns/validation
++      ${OPENTURNS_DATA_PATH}/openturns/validation
+       CACHE PATH "The directory where validation files are installed"
+     )
+ set ( OPENTURNS_DOC_PATH
+-      share/openturns/doc
++      ${OPENTURNS_DATA_PATH}/openturns/doc
+       CACHE PATH "The directory where the license files are installed"
+     )
+ 
+Index: openturns/lib/src/CMakeLists.txt
+===================================================================
+--- openturns.orig/lib/src/CMakeLists.txt	2013-01-03 15:32:58.000000000 +0000
++++ openturns/lib/src/CMakeLists.txt	2013-04-23 09:38:31.541588743 +0000
+@@ -37,18 +37,18 @@
+ set (CURL curl)
+ set (prefix "${CMAKE_INSTALL_PREFIX}")
+ set (exec_prefix "${CMAKE_INSTALL_PREFIX}")
+-set (libdir "${INSTALL_PATH}/lib${LIB_SUFFIX}")
++set (libdir "${prefix}/lib${LIB_SUFFIX}")
+ set (PACKAGE "${CPACK_PACKAGE_NAME}")
+ configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/openturns-module-build.in
+                  ${CMAKE_CURRENT_BINARY_DIR}/openturns-module-build
+                  @ONLY
+                )
+ install ( PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/openturns-config-build
+-          DESTINATION ${INSTALL_PATH}/bin
++          DESTINATION ${prefix}/bin
+           RENAME openturns-config
+         )
+ install ( PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/openturns-module-build
+-          DESTINATION ${INSTALL_PATH}/bin
++          DESTINATION ${prefix}/bin
+           RENAME openturns-module
+         )
+ 

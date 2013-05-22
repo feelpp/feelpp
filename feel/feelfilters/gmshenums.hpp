@@ -33,6 +33,32 @@
 #include <boost/assign/list_of.hpp>
 namespace Feel
 {
+enum GMSH_PARTITIONER
+{
+    GMSH_PARTITIONER_CHACO = 1,
+    GMSH_PARTITIONER_METIS = 2
+
+};
+
+extern const GMSH_PARTITIONER GMSH_PARTITIONER_DEFAULT;
+
+
+enum GMSH_ORDER
+{
+    GMSH_ORDER_ONE = 1,
+    GMSH_ORDER_TWO = 2,
+    GMSH_ORDER_THREE = 3,
+    GMSH_ORDER_FOUR = 4,
+    GMSH_ORDER_FIVE = 5
+};
+
+enum GMSH_FORMAT
+{
+    GMSH_FORMAT_ASCII = 0,
+    GMSH_FORMAT_BINARY = 1
+};
+
+
 /**
  * \enum GMSH_ENTITY
  *

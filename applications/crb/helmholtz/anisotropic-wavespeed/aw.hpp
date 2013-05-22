@@ -50,6 +50,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
 
 namespace Feel
 {
@@ -80,14 +81,44 @@ makeAnisotropicWavespeedAbout( std::string const& str = "aw" )
     return about;
 }
 
+
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 2;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+
+class FunctionSpaceDefinition
+{
+public :
+    static const uint16_type Order = 3;
+
+    typedef double value_type;
+
+    /*mesh*/
+    typedef Simplex<2,1> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    /*basis*/
+    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+
+    /*space*/
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+};
+
 /**
  * \class AnisotropicWavespeed
  * @author Christophe Prud'homme
  * @see
  */
-class AnisotropicWavespeed
+    class AnisotropicWavespeed : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >
 {
 public:
+
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition > super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
 
     /** @name Constants
@@ -147,10 +178,13 @@ public:
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef Eigen::VectorXd theta_vector_type;
+    typedef std::vector< std::vector< double > > beta_vector_type;
 
+    typedef boost::tuple<
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
 
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -170,7 +204,7 @@ public:
     ~AnisotropicWavespeed() {}
 
     //! initialisation of the model
-    void init();
+    void initModel();
     //@}
 
     /** @name Operator overloads
@@ -210,6 +244,24 @@ public:
         return 1;
     }
 
+    int mMaxA( int q )
+    {
+        if ( q < Qa() )
+            return 1;
+        else
+            throw std::logic_error( "[Model] ERROR : try to acces to mMaxA(q) with a bad value of q");
+    }
+
+    int mMaxF( int output_index, int q)
+    {
+        if ( q < 1 )
+            return 1;
+        else
+            throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
+    }
+
+
+
     /**
      * \brief Returns the function space
      */
@@ -225,56 +277,34 @@ public:
     }
 
     /**
-     * \brief compute the theta coefficient for both bilinear and linear form
+     * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=0 )
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
+    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
     {
-        M_thetaAq.resize( Qa() );
-        M_thetaAq( 0 ) = 1;
-        M_thetaAq( 1 ) = mu( 0 );
-        M_thetaAq( 2 ) = -mu( 1 );
-
-        M_thetaFq.resize( Nl() );
-        M_thetaFq[0].resize( Ql( 0 ) );
-        M_thetaFq[0]( 0 ) = mu( 0 );
-
-        return boost::make_tuple( M_thetaAq, M_thetaFq );
+        return computeBetaQm( mu , time );
     }
 
-    /**
-     * \brief return the coefficient vector
-     */
-    theta_vector_type const& thetaAq() const
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
+    computeBetaQm( parameter_type const& mu , double time=0 )
     {
-        return M_thetaAq;
+        M_betaAqm.resize( Qa() );
+        M_betaAqm[0].resize( 1 );
+        M_betaAqm[1].resize( 1 );
+        M_betaAqm[2].resize( 1 );
+        M_betaAqm[0][0] = 1;
+        M_betaAqm[1][0] = mu( 0 );
+        M_betaAqm[2][0] = -mu( 1 );
+
+        M_betaFqm.resize( Nl() );
+        M_betaFqm[0].resize( Ql( 0 ) );
+        M_betaFqm[0][0].resize(1);
+        M_betaFqm[0][0][0] = mu( 0 );
+
+        return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
-    /**
-     * \brief return the coefficient vector
-     */
-    std::vector<theta_vector_type> const& thetaFq() const
-    {
-        return M_thetaFq;
-    }
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type thetaAq( int q ) const
-    {
-        return M_thetaAq( q );
-    }
-
-    /**
-     * \return the \p q -th term of the \p l -th output
-     */
-    value_type thetaL( int l, int q ) const
-    {
-        return M_thetaFq[l]( q );
-    }
 
     //@}
 
@@ -308,9 +338,25 @@ public:
     sparse_matrix_ptrtype newMatrix() const;
 
     /**
+     * create a new vector
+     * \return the newly created vector
+     */
+     vector_ptrtype newVector() const;
+
+    /**
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
+
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        element_ptrtype elt ( new element_type ( Xh ) );
+        q[0][0] = elt;
+        return q;
+    }
 
     /**
      * \brief solve the model for parameter \p mu
@@ -322,12 +368,20 @@ public:
     /**
      * solve for a given parameter \p mu
      */
-    void solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu );
 
     /**
      * solve \f$ M u = f \f$
      */
     void l2solve( vector_ptrtype& u, vector_ptrtype const& f );
+
+    /**
+     * H1 scalar product
+     */
+    sparse_matrix_ptrtype innerProduct ( void )
+    {
+        return M;
+    }
 
 
     /**
@@ -391,12 +445,13 @@ private:
     vector_ptrtype F;
     element_ptrtype pT;
 
-    std::vector<sparse_matrix_ptrtype> M_Aq;
-    std::vector<std::vector<vector_ptrtype> > M_Fq;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
     parameterspace_ptrtype M_Dmu;
-    theta_vector_type M_thetaAq;
-    std::vector<theta_vector_type> M_thetaFq;
+    beta_vector_type M_betaAqm;
+    std::vector<beta_vector_type> M_betaFqm;
+
 };
 
 AnisotropicWavespeed::AnisotropicWavespeed()
@@ -409,7 +464,6 @@ AnisotropicWavespeed::AnisotropicWavespeed()
     exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 
 
@@ -424,10 +478,9 @@ AnisotropicWavespeed::AnisotropicWavespeed( po::variables_map const& vm )
     exporter( Exporter<mesh_type>::New( vm, "AnisotropicWavespeed" ) ),
     M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 void
-AnisotropicWavespeed::init()
+AnisotropicWavespeed::initModel()
 {
     if ( M_is_initialized  )
         return;
@@ -441,8 +494,7 @@ AnisotropicWavespeed::init()
     R.setMarker( _type="line",_name="Top",_marker4=true,_marker2=true,_marker3=true );
     R.setMarker( _type="line",_name="Bottom",_marker1=true );
     R.setMarker( _type="surface",_name="Omega",_markerAll=true );
-    mesh = R.createMesh<mesh_type>( _mesh=mesh, _name="Omega" );
-
+    mesh = R.createMesh( _mesh=mesh, _name="Omega" );
 
     /*
      * The function space and some associate elements are then defined
@@ -452,15 +504,19 @@ AnisotropicWavespeed::init()
     pT = element_ptrtype( new element_type( Xh ) );
 
     //  initialisation de A1 et A2
-    M_Aq.resize( Qa() );
-    M_Aq[0] = backend->newMatrix( Xh, Xh );
-    M_Aq[1] = backend->newMatrix( Xh, Xh );
-    M_Aq[2] = backend->newMatrix( Xh, Xh );
+    M_Aqm.resize( Qa() );
+    for(int q=0; q<Qa(); q++)
+        M_Aqm[q].resize( 1 );
+
+    M_Aqm[0][0] = backend->newMatrix( Xh, Xh );
+    M_Aqm[1][0] = backend->newMatrix( Xh, Xh );
+    M_Aqm[2][0] = backend->newMatrix( Xh, Xh );
 
 
-    M_Fq.resize( Nl() );
-    M_Fq[0].resize( Ql( 0 ) );
-    M_Fq[0][0] = backend->newVector( Xh );
+    M_Fqm.resize( Nl() );
+    M_Fqm[0].resize( Ql( 0 ) );
+    M_Fqm[0][0].resize(1);
+    M_Fqm[0][0][0] = backend->newVector( Xh );
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
@@ -480,27 +536,26 @@ AnisotropicWavespeed::init()
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
-    form1( Xh, M_Fq[0][0], _init=true ) = integrate( elements( mesh ), id( v ) );
-    M_Fq[0][0]->close();
+    form1( Xh, M_Fqm[0][0][0], _init=true ) = integrate( elements( mesh ), id( v ) );
+    M_Fqm[0][0][0]->close();
 
-    form2( Xh, Xh, M_Aq[0], _init=true ) = integrate( elements( mesh ), dxt( u )*dx( v ) );
-    M_Aq[0]->close();
+    form2( Xh, Xh, M_Aqm[0][0], _init=true ) = integrate( elements( mesh ), dxt( u )*dx( v ) );
+    M_Aqm[0][0]->close();
 
-    form2( Xh, Xh, M_Aq[1], _init=true ) = integrate( elements( mesh ), dyt( u )*dy( v ) );
+    form2( Xh, Xh, M_Aqm[1][0], _init=true ) = integrate( elements( mesh ), dyt( u )*dy( v ) );
     // Dirichlet condition apply to Bottom, only y-dir terms non zero because of normal being N()=(Nx(),Ny()) = (0,-1)
     // thus the simplification below with the signs which should -Ny() = +1
-    form2( Xh, Xh, M_Aq[1] ) += integrate( markedfaces( mesh,"Bottom" ), dyt( u )*id( v )+dy( u )*idt( v )+M_gammabc*idt( u )*id( v )/hFace() );
-    M_Aq[1]->close();
+    form2( Xh, Xh, M_Aqm[1][0] ) += integrate( markedfaces( mesh,"Bottom" ), dyt( u )*id( v )+dy( u )*idt( v )+M_gammabc*idt( u )*id( v )/hFace() );
+    M_Aqm[1][0]->close();
 
-    form2( Xh, Xh, M_Aq[2], _init=true ) = integrate( elements( mesh ), idt( u )*id( v ) );
-    M_Aq[2]->close();
+    form2( Xh, Xh, M_Aqm[2][0], _init=true ) = integrate( elements( mesh ), idt( u )*id( v ) );
+    M_Aqm[2][0]->close();
 
     M = backend->newMatrix( Xh, Xh );
 
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
-
 
     LOG(INFO) << "[AW::init] done\n";
 
@@ -512,10 +567,17 @@ AnisotropicWavespeed::newMatrix() const
     return backend->newMatrix( Xh, Xh );
 }
 
+AnisotropicWavespeed::vector_ptrtype
+AnisotropicWavespeed::newVector() const
+{
+    return backend->newVector( Xh );
+}
+
+
 AnisotropicWavespeed::affine_decomposition_type
 AnisotropicWavespeed::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Aq, M_Fq );
+    return boost::make_tuple( M_Aqm, M_Fqm  );
 }
 
 
@@ -546,24 +608,31 @@ AnisotropicWavespeed::exportResults( element_type& U )
 void
 AnisotropicWavespeed::update( parameter_type const& mu )
 {
-    *D = *M_Aq[0];
+    *D = *M_Aqm[0][0];
 
-    for ( size_type q = 1; q < M_Aq.size(); ++q )
+    for ( size_type q = 1; q < M_Aqm.size(); ++q )
     {
-        //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
-        D->addMatrix( M_thetaAq[q], M_Aq[q] );
+        for ( size_type m = 0; m < mMaxA(q); ++m )
+        {
+            D->addMatrix( M_betaAqm[q][m] , M_Aqm[q][m] );
+            //std::cout << "[affine decomp] scale q=" << q << " with " << M_betaAqm[q] << "\n";
+        }
     }
 
     F->close();
     F->zero();
 
-    for ( size_type q = 0; q < M_Fq[0].size(); ++q )
+    for ( size_type q = 0; q < M_Fqm[0].size(); ++q )
     {
-        //std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
-        F->add( M_thetaFq[0][q], M_Fq[0][q] );
+        for ( size_type m = 0; m < mMaxF(0,q); ++m )
+        {
+            //std::cout << "[affine decomp] scale q=" << q << " with " << M_betaFqm[0][q] << "\n";
+            F->add( M_betaFqm[0][q][m], M_Fqm[0][q][m] );
+        }
     }
 }
-void
+
+typename AnisotropicWavespeed::element_type
 AnisotropicWavespeed::solve( parameter_type const& mu )
 {
     //std::cout << "solve(mu) for parameter " << mu << "\n";
@@ -571,13 +640,13 @@ AnisotropicWavespeed::solve( parameter_type const& mu )
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
     this->exportResults( *T );
-
+    return *T;
 }
 
 void
 AnisotropicWavespeed::solve( parameter_type const& mu, element_ptrtype& T )
 {
-    this->computeThetaq( mu );
+    this->computeBetaQm( mu );
     this->update( mu );
     backend->solve( _matrix=D,  _solution=T, _rhs=F );
 }
@@ -613,14 +682,14 @@ AnisotropicWavespeed::run( const double * X, unsigned long N, double * Y, unsign
     if ( do_init )
     {
         meshSize = X[2];
-        this->init();
+        this->initModel();
         do_init = false;
     }
 
     this->solve( mu, pT );
 
 
-    Y[0]=M_thetaFq[0]( 0 )*integrate( elements( mesh ), idv( *pT ) ).evaluate()( 0,0 );
+    Y[0]=M_betaFqm[0][0][0]*integrate( elements( mesh ), idv( *pT ) ).evaluate()( 0,0 );
 }
 
 
@@ -632,17 +701,10 @@ AnisotropicWavespeed::output( int output_index, parameter_type const& mu )
     this->solve( mu, pT );
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;
-
-    // right hand side (compliant)
-    if ( output_index == 0 )
-    {
-        double s1 = M_thetaFq[0]( 0 )*dot( M_Fq[0][0], U );
-        return s1;
     }
 
 }
 
-}
 
 #endif /* __AnisotropicWavespeed_H */
 

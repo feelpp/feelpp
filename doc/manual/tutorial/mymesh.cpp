@@ -4,7 +4,7 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 	     Guillaume Dollé <guillaume.dolle@math.unistra.fr>
- 
+
   Date 2013-02-11
 
   Copyright (C) 2008-2013
@@ -47,12 +47,13 @@ int main( int argc, char** argv )
                      _about=about( _name="mymesh" ,
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" ) );
-                     
+
     // create a mesh with GMSH using Feel++ geometry tool
     auto mesh = unitSquare();
-    
+
     // export results for post processing
     auto e = exporter( _mesh=mesh );
+    e->addRegions();
     e->save();
 
 }   // main

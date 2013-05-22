@@ -206,6 +206,11 @@ public:
     typedef boost::tuple<size_type /*element id*/, uint16_type /*lid*/, uint16_type /*c*/, size_type /*gDof*/, uint16_type /*type*/> periodic_dof_type;
     typedef std::multimap<size_type /*gid*/, periodic_dof_type> periodic_dof_map_type;
 
+    DofTable( WorldComm const& _worldComm )
+        :
+        super( _worldComm )
+        {}
+
     /**
      * @brief The minimal constructor
      *
@@ -271,6 +276,11 @@ public:
         return ind;
     }
 
+    std::vector<size_type> getIndices( size_type id_el, mpl::size_t<MESH_ELEMENTS> /**/ ) const
+    {
+        return getIndices( id_el );
+    }
+
     void getIndicesSet( size_type id_el, std::vector<size_type>& ind ) const
     {
         const size_type s = getIndicesSize();
@@ -278,6 +288,21 @@ public:
         for ( size_type i = 0; i < s; ++i )
             ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
     }
+
+    std::vector<size_type> getIndices( size_type id_el, mpl::size_t<MESH_FACES> /**/ ) const
+    {
+        const size_type nDofF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                                  face_type::numEdges * fe_type::nDofPerEdge +
+                                  face_type::numFaces * fe_type::nDofPerFace );
+        const size_type ntdof = is_product?nComponents*nDofF:nDofF;
+        std::vector<size_type> ind( ntdof );
+
+        for ( size_type i = 0; i < ntdof; ++i )
+            ind[i] = boost::get<0>( _M_face_l2g[ id_el][ i ] );
+
+        return ind;
+    }
+
 
     void getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
     {
@@ -975,23 +1000,27 @@ public:
      */
     void buildGhostInterProcessDofMap( mesh_type& mesh,
                                        std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
+    void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
+    void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
+                                                                    std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
+    void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDof( mesh_type& mesh,
+                                                 std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend );
+    void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
+
     void buildGhostInterProcessDofMapInit( mesh_type& mesh,
                                            std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
-
     boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
     buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
                                            std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
                                            std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
                                            std::vector< std::set<size_type > > & memoryFace );
+
     void buildDofNotPresent( std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
-                             std::set<int> & setInterProcessDofNotPresent );
+                             std::map<size_type,boost::tuple<size_type,size_type> > & setInterProcessDofNotPresent );
 
     void buildGlobalProcessToGlobalClusterDofMap( mesh_type& mesh,
-            std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
-            std::set<int> const& setInterProcessDofNotPresent );
-    void updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& mapInterProcessDof,
-                               std::set<int> const& setInterProcessDofNotPresent,
-                               int procToUpdate );
+            std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
+    void updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
 
 #endif
     /**

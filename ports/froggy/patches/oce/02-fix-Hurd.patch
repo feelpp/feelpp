@@ -1,0 +1,35 @@
+Description: Use UnixExtract on unknown systems
+ Several tests fail on Hurd:
+   The following tests FAILED:
+     24 - IGESImportTestSuite.testImportIGES_1 (Failed)
+     25 - STEPImportTestSuite.testImportAP203_1 (Failed)
+     26 - STEPImportTestSuite.testImportAP203_2 (Failed)
+     27 - STEPImportTestSuite.testImportAP214_1 (Failed)
+     28 - STEPImportTestSuite.testImportAP214_2 (Failed)
+     29 - STEPImportTestSuite.testImportAP214_3 (Failed)
+     34 - TDataXtdTestSuite.testPattern (Failed)
+     35 - UnitsAPITestSuite.testCurrentUnits (Failed)
+     36 - UnitsAPITestSuite.testMDTVCurrentUnits (Failed)
+ because OSD_Path(name) does nothing when system is unknown.
+Author: Denis Barbier <bouzim@gmail.com>
+Origin: Debian
+Forwarded: no
+Last-Update: 2012-12-16
+
+Index: oce/src/OSD/OSD_Path.cxx
+===================================================================
+--- oce.orig/src/OSD/OSD_Path.cxx
++++ oce/src/OSD/OSD_Path.cxx
+@@ -365,9 +365,10 @@ OSD_Path::OSD_Path(const TCollection_Asc
+      MacExtract(aDependentName,myDisk,myTrek,myName,myExtension);
+      break;
+   default:
+-#ifndef DEB
+-       cout << " WARNING WARNING : OSD Path for an Unknown SYSTEM : " << (Standard_Integer)todo << endl;
++#ifdef DEB
++     cout << " WARNING WARNING : OSD Path for an Unknown SYSTEM : " << (Standard_Integer)todo << endl;
+ #endif 
++     UnixExtract(aDependentName,myNode,myUserName,myPassword,myTrek,myName,myExtension);
+      break ;
+  } 
+ }

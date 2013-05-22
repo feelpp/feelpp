@@ -46,7 +46,6 @@ M_backend( backend_type::build( BACKEND_PETSC ) ),
 exporter( Exporter<mesh_type>::New( "ensight" ) ),
 M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 
 ConvectionCrb::ConvectionCrb( po::variables_map const& vm )
@@ -56,7 +55,6 @@ M_backend( backend_type::build( vm ) ),
 exporter( Exporter<mesh_type>::New( vm, "convection" ) ),
 M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 
 // <int Order_s, int Order_p, int Order_t>

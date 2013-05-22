@@ -196,7 +196,7 @@ public:
 };
 #endif
 /**
-   \class VisitorBaseImpl
+   
   *\ingroup Core
   *\brief
    Implements non-strict visitation (you can implement only part of the Visit

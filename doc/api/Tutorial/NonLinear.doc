@@ -1,0 +1,113 @@
+/* -*- mode: c++; coding: utf-8 -*- */
+namespace Feel {
+    /** \page NonLinear Non Linear Examples
+\author Christophe Prud'homme
+
+\tableofcontents
+<br>
+<hr>
+<br>
+
+\section Solving Solving Nonlinear Equations
+\feel allows to solve nonlinear equations thanks to its interface to the interface to the PETSc nonlinear solver library. It requires the implementation of two extra functions in your application that will update the jacobian matrix associated to the tangent problem and the residual.
+
+Consider that you have an application class \c MyApp with a backend as data member
+\co
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/application.hpp>
+#include <feel/feelalg/backend.hpp>
+namespace Feel {
+                                    
+class MyApp : public Application
+{
+  public:
+                                  
+  typedef Backend<double> backend_type;
+  typedef boost::shared_ptr<backend_type> backend_ptrtype;
+                                  
+  MyApp( int argc, char** argv,
+  AboutData const& ad, po::options_description const& od )
+  :
+  // init the parent class
+  Application( argc, argv, ad, od ),
+  // init the backend
+  M_backend( backend_type::build( this->vm() ) ),
+  {
+    // define the callback functions (works only for the PETSc backend)
+    M_backend->nlSolver()->residual =
+      boost::bind( &self_type::updateResidual, boost::ref( *this ), _1, _2 );
+    M_backend->nlSolver()->jacobian =
+      boost::bind( &self_type::updateJacobian, boost::ref( *this ), _1, _2 );
+  }
+  void updateResidual( const vector_ptrtype& X, vector_ptrtype& R )
+  {
+    // update the matrix J (Jacobian matrix) associated
+    // with the tangent problem
+  }
+  void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J)
+  {
+    // update the vector R associated with the residual
+  }
+  void run()
+  {
+    //define space
+    Xh...
+    element_type u(Xh);
+    // initial guess is 0
+    u = project( M_Xh, elements(mesh), constant(0.) );
+    vector_ptrtype U( M_backend->newVector( u.functionSpace() ) );
+    *U = u;
+                                  
+    // define R and J
+    vector_ptrtype R( M_backend->newVector( u.functionSpace() ) );
+    sparse_matrix_ptrtype J;
+                                  
+    // update R
+    updateJacobian( U, R );
+    // update J
+    updateResidual( U, J );
+                                  
+    // solve using non linear methods (newton)
+    // tolerance : 1e-10
+    // max number of iterations : 10
+    M_backend->nlSolve( J, U, R, 1e-10, 10 );
+                                  
+    // the soluution was stored in U
+    u = *U;
+  }
+  private:
+                                  
+  backend_ptrtype M_backend;
+};
+} // namespace Feel
+\eco
+
+The function \c updateJacobian and \c updateResidual implement the assmebly of the matrix \f$J\f$ (jacobian matrix) and the vector \f$R\f$ (residual vector) respectively.
+
+\subsection Solving_First A first nonlinear problem
+As a simple example, let \f$\Omega \f$ be a subset of \f$\mathbb{R}^d, d=1,2,3\f$, (\em i.e. \f$\Omega=[-1,1]^d\f$) with boundary \f$\partial \Omega\f$. Consider now the following equation and boundary condition
+<br><center>\f$
+\begin{aligned}
+  -\Delta u + u^\lambda = f,\quad u = 0 \text{ on } \partial \Omega.
+\end{aligned}
+\f$</center><br>
+
+where \f$\lambda \in \mathbb{R_+}\f$ is a given parameter and \f$f=1\f$.
+
+\note To be described in this section. For now see \c "doc/manual/nonlinear/nonlinearpow.cpp" for an implementation of this problem.
+
+\subsection Solving_Simplified Simplified combustion problem: Bratu
+As a simple example, let \f$\Omega\f$ be a subset of \f$\mathbb{R}^d, d=1,2,3\f$,(\em i.e. \f$\Omega=[-1,1]^d\f$) with boundary \f$\partial\Omega\f$. Consider now the following equation and boundary condition 
+<br><center>\f$
+\begin{aligned}
+  -\Delta u + \lambda e^u = f,\quad u = 0 \text{ on } \partial \Omega
+\end{aligned}
+\f$</center><br>
+
+where \f$\lambda\f$ is a given parameter. This is usually called the Bratu problem and appears in the simplification of nonlinear diffusion process for example in the field of combustion.
+
+\note To be described in this section. For now see \c "doc/manual/nonlinear/bratu.cpp" for an implementation of this problem.
+
+
+*/ 
+}

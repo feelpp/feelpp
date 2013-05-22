@@ -94,10 +94,10 @@ set(CLN_FOUND)
 set(CLN_INCLUDE_DIR)
 set(CLN_LIBRARIES)
 
-include(FindPkgConfig)
-if (PKG_CONFIG_FOUND)
-	pkg_check_modules(_cln cln)
-endif()
+#include(FindPkgConfig)
+#if (PKG_CONFIG_FOUND)
+#	pkg_check_modules(_cln cln)
+#endif()
 
 find_path(CLN_INCLUDE_DIR NAMES feel/cln/cln.h cln/cln.h
   HINTS
@@ -158,16 +158,17 @@ if (CLN_INCLUDE_DIR AND CLN_LIBRARIES AND NOT CMAKE_CROSSCOMPILING)
 		_cl_version_matches)
 	set(CMAKE_REQUIRED_LIBRARIES ${_save_required_libraries})
 	set(CMAKE_REQUIRED_INCLUDES ${_save_required_includes})
-	if (NOT _cl_version_matches)
-		if (NOT CLN_FIND_QUIETLY)
-			message(ERROR "header (version differs from the library one, "
-				      "please check your installation.")
-		endif()
-		set(CLN_INCLUDE_DIR CLN-NOTFOUND)
-		set(CLN_LIBRARIES CLN-NOTFOUND)
-		set(CLN_LIBRARY_DIRS)
-		set(CLN_VERSION)
-	endif()
+# below is causing problem with Debian packaging, need to investigate
+# 	if (NOT _cl_version_matches)
+#		if (NOT CLN_FIND_QUIETLY)
+#			message(ERROR "header (version differs from the library one, "
+#				      "please check your installation.")
+#		endif()
+#		set(CLN_INCLUDE_DIR CLN-NOTFOUND)
+#		set(CLN_LIBRARIES CLN-NOTFOUND)
+#		set(CLN_LIBRARY_DIRS)
+#		set(CLN_VERSION)
+#	endif()
 endif()
 
 if (CLN_LIBRARIES AND CLN_INCLUDE_DIR)

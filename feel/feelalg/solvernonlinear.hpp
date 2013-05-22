@@ -410,6 +410,28 @@ public:
     void setShowKSPConvergedReason( bool b ) { M_showKSPConvergedReason=b; }
 
 
+    /**
+     * KSP relative tolerance
+     */
+    double rtoleranceKSP() const { return M_rtoleranceKSP; }
+    void setRtoleranceKSP( double tol ) { M_rtoleranceKSP=tol; }
+    /**
+     * KSP divergence tolerance
+     */
+    double dtoleranceKSP() const { return M_dtoleranceKSP; }
+    void setDtoleranceKSP( double tol ) { M_dtoleranceKSP=tol; }
+    /**
+     * KSP absolute tolerance
+     */
+    double atoleranceKSP() const { return M_atoleranceKSP; }
+    void setAtoleranceKSP( double tol ) { M_atoleranceKSP=tol; }
+    /**
+     * KSP maximum number of iterations
+     */
+    size_type maxitKSP() const { return M_maxitKSP; }
+    void setMaxitKSP( size_type n) { M_maxitKSP=n; }
+
+
     /** @name  Methods
      */
     //@{
@@ -572,12 +594,26 @@ protected:
     bool M_showKSPMonitor, M_showSNESMonitor;
     bool M_showKSPConvergedReason, M_showSNESConvergedReason;
 
+    /**
+     * KSP relative tolerance
+     */
+    double M_rtoleranceKSP;
+    /**
+     * KSP divergence tolerance
+     */
+    double M_dtoleranceKSP;
+    /**
+     * KSP absolute tolerance
+     */
+    double M_atoleranceKSP;
+    /**
+     * KSP maximum number of iterations
+     */
+    size_type M_maxitKSP;
+
+
 };
 
 
-/**
- * command line options
- */
-po::options_description nlsolver_options();
 } // Feel
 #endif /* __SolverNonLinear_H */

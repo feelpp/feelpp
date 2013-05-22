@@ -138,7 +138,7 @@ public:
      */
     ResidualEstimator( AboutData const& about )
         :
-        super( about ),
+        super(),
         M_backend( backend_type::build() ),
         M_backendP1( backend_type::build() ),
         meshSize( 0.1 ),

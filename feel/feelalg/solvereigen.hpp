@@ -514,20 +514,5 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
     return eigen->eigenModes();
 }
 
-/**
- * defines solver eigen options
- *
- * The \p prefix parameter allows to set different eigensolver options for
- * different eigensolver. It allows to distinguish between these options
- * \code
- * // register two slepc eigensolver options
- * add_options( solvereigen_options( "eigen1" ) ).add_options( solvereigen_options( "eigen2" ));
- * // build an eigen solver associated with option set eigen1
- * SolverEigen<double>::build( vm, "eigen1" );
- * \endcode
- *
- * \param prefix prefix allows to prefix options
- */
-po::options_description solvereigen_options( std::string const& prefix = "" );
 } // Feel
 #endif /* __SolverEigen_H */
