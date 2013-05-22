@@ -120,6 +120,7 @@ public:
 
     typedef Faces<typename Shape::template shape<1,Shape::nOrder,Shape::nRealDim>::type,
                   typename super_elements::element_type> super_faces;
+    typedef typename super_faces::face_iterator face_iterator;
     typedef typename super_faces::faces_type faces_type;
     typedef typename super_faces::face_type face_type;
     typedef face_type edge_type;
@@ -280,6 +281,10 @@ public:
 /** @name  Methods
  */
 //@{
+
+    face_iterator beginEdge() { return this->beginFace(); }
+    face_iterator endEdge() { return this->endFace(); }
+    faces_type edges() { return this->faces(); }
 
     void setWorldComm( WorldComm const& _worldComm )
         {

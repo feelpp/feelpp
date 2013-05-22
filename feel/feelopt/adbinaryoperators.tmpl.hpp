@@ -22,7 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file adbinaryoperators.hpp
+   
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-14
  */

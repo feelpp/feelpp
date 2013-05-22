@@ -489,7 +489,5 @@ private:
     std::vector<std::string> M_keys;
 
 };
-//! add benchmark options to feel++ applications
-po::options_description benchmark_options( std::string const& prefix = "" );
 }
 #endif /* __Application_H */

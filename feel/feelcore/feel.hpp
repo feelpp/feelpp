@@ -112,7 +112,6 @@ namespace constants=boost::math::constants;
 const double pi = constants::pi<double>();
 const double two_pi = constants::two_pi<double>();
 
-
 namespace algorithm=boost::algorithm;
 using google::WARNING;
 using google::ERROR;
@@ -143,7 +142,7 @@ namespace detail
 template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 }
 
-/*!  \page types_page Feel Types
+/*!  \page Types Feel Types
   \section types Types
   \subsection real Real Numbers
 

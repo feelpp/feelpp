@@ -108,6 +108,7 @@ struct f_sinPx
     }
 };
 
+#if 0
 #include <matheval.h>
 struct f_matheval
 {
@@ -131,7 +132,7 @@ struct f_matheval
         return val;
     }
 };
-
+#endif
 template<typename T, int Dim, int Order = 1>
 struct imesh
 {

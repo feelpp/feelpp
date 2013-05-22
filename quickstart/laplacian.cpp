@@ -7,15 +7,18 @@ int main(int argc, char**argv )
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                     _directory=".",
                      _about=about(_name="qs_laplacian",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     //# endmarker1 #
 
     //# marker2 #
-    auto mesh = unitSquare();
-    auto Vh = Pch<1>( mesh );
+    //auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    //auto Vh = Pch<1>( mesh );
+    auto mesh = unitCube();
+    boost::timer t;
+    auto Vh = Pch<3>( mesh );
+    std::cout << "time: " << t.elapsed() << "\n";
     auto u = Vh->element();
     auto v = Vh->element();
     //# endmarker2 #
@@ -40,4 +43,3 @@ int main(int argc, char**argv )
     return 0;
     //# endmarker4 #
 }
-

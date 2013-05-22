@@ -1,0 +1,197 @@
+\usepackage{bbold}
+\usepackage{bm}
+\usepackage{todonotes}
+\usepackage{longtable}
+\usepackage{mathptmx}      % use Times fonts if available on your TeX system
+\usepackage{multicol}
+%\usepackage{stmaryrd}     % for llbracket
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xmpmulti}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{fullpage}
+\usepackage{subfigure}
+\usepackage{paralist}
+\usepackage{xspace}
+
+\newcommand{\opdim}{\ensuremath{\operatorname{dim}}}
+
+\newcommand{\fixme}[1]{{\color{red}FIXME:} {\color{cpgreen07}#1}}
+\newcommand{\PS}[1]{\ensuremath{\mathbb{P}_{#1}}\xspace}
+\newcommand{\geo}{\ensuremath{{\mathrm{geo}}}\xspace}
+\newcommand{\Ngeo}{\ensuremath{{N_{\geo}}}\xspace}
+\newcommand{\tih}{\ensuremath{\tilde{h}}\xspace}
+\newcommand{\bphi}{\ensuremath{\vec{\varphi}}\xspace}
+\newcommand{\poly}[2]{\mathbb P_{#1}#2}
+
+%%\newenvironment{abstract}{\textbf{Abstract.}}{}
+% \newenvironment{acknowledgement}{\textbf{Acknowledgements.}}{}
+
+\newcommand{\cpp}{{\sl\sffamily
+C{\kern-.0em\lower+.4ex\hbox{$^{\text{\sl\sffamily ++}}$}}}\xspace}
+\newcommand{\cc}{{\sl\sffamily C}\xspace}
+\newcommand{\Feel}{\textsc{Feel++}\xspace}
+\newcommand{\Gmsh}{\textsc{Gmsh}\xspace}
+\newcommand{\D}{\mathbb{D}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\renewcommand{\H}{\mathbb{H}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\W}{\mathbb{W}}
+\newcommand{\X}{\mathbb{X}}
+\newcommand{\Y}{\mathbb{Y}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\V}{\mathbb{V}}
+\newcommand{\re}{\mathcal{R}e}
+\newcommand{\ds}{\displaystyle}
+\newcommand{\RaTu}{\ensuremath{\mathbb{RaTu}}}
+\newcommand{\RT}{\ensuremath{\mathbb{RT}}}
+\newcommand{\CR}{\ensuremath{\mathbb{CR}}}
+
+
+\newcommand{\cf}{cf.\@\xspace}
+\newcommand{\st}{s.t.\@\xspace}
+\newcommand{\eg}{e.g.\@\xspace}
+\newcommand{\ie}{i.e.\@\xspace}
+\newcommand{\ale}{a.e.\@\xspace}
+\newcommand{\etc}{etc.\@\xspace}
+
+\DeclareMathOperator{\opHess}{H}
+
+\newcommand{\SCAL}{{\cdot}}
+\newcommand{\SSCAL}{{:}}
+\newcommand{\GRAD}{{\nabla}}
+\newcommand{\DIV}{{\nabla\SCAL}}
+\newcommand{\LAPL}{{\triangle}}
+\newcommand{\HESS}{{\opHess}}
+\newcommand{\ST}{\; | \;}
+%\newcommand{\ST}{\,;\,}
+
+\DeclareMathOperator{\opcard}{card}
+\DeclareMathOperator{\opdiam}{diam}
+%% \DeclareMathOperator{\opmeas}{meas}
+\DeclareMathOperator{\opsize}{size}
+\DeclareMathOperator{\opsupp}{supp}
+\DeclareMathOperator{\opdiv}{div}
+\DeclareMathOperator{\opgrad}{grad}
+\DeclareMathOperator{\optr}{tr}
+\DeclareMathOperator{\opKer}{Ker}
+\DeclareMathOperator{\opdist}{dist}
+\DeclareMathOperator{\opspan}{span}
+% \DeclareMathOperator{\opd}{d}
+\DeclareMathOperator{\minmod}{minmod}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator{\opapp}{app}
+\DeclareMathOperator{\opsup}{sup}
+\DeclareMathOperator{\opinf}{inf}
+\DeclareMathOperator{\opdet}{det}
+
+%------------------------------------------------------------------------------%
+
+\newcommand{\opd}{{\rm d}}
+
+\newcommand{\card}[1]{\opcard(#1)}
+\newcommand{\diam}[1]{\opdiam(#1)}
+\newcommand{\dist}[1]{\opdist(#1)}
+\newcommand{\meas}[1]{|#1|}
+\newcommand{\Meas}[1]{\left|#1\right|}
+\newcommand{\measd}[2]{|#2|_{#1}}
+\newcommand{\size}[1]{\opsize(#1)}
+%% \newcommand{\supp}[1]{\opsupp(#1)}
+%% \renewcommand{\span}[1]{\opspan\{#1\}}
+\newcommand{\Span}[1]{\opspan\left\{#1\right\}}
+
+\newcommand{\ud}[1]{\,\opd{{#1}}}
+
+\newcommand{\Ker}[1]{\opKer(#1)}
+
+\newcommand{\module}[1]{|#1|}
+\newcommand{\norm}[1]{\|#1\|}
+\newcommand{\pnorm}[2]{|#2|_{{\ell^{#1}}}}
+%% \newcommand{\pnorm}[2]{\|#2\|_{#1}}
+\newcommand{\seminorm}[1]{|#1|}
+\newcommand{\normBV}[1]{\|#1\|_{{\rm BV}}}
+\newcommand{\seminormBV}[1]{\seminorm{#1}_{{\rm BV}}}
+
+\newcommand{\Module}[1]{\left|#1\right|}
+\newcommand{\Norm}[1]{\left|#1\right|}
+%% \newcommand{\PNorm}[2]{\left\|#1\right\|_{{\ell^{#2}}}}
+\newcommand{\PNorm}[2]{\left\|#2\right\|_{#1}}
+\newcommand{\Seminorm}[1]{\left|#1\right|}
+\newcommand{\SeminormBV}[1]{\seminorm{#1}_{{\rm BV}}}
+\newcommand{\NormBV}[1]{\left\|#1\right\|_{{\rm BV}}}
+\newcommand{\TV}[1]{{\rm TV}(#1)}
+\newcommand{\bndlinop}[2]{{\cal L}(#1,#2)}
+
+\newcommand{\eqbydef}{\mathrel{{:}}{=}}
+\newcommand{\restrto}[2]{#1{|}_{#2}}
+
+\newcommand{\Th}{\mathcal{T}_h}
+\newcommand{\Thi}{\mathcal{T}_h^i}
+\newcommand{\Thb}{\mathcal{T}_h^b}
+\newcommand{\Rh}{\mathcal{R}_h} % simplicial conformal refinement
+\newcommand{\Sh}{\mathcal{S}_h} % stencil
+\newcommand{\Nh}{\mathcal{N}_h} % neighbours of neighbours
+\newcommand{\Fh}{\mathcal{F}_h}
+\newcommand{\Fhi}{\mathcal{F}_h^i}
+\newcommand{\Fhb}{\mathcal{F}_h^b}
+
+\newcommand{\calA}{\mathcal{A}}
+\newcommand{\calB}{\mathcal{B}}
+\newcommand{\calD}{\mathcal{D}}
+\newcommand{\calE}{\mathcal{E}}
+\newcommand{\calF}{\mathcal{F}}
+\newcommand{\calG}{\mathcal{G}}
+\newcommand{\calH}{\mathcal{H}}
+\newcommand{\calI}{\mathcal{I}}
+\newcommand{\calK}{\mathcal{K}}
+\newcommand{\calL}{\mathcal{L}}
+\newcommand{\calM}{\mathcal{M}}
+\newcommand{\calN}{\mathcal{N}}
+\newcommand{\calP}{\mathcal{P}}
+\newcommand{\calR}{\mathcal{R}}
+\newcommand{\calT}{\mathcal{T}}
+\newcommand{\calU}{\mathcal{U}}
+\newcommand{\calX}{\mathcal{X}}
+\newcommand{\calZ}{\mathcal{Z}}
+
+\newcommand{\Ck}[1][k]{\ensuremath{{\mathcal{C}^#1}}\xspace}
+\newcommand{\Pk}[1][k]{{\ensuremath{{\mathbb{P}_#1}}\xspace}}
+\newcommand{\Qk}[1][k]{{\ensuremath{{\mathbb{Q}_#1}}\xspace}}
+\newcommand{\Pch}[1][k]{{\ensuremath{{P^#1_{c,h}}}\xspace}}
+\newcommand{\Pcho}[1][k]{{\ensuremath{{P^#1_{c,h,0}}}\xspace}}
+
+
+\newcommand{\Iclag}{\calI _{c,h}^{\mathrm{LAG}}}
+\newcommand{\Idlag}{\calI_{d,h}^\mathrm{LAG}}
+\newcommand{\Irt}{\calI_h^\mathrm{RT}}
+\newcommand{\In}{\calI_h^\mathrm{N}}
+\newcommand{\Icr}{\calI_h^\mathrm{CR}}
+
+\newcommand{\hatK}{\hat{K}}
+
+\newcommand{\MAT}[1]{\mathbf{#1}}
+\newcommand{\VEC}[1]{\mathbf{#1}}
+\newcommand{\normal}{\mathrm{n}}
+\newcommand{\evect}{\mathrm{e}}
+\newcommand{\Dt}{\delta_t}
+
+\newcommand{\tgeoK}{\ensuremath{\phi^\mathrm{geo}_K}\xspace}
+\newcommand{\kgeo}{\ensuremath{k_\mathrm{geo}}\xspace}
+\newcommand{\tgeoKkgeo}{\ensuremath{\phi^\mathrm{geo}_{K,\kgeo}}\xspace}
+
+\newcommand{\closure}[1]{\overline{#1}}
+\newcommand{\id}[1]{\mathbb{1}_{#1}}
+\newcommand{\charac}[1]{\chi_{#1}}
+
+\DeclareMathOperator{\oplift}{r}
+\DeclareMathOperator{\opLift}{R}
+
+\newcommand{\jump}[1]{\llbracket #1\rrbracket}
+\newcommand{\avg}[1]{\lbrace#1\rbrace}
+
+\newcommand{\lift}[1]{\oplift_{#1}}
+\newcommand{\Lift}{\opLift_h}

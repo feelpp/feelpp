@@ -81,6 +81,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_dimension( nDim ),
     M_order( nOrder ),
     M_version( FEELPP_GMSH_FORMAT_VERSION ),
+    M_format( GMSH_FORMAT_ASCII ),
     M_I( nDim ),
     M_h( 0.1 ),
     M_addmidpoint( true ),
@@ -101,6 +102,7 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_dimension( __g.M_dimension ),
     M_order( __g.M_order ),
     M_version( __g.M_version ),
+    M_format( __g.M_format ),
     M_I( __g.M_I ),
     M_h( __g.M_h ),
     M_addmidpoint( __g.M_addmidpoint ),
@@ -115,6 +117,24 @@ Gmsh::Gmsh( Gmsh const & __g )
 {}
 Gmsh::~Gmsh()
 {}
+
+Gmsh&
+Gmsh::operator=( Gmsh const& __g )
+{
+    if (  this != &__g )
+    {
+        M_dimension = __g.M_dimension;
+        M_order = __g.M_order;
+        M_version = __g.M_version;
+        M_format = __g.M_format;
+        M_addmidpoint = __g.M_addmidpoint;
+        M_usePhysicalNames = __g.M_usePhysicalNames;
+        M_shear = __g.M_shear;
+        M_refine_levels = __g.M_refine_levels;
+    }
+
+    return *this;
+}
 
 boost::shared_ptr<Gmsh>
 Gmsh::New( po::variables_map const& vm )
@@ -171,57 +191,97 @@ Gmsh::getDescriptionFromFile( std::string const& file ) const
     __geoin.close();
     return  __geostream.str();
 }
+
 bool
-Gmsh::generateGeo( std::string const& __name, std::string const& __geo,bool const modifGeo ) const
+Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool const modifGeo ) const
 {
     std::string _geo;
 
+    _geo = __geo;
+
     if ( modifGeo )
     {
+        // Get the 'h' for hsize and modify its value in the geo file.
         boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
-        DVLOG(2) << "found hsize: " << regex_search(__geo, regex, boost::match_default) << "\n";
-        DVLOG(2) << "hstr: " << hstr.str() << "\n";
 
-        _geo = boost::regex_replace( __geo, regex, hstr.str(), boost::match_default | boost::format_all );
+        LOG(INFO) << __name << ".geo  hsize was  " << regex_search(_geo, regex, boost::match_default)
+                  << " and is now "  << hstr.str();
+
+        _geo = boost::regex_replace( _geo, regex, hstr.str(), boost::match_default | boost::format_all );
+
+        // Split the variable string to get the `key=value` token list.
+        boost::char_separator<char> separator1( ":" );
+        boost::tokenizer< boost::char_separator<char> > tok(
+            option(_name="gmsh.geo-variables-list").as<std::string>(),
+            separator1 );
+
+        // Split each token to get the key and the value and put them into a vector.
+        boost::char_separator<char> separator2( "=" );
+        for( auto iSep = tok.begin(); iSep != tok.end(); ++iSep )
+        {
+            boost::tokenizer< boost::char_separator<char> > tok2( *iSep, separator2 );
+
+            assert( distance( tok2.begin(), tok2.end() ) == 2 ); //! TODO modify message !
+
+            std::vector<std::string> keyvalVec;
+            for( auto iSep2 = tok2.begin(); iSep2 != tok2.end(); ++iSep2 )
+                keyvalVec.push_back(*iSep2);
+
+            // Get the `key` and modify its `value` in the geo file.
+            boost::regex _regex( "(?:(" + keyvalVec.at(0) + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
+            std::ostringstream _ostr;
+            _ostr << "(?1$1) = " << keyvalVec.at(1) << ";";
+
+            LOG(INFO) << "Modify " << __name << ".geo : "
+                      << "Key " << keyvalVec.at(0)
+                      << ( ( regex_search( __geo, _regex, boost::match_default) )?
+                           ( " found ! "+ keyvalVec.at(0) + "=" + keyvalVec.at(1) + " now." ) : " not found ! " )
+                      << std::endl;
+
+            _geo = boost::regex_replace( _geo, _regex, _ostr.str(), boost::match_default | boost::format_all );
+        }
+
     }
 
-    else
-    {
-        _geo = __geo;
-    }
-
-    // generate geo
     std::ostringstream __geoname;
     __geoname << __name << ".geo";
     fs::path __path( __geoname.str() );
     bool geochanged = false;
 
+    // Create a new .geo.
     if ( !fs::exists( __path ) )
     {
-        DVLOG(2) << "generating: " << __geoname.str() << "\n";
+        LOG(INFO) << "Creating " << __geoname.str();
         std::ofstream __geofile( __geoname.str().c_str() );
         __geofile << _geo;
         __geofile.close();
         geochanged = true;
     }
 
+    // Overwrite .geo if it exists and differs.
     else
     {
         std::string s = this->getDescriptionFromFile( __geoname.str() );
 
         if ( s != _geo )
         {
+            LOG(INFO) << __geoname.str() << " exists but is different from the expected geometry, we overwrite it now";
             std::ofstream __geofile( __geoname.str().c_str() );
             __geofile << _geo;
             __geofile.close();
             geochanged = true;
         }
+        else
+        {
+            LOG(INFO) << __geoname.str() << " exists and its content correspond to the expected geometry";
+        }
     }
 
     return geochanged;
 }
+
 std::string
 Gmsh::generate( std::string const& name ) const
 {
@@ -236,21 +296,21 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
-        LOG(INFO) << "[Gmsh::generate] generate on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
-        bool geochanged ( generateGeo( __name,__geo,modifGeo ) );
+        LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
+        bool geochanged = generateGeo( __name,__geo,modifGeo );
         std::ostringstream __geoname;
         __geoname << __name << ".geo";
 
         // generate mesh
         std::ostringstream __meshname;
         __meshname << __name << ".msh";
-        LOG( INFO ) << "mesh file name: " << __meshname.str() << "\n";
-        LOG( INFO ) << "does mesh file name exists ?: " << fs::exists( __meshname.str() ) << "\n";
+        LOG( INFO ) << "Mesh file " << __meshname.str() << " generated from geometry " << __geoname.str();
+        LOG( INFO ) << " - does mesh file name exists : " << (fs::exists( __meshname.str() )?"true":"false") << "\n";
         fs::path __meshpath( __meshname.str() );
 
         if ( geochanged || __forceRebuild || !fs::exists( __meshpath ) )
         {
-            LOG( INFO ) << "generating: " << __meshname.str() << "\n";
+            LOG( INFO ) << "Generating " << __meshname.str() << "...\n";
 #if 0
 
             if ( __geo.find( "Volume" ) != std::string::npos )
@@ -267,19 +327,18 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
 #else
             generate( __geoname.str(), this->dimension(), parametric );
 #endif
+            LOG( INFO ) << "Generating " << __meshname.str() << " done.\n";
         }
-
-        LOG(INFO) << "[Gmsh::generate] meshname = " << __meshname.str() << "\n";
         fname=__meshname.str();
     }
     google::FlushLogFiles(INFO);
-    if ( mpi::environment::initialized() )
+
+	if ( mpi::environment::initialized() )
     {
+		this->worldComm().barrier();
+        LOG(INFO) << "Broadcast mesh file " << fname << " to all other mpi processes\n";
         mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
-        LOG(INFO) << "[Gmsh::generate] broadcast mesh filename : " << fname << " to all other processes\n";
-
     }
-
     return fname;
 }
 std::string
@@ -287,21 +346,20 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 {
 #if FEELPP_HAS_GMSH
     std::ostringstream filename;
-#if BOOST_FILESYSTEM_VERSION == 3
-    filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
-#elif BOOST_FILESYSTEM_VERSION == 2
-    filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
-#endif
+	std::string _name;
 
-#if BOOST_FILESYSTEM_VERSION == 3
-    boost::system::error_code ec;
-    fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
-#elif BOOST_FILESYSTEM_VERSION == 2
-    fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
-#endif
-
-    for ( int l = 0; l < level; ++l )
+    if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
+#if BOOST_FILESYSTEM_VERSION == 3
+		filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
+		boost::system::error_code ec;
+		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
+#elif BOOST_FILESYSTEM_VERSION == 2
+		filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
+		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
+#endif
+
+#if !defined(FEELPP_HAS_GMSH_LIBRARY)
         // generate mesh
         std::ostringstream __str;
 
@@ -313,10 +371,70 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
             __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
                   << " -refine " << filename.str();
 
-        ::system( __str.str().c_str() );
+		for ( int l = 0; l < level; ++l )
+		{
+		    auto err = ::system( __str.str().c_str() );
+		}
+
+#else
+		//// Initializing
+		//GmshInitialize();
+		GModel* newGmshModel = new GModel();
+		newGmshModel->readMSH(filename.str());
+
+		CTX::instance()->mesh.order = M_order;
+		CTX::instance()->mesh.secondOrderIncomplete = 0;
+		CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
+
+
+        int partitions = newGmshModel->getMeshPartitions().size();
+		LOG(INFO) << "[Gmsh::refine] Original mesh : " << filename.str() << "\n";
+		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
+		LOG(INFO) << "[Gmsh::refine] partitions : " << partitions << "\n";
+		//std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
+		CTX::instance()->partitionOptions.num_partitions =  M_partitions;
+		CTX::instance()->partitionOptions.partitioner =  M_partitioner;
+		CTX::instance()->partitionOptions.mesh_dims[0] = M_partitions;
+		CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
+		CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
+
+		for ( int l = 0; l < level; ++l )
+		{
+		    newGmshModel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+		}
+
+		if ( partitions )
+            {
+                LOG(INFO) << "[Gmsh::refine] Repartioning mesh : " << filename.str() << "\n";
+                PartitionMesh( GModel::current(), CTX::instance()->partitionOptions ); 
+            }
+        newGmshModel->writeMSH( filename.str() );
+		LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
+		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
+		LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
+
+		_name = filename.str();
+
+		newGmshModel->destroy();
+		delete newGmshModel;
+		//GmshFinalize();
+#endif
+
+	}
+
+	if ( mpi::environment::initialized() )
+    {
+		this->worldComm().barrier();
+
+        _name = filename.str();
+        mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
+        LOG(INFO) << "[Gmsh::refine] broadcast mesh filename : " << _name << " to all other processes\n";
     }
 
-    return filename.str();
+    return _name;
+
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
 #endif
@@ -337,6 +455,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     else
         __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
               << " -" << dim << " -part " << M_partitions  << " " << __geoname;
+
 
     LOG(INFO) << "[Gmsh::generate] execute '" <<  __str.str() << "\n";
     LOG(INFO) << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
@@ -387,20 +506,29 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
 
-    new GModel();
+    GModel* newGmshModel = new GModel();
     GModel::current()->setName( _name );
     GModel::current()->setFileName( _name );
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
-    for( int l = 0; l < M_refine_levels-1; ++l )
+    LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
+    for( int l = 0; l < M_refine_levels; ++l )
     {
-        LOG(INFO) << "refine mesh level : " << l << "\n";
         GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
     }
     PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-    LOG(INFO) << "size : " << GModel::current()->getMeshPartitions().size() << "\n";
-    GModel::current()->writeMSH( _name+".msh" );
-    //GModel::current()->destroy();
+    LOG(INFO) << "Mesh partitions : " << GModel::current()->getMeshPartitions().size() << "\n";
+
+    // convert mesh to latest binary format
+    CHECK(GModel::current()->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << GModel::current()->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
+
+    CTX::instance()->mesh.binary = M_format;
+    LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
+    GModel::current()->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
+
+    newGmshModel->destroy();
+    delete newGmshModel;
+
 #endif
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
@@ -416,8 +544,11 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
-
-        std::string _name = fs::path( nameMshInput ).stem().string();
+#if BOOST_FILESYSTEM_VERSION == 3
+		std::string _name = fs::path( nameMshInput ).stem().string();
+#elif BOOST_FILESYSTEM_VERSION == 2
+        std::string _name = fs::path( nameMshInput ).stem();
+#endif
 
         GModel* newGmshModel=new GModel();
         newGmshModel->readMSH( nameMshInput );
@@ -443,6 +574,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     if ( mpi::environment::initialized() )
     {
+        this->worldComm().barrier();
         mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
         LOG(INFO) << "[Gmsh::rebuildPartitionMsh] broadcast mesh filename : " << _name << " to all other processes\n";
     }
@@ -617,4 +749,38 @@ const bool meshs112s = Gmsh::Factory::type::instance().registerProduct( "hypercu
 const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hypercube(1,1,2,yypercube)", *new Feel::detail::HypercubeDomain( 1, 1, 2, "hypercube" ) );
 
 /// \endcond detail
+
+
+
+
+boost::shared_ptr<Mesh<Simplex<1> > >
+unitSegment( double h )
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
+                          _desc=domain( _name="segment",
+                                        _shape="hypercube",
+                                        _dim=3,
+                                        _h=h ) );
+}
+
+boost::shared_ptr<Mesh<Simplex<2> > >
+unitSquare( double h )
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
+                          _desc=domain( _name="square",
+                                        _shape="hypercube",
+                                        _dim=2,
+                                        _h=h ) );
+}
+
+boost::shared_ptr<Mesh<Simplex<3> > >
+unitCube( double h )
+{
+    return createGMSHMesh(_mesh=new Mesh<Simplex<3> >,
+                          _desc=domain( _name="cube",
+                                        _shape="hypercube",
+                                        _dim=3,
+                                        _h= h ) );
+}
+
 } // Feel

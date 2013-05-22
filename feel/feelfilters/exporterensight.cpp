@@ -369,29 +369,29 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
         typename timeset_type::step_const_iterator __end = __ts->endStep();
         __it = boost::prior( __end );
 
+        if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
+        {
+            std::ostringstream __geofname;
+            __geofname << this->path() << "/"
+                       << __ts->name()
+                       << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
+                       << ".geo";
+            _M_filename =  __geofname.str();
+            CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
+            if ( __ts->hasMesh() )
+                __ts->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+            if ( (*__it)->hasMesh() && !__ts->hasMesh() )
+                (*__it)->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
+        }
+
         while ( __it != __end )
         {
-            typename timeset_type::step_ptrtype __step = *__it;;
+            typename timeset_type::step_ptrtype __step = *__it;
 
 
             std::ostringstream __geofname;
 
-            if ( this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
-            {
-                __geofname << this->path() << "/"
-                           << __ts->name()
-                           << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
-                           << ".geo";
-                // save only if index == 0
-                if ( __step->isInMemory() && ( __it  == __ts->beginStep() ) )
-                {
-                    //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
-                    //, __ts->name(), __geofname.str() );
-                    _M_filename =  __geofname.str();
-                    __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
-                }
-            }
-            else
+            if ( this->exporterGeometry() != EXPORTER_GEOMETRY_STATIC )
             {
                 __geofname << this->path() << "/"
                            << __ts->name()
@@ -480,8 +480,18 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
         if ( __var->second.is_vectorial )
             nComponents = 3;
 
-        size_type __field_size = nComponents*__var->second.size()/__var->second.nComponents;
+        /**
+         * BE CAREFUL HERE some points in the mesh may not be present in the
+         * mesh element connectivity, we really need to have an array of the
+         * size of the number of points in the mesh even though if some are not
+         * in the connectivity and not an array of the dimension of the function
+         * space which has the "right" size.
+         */
+        size_type __field_size = __step->mesh()->numPoints();
+        if ( __var->second.is_vectorial )
+            __field_size *= 3;
         ublas::vector<float> __field( __field_size );
+
         __field.clear();
         typename mesh_type::element_const_iterator elt_it, elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( *__step->mesh() );
@@ -498,6 +508,10 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
                 {
                     size_type ptid = elt_it->point( p ).id();
                     size_type global_node_id = nComponents * ptid + c ;
+                    DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
+                                                                 << " local pt:" << p
+                                                                 << " mesh numPoints: " << __step->mesh()->numPoints();
+                    DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
                     if ( c < __var->second.nComponents )
                     {

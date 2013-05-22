@@ -100,7 +100,7 @@ struct MeshMarkerName
 };
 
 std::vector<MeshMarkerName> markerMap( int Dim );
-po::options_description mesh_options( int Dim, std::string const& prefix = "" );
+
 
 
 /**
@@ -109,7 +109,6 @@ po::options_description mesh_options( int Dim, std::string const& prefix = "" );
 template<typename Mesh> class Partitioner;
 
 /*!
-  \class mesh
   \brief unifying mesh class
 
   @author Christophe Prud'homme
@@ -223,6 +222,21 @@ public:
     typedef typename trace_mesh<Tag>::ptrtype trace_mesh_ptrtype;
 
 
+    template<int TheTag>
+    struct trace_trace_mesh
+    {
+        static const uint16_type nDim = (GeoShape::nDim==1)?GeoShape::nDim-1:GeoShape::nDim-2;
+        typedef typename mpl::if_<mpl::bool_<GeoShape::is_simplex>,
+                                  mpl::identity< Mesh< Simplex<nDim,nOrder,GeoShape::nRealDim>, value_type, TheTag > >,
+                                  mpl::identity< Mesh< Hypercube<nDim,nOrder,GeoShape::nRealDim>,value_type, TheTag > > >::type::type type;
+
+        typedef boost::shared_ptr<type> ptrtype;
+        typedef boost::shared_ptr<const type> const_ptrtype;
+    };
+    typedef typename trace_trace_mesh<Tag>::type trace_trace_mesh_type;
+    typedef typename trace_trace_mesh<Tag>::ptrtype trace_trace_mesh_ptrtype;
+
+
     //@}
 
     /**
@@ -325,7 +339,7 @@ public:
     face_processor_type const& localFaceId( element_type const& e,
                                             size_type const n ) const
     {
-        return _M_e2f[std::make_pair(e.id(),n)];
+        return _M_e2f.find(std::make_pair(e.id(),n))->second;
     }
 
     /**
@@ -334,7 +348,7 @@ public:
     face_processor_type const& localFaceId( size_type const e,
                                             size_type const n ) const
     {
-        return _M_e2f[std::make_pair(e,n)];
+        return _M_e2f.find(std::make_pair(e,n))->second;
     }
 #if 0
     /**
@@ -507,6 +521,22 @@ public:
     template<typename RangeT>
     typename trace_mesh<Tag>::ptrtype
     trace( RangeT const& range ) const;
+
+
+    template<int TheTag=Tag>
+    typename trace_mesh<TheTag>::ptrtype
+    wireBasket() const
+    {
+        return wireBasket(boundaryfaces(this->shared_from_this()),mpl::int_<TheTag>());
+    }
+
+    template<typename RangeT, int TheTag>
+    typename trace_trace_mesh<TheTag>::ptrtype
+    wireBasket( RangeT const& range, mpl::int_<TheTag> ) const;
+
+    template<typename RangeT>
+    typename trace_trace_mesh<Tag>::ptrtype
+    wireBasket( RangeT const& range ) const;
 
 
     template<typename Iterator>
@@ -715,14 +745,16 @@ public:
             std::ostringstream os1;
             os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
-            std::cout << "try loading " << p.native()  << "\n";
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "try loading " << p.native()  << "\n";
             if ( !fs::exists( p ) )
             {
                 LOG(INFO) << "[mesh::load] failed loading " << p.native() << "\n";
                 std::ostringstream os2;
                 os2 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
-                std::cout << " now try loading " << p.native()  << "\n";
+                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    std::cout << " now try loading " << p.native()  << "\n";
 
                 if ( !fs::exists( p ) )
                 {
@@ -1346,12 +1378,35 @@ Mesh<Shape, T, Tag>::trace( RangeT const& range ) const
 
 }
 
+template<typename Shape, typename T, int Tag>
+template<typename RangeT>
+typename Mesh<Shape, T, Tag>::template trace_trace_mesh<Tag>::ptrtype
+Mesh<Shape, T, Tag>::wireBasket( RangeT const& range ) const
+{
+    DVLOG(2) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
+    return Feel::createSubmesh<const mesh_type,RangeT,Tag>( this->shared_from_this(), range );
+
+}
+
+
 template<int TheTag> struct Tag : public mpl::int_<TheTag>  {};
 
 template<typename Shape, typename T, int Tag>
 template<typename RangeT,int TheTag>
 typename Mesh<Shape, T, Tag>::template trace_mesh<TheTag>::ptrtype
 Mesh<Shape, T, Tag>::trace( RangeT const& range, mpl::int_<TheTag> ) const
+{
+    DVLOG(2) << "[trace] extracting " << range.template get<0>() << " nb elements :"
+                  << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
+    return Feel::createSubmesh<const mesh_type,RangeT,TheTag>( this->shared_from_this(), range );
+
+}
+
+template<typename Shape, typename T, int Tag>
+template<typename RangeT,int TheTag>
+typename Mesh<Shape, T, Tag>::template trace_trace_mesh<TheTag>::ptrtype
+Mesh<Shape, T, Tag>::wireBasket( RangeT const& range, mpl::int_<TheTag> ) const
 {
     DVLOG(2) << "[trace] extracting " << range.template get<0>() << " nb elements :"
                   << std::distance(range.template get<1>(),range.template get<2>()) << "\n";
@@ -1590,7 +1645,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
         new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
-        new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
+        //new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());
 
         // Loop over the P1 nodes on this element.
@@ -1651,7 +1706,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
                 new_face.setNumberOfPartitions(old_face.numberOfPartitions());
                 new_face.setProcessId(old_face.processId());
-                new_face.setIdInPartition( old_face.pidInPartition(), n_new_faces );
+                //new_face.setIdInPartition( old_face.pidInPartition(), n_new_faces );
                 new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
                 // update P1 points info
                 for ( uint16_type p = 0; p < face_type::numVertices; ++p )
@@ -1668,9 +1723,10 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
         if ( it->isGhostCell() )
             {
-                for (auto it_pid=it->idInPartition().begin(),en_pid=it->idInPartition().end() ; it_pid!=en_pid ; ++it_pid)
+                DVLOG(2) << "element " << it->id() << " is a ghost cell\n";
+                for (auto it_pid=it->idInOthersPartitions().begin(),en_pid=it->idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
                     {
-                        //std::cout << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
+                        DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
                         const int procToSend=it_pid->first;
                         if (procToSend!=it->pidInPartition())
                             {
@@ -1777,7 +1833,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                     for (int k=0;k<vecToRecv[proc].size();++k)
                         {
                             auto elttt = new_mesh->elementIterator( memory_id[proc][k], /*new_mesh->worldComm().localRank()*/ proc );
-                            new_mesh->elements().modify( elttt, detail::update_id_in_partition_type( proc, vecToRecv[proc][k] ) );
+                            new_mesh->elements().modify( elttt, detail::updateIdInOthersPartitions( proc, vecToRecv[proc][k] ) );
                         }
                 }
 

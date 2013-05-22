@@ -165,6 +165,8 @@ public:
     void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step ) const;
 
 
+    void gmshSaveOneElementAsMesh( std::string const& filename, typename mesh_type::element_type::super const& elt ) const;
+
     //@}
 
 private:
