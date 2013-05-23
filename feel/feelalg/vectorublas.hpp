@@ -410,7 +410,7 @@ public:
      */
     void setGlobalValue( size_type i, value_type v ) const
     {
-        M_global_values( i ) = v;
+        //M_global_values( i ) = v;
     }
 
     /**
@@ -894,7 +894,7 @@ private:
 private:
     vector_type _M_vec;
     mutable bool M_global_values_updated;
-    mutable ublas::vector<value_type> M_global_values;
+    //mutable ublas::vector<value_type> M_global_values;
 };
 
 /**
