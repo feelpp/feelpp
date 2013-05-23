@@ -4069,7 +4069,7 @@ CRB<TruthModelType>::delta( size_type N,
             M_scmA->setScmForMassMatrix( false );
             boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
             boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
-            std::cout << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up << "\n";
+            LOG( INFO ) << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up ;
 
             if ( ! M_model->isSteady() )
             {
@@ -4077,7 +4077,7 @@ CRB<TruthModelType>::delta( size_type N,
                 double alphaM_up, lbti;
                 boost::tie( alphaM, lbti ) = M_scmM->lb( mu );
                 boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
-                std::cout << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up << "\n";
+                LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
         }
 
