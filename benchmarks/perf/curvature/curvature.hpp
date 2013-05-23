@@ -225,11 +225,11 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                                               _shape="hypercube",
                                               _usenames=true,
                                               _dim=Dim,
-                                              _h=meshSizeInit(),
+                                              _h=meshSizeInit() / std::pow(2,level()-1),
                                               _shear=shear,
                                               _xmin=-1.,_xmax=1.,
                                               _ymin=-1.,_ymax=1. ),
-                                _refine=level(),
+                           //_refine=level(),
                                 _partitions=nparts );
 
     M_stats.put( "t.init.mesh",t.elapsed() );t.restart();
@@ -278,7 +278,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*BasisU::nOrder); // with this one I can get order 1  for P1 and P2
 
     //    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder+1); // 0 !
-    double diffnum = (meshSizeInit() / std::pow(2,level())) / (BasisU::nOrder*2); // order 1 for P1, P2 and P3
+    double diffnum = (meshSizeInit() / std::pow(2,level()-1)) / (BasisU::nOrder*2); // order 1 for P1, P2 and P3
 
     //    double diffnum = (meshSizeInit() / std::pow(2,level())) / BasisU::nOrder; // order 0
 
