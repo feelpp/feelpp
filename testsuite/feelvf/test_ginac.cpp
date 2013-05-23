@@ -127,7 +127,7 @@ int main( int argc, char* argv[] )
 
     if ( option(_name="ginac.strict-parser").as<bool>() )
         std::cout << "Strict Ginac Parser enabled\n";
-    if ( !env.vm()["dim"].template as<int>() )
+    if ( !env.vm()["dim"].as<int>() )
         {
             std::cout << "dim=" << std::flush;
             std::cin >> dim;
@@ -135,14 +135,14 @@ int main( int argc, char* argv[] )
         }
 
     // Load param list
-    if ( !env.vm()["params"].template as<std::string>().empty() )
+    if ( !env.vm()["params"].as<std::string>().empty() )
         {
             boost::split(lst_params, params, boost::is_any_of(";"));
             parameters = symbols(lst_params);
         }
 
     // load exact
-    if ( env.vm()["exact"].template as<std::string>().empty() )
+    if ( env.vm()["exact"].as<std::string>().empty() )
         {
             // Load param list
             std::cout << "params (eg params=\"a;b\")=" << std::flush; std::cin >> params;  std::cout << std::flush;
