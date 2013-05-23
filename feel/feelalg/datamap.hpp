@@ -236,7 +236,7 @@ public:
 
         while ( ( !find ) && ( proc<this->nProcessors() ) )
         {
-            if ( ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) )
+            if ( ( this->nLocalDofWithGhost(proc) > 0 ) && ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) )
             {
                 res = proc;
                 find=true;
@@ -256,7 +256,7 @@ public:
 
     bool dofGlobalClusterIsOnProc( size_type globDof, int proc ) const
     {
-        return ( ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) );
+        return ( ( this->nLocalDofWithGhost(proc) > 0 ) && ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) );
     }
 
 
