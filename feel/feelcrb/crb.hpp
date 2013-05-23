@@ -1156,6 +1156,8 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_m
     *u = M_model->solve( mu );
 #else
 
+    int nl = M_model->Nl(); //number of outputs
+
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
@@ -1176,15 +1178,18 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_m
     auto un = M_model->functionSpace()->element();
     un = *u;
 
+    //mu-independant terms of the affine decomposition
+    boost::tie( boost::tuples::ignore , Aqm, Fqm ) = M_model->computeAffineDecomposition();
+
     do
     {
         //compute beta (eim) using the solution ( from fixed point - with affine decomposition )
         boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( un , mu );
-        //mu-independant terms of the affine decomposition
-        boost::tie( boost::tuples::ignore , Aqm, Fqm ) = M_model->computeAffineDecomposition();
 
         A->zero();
         F[0]->zero();
+        for(int l=1; l<nl; l++ )
+            F[l]->zero();
 
         //assemble matrix and vector
         int q_max = M_model->Qa();
@@ -1195,12 +1200,19 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_m
                 A->addMatrix( betaAqm[q][m] , Aqm[q][m] );
         }
 
-        q_max = M_model->Ql( 0 );
-        for ( size_type q = 0; q < q_max; ++q )
+        int nb_output=1;
+        if( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+            nb_output = nl;
+
+        for(int l=0; l<nb_output; l++)
         {
-            int m_max = M_model->mMaxF( 0, q );
-            for ( size_type m = 0; m < m_max; ++m )
-                F[0]->add( betaFqm[0][q][m] , Fqm[0][q][m] );
+            q_max = M_model->Ql( l );
+            for ( size_type q = 0; q < q_max; ++q )
+            {
+                int m_max = M_model->mMaxF( l, q );
+                for ( size_type m = 0; m < m_max; ++m )
+                    F[l]->add( betaFqm[l][q][m] , Fqm[l][q][m] );
+            }
         }
 
         //backup
@@ -4246,7 +4258,6 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
             wn[j].add( -__rij_pr, wn[i] );
         }
     }
-
     // normalize
     for ( size_type i =N-Nm; i < N; ++i )
     {
@@ -4259,7 +4270,6 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 
     if ( this->vm()["crb.check.gs"].template as<int>() )
         checkOrthonormality( N , wn );
-
 }
 
 template <typename TruthModelType>
