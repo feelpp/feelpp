@@ -318,13 +318,15 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     else
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
+    DVLOG(2) << "[buildGhostInterProcessDofMap] nbFaceDof " << nbFaceDof << "\n";
+
     if ( nbFaceDof == 0 ) return;
 
     const uint16_type ncdof = is_product?nComponents:1;
+    DVLOG(2) << "[buildGhostInterProcessDofMap] ncdof " << ncdof << "\n";
 
     //------------------------------------------------------------------------------//
     std::vector<bool> dofdone(this->_M_n_localWithGhost_df[myRank],false);
-    //std::vector<bool> setInterProcessDofNotPresentBis(this->_M_n_localWithGhost_df[myRank],false);
     size_type nDofNotPresent=0;
 
     // iteration on all interprocessfaces in order to send requests to the near proc
@@ -339,6 +341,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
         const bool elt0isGhost = elt0.isGhostCell();
         auto const& eltOnProc = (elt0isGhost)?elt1:elt0;
         auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+        DVLOG(2) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") eltOnProc id: "  << eltOnProc.id()  << "G(): " << eltOnProc.G() << "\n";
+        DVLOG(2) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") eltOffProc id: " << eltOffProc.id() << "G(): " << eltOffProc.G() << "\n";
 
         //------------------------------------------------------------------------------//
 
@@ -397,7 +401,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     //------------------------------------------------------------------------------//
     //------------------------------------------------------------------------------//
     // update datamap info
-    const size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - nDofNotPresent;
+    //const size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - nDofNotPresent;
+    const size_type mynDofWithoutGhost = this->_M_n_localWithGhost_df[myRank] - nDofNotPresent;
     mpi::all_gather( this->worldComm(),
                      mynDofWithoutGhost,
                      this->_M_n_localWithoutGhost_df );
@@ -412,8 +417,15 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     this->_M_last_df_globalcluster=this->_M_last_df;
     for ( int i=1; i<this->worldComm().size(); ++i )
     {
-        this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
-        this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
+        if ( this->_M_n_localWithoutGhost_df[i-1] >0 )
+            this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
+        else
+            this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1];
+
+        if ( this->_M_n_localWithoutGhost_df[i] >0 )
+            this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
+        else
+            this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i];
     }
     //------------------------------------------------------------------------------//
     // init map
@@ -485,11 +497,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
                 memoryInitialRequest[proc][cptFaces][cptDof] = theglobdof;
                 //------------------------------------------------------------------------------//
                 // get info to send
-                ublas::vector<double> nodeDofToSend( nDim );
+                ublas::vector<double> nodeDofToSend( nRealDim );
                 nodeDofToSend[0]=dofPoint( theglobdof ).template get<0>()[0];
-                if ( nDim>1 )
+                if ( nRealDim>1 )
                     nodeDofToSend[1]=dofPoint( theglobdof ).template get<0>()[1];
-                if ( nDim>2 )
+                if ( nRealDim>2 )
                     nodeDofToSend[2]=dofPoint( theglobdof ).template get<0>()[2];
                 // up container
                 dofsInFaceContainer[cptDof] = boost::make_tuple(comp,nodeDofToSend);
@@ -517,6 +529,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
             this->worldComm().recv( proc, cpt, dataToRecvVec );
 
             auto const idFaceInMyPartition = dataToRecvVec.template get<0>();
+            DVLOG(2) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
+                    << "idFaceInMyPartition: " << idFaceInMyPartition << "\n";
 
             auto itDofInFace = dataToRecvVec.template get<1>().begin();
             auto const enDofInFace = dataToRecvVec.template get<1>().end();
@@ -541,13 +555,47 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
                 int locDof = nbFaceDof;
                 bool find=false;
 
+                if ( nDim==1 )
+                {
+                    auto itdofpt = this->dofPointBegin();
+                    auto const endofpt = this->dofPointEnd();
+                    size_type indexpt=0;
+                    for ( ; itdofpt!=endofpt && !find ; ++itdofpt,++indexpt )
+                    {
+                        const auto thedofPtInFace = itdofpt->template get<0>();
+                        DVLOG(3) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
+                                 << "thedofPtInFace: " << thedofPtInFace << "nodeDofRecv: " << nodeDofRecv << "\n";
+
+                        // test equatlity of dofs point
+                        bool find2=true;
+                        for (uint16_type d=0;d<nRealDim;++d)
+                        {
+                            find2 = find2 && (std::abs( thedofPtInFace[d]-nodeDofRecv[d] )<1e-9);
+                        }
+                        // if find else save local dof
+                        if (find2) { locDof = indexpt;find=true; }
+                    }
+                    // check
+                    CHECK( find ) << "\nPROBLEM with parallel dof table construction : Dof point not find on interprocess face " << nodeDofRecv << "\n";
+                    //------------------------------------------------------------------------------//
+                    // get global dof
+                    //const auto thedof = localToGlobal( idFaceInMyPartition, locDof, comp );
+                    const auto dofGlobAsked = locDof;//thedof.template get<0>();
+                    // save response
+                    resAskedWithMultiProcess[cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                }
+                else
+                {
                 for ( uint16_type l = 0; ( l < nbFaceDof && !find ) ; ++l )
                 {
                     // dof point in face
                     const auto thedofPtInFace = dofPoint(faceLocalToGlobal( idFaceInMyPartition, l, comp ).template get<0>()).template get<0>();
+                    DVLOG(3) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
+                            << "thedofPtInFace: " << thedofPtInFace << "nodeDofRecv: " << nodeDofRecv << "\n";
+
                     // test equatlity of dofs point
                     bool find2=true;
-                    for (uint16_type d=0;d<nDim;++d)
+                    for (uint16_type d=0;d<nRealDim;++d)
                     {
                         find2 = find2 && (std::abs( thedofPtInFace[d]-nodeDofRecv[d] )<1e-9);
                     }
@@ -560,7 +608,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
                 } // for ( uint16_type l = 0; ( l < nbFaceDof && !find ) ; ++l )
                 //------------------------------------------------------------------------------//
                 // check
-                //if ( !find ) std::cout<<"\n [buildGhostInterProcessDofMap] : Dof point not find on interprocess face " << nodeDofRecv << std::endl;
                 CHECK( find ) << "\nPROBLEM with parallel dof table construction : Dof point not find on interprocess face " << nodeDofRecv << "\n";
                 //------------------------------------------------------------------------------//
                 // get global dof
@@ -568,6 +615,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
                 const auto dofGlobAsked = thedof.template get<0>();
                 // save response
                 resAskedWithMultiProcess[cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
+                }
                 //------------------------------------------------------------------------------//
             }
             this->worldComm().send( proc, cpt, resAskedWithMultiProcess );
@@ -1267,7 +1315,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 
     //------------------------------------------------------------------------------//
     // update datamap info
-    const size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - setInterProcessDofNotPresent.size();
+    //const size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - setInterProcessDofNotPresent.size();
+    const size_type mynDofWithoutGhost = this->_M_n_localWithGhost_df[myRank] - setInterProcessDofNotPresent.size();
     mpi::all_gather( this->worldComm(),
                      mynDofWithoutGhost,
                      this->_M_n_localWithoutGhost_df );
@@ -1282,8 +1331,15 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     this->_M_last_df_globalcluster=this->_M_last_df;
     for ( int i=1; i<this->worldComm().size(); ++i )
     {
-        this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
-        this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
+        if ( this->_M_n_localWithoutGhost_df[i-1] >0 )
+            this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
+        else
+            this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1];
+
+        if ( this->_M_n_localWithoutGhost_df[i] >0 )
+            this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
+        else
+            this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i];
     }
 
     //------------------------------------------------------------------------------//
