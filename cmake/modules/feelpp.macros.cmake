@@ -6,7 +6,7 @@ macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS;TEST"
-    "NO_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -44,18 +44,18 @@ macro(feelpp_add_application)
   target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   #INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
   if ( NOT FEELPP_APP_NO_TEST )
-	IF(NProcs2 GREATER 1)
-    		add_test(NAME ${execname}-np-${NProcs2} COMMAND mpirun -np ${NProcs2} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST})
+	IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+    	  add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
 	ENDIF()
-    add_test(NAME ${execname}-np-1 COMMAND mpirun -np 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST})
+	add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
   endif()
   #add_dependencies(crb ${execname})
   # Add label if provided
   if ( FEELPP_APP_LABEL )
     set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
     if ( NOT FEELPP_APP_NO_TEST )
-	IF(NProcs2 GREATER 1)
-      		set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABEL})
+	IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+      	  set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABEL})
 	ENDIF()
       set_property(TEST ${execname}-np-1 PROPERTY LABELS ${FEELPP_APP_LABEL})
     endif()
