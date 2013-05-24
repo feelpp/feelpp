@@ -96,6 +96,22 @@ public :
     static const uint16_type ParameterSpaceDimension = 2;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
+class FunctionSpaceDefinition
+{
+public :
+    static const uint16_type Order = 1;
+    typedef double value_type;
+
+    /*mesh*/
+    typedef Simplex<2,Order> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    /*basis*/
+    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+
+    /*space*/
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+};
 
 
 /**
@@ -105,11 +121,11 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class HeatShield : public ModelCrbBase< ParameterDefinition >
+class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition> super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -184,8 +200,8 @@ public:
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
 
     //@}
 
@@ -206,7 +222,7 @@ public:
     ~HeatShield() {}
 
     //! initialization of the model
-    void init();
+    void initModel();
     //@}
 
     /** @name Operator overloads
@@ -279,16 +295,6 @@ public:
             throw std::logic_error( "[Model heatshield] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
     }
 
-    int QInitialGuess() const
-    {
-        return 1;
-    }
-
-    int mMaxInitialGuess( int q )
-    {
-        return 1;
-    }
-
 
     /**
      * \brief Returns the function space
@@ -308,13 +314,13 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
     {
         return computeBetaQm( mu , time );
     }
 
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> , beta_vector_type >
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>  >
     computeBetaQm( parameter_type const& mu , double time=1e30 )
     {
         double biot_out   = mu( 0 );
@@ -341,69 +347,9 @@ public:
         M_betaFqm[1][0].resize( 1 );
         M_betaFqm[1][0][0] = 1./surface;
 
-        M_betaInitialGuessQm.resize( QInitialGuess() );
-        M_betaInitialGuessQm[0].resize( 1 );
-        M_betaInitialGuessQm[0][0] = 0;
-
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm , M_betaInitialGuessQm);
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
     }
 
-    /**
-     * \brief return the coefficient vector
-     */
-    beta_vector_type const& betaAqm() const
-    {
-        return M_betaAqm;
-    }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    beta_vector_type const& betaMqm() const
-    {
-        return M_betaMqm;
-    }
-
-
-    /**
-     * \brief return the coefficient vector
-     */
-    std::vector<beta_vector_type> const& betaFqm() const
-    {
-        return M_betaFqm;
-    }
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaAqm( int q, int m ) const
-    {
-        return M_betaAqm[q][m];
-    }
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaMqm( int q, int m ) const
-    {
-        return M_betaMqm[q][m];
-    }
-
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_betaInitialGuessQm[q][m];
-    }
-
-
-    /**
-     * \return the \p q -th term of the \p l -th output
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_betaFqm[l][q][m];
-    }
 
     //@}
 
@@ -446,6 +392,15 @@ public:
      */
     affine_decomposition_type computeAffineDecomposition();
 
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        element_ptrtype elt ( new element_type ( Xh ) );
+        q[0][0] = elt;
+        return q;
+    }
     /**
      * \brief solve the model for parameter \p mu
      * \param mu the model parameter
@@ -598,9 +553,7 @@ HeatShield::HeatShield()
     export_number( 0 ),
     do_export( false ),
     M_Dmu( new parameterspace_type )
-{
-    this->init();
-}
+{ }
 
 HeatShield::HeatShield( po::variables_map const& vm )
     :
@@ -611,9 +564,7 @@ HeatShield::HeatShield( po::variables_map const& vm )
     export_number( 0 ),
     do_export( vm["do-export"].as<bool>() ),
     M_Dmu( new parameterspace_type )
-{
-    this->init();
-}
+{ }
 
 
 
@@ -687,7 +638,7 @@ void HeatShield::initializationField( element_ptrtype& initial_field , parameter
     initial_field->setZero();
 }
 
-void HeatShield::init()
+void HeatShield::initModel()
 {
 
 
@@ -816,12 +767,12 @@ void HeatShield::assemble()
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, M ) =
+    form2( _test=Xh, _trial=Xh, _matrix=M ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     M->close();
 
     Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, Mpod ) =
+    form2( _test=Xh, _trial=Xh, _matrix=Mpod ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     Mpod->close();
 
@@ -847,7 +798,7 @@ HeatShield::newVector() const
 typename HeatShield::affine_decomposition_type
 HeatShield::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm , M_InitialGuessQm );
+    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
 }
 
 
@@ -1026,7 +977,7 @@ void HeatShield::run( const double * X, unsigned long N, double * Y, unsigned lo
 
     if ( do_init )
     {
-        this->init();
+        this->initModel();
         do_init = false;
     }
 
@@ -1061,10 +1012,10 @@ double HeatShield::output( int output_index, parameter_type const& mu, bool expo
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                element_ptrtype eltF( new element_type( Xh ) );
-                *eltF = *M_Fqm[output_index][q][m];
-                s += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
-                //s += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+                //element_ptrtype eltF( new element_type( Xh ) );
+                //*eltF = *M_Fqm[output_index][q][m];
+                //s += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
+                s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m], *pT );
             }
         }
     }

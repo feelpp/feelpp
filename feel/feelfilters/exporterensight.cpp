@@ -178,6 +178,7 @@ ExporterEnsight<MeshType,N>::_F_writeSoSFile() const
                   << "data_path: " << fs::current_path().string() << "\n"
                   << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
         }
+        __out.close();
     }
 }
 template<typename MeshType, int N>

@@ -175,6 +175,7 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
             exit( 0 );
         }
 
+#if 0
         __out << "FORMAT:\n"
               << "type: master_server gold \n"
               << "SERVERS\n"
@@ -189,6 +190,18 @@ ExporterEnsightGold<MeshType,N>::writeSoSFile() const
                   << "data_path: " << fs::current_path().string() << "\n"
                   << "casefile: " << this->prefix() << "-" << this->worldComm().globalSize() << "_" << pid << ".case\n";
         }
+#else
+        __out << "FORMAT:\n"
+              << "type: master_server gold \n\n"
+              << "MULTIPLE_CASEFILES\n"
+              << "total number of cfiles: " << this->worldComm().globalSize() << "\n"
+              << "cfiles global path: " << fs::current_path().string() << "\n"
+              << "cfiles pattern: "<<this->prefix() << "-" << this->worldComm().globalSize() << "_*.case\n"
+              << "cfiles start number: 0\n"
+              << "cfiles increment: 1\n\n"
+              << "SERVERS\n"
+              << "number of servers: "<< (this->worldComm().globalSize()/100)+1 <<" repeat\n";
+#endif
     }
 }
 template<typename MeshType, int N>
@@ -426,7 +439,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
     }
 
     __out << "\n";
-
+#if 0
     if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
     {
         __out << "APPENDED_CASEFILES\n"
@@ -442,6 +455,7 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             __out << filestr.str() << "\n        ";
         }
     }
+#endif
     __out.close();
 
 }
@@ -632,10 +646,11 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                 }
             }
             std::vector<float> field( nComponents*nv );
-            for ( uint16_type c = 0; c < nComponents; ++c )
+            for( ; fit != fen; ++fit )
             {
-                for( ; fit != fen; ++fit )
+                for ( uint16_type c = 0; c < nComponents; ++c )
                 {
+
                     for ( size_type j = 0; j < nverts; j++ )
                     {
                         int pid = fit->point( j ).id();
@@ -669,8 +684,13 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             __out.write( ( char * ) & buffer, sizeof( buffer ) );
             uint16_type nComponents = __var->second.nComponents;
 
+            LOG(INFO) << "nComponents field: " << nComponents;
             if ( __var->second.is_vectorial )
+            {
                 nComponents = 3;
+                LOG(INFO) << "nComponents field(is_vectorial): " << nComponents;
+            }
+
 
             /**
              * BE CAREFUL HERE some points in the mesh may not be present in the
@@ -682,7 +702,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             size_type __field_size = __step->mesh()->numPoints();
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
-            ublas::vector<float> __field( __field_size );
+            ublas::vector<float> __field( __field_size, 0. );
 
             __field.clear();
             //typename mesh_type::element_const_iterator elt_it, elt_en;
@@ -699,9 +719,9 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             if ( !__var->second.areGlobalValuesUpdated() )
                 __var->second.updateGlobalValues();
 
-            for ( uint16_type c = 0; c < nComponents; ++c )
+            for ( ; elt_it != elt_en; ++elt_it )
             {
-                for ( ; elt_it != elt_en; ++elt_it )
+                for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
                 {
                     for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                     {

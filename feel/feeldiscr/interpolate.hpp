@@ -109,6 +109,8 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
     auto it = f.functionSpace()->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
     auto en = f.functionSpace()->mesh()->endElementWithProcessId( space->mesh()->comm().rank() );
+    if ( it==en ) return;
+
     //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
 
     //f.id( *fectx, fvalues );
