@@ -72,11 +72,10 @@ namespace Feel
    - \subpage Layout
 */
 
-
-
-
-
-
+/** \page Modules
+   - \subpage fsi FSI
+   - \subpage hifimagnet HIFIMAGNET
+*/
 
 
 }
