@@ -747,7 +747,7 @@ public:
                                 if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
                                 {
                                     LOG(INFO) << "start convergence study...\n";
-                                    std::map<int, boost::tuple<double,double,double,double,double> > conver;
+                                    std::map<int, boost::tuple<double,double,double,double,double,double> > conver;
                                     for( int N = 1; N <= crb->dimension(); N++ )
                                     {
                                         //auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
@@ -761,7 +761,8 @@ public:
                                         double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
                                         double condition_number = o.template get<3>();
-                                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number );
+                                        double error_bound_efficiency = relative_estimated_error / rel_err;
+                                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , error_bound_efficiency );
                                         LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
                                             std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<relative_estimated_error<<" "<<condition_number<<std::endl;
@@ -769,6 +770,7 @@ public:
                                         M_mapConvCRB["H1"][N-1](curpar - 1) = h1_error;
                                         M_mapConvCRB["Rel"][N-1](curpar - 1) = rel_err;
                                         M_mapConvCRB["EstimatedError"][N-1](curpar - 1) = relative_estimated_error;
+                                        M_mapConvCRB["ErrorBoundEfficiency"][N-1](curpar - 1) =  error_bound_efficiency;
                                         LOG(INFO) << "N=" << N << " done.\n";
                                     }
                                     if( proc_number == Environment::worldComm().masterRank() )
@@ -781,7 +783,7 @@ public:
                                         std::ofstream conv( file_name );
                                         BOOST_FOREACH( auto en, conver )
                                             conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() <<
-                                            "\t"<< en.second.get<3>() << "\t"<< en.second.get<4>()<< "\n";
+                                            "\t"<< en.second.get<3>() << "\t"<< en.second.get<4>()<< "\t" <<en.second.get<5>()<< "\n";
                                     }
                                 }//end of cvg-study
                             }//case CRB
@@ -1075,6 +1077,7 @@ private:
         M_mapConvCRB["H1"] = std::vector<vectorN_type>(N);
         M_mapConvCRB["Rel"] = std::vector<vectorN_type>(N);//true error
         M_mapConvCRB["EstimatedError"] = std::vector<vectorN_type>(N);//estimated error
+        M_mapConvCRB["ErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
 
         for(int j=0; j<N; j++)
             {
@@ -1082,6 +1085,7 @@ private:
                 M_mapConvCRB["H1"][j].resize(sampling_size);
                 M_mapConvCRB["Rel"][j].resize(sampling_size);
                 M_mapConvCRB["EstimatedError"][j].resize(sampling_size);
+                M_mapConvCRB["ErrorBoundEfficiency"][j].resize(sampling_size);
             }
     }
 
@@ -1197,7 +1201,7 @@ private:
     {
         auto N = crb->dimension();
         //std::list<std::string> list_error_type;
-        std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("Rel")("EstimatedError");
+        std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("Rel")("EstimatedError")("ErrorBoundEfficiency");
         BOOST_FOREACH( auto error_name, list_error_type)
             {
                 std::ofstream conv;
