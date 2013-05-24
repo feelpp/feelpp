@@ -1,0 +1,21 @@
+Description: Disable test timing.
+ Tests are much slower on Hurd and package FTBFS because of these timings.
+Author: Denis Barbier
+Origin: Debian
+Forwarded: http://trac.openturns.org/ticket/600
+Last-Update: 2013-02-02
+
+Index: openturns/python/test/t_coupling_tools.py
+===================================================================
+--- openturns.orig/python/test/t_coupling_tools.py
++++ openturns/python/test/t_coupling_tools.py
+@@ -13,7 +13,8 @@ parsed = '# ooo\nE=1.6\nE1=1.6\nFE1=5#oo
+ # how many Mo for perf file
+ #howbig = 3024
+ howbig = 256
+-max_time = divmod(howbig, 5)[0]
++# Disable test timing
++max_time = sys.maxint
+ 
+ 
+ def create_template():

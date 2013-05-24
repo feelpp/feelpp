@@ -1,0 +1,65 @@
+Description: switch from opencascade to oce
+Origin: http://www.geuz.org/pipermail/gmsh/2011/006731.html
+Author: D. Barbier <bouzim@gmail.com>
+Reviewed-by: Anton Gladky <gladky.anton@gmail.com>
+Last-Update: 2012-02-10
+
+Index: gmsh-tetgen-2.6.2~svn13116/CMakeLists.txt
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13116.orig/CMakeLists.txt	2012-09-05 11:18:48.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13116/CMakeLists.txt	2012-09-05 11:18:56.000000000 +0200
+@@ -824,15 +824,6 @@
+ endif(HAVE_SOLVER)
+ 
+ if(ENABLE_OCC)
+-  if(WIN32 OR CYGWIN)
+-    if(HAVE_64BIT_SIZE_T)
+-      set(OCC_SYS_NAME win64)
+-    else(HAVE_64BIT_SIZE_T)
+-      set(OCC_SYS_NAME win32)
+-    endif(HAVE_64BIT_SIZE_T)
+-  else(WIN32 OR CYGWIN)
+-    set(OCC_SYS_NAME ${CMAKE_SYSTEM_NAME})
+-  endif(WIN32 OR CYGWIN)
+   set(OCC_LIBS_REQUIRED
+       # subset of DataExchange
+       TKSTEP TKSTEP209 TKSTEPAttr TKSTEPBase TKIGES TKXSBase
+@@ -843,6 +834,30 @@
+       TKBRep TKGeomBase TKG3d TKG2d
+       # FoundationClasses
+       TKAdvTools TKMath TKernel)
++  # First try to detect OpenCascade Community Edition, based on CMake
++  find_package(OCE QUIET COMPONENTS ${OCC_LIBS_REQUIRED})
++  if(OCE_ALL_FOUND)
++    list(APPEND EXTERNAL_LIBRARIES ${OCC_LIBS_REQUIRED})
++    list(APPEND EXTERNAL_INCLUDES ${OCE_INCLUDE_DIRS})
++    set_config_option(HAVE_OCC "OpenCascade(OCE)")
++    add_definitions(-DHAVE_NO_OCC_CONFIG_H)
++    if(HAVE_64BIT_SIZE_T)
++      add_definitions(-D_OCC64)
++    endif(HAVE_64BIT_SIZE_T)
++    if(CYGWIN)
++      list(APPEND EXTERNAL_LIBRARIES "winspool")
++    elseif(MSVC)
++      add_definitions(-DWNT)
++    endif(CYGWIN)
++  else(OCE_ALL_FOUND)
++    if(OCE_FOUND)
++      message(STATUS "Found OCE version ${OCE_VERSION}, but those libraries are missing: " ${OCE_MISSING_TOOLKITS})
++    endif(OCE_FOUND)
++    if(WIN32 OR CYGWIN)
++      set(OCC_SYS_NAME win32)
++    else(WIN32 OR CYGWIN)
++      set(OCC_SYS_NAME ${CMAKE_SYSTEM_NAME})
++    endif(WIN32 OR CYGWIN)
+   list(LENGTH OCC_LIBS_REQUIRED NUM_OCC_LIBS_REQUIRED)
+   set(OCC_LIBS)
+   foreach(OCC ${OCC_LIBS_REQUIRED})
+@@ -878,6 +893,7 @@
+       endif(NOT OCC_CONFIG_H)
+     endif(OCC_INC)
+   endif(NUM_OCC_LIBS EQUAL NUM_OCC_LIBS_REQUIRED)
++  endif(OCE_ALL_FOUND)
+   if(HAVE_OCC AND ENABLE_SALOME)
+     add_subdirectory(contrib/Salome)
+     include_directories(contrib/Salome)

@@ -95,6 +95,16 @@ gmsh_options( std::string const& prefix )
 }
 
 po::options_description
+ginac_options( std::string const& prefix )
+{
+    po::options_description _options( "GiNaC " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"ginac.strict-parser" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable strict parsing of GiNaC expressions, no extra variables/symbols can be defined if set to true" )
+        ;
+    return _options;
+}
+po::options_description
 feel_options( std::string const& prefix  )
 {
     auto opt = benchmark_options( prefix )
@@ -121,6 +131,9 @@ feel_options( std::string const& prefix  )
 
         /* gmsh options */
         .add( gmsh_options( prefix ) )
+
+        /* ginac options */
+        .add( ginac_options( prefix ) )
 
         /* material options */
         .add( material_options( prefix ) )
