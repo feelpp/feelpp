@@ -27,7 +27,6 @@ project( feel-research )
 
 foreach(project dot fsi hifimagnet idf ifp  hamm maxwell cabine pmp m2cssi rb publications )
 
-# a posteriori error estimation project
 if ( EXISTS ${FEELPP_SOURCE_DIR}/research/${project} )
   add_subdirectory( ${project} )
 endif()

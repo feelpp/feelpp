@@ -218,3 +218,32 @@ if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   endif()
 endif( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
 endmacro(feelpp_ot_add_python_module)
+
+MACRO(find_directories_containing result_list)
+  PARSE_ARGUMENTS(FILE
+    "FILTER"
+    ${ARGN}
+    )
+  CAR(FILE_NAME ${FILE_DEFAULT_ARGS})
+
+  if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+    MESSAGE("*** Arguments for find_directories_containing " ${FILE_DEFAULT_ARGS})
+    MESSAGE("  Filters: ${FILE_FILTER}")
+  endif()
+
+    FILE(GLOB_RECURSE new_list ${FILE_NAME})
+    SET(dir_list "")
+    FOREACH(file_path ${new_list})
+        GET_FILENAME_COMPONENT(dir_path ${file_path} PATH)
+        #MESSAGE("    dir_path: ${dir_path}")
+        if ( FILE_FILTER )
+           if ( "${dir_path}" MATCHES "(.*)${FILE_FILTER}/(.*)" )
+              #MESSAGE(STATUS "${dir_path}")
+              LIST(APPEND dir_list ${dir_path})
+           endif()
+        endif()
+    ENDFOREACH()
+    LIST(REMOVE_DUPLICATES dir_list)
+    #MESSAGE("    LIST: ${dir_list}")
+    SET(${result_list} ${dir_list})
+ENDMACRO(find_directories_containing)
