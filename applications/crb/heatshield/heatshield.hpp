@@ -767,12 +767,12 @@ void HeatShield::assemble()
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, M ) =
+    form2( _test=Xh, _trial=Xh, _matrix=M ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     M->close();
 
     Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, Mpod ) =
+    form2( _test=Xh, _trial=Xh, _matrix=Mpod ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     Mpod->close();
 

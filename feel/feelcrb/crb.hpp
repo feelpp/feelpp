@@ -1560,11 +1560,14 @@ CRB<TruthModelType>::offline()
         if ( M_error_type == CRB_RESIDUAL_SCM )
         {
             M_scmA->setScmForMassMatrix( false );
-            std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
+            if( ! M_scmA->loadDB() )
+                std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
+
             if ( ! M_model->isSteady() )
             {
                 M_scmM->setScmForMassMatrix( true );
-                std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
+                if( ! M_scmM->loadDB() )
+                    std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
             }
         }
 
