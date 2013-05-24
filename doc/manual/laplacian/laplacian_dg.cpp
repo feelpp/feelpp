@@ -63,7 +63,8 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
-    auto a = form2( _trial=Vh, _test=Vh );
+    auto mat = backend()->newMatrix(_trial=Vh, _test=Vh, _pattern=size_type(Pattern::EXTENDED) );
+    auto a = form2( _trial=Vh, _test=Vh, _matrix=mat );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a +=integrate( internalfaces( mesh ),
