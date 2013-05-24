@@ -1059,6 +1059,9 @@ public:
 
     typedef typename ModelType::element_type solution_type;
 
+    typedef typename SpaceType::mesh_type mesh_type;
+    static const uint16_type nDim = mesh_type::nDim;
+
     typedef typename super::parameterspace_type parameterspace_type;
     typedef typename super::parameter_type parameter_type;
     typedef typename super::sampling_ptrtype sampling_ptrtype;
@@ -1161,7 +1164,8 @@ public:
     boost::tuple<double,node_type> computeMaximumOfResidual( parameter_type const& mu, element_type const& z, element_type const& g)
     {
         double max=0;
-        node_type node;
+        node_type node(nDim);
+        for(int d=0; d<nDim; d++) node(d)=0;
 
         M_mu=mu;
 
@@ -1226,7 +1230,8 @@ public:
     boost::tuple<double,node_type> computeMaximumOfExpression( parameter_type const& mu, element_type const& g)
     {
         double max=0;
-        node_type node;
+        node_type node(nDim);
+        for(int d=0; d<nDim; d++) node(d)=0;
 
         M_mu = mu;
         auto expr = M_expr;
