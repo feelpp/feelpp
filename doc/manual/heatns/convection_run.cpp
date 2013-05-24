@@ -32,11 +32,9 @@
 void
 Convection::run()
 {
-    std::cout << "start run()\n";
-    std::cout << "gr=" << this->vm()["gr"]. as<double>() << std::endl;
-    std::cout << "pr=" << this->vm()["pr"]. as<double>() << std::endl;
-    std::cout << "h=" << this->vm()["hsize"]. as<double>() << std::endl;
-    std::cout << "parameter defined\n";
+    LOG( INFO ) << "gr=" << this->vm()["gr"]. as<double>() ;
+    LOG( INFO ) << "pr=" << this->vm()["pr"]. as<double>() ;
+    LOG( INFO ) << "h=" << this->vm()["hsize"]. as<double>() ;
 
 
     using namespace Feel::vf;
@@ -45,7 +43,6 @@ Convection::run()
     timers["all"].first.restart();
 
     std::ofstream timings( "runtime.txt" );
-    std::cout << "1\n";
 
     //
     // --- MESH ---
@@ -119,8 +116,8 @@ Convection::run()
 #if CONVECTION_DIM == 2
     u = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( Px()*Py(),Py()*Px() ) );
     un = vf::project( Xh-> functionSpace<0>(), elements( mesh ), vec( Px()*Py(),Py()*Px() ) );
-    std::cout << integrate( elements( mesh ), idv( u ) , _Q<2>() ).evaluate() << "\n";
-    std::cout << integrate( boundaryfaces( mesh ), gradv( u )*N() , _Q<1>() ).evaluate() << "\n";
+    LOG( INFO ) << integrate( elements( mesh ), idv( u ) , _Q<2>() ).evaluate() << "\n";
+    LOG( INFO ) << integrate( boundaryfaces( mesh ), gradv( u )*N() , _Q<1>() ).evaluate() << "\n";
 #endif
 
     p = vf::project( Xh->  functionSpace<1>(), elements( mesh ), exp( Px() ) );
@@ -129,23 +126,21 @@ Convection::run()
     tn = vf::project( Xh->  functionSpace<2>(), elements( mesh ), sin( Py() ) );
 
 
-    std::cout << integrate( elements( mesh ), idv( p ) , _Q<3>() ).evaluate() << "\n";
-    std::cout << integrate( elements( mesh ), idv( t ) , _Q<6>() ).evaluate() << "\n";
+    LOG( INFO ) << integrate( elements( mesh ), idv( p ) , _Q<3>() ).evaluate() << "\n";
+    LOG( INFO ) << integrate( elements( mesh ), idv( t ) , _Q<6>() ).evaluate() << "\n";
 
 
-    std::cout << integrate( boundaryfaces( mesh ), gradv( p )*N() , _Q<3>() ).evaluate() << "\n";
-    std::cout << integrate( boundaryfaces( mesh ), gradv( t )*N() , _Q<6>() ).evaluate() << "\n";
+    LOG( INFO ) << integrate( boundaryfaces( mesh ), gradv( p )*N() , _Q<3>() ).evaluate() << "\n";
+    LOG( INFO ) << integrate( boundaryfaces( mesh ), gradv( t )*N() , _Q<6>() ).evaluate() << "\n";
 
 #if defined( FEELPP_USE_LM )
     xi = vf::project( Xh->  functionSpace<3>(), elements( mesh ), constant( 1.0 ) );
-    std::cout << integrate( elements( mesh ), idv( xi ), _Q<1>() ).evaluate() << "\n";
+    LOG( INFO ) << integrate( elements( mesh ), idv( xi ), _Q<1>() ).evaluate() << "\n";
 #endif
 
-    std::cout<< "----1----"<<std::endl;
     int adim=this->vm()["adim"]. as<int>();
     timers["fspace"].second=timers["fspace"].first.elapsed();
     timings << "[F spaces] Time : " << timers["fspace"].second << std::endl;
-    std::cout<< "----2----"<<std::endl;
     // init to 0 and then later reuse previous grashof results to
     // initialize the solver
 
@@ -186,27 +181,19 @@ Convection::run()
     M_backend->nlSolver()->jacobian = boost::bind( &self_type::updateJacobian,
                                                    boost::ref( *this ), _1, _2 );
 
-    std::cout<< "----3----"<<std::endl;
     // Output for the benchmark data for each grashof number
     std::ofstream benchOut( "benchmark.dat" );
-
-
-
-    std::cout<< "----4----"<<std::endl;
 
     vector_ptrtype R( M_backend->newVector( Xh ) );
     sparse_matrix_ptrtype J( M_backend->newMatrix( Xh,Xh ) );
 
     LOG(INFO) << "============================================================\n";
-    std::cout << "============================================================\n";
     double gr( this->vm()["gr"]. as<double>() );
     M_current_Grashofs = gr;
     double pr = this->vm()["pr"]. as<double>();
     M_current_Prandtl = pr;
     LOG(INFO) << "Grashof = " << M_current_Grashofs << "\n";
     LOG(INFO) << "Prandtl = " << M_current_Prandtl << "\n";
-    std::cout << "Grashof = " << M_current_Grashofs << "\n";
-    std::cout << "Prandtl = " << M_current_Prandtl << "\n";
 
     int N=1;
 
@@ -227,9 +214,9 @@ Convection::run()
             M_current_Prandtl = pr;
         }
 
-        std::cout << "i/N = " << i << "/" << N <<std::endl;
-        std::cout << " intermediary Grashof = " << M_current_Grashofs<<std::endl;
-        std::cout<< " and Prandtl = " << M_current_Prandtl << "\n"<<std::endl;
+        LOG( INFO ) << "i/N = " << i << "/" << N ;
+        LOG( INFO ) << " intermediary Grashof = " << M_current_Grashofs;
+        LOG( INFO ) << " and Prandtl = " << M_current_Prandtl ;
 
         M_backend->nlSolve( _solution = U );
 
@@ -259,30 +246,29 @@ Convection::run()
 
     // value mean-pressure
     double meas = integrate( elements( mesh ),constant( 1.0 )  ).evaluate()( 0, 0 );
-    std::cout << "measure(Omega)=" << meas << " (should be equal to 1)\n";
-    std::cout << "mean pressure = "
-              << integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas << "\n";
+    LOG( INFO ) << "measure(Omega)=" << meas << " (should be equal to 1)";
+    LOG( INFO ) << "mean pressure = "
+                << integrate( elements( mesh ) ,idv( p ) ).evaluate()( 0,0 )/meas ;
 
 #if defined( FEELPP_USE_LM )
     LOG(INFO) << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
-    std::cout << "value of the Lagrange multiplier xi= " << xi( 0 ) << "\n";
 #endif
 
     double mean_div_u = integrate( elements( mesh ),
                                    divv( u ) ).evaluate()( 0, 0 );
-    std::cout << "mean_div(u)=" << mean_div_u << "\n";
+    LOG( INFO ) << "mean_div(u)=" << mean_div_u ;
 
     double div_u_error_L2 = integrate( elements( mesh ),
                                        divv( u )*divv( u ) ).evaluate()( 0, 0 );
-    std::cout << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
+    LOG( INFO ) << "||div(u)||_2=" << math::sqrt( div_u_error_L2 ) ;
 
     double AverageTdomain = integrate( elements( mesh ) , idv( t ) ).evaluate()( 0,0 ) ;
-    std::cout << "AverageTdomain = " << AverageTdomain << std::endl;
+    LOG( INFO ) << "AverageTdomain = " << AverageTdomain ;
 
     // calcul le nombre de Nusselt
     double AverageT = integrate( markedfaces( mesh,"Tflux" ) ,
                                  idv( t ) ).evaluate()( 0,0 ) ;
-    std::cout << "AverageT = " << AverageT << std::endl;
+    LOG( INFO ) << "AverageT = " << AverageT ;
 
 #if 0
 #if CONVECTION_DIM==2
@@ -292,7 +278,7 @@ Convection::run()
     double Flux = integrate( markedfaces( mesh, "Fflux" ) ,
                             trans( idv( u ) )*vec( constant( -1.0 ),constant( 0.0 ), cst(0.0) ) ).evaluate()( 0,0 ) ;
 #endif
-    std::cout << "Flux = " << Flux << std::endl;
+    LOG( INFO ) << "Flux = " << Flux;
 #endif
     // benchOut << M_current_Grashofs << " " << AverageT << " " << Flux << std::endl;
 
