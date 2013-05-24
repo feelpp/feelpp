@@ -669,15 +669,15 @@ UnsteadyHeat1D::initModel()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    Mpod = backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, Mpod, _init=true ) =
+    Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=Mpod, _init=true ) =
         //integrate( elements(mesh), id(u)*idt(v) );
         integrate( elements( mesh ), id( u )*idt( v ) + grad( v )*trans( gradt( u ) ) );
     Mpod->close();
 
 
-    M = backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, M, _init=true ) =
+    M = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( v )*trans( gradt( u ) ) );
     //integrate( elements(mesh), id(u)*idt(v) );
     M->close();
@@ -708,31 +708,31 @@ UnsteadyHeat1D::assemble()
 
 
     //mass matrix
-    form2( Xh, Xh, M_Mqm[0][0], _init=true ) = integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0], _init=true ) = integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
     M_Mqm[0][0]->close();
 
     // right hand side
-    form1( Xh, M_Fqm[0][0][0], _init=true ) = integrate( markedfaces( mesh,"left" ), id( v ) );
+    form1( _test=Xh, _vector=M_Fqm[0][0][0], _init=true ) = integrate( markedfaces( mesh,"left" ), id( v ) );
     form1( _test=Xh, _vector=M_Fqm[0][1][0], _init=true ) = integrate( elements( mesh ), id( v ) );
     M_Fqm[0][0][0]->close();
     M_Fqm[0][1][0]->close();
 
     // output
-    form1( Xh, M_Fqm[1][0][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
-    form1( Xh, M_Fqm[1][0][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
+    form1( _test=Xh, _vector=M_Fqm[1][0][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
+    form1( _test=Xh, _vector=M_Fqm[1][0][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
     M_Fqm[1][0][0]->close();
 
-    form2( Xh, Xh, M_Aqm[0][0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aqm[0][0] ) += integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) += integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
 
     M_Aqm[0][0]->close();
 
-    form2( Xh, Xh, M_Aqm[1][0], _init=true ) = integrate( markedelements( mesh,"k1_1" ), ( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aqm[1][0] ) += integrate( markedelements( mesh,"k1_2" ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0], _init=true ) = integrate( markedelements( mesh,"k1_1" ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate( markedelements( mesh,"k1_2" ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aqm[1][0]->close();
 
-    form2( Xh, Xh, M_Aqm[2][0], _init=true ) = integrate( markedelements( mesh,"k2_1" ), ( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aqm[2][0] ) += integrate( markedelements( mesh,"k2_2" ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0], _init=true ) = integrate( markedelements( mesh,"k2_1" ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate( markedelements( mesh,"k2_2" ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aqm[2][0]->close();
 
 }
