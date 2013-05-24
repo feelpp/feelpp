@@ -21,6 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 find_program(LATEX NAMES latex pdflatex)

@@ -447,15 +447,15 @@ public:
         M_Dmu = M_model->parameterSpace();
         M_Xi = sampling_ptrtype( new sampling_type( M_Dmu ) );
 
-	if ( ! loadDB() )
-	    M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
-    else
-    {
-        LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
-    }
+        if ( ! loadDB() )
+            M_WNmu = sampling_ptrtype( new sampling_type( M_Dmu ) );
+        else
+        {
+            LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
+        }
 
-    //M_scmA->setTruthModel( M_model );
-    //M_scmM->setTruthModel( M_model );
+        //M_scmA->setTruthModel( M_model );
+        //M_scmM->setTruthModel( M_model );
     }
 
     //! set max iteration number
@@ -686,7 +686,7 @@ public:
      */
     void newton(  size_type N, parameter_type const& mu , vectorN_type & uN  , double& condition_number, double& output) const ;
 
-    void offlineFixedPointPrimal( parameter_type const& mu , element_ptrtype & u) const;
+    void offlineFixedPointPrimal( parameter_type const& mu , sparse_matrix_ptrtype & A, std::vector< vector_ptrtype > & F, element_ptrtype & u) const;
 
     /*
      * fixed point ( primal problem )
@@ -1149,18 +1149,14 @@ po::options_description crbOptions( std::string const& prefix = "" );
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , element_ptrtype & u ) const
+CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_matrix_ptrtype & A, std::vector< vector_ptrtype > & F, element_ptrtype & u ) const
 {
 
 #if 0
     *u = M_model->solve( mu );
 #else
-    sparse_matrix_ptrtype A = M_model->newMatrix();
-    //vector_ptrtype F = M_model->newVector();
-    int nl = M_model->Nl();
-    std::vector< vector_ptrtype > F( nl );
-    for(int l=0; l<nl; l++)
-        F[l]=M_model->newVector();
+
+    int nl = M_model->Nl(); //number of outputs
 
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
@@ -1182,15 +1178,18 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , element_
     auto un = M_model->functionSpace()->element();
     un = *u;
 
+    //mu-independant terms of the affine decomposition
+    boost::tie( boost::tuples::ignore , Aqm, Fqm ) = M_model->computeAffineDecomposition();
+
     do
     {
         //compute beta (eim) using the solution ( from fixed point - with affine decomposition )
         boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( un , mu );
-        //mu-independant terms of the affine decomposition
-        boost::tie( boost::tuples::ignore , Aqm, Fqm ) = M_model->computeAffineDecomposition();
 
         A->zero();
         F[0]->zero();
+        for(int l=1; l<nl; l++ )
+            F[l]->zero();
 
         //assemble matrix and vector
         int q_max = M_model->Qa();
@@ -1201,19 +1200,27 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , element_
                 A->addMatrix( betaAqm[q][m] , Aqm[q][m] );
         }
 
-        q_max = M_model->Ql( 0 );
-        for ( size_type q = 0; q < q_max; ++q )
+        int nb_output=1;
+        if( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+            nb_output = nl;
+
+        for(int l=0; l<nb_output; l++)
         {
-            int m_max = M_model->mMaxF( 0, q );
-            for ( size_type m = 0; m < m_max; ++m )
-                F[0]->add( betaFqm[0][q][m] , Fqm[0][q][m] );
+            q_max = M_model->Ql( l );
+            for ( size_type q = 0; q < q_max; ++q )
+            {
+                int m_max = M_model->mMaxF( l, q );
+                for ( size_type m = 0; m < m_max; ++m )
+                    F[l]->add( betaFqm[l][q][m] , Fqm[l][q][m] );
+            }
         }
 
         //backup
         uold = un;
 
         //solve
-        M_backend->solve( _matrix=A , _solution=un, _rhs=F[0]);
+        //M_backend->solve( _matrix=A , _solution=un, _rhs=F[0]);
+        backend()->solve( _matrix=A , _solution=un, _rhs=F[0]);
 
         //on each subspace the norme of the increment is computed and then we perform the sum
         increment_norm = M_model->computeNormL2( un , uold );
@@ -1553,11 +1560,14 @@ CRB<TruthModelType>::offline()
         if ( M_error_type == CRB_RESIDUAL_SCM )
         {
             M_scmA->setScmForMassMatrix( false );
-            std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
+            if( ! M_scmA->loadDB() )
+                std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
+
             if ( ! M_model->isSteady() )
             {
                 M_scmM->setScmForMassMatrix( true );
-                std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
+                if( ! M_scmM->loadDB() )
+                    std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
             }
         }
 
@@ -1635,10 +1645,10 @@ CRB<TruthModelType>::offline()
         LOG(INFO) <<"there are "<<M_N<<" elements in the database"<<std::endl;
     }//end of else associated to if ( rebuild_databse )
 
-    sparse_matrix_ptrtype M,A,Adu,At;
+    sparse_matrix_ptrtype M,Adu,At;
     element_ptrtype InitialGuess;
     //vector_ptrtype MF;
-    std::vector<vector_ptrtype> F,L;
+    std::vector<vector_ptrtype> L;
 
     LOG(INFO) << "[CRB::offline] compute affine decomposition\n";
     std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
@@ -1651,6 +1661,11 @@ CRB<TruthModelType>::offline()
     std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm,Lqm;
     sparse_matrix_ptrtype Aq_transpose = M_model->newMatrix();
 
+    sparse_matrix_ptrtype A = M_model->newMatrix();
+    int nl = M_model->Nl();
+    std::vector< vector_ptrtype > F( nl );
+    for(int l=0; l<nl; l++)
+        F[l]=M_model->newVector();
 
     std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > Rqm;
@@ -1741,7 +1756,7 @@ CRB<TruthModelType>::offline()
 
             //we need to treat nonlinearity also in offline step
             //because in online step we have to treat nonlinearity ( via a fixed point for example )
-            offlineFixedPointPrimal( mu , u );
+            offlineFixedPointPrimal( mu , A , F , u );
 
             if( solve_dual_problem )
             {
@@ -4057,7 +4072,7 @@ CRB<TruthModelType>::delta( size_type N,
             M_scmA->setScmForMassMatrix( false );
             boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
             boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
-            std::cout << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up << "\n";
+            LOG( INFO ) << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up ;
 
             if ( ! M_model->isSteady() )
             {
@@ -4065,7 +4080,7 @@ CRB<TruthModelType>::delta( size_type N,
                 double alphaM_up, lbti;
                 boost::tie( alphaM, lbti ) = M_scmM->lb( mu );
                 boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
-                std::cout << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up << "\n";
+                LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
         }
 
@@ -4246,7 +4261,6 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
             wn[j].add( -__rij_pr, wn[i] );
         }
     }
-
     // normalize
     for ( size_type i =N-Nm; i < N; ++i )
     {
@@ -4259,7 +4273,6 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 
     if ( this->vm()["crb.check.gs"].template as<int>() )
         checkOrthonormality( N , wn );
-
 }
 
 template <typename TruthModelType>
