@@ -684,9 +684,8 @@ INPUT                  = \
  "@FEELPP_HOME_DIR@/doc/api" \
  "@FEELPP_HOME_DIR@/ChangeLog" \
  "@FEELPP_HOME_DIR@/COPYING.md" \
- "@FEELPP_HOME_DIR@/doc/biblio/"
-
-
+ "@FEELPP_HOME_DIR@/doc/biblio/" \
+ "@FEELPP_PROJECTS_DIR@"
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -723,6 +722,7 @@ RECURSIVE              = YES
 
 EXCLUDE                =
 
+
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
 # from the input.
@@ -735,7 +735,10 @@ EXCLUDE_SYMLINKS       = YES
 # against the file with absolute path, so to exclude all test directories
 # for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = */.svn/* */.git/* */research/* */.tex/*
+#EXCLUDE_PATTERNS       = */.svn/* */.git/* */research/* */.tex/*
+# research may now be include
+# shall we consider to explicitly har research subdirectory to be excluded??
+EXCLUDE_PATTERNS       = */.svn/* */.git/* */.tex/*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
