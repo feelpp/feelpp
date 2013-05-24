@@ -466,8 +466,12 @@ public:
                 this->initializeConvergenceEimMap( Sampling->size() );
                 compute_fem=false;
             }
+
             if (option(_name="crb.cvg-study").template as<bool>())
                 this->initializeConvergenceCrbMap( Sampling->size() );
+
+            if (option(_name="crb.scm.cvg-study").template as<bool>())
+                this->initializeConvergenceScmMap( Sampling->size() );
 
             int crb_dimension = option(_name="crb.dimension").template as<int>();
             int crb_dimension_max = option(_name="crb.dimension-max").template as<int>();
@@ -476,6 +480,9 @@ public:
             bool crb_compute_variance  = option(_name="crb.compute-variance").template as<bool>();
 
             double output_fem = -1;
+
+            //in the case we don't do the offline step, we need the affine decomposition
+            model->computeAffineDecomposition();
 
             BOOST_FOREACH( auto mu, *Sampling )
             {
@@ -575,8 +582,6 @@ public:
 
 
                                 boost::mpi::timer ti;
-                                //in the case we don't do the offline step, we need the affine decomposition
-                                model->computeAffineDecomposition();
 
                                 ti.restart();
                                 LOG(INFO) << "solve crb\n";
@@ -631,9 +636,6 @@ public:
                                     std::ostringstream u_fem_str;
                                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                                     u_fem.setName( u_fem_str.str()  );
-
-                                    LOG(INFO) << "compute output\n";
-                                    google::FlushLogFiles(google::GLOG_INFO);
 
                                     LOG(INFO) << "export u_fem \n";
                                     exporter->step(0)->add( u_fem.name(), u_fem );
@@ -813,9 +815,38 @@ public:
 
                         case  CRBModelMode::SCM:
                             {
+
                                 std::cout << "SCM mode\n";
-                                auto o = crb->scm()->run( mu, crb->scm()->KMax() );
+                                int kmax = crb->scm()->KMax();
+                                auto o = crb->scm()->run( mu, kmax );
                                 printEntry( ostr, mu, o );
+
+                                if (option(_name="crb.scm.cvg-study").template as<bool>()  )
+                                {
+                                    LOG(INFO) << "start scm convergence study...\n";
+                                    std::map<int, boost::tuple<double> > conver;
+                                    for( int N = 1; N <= kmax; N++ )
+                                    {
+                                        auto o = crb->scm()->run( mu, N);
+                                        double relative_error = o[6];
+                                        conver[N]=boost::make_tuple( relative_error );
+                                        if ( proc_number == Environment::worldComm().masterRank() )
+                                            std::cout << "N=" << N << " " << relative_error <<std::endl;
+                                        M_mapConvSCM["RelativeError"][N-1](curpar - 1) = relative_error;
+                                    }
+                                    if( proc_number == Environment::worldComm().masterRank() )
+                                    {
+                                        LOG(INFO) << "save in logfile\n";
+                                        std::string mu_str;
+                                        for ( int i=0; i<mu.size(); i++ )
+                                            mu_str= mu_str + ( boost::format( "_%1%" ) %mu[i] ).str() ;
+                                        std::string file_name = "convergence-scm-"+mu_str+".dat";
+                                        std::ofstream conv( file_name );
+                                        BOOST_FOREACH( auto en, conver )
+                                            conv << en.first << "\t" << en.second.get<0>()  ;
+                                    }
+                                }//end of cvg-study
+
                             }
                             break;
 
@@ -843,6 +874,9 @@ public:
 
             if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
                 this->doTheCrbConvergenceStat( Sampling->size() );
+
+            if (option(_name="crb.scm.cvg-study").template as<bool>() )
+                this->doTheScmConvergenceStat( Sampling->size() );
 
             if ( compute_stat && compute_fem )
             {
@@ -1051,6 +1085,17 @@ private:
             }
     }
 
+    void initializeConvergenceScmMap( int sampling_size )
+    {
+        auto N = crb->scm()->KMax();
+        M_mapConvSCM["RelativeError"] = std::vector<vectorN_type>(N);
+
+        for(int j=0; j<N; j++)
+        {
+            M_mapConvSCM["RelativeError"][j].resize(sampling_size);
+        }
+    }
+
     void studyEimConvergence( typename ModelType::parameter_type const& mu , element_type & model_solution , int mu_number)
     {
         auto eim_sc_vector = model->scalarContinuousEim();
@@ -1183,6 +1228,40 @@ private:
             }
     }
 
+    void doTheScmConvergenceStat( int sampling_size )
+    {
+        auto N = crb->scm()->KMax();
+        std::list<std::string> list_error_type = boost::assign::list_of("RelativeError");
+        BOOST_FOREACH( auto error_name, list_error_type)
+        {
+            std::ofstream conv;
+            std::string file_name = "cvg-scm-"+ error_name +"-stats.dat";
+
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                conv.open(file_name, std::ios::app);
+                conv << "Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+            }
+
+            for(int j=0; j<N; j++)
+            {
+                double mean = M_mapConvSCM[error_name][j].mean();
+                double variance = 0.0;
+                for( int k=0; k < sampling_size; k++)
+                    variance += (M_mapConvSCM[error_name][j](k) - mean)*(M_mapConvSCM[error_name][j](k) - mean)/sampling_size;
+
+                if( Environment::worldComm().globalRank()  == Environment::worldComm().masterRank() )
+                {
+                    conv << j+1 << "\t"
+                         << M_mapConvSCM[error_name][j].minCoeff() << "\t"
+                         << M_mapConvSCM[error_name][j].maxCoeff() << "\t"
+                         << mean << "\t" << variance << "\n";
+                }
+            }
+            conv.close();
+        }
+    }
+
 
     // Script write current mu in cfg => need to write it in SamplingForTest
     void buildSamplingFromCfg()
@@ -1249,8 +1328,10 @@ private:
 
     // For EIM convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvEIM;
-    // For EIM convergence study
+    // For CRB convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvCRB;
+    // For SCM convergence study
+    std::map<std::string, std::vector<vectorN_type> > M_mapConvSCM;
 
     fs::path M_current_path;
 }; // OpusApp
