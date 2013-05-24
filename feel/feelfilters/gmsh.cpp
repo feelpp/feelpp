@@ -385,7 +385,7 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 
         int partitions = newGmshModel->getMeshPartitions().size();
 		LOG(INFO) << "[Gmsh::refine] Original mesh : " << filename.str() << "\n";
-		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+		//LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
 		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
 		LOG(INFO) << "[Gmsh::refine] partitions : " << partitions << "\n";
 		//std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
@@ -403,11 +403,11 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		if ( partitions )
             {
                 LOG(INFO) << "[Gmsh::refine] Repartioning mesh : " << filename.str() << "\n";
-                PartitionMesh( GModel::current(), CTX::instance()->partitionOptions ); 
+                PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
             }
         newGmshModel->writeMSH( filename.str() );
 		LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
-		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+		//LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
 		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
 		LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
 
@@ -755,7 +755,7 @@ unitSegment( double h )
     return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
                           _desc=domain( _name="segment",
                                         _shape="hypercube",
-                                        _dim=3,
+                                        _dim=1,
                                         _h=h ) );
 }
 
