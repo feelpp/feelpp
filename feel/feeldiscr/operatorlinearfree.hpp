@@ -35,7 +35,9 @@
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
+#if BOOST_VERSION >= 104700
 #include <boost/math/special_functions/nonfinite_num_facets.hpp>
+#endif
 #include <feel/feelvf/vf.hpp>
 namespace Feel
 {

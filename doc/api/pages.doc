@@ -1,5 +1,11 @@
+// -*- mode: c++ -*-
 namespace Feel
 {
+/**
+  \page ChangeLog
+  \page md_Credits
+  \page Notations
+*/
 /** \page GettingStarted Getting Started
    - \subpage CrashCourse
    - \subpage Building
@@ -13,6 +19,7 @@ namespace Feel
    - \subpage Mesh
    - \subpage Spaces
    - \subpage Integrals
+   - \subpage Projection
    - \subpage Forms
    - \subpage Exporter
 */
@@ -39,9 +46,11 @@ namespace Feel
 */
 /** \page HeatTransfer Heat Transfer
    - \subpage HeatSink
-*/ 
+*/
 /** \page FluidMechanics Fluid Mechanics
+   - \subpage StokesTutorial
    - \subpage StokesCurl
+   - \subpage FictitiousDomainPenalisationParticle
 */
 /** \page SolidMechanics Solid Mechanics
     - \subpage LinearElasticity

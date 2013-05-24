@@ -20,10 +20,10 @@ int main( int argc, char** argv )
                    _about=about( _name="mymesh" ,
                                  _author="Feel++ Consortium",
                                  _email="feelpp-devel@feelpp.org" ) );
-                                 
+
   // create a mesh with GMSH using Feel++ geometry tool
   auto mesh = unitSquare();
-                                 
+
   // export results for post processing
   auto e = exporter( _mesh=mesh );
   e->addRegions();
@@ -80,10 +80,34 @@ Required Parameters :
 \li \c _mesh : a mesh data structure.
 
 Optional Parameters :
-\li \c _filename : filename with extension. By default = \c "feel.geo".
-\li \c _refine : optionally refine with \p refine levels the mesh. Default =\c 0.
-\li \c _update : update the mesh data structure (build internal faces and edges). Default =\c true.
-\li \c _physical_are_elementary_regions : to load specific meshes formats. Default = \c false.
+ -  \c _hsize (double) : characteristic size of the mesh. This option will edit the \c .geo file and change the variable \c h if defined
+   - Default : \c 0.1
+   -  Option : \c gmsh.hsize
+ -  \c _geo_variables_list (string) : Set a list of variable that may be defined in a \c .geo file
+   - Default : \c ""
+   -  Option : \c gmsh.geo-variables-list
+ -  \c _filename (string) : filename with extension.
+   - Default : \c "feel.geo"
+   -  Option : \c gmsh.filename
+ -  \c _depends (string) : list of files (separated by , or ;) on which \c gmsh.filename depends
+   - Default : \c ""
+   -  Option : \c gmsh.depends
+ - \c _refine (boolean) : optionally refine with \p refine levels the mesh.
+   - Default : \c 0.
+   - Option  : \c gmsh.refine
+ - \c _update (integer) : update the mesh data structure (build internal faces and edges).
+   - Default : \c true
+ -  \c _physical_are_elementary_regions (boolean): to load specific meshes formats.
+   - Default : \c false.
+   - Option : gmsh.physical_are_elementary_regions
+ - \c _straighten (boolean): in case of curvilinear elements, straighten the elements
+   which are not touching with a face the boundary of the domain
+   - Default : \c true
+   - Option : \c gmsh.straighten
+ - \c _partitioner (integer) : define the mesh partitioner to use :
+   - Default : \c 1 (if Metis is available) \c 0 if not (CHACO)
+   - Option : gmsh.partitioner
+
 
 <br>
 The file you want to load has to be in an appropriate repository.<br>

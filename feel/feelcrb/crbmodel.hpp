@@ -268,6 +268,8 @@ public:
             M_model->setInitialized( true );
         }
 
+        initB();
+
         if ( M_mode != CRBModelMode::CRB_ONLINE &&
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
@@ -448,11 +450,12 @@ public:
     /**
      * set the mesh characteristic length to \p s
      */
+#if 0
     void setMeshSize( double s )
     {
         M_model->setMeshSize( s );
     }
-
+#endif
 
     //@}
 
@@ -533,13 +536,13 @@ public:
      */
     offline_merge_type update( parameter_type const& mu,  double time=0 )
     {
-        M_model->computeBetaQm( mu , time );
-        return offlineMerge( mu );
+        auto all_beta = this->computeBetaQm( mu , time );
+        return offlineMerge(  all_beta , mu );
     }
     offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 )
     {
-        M_model->computeBetaQm(T, mu , time );
-        return offlineMerge( mu );
+        auto all_beta = this->computeBetaQm(  T , mu , time );
+        return offlineMerge( all_beta, mu );
     }
 
     element_type solveFemUsingOnlineEimPicard( parameter_type const& mu );
@@ -820,78 +823,9 @@ public:
 
 
 
-    /**
-     * \brief Returns the vector coefficients
-     */
-    beta_vector_type const& betaAqm() const
-    {
-        return M_model->betaAqm();
-    }
-
-    /**
-     * \brief Returns the vector coefficients
-     */
-    beta_vector_type const& betaMqm() const
-    {
-        return mpl::bool_<model_type::is_time_dependent>();
-    }
-    beta_vector_type const& betaMqm( mpl::bool_<true> ) const
-    {
-        return M_model->betaMqm();
-    }
-    beta_vector_type const& betaMqm( mpl::bool_<false> ) const
-    {
-        LOG(WARNING) << "invalid call\n";
-        return  M_dummy_betaMqm;
-    }
     beta_vector_type const& betaInitialGuessQm( mpl::bool_<true> ) const
     {
         return M_model->betaInitialGuessQm();
-    }
-    /**
-     * \brief Returns the value of the \f$A_{qm}\f$ coefficient at \f$\mu\f$
-     */
-    value_type betaAqm( int q, int m ) const
-    {
-        return M_model->betaAqm(q,m);
-    }
-
-    /**
-     * \brief Returns the value of the \f$M_{qm}\f$ coefficient at \f$\mu\f$
-     */
-    value_type betaMqm( int q, int m ) const
-    {
-        return betaMqm( q, m, mpl::bool_<model_type::is_time_dependent>() );
-    }
-    value_type betaMqm( int q, int m, mpl::bool_<false> ) const
-    {
-        return 0;
-    }
-    value_type betaMqm( int q, int m, mpl::bool_<true> ) const
-    {
-        return M_model->betaMqm(q,m);
-    }
-
-
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_model->betaInitialGuessQm(q,m);
-    }
-
-    /**
-     * \brief Returns the vector coefficients
-     */
-    std::vector<beta_vector_type> const& betaL() const
-    {
-        return M_model->betaL();
-    }
-
-    /**
-     * \brief Returns the value of the \f$L_qm\f$ coefficient at \f$\mu\f$
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_model->betaL( l, q , m);
     }
 
 
@@ -1236,7 +1170,7 @@ private:
      * \param mu the parameter at which the matrix A and vector F are assembled
      *
      */
-    offline_merge_type offlineMerge( parameter_type const& mu );
+    offline_merge_type offlineMerge( betaqm_type const& all_beta, parameter_type const& mu );
 
     void assembleMassMatrix( );
     void assembleMassMatrix( mpl::bool_<true> );
@@ -1373,7 +1307,6 @@ CRBModel<TruthModelType>::initB()
 
     //the matrix associated with H1 scalar product is now given by the model
     M_B = M_model->innerProduct();
-
 #if 0
     LOG(INFO) << "[CRBModel::initB] initialize scalar product\n";
     M_B = M_backend->newMatrix( M_model->functionSpace(), M_model->functionSpace() );
@@ -1579,7 +1512,7 @@ CRBModel<TruthModelType>::assembleInitialGuess( parameter_type const& mu )
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
-CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
+CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_type const& mu )
 {
 
 #if 0
@@ -1600,10 +1533,16 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
+    //acces to beta coefficients
+    auto beta_M = all_beta.template get<0>();
+    auto beta_A = all_beta.template get<1>();
+    //warning : beta_F is a vector of beta_coefficients
+    auto beta_F = all_beta.template get<2>();
+
     for ( size_type q = 0; q < Qa(); ++q )
     {
         for(size_type m = 0; m < mMaxA(q); ++m )
-            A->addMatrix( this->betaAqm( q , m ), M_Aqm[q][m] );
+            A->addMatrix( beta_A[q][m], M_Aqm[q][m] );
     }
 
     if( Qm() > 0 )
@@ -1611,7 +1550,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
         for ( size_type q = 0; q < Qm(); ++q )
         {
             for(size_type m = 0; m < mMaxM(q) ; ++m )
-                M->addMatrix( this->betaMqm( q , m ), M_Mqm[q][m] );
+                M->addMatrix( beta_M[q][m] , M_Mqm[q][m] );
         }
     }
 
@@ -1623,7 +1562,7 @@ CRBModel<TruthModelType>::offlineMerge( parameter_type const& mu )
         for ( size_type q = 0; q < Ql( l ); ++q )
         {
             for ( size_type m = 0; m < mMaxF(l,q); ++m )
-                F[l]->add( this->betaL( l, q , m ), M_Fqm[l][q][m] );
+                F[l]->add( beta_F[l][q][m] , M_Fqm[l][q][m] );
         }
         F[l]->close();
     }

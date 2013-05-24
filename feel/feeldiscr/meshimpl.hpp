@@ -102,8 +102,8 @@ Mesh<Shape, T, Tag>::updateForUse()
 
     if ( this->numElements() == 0 )
     {
-        VLOG(2) << "No elements in Mesh?\n";
-        return;
+        VLOG(2) << "No elements in Mesh? (with process rank " << this->worldComm().rank() <<")\n";
+        if ( this->worldComm().localSize()==1 ) return;
     }
 
     boost::timer ti;
@@ -874,7 +874,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
             {
                 uint16_type pt_localid = ( nDim==1 )?j:iv->fToP( j, f );
                 s.insert( iv->point( pt_localid ).id() );
-                VLOG(2) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
+                VLOG(3) << "add point local id " << f << " to face " << j  << " " << iv->fToP( j, f )
                         << " global id " << iv->point( pt_localid ).id() << "\n";
             }
 
@@ -1152,6 +1152,9 @@ Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<2> )
 
         for ( size_type j = 0; j < this->numLocalFaces(); j++ )
         {
+            //if ( !iv->facePtr( j ) ) { LOG(INFO) << "[Mesh::updateOnBoundary] Warning : a face access is missing in elt;\n"
+            //                                    << "this->numLocalFaces " << this->numLocalFaces() << std::endl; continue; }
+
             isOnBoundary |= iv->face( j ).isOnBoundary();
         }
 
