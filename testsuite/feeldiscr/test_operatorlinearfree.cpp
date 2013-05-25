@@ -273,7 +273,7 @@ testExpression()
         auto op = opLinear( _domainSpace=Xh, _imageSpace=Xh,  _backend=backend );
         *op = expr;
 
-        //stock operators
+        //store operators
         operators_vector.push_back( op );
         operators_free_vector.push_back( opfree );
 
@@ -297,9 +297,6 @@ testExpression()
 
         //this test is not ok, except for the last value of i
         BOOST_CHECK_SMALL( norm-normfree , 1e-14 );
-
-        //but this one is unfortunately ok for each i
-        BOOST_CHECK_SMALL( last_value-normfree , 1e-14 );
     }
 
 
@@ -331,5 +328,3 @@ BOOST_AUTO_TEST_CASE( test_3 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-
