@@ -26,6 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-15
  */
+#include <boost/unordered_map.hpp>
+
 #include <feel/feelalg/matrixeigensparse.hpp>
 
 namespace Feel
@@ -132,9 +134,14 @@ template<typename T>
 void
 MatrixEigenSparse<T>::close() const
 {
-    _M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
-    M_tripletList.clear();
-    _M_is_closed = true;
+
+    if ( !_M_is_closed )
+    {
+        LOG(INFO) << "Closing matrix";
+        _M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
+        M_tripletList.clear();
+        _M_is_closed = true;
+    }
 }
 
 template<typename T>
@@ -155,7 +162,7 @@ MatrixEigenSparse<T>::diagonal ( Vector<T>& dest ) const
 #endif
 }
 template<typename T>
-typename MatrixEigenSparse<T>::value_type
+typename MatrixEigenSparse<T>::real_type
 MatrixEigenSparse<T>::energy( Vector<value_type> const& __v,
                              Vector<value_type> const& __u,
                              bool tranpose ) const
@@ -202,6 +209,50 @@ MatrixEigenSparse<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type>
                                       size_type start_j )
 {
     LOG(ERROR) << "Invalid call to updateBlockMat, not yet implemented\n";
+}
+
+template<typename T>
+void
+MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
+                                std::vector<value_type> const& vals,
+                                Vector<value_type>& rhs,
+                                Context const& on_context )
+{
+    LOG(INFO) << "zero out " << rows.size() << " rows except diagonal is row major: " << _M_mat.IsRowMajor;
+    Feel::detail::ignore_unused_variable_warning( rhs );
+    Feel::detail::ignore_unused_variable_warning( vals );
+    boost::unordered_map<int,std::set<int>> m;
+    for (int k=0; k<rows.size(); ++k)
+    {
+        for (typename matrix_type::InnerIterator it(_M_mat,rows[k]); it; ++it)
+        {
+            m[it.row()].insert(it.col());
+            double value = 1.0;
+            if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+                value = it.value();
+            rhs.add( it.row(), -it.value() * vals[k] );
+            it.valueRef() = 0;
+
+            if ( it.row() == it.col() )
+            {
+                it.valueRef() = value;
+                rhs.set( it.row(), value * vals[k] );
+            }
+        }
+    }
+    for(auto rit = m.begin();rit != m.end();++rit )
+    {
+        for (typename matrix_type::InnerIterator it(_M_mat,rit->first); it; ++it)
+        {
+            double value = 1.0;
+            if( rit->second.find( it.row() ) != rit->second.end() )
+            {
+                // don't change diagonal, it was done in the first pass
+                if ( it.row() != it.col() )
+                    it.valueRef() = 0;
+            }
+        }
+    }
 }
 
 template<typename T>

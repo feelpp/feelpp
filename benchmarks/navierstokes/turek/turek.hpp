@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2008-05-10
 
-  Copyright (C) 2008 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -42,6 +42,7 @@
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelfilters/exporter.hpp>
 
 #include <data.hpp>
 
@@ -208,5 +209,3 @@ private:
 } // Feel
 
 #endif
-
-

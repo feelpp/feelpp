@@ -78,9 +78,9 @@ INSTALL(FILES ${files} DESTINATION include/feel COMPONENT Devel)
 
 # documentation and examples
 #  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/feel_get_tutorial.sh DESTINATION bin COMPONENT Doc)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feelpp-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
-IF( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html" )
-  install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
+#install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/manual/feelpp-manual.pdf DESTINATION share/doc/feel COMPONENT Doc)
+IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/doc/api/html" )
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc/api/html DESTINATION share/doc/feel COMPONENT Doc
     PATTERN ".svn" EXCLUDE PATTERN ".git" EXCLUDE )
 ENDIF()
 

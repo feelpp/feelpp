@@ -118,7 +118,7 @@ public:
         M_pid( 0 ),
         M_pidInPartition( 0 ),
         M_neighor_pids(),
-        M_idInPartition(),
+        M_idInOthersPartitions(),
         M_elist()
     {}
 
@@ -136,7 +136,7 @@ public:
         M_pid( 0 ),
         M_pidInPartition( 0 ),
         M_neighor_pids(),
-        M_idInPartition(),
+        M_idInOthersPartitions(),
         M_elist()
     {}
 
@@ -151,7 +151,7 @@ public:
         M_pid( __me.M_pid ),
         M_pidInPartition( __me.M_pidInPartition ),
         M_neighor_pids( __me.M_neighor_pids ),
-        M_idInPartition( __me.M_idInPartition ),
+        M_idInOthersPartitions( __me.M_idInOthersPartitions ),
         M_elist( __me.M_elist )
     {}
 
@@ -167,7 +167,7 @@ public:
             M_pid = __me.M_pid;
             M_pidInPartition = __me.M_pidInPartition;
             M_neighor_pids = __me.M_neighor_pids;
-            M_idInPartition = __me.M_idInPartition;
+            M_idInOthersPartitions = __me.M_idInOthersPartitions;
             M_elist = __me.M_elist;
         }
 
@@ -498,29 +498,44 @@ public:
     {
         return M_neighor_pids;
     }
+    /**
+     * \return the number of partition the element is linked to
+     */
+    std::vector<int> & neighborPartitionIds()
+    {
+        return M_neighor_pids;
+    }
 
     /**
      * set id in a partition pid of the entity
      */
-    void setIdInPartition( uint16_type pid, size_type id )
+    void setIdInOthersPartitions( uint16_type pid, size_type id )
     {
-        M_idInPartition.insert( std::make_pair( pid, id ) );
+        M_idInOthersPartitions.insert( std::make_pair( pid, id ) );
     }
 
     /**
      * \return the id of the entity in a partition pid
      */
-    size_type idInPartition( uint16_type pid ) const
+    size_type idInOthersPartitions( uint16_type pid ) const
     {
-        return M_idInPartition.find( pid )->second;
+        return M_idInOthersPartitions.find( pid )->second;
     }
 
     /**
-     * \return idInPartition map
+     * \return idInOthersPartitions map
      */
-    std::map<uint16_type, size_type> const& idInPartition() const
+    std::map<uint16_type, size_type> const& idInOthersPartitions() const
     {
-        return M_idInPartition;
+        return M_idInOthersPartitions;
+    }
+
+    /**
+     * \return idInOthersPartitions map
+     */
+    std::map<uint16_type, size_type> & idInOthersPartitions()
+    {
+        return M_idInOthersPartitions;
     }
 
     /**
@@ -653,6 +668,36 @@ public:
         return M_elist;
     }
 
+
+    /**
+     * add a new ghost element to which the point belongs
+     */
+    self_type& addElementGhost( int proc, size_type e  )
+    {
+        M_elistGhost.insert( boost::make_tuple( proc,e ) );
+        return *this;
+    }
+
+    /**
+     * \return the number of ghost elements whom the point belongs to
+     */
+    size_type numberOfElementsGhost() const
+    {
+        return M_elistGhost.size();
+    }
+
+    /**
+     * \return the set of ids of ghost elements whom the point belongs to
+     */
+    std::set<boost::tuple<int,size_type> > const& elementsGhost() const
+    {
+        return M_elistGhost;
+    }
+    std::set<boost::tuple<int,size_type> >& elementsGhost()
+    {
+        return M_elistGhost;
+    }
+
     //@}
 
 
@@ -686,7 +731,7 @@ private:
             DVLOG(2) << "  - pid:" << M_pid << "\n";
             ar & M_pidInPartition;
             ar & M_neighor_pids;
-            ar & M_idInPartition;
+            ar & M_idInOthersPartitions;
         }
 
 private:
@@ -702,10 +747,12 @@ private:
     uint16_type M_pid;
     uint16_type M_pidInPartition;
     std::vector<int> M_neighor_pids;
-    std::map<uint16_type, size_type> M_idInPartition;
+    std::map<uint16_type, size_type> M_idInOthersPartitions;
 
     //! element list to which the point belongs
     std::set<size_type> M_elist;
+    //! element list to which the point belongs
+    std::set<boost::tuple<int,size_type> > M_elistGhost;
 
 };
 

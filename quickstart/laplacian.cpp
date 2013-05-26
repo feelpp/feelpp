@@ -7,15 +7,14 @@ int main(int argc, char**argv )
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                     _directory=".",
                      _about=about(_name="qs_laplacian",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     //# endmarker1 #
 
     //# marker2 #
-    auto mesh = unitSquare();
-    auto Vh = Pch<1>( mesh );
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+    auto Vh = Pch<3>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
     //# endmarker2 #
@@ -25,7 +24,7 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
-    auto a = form2( _trial=Vh, _test=Vh );
+    auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
@@ -40,4 +39,3 @@ int main(int argc, char**argv )
     return 0;
     //# endmarker4 #
 }
-

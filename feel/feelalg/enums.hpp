@@ -79,7 +79,8 @@ enum BackendType
     BACKEND_GMM = 0,
     BACKEND_PETSC,
     BACKEND_TRILINOS,
-    BACKEND_EIGEN
+    BACKEND_EIGEN,
+    BACKEND_EIGEN_DENSE
 };
 
 /**
