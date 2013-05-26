@@ -92,6 +92,7 @@ public:
 
     static const uint16_type nOrder = fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
+    static const uint16_type nRealDim = mesh_type::nRealDim;
     static const uint16_type Shape = mesh_type::Shape;
     static const uint16_type nComponents = fe_type::nComponents;
     static const uint16_type nComponents1 = fe_type::nComponents1;
@@ -206,6 +207,11 @@ public:
     typedef boost::tuple<size_type /*element id*/, uint16_type /*lid*/, uint16_type /*c*/, size_type /*gDof*/, uint16_type /*type*/> periodic_dof_type;
     typedef std::multimap<size_type /*gid*/, periodic_dof_type> periodic_dof_map_type;
 
+    DofTable( WorldComm const& _worldComm )
+        :
+        super( _worldComm )
+        {}
+
     /**
      * @brief The minimal constructor
      *
@@ -271,6 +277,11 @@ public:
         return ind;
     }
 
+    std::vector<size_type> getIndices( size_type id_el, mpl::size_t<MESH_ELEMENTS> /**/ ) const
+    {
+        return getIndices( id_el );
+    }
+
     void getIndicesSet( size_type id_el, std::vector<size_type>& ind ) const
     {
         const size_type s = getIndicesSize();
@@ -278,6 +289,21 @@ public:
         for ( size_type i = 0; i < s; ++i )
             ind[i] = boost::get<0>( _M_el_l2g[ id_el][ i ] );
     }
+
+    std::vector<size_type> getIndices( size_type id_el, mpl::size_t<MESH_FACES> /**/ ) const
+    {
+        const size_type nDofF = ( face_type::numVertices * fe_type::nDofPerVertex +
+                                  face_type::numEdges * fe_type::nDofPerEdge +
+                                  face_type::numFaces * fe_type::nDofPerFace );
+        const size_type ntdof = is_product?nComponents*nDofF:nDofF;
+        std::vector<size_type> ind( ntdof );
+
+        for ( size_type i = 0; i < ntdof; ++i )
+            ind[i] = boost::get<0>( _M_face_l2g[ id_el][ i ] );
+
+        return ind;
+    }
+
 
     void getIndicesSetOnGlobalCluster( size_type id_el, std::vector<size_type>& ind ) const
     {
@@ -884,7 +910,13 @@ public:
         // multi process
         if ( this->worldComm().localSize()>1 )
             {
-                if (this->_M_n_dofs>1 )
+                auto it_nlocDof = this->_M_n_localWithGhost_df.begin();
+                auto const en_nlocDof = this->_M_n_localWithGhost_df.end();
+                bool isP0continuous = true;
+                for ( ; it_nlocDof!=en_nlocDof && isP0continuous ; ++it_nlocDof )
+                    isP0continuous = isP0continuous && (*it_nlocDof==1);
+
+                if ( !isP0continuous )//this->_M_n_dofs>1 )
                     {
 #if defined(FEELPP_ENABLE_MPI_MODE)
                         VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
@@ -975,23 +1007,27 @@ public:
      */
     void buildGhostInterProcessDofMap( mesh_type& mesh,
                                        std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
+    void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
+    void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
+                                                                    std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
+    void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDof( mesh_type& mesh,
+                                                 std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend );
+    void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
+
     void buildGhostInterProcessDofMapInit( mesh_type& mesh,
                                            std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
-
     boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
     buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
                                            std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
                                            std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
                                            std::vector< std::set<size_type > > & memoryFace );
+
     void buildDofNotPresent( std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
-                             std::set<int> & setInterProcessDofNotPresent );
+                             std::map<size_type,boost::tuple<size_type,size_type> > & setInterProcessDofNotPresent );
 
     void buildGlobalProcessToGlobalClusterDofMap( mesh_type& mesh,
-            std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
-            std::set<int> const& setInterProcessDofNotPresent );
-    void updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& mapInterProcessDof,
-                               std::set<int> const& setInterProcessDofNotPresent,
-                               int procToUpdate );
+            std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
+    void updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
 
 #endif
     /**
@@ -2939,6 +2975,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     // compute the number of dof on current processor
     auto it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
     auto en_elt = M.endElementWithProcessId( M.worldComm().localRank() );
+    bool hasNoElt = ( it_elt == en_elt );
+
     //size_type n_elts = std::distance( it_elt, en_elt);
     //DVLOG(2) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
 
@@ -2961,12 +2999,18 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
     } // elements loop
 
+    const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
+
     mpi::all_gather( M.worldComm().localComm(),
-                     next_free_dof-1,
+                     thelastDof,//next_free_dof-1,
                      this->_M_last_df );
 
     // access to _M_n_localWithGhost_df for each process
-    size_type mynDofWithGhost = this->_M_last_df[M.worldComm().localRank()] - this->_M_first_df[M.worldComm().localRank()] + 1;
+    size_type mynDofWithGhost = ( !hasNoElt )?
+        this->_M_last_df[M.worldComm().localRank()] - this->_M_first_df[M.worldComm().localRank()] + 1 :
+        this->_M_first_df[M.worldComm().localRank()];
+
+    // update info with all_gather
     mpi::all_gather( M.worldComm().localComm(),
                      mynDofWithGhost,
                      this->_M_n_localWithGhost_df );

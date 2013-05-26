@@ -456,14 +456,12 @@ private:
 #endif
 
 //     *********** Geometrical Elements *****************
-//! \defgroup GeoEle Geometry Element classes
+/** \defgroup GeoEle Geometry Element classes
+    \ingroup Obsolet_Groups */
 /*@{*/
 
 /**
  * Class for Points and Vertices
- *
- * \bug: in the 1D mesh case the points are subfaces of the segments
- *       but this is not handled yet, fixes in regionmesh1D needed
  */
 template <uint16_type Dim,
          typename SubFace = SubFaceOfNone,
@@ -489,6 +487,7 @@ public:
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<SubFace::nDim>, mpl::int_<0> >, mpl::identity<self_type>, mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type element_type;
     typedef self_type point_type;
 
+    static const uint16_type numLocalVertices = super::numVertices;
 
     GeoElement0D()
         :
@@ -850,6 +849,10 @@ public:
         return edge_permutation_type();
     }
 
+    point_type const& edge( uint16_type i ) const
+    {
+        return *M_vertices[i];
+    }
     point_type const& face( uint16_type i ) const
     {
         return *M_vertices[i];
@@ -1113,8 +1116,8 @@ public:
      */
     edge_type& edge( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         return boost::ref( *M_edges[i] );
     }
 
@@ -1174,7 +1177,7 @@ public:
      */
     edge_permutation_type permutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges << " in element id " << this->id();
         return M_edge_permutation[i];
     }
 

@@ -87,13 +87,17 @@ public:
         :
         super_type(),
         M_backend( backend_type::build( BACKEND_PETSC ) ),
-        M_matrix()
+        M_matrix(),
+        M_pattern( Pattern::COUPLED ),
+        M_name("operatorlinear")
     {}
     OperatorLinear( OperatorLinear const& ol, bool deep_copy = false )
         :
         super_type( ol ),
         M_backend( ol.M_backend ),
-        M_matrix()
+        M_matrix(),
+        M_pattern( ol.M_pattern ),
+        M_name(ol.M_name )
     {
         if ( deep_copy )
         {
@@ -108,27 +112,36 @@ public:
     OperatorLinear( domain_space_ptrtype     domainSpace,
                     dual_image_space_ptrtype dualImageSpace,
                     backend_ptrtype          backend,
-                    bool buildMatrix = true ) :
+                    bool buildMatrix = true ,
+                    size_type pattern=Pattern::COUPLED)
+        :
         super_type( domainSpace, dualImageSpace ),
-        M_backend( backend )
+        M_backend( backend ),
+        M_pattern( pattern ),
+        M_name( "operatorlinear" )
     {
-        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
+        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
 
     ~OperatorLinear() {}
 
-    void
+    virtual void
     init( domain_space_ptrtype     domainSpace,
           dual_image_space_ptrtype dualImageSpace,
           backend_ptrtype          backend,
-          bool buildMatrix = true )
+          bool buildMatrix = true ,
+          size_type pattern = Pattern::COUPLED )
     {
         this->setDomainSpace( domainSpace );
         this->setDualImageSpace( dualImageSpace );
         M_backend = backend;
-
-        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace );
+        M_pattern = pattern;
+        if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
+
+    void setName( std::string name ) { M_name = name; }
+    std::string name() const { return M_name ; }
+
 
     // apply the operator: ie := Op de
     template<typename Storage>
@@ -148,7 +161,7 @@ public:
         ie.container() = *_v2;
     }
 
-    void
+    virtual void
     apply( const domain_element_type& de,
            image_element_type&        ie ) const
     {
@@ -164,7 +177,7 @@ public:
         ie.container() = *_v2;
     }
 
-    double
+    virtual double
     energy( const typename domain_space_type::element_type & de,
             const typename dual_image_space_type::element_type & ie ) const
     {
@@ -183,7 +196,7 @@ public:
     }
 
 
-    void
+    virtual void
     apply( const typename domain_space_type::element_type & de,
            typename dual_image_space_type::element_type & ie )
     {
@@ -200,7 +213,7 @@ public:
     }
 
 
-    void
+    virtual void
     //apply( const typename domain_space_type::template Element<typename domain_space_type::value_type,
     //       typename VectorUblas<typename domain_space_type::value_type>::range::type > & de,
     apply( const domain_element_range_type & de,
@@ -218,7 +231,7 @@ public:
         ie.container() = *_v2;
     }
 
-    void
+    virtual void
     apply( const typename domain_space_type::element_type & de,
            dual_image_element_range_type & ie )
     {
@@ -235,7 +248,7 @@ public:
     }
 
 
-    void
+    virtual void
     apply( const domain_element_range_type & de,
            dual_image_element_range_type & ie )
     {
@@ -252,7 +265,7 @@ public:
     }
 
 
-    void
+    virtual void
     apply( const domain_element_slice_type & de,
            typename dual_image_space_type::element_type & ie )
     {
@@ -268,7 +281,7 @@ public:
         ie.container() = *_v2;
     }
 
-    void
+    virtual void
     apply( const typename domain_space_type::element_type & de,
            dual_image_element_slice_type & ie )
     {
@@ -285,7 +298,7 @@ public:
     }
 
 
-    void
+    virtual void
     apply( /*const*/ domain_element_slice_type /*&*/ de,
                      dual_image_element_slice_type /*&*/ ie )
     {
@@ -321,7 +334,7 @@ public:
 
 
 
-    void
+    virtual void
     apply( const domain_element_range_type & de,
            dual_image_element_slice_type & ie )
     {
@@ -337,7 +350,7 @@ public:
         ie.container() = *_v2;
     }
 
-    void
+    virtual void
     apply( const domain_element_slice_type & de,
            dual_image_element_range_type & ie )
     {
@@ -451,7 +464,6 @@ public:
     }
 
 
-
     // fill underlying matrix
     template<class ExprT>
     this_type& operator=( ExprT const& e )
@@ -468,6 +480,7 @@ public:
         M_backend = m.M_backend;
         M_matrix->zero();
         M_matrix->addMatrix( 1.0, m.M_matrix );
+        M_pattern = m.M_pattern;
 
         return *this;
     }
@@ -514,6 +527,11 @@ public:
         return M_matrix;
     }
 
+    virtual void matPtr( matrix_ptrtype & matrix )
+    {
+        matrix = M_matrix;
+    }
+
     template<typename T>
     OperatorLinear& add( T const& scalar, OperatorLinear const& ol )
     {
@@ -525,6 +543,11 @@ public:
     backend_ptrtype& backend()
     {
         return M_backend;
+    }
+
+    size_type pattern()
+    {
+        return M_pattern;
     }
 
     template<typename T>
@@ -552,9 +575,11 @@ private:
 
     backend_ptrtype M_backend;
     matrix_ptrtype M_matrix;
-
-
+    size_type M_pattern;
+    std::string M_name;
 }; // class Operator
+
+
 
 template<typename Args>
 struct compute_opLinear_return
@@ -575,6 +600,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // required
     ( optional
       ( backend,        *, Backend<typename compute_opLinear_return<Args>::domain_space_type::value_type>::build() )
+      ( pattern,        *, (size_type)Pattern::COUPLED  )
     ) // optionnal
 )
 {
@@ -582,7 +608,7 @@ BOOST_PARAMETER_FUNCTION(
     typedef OperatorLinear<typename compute_opLinear_return<Args>::domain_space_type,
             typename compute_opLinear_return<Args>::image_space_type> operatorlinear_type;
 
-    boost::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend ) );
+    boost::shared_ptr<operatorlinear_type> opI( new operatorlinear_type( domainSpace,imageSpace,backend,pattern ) );
 
     return opI;
 

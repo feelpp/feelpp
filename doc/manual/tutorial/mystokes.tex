@@ -1,4 +1,5 @@
 % (C) 2013 - Université de Strasbourg
+% * Vincent Huber <vincent.huber@cemosis.fr>
 % * Guillaume Dollé <guillaume.dolle@math.unistra.fr>
 % * Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 % Tutorial documentation - mymesh
@@ -7,16 +8,15 @@
 \section{Stokes Problem}
 \label{sec:tuto-mystokes}
 
-Let solve the stokes equation considering a Poiseuille flow profile 
-on the inlet. We have the following system of equations,
+Let solve the stokes equation considering a Poiseuille flow profile. 
+We have the following system of equations,
 %
 \begin{equation}
 \left\{
 \begin{array}{rcll}
 -\mu\Delta \bf u + \nabla p & = & \bf f & \text{on}\; \Omega \;, \\
                 \div(\bf u) & = & 0 & \text{on}\; \Omega \;, \\
-                     \bf u  & = & g & \text{on}\; \Gamma_{wall}\cup\Gamma_{inlet} \;, \\
-                     \int p & = & 0 & \text{on}\; \Gamma_{outlet} \;, \\
+                \bf u  & = & g & \text{on}\; \Gamma \;, \\
 \end{array}
 \right.
 \label{eq:tuto-stk}
@@ -28,7 +28,7 @@ The last boundary condition expresses a null pressure fixed
 on the outlet. The Poiseuille profile on the boundary is,
 %
 \begin{equation}
-u(x,y)=
+g(x,y)=
 \left(
 \begin{array}{c}
  y(1-y) \\
@@ -85,10 +85,10 @@ and after rearranging the integrals (\ref{eq:tuto-stk-1}) the variationnal formu
 \begin{equation}
 \int_\Omega \mu \nabla \mathbf u :\nabla \mathbf v
 +\int_\Omega \left( \div(\mathbf u) q - p \div(\mathbf v) \right)
-+\underbrace{
-    \int_{\partial\Omega} \left( p \mathbf n - \frac{\partial \mathbf u}{\partial \mathbf n} \right)
++
+    \int_{\partial\Omega} \left( p \mathbf n - 
+    \underbrace{\frac{\partial \mathbf u}{\partial \mathbf n}}_{=0} \right)
      \cdot \mathbf v
-  }_{=0}
 =\int_\Omega \mathbf f \cdot \mathbf v 
 \label{eq:tuto-stk-varform}
 \end{equation}
@@ -109,9 +109,14 @@ We suppose for this example the viscosity $\mu=1$ and $\mathbf f = 0$.
 \lstinputlisting[linerange=marker_main-endmarker_main]{tutorial/mystokes.cpp}
 \vspace{2mm}
 %
+
+The procedure to create the mesh is very simple.
+You have to provide to the command line (or via the cfg file) the gmsh.filename option.
+You can provide a geo or a msh file (created via gmsh).
+
 As for the laplacian problem, the code is very closed to the mathematical formulation.
 We define the product of function spaces for the flow speed and the flow pressure
-using \lstinline!THch<order>()! function which is \lstinline!Pch<N+1>!$\times$ \lstinline!Pch<N>!
+using \lstinline!THch<order>()~\footnote{TH stands for Taylor-Hoods;}! function which is \lstinline!Pch<N+1>!$\times$ \lstinline!Pch<N>!
 for respectively flow speed and pressure spaces.
 We take an element 
 $U=\left(

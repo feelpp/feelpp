@@ -1,0 +1,95 @@
+Description: Split export file into several pieces
+Author: Denis Barbier <bouzim@gmail.com>
+Origin: Debian
+Forwarded: no
+Last-Update: 2012-08-02
+
+In Debian, OCE libraries are split into several packages.
+Prior to oce 0.10-3, the OCE-libraries-release.cmake file contained all
+targets computed when compiling.  But then CMake projects could load this
+file only if all files referenced by these targets were present, which
+means that nearly all oce packages have to be installed.
+
+With this patch, each package contains a cmake script which declares
+only its own targets, and OCEConfig.cmake loads all those scripts
+in the right order.
+
+The only downside is that cmake reports errors when generating files:
+  CMake Error: INSTALL(EXPORT "OCE02_ModelingTargets" ...) includes target "TKG2d" which requires target "TKernel" that is not in the export set.
+  CMake Error: INSTALL(EXPORT "OCE02_ModelingTargets" ...) includes target "TKG3d" which requires target "TKMath" that is not in the export set.
+  [...]
+and thus returns 1 instead of 0.
+
+This is related to
+  http://www.cmake.org/Bug/view.php?id=12588
+
+This patch is Debian specific and does not have to be forwarded upstream.
+
+Index: oce/CMakeLists.txt
+===================================================================
+--- oce.orig/CMakeLists.txt
++++ oce/CMakeLists.txt
+@@ -1021,6 +1021,19 @@ CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_D
+ SET ( ${PROJECT_NAME}_WIN32_RES_FILE ${CMAKE_CURRENT_BINARY_DIR}/Version.rc )
+ ENDIF(NOT ${PROJECT_NAME}_NO_LIBRARY_VERSION)
+ 
++MACRO(DEBIAN_DECLARE_EXPORT_TARGETS packagename modules)
++	FOREACH(module ${modules})
++		SET(debianTargetExport${module} ${PROJECT_NAME}${packagename}Targets)
++	ENDFOREACH(module ${modules})
++ENDMACRO(DEBIAN_DECLARE_EXPORT_TARGETS packagename modules)
++
++DEBIAN_DECLARE_EXPORT_TARGETS(01_Foundation "TKernel;TKMath;TKAdvTools")
++DEBIAN_DECLARE_EXPORT_TARGETS(02_Modeling "TKG2d;TKG3d;TKGeomBase;TKBRep;TKGeomAlgo;TKTopAlgo;TKPrim;TKBO;TKHLR;TKMesh;TKShHealing;TKXMesh;TKBool;TKFillet;TKFeat;TKOffset;TKSTL;TKXSBase;TKSTEPBase;TKIGES;TKSTEPAttr;TKSTEP209;TKSTEP")
++DEBIAN_DECLARE_EXPORT_TARGETS(03_OcafLite "TKCDF;PTKernel;TKLCAF;FWOSPlugin;TKPShape;TKBinL;TKXmlL;TKPLCAF;TKTObj;TKShapeSchema;TKStdLSchema")
++DEBIAN_DECLARE_EXPORT_TARGETS(04_Ocaf "TKCAF;TKBin;TKXml;TKPCAF;TKBinTObj;TKXmlTObj;TKStdSchema;TKXCAF;TKXCAFSchema;TKXmlXCAF;TKBinXCAF;TKXDEIGES;TKXDESTEP")
++DEBIAN_DECLARE_EXPORT_TARGETS(05_Visualization "TKService;TKV2d;TKV3d;TKOpenGl;TKMeshVS;TKNIS;TKVRML;TKVoxel")
++DEBIAN_DECLARE_EXPORT_TARGETS(06_Draw "TKDraw;TKTopTest;TKViewerTest;TKXSDRAW;TKDCAF;TKXDEDRAW;TKTObjDRAW;TKQADraw")
++
+ MACRO(PROCESS_MODULE modulename modules_std)
+ 	set(modules ${modules_std})
+ 	IF(NOT ${PROJECT_NAME}_DISABLE_X11)
+@@ -1086,7 +1099,12 @@ CONFIGURE_FILE( ${CMAKE_CURRENT_SOURCE_D
+ INSTALL(FILES ${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake ${PROJECT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+ 	DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKE_DATA_DIR} COMPONENT Development )
+ 
+-INSTALL(EXPORT ${PROJECT_NAME}-libraries DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKE_DATA_DIR} COMPONENT Development)
++INSTALL(EXPORT ${PROJECT_NAME}01_FoundationTargets DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKE_DATA_DIR} COMPONENT Development)
++INSTALL(EXPORT ${PROJECT_NAME}02_ModelingTargets DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKE_DATA_DIR} COMPONENT Development)
++INSTALL(EXPORT ${PROJECT_NAME}03_OcafLiteTargets DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKE_DATA_DIR} COMPONENT Development)
++INSTALL(EXPORT ${PROJECT_NAME}04_OcafTargets DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKE_DATA_DIR} COMPONENT Development)
++INSTALL(EXPORT ${PROJECT_NAME}05_VisualizationTargets DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKE_DATA_DIR} COMPONENT Development)
++INSTALL(EXPORT ${PROJECT_NAME}06_DrawTargets DESTINATION ${${PROJECT_NAME}_INSTALL_CMAKE_DATA_DIR} COMPONENT Development)
+ 
+ IF(${PROJECT_NAME}_USE_BUNDLE_SOURCE AND ${PROJECT_NAME}_BUNDLE_ROOT_PATH)
+ 	# Add dependencies between OCE and oce-win-bundle
+Index: oce/ProjectConfig.cmake.in
+===================================================================
+--- oce.orig/ProjectConfig.cmake.in
++++ oce/ProjectConfig.cmake.in
+@@ -20,7 +20,11 @@ GET_FILENAME_COMPONENT(SELF_DIR "${CMAKE
+ SET(@PROJECT_NAME@_INCLUDE_DIRS "${SELF_DIR}/@OCE_CMAKE_DATA_TO_INCLUDE_RELATIVE_DIR@")
+ SET(@PROJECT_NAME@_LIBRARIES "@OCE_LIBRARIES@")
+ SET(@PROJECT_NAME@_ALL_BUILT_MODULES "@OCE_ALL_BUILT_MODULES@")
+-INCLUDE("${SELF_DIR}/@PROJECT_NAME@-libraries.cmake")
++FILE(GLOB DEBIAN_TARGET_FILES ${SELF_DIR}/@PROJECT_NAME@*Targets.cmake)
++LIST(SORT DEBIAN_TARGET_FILES)
++FOREACH(file ${DEBIAN_TARGET_FILES})
++	INCLUDE("${file}")
++ENDFOREACH(file ${DEBIAN_TARGET_FILES})
+ 
+ SET(@PROJECT_NAME@_ALL_FOUND true)
+ IF(@PROJECT_NAME@_FIND_COMPONENTS)
+Index: oce/adm/cmake/BuildToolkit.cmake
+===================================================================
+--- oce.orig/adm/cmake/BuildToolkit.cmake
++++ oce/adm/cmake/BuildToolkit.cmake
+@@ -265,7 +265,7 @@ ELSE(TOOLKIT_IS_PRIVATE)
+ ENDIF(TOOLKIT_IS_PRIVATE)
+ 
+ INSTALL(TARGETS ${TOOLKIT}
+-	EXPORT ${PROJECT_NAME}-libraries
++	EXPORT ${debianTargetExport${TOOLKIT}}
+ 	RUNTIME DESTINATION ${TOOLKIT_INSTALL_BIN_DIR} COMPONENT RuntimeLibraries
+ 	LIBRARY DESTINATION ${TOOLKIT_INSTALL_LIB_DIR} COMPONENT RuntimeLibraries
+ 	ARCHIVE DESTINATION ${TOOLKIT_INSTALL_LIB_DIR} COMPONENT Development

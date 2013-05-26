@@ -27,21 +27,17 @@
    \date 2007-07-21
  */
 #include <feel/options.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelalg/backendpetsc.hpp>
-#include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelalg/backendtrilinos.hpp>
-#include <feel/feelmaterial/materiallib.hpp>
-
-#include <feel/feeldiscr/bdf2.hpp>
-
-
-#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/gmshenums.hpp>
 
 namespace Feel
 {
+
+std::string
+prefixvm( std::string const& prefix,
+          std::string const& opt,
+          std::string const& sep = "." );
+
+
 po::options_description
 file_options( std::string const& appname )
 {
@@ -64,7 +60,7 @@ generic_options()
         ( "help", "prints this help message" )
         ( "license", "prints the license text" )
         ( "version", "prints the version" )
-        //( "v", po::value<int>(), "verbosity level" )
+        ( "v", po::value<int>()->default_value(0), "verbosity level" )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
         ( "directory", po::value<std::string>(), "change directory to specified one" )
@@ -72,6 +68,42 @@ generic_options()
     return generic;
 }
 
+po::options_description
+gmsh_options( std::string const& prefix )
+{
+    po::options_description _options( "Gmsh " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
+        ( prefixvm( prefix,"gmsh.depends" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "list of files separated by , or ; that are dependencies of a loaded Gmsh geometry" )
+        ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
+        ( prefixvm( prefix,"gmsh.geo-variables-list" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "modify a list of geo variables (ex : alpha=1:beta=2)" )
+        ( prefixvm( prefix,"gmsh.refine" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "refinement by splitting level" )
+        ( prefixvm( prefix,"gmsh.straighten" ).c_str(), Feel::po::value<bool>()->default_value( true ), "straighten high order mesh" )
+        ( prefixvm( prefix,"gmsh.physical_are_elementary_regions" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Physical regions are defined by elementary regions, useful for medit format" )
+        ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
+#if defined(HAVE_METIS)
+        ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO, 2=METIS)" )
+#else
+        ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
+#endif
+        ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" );
+
+
+    return _options;
+
+}
+
+po::options_description
+ginac_options( std::string const& prefix )
+{
+    po::options_description _options( "GiNaC " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"ginac.strict-parser" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable strict parsing of GiNaC expressions, no extra variables/symbols can be defined if set to true" )
+        ;
+    return _options;
+}
 po::options_description
 feel_options( std::string const& prefix  )
 {
@@ -97,6 +129,12 @@ feel_options( std::string const& prefix  )
         /* exporter options */
         .add( exporter_options( prefix ) )
 
+        /* gmsh options */
+        .add( gmsh_options( prefix ) )
+
+        /* ginac options */
+        .add( ginac_options( prefix ) )
+
         /* material options */
         .add( material_options( prefix ) )
 
@@ -108,4 +146,3 @@ feel_options( std::string const& prefix  )
 
 }
 }
-

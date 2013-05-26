@@ -764,7 +764,20 @@ public:
         _M_F->set( i, v );
     }
 
+    /**
+     * set linear form to 0
+     */
+    void zero() { _M_F->zero(); }
 
+    LinearForm& operator+=( LinearForm& f )
+        {
+            if ( this == &f )
+                return *this;
+
+            *_M_F += *f._M_F;
+
+            return *this;
+        }
     //@}
 
 protected:

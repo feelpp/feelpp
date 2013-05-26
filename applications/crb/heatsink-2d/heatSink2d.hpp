@@ -56,7 +56,7 @@
 #include <Eigen/Dense>
 
 
-
+#include <feel/feelcrb/modelcrbbase.hpp>
 
 namespace Feel
 {
@@ -103,6 +103,28 @@ makeHeatSink2DAbout( std::string const& str = "heatSink" )
 
 
 
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 3;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+
+class FunctionSpaceDefinition
+{
+public :
+    typedef double value_type;
+
+    /*mesh*/
+    typedef Simplex<2,1> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    /*basis*/
+    typedef fusion::vector<Lagrange<1, Scalar> > basis_type;
+
+    /*space*/
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+};
 
 /**
  * \class HeatSink2D
@@ -111,9 +133,13 @@ makeHeatSink2DAbout( std::string const& str = "heatSink" )
  * @author Christophe Prud'homme
  * @see
  */
-class HeatSink2D
+    class HeatSink2D : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
 {
 public:
+
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
 
     /** @name Constants
@@ -188,8 +214,8 @@ public:
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
 
     //typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
     //@}
@@ -211,7 +237,7 @@ public:
     ~HeatSink2D() {}
 
     //! initialization of the model
-    void init();
+    void initModel();
     //@}
 
     /** @name Operator overloads
@@ -284,15 +310,6 @@ public:
             throw std::logic_error( "[Model heatsink] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
     }
 
-    int QInitialGuess() const
-    {
-        return 1;
-    }
-
-    int mMaxInitialGuess( int q )
-    {
-        return 1;
-    }
 
     /**
      * \brief Returns the function space
@@ -312,13 +329,13 @@ public:
      * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
     {
         return computeBetaQm( mu , time );
     }
 
-    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> , beta_vector_type >
+    boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>  >
     computeBetaQm( parameter_type const& mu , double time=1e30 )
     {
         double biot      = mu( 0 );
@@ -354,68 +371,7 @@ public:
         M_betaFqm[0][0][0] = 1-math::exp( -t );
         M_betaFqm[1][0][0] = 2;
 
-        M_betaInitialGuessQm.resize( QInitialGuess() );
-        M_betaInitialGuessQm[0].resize( 1 );
-        M_betaInitialGuessQm[0][0] = 0;
-
-        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm, M_betaInitialGuessQm );
-    }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    beta_vector_type const& betaAqm() const
-    {
-        return M_betaAqm;
-    }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    beta_vector_type const& betaMqm() const
-    {
-        return M_betaMqm;
-    }
-
-
-    /**
-     * \brief return the coefficient vector
-     */
-    std::vector<beta_vector_type> const& betaFqm() const
-    {
-        return M_betaFqm;
-    }
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaAqm( int q , int m) const
-    {
-        return M_betaAqm[q][m];
-    }
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaMqm( int q, int m ) const
-    {
-        return M_betaMqm[q][m];
-    }
-
-
-    /**
-     * \return the \p q -th term of the \p l -th output
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_betaFqm[l][q][m];
-    }
-
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_betaInitialGuessQm[q][m];
+        return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaFqm );
     }
 
     //@}
@@ -455,6 +411,16 @@ public:
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
+
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        element_ptrtype elt ( new element_type ( Xh ) );
+        q[0][0] = elt;
+        return q;
+    }
 
     /**
      * \brief solve the model for parameter \p mu
@@ -602,11 +568,9 @@ private:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
-    beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
 
     bdf_ptrtype M_bdf;
@@ -625,9 +589,7 @@ HeatSink2D::HeatSink2D()
     C( 385 ),
     k_fin( 386 ),
     M_Dmu( new parameterspace_type )
-{
-    this->init();
-}
+{}
 
 HeatSink2D::HeatSink2D( po::variables_map const& vm )
     :
@@ -642,9 +604,7 @@ HeatSink2D::HeatSink2D( po::variables_map const& vm )
     C( vm["C"].as<double>() ),
     k_fin( vm["k_fin"].as<double>() ),
     M_Dmu( new parameterspace_type )
-{
-    this->init();
-}
+{}
 
 
 
@@ -716,10 +676,8 @@ void HeatSink2D::initializationField( element_ptrtype& initial_field , parameter
     //initial_field->scale(Tambiant);
 }
 
-void HeatSink2D::init()
+void HeatSink2D::initModel()
 {
-
-    std::cout<<"init !!!!! "<<std::endl;
 
     using namespace Feel::vf;
 
@@ -730,7 +688,7 @@ void HeatSink2D::init()
     mesh = createGMSHMesh ( _mesh = new mesh_type,
                             _desc = createGeo( meshSize, Lref ),
                             _update=MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
-    std::cout<<"mesh ok"<<std::endl;
+
     /*
      * The function space and some associate elements are then defined
      */
@@ -741,14 +699,17 @@ void HeatSink2D::init()
     pT = element_ptrtype( new element_type( Xh ) );
 
 
-    std::cout<<"evaluation of surface_gamma1 ..."<<std::endl;
     surface_gamma1 = integrate( _range= markedfaces( mesh,"gamma1" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
-    std::cout<<"surface_gamma = "<<surface_gamma1<<std::endl;
 
     M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatSink2d" , _prefix="heatSink2d" );
 
     M_Aqm.resize( this->Qa() );
+    for(int q=0; q<Qa(); q++)
+        M_Aqm[q].resize( 1 );
+
     M_Mqm.resize( this->Qm() );
+    for(int q=0; q<Qm(); q++)
+        M_Mqm[q].resize( 1 );
 
     //three outputs : one "compliant" and two others
     M_Fqm.resize( this->Nl() );
@@ -826,20 +787,14 @@ void HeatSink2D::assemble()
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, M ) =
+    form2( _test=Xh, _trial=Xh, _matrix=M ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
     Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( Xh, Xh, Mpod ) =
+    form2( _test=Xh, _trial=Xh, _matrix=Mpod ) =
         integrate( elements( mesh ), id( u )*idt( v ) );
     Mpod->close();
-
-    auto ini_cond = Xh->elementPtr();
-    ini_cond->setZero();
-    M_InitialGuessQm.resize( 1 );
-    M_InitialGuessQm[0].resize( 1 );
-    M_InitialGuessQm[0][0] = ini_cond;
 
 }
 
@@ -860,7 +815,7 @@ HeatSink2D::newVector() const
 typename HeatSink2D::affine_decomposition_type
 HeatSink2D::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm , M_InitialGuessQm );
+    return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
 }
 
 
@@ -1097,7 +1052,7 @@ void HeatSink2D::run( const double * X, unsigned long N, double * Y, unsigned lo
 
     if ( do_init )
     {
-        this->init();
+        this->initModel();
         do_init = false;
     }
 
@@ -1142,22 +1097,6 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, bool expo
     else
         throw std::logic_error( "[HeatSink2d::output] error with output_index : only 0 or 1 " );
 
-#if 0
-    if ( output_index==0 )
-    {
-        for ( int i=0; i<Ql( output_index ); i++ )  s += M_betaFq[output_index]( i )*dot( M_Fqm[output_index][i], U );
-    }
-    else if ( output_index==1 )
-    {
-        s = M_betaFq[output_index]( 0 )*dot( M_Fqm[output_index][0], U );
-        std::cout<<" s model = "<<s<<std::endl;
-    }
-
-    else
-    {
-        throw std::logic_error( "[HeatSink2D::output] error with output_index : only 0 or 1 " );
-    }
-#endif
 
     return s ;
 }

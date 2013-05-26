@@ -58,6 +58,8 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
+
 // use the Feel namespace
 using namespace Feel;
 using namespace Feel::vf;
@@ -78,6 +80,43 @@ using namespace Feel::vf;
 #define CRB_SOLVER 0
 #endif
 
+
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 2;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+
+class FunctionSpaceDefinition
+{
+public :
+    static const uint16_type Order = 1;
+
+    static const int Order_s = CONVECTION_ORDER_U;
+    static const int Order_p = CONVECTION_ORDER_P;
+    static const int Order_t = CONVECTION_ORDER_T;
+
+    // Definitions pour mesh
+    typedef Simplex<CONVECTION_DIM> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    // space and associated elements definitions
+    typedef Lagrange<Order_s, Vectorial,Continuous,PointSetFekete> basis_u_type; // velocity space
+    typedef Lagrange<Order_p, Scalar,Continuous,PointSetFekete> basis_p_type; // pressure space
+    typedef Lagrange<Order_t, Scalar,Continuous,PointSetFekete> basis_t_type; // temperature space
+
+#if defined( FEELPP_USE_LM )
+    typedef Lagrange<0, Scalar> basis_l_type; // multipliers for pressure space
+    typedef bases< basis_u_type , basis_p_type , basis_t_type,basis_l_type> basis_type;
+#else
+    typedef bases< basis_u_type , basis_p_type , basis_t_type> basis_type;
+#endif
+
+    typedef FunctionSpace<mesh_type, basis_type> space_type;
+};
+
+
 /**
  * \class ConvectionCrb
  * The class derives from the Application class
@@ -87,9 +126,13 @@ using namespace Feel::vf;
  * \tparam Order_p pressure polynomial order
  */
 //template< int Order_s, int Order_p, int Order_t >
-class ConvectionCrb
+class ConvectionCrb : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
 {
 public:
+
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
     static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 2;
@@ -153,9 +196,9 @@ public:
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 
     /* EIM */
-    typedef EIMFunctionBase<U_space_type, space_type , parameterspace_type> fun_type;
-    typedef boost::shared_ptr<fun_type> fun_ptrtype;
-    typedef std::vector<fun_ptrtype> funs_type;
+    //typedef EIMFunctionBase<U_space_type, space_type , parameterspace_type> fun_type;
+    //typedef boost::shared_ptr<fun_type> fun_ptrtype;
+    //typedef std::vector<fun_ptrtype> funs_type;
 
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
@@ -182,8 +225,8 @@ public:
 
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
 
     typedef Eigen::MatrixXd matrixN_type;
 
@@ -196,7 +239,7 @@ public:
 
     // Functions usefull for crb resolution :
 
-    void init();
+    void initModel();
 
     std::string modelName()
     {
@@ -214,9 +257,8 @@ public:
 
     affine_decomposition_type computeAffineDecomposition()
     {
-        return boost::make_tuple( M_Aqm, M_Fqm, M_InitialGuessQm );
+        return boost::make_tuple( M_Aqm, M_Fqm );
     }
-
 
     // \return the number of terms in affine decomposition of left hand
     // side bilinear form
@@ -247,56 +289,16 @@ public:
      * \brief compute the beta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( parameter_type const& mu, double time=0  ) ;
 
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm(element_type const& T,  parameter_type const& mu, double time=0  )
     {
         return computeBetaQm( mu , time );
     }
 
-    /**
-     * \brief return the coefficient vector
-     */
-    beta_vector_type const& betaAqm() const
-    {
-        return M_betaAqm;
-    };
-
-    /**
-     * \brief return the coefficient vector
-     */
-    std::vector<beta_vector_type> const& betaFqm() const
-    {
-        return M_betaFqm;
-    };
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaAqm( int q , int m) const
-    {
-        return M_betaAqm[q][m];
-    };
-
-    /**
-     * \return the \p q -th term of the \p l -th output
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_betaFqm[l][q][l];
-    };
-
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_betaInitialGuessQm[q][m];
-    }
-
     void update( parameter_type const& mu );
-
-
 
     void solve( sparse_matrix_ptrtype& D, element_type& u, vector_ptrtype& F );
 
@@ -441,12 +443,10 @@ private:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
 
     parameterspace_ptrtype M_Dmu;
     beta_vector_type M_betaAqm;
-    beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
 
     element_type M_unknown;

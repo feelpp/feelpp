@@ -118,15 +118,17 @@ SAVE_CFLAGS="$CFLAGS"
 SAVE_LIBS="$LIBS"
 AC_ARG_WITH(gflags, AS_HELP_STRING[--with-gflags=GFLAGS_DIR],
   GFLAGS_CFLAGS="-I${with_gflags}/include"
-  GFLAGS_LIBS="-L${with_gflags}/lib -lgflags"
+  GFLAGS_LIBS="-L${with_gflags}/lib -lfeelpp_gflags"
   CFLAGS="$CFLAGS $GFLAGS_CFLAGS"
   LIBS="$LIBS $GFLAGS_LIBS"
 )
-AC_CHECK_LIB(gflags, main, ac_cv_have_libgflags=1, ac_cv_have_libgflags=0)
+
+AC_CHECK_LIB(feelpp_gflags, main, ac_cv_have_libgflags=1, ac_cv_have_libgflags=0)
+
 if test x"$ac_cv_have_libgflags" = x"1"; then
   AC_DEFINE(HAVE_LIB_GFLAGS, 1, [define if you have google gflags library])
   if test x"$GFLAGS_LIBS" = x""; then
-    GFLAGS_LIBS="-lgflags"
+    GFLAGS_LIBS="-lfeelpp_gflags"
   fi
 else
   GFLAGS_CFLAGS=

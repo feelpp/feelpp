@@ -642,6 +642,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     ti.restart();
 
     edge_type edg;
+    edg.setProcessIdInPartition( this->worldComm().localRank() );
 
     if ( this->edges().empty() )
     {
@@ -670,6 +671,9 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 if ( edgeinserted )
                     ++next_edge;
 
+                // reset the process id (edge not connected to an active elt take this value)
+                edg.setProcessId( invalid_uint16_type_value );
+
                 if ( edgeinserted )
                 {
                     // set edge id
@@ -683,6 +687,8 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     //edg.addElement( ifa->ad_first() );
                     this->addEdge( edg );
                 }
+                // set the process id from element (only active element)
+                if (!ifa->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(ifa->processId()) );
             }
         }
     }
@@ -717,6 +723,9 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
             _M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
 
+            // reset the process id (edge not connected to an active elt take this value)
+            edg.setProcessId( invalid_uint16_type_value );
+
             if ( edgeinserted )
             {
                 FEELPP_ASSERT( _edgeit->second >= this->numEdges() )( _edgeit->second )( this->numEdges() ).error( "invalid edge index" );
@@ -725,6 +734,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 // we have already inserted edges on the boundary so
                 // this one _is_ not on the boundary
                 edg.setOnBoundary( false );
+
                 if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
                     edg.addElement( vid );
 
@@ -744,6 +754,9 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
                     this->edges().modify( this->edgeIterator( _edgeit->second ), [vid] ( edge_type& e ) { e.addElement( vid ); } );
             }
+
+            // set the process id from element (only active element)
+            if (!elt_it->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(elt_it->processId()) );
 
             this->elements().modify( elt_it,
                                      detail::UpdateEdge<edge_type>( j, boost::cref( this->edge( _edgeit->second ) ) ) );

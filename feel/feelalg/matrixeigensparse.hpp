@@ -51,7 +51,7 @@ namespace Feel
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * \class MatrixEigen
+ * 
  * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
@@ -322,7 +322,7 @@ public:
     /**
      * \return \f$ v^T M u \f$
      */
-    value_type
+    real_type
     energy( Vector<value_type> const& __v,
             Vector<value_type> const& __u, bool transpose = false ) const;
 
@@ -431,34 +431,6 @@ private:
 };
 
 
-template<typename T>
-void
-MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
-                               std::vector<value_type> const& vals,
-                               Vector<value_type>& rhs,
-                               Context const& on_context )
-{
-    Feel::detail::ignore_unused_variable_warning( rhs );
-    Feel::detail::ignore_unused_variable_warning( vals );
-
-    for (int k=0; k<rows.size(); ++k)
-    {
-        for (typename matrix_type::InnerIterator it(_M_mat,rows[k]); it; ++it)
-        {
-            double value = 1.0;
-            if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-                value = it.value();
-            it.valueRef() = 0;
-            if ( it.row() == it.col() )
-            {
-                it.valueRef() = value;
-                // multiply rhs by value of the diagonal entry value
-                rhs.set( rows[k], value * vals[k] );
-            }
-        }
-
-    }
-}
 
 } // Feel
 #endif /* __MatrixEigenSparse_H */

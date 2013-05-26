@@ -87,7 +87,7 @@ enum ReferenceShapes
 
 /**
  * @defgroup GeoEntites Basis Reference Shapes
- */
+ \ingroup Obsolet_Groups */
 //@{
 
 /// \cond detail

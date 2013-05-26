@@ -1,0 +1,223 @@
+Description: <short summary of the patch>
+Author: Christophe Trophime <christophe.trophime@lncmi.cnrs.fr>
+Reviewed-by: Anton Gladky <gladky.anton@gmail.com>
+Last-Update: 2013-04-02
+
+Index: gmsh-tetgen-2.6.2~svn14678/Geo/GModelIO_CGNS.cpp
+===================================================================
+--- gmsh-tetgen-2.6.2~svn14678.orig/Geo/GModelIO_CGNS.cpp	2013-02-04 14:09:40.000000000 +0100
++++ gmsh-tetgen-2.6.2~svn14678/Geo/GModelIO_CGNS.cpp	2013-02-04 15:16:04.000000000 +0100
+@@ -155,24 +155,24 @@
+ //    1D second-order elements
+ //    MSH_NUM_TYPE+1 is used to place non-cgns elements last.
+ static const int msh2cgns[MSH_NUM_TYPE][2] = {
+-  {BAR_2,          16},
+-  {TRI_3,          11},
+-  {QUAD_4,         12},
+-  {TETRA_4,         1},
+-  {HEXA_8,          4},
+-  {PENTA_6,         3},
+-  {PYRA_5,          2},
+-  {BAR_3,          17},
+-  {TRI_6,          13},
+-  {QUAD_9,         15},
+-  {TETRA_10,        5},
+-  {HEXA_27,        10},
+-  {PENTA_18,        8},
+-  {PYRA_14,         6},
++  {CGNS_ENUMV(BAR_2),          16},
++  {CGNS_ENUMV(TRI_3),          11},
++  {CGNS_ENUMV(QUAD_4),         12},
++  {CGNS_ENUMV(TETRA_4),         1},
++  {CGNS_ENUMV(HEXA_8),          4},
++  {CGNS_ENUMV(PENTA_6),         3},
++  {CGNS_ENUMV(PYRA_5),          2},
++  {CGNS_ENUMV(BAR_3),          17},
++  {CGNS_ENUMV(TRI_6),          13},
++  {CGNS_ENUMV(QUAD_9),         15},
++  {CGNS_ENUMV(TETRA_10),        5},
++  {CGNS_ENUMV(HEXA_27),        10},
++  {CGNS_ENUMV(PENTA_18),        8},
++  {CGNS_ENUMV(PYRA_14),         6},
+   {-1, MSH_NUM_TYPE+1},  // MSH_PNT (NODE in CGNS but not used herein)
+-  {QUAD_8,         14},
+-  {HEXA_20,         9},
+-  {PENTA_15,        7},
++  {CGNS_ENUMV(QUAD_8),         14},
++  {CGNS_ENUMV(HEXA_20),         9},
++  {CGNS_ENUMV(PENTA_15),        7},
+   {-1, MSH_NUM_TYPE+1},  // MSH_PYR_13
+   {-1, MSH_NUM_TYPE+1},  // MSH_TRI_9
+   {-1, MSH_NUM_TYPE+1},  // MSH_TRI_10
+@@ -587,9 +587,9 @@
+   for (int index_zone = 1; index_zone <= nZones; index_zone++) {
+     Msg::Debug("Reading zone to compute MG level %i.", index_zone);
+ 
+-    ZoneType_t zoneType;
++    CGNS_ENUMT(ZoneType_t) zoneType;
+     cg_zone_type(index_file, index_base, index_zone, &zoneType);
+-    if ( zoneType == Unstructured ) {
++    if ( zoneType == CGNS_ENUMV( Unstructured ) ) {
+       Msg::Debug("Unstructured zone detected, skipping.");
+       continue;
+     }
+@@ -645,9 +645,9 @@
+ 
+     int offset = vnum;
+ 
+-    ZoneType_t zoneType;
++    CGNS_ENUMT(ZoneType_t) zoneType;
+     cg_zone_type(index_file, index_base, index_zone, &zoneType);
+-    if ( zoneType == Unstructured ) {
++    if ( zoneType == CGNS_ENUMV( Unstructured ) ) {
+       Msg::Debug("Unstructured zone detected, skipping.");
+       continue;
+     }
+@@ -681,7 +681,7 @@
+     int nCoords;
+     cg_ncoords(index_file, index_base, index_zone, &nCoords);
+ 
+-    DataType_t dataType;
++    CGNS_ENUMT( DataType_t ) dataType;
+     char coordName[35];
+     void* coord;
+     double nodes[nnodesZone][nCoords];
+@@ -696,7 +696,7 @@
+       Msg::Debug("Reading coordinate %i : %s.", iCoord+1, coordName);
+ 
+       switch(dataType) {
+-        case RealSingle:
++        case CGNS_ENUMV(RealSingle):
+ 	  Msg::Debug("        [Type is float]");
+ 	  coord = new float[nnodesZone];
+ 	  if ( cg_coord_read(index_file, index_base, index_zone, coordName, dataType, irmin, irmax, coord)) {
+@@ -709,7 +709,7 @@
+ 	  }
+ 	  delete [] (float*)coord;
+ 	  break;
+-        case RealDouble:
++        case CGNS_ENUMV(RealDouble):
+ 	  Msg::Debug("        [Type is double]");
+ 	  coord = new double[nnodesZone];
+ 	  if ( cg_coord_read(index_file, index_base, index_zone, coordName, dataType, irmin, irmax, coord)) {
+@@ -1491,8 +1491,9 @@
+   ZoneTask() : status(0), indexInOwner(0) { }
+   void change_status(const int _status)
+   {
+-#pragma omp atomic
+-    status = _status;
++    status = 0;
++    #pragma omp atomic
++    status += _status;
+   }
+ };
+ 
+@@ -1583,7 +1584,7 @@
+           cgZoneSize[2] = writeZone->numBoVert;  // Number of boundary vertices
+           if(cg_zone_write(cgIndexFile, cgIndexBase,
+                            writeTask->zoneName.c_str(), cgZoneSize,
+-                           Unstructured, &cgIndexZone))
++                           CGNS_ENUMV(Unstructured), &cgIndexZone))
+           {
+             return cgnsErr();
+           }
+@@ -1610,7 +1611,7 @@
+           for (int i = 0; i != cgZoneSize[0]; ++i) {
+             dBuffer[i] = writeZone->zoneVertVec[i]->x()*scalingFactor;
+           }
+-          if(cg_coord_write(cgIndexFile, cgIndexBase, cgIndexZone, RealDouble,
++          if(cg_coord_write(cgIndexFile, cgIndexBase, cgIndexZone, CGNS_ENUMV(RealDouble),
+                             "CoordinateX", &dBuffer[0], &cgIndexCoord))
+             return cgnsErr();
+ 
+@@ -1618,7 +1619,7 @@
+           for(int i = 0; i != cgZoneSize[0]; ++i) {
+             dBuffer[i] = writeZone->zoneVertVec[i]->y()*scalingFactor;
+           }
+-          if(cg_coord_write(cgIndexFile, cgIndexBase, cgIndexZone, RealDouble,
++          if(cg_coord_write(cgIndexFile, cgIndexBase, cgIndexZone, CGNS_ENUMV(RealDouble),
+                             "CoordinateY", &dBuffer[0], &cgIndexCoord))
+             return cgnsErr();
+ 
+@@ -1627,7 +1628,7 @@
+             for(int i = 0; i != cgZoneSize[0]; ++i) {
+               dBuffer[i] = writeZone->zoneVertVec[i]->z()*scalingFactor;
+             }
+-            if(cg_coord_write(cgIndexFile, cgIndexBase, cgIndexZone, RealDouble,
++            if(cg_coord_write(cgIndexFile, cgIndexBase, cgIndexZone, CGNS_ENUMV(RealDouble),
+                               "CoordinateZ", &dBuffer[0], &cgIndexCoord))
+               return cgnsErr();
+           }
+@@ -1707,7 +1708,7 @@
+               int cgIndexSection;
+               if(cg_section_write
+                  (cgIndexFile, cgIndexBase, cgIndexZone, elemName,
+-                  static_cast<ElementType_t>(typeCGNS), iElemSection + 1,
++                  static_cast<CGNS_ENUMT(ElementType_t)>(typeCGNS), iElemSection + 1,
+                   writeZone->zoneElemConn[typeMSHm1].numElem + iElemSection,
+                   writeZone->zoneElemConn[typeMSHm1].numBoElem + iElemSection,
+                   (cgsize_t*)&writeZone->zoneElemConn[typeMSHm1].connectivity[0],
+@@ -1747,9 +1748,9 @@
+             // In the first zone
+             if(cg_conn_write
+                (cgIndexFile, cgIndexBase, zoneInfo[gCIt->first.zone1].cgIndex,
+-                interfaceName.c_str(), Vertex, Abutting1to1, PointList, nVert,
++                interfaceName.c_str(), CGNS_ENUMV(Vertex), CGNS_ENUMV(Abutting1to1), CGNS_ENUMV(PointList), nVert,
+                 &iBuffer1[0], zoneInfo[gCIt->first.zone2].name.c_str(),
+-                Unstructured, PointListDonor, Integer, nVert, &iBuffer2[0],
++                CGNS_ENUMV(Unstructured), CGNS_ENUMV(PointListDonor), CGNS_ENUMV(Integer), nVert, &iBuffer2[0],
+                 &cgIndexInterface))
+             {
+               return cgnsErr();
+@@ -1757,9 +1758,9 @@
+             // In the second zone
+             if(cg_conn_write
+                (cgIndexFile, cgIndexBase, zoneInfo[gCIt->first.zone2].cgIndex,
+-                interfaceName.c_str(), Vertex, Abutting1to1, PointList, nVert,
++                interfaceName.c_str(), CGNS_ENUMV(Vertex), CGNS_ENUMV(Abutting1to1), CGNS_ENUMV(PointList), nVert,
+                 &iBuffer2[0], zoneInfo[gCIt->first.zone1].name.c_str(),
+-                Unstructured, PointListDonor, Integer, nVert, &iBuffer1[0],
++                CGNS_ENUMV(Unstructured), CGNS_ENUMV(PointListDonor), CGNS_ENUMV(Integer), nVert, &iBuffer1[0],
+                 &cgIndexInterface))
+             {
+               return cgnsErr();
+@@ -1879,7 +1880,7 @@
+               }
+               if(cg_boco_write(cgIndexFile, cgIndexBase,
+                                zoneInfo[zoneIndex].cgIndex, patchName.c_str(),
+-                               BCTypeNull, PointList, numBCVert, &iBuffer1[0],
++                               CGNS_ENUMV( BCTypeNull), CGNS_ENUMV(PointList), numBCVert, &iBuffer1[0],
+                                &cgIndexBoco))
+               {
+                 return cgnsErr();
+@@ -1889,7 +1890,7 @@
+                 int normalIndex;
+                 if(cg_boco_normal_write(cgIndexFile, cgIndexBase,
+                                         zoneInfo[zoneIndex].cgIndex, cgIndexBoco,
+-                                        &normalIndex, 1, RealDouble, &dBuffer[0]))
++                                        &normalIndex, 1, CGNS_ENUMV(RealDouble), &dBuffer[0]))
+                 {
+                   return cgnsErr();
+                 }
+Index: gmsh-tetgen-2.6.2~svn14678/Geo/CustomContainer.h
+===================================================================
+--- gmsh-tetgen-2.6.2~svn14678.orig/Geo/CustomContainer.h	2013-02-04 10:39:54.000000000 +0100
++++ gmsh-tetgen-2.6.2~svn14678/Geo/CustomContainer.h	2013-02-04 15:16:49.000000000 +0100
+@@ -559,7 +559,7 @@
+   }
+ 
+   // Destructor
+-  ~FaceVector() { deallocate(_capacity, faces); }
++  ~FaceVector() { this->deallocate(_capacity, faces); }
+ 
+   // Index the vector
+   const T &operator[](const int i) const { return faces[i]; }
+@@ -568,7 +568,7 @@
+   // Add element to end
+   T &push_back(const T val)
+   {
+-    if(_size == _capacity) grow(_capacity, faces);
++    if(_size == _capacity) this->grow(_capacity, faces);
+     return faces[_size++] = val;
+   }
+ 

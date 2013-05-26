@@ -36,7 +36,7 @@ class MeshBase;
 
 /**
  *  \defgroup GeoXD Basis Geometrical Entities Geo0D and GeoND.
- *
+ *  \ingroup Obsolet_Groups
  *  They are intermediate classes used to build the actual Geometry classes
  *
  *  \warning Geo1D/2D/3D are template classes because some of the info is not

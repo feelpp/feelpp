@@ -40,7 +40,7 @@ set(GINAC_LIBRARY_DIRS)
 set(GINAC_VERSION)
 
 include(FindPkgConfig)
-find_package(CLN 1.2.2)
+find_package(CLN 1.3.2)
 
 if (PKG_CONFIG_FOUND)
 	pkg_check_modules(_ginac ginac)

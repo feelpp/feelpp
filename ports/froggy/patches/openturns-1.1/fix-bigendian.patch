@@ -1,0 +1,47 @@
+Description: Fix build on big endian machines.
+ Many checks fail on some (but not all) big endian machines.
+ It seems that not all systems define __BIG_ENDIAN__.
+ Add some compile-time checks to determine endianness.
+
+Author: Denis Barbier <bouzim@gmail.com>
+Origin: Debian
+Forwarded: no
+Last-Update: 2012-05-22
+
+Index: openturns/CMakeLists.txt
+===================================================================
+--- openturns.orig/CMakeLists.txt
++++ openturns/CMakeLists.txt
+@@ -109,6 +109,7 @@ check_include_file ( stdint.h      HAVE_
+ check_include_file ( stdlib.h      HAVE_STDLIB_H      )
+ check_include_file ( string.h      HAVE_STRING_H      )
+ check_include_file ( strings.h     HAVE_STRINGS_H     )
++check_include_file ( sys/param.h   HAVE_SYS_PARAM_H   )
+ check_include_file ( sys/socket.h  HAVE_SYS_SOCKET_H  )
+ check_include_file ( sys/stat.h    HAVE_SYS_STAT_H    )
+ check_include_file ( sys/time.h    HAVE_SYS_TIME_H    )
+Index: openturns/lib/src/Base/Stat/dsfmt.h
+===================================================================
+--- openturns.orig/lib/src/Base/Stat/dsfmt.h
++++ openturns/lib/src/Base/Stat/dsfmt.h
+@@ -29,6 +29,20 @@
+ #include "simd.h"
+ #include "OTprivate.hxx"
+ 
++#if !defined(__BIG_ENDIAN__) && !defined(__LITTLE_ENDIAN__)
++# ifdef HAVE_SYS_PARAM_H
++#  include <sys/param.h>
++# endif
++#endif
++
++#if !defined(__BIG_ENDIAN__) && !defined(__LITTLE_ENDIAN__)
++# ifdef __BYTE_ORDER
++#  if __BYTE_ORDER == __BIG_ENDIAN
++#   define __BIG_ENDIAN__
++#  endif
++# endif
++#endif
++
+ namespace tutils
+ {
+   namespace detail
