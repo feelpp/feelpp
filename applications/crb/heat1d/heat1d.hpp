@@ -50,6 +50,8 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
+
 
 namespace Feel
 {
@@ -115,6 +117,30 @@ createGeo( double meshSize  )
     return gmshp;
 }
 
+
+class ParameterDefinition
+{
+public :
+    static const uint16_type ParameterSpaceDimension = 4;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
+class FunctionSpaceDefinition
+{
+public :
+    static const uint16_type Order = 5;
+
+    typedef double value_type;
+
+    /*mesh*/
+    typedef Simplex<1,1> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    /*basis*/
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
+
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+};
+
 /**
  * \class Heat1D
  * \brief brief description
@@ -122,15 +148,17 @@ createGeo( double meshSize  )
  * @author Christophe Prud'homme
  * @see
  */
-class Heat1D
+class Heat1D : public ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition>
 {
 public:
 
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
     /** @name Constants
      */
     //@{
-
     static const uint16_type Order = 5;
     static const uint16_type ParameterSpaceDimension = 4;
     static const bool is_time_dependent = false;
@@ -141,6 +169,11 @@ public:
     //@{
 
     typedef double value_type;
+
+    typedef typename FunctionSpaceDefinition::mesh_type mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef typename FunctionSpaceDefinition::mesh_type basis_type;
 
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -155,19 +188,11 @@ public:
     typedef eigen_matrix_type ematrix_type;
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
-    /*mesh*/
-    typedef Simplex<1,1> entity_type;
-    typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef p0_space_type::element_type p0_element_type;
 
-    /*basis*/
-    typedef bases<Lagrange<Order, Scalar> > basis_type;
-
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+    typedef typename FunctionSpaceDefinition::space_type space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef space_type functionspace_type;
     typedef space_ptrtype functionspace_ptrtype;
@@ -192,8 +217,8 @@ public:
 
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
 
     //@}
 
@@ -214,7 +239,7 @@ public:
     virtual ~Heat1D() {}
 
     //! initialisation of the model
-    void init();
+    void initModel();
     //@}
 
     /** @name Operator overloads
@@ -279,11 +304,6 @@ public:
         return 1;
     }
 
-    int mMaxInitialGuess( int q )
-    {
-        return 1;
-    }
-
 
     /**
      * \brief Returns the function space
@@ -303,13 +323,13 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
     {
         return computeBetaQm( mu , time );
     }
 
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type >
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( parameter_type const& mu, double time=0 )
     {
         M_betaAqm.resize( Qa() );
@@ -330,11 +350,7 @@ public:
         M_betaFqm[0][1][0] = mu( 3 ); // phi
         M_betaFqm[1][0][0] = 1;
 
-        M_betaInitialGuessQm.resize( QInitialGuess() );
-        M_betaInitialGuessQm[0].resize( 1 );
-        M_betaInitialGuessQm[0][0] = 0;
-
-        return boost::make_tuple( M_betaAqm, M_betaFqm, M_betaInitialGuessQm);
+        return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
     /**
@@ -360,11 +376,6 @@ public:
     value_type betaAqm( int q , int m ) const
     {
         return M_betaAqm[q][m];
-    }
-
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_betaInitialGuessQm[q][m];
     }
 
     /**
@@ -417,6 +428,8 @@ public:
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
+
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition();
 
     /**
      * \brief solve the model for parameter \p mu
@@ -507,10 +520,8 @@ private:
     std::vector < std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector < std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector < std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
     beta_vector_type M_betaAqm;
-    beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
 
     parameterspace_ptrtype M_Dmu;
@@ -524,7 +535,6 @@ Heat1D::Heat1D()
     exporter( Exporter<mesh_type>::New( "ensight" ) ),
     M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 
 
@@ -537,10 +547,9 @@ Heat1D::Heat1D( po::variables_map const& vm )
     exporter( Exporter<mesh_type>::New( vm, "heat1d" ) ),
     M_Dmu( new parameterspace_type )
 {
-    this->init();
 }
 void
-Heat1D::init()
+Heat1D::initModel()
 {
     /*
      * First we create the mesh
@@ -575,12 +584,6 @@ Heat1D::init()
         }
     }
 
-    auto ini_cond = Xh->elementPtr();
-    ini_cond->setZero();
-    M_InitialGuessQm.resize( 1 );
-    M_InitialGuessQm[0].resize( 1 );
-    M_InitialGuessQm[0][0] = ini_cond;
-
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
 
@@ -599,30 +602,30 @@ Heat1D::init()
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
-    form1( Xh, M_Fqm[0][0][0], _init=true ) = integrate( markedfaces( mesh,mesh->markerName( "left" ) ), id( v ) );
+    form1( _test=Xh, _vector=M_Fqm[0][0][0], _init=true ) = integrate( markedfaces( mesh,mesh->markerName( "left" ) ), id( v ) );
     form1( _test=Xh, _vector=M_Fqm[0][1][0], _init=true ) = integrate( elements( mesh ), id( v ) );
     M_Fqm[0][0][0]->close();
     M_Fqm[0][1][0]->close();
 
     // output
-    form1( Xh, M_Fqm[1][0][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
-    form1( Xh, M_Fqm[1][0][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
+    form1( _test=Xh, _vector=M_Fqm[1][0][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
+    form1( _test=Xh, _vector=M_Fqm[1][0][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
     M_Fqm[1][0][0]->close();
 
-    form2( Xh, Xh, M_Aqm[0][0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aqm[0][0] ) += integrate( markedfaces( mesh,mesh->markerName( "right" ) ), id( u )*idt( v ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) += integrate( markedfaces( mesh,mesh->markerName( "right" ) ), id( u )*idt( v ) );
     M_Aqm[0][0]->close();
 
-    form2( Xh, Xh, M_Aqm[1][0], _init=true ) = integrate( markedelements( mesh, "k1_1"  ), ( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aqm[1][0] ) += integrate( markedelements( mesh,"k1_2"  ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0], _init=true ) = integrate( markedelements( mesh, "k1_1"  ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate( markedelements( mesh,"k1_2"  ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aqm[1][0]->close();
 
-    form2( Xh, Xh, M_Aqm[2][0], _init=true ) = integrate( markedelements( mesh, "k2_1"  ), ( gradt( u )*trans( grad( v ) ) ) );
-    form2( Xh, Xh, M_Aqm[2][0] ) += integrate( markedelements( mesh, "k2_2"  ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0], _init=true ) = integrate( markedelements( mesh, "k2_1"  ), ( gradt( u )*trans( grad( v ) ) ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate( markedelements( mesh, "k2_2"  ), ( gradt( u )*trans( grad( v ) ) ) );
     M_Aqm[2][0]->close();
     M = backend->newMatrix( Xh, Xh );
 
-    form2( Xh, Xh, M, _init=true ) =
+    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
 
@@ -644,9 +647,19 @@ Heat1D::newVector() const
 Heat1D::affine_decomposition_type
 Heat1D::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Aqm, M_Fqm, M_InitialGuessQm );
+    return boost::make_tuple( M_Aqm, M_Fqm );
 }
 
+std::vector< std::vector< Heat1D::element_ptrtype > >
+Heat1D::computeInitialGuessAffineDecomposition()
+{
+    std::vector< std::vector<element_ptrtype> > q;
+    q.resize(1);
+    q[0].resize(1);
+    element_ptrtype elt ( new element_type ( Xh ) );
+    q[0][0] = elt;
+    return q;
+}
 
 void
 Heat1D::solve( sparse_matrix_ptrtype& D,
@@ -754,7 +767,7 @@ Heat1D::run( const double * X, unsigned long N, double * Y, unsigned long P )
     if ( do_init )
     {
         meshSize = X[4];
-        this->init();
+        this->initModel();
         do_init = false;
     }
 
@@ -780,7 +793,16 @@ Heat1D::output( int output_index, parameter_type const& mu )
     // right hand side (compliant)
     if ( output_index == 0 )
     {
-        output = M_betaFqm[0][0][0]*dot( M_Fqm[0][0][0], U ) + M_betaFqm[0][1][0]*dot( M_Fqm[0][1][0], U );
+        //output = M_betaFqm[0][0][0]*dot( M_Fqm[0][0][0], U ) + M_betaFqm[0][1][0]*dot( M_Fqm[0][1][0], U );
+        for ( int q=0; q<Ql( output_index ); q++ )
+        {
+            for ( int m=0; m<mMaxF(output_index,q); m++ )
+            {
+                element_ptrtype eltF( new element_type( Xh ) );
+                *eltF = *M_Fqm[output_index][q][m];
+                output += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
+            }
+        }
         //std::cout << "output0 c1 = " << s1 <<"\n";
         //double s2 = ( M_thetaFq[0](0)*integrate( markedfaces(mesh,mesh->markerName( "left" )), idv(*pT) ).evaluate()(0,0) +
         //M_thetaFq[0](1)*integrate( elements(mesh), idv(*pT) ).evaluate()(0,0) );

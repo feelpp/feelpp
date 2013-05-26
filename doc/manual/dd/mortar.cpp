@@ -100,41 +100,23 @@ public Simget
 public:
 
     typedef double value_type;
-
     typedef Backend<value_type> backend_type;
-
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
     typedef Mesh< Simplex<Dim,1,Dim> > mesh_type;
-
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-
     typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
-
     typedef bases<Lagrange<Order1,Scalar> > basis1_type;
-
     typedef bases<Lagrange<Order2,Scalar> > basis2_type;
-
     typedef FunctionSpace<mesh_type, basis1_type> space1_type;
-
     typedef FunctionSpace<mesh_type, basis2_type> space2_type;
-
     typedef typename space1_type::trace_functionspace_type lagmult_space_type;
-
     typedef typename space1_type::element_type element1_type;
-
     typedef typename space2_type::element_type element2_type;
-
     typedef typename lagmult_space_type::element_type trace_element_type;
-
     typedef Exporter<mesh_type> export_type;
-
     typedef boost::shared_ptr<export_type> export_ptrtype;
-
     typedef Exporter<trace_mesh_type> trace_export_type;
-
     typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
 
     /**
@@ -207,17 +189,17 @@ MortarLaplacian<Dim, Order1, Order2>::createMesh(  double xmin, double xmax, dou
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % shape % Dim % id ).str() ,
-                                                _addmidpoint=false,
-                                                _usenames=false,
-                                                _shape=this->shape,
-                                                _dim=Dim,
-                                                _h=meshsize,
-                                                _xmin=xmin,
-                                                _xmax=xmax,
-                                                _ymin=0.,
-                                                _ymax=1.,
-                                                _zmin=0.,
-                                                _zmax=1. ) );
+                                                      _addmidpoint=false,
+                                                      _usenames=false,
+                                                      _shape=this->shape,
+                                                      _dim=Dim,
+                                                      _h=meshsize,
+                                                      _xmin=xmin,
+                                                      _xmax=xmax,
+                                                      _ymin=0.,
+                                                      _ymax=1.,
+                                                      _zmin=0.,
+                                                      _zmax=1. ) );
 
     return mesh;
 }
@@ -281,7 +263,7 @@ MortarLaplacian<Dim, Order1, Order2>::exportResults( element1_type& u, element2_
 
     LOG(INFO) << "exportResults done\n";
     timers["export"].second = timers["export"].first.elapsed();
-    std::cout << "[timer] exportResults(): " << timers["export"].second << "s\n";
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "s\n";
 } // MortarLaplacian::export
 
 template<int Dim, int Order1, int Order2>
@@ -451,11 +433,11 @@ MortarLaplacian<Dim, Order1, Order2>::run()
 
     B2->transpose( B2t );
 
-    auto myb = Blocks<3,3>()<< D1 << B12 << B1t
-               << B21 << D2 << B2t
-               << B1 << B2  << BLL ;
+    auto myb = BlocksSparseMatrix<3,3>()<< D1 << B12 << B1t
+                                        << B21 << D2 << B2t
+                                        << B1 << B2  << BLL ;
 
-    auto AbB = M_backend->newBlockMatrix( myb );
+    auto AbB = M_backend->newBlockMatrix( _block=myb );
     AbB->close();
 
     auto FbB = M_backend->newVector( u1.size()+u2.size()+mu.size(),u1.size()+u2.size()+mu.size() );
@@ -543,10 +525,3 @@ main( int argc, char** argv )
 
     app.run();
 }
-
-
-
-
-
-
-

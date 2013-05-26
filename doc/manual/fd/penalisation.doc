@@ -1,0 +1,181 @@
+namespace Feel
+{
+
+/** \page FictitiousDomainPenalisationParticle Penalty method to simulate particle flow in capillaries
+
+    \tableofcontents
+
+    \section FictitiousDomainPenalisationParticle_Intro Introduction
+
+    We propose a somewhat simple numerical method albeit used
+    conjointly with physical experiments to understand particle flows
+    in capillaries.  Studies of flows in micro channels have been
+    multiplied since several years because of the goal to create cheap
+    and efficient lab-on-chips. An application that would like to
+    achieve many groups with a good quality is the sorting of
+    particles on lab-on-chips. For example sorting healthy / sick red
+    blood cells. One of the building blocs of such microfluidic system
+    is the splitting of a channel into two daughters channels. All the
+    mechanisms involving the spreading of particles in such a system
+    are not completely understood. It has been seen for example that,
+    when a suspension of particles pass through a bifurcation having
+    different flow rates at outlet, the branch having the higher flow
+    rate see its volume fraction (concentration of particles)
+    increase. This phenomenon is known as the \textit{Zweifach - Fung
+    effect} \cite{YuanCheng197334}.
+
+    In \cite DOYEUX2011a, the authors used \c FreeFem++ to run a 2D
+    simulation of a microfluidic bifurcation in which a rigid and circular particle
+    is put in the inlet channel and goes to one of the outlet channels. The choice
+    of the particle to go to the higher or the lower flow rate channel depends on many
+    parameters which have been studied in the paper such as the flow rate ratio
+    between the two branches, the size of the particle, the size of the outlet
+    channels or even the angle between the inlet and the outlet channels. The
+    simulations were compared with experiments and showed a good agreement. These
+    simulations and experiments shown an attracting hydrodynamical force toward the
+    lower flow rate channel which was unknown until there. Moreover the increase in
+    concentration in the highest flow rate branch has been explained by a
+    geometrical effect of the distribution of particles in the inlet channel which
+    was a good step forward in the understanding of the \e Zweifach-Fung \c effect.
+
+    \section FictitiousDomainPenalisationParticle_Model Model and numerical method
+
+    We propose to implement the method used in \cite DOYEUX2011a and have both 2D
+    and 3D setups which is readily the case using \c Feel++. Moreover, \c Feel++
+    allows us to run the same simulation in 3D without re-coding.
+
+    The size of the channel is very small (typically
+    \f$\unit{60}{\micro\meter}\f$), so that we can assume that we are in a low Reynolds
+    number regime  (\f$Re=10^{-1}\f$ in \cite DOYEUX2011a). The particles are rigid
+    and spherical (circular in 2D) and for the sake of simplicity, we consider only one
+    particle in the bifurcation. The extension  to many particles can be done
+    with no special care since the particles do not touch. This assumption is valid
+    since we are interested in dilute suspension and in this case the hydrodynamic
+    force is generally sufficient to prevent contacts.
+
+
+    Let's call \f$\Omega_f\f$ the fluid domain, \f$B\f$ the particle domain and \f$\Omega = \Omega_f \cup
+    B\f$ the whole domain. As explained above, the fluid is assumed to be governed by Stokes equations
+
+    \f{eqnarray}{
+    - 2 \nu \nabla \cdot \bm{D(u)} + \nabla p &=& 0 \:  \text{ in } \Omega_f, \label{eq:stokes_1}\\
+    \nabla \cdot \bm{u} &=& 0 \: \text{ in } \Omega_f, \label{eq:stokes_2} \\
+    \bm{u} &=& \bm{f} \:  \text{ on } \partial \Omega_f\setminus\partial B, \label{eq:stokes_3}
+    \f}
+
+    where : \f$\bm{u}\f$ is the velocity of the fluid,
+    \f$\bm{D(u)} =  \dfrac{\nabla \bm{u} + \nabla \bm{u}^T}{2}\f$
+    the deformation tensor, \f$p\f$ is the pressure of the fluid and
+    \f$\bm{f}\f$ is a given function related to the boundary conditions on
+    \f$\partial\Omega\f$ (those on \f$\partial B\f$ will be treated later by
+    penalty). Moreover, we impose that the mean of the pressure is zero by adding a
+    Lagrange multiplier \f$\lambda\f$. This approach allows us to use direct solvers
+    such as UMFPack, MUMPS or PASTIX otherwise only iterative solvers would have
+    been accessible. Thus, the variational formulation reads :
+
+    Find \f$(\bm{u}, p, \lambda) \in H^1(\Omega_f)^2\times L^2_0(\Omega_f)\times\mathbb{R}\f$
+    such that \f$\forall (\bm{v}, q, \mu) \in H^1(\Omega_f)^2\times L^2_0(\Omega_f)\times\mathbb{R}\f$ :
+
+    \f{eqnarray}
+    2 \nu \int_{\Omega_f} \bm{D(u)} : \bm{D(v)} - \int_{\Omega_f} p \nabla \cdot
+    \bm{v} &&\nonumber\\
+    + \int_{\Omega_f} \lambda q &=& 0, \label{eq:varstokes_1}\\
+    \int_{\Omega_f} q \nabla \cdot \bm{u} &=& 0, \label{eq:varstokes_2} \\
+    \int_{\Omega_f} \mu p &=& 0, \label{eq:varstokes_4}\\
+    \bm{u} &=& \bm{f} \: \text{ on } \partial \Omega. \label{eq:varstokes_3}\nonumber
+    \f}
+
+
+    and the corresponding \Feel code is given by the listing \ref{listing_stokes}.
+
+    The particle is taken into account following \cite Janela2005 in
+    which, one imposes a rigid-body constraint by a penalty
+    method. From the physics point of view, this method consists to
+    consider the particle as a part of the fluid with a ``huge
+    viscosity'' and constrained to have a rigid-body motion. Thus,
+    instead of integrating in the fluid domain \f$\Omega_f\f$, we
+    rewrite our variational formulation in the whole domain
+    \f$\Omega\f$ while taking into account the following constraint
+
+    \f[
+    \bm{D(u)} = 0, \: \text{ in } B.
+    \label{eq:rigidbody}
+    \f]
+
+
+    This rigid-body constraint \eqref{eq:rigidbody} is added to equation
+    \eqref{eq:varstokes_1} using a small enough penalty coefficient
+    \f$\varepsilon\f$.  Finally the new variational formulation reads
+
+    Find \f$(\bm{u},p, \lambda) \in H^1(\Omega)^2 \times L^2_0(\Omega) \times \mathbb{R}\f$ such
+    that \f$\forall (\bm{v}, q, \mu) \in H^1(\Omega)^2 \times L^2_0(\Omega) \times \mathbb{R}\f$ :
+
+    \f{eqnarray}{
+    2 \nu \int_{\Omega} \bm{D(u)} : \bm{D(v)} - \int_{\Omega} p \nabla \cdot \bm{v} && \nonumber\\
+    +\int_{\Omega} \lambda q + \frac{2}{\varepsilon} \int_B \chi ( \bm{D(u)} : \bm{D(v)} )  &=& 0, \label{eq:varstokespenal_1}\\
+    \int_{\Omega} q \nabla \cdot \bm{u} &=& 0, \label{eq:varstokespenal_2} \\
+    \int_{\Omega} \mu p &=& 0, \label{eq:varstokespenal_4}\\
+    \bm{u} &=& \bm{f} \: \text{ on } \partial \Omega. \label{eq:varstokespenal_3}\nonumber
+    \f}
+
+
+
+
+
+    Note that the integral over \f$B\f$ is performed by integrating over \f$\Omega\f$ while
+    multiplying by the characteristic function \f$\chi\f$ (see listing
+    \ref{listing_penalty}). In practice, only the penalty term changes during time
+    and has to be reassembled (e.g. the last term in equation
+    \eqref{eq:varstokespenal_1}). Thus, only the penalty term is added to the whole
+    problem at each iteration. Moreover, this term does vanishes on most
+    elements of the mesh and instead of integrating the penalty term over all the
+    elements and multiplying by \f$\chi\f$, we only integrate on those crossed by
+    \f$\chi\f$ using a special feature \c broken() of \c integrate()
+    to localize these elements, see section~\ref Integrals.
+
+
+    Finally, we introduce the time step \f$\Delta t\f$ and we denote by
+    \f$(\bm{u}_n,p_n,\lambda_n)\f$ the solution of the system
+    \eqref{eq:varstokespenal_1}-\eqref{eq:varstokespenal_2}-\eqref{eq:varstokespenal_4}
+    at time \f$t_n=n\Delta t\f$.  The velocity of the particle denoted by
+    \f$\bm{V}_n\f$ is then calculated by
+    the relation \eqref{eq:velocitypart} and its position \f$\bm{X}_n\f$ by the relation
+    \eqref{eq:positionpart}.
+
+    \f{eqnarray}{
+    \bm{V}_n &=& \frac{1}{\int_{\Omega} \chi} \int_{\Omega} \chi \, \bm{u}_n, \label{eq:velocitypart}\\
+    \bm{X}_{n+1} &=& \bm{X}_{n} + \Delta t \bm{V}_n, \label{eq:positionpart}
+    \f}
+
+    \section FictitiousDomainPenalisationParticle_Results Numerical Results
+
+    Figure shows a 2D simulation of a particle entering in the low
+    flow rate branch while figures and display the results of the 3D
+    simulation.
+
+    <center>
+    <table border=0px>
+    <tr>
+    <td style="width:30%">\image html bift_001 "t=0.01" width="100%"</td>
+    <td style="width:30%">\image html bift_120 "t=1.20" width="100%"</td>
+    <td style="width:30%">\image html bift_260 "t=2.60" width="100%"</td>
+    </tr>
+    <tr>
+    <td><center>2D simulation of a particle entering in the low flow rate channel.</center></td>
+    </tr>
+    <table>
+
+    <center>
+    <table border=0px>
+    <tr>
+    <td width="15%">\image html bif_vecteurs.png</td>
+    </tr>
+    <tr>
+    <td><center>3D simulation of the bifurcation problem. The velocity vectors are plotted and colored by the velocity magnitude. </center></td>
+    </tr>
+    </table>
+    </center>
+
+*/
+
+}

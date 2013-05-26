@@ -117,7 +117,7 @@ regionProcess( boost::shared_ptr<SpaceType> const& space )
 }
 
 /**
- * \class Functor class for RegionProcess
+ * class for RegionProcess
  */
 struct RegionProcess : public Region
 {
@@ -141,7 +141,7 @@ regionMarker( boost::shared_ptr<SpaceType> const& space )
 
 }
 /**
- * \class Functor class for RegionMarker
+ * class for RegionMarker
  */
 struct RegionMarkre : public Region
 {
@@ -166,7 +166,7 @@ regionMarker2( boost::shared_ptr<SpaceType> const& space )
 }
 
 /**
- * \class Functor class for RegionMarker2
+ * class for RegionMarker2
  */
 struct RegionMarker2 : public Region
 {
@@ -191,7 +191,7 @@ regionMarker3( boost::shared_ptr<SpaceType> const& space )
 }
 
 /**
- * \class Functor class for RegionMarker3
+ * class for RegionMarker3
  */
 struct RegionMarker3 : public Region
 {

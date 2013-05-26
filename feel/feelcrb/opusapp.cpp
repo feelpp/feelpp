@@ -42,6 +42,8 @@ po::options_description opusapp_options( std::string const& prefix )
     ( ( _prefix+"run.mode" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "execution mode: pfem=0, scm=1, crb=2" )
     ( ( _prefix+"run.sampling.size" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "size of sampling in parameter space" )
     ( ( _prefix+"run.sampling.mode" ).c_str(), Feel::po::value<int>()->default_value( 10 ), "type of sampling in parameter space (random=0, equidistributed=1)" )
+    ( (_prefix+"how-compute-unkown-for-eim").c_str(), Feel::po::value<std::string>()->default_value("CRB-with-ad"), "CRB-with-ad or FEM-with-ad or FEM-without-ad (ad:affine decomposition)")
+
     ;
 
     return _options;

@@ -298,7 +298,7 @@ public:
 }; // PointsGradient
 
 /**
- * \class ComponentsPointsEvaluation
+ * 
  * \brief generate the functionals associated with  point set
  *
  * Given a function space \f$ E \f$ and a set of points in the

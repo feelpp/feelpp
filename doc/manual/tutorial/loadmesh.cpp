@@ -32,44 +32,19 @@
 
 int main( int argc, char** argv )
 {
-    // Declare the supported options.
-    namespace po = boost::program_options;
-    po::options_description desc( "Allowed options" );
-
-
     using namespace Feel;
 
     Environment env( _argc=argc, _argv=argv,
-                     _desc=desc,
                      _about=about(_name="loadmesh",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
-    typedef Mesh<Simplex<3> > mesh_type;
-    fs::path mesh_name=Environment::vm()["filename"].as<std::string>();
-    auto mesh =  mesh_type::New();
-    if ( mesh_name.extension() == ".geo" )
-        mesh = createGMSHMesh( _mesh=mesh,
-                               _desc=geo( _filename=mesh_name.string(),_depends=Environment::vm()["depends"].as<std::string>() ),
-                               _physical_are_elementary_regions=true,
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-    else if ( mesh_name.extension() == ".msh" )
-        mesh = loadGMSHMesh( _mesh=mesh,
-                             _filename=mesh_name.string(),
-                             _rebuild_partitions=true,
-                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
-    else
-    {
-        std::cerr << "invalid file name : " << mesh_name << "\n";
-        return 0;
-    }
 
-    std::cout << "mesh " << mesh_name << " loaded\n" << std::endl;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>,
+                         _filename=option(_name="gmsh.filename").as<std::string>() );
 
-    std::cout << "volume =" << std::endl
-              << integrate( elements( mesh ), cst( 1. ) ).evaluate() << "\n";
-    std::cout << "surface =" << std::endl
-              << integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate() << "\n";
+    LOG(INFO) << "mesh " << option(_name="gmsh.filename").as<std::string>() << " loaded";
 
-
+    LOG(INFO) << "volume =" << integrate( elements( mesh ), cst( 1. ) ).evaluate();
+    LOG(INFO) << "surface = " << integrate( boundaryfaces( mesh ), cst( 1. ) ).evaluate();
 }

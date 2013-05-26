@@ -24,14 +24,19 @@
 add_custom_target(
   loadmesh
   ALL
-  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/medit/Cylref.mesh
-                                   ${FEELPP_BUILD_DIR}/doc/manual/
+  COMMAND ${CMAKE_COMMAND} -E copy ${FEELPP_SOURCE_DIR}/data/gmsh/feel.geo
+                                   ${FEELPP_BUILD_DIR}/doc/manual/tutorial
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh
-mylaplacian mystokes myadvection)
-  feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
+foreach(app myapp mymesh myintegrals myfunctionspace geotool loadmesh mylaplacian myadvection myexporter)
+
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${app}.cfg )
+    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc CFG ${app}.cfg)
+  else()
+    feelpp_add_application( doc_${app} SRCS ${app}.cpp LABEL doc)
+  endif()
+  install(TARGETS feelpp_doc_${app} DESTINATION bin/ COMPONENT Bin )
 endforeach()
-
-
+feelpp_add_application( doc_mystokes SRCS mystokes.cpp LABEL doc CFG mystokes.cfg GEO mystokes.geo)
+install(TARGETS feelpp_doc_mystokes DESTINATION bin/ COMPONENT Bin )
