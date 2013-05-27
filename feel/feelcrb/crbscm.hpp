@@ -594,8 +594,11 @@ CRBSCM<TruthModelType>::offline()
 
     while ( relative_error > M_tolerance && K <= M_iter_max )
     {
-        std::cout << "============================================================\n";
-        std::cout << "K=" << K << "\n";
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        {
+            std::cout << "============================================================\n";
+            std::cout << "K=" << K << "\n";
+        }
 
         os_C << M_C->at( K-1 ) << "\n";
 
@@ -671,10 +674,10 @@ CRBSCM<TruthModelType>::offline()
             return ckconv;
         }
 
-        std::cout << "[fe eig] mu=" << std::setprecision( 4 ) << mu << "\n"
-                  << "[fe eig] eigmin : " << std::setprecision( 16 ) << modes.begin()->second.template get<0>() << "\n"
-                  << "[fe eig] ndof:" << M_model->functionSpace()->nDof() << "\n";
 
+        LOG( INFO ) << "[fe eig] mu=" << std::setprecision( 4 ) << mu ;
+        LOG( INFO ) << "[fe eig] eigmin : " << std::setprecision( 16 ) << modes.begin()->second.template get<0>() ;
+        LOG( INFO ) << "[fe eig] ndof:" << M_model->functionSpace()->nDof() ;
 
         // extract the eigenvector associated with the smallest eigenvalue
         eigenvector = modes.begin()->second.template get<2>();
@@ -700,7 +703,7 @@ CRBSCM<TruthModelType>::offline()
             {
                 value_type aqmw = Matrixq[q][m_eim]->energy( eigenvector, eigenvector );
                 value_type bw = B->energy( eigenvector, eigenvector );
-                std::cout << "[scm_offline] q=" << q << " aqmw = " << aqmw << ", bw = " << bw << "\n";
+                LOG( INFO ) << "[scm_offline] q=" << q << " aqmw = " << aqmw << ", bw = " << bw ;
                 M_Y_ub[K-1][ q ](m_eim) = aqmw/bw;
             }
 
@@ -713,9 +716,9 @@ CRBSCM<TruthModelType>::offline()
 
 
 	if( M_scm_for_mass_matrix )
-	    std::cout<<"scm is done for mass matrix"<<std::endl;
+	    LOG( INFO ) <<"scm is done for mass matrix";
 	else
-	    std::cout<<"scm is done for a( . , . ; mu )"<<std::endl;
+	    LOG( INFO )<<"scm is done for a( . , . ; mu )";
 
         double minerr, meanerr;
         boost::tie( relative_error, mu, index, minerr, meanerr ) = maxRelativeError( K );
@@ -731,7 +734,8 @@ CRBSCM<TruthModelType>::offline()
         // the coercivity constant is independant of the parameter set
         if ( relative_error > M_tolerance && K < M_iter_max )
         {
-            std::cout << " -- inserting mu - index : "<<index<<" -  in C (" << M_C->size() << ")\n";
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << " -- inserting mu - index : "<<index<<" -  in C (" << M_C->size() << ")\n";
             M_C->push_back( mu, index );
 
             //for ( size_type _i =0; _i < M_C->size(); ++_i )
@@ -744,7 +748,8 @@ CRBSCM<TruthModelType>::offline()
         }
 
         ++K;
-        std::cout << "============================================================\n";
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "============================================================\n";
     }
 
     //before call saveDB we have to split the vector of tuple M_y_bounds
@@ -934,8 +939,8 @@ CRBSCM<TruthModelType>::lb( parameter_type const& mu ,size_type K ,int indexmu )
 
     int nnz = nb_decomposition_terms_qm()*( Malpha+Mplus );
 
-    int ia[1+1000], ja[1+1000];
-    double ar[1+1000];
+    int ia[1+10000], ja[1+10000];
+    double ar[1+10000];
     int nnz_index = 1;
 
     // set the auxiliary variables: we have first Malpha of them from C_K and
@@ -1361,7 +1366,8 @@ CRBSCM<TruthModelType>::computeYBounds()
                 if ( modes.empty() )
                 {
                     LOG(INFO) << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)\n";
-                    std::cout << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)"<<std::endl;
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "[Computeybounds] eigmin did not converge for q=" << q << " (set to 0)"<<std::endl;
                 }
 
                 double eigmin = modes.empty()?0:modes.begin()->second.template get<0>();
@@ -1387,11 +1393,13 @@ CRBSCM<TruthModelType>::computeYBounds()
                 if ( modes.empty() )
                 {
                     LOG(INFO) << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)\n";
-                    std::cout << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)"<<std::endl;
+                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                        std::cout << "[Computeybounds] eigmax did not converge for q=" << q << " (set to 0)"<<std::endl;
                 }
 
                 double eigmax = modes.empty()?0:modes.rbegin()->second.template get<0>();
-                std::cout<<"[computeYBounds] bounds for (q,m) = ("<<q<<","<<m<<") [ "<<eigmin<<" ; "<<eigmax<<"]"<<std::endl;
+                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    std::cout<<"[computeYBounds] bounds for (q,m) = ("<<q<<","<<m<<") [ "<<eigmin<<" ; "<<eigmax<<"]"<<std::endl;
                 LOG(INFO)<<"[computeYBounds] bounds for (q,m) = ("<<q<<","<<m<<") [ "<<eigmin<<" ; "<<eigmax<<"]\n";
                 //std::cout << "[Computeybounds] q= " << q << " eigmin=" << std::setprecision(16) << eigmin << " eigmax=" << std::setprecision(16) << eigmax << "\n";
                 //std::cout << std::setprecision(16) << eigmin << " " << eigmax << "\n";
@@ -1419,20 +1427,20 @@ CRBSCM<TruthModelType>::run( parameter_type const& mu, int K )
     boost::tie( alpha_ub, alpha_ubti ) = this->ub( mu, K );
     double alpha_ex, alpha_exti;
     boost::tie( alpha_ex, alpha_exti ) = this->ex( mu );
-    std::cout << "alpha_lb=" << alpha_lb << " alpha_ub=" << alpha_ub << " alpha_ex=" << alpha_ex << "\n";
-    std::cout << ( alpha_ex-alpha_lb )/( alpha_ub-alpha_lb ) << "\n";
-    std::cout << K << " "
-              << std::setprecision( 16 ) << alpha_lb << " "
-              << std::setprecision( 3 ) << alpha_lbti << " "
-              << std::setprecision( 16 ) << alpha_ub << " "
-              << std::setprecision( 3 ) << alpha_ubti << " "
-              << std::setprecision( 16 ) << alpha_ex << " "
-              << std::setprecision( 16 ) << alpha_exti << " "
-              << std::setprecision( 16 ) << ( alpha_ub-alpha_lb )/( alpha_ub ) << " "
-              << std::setprecision( 16 ) << ( alpha_ex-alpha_lb )/( alpha_ex ) << " "
-              << std::setprecision( 16 ) << ( alpha_ub-alpha_ex )/( alpha_ex ) << " "
-              << "\n";
-    std::cout << "------------------------------------------------------------\n";
+    LOG( INFO ) << "alpha_lb=" << alpha_lb << " alpha_ub=" << alpha_ub << " alpha_ex=" << alpha_ex << "\n";
+    LOG( INFO ) << ( alpha_ex-alpha_lb )/( alpha_ub-alpha_lb ) << "\n";
+    LOG( INFO ) << K << " "
+                << std::setprecision( 16 ) << alpha_lb << " "
+                << std::setprecision( 3 ) << alpha_lbti << " "
+                << std::setprecision( 16 ) << alpha_ub << " "
+                << std::setprecision( 3 ) << alpha_ubti << " "
+                << std::setprecision( 16 ) << alpha_ex << " "
+                << std::setprecision( 16 ) << alpha_exti << " "
+                << std::setprecision( 16 ) << ( alpha_ub-alpha_lb )/( alpha_ub ) << " "
+                << std::setprecision( 16 ) << ( alpha_ex-alpha_lb )/( alpha_ex ) << " "
+                << std::setprecision( 16 ) << ( alpha_ub-alpha_ex )/( alpha_ex ) << " "
+        ;
+    LOG( INFO ) << "------------------------------------------------------------\n";
     double rel_diff = (alpha_ex - alpha_lb)/alpha_ex;
     return boost::assign::list_of( alpha_lb )( alpha_lbti )( alpha_ub )( alpha_ubti )( alpha_ex )( alpha_exti )( rel_diff );
 }
