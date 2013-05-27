@@ -268,6 +268,8 @@ public:
             M_model->setInitialized( true );
         }
 
+        initB();
+
         if ( M_mode != CRBModelMode::CRB_ONLINE &&
                 M_mode != CRBModelMode::SCM_ONLINE )
         {
@@ -1305,7 +1307,6 @@ CRBModel<TruthModelType>::initB()
 
     //the matrix associated with H1 scalar product is now given by the model
     M_B = M_model->innerProduct();
-
 #if 0
     LOG(INFO) << "[CRBModel::initB] initialize scalar product\n";
     M_B = M_backend->newMatrix( M_model->functionSpace(), M_model->functionSpace() );

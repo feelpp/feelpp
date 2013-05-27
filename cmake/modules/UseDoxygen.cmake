@@ -54,7 +54,7 @@
 macro(usedoxygen_set_default name value type docstring)
   if(NOT DEFINED "${name}")
     set("${name}" "${value}" CACHE "${type}" "${docstring}")
-    endif()
+  endif()
 endmacro()
 
 find_package(Doxygen)
@@ -114,30 +114,30 @@ if(DOXYGEN_FOUND AND DOXYFILE_IN_FOUND)
     if(LATEX_COMPILER AND MAKEINDEX_COMPILER AND DOXYFILE_MAKE)
       if(PDFLATEX_COMPILER)
         set(DOXYFILE_PDFLATEX "YES")
-        endif()
-        if(DOXYGEN_DOT_EXECUTABLE)
-          set(DOXYFILE_DOT "YES")
-          endif()
+      endif()
+      if(DOXYGEN_DOT_EXECUTABLE)
+        set(DOXYFILE_DOT "YES")
+      endif()
 
-          add_custom_command(TARGET doxygen
-            POST_BUILD
-            COMMAND "${DOXYFILE_MAKE}"
-            COMMENT"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
-            WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
-          else()
-            set(DOXYGEN_LATEX "NO")
-            endif()
-            else()
-              set(DOXYFILE_GENERATE_LATEX "NO")
-              endif()
+      add_custom_command(TARGET doxygen
+        POST_BUILD
+        COMMAND "${DOXYFILE_MAKE}"
+        COMMENT"Running LaTeX for Doxygen documentation in ${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}..."
+        WORKING_DIRECTORY "${DOXYFILE_OUTPUT_DIR}/${DOXYFILE_LATEX_DIR}")
+    else()
+      set(DOXYGEN_LATEX "NO")
+    endif()
+  else()
+    set(DOXYFILE_GENERATE_LATEX "NO")
+  endif()
 
 
-              configure_file("${DOXYFILE_IN}" "${DOXYFILE}" @ONLY)
+  configure_file("${DOXYFILE_IN}" "${DOXYFILE}" @ONLY)
 
-              get_target_property(DOC_TARGET doc TYPE)
-              if(NOT DOC_TARGET)
-                add_custom_target(doc)
-                endif()
+  get_target_property(DOC_TARGET doc TYPE)
+  if(NOT DOC_TARGET)
+    add_custom_target(doc)
+  endif()
 
-                add_dependencies(doc doxygen)
+  add_dependencies(doc doxygen)
 endif()

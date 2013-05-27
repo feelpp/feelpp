@@ -26,7 +26,7 @@
 #include <feel/feel.hpp>
 using namespace Feel;
 
-/** \page Laplacian Laplacian Problem
+/** \page LaplacianTutorial Laplacian with homogeneous Dirichlet conditions
 \author Feel++ Consortium
 \date 2013-02-11
 
@@ -54,13 +54,13 @@ We multiply each part of the first equation by a "test" function \f$v\in H_0^1(\
 \end{aligned}
 \f$</center><br>
 We can integrate by parts this equation (Green Theorem) to obtain the variationnal formulation,
-<br><center>\f$
+\f[
 \begin{aligned}
 \int_\Omega \nabla u \nabla v
 -\underbrace{ \int_{\partial\Omega} \frac{\partial u}{\partial n} v }_{= 0}
 =\int_\Omega f v \;
 \end{aligned}
-\f$</center><br>
+\f]
 where \f$n\f$ denotes a unit outward normal vector to the boundary. We can rewrite the problem as find \f$u\in H_0^1(\Omega)\f$ such that for all \f$v\in H_0^1(\Omega)\f$,
 <br><center>\f$
 \begin{aligned}
@@ -80,7 +80,7 @@ The gradient for the trial functions is declared with the \c gradt() expression 
 Note that we need to transpose the second vector to perform the scalar product.
 
 To introduce the homogeneous dirichlet conditions on the boundary, we use the function \c on(). Once the variationnal formulation and the boundary conditions are set, we call
-the solver with solve().
+the solver with \c solve().
 
 */
 
@@ -125,5 +125,3 @@ int main(int argc, char**argv )
     e->save();
 }
 /// [marker1]
-
-
