@@ -253,6 +253,12 @@ void SolverLinearPetsc<T>::init ()
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
+        if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
+        {
+            int nRestartGMRES = option(_name="gmres-restart", _prefix=this->prefix() ).template as<int>();
+            ierr = KSPGMRESSetRestart( _M_ksp, nRestartGMRES );
+            CHKERRABORT( this->worldComm().globalComm(),ierr );
+        }
         // Notify PETSc of location to store residual history.
         // This needs to be called before any solves, since
         // it sets the residual history length to zero.  The default

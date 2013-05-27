@@ -1,0 +1,18 @@
+Description: Add missing header file
+Author: Julien Schueller
+Origin: upstream
+Applied-Upstream: http://trac.openturns.org/changeset/3030
+Last-Update: 2013-02-02
+
+Index: openturns/lib/src/Base/Common/CMakeLists.txt
+===================================================================
+--- openturns.orig/lib/src/Base/Common/CMakeLists.txt
++++ openturns/lib/src/Base/Common/CMakeLists.txt
+@@ -107,6 +107,7 @@ ot_install_header_file ( WrapperInterfac
+ ot_install_header_file ( WrapperCommon.h )
+ ot_install_header_file ( WrapperCommon_macros.h )
+ ot_install_header_file ( WrapperCommon_static.h )
++ot_install_header_file ( WrapperCommon_extern.h )
+ ot_install_header_file ( WrapperMacros.h )
+ 
+ if (LIBXML2_FOUND)

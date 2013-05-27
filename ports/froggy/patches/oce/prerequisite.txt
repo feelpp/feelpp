@@ -1,0 +1,235 @@
+Source: oce
+Section: science
+Priority: extra
+Maintainer: Debian Science Maintainers <debian-science-maintainers@lists.alioth.debian.org>
+Uploaders: "Adam C. Powell, IV" <hazelsct@debian.org>, Denis Barbier <barbier@debian.org>
+Standards-Version: 3.9.4
+Build-Depends: debhelper (>= 9), quilt, cmake,
+ libx11-dev, libxmu-dev, libxext-dev, tcl8.5-dev, tk8.5-dev,
+ libgl1-mesa-dev | libgl-dev, libglu1-mesa-dev | libglu-dev,
+ libftgl-dev, libgl2ps-dev
+Homepage: https://github.com/tpaviot/oce/wiki
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=debian-science/packages/oce.git
+Vcs-Git: git://anonscm.debian.org/debian-science/packages/oce.git -b debian
+
+Package: liboce-foundation6
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform shared library
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package is based on OCE, OpenCASCADE Community Edition, which is
+ maintained by a community of developers, and not by OpenCASCADE SAS.
+ .
+ This package contains foundation classes which provide a variety of
+ general-purpose services such as automated management of heap memory,
+ exception handling, classes for manipulating aggregates of data, basic
+ math tools.
+ .
+ This package contains the following shared libraries:
+   TKernel TKMath TKAdvTools
+
+Package: liboce-modeling6
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform shared library
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package is based on OCE, OpenCASCADE Community Edition, which is
+ maintained by a community of developers, and not by OpenCASCADE SAS.
+ .
+ This package supplies data structures to represent 2D and 3D geometric models,
+ as well as topological and geometrical algorithms.
+ .
+ This package contains the following shared libraries:
+   TKG2d TKG3d TKGeomBase TKBRep TKGeomAlgo TKTopAlgo TKPrim TKBO TKHLR
+   TKMesh TKShHealing TKXMesh TKBool TKFillet TKFeat TKOffset TKSTL
+   TKXSBase TKSTEPBase TKIGES TKSTEPAttr TKSTEP209 TKSTEP
+
+Package: liboce-visualization6
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform shared library
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package is based on OCE, OpenCASCADE Community Edition, which is
+ maintained by a community of developers, and not by OpenCASCADE SAS.
+ .
+ This package provides services for displaying 2D and 3D graphics.
+ .
+ This package contains the following shared libraries:
+   TKService TKV2d TKV3d TKOpenGl TKMeshVS TKNIS TKVRML TKVoxel
+
+Package: liboce-ocaf-lite6
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform shared library
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package is based on OCE, OpenCASCADE Community Edition, which is
+ maintained by a community of developers, and not by OpenCASCADE SAS.
+ .
+ This package is part of the OpenCASCADE Application Framework, it
+ provides shared libraries which have no dependency against X11.
+ .
+ This package contains the following shared libraries:
+   TKCDF PTKernel TKLCAF FWOSPlugin TKPShape TKBinL TKXmlL
+   TKPLCAF TKTObj TKShapeSchema TKStdLSchema
+
+Package: liboce-ocaf6
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform shared library
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package is based on OCE, OpenCASCADE Community Edition, which is
+ maintained by a community of developers, and not by OpenCASCADE SAS.
+ .
+ This package provides OpenCASCADE Application Framework services and 
+ support for data exchange.
+ .
+ This package contains the following shared libraries:
+   TKCAF TKBin TKXml TKPCAF TKBinTObj TKXmlTObj TKStdSchema
+   TKXCAF TKXCAFSchema TKXmlXCAF TKBinXCAF TKXDEIGES TKXDESTEP
+
+Package: oce-draw
+Architecture: any
+Section: science
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Replaces: opencascade-draw
+Conflicts: opencascade-draw
+Description: OpenCASCADE Community Edition CAE platform shared library
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package is based on OCE, OpenCASCADE Community Edition, which is
+ maintained by a community of developers, and not by OpenCASCADE SAS.
+ .
+ This package contains the DRAW test harness.
+
+Package: liboce-foundation-dev
+Architecture: any
+Section: libdevel
+Depends: liboce-foundation6 (>= ${source:Upstream-Version}), liboce-foundation6 (<< ${source:Upstream-Version}+1~),
+         ${misc:Depends}
+Replaces: libopencascade-foundation-dev
+Conflicts: libopencascade-foundation-dev
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform library development files
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package contains the headers and symlinks for libraries shipped by
+ liboce-foundation6.
+
+Package: liboce-modeling-dev
+Architecture: any
+Section: libdevel
+Depends: liboce-foundation-dev (>= ${source:Upstream-Version}), liboce-foundation-dev (<< ${source:Upstream-Version}+1~),
+         liboce-modeling6 (>= ${source:Upstream-Version}), liboce-modeling6 (<< ${source:Upstream-Version}+1~),
+         ${misc:Depends}
+Replaces: libopencascade-modeling-dev
+Conflicts: libopencascade-modeling-dev
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform library development files
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package contains the headers and symlinks for libraries shipped by
+ liboce-modeling6.
+
+Package: liboce-ocaf-lite-dev
+Architecture: any
+Section: libdevel
+Depends: liboce-foundation-dev (>= ${source:Upstream-Version}), liboce-foundation-dev (<< ${source:Upstream-Version}+1~),
+         liboce-modeling-dev (>= ${source:Upstream-Version}), liboce-modeling-dev (<< ${source:Upstream-Version}+1~),
+         liboce-ocaf-lite6 (>= ${source:Upstream-Version}), liboce-ocaf-lite6 (<< ${source:Upstream-Version}+1~),
+         ${misc:Depends}
+Replaces: libopencascade-ocaf-lite-dev
+Conflicts: libopencascade-ocaf-lite-dev
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform library development files
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package contains the headers and symlinks for libraries shipped by
+ liboce-ocaf-lite6.
+
+Package: liboce-ocaf-dev
+Architecture: any
+Section: libdevel
+Depends: liboce-foundation-dev (>= ${source:Upstream-Version}), liboce-foundation-dev (<< ${source:Upstream-Version}+1~),
+         liboce-modeling-dev (>= ${source:Upstream-Version}), liboce-modeling-dev (<< ${source:Upstream-Version}+1~),
+         liboce-ocaf-lite-dev (>= ${source:Upstream-Version}), liboce-ocaf-lite-dev (<< ${source:Upstream-Version}+1~),
+         liboce-ocaf6 (>= ${source:Upstream-Version}), liboce-ocaf6 (<< ${source:Upstream-Version}+1~),
+         ${misc:Depends}
+Replaces: libopencascade-ocaf-dev
+Conflicts: libopencascade-ocaf-dev
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform library development files
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package contains the headers and symlinks for libraries shipped by
+ liboce-ocaf6.
+
+Package: liboce-visualization-dev
+Architecture: any
+Section: libdevel
+Depends: liboce-foundation-dev (>= ${source:Upstream-Version}), liboce-foundation-dev (<< ${source:Upstream-Version}+1~),
+         liboce-modeling-dev (>= ${source:Upstream-Version}), liboce-modeling-dev (<< ${source:Upstream-Version}+1~),
+         liboce-ocaf-lite-dev (>= ${source:Upstream-Version}), liboce-ocaf-lite-dev (<< ${source:Upstream-Version}+1~),
+         liboce-visualization6 (>= ${source:Upstream-Version}), liboce-visualization6 (<< ${source:Upstream-Version}+1~),
+         ${misc:Depends}
+Replaces: libopencascade-ocaf-lite-dev
+Conflicts: libopencascade-ocaf-lite-dev
+Multi-Arch: same
+Description: OpenCASCADE Community Edition CAE platform library development files
+ OpenCASCADE is a suite for 3D surface and solid modeling, visualization, data
+ exchange and rapid application development.  It is an excellent platform for
+ development of numerical simulation software including CAD/CAM/CAE, AEC and
+ GIS, as well as PDM applications.
+ .
+ This package contains the headers and symlinks for libraries shipped by
+ liboce-visualization6.
+
