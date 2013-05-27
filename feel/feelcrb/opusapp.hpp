@@ -818,7 +818,8 @@ public:
                         case  CRBModelMode::SCM:
                             {
 
-                                std::cout << "SCM mode\n";
+                                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                                    std::cout << "SCM mode\n";
                                 int kmax = crb->scm()->KMax();
                                 auto o = crb->scm()->run( mu, kmax );
                                 printEntry( ostr, mu, o );
@@ -862,7 +863,7 @@ public:
 
                         }
 
-                    std::cout << "------------------------------------------------------------\n";
+                    LOG( INFO ) << "------------------------------------------------------------";
                 }
             }
 
