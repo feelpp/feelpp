@@ -644,153 +644,163 @@ namespace Feel
 
         int nbPosfiles = posfiles.size();
 
-        /// *********** GMSH call to build new mesh ********** ///
+        if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  &&  Environment::worldComm().globalRank() == Environment::worldComm().masterRank() ) )
+            {
+                /// *********** GMSH call to build new mesh ********** ///
 #if FEELPP_HAS_GMSH
 #if defined(FEELPP_HAS_GMSH_H)
 
-        std::string geofileNameWE = (boost::format( "%1%.geo" ) % geofileName).str();
-        std::string exeName = "";
+                std::string geofileNameWE = (boost::format( "%1%.geo" ) % geofileName).str();
+                std::string exeName = "";
 
-        // Load geofile (.geo) and post processing (.pos) files
-        int argcGmsh = nbPosfiles + 2;
-        char **argvGmsh = new char * [argcGmsh]; // geofile + posfiles
+                // Load geofile (.geo) and post processing (.pos) files
+                int argcGmsh = nbPosfiles + 2;
+                char **argvGmsh = new char * [argcGmsh]; // geofile + posfiles
 
-        /// argv[0] is the executable name
-        char *argExe = new char[exeName.size() + 1];
-        copy(exeName.begin(), exeName.end(), argExe);
-        argExe[exeName.size()] = '\0';
-        argvGmsh[0] = argExe;
-
-
-        /// argv[1] => geofile
-        char *argGeo = new char[geofileNameWE.size() + 1];
-        copy(geofileNameWE.begin(), geofileNameWE.end(), argGeo);
-        argGeo[geofileNameWE.size()] = '\0';
-        argvGmsh[1] = argGeo;
-
-        /// argv[2,...,n] => posfiles
-        for (int i=0; i<nbPosfiles; i++)
-            {
-                int j = i + 2; // Shift (0 = exe, 1 = geo)
-                char *argPos = new char[posfiles[i].size() + 1];
-                copy(posfiles[i].begin(), posfiles[i].end(), argPos);
-                argPos[posfiles[i].size()] = '\0';
-                argvGmsh[j] = argPos;
-            }
-
-        //// Initializing
-        GmshInitialize(argcGmsh, argvGmsh);
+                /// argv[0] is the executable name
+                char *argExe = new char[exeName.size() + 1];
+                copy(exeName.begin(), exeName.end(), argExe);
+                argExe[exeName.size()] = '\0';
+                argvGmsh[0] = argExe;
 
 
-        GmshSetOption("Mesh", "Algorithm", 5.);
-        ::GModel *newGmshModel = new GModel();
+                /// argv[1] => geofile
+                char *argGeo = new char[geofileNameWE.size() + 1];
+                copy(geofileNameWE.begin(), geofileNameWE.end(), argGeo);
+                argGeo[geofileNameWE.size()] = '\0';
+                argvGmsh[1] = argGeo;
 
-        //CTX::instance()->mesh.secondOrderIncomplete = 0;
-        //CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
-
-        // Retreive list of files
-        for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
-            {
-                LOG(INFO) << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << "\n";
-                MergeFile(CTX::instance()->files[i]);
-            }
-
-        // /* Create Fields from PView list */
-        ::FieldManager* myFieldManager = newGmshModel->getFields();
-        std::list<int> idList;
-
-        for (unsigned int i = 0; i < ::PView::list.size(); i++)
-            {
-                ::PView *v = ::PView::list[i];
-                if (v->getData()->hasModel(::GModel::current()))
+                /// argv[2,...,n] => posfiles
+                for (int i=0; i<nbPosfiles; i++)
                     {
-                        Msg::Error("Cannot use view based on current mesh for background mesh: you might"
-                                   " want to use a list-based view (.pos file) instead");
-                        return 0;
+                        int j = i + 2; // Shift (0 = exe, 1 = geo)
+                        char *argPos = new char[posfiles[i].size() + 1];
+                        copy(posfiles[i].begin(), posfiles[i].end(), argPos);
+                        argPos[posfiles[i].size()] = '\0';
+                        argvGmsh[j] = argPos;
                     }
 
-                LOG(INFO) << "[MeshAdaptation] PostView : " << v->getData()->getFileName() << "\n";
+                //// Initializing
+                GmshInitialize(argcGmsh, argvGmsh);
 
-                /// Add new PView as post processing file
+
+                GmshSetOption("Mesh", "Algorithm", 5.);
+                ::GModel *newGmshModel = new GModel();
+
+                //CTX::instance()->mesh.secondOrderIncomplete = 0;
+                //CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
+
+                // Retreive list of files
+                for (unsigned int i = 0; i < CTX::instance()->files.size(); i++)
+                    {
+                        LOG(INFO) << "[MeshAdaptation] loaded files : " << CTX::instance()->files[i] << "\n";
+                        MergeFile(CTX::instance()->files[i]);
+                    }
+
+                // /* Create Fields from PView list */
+                ::FieldManager* myFieldManager = newGmshModel->getFields();
+                std::list<int> idList;
+
+                for (unsigned int i = 0; i < ::PView::list.size(); i++)
+                    {
+                        ::PView *v = ::PView::list[i];
+                        if (v->getData()->hasModel(::GModel::current()))
+                            {
+                                Msg::Error("Cannot use view based on current mesh for background mesh: you might"
+                                           " want to use a list-based view (.pos file) instead");
+                                return 0;
+                            }
+
+                        LOG(INFO) << "[MeshAdaptation] PostView : " << v->getData()->getFileName() << "\n";
+
+                        /// Add new PView as post processing file
+                        int id = myFieldManager->newId();
+                        myFieldManager->newField(id, "PostView");
+
+                        ::Field *f = myFieldManager->get(id);
+                        f->options["IView"]->numericalValue(i);
+                        idList.push_back(id);
+                    }
+
+                // /* Create minAniso field, with all the posfiles (intersection) */
                 int id = myFieldManager->newId();
-                myFieldManager->newField(id, "PostView");
 
+                if (aniso)
+                    myFieldManager->newField(id, "MinAniso");
+                else
+                    myFieldManager->newField(id, "Min");
                 ::Field *f = myFieldManager->get(id);
-                f->options["IView"]->numericalValue(i);
-                idList.push_back(id);
-            }
 
-        // /* Create minAniso field, with all the posfiles (intersection) */
-        int id = myFieldManager->newId();
+                /// Check if list of field for MinAniso is empty
+                assert( f->options["FieldsList"]->list().size() == 0);
+                /// Copy idlist vector into algorithm fieldlist
+                //std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
+                f->options["FieldsList"]->list(idList);
 
-        if (aniso)
-            myFieldManager->newField(id, "MinAniso");
-        else
-            myFieldManager->newField(id, "Min");
-        ::Field *f = myFieldManager->get(id);
+                // /* Now create the adapted mesh */
 
-        /// Check if list of field for MinAniso is empty
-        assert( f->options["FieldsList"]->list().size() == 0);
-        /// Copy idlist vector into algorithm fieldlist
-        //std::copy(idList.begin(), idList.end(), std::back_inserter(f->options["FieldsList"]->list()) );
-        f->options["FieldsList"]->list(idList);
+                /// Define background field from Fields
+                myFieldManager->setBackgroundFieldId(id);
+                f = myFieldManager->get(myFieldManager->getBackgroundField());
 
-        // /* Now create the adapted mesh */
+                /// Algo for remeshing
+                CTX::instance()->mesh.algo2d = ALGO_2D_BAMG;
+                if (Dim == 3)
+                    CTX::instance()->mesh.algo3d = ALGO_3D_MMG3D;
 
-        /// Define background field from Fields
-        myFieldManager->setBackgroundFieldId(id);
-        f = myFieldManager->get(myFieldManager->getBackgroundField());
+                newGmshModel->deleteMesh(); //Delete current mesh
+                newGmshModel->mesh(Dim);
 
-        /// Algo for remeshing
-        CTX::instance()->mesh.algo2d = ALGO_2D_BAMG;
-        if (Dim == 3)
-            CTX::instance()->mesh.algo3d = ALGO_3D_MMG3D;
+                LOG(INFO) << "[MeshAdaptation] New mesh built : " << newMeshName << "\n";
+                newGmshModel->writeMSH(newMeshName);
+                LOG(INFO) << "[MeshAdaptation] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+                LOG(INFO) << "[MeshAdaptation] elements : " << newGmshModel->getNumMeshElements() << "\n";
 
-        newGmshModel->deleteMesh(); //Delete current mesh
-        newGmshModel->mesh(Dim);
+                //// Delete list of loaded files
+                CTX::instance()->files.erase(CTX::instance()->files.begin(), CTX::instance()->files.end());
+                //// Delete PView list
+                ::PView::list.erase(::PView::list.begin(), ::PView::list.end() );
 
-        LOG(INFO) << "[MeshAdaptation] New mesh built : " << newMeshName << "\n";
-        newGmshModel->writeMSH(newMeshName);
-        LOG(INFO) << "[MeshAdaptation] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
-        LOG(INFO) << "[MeshAdaptation] elements : " << newGmshModel->getNumMeshElements() << "\n";
-
-        //// Delete list of loaded files
-        CTX::instance()->files.erase(CTX::instance()->files.begin(), CTX::instance()->files.end());
-        //// Delete PView list
-        ::PView::list.erase(::PView::list.begin(), ::PView::list.end() );
-
-        // Cleanup memory
-        newGmshModel->destroy();
-        delete newGmshModel;
-        delete[] argGeo;
-        delete[] argExe;
-        delete[] argvGmsh;
-        GmshFinalize();
+                // Cleanup memory
+                newGmshModel->destroy();
+                delete newGmshModel;
+                delete[] argGeo;
+                delete[] argExe;
+                delete[] argvGmsh;
+                GmshFinalize();
 
 #else
-        std::string newAccessGeofile = createAdaptedGeo(geofile, name, posfiles, aniso);
+                std::string newAccessGeofile = createAdaptedGeo(geofile, name, posfiles, aniso);
 
-        // Execute gmsh command to generate new mesh from new geofile built
-        std::ostringstream __str;
-        __str << "gmsh" << " " << newAccessGeofile << " "
-              << "-o " << newMeshName << " ";
-        for (int p=0; p<nbPosfiles; p++)
-            {
-                __str << posfiles[p] << " ";
-            }
-        if (aniso)
-            {
-                __str << "-algo bamg" << " ";
-                if( Dim == 3)
-                    __str << "-algo mmg3d" << " ";
-            }
-        __str << "-" << Dim;
+                // Execute gmsh command to generate new mesh from new geofile built
+                std::ostringstream __str;
+                __str << "gmsh" << " " << newAccessGeofile << " "
+                      << "-o " << newMeshName << " ";
+                for (int p=0; p<nbPosfiles; p++)
+                    {
+                        __str << posfiles[p] << " ";
+                    }
+                if (aniso)
+                    {
+                        __str << "-algo bamg" << " ";
+                        if( Dim == 3)
+                            __str << "-algo mmg3d" << " ";
+                    }
+                __str << "-" << Dim;
 
-        ::system(__str.str().c_str());
+                ::system(__str.str().c_str());
 #endif
 #else
-        throw std::invalid_argument("Gmsh is not available on this system");
+                throw std::invalid_argument("Gmsh is not available on this system");
 #endif
+            }
+
+        if ( mpi::environment::initialized() )
+            {
+                Environment::worldComm().barrier();
+                LOG(INFO) << "Broadcast adapted mesh file " << newMeshName << " to all other mpi processes\n";
+                mpi::broadcast( Environment::worldComm().globalComm(), newMeshName, 0 );
+            }
 
         return newMeshName;
     }

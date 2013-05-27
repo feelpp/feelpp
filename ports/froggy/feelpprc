@@ -1,0 +1,53 @@
+if shopt -q login_shell ; then # We're in a login shell
+	echo "Loading feelpp env"
+fi
+
+# you may have to unset LC_CTYPE otherwise the feel++ application crash (utf8 mess)
+unset LC_CTYPE
+
+module load binutils/2.21.1_gcc-4.6.2
+module load ciment/devel_gcc-4.6.2
+module load openmpi/1.4.4_gcc-4.6.2
+module load zlib/1.2.7_gcc-4.6.2
+module load glib/2.34.2_gcc-4.6.2
+module load emacs/23.4_gcc-4.6.2
+module load cmake/2.8.8_gcc-4.6.2                                                                                                                                                                                      
+module load lapack/3.4.0_gcc-4.6.2
+#module load boost/1.48.0_gcc-4.6.2
+module load boost/1.52.0_gcc-4.6.2
+module load python/2.7.3_gcc-4.6.2
+module load bison/2.6.5_gcc-4.6.2
+module load flex/2.5.35_gcc-4.6.2
+module load autoconf/2.69_gcc-4.6.2
+module load automake/1.12_gcc-4.6.2
+
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/lib64
+export LD_PRELOAD=/applis/ciment/v2/x86_64/lib/libc.so.6
+
+if [ -z $packagesBaseDir ]; then
+   export packagesBaseDir=/home/chabannes/packages/
+   
+   export LD_PRELOAD=/applis/ciment/v2/x86_64/lib/libc.so.6
+   export PATH=$packagesBaseDir/git/git-1.8.2-install/bin/:$PATH
+
+   export gccVersion=4.6.2
+   export gccDir=/applis/ciment/v2/stow/x86_64/gcc_4.6.2/gcc_$gccVersion/
+
+   export gmshDir=$packagesBaseDir/gmsh/gmsh-2.7.0.install-gcc$gccVersion
+   export GMSH_DIR=$gmshDir
+   export BOOSTROOT=$boost_DIR
+   export petscDir=$packagesBaseDir/petsc/petsc-3.3-p6-install-gcc$gccVersion
+   export PETSC_DIR=$petscDir
+
+   export PATH=$GMSH_DIR/bin:$PATH
+   export PATH=$BOOSTROOT/include:$PATH
+
+   export LD_LIBRARY_PATH=$GMSH_DIR/lib:$LD_LIBRARY_PATH
+   export LD_LIBRARY_PATH=$BOOSTROOT/lib:$LD_LIBRARY_PATH
+
+   export VTK_DIR=$packagesBaseDir/vtk/VTK5.10.1-install-gcc$gccVersion-staticlib/                                  |
+   export LD_LIBRARY_PATH=$VTK_DIR/lib/vtk-5.10:$LD_LIBRARY_PATH 
+fi
+
+# very important : fix internal compiler error with feel++                                                                                                                                                                         
+ulimit -s unlimited

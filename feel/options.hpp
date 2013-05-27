@@ -57,6 +57,8 @@ po::options_description mesh_options( int Dim, std::string const& prefix = "" );
 
 po::options_description gmsh_options( std::string const& prefix = "" );
 
+po::options_description ginac_options( std::string const& prefix = "" );
+
 /**
  * defines solver eigen options
  *

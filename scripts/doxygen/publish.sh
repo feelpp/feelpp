@@ -7,30 +7,25 @@ function builddox
     [ -d doxygen-$branch ] && rm -rf doxygen-$branch
     mkdir doxygen-$branch
     cd doxygen-$branch
-    cmake ../feelpp.git
+    cmake -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.6 -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.6 ../feelpp.git
     make doxygen
-    cd doc/manual/ 
-#    make feelpp-manual_pdf
-    cd ../../..
+    cd ../
 
     # now work in feelpp.docs to push the newly created doxygen files
-    mkdir -p feelpp.docs/api/$branch
-    cd feelpp.docs && git pull
+    mkdir -p gh-pages/$branch
+    cd gh-pages  && git pull
     
-    rsync -avz ../doxygen-$branch/doc/api/html/ api/$branch/html/
-    mkdir api/$branch/pdfs
-#    cp ../doxygen-$branch/doc/manual/feelpp-manual.pdf  api/$branch/pdfs
-    git add api/$branch/html/* 
-#    git add api/$branch/pdfs/* 
-    git commit -m"update $branch doxygen and user manual documentation" -a
-    git push
+    rsync -avz ../doxygen-$branch/doc/api/html/ $branch/
+    git add -f $branch/* 
+    git commit -m"update Feel++ online documentation of branch $branch" -a
+    git push origin gh-pages
     cd ..
 }
 
 
-if [ ! -d feelpp.docs ]; then git clone  https://code.google.com/p/feelpp.docs/ feelpp.docs; fi
-cd feelpp.docs && git pull && cd ..
-if [ ! -d feelpp.git ]; then git clone  https://github.com/feelpp/feelpp.git feelpp.git; fi
+if [ ! -d gh-pages ]; then mkdir gh-pages; cd gh-pages; git init; git remote add -t gh-pages -f origin https://github.com/feelpp/feelpp.git; git checkout gh-pages; cd ..; fi
+cd gh-pages && git pull && cd ..
+#if [ ! -d feelpp.git ]; then git clone  https://github.com/feelpp/feelpp.git feelpp.git; fi
 cd feelpp.git && git pull && cd ..
 
 # checkout in master branch

@@ -22,7 +22,7 @@
 #
 
 # Set to "ON" if you want the LaTeX documentation to be built.
-set(DOXYFILE_LATEX 0)
+set(DOXYFILE_LATEX 1)
 
 find_program(DOXYGEN doxygen)
 if ( DOXYGEN )
@@ -32,6 +32,35 @@ if ( DOXYGEN )
    # make sure that doxygen is not run byt default
    set_target_properties(doxygen PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
+   # add subpages to projects/modules
+   configure_file(
+     ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc.in
+     ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc
+     )
+
+   set(FEELPP_PROJECTS_DIR,"")
+   # if projects have been detected
+   foreach(project ${projects_list})
+     #get shortname
+     GET_FILENAME_COMPONENT(dirname ${project} NAME)
+     
+     #define option to control doc generation
+     string(TOUPPER ${dirname} PROJECT)
+     if (FEELPP_ENABLE_${PROJECT}_DOCUMENTATION )
+       set(FEELPP_PROJECTS_DIR ${FEELPP_PROJECTS_DIR} "${project}")
+       FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "   - \\subpage ${dirname} ${PROJECT}\n")
+       MESSAGE(STATUS "Doxygen Documention for ${project} will be generated")
+     endif()
+   endforeach()
+   FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "*/\n")
+
+   STRING(REPLACE ";" " " _TMP_STR "${FEELPP_PROJECTS_DIR}")
+   SET(FEELPP_PROJECTS_DIR "${_TMP_STR}")
+
+   FILE(APPEND ${CMAKE_CURRENT_SOURCE_DIR}/pages.doc "\n\n}\n")
+
+
+   #  
    configure_file(
      ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
      ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile

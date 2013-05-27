@@ -57,8 +57,6 @@ namespace Feel
 {
 using GiNaC::symbol;
 using GiNaC::ex;
-
-
 }
 
 #include <feel/feelfilters/gmsh.hpp>

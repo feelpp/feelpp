@@ -1635,7 +1635,11 @@ public:
         :
         M_expr( expr )
     {
-        ;
+    }
+    UnaryPlus( UnaryPlus const& e )
+        :
+        M_expr( e.M_expr )
+    {
     }
 
     expression_type const& expression() const
@@ -1729,7 +1733,7 @@ public:
 protected:
     UnaryPlus() {}
 
-    const expression_type& M_expr;
+    expression_type M_expr;
 };
 template <class T> inline
 Expr< UnaryPlus< Expr<T> > >
@@ -1776,6 +1780,27 @@ public:
         M_expr( expr )
     {
         ;
+    }
+
+    UnaryMinus( UnaryMinus const& u )
+        :
+        M_expr( u.M_expr )
+    {
+        ;
+    }
+
+    UnaryMinus( UnaryMinus&& u )
+        :
+        M_expr( u.M_expr )
+    {
+    }
+
+    UnaryMinus&
+    operator=( UnaryMinus const& u )
+    {
+        if ( this != &u )
+            M_expr = u.M_expr;
+        return *this;
     }
 
     expression_type const& expression() const
@@ -1869,7 +1894,7 @@ public:
 protected:
     UnaryMinus() {}
 
-    const expression_type& M_expr;
+    expression_type M_expr;
 };
 template <class T> inline
 Expr< UnaryMinus< Expr<T> > >

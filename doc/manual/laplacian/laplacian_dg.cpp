@@ -28,8 +28,26 @@
  */
 #include <feel/feel.hpp>
 
+namespace Feel
+{
+/**
+   \page LaplacianDG Laplacian using Discontinous Galerkin
+   \author Feel++ Consortium
+
+   <br>
+   <br>
+
+   `feelpp_doc_laplacian_dg` solves for the Laplacian in a square using a modal
+   basis (Dubiner) using a DG formulation.
+
+   \section LaplacianDG_Implementation
+   the implementation is available in \ref doc/manual/laplacian/laplacian_dg.cpp
+   \snippet laplacian_dg.cpp marker1
+ */
+}
 int main(int argc, char**argv )
 {
+    /// [marker1]
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _about=about(_name="laplacian_dg",
@@ -38,6 +56,7 @@ int main(int argc, char**argv )
 
     auto mesh = unitSquare();
     auto Vh = Odh<1>( mesh );
+    auto Xh = Pch<1>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
 
@@ -45,7 +64,8 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
-    auto a = form2( _trial=Vh, _test=Vh );
+    auto a = form2( _trial=Vh, _test=Vh,
+                    _pattern=size_type(Pattern::EXTENDED) );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a +=integrate( internalfaces( mesh ),
@@ -62,10 +82,13 @@ int main(int argc, char**argv )
 
     a.solve(_rhs=l,_solution=u);
 
+    auto p = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 );
+    auto uc = p->project( idv(u) );
+
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
+    e->add( "uc", uc );
     e->save();
+    /// [marker1]
     return 0;
 }
-
-
