@@ -52,6 +52,35 @@ namespace Feel
 {
 namespace detail
 {
+struct GMSHPoint
+{
+    int id;
+    Eigen::Vector3d x;
+    bool onbdy;
+    bool parametric;
+    int gdim,gtag;
+    Eigen::Vector2d uv;
+    GMSHPoint()
+        :
+        id( 0 ),
+        x( Eigen::Vector3d::Zero() ),
+        onbdy( false ),
+        parametric( false ),
+        gdim( 0 ),
+        gtag( 0 ),
+        uv( Eigen::Vector2d::Zero() )
+        {}
+    GMSHPoint(GMSHPoint const& p )
+        :
+        id ( p.id ),
+        x( p.x ),
+        onbdy( p.onbdy ),
+        parametric( p.parametric ),
+        gdim( p.gdim ),
+        gtag( p.gtag ),
+        uv( p.uv )
+        {}
+};
 struct GMSHElement
 {
     GMSHElement()
@@ -370,7 +399,7 @@ private:
     std::set<std::string> _M_ignorePhysicalName;
     bool M_use_elementary_region_as_physical_region;
 
-    std::map<int,int> itoii;
+    //std::map<int,int> itoii;
     std::vector<int> ptseen;
 
 };
@@ -557,58 +586,60 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     if ( binary )
         __is.get();
 
-    std::vector<double> __x( 3*__n );
-    std::vector<int> __gdim( __n );
-    std::vector<int> __gtag( __n );
-    std::vector<double> __uv( 2*__n );
-    std::fill( __gdim.begin(), __gdim.end(), 0 );
-    std::fill( __gtag.begin(), __gtag.end(), 0 );
-    std::fill( __uv.begin(), __uv.end(), 0. );
 
-    std::vector<bool> __isonboundary( __n );
+    std::map<int, Feel::detail::GMSHPoint > gmshpts;
     LOG(INFO) << "Reading "<< __n << " nodes\n";
 
-
+    Eigen::Vector3d x;
+    Eigen::Vector2d uv;
     for ( uint __i = 0; __i < __n; ++__i )
     {
-        int __ni;
+        int id = 0;
         if ( !binary )
         {
-            __is >> __ni
-                 >> __x[3*__i]
-                 >> __x[3*__i+1]
-                 >> __x[3*__i+2];
+            __is >> id
+                 >> x[0]
+                 >> x[1]
+                 >> x[2];
         }
         else
         {
-            __is.read( (char*)&__ni, sizeof(int) );
-            if(swap) SwapBytes((char*)&__ni, sizeof(int), 1);
-            __is.read( (char*)&__x[3*__i], 3*sizeof(double) );
-            if(swap) SwapBytes((char*)&__x[3*__i], sizeof(double), 3);
+            __is.read( (char*)&id, sizeof(int) );
+            if(swap) SwapBytes((char*)&id, sizeof(int), 1);
+            __is.read( (char*)&x[0], 3*sizeof(double) );
+            if(swap) SwapBytes((char*)&x[0], sizeof(double), 3);
 
         }
+        gmshpts[id].id = id;
+        gmshpts[id].x = x;
 
         if ( has_parametric_nodes )
         {
+
+            gmshpts[id].parametric = true;
             CHECK( !binary ) << "GMSH Binary format not yet supported for parametric nodes\n";
+            int gdim, gtag;
             if ( !binary )
             {
-                __is >> __gdim[__i] >> __gtag[__i];
+                __is >> gdim >> gtag;
 
                 // if gdim == 0 then u = v = 0
                 // if gdim == 3 then no need for a parametric point
                 // this logic is done later when filling the mesh data structure
-                if ( __gdim[__i] == 1 )
-                    __is >> __uv[2*__i];
+                if ( gdim == 1 )
+                    __is >> uv[0];
 
-                else if ( __gdim[__i] == 2 )
-                    __is >> __uv[2*__i] >> __uv[2*__i+1];
+                else if ( gdim == 2 )
+                    __is >> uv[0] >> uv[1];
             }
+            gmshpts[id].gdim = gdim;
+            gmshpts[id].gtag = gtag;
+            gmshpts[id].uv = uv;
         }
 
         // stores mapping to be able to reorder the indices
         // so that they are contiguous
-        itoii[__ni] = __i;
+        //itoii[idpts[__i]] = __i;
     }
     ptseen.resize( __n );
     std::fill( ptseen.begin(), ptseen.end(), -1 );
@@ -686,7 +717,10 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
           for(int j = 0; j < numVertices; j++)
           {
               __is >> indices[j];
+              // we do not renumber anymore
+#if 0
               indices[j] = itoii[ indices[j] ];
+#endif
           }
           if ( M_use_elementary_region_as_physical_region )
           {
@@ -752,11 +786,13 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
                 std::copy( &data[numTags + 1], &data[numTags + 1]+numVertices, indices.begin() );
 
-
+                // we do not renumber anymore
+#if 0
                 for(int j = 0; j < numVertices; j++)
                 {
                     indices[j] = itoii[ indices[j] ];
                 }
+#endif
                 if ( M_use_elementary_region_as_physical_region )
                 {
                     physical = elementary;
@@ -798,11 +834,10 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         << "invalid end elements string " << __buf
         << " in gmsh importer. It should be either $ENDELM or $EndElements\n";
 
+#if 1
     //
     // FILL Mesh Data Structure
     //
-    __isonboundary.assign( __n, false );
-
     for ( uint __i = 0; __i < numElements; ++__i )
     {
         // if the element is not associated to the processor (in partition or ghost) or
@@ -816,7 +851,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         case GMSH_POINT:
             if ( mesh_type::nDim == 1 )
             {
-                __isonboundary[ __et[__i].indices[0] ] = true;
+                gmshpts[ __et[__i].indices[0] ].onbdy = true;
             }
 
             break;
@@ -830,7 +865,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
                 {
-                    __isonboundary[ __et[__i].indices[jj] ] = true;
+                    gmshpts[ __et[__i].indices[jj] ].onbdy = true;
                 }
             }
 
@@ -847,7 +882,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
                 {
-                    __isonboundary[ __et[__i].indices[jj] ] = true;
+                    gmshpts[ __et[__i].indices[jj] ].onbdy = true;
                 }
             }
 
@@ -857,35 +892,10 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             break;
         }
     }
-
+#endif
     std::map<int,boost::tuple<int,int> > mapGhostElt;
 
-
-    // add the points to the mesh
-    for ( uint __i = 0; __i < __n; ++__i )
-    {
-        node_type __n( mesh_type::nRealDim );
-
-        for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
-            __n[j] = __x[3*__i+j];
-
-        point_type __pt( __i,__n, __isonboundary[ __i ] );
-        __pt.setOnBoundary( __isonboundary[ __i ] );
-        __pt.setProcessId( invalid_uint16_type_value );
-
-        if ( has_parametric_nodes )
-        {
-            __pt.setGDim( __gdim[__i] );
-            __pt.setGTag( __gtag[__i] );
-
-            if ( __gdim[__i] < 3 )
-            {
-                __pt.setParametricCoordinates( __uv[2*__i], __uv[2*__i+1] );
-                mesh->setParametric( true );
-            }
-        }
-        auto const& p = mesh->addPoint( __pt );
-    }
+    node_type coords( mesh_type::nRealDim );
 
     _M_n_vertices.resize( __n );
     _M_n_vertices.assign( __n, 0 );
@@ -900,6 +910,34 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         if ( __et[__i].isOnProcessor() == false ||
              __et[__i].isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
             continue;
+
+        // add the points associates to the element on the processor
+        for ( uint16_type p = 0; p < npoints_per_element; ++p )
+        {
+            int ptid = __et[__i].indices[p];
+            // don't do anything if the point is already registered
+            if ( mesh->hasPoint( ptid ) )
+                continue;
+
+            auto const& gmshpt = gmshpts.find(ptid)->second;
+            for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
+                coords[j] = gmshpt.x[j];
+
+            point_type pt( ptid, coords );
+
+            if ( gmshpt.parametric )
+            {
+                pt.setGDim( gmshpt.gdim );
+                pt.setGTag( gmshpt.gtag );
+
+                if ( gmshpt.gdim < 3 )
+                {
+                    pt.setParametricCoordinates( gmshpt.uv[0], gmshpt.uv[1] );
+                    mesh->setParametric( true );
+                }
+            }
+            mesh->addPoint( pt );
+        } // loop over local points
 
         switch ( __et[__i].type )
         {
