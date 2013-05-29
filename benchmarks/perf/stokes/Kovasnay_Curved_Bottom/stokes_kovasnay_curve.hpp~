@@ -413,10 +413,10 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::run()
 
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
-    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ));
+    stokes_rhs += integrate( elements( mesh ),inner( f,id( v ) ),_quad=_Q<20>());
 
    //#if defined( FEELPP_USE_LM )
-    stokes_rhs += integrate( elements( mesh ),id(nu)* p_exact );   //add the mean of the exact pressure
+    stokes_rhs += integrate( elements( mesh ),id(nu)* p_exact,_quad=_Q<20>() );   //add the mean of the exact pressure
     //#endif
     //************
     LOG(INFO) << "[stokes] vector local assembly done\n";
@@ -527,19 +527,17 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprP
 
 
     //#if (STOKESPRESSMESHTYPE ==2)
-    auto vv=vec(cst(1.), cst(1.));
-    v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), vv );
     auto Du= gradv(u);//sym
     auto Dv= gradv(v);//sym
     auto SigmaNN =-idv(p)*vf::N()+mu*Du*vf::N();//*2
 
     //**************  F ******************
-    auto FappCur = integrate(markedfaces( mesh,2) , inner(SigmaNN,idv(v)), _quad=_Q<20>()).evaluate();
+    /* auto FappCur = integrate(markedfaces( mesh,2) , inner(SigmaNN,idv(v)), _quad=_Q<20>()).evaluate();
     std::cout.precision(17);
     std::cout << "FappCur = "<<FappCur << "\n" ;
-    std::cout << "||Fex-Fappcur|| = "<< math::abs(-0.6709310448-FappCur(0,0)) << "\n" ;
+    std::cout << "|Fex-Fappcur| = "<< math::abs(-0.6709310448-FappCur(0,0)) << "\n" ;
     // LOG(INFO) << "FappCur = "<<math::abs(2.486163775- FappCur) << "\n" ;
-
+    */
 
     auto pI = integrate(markedfaces( mesh,2) , -idv(p)*vf::N(), _quad=_Q<20>()).evaluate();
     std::cout.precision(17);
@@ -554,34 +552,41 @@ Stokes_Kovasnay_Curve<POrder,GeoOrder>::exportResults( ExprUExact u_exact, ExprP
     std::cout.precision(17);
     std::cout << " SigmaN1 = "<< SigmaN(0,0) << "\n" ;
     std::cout << " SigmaN2 = "<< SigmaN(1,0) << "\n" ;
-
-
-
-
+    std::cout << "||Fex-Fappcur||_2 = "<< math::sqrt((0.08217721411-SigmaN(0,0))*(0.08217721411-SigmaN(0,0))+(-0.7531082589-SigmaN(1,0))*(-0.7531082589-SigmaN(1,0))) << "\n" ;
 
 
 
 
     //**************  Somme des integrales  ******************
+    auto v1=vec(cst(1.), cst(0.));
+    v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), v1 );
+
     double lambda2 = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
-    auto f11 = (exp( lambda2 * Px() )*((lambda2*lambda2 - 4.*pi*pi)*mu*cos(2.*pi*Py()) - lambda2*exp( lambda2 * Px() )));
+    auto f11 =  ( -mu*( -lambda2*lambda2*exp( lambda2*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambda2*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambda2*exp( 2.0*lambda2*Px() ) );
 
+    auto f22 = ( -mu*( lambda2*lambda2*lambda2*exp( lambda2*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambda2*exp( lambda2*Px() )*sin( 2.0*pi*Py() )*pi ) );
 
-    //auto f22 = ( -mu*( lambda2*lambda2*lambda2*exp( lambda2*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambda2*exp( lambda2*Px() )*sin( 2.0*pi*Py() )*pi ) );
-    auto f22 = (lambda2/2*pi)*(exp( lambda2 * Px() )*mu*sin(2.*pi*Py())*(-lambda2*lambda2 +4*pi*pi));
-
-  
     auto ff = val( vec( f11,f22 ) ); //+ convection;
 
-    auto sum=integrate( elements( mesh ),inner( -ff,idv( v ) ), _quad=_Q<20>()).evaluate();
-    sum+=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p), _quad=_Q<20>()).evaluate();//*2
-    sum+=integrate( markedfaces( mesh,1 ),inner(idv(p)*vf::N()-mu*Du*vf::N(),idv(v)), _quad=_Q<20>()).evaluate();//*2
-    sum+=integrate( markedfaces( mesh,3 ),inner(idv(p)*vf::N()-mu*Du*vf::N(),idv(v)),_quad=_Q<20>()).evaluate();//*2
+    auto sum1 =integrate( elements( mesh ),inner( -ff,idv( v ) ), _quad=_Q<20>()).evaluate();
+    sum1 +=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p), _quad=_Q<20>()).evaluate();//*2
+    sum1 +=integrate( markedfaces( mesh,1 ),inner(idv(p)*vf::N()-mu*Du*vf::N(),idv(v)), _quad=_Q<20>()).evaluate();//*2
+    sum1 +=integrate( markedfaces( mesh,3 ),inner(idv(p)*vf::N()-mu*Du*vf::N(),idv(v)),_quad=_Q<20>()).evaluate();//*2
     std::cout.precision(17);
-    std::cout << "Sum = "<< sum(0,0) << "\n" ;
-    std::cout << "||Fex-Sum|| = "<< math::abs(-0.6709310448-sum(0,0)) << "\n" ;
-    //LOG(INFO) << "Sum = "<<  2.486163775-sum(0,0) << "\n" ;
-    // #endif*/
+    std::cout << "Sum1 = "<< sum1 << "\n" ;
+
+
+    auto v2=vec(cst(0.), cst(1.));
+    v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), v2 );
+    auto sum2 =integrate( elements( mesh ),inner( -ff,idv( v ) ), _quad=_Q<20>()).evaluate();
+    sum2 +=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p), _quad=_Q<20>()).evaluate();//*2
+    sum2 +=integrate( markedfaces( mesh,1 ),inner(idv(p)*vf::N()-mu*Du*vf::N(),idv(v)), _quad=_Q<20>()).evaluate();//*2
+    sum2 +=integrate( markedfaces( mesh,3 ),inner(idv(p)*vf::N()-mu*Du*vf::N(),idv(v)),_quad=_Q<20>()).evaluate();//*2
+    std::cout.precision(17);
+    std::cout << "Sum2 = "<< sum2 << "\n" ;
+
+    std::cout << "||Fex-R||_2 = "<< math::sqrt((0.08217721411-sum1(0,0))*(0.08217721411-sum1(0,0))+(-0.7531082589-sum2(0,0))*(-0.7531082589-sum2(0,0))) << "\n" ;
+
 
     auto u_ex = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     auto p_ex = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
@@ -641,6 +646,6 @@ main( int argc, char** argv )
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
-    Feel::Stokes_Kovasnay_Curve<4,4> Stokes_Kovasnay_Curve;
+    Feel::Stokes_Kovasnay_Curve<3,3> Stokes_Kovasnay_Curve;
     Stokes_Kovasnay_Curve.run();
 }
