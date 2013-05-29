@@ -34,5 +34,5 @@ feelpp_add_application( doc_nonoverlapping SRCS nonoverlappinggeo.cpp nonoverlap
 feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp LABEL doc  )
 
 # Non-conforming domain decomposition methods
-feelpp_add_application( doc_mortar SRCS mortar.cpp LABEL doc  )
-feelpp_add_application( doc_threefields SRCS threefields.cpp TEST -pc_type ilu -ksp_monitor  LABEL doc )
+feelpp_add_application( doc_mortar SRCS mortar.cpp LABEL doc  NO_MPI_TEST )
+feelpp_add_application( doc_threefields SRCS threefields.cpp TEST -pc_type ilu -ksp_monitor  LABEL doc NO_MPI_TEST )
