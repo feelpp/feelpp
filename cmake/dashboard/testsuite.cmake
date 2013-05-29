@@ -217,9 +217,11 @@ endif(UNIX)
 #   endif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
 # endif(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
 
+message(WARNING "CTEST_CMAKE_COMMAND: ${CTEST_CMAKE_COMMAND}" )
 if(DEFINED FEELPP_CMAKE_ARGS)
   set(CTEST_CMAKE_COMMAND "${CTEST_CMAKE_COMMAND} ${FEELPP_CMAKE_ARGS}")
 endif(DEFINED FEELPP_CMAKE_ARGS)
+message(WARNING "CTEST_CMAKE_COMMAND: ${CTEST_CMAKE_COMMAND}" )
 
 #The idea behind ctest launchers is that they wrap each compile or link step so
 #the output can be saved and sent to CDash in the event of a warning or
@@ -268,7 +270,7 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   set_property (GLOBAL PROPERTY Label ${subproject})
 
   ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND
-    OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}" )
+    OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS};-DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX};${CTEST_CMAKE_COMMAND}" )
   ctest_submit(PARTS Configure)
 
   message(WARNING "build target "${subproject})
