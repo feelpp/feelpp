@@ -247,9 +247,7 @@ set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS "33331")
 include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
 # clear the binary directory and create an initial cache
 #CTEST_EMPTY_BINARY_DIRECTORY (${CTEST_BINARY_DIRECTORY})
-set(CTEST_INITIAL_CACHE "
-CMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}
-")
+set(CTEST_INITIAL_CACHE "CMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}")
 # site
 set(CTEST_SITE "${FEELPP_SITE}")
 # build name
@@ -275,8 +273,7 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   set_property(GLOBAL PROPERTY SubProject ${subproject})
   set_property (GLOBAL PROPERTY Label ${subproject})
 
-  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND
-    OPTIONS  )
+  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}")
   ctest_submit(PARTS Configure)
 
   message(WARNING "build target "${subproject})
