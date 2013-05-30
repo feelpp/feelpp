@@ -1151,7 +1151,6 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_matrix_ptrtype & A, std::vector< vector_ptrtype > & F, element_ptrtype & u ) const
 {
-
 #if 0
     *u = M_model->solve( mu );
 #else
@@ -1201,7 +1200,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_m
         }
 
         int nb_output=1;
-        if( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
+        if( solve_dual_problem )
             nb_output = nl;
 
         for(int l=0; l<nb_output; l++)
@@ -1220,7 +1219,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_m
 
         //solve
         //M_backend->solve( _matrix=A , _solution=un, _rhs=F[0]);
-        backend()->solve( _matrix=A , _solution=un, _rhs=F[0]);
+        backend()->solve( _matrix=A , _solution=un, _rhs=F[0] );
 
         //on each subspace the norme of the increment is computed and then we perform the sum
         increment_norm = M_model->computeNormL2( un , uold );
@@ -1237,6 +1236,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_m
     *eltF = *F[0];
     LOG(INFO) << "[CRB::offlineFixedPoint] u^T F = " << inner_product( *u, *eltF ) ;
     LOG(INFO) << "[CRB::offlineFixedPoint] energy = " << A->energy( *u, *u ) ;
+
 #endif
 }//offline fixed point
 
@@ -1256,8 +1256,8 @@ CRB<TruthModelType>::offline()
 
     M_use_newton = this->vm()["crb.use-newton"].template as<bool>() ;
 
-    if ( this->worldComm().globalSize() > 1 )
-        solve_dual_problem = false;
+    //if ( this->worldComm().globalSize() > 1 )
+    //    solve_dual_problem = false;
 
     if ( ! solve_dual_problem ) orthonormalize_dual=false;
 
@@ -1761,13 +1761,18 @@ CRB<TruthModelType>::offline()
             if( solve_dual_problem )
             {
                 At = M_model->newMatrix();
-                A->transpose( At );
-
+                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    At = A;
+                else
+                    A->transpose( At );
+                At->close();
                 *Rhs = *F[M_output_index];
+                Rhs->close();
                 Rhs->scale( -1 );
                 backend_dual_problem->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
             }
         }
+
 
 		if ( M_model->isSteady() && M_use_newton )
         {
@@ -1775,7 +1780,6 @@ CRB<TruthModelType>::offline()
             u->zero();
 
             timer2.restart();
-
             LOG(INFO) << "[CRB::offline] solving primal" << "\n";
             *u = M_model->solve( mu );
 
@@ -1942,7 +1946,10 @@ CRB<TruthModelType>::offline()
 
                     boost::tie( M, A, F) = M_model->update( mu , M_bdf_dual->time() );
                     A->addMatrix( bdf_coeff, M );
-                    A->transpose( Adu );
+                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                        Adu = A;
+                    else
+                        A->transpose( Adu );
                     Rhs->zero();
                     *vec_bdf_poly = bdf_poly;
                     Rhs->addVector( *vec_bdf_poly, *M );
@@ -2423,10 +2430,12 @@ CRB<TruthModelType>::offline()
 
         if ( M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
-            std::cout << "  -- offlineResidual update starts\n";
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "  -- offlineResidual update starts\n";
             offlineResidual( M_N, number_of_added_elements );
             LOG(INFO)<<"[CRB::offline] end of call offlineResidual and M_N = "<< M_N <<"\n";
-            std::cout << "  -- offlineResidual updated in " << timer2.elapsed() << "s\n";
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "  -- offlineResidual updated in " << timer2.elapsed() << "s\n";
             timer2.restart();
         }
 
@@ -2852,7 +2861,10 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
             auto bdf_poly = bdf_dual->polyDeriv();
 
             boost::tie( M, A, F ) = M_model->update( mu , bdf_dual->time() );
-            A->transpose( Adu );
+            if( option("crb.use-symmetric-matrix").template as<bool>() )
+                Adu = A;
+            else
+                A->transpose( Adu );
             *undu = *Undu[time_index];
             *unduold = *Unduold[time_index];
             Adu->multVector( undu, AduUn );
@@ -2946,7 +2958,10 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
 
     LOG(INFO) << "[CRB::checkResidual] transpose primal matrix" << "\n";
     At = M_model->newMatrix();
-    A->transpose( At );
+    if( option("crb.use-symmetric-matrix").template as<bool>() )
+        At = A;
+    else
+        A->transpose( At );
     u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
     udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
@@ -4167,6 +4182,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
             err.resize( M_WNmu_complement->size() );
             check_err.resize( M_WNmu_complement->size() );
 
+
             for ( size_type k = 0; k < M_WNmu_complement->size(); ++k )
             {
                 parameter_type const& mu = M_WNmu_complement->at( k );
@@ -4178,6 +4194,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
                 err( k ) = _err;
                 check_err[k] = _err;
             }
+
         }//end of seeking mu in the complement
 
         else
@@ -4536,6 +4553,7 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
     beta_vector_type betaMqm;
     beta_vector_type betaMFqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
+
     boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu, time );
 
     size_type __QLhs = M_model->Qa();
@@ -4640,7 +4658,6 @@ CRB<TruthModelType>::steadyPrimalResidual( int Ncur,parameter_type const& mu, ve
     beta_vector_type betaAqm;
     std::vector<beta_vector_type> betaFqm, betaLqm;
     boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( mu , time );
-
 
     int __QLhs = M_model->Qa();
     int __QRhs = M_model->Ql( 0 );
@@ -4890,6 +4907,7 @@ CRB<TruthModelType>::steadyDualResidual( int Ncur,parameter_type const& mu, vect
     }//q1
 
     value_type delta_du = math::abs( __c0_du+__lambda_du+__gamma_du );
+
 #if(0)
 
     if ( !boost::math::isfinite( delta_du ) )
@@ -4931,9 +4949,12 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     int __QOutput = M_model->Ql( M_output_index );
     int __Qm = M_model->Qm();
     int __N = Ncur;
-    std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
-              << " QRhs=" << __QRhs << " Qoutput=" << __QOutput
-              << " Qm=" << __Qm << "\n";
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
+                  << " QRhs=" << __QRhs << " Qoutput=" << __QOutput
+                  << " Qm=" << __Qm << "\n";
+
     vector_ptrtype __X( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype __Fdu( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype __Z1(  M_backend->newVector( M_model->functionSpace() ) );
@@ -4960,6 +4981,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 #endif
 
     offlineResidual( Ncur, mpl::bool_<false>(), number_of_added_elements );
+
 
     for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
     {
@@ -4989,7 +5011,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         }//m1
     }//q1
 
-    std::cout << "     o M_Cmf_pr updated in " << ti.elapsed() << "s\n";
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o M_Cmf_pr updated in " << ti.elapsed() << "s\n";
     ti.restart();
 
 
@@ -5046,7 +5069,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         }// on m1
     } // on q1
 
-    std::cout << "     o M_Cma_pr updated in " << ti.elapsed() << "s\n";
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o M_Cma_pr updated in " << ti.elapsed() << "s\n";
     ti.restart();
 
     for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
@@ -5104,7 +5128,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         }// on m1
     } // on q1
 
-    std::cout << "     o M_Cmm_pr updated in " << ti.elapsed() << "s\n";
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o M_Cmm_pr updated in " << ti.elapsed() << "s\n";
     ti.restart();
 
 
@@ -5124,7 +5149,11 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
         for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
         {
-            Mqm[__q1][__m1]->transpose( Mtq1 );
+
+            if( option("crb.use-symmetric-matrix").template as<bool>() )
+                Mtq1 = Mqm[__q1][__m1];
+            else
+                Mqm[__q1][__m1]->transpose( Mtq1 );
 
             for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
             {
@@ -5137,10 +5166,12 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
                     {
                         *__X=M_WNdu[elem];
                         Mtq1->multVector(  __X, __W );
+                        __W->close();
                         __W->scale( -1. );
                         M_model->l2solve( __Z1, __W );
 
                         *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                        __Fdu->close();
                         __Fdu->scale( -1.0 );
                         M_model->l2solve( __Z2, __Fdu );
 
@@ -5151,18 +5182,27 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         } // m1
     } // q1
 
+
     for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
     {
         for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
         {
-            Mqm[__q1][__m1]->transpose( Mtq1 );
+
+            if( option("crb.use-symmetric-matrix").template as<bool>() )
+                Mtq1 = Mqm[__q1][__m1];
+            else
+                Mqm[__q1][__m1]->transpose( Mtq1 );
 
             for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
             {
                 for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                 {
 
-                    Aqm[__q2][__m2]->transpose( Atq2 );
+                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                        Atq2 = Aqm[__q2][__m2];
+                    else
+                        Aqm[__q2][__m2]->transpose( Atq2 );
+
                     M_Cma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -5207,7 +5247,9 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         }// m1
     } // q1
 
-    std::cout << "     o Cma_du updated in " << ti.elapsed() << "s\n";
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o Cma_du updated in " << ti.elapsed() << "s\n";
+
     ti.restart();
 
 
@@ -5216,14 +5258,21 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
     {
         for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
         {
-            Mqm[__q1][__m1]->transpose( Mtq1 );
+            if( option("crb.use-symmetric-matrix").template as<bool>() )
+                Mtq1 = Mqm[__q1][__m1];
+            else
+                Mqm[__q1][__m1]->transpose( Mtq1 );
 
             for ( int __q2 = 0; __q2 < __Qm; ++__q2 )
             {
                 for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
                 {
 
-                    Mqm[__q2][__m2]->transpose( Mtq2 );
+                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                        Mtq2 = Mqm[__q2][__m2];
+                    else
+                        Mqm[__q2][__m2]->transpose( Mtq2 );
+
                     M_Cmm_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
                     for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -5267,7 +5316,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
         }// m1
     } // q1
 
-    std::cout << "     o Cmm_du updated in " << ti.elapsed() << "s\n";
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o Cmm_du updated in " << ti.elapsed() << "s\n";
     ti.restart();
 
     LOG(INFO) << "[offlineResidual] Done.\n";
@@ -5285,8 +5335,11 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     int __QRhs = M_model->Ql( 0 );
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
-    std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
-              << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o N=" << Ncur << " QLhs=" << __QLhs
+                  << " QRhs=" << __QRhs << " Qoutput=" << __QOutput << "\n";
+
     vector_ptrtype __X( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype __Fdu( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype __Z1(  M_backend->newVector( M_model->functionSpace() ) );
@@ -5344,7 +5397,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
         }//end of loop __q1
     }// Ncur==1
 
-    std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
     ti.restart();
 
 #if 0
@@ -5415,7 +5469,10 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
             }//end of loop __m1
         }//end of __q1
     }//elem
-    std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n";
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o Lambda_pr updated in " << ti.elapsed() << "s\n";
+
     ti.restart();
 
     for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
@@ -5483,7 +5540,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
         }// on m1
     } // on q1
 
-    std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n";
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout << "     o Gamma_pr updated in " << ti.elapsed() << "s\n";
     ti.restart();
     sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
     sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
@@ -5504,6 +5562,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                 for ( int __m1 = 0; __m1 < M_model->mMaxF(M_output_index,__q1); ++__m1 )
                 {
                     *__Fdu = *Fqm[M_output_index][__q1][__m1];
+                    __Fdu->close();
                     __Fdu->scale( -1.0 );
                     M_model->l2solve( __Z1, __Fdu );
 
@@ -5512,6 +5571,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                         for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
                         {
                             *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            __Fdu->close();
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
                             M_C0_du[__q1][__m1][__q2][__m2] = M_model->scalarProduct( __Z1, __Z2 );
@@ -5522,7 +5582,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                 }//end of loop __m1
             }//end of loop __q1
 
-            std::cout << "     o C0_du updated in " << ti.elapsed() << "s\n";
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "     o C0_du updated in " << ti.elapsed() << "s\n";
             ti.restart();
         }
 
@@ -5536,8 +5597,14 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
             {
                 for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
                 {
-                    Aqm[__q1][__m1]->transpose( Atq1 );
+
+                    if( option("crb.use-symmetric-matrix").template as<bool>() )
+                        Atq1 = Aqm[__q1][__m1];
+                    else
+                        Aqm[__q1][__m1]->transpose( Atq1 );
+
                     Atq1->multVector(  __X, __W );
+                    __W->close();
                     __W->scale( -1. );
                     //std::cout << "__W->norm=" << __W->l2Norm() << "\n";
                     M_model->l2solve( __Z1, __W );
@@ -5549,6 +5616,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                             M_Lambda_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
 
                             *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            __Fdu->close();
                             __Fdu->scale( -1.0 );
                             M_model->l2solve( __Z2, __Fdu );
                             M_Lambda_du[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z2, __Z1 );
@@ -5560,7 +5628,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
             } // q1
         }//elem
 
-        std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o Lambda_du updated in " << ti.elapsed() << "s\n";
         ti.restart();
 
         for ( int __q1 = 0; __q1 < __QLhs; ++__q1 )
@@ -5568,14 +5637,21 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
             for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
             {
 
-                Aqm[__q1][__m1]->transpose( Atq1 );
+                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    Atq1=Aqm[__q1][__m1];
+                else
+                    Aqm[__q1][__m1]->transpose( Atq1 );
 
                 for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
                 {
                     for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
                     {
 
-                        Aqm[__q2][__m2]->transpose( Atq2 );
+                        if( option("crb.use-symmetric-matrix").template as<bool>() )
+                            Atq2 = Aqm[__q2][__m2];
+                        else
+                            Aqm[__q2][__m2]->transpose( Atq2 );
+
                         M_Gamma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
 
                         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
@@ -5632,7 +5708,8 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
             }// on m1
         } // on q1
 
-        std::cout << "     o Gamma_du updated in " << ti.elapsed() << "s\n";
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o Gamma_du updated in " << ti.elapsed() << "s\n";
         ti.restart();
         LOG(INFO) << "[offlineResidual] Done.\n";
 
@@ -6397,3 +6474,4 @@ template<typename T> const unsigned int version<Feel::CRB<T> >::value;
 }
 }
 #endif /* __CRB_H */
+

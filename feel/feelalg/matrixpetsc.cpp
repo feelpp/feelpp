@@ -1782,6 +1782,7 @@ void MatrixPetscMPI<T>::init( const size_type m,
     ierr = MatMPIAIJSetPreallocation( this->mat(), 0, dnz, 0, dnzOffProc );
 #else
     ierr = MatMPIAIJSetPreallocationCSR( this->mat(), ia.data() , ja.data(), this->graph()->a().data() );
+    //ierr = MatMPIAIJSetPreallocationCSR( this->mat(), ia.data() , ja.data(),NULL );
 #endif
     CHKERRABORT( this->comm(),ierr );
 
@@ -1858,8 +1859,8 @@ void MatrixPetscMPI<T>::init( const size_type m,
     ierr = ISLocalToGlobalMappingDestroy( isLocToGlobMapCol );
     CHKERRABORT( this->comm(),ierr );
 #endif
-    delete idxRow;
-    delete idxCol;
+    delete[] idxRow;
+    delete[] idxCol;
 
     //----------------------------------------------------------------------------------//
     // options
@@ -2164,7 +2165,7 @@ MatrixPetscMPI<T>::addMatrixSameNonZeroPattern( const T a_in, MatrixSparse<T> &X
                             ierr = MatRestoreRow( X->mat(), gDof, &ncolsX, &idcX, &valX );
                             CHKERRABORT( this->comm(),ierr );
                             // clean
-                            delete valNewRow;
+                            delete[] valNewRow;
                         }
                 }
 
