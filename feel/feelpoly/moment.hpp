@@ -978,7 +978,7 @@ Moment<Dim, Degree, TheConvex,  T, StoragePolicy>::derivate( ublas::matrix_expre
 
 namespace fem
 {
-/** \cond DETAIL */
+/// \cond DETAIL
 namespace detail
 {
 /**
@@ -1111,7 +1111,7 @@ template<uint16_type Dim,
 const uint16_type MomentPolynomialSet<Dim, Order, RealDim, PolySetType,T, Convex>::nLocalDof;
 
 } // detail
-/** \encond  */
+/// \encond 
 
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar>
