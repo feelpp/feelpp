@@ -242,6 +242,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( ddmethod )
     BOOST_PARAMETER_NAME( penaldir )
 
+    BOOST_PARAMETER_NAME( close )
+
     BOOST_PARAMETER_NAME( author )
     BOOST_PARAMETER_NAME( task )
     BOOST_PARAMETER_NAME( email )
