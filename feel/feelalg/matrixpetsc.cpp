@@ -961,7 +961,12 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
                                  const std::vector<size_type>& rows,
                                  const std::vector<size_type>& cols ) const
 {
+    //auto sub_graph = GraphCSR(rows.size()*cols.size(),0,rows.size()-1,0,cols.size()-1,this->comm());
+    auto sub_graph = graph_ptrtype(new graph_type(rows.size()*cols.size(),0,rows.size(),0,cols.size(),this->comm()));
+
     MatrixPetsc<T>* A = dynamic_cast<MatrixPetsc<T>*> ( &submatrix );
+    A->setGraph( sub_graph );
+
     int ierr=0;
     IS isrow;
     IS iscol;
@@ -977,14 +982,14 @@ MatrixPetsc<T>::createSubmatrix( MatrixSparse<T>& submatrix,
     for (int i=0; i<ncol; i++) colMap[i] = cols[i];
 
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,PETSC_COPY_VALUES,&isrow);
     CHKERRABORT( this->comm(),ierr );
-    ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
+    ierr = ISCreateGeneral(this->comm(),ncol,colMap,PETSC_COPY_VALUES,&iscol);
     CHKERRABORT( this->comm(),ierr );
 #else
-    ierr = ISCreateGeneral(Environment::worldComm(),nrow,rowMap,&isrow);
+    ierr = ISCreateGeneral(this->comm(),nrow,rowMap,&isrow);
     CHKERRABORT( this->comm(),ierr );
-    ierr = ISCreateGeneral(Environment::worldComm(),ncol,colMap,&iscol);
+    ierr = ISCreateGeneral(this->comm(),ncol,colMap,&iscol);
     CHKERRABORT( this->comm(),ierr );
 #endif
     ierr = MatGetSubMatrix(this->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &A->mat());

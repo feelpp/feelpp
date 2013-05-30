@@ -124,7 +124,8 @@ GraphCSR::transpose()
                                             M_first_col_entry_on_proc,
                                             M_last_col_entry_on_proc,
                                             M_first_row_entry_on_proc,
-                                            M_last_row_entry_on_proc ) );
+                                            M_last_row_entry_on_proc,
+                                            this->worldComm() ) );
 
     for ( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
     {
@@ -164,7 +165,8 @@ GraphCSR::transpose(DataMap const& dm)
                                             M_first_col_entry_on_proc,
                                             M_last_col_entry_on_proc,
                                             M_first_row_entry_on_proc,
-                                            M_last_row_entry_on_proc ) );
+                                            M_last_row_entry_on_proc,
+                                            this->worldComm() ) );
 
     for ( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
     {

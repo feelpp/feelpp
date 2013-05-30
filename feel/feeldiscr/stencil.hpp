@@ -1279,7 +1279,8 @@ Stencil<X1,X2>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<tru
 
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                   first1_dof_on_proc, last1_dof_on_proc,
-                                  first2_dof_on_proc, last2_dof_on_proc ) );
+                                  first2_dof_on_proc, last2_dof_on_proc,
+                                  _M_X1->worldComm() ) );
 
     typedef typename test_mesh_type::element_const_iterator mesh_element_const_iterator;
     mesh_element_const_iterator       elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );

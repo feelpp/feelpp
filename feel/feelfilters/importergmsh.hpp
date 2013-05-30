@@ -895,11 +895,13 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     // add the element to the mesh
     for ( uint __i = 0; __i < numElements; ++__i )
     {
+
+        //std::cout<<"isOnProcessor= "<< __et[__i].isOnProcessor()  <<"\n";
         // if the element is not associated to the processor (in partition or ghost) or
         // if the physical entity is ignored
-        if ( __et[__i].isOnProcessor() == false ||
-             __et[__i].isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
-            continue;
+        // if ( __et[__i].isOnProcessor() == false ||
+        //      __et[__i].isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
+        //     continue;
 
         switch ( __et[__i].type )
         {
