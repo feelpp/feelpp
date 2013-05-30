@@ -76,16 +76,25 @@
 
    \subsection issues0930 Issues
 
-   - #103 Off by one error in mesh point indices
-   - #109 Load Gmsh supported file format seamlessly
-   - #15 Reorder dof with respect to interior, face, edge and vertex dof of the domain
-   - #38 support for gmsh binary format enhancement
-   - #45 problem with dot function in parallel when using vectors
-   - #56 use multVector directly with element_type
-   - #79 improve export when same mesh reused enhancement
-   - #91 GFlags not used
-   - #95 Port Feel++ on SUPERMUC
-   - #99 (Re)Moving libmatheval Usability Component-Progenv
+   - <a href="https://github.com/feelpp/feelpp/issues/123">#123</a> test_ginac fails to compile
+   - <a href="https://github.com/feelpp/feelpp/issues/122">#122</a> Automatic generation of API documentation from research
+   - <a href="https://github.com/feelpp/feelpp/issues/121">#121</a> code in doc/manual/heatns fail to compile
+   - <a href="https://github.com/feelpp/feelpp/issues/120">#120</a> Codes in doc/manual/dd fail to compile
+   - <a href="https://github.com/feelpp/feelpp/issues/119">#119</a> exporter ensightgold with vectorial field
+   - <a href="https://github.com/feelpp/feelpp/issues/118">#118</a> problem using -idv(...) in expression and operator linear free
+   - <a href="https://github.com/feelpp/feelpp/issues/116">#116</a> Support Ensight Gold format
+   - <a href="https://github.com/feelpp/feelpp/issues/111">#111</a> Compilation error of CRB models in develop branch
+   - <a href="https://github.com/feelpp/feelpp/issues/109">#109</a> Load Gmsh supported file format seamlessly
+   - <a href="https://github.com/feelpp/feelpp/issues/106">#106</a> Improve website documentation
+   - <a href="https://github.com/feelpp/feelpp/issues/103">#103</a> Off by one error in mesh point indices
+   - <a href="https://github.com/feelpp/feelpp/issues/15">#15</a> Reorder dof with respect to interior, face, edge and vertex dof of the domain
+   - <a href="https://github.com/feelpp/feelpp/issues/38">#38</a> support for gmsh binary format enhancement
+   - <a href="https://github.com/feelpp/feelpp/issues/45">#45</a> problem with dot function in parallel when using vectors
+   - <a href="https://github.com/feelpp/feelpp/issues/56">#56</a> use multVector directly with element_type
+   - <a href="https://github.com/feelpp/feelpp/issues/79">#79</a> improve export when same mesh reused enhancement
+   - <a href="https://github.com/feelpp/feelpp/issues/91">#91</a> GFlags not used
+   - <a href="https://github.com/feelpp/feelpp/issues/95">#95</a> Port Feel++ on SUPERMUC
+   - <a href="https://github.com/feelpp/feelpp/issues/99">#99</a> (Re)Moving libmatheval Usability Component-Progenv
 
    \section feelpp0920 Feel++ Release 0.92.0
 

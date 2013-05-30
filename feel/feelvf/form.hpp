@@ -227,13 +227,15 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                             ( test,             * )
                             ( trial,            * )
                           ) // required
-                          ( optional                                  //    four optional parameters, with defaults
-                            ( init,             *( boost::is_integral<mpl::_> ), false )
-                            ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
-                            ( in_out( matrix ),   *, backend()->newMatrix( _test=test, _trial=trial, _pattern=pattern ) )
-                            ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
-                            ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
-                          ) // optional
+                          (deduced
+                           ( optional                                  //    four optional parameters, with defaults
+                             ( init,             *( boost::is_integral<mpl::_> ), false )
+                             ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
+                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend()->newMatrix( _test=test, _trial=trial, _pattern=pattern ) )
+                             ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
+                             ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
+                               ) // optional
+                              ) // deduced
                         )
 {
     Feel::detail::ignore_unused_variable_warning( args );

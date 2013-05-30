@@ -89,6 +89,7 @@ struct compute_graph3
                                            _pattern_block=M_stencil->blockPattern(),
                                            _diag_is_nonzero=false,
                                            _collect_garbage=false,
+                                           _close=false,
                                            _range=M_stencil->template subRangeIterator<Space2::basis_type::TAG,Space1Type::basis_type::TAG>
                                            (mpl::bool_<BFType::template rangeiteratorType<Space2::basis_type::TAG,Space1Type::basis_type::TAG>::hasnotfindrange_type::value>() )
                                            );
@@ -169,6 +170,7 @@ struct compute_graph2
                                            _pattern_block=M_stencil->blockPattern(),
                                            _diag_is_nonzero=false,
                                            _collect_garbage=false,
+                                           _close=false,
                                            _range=M_stencil->template subRangeIterator<Space1Type::basis_type::TAG,Space2::basis_type::TAG>
                                            (mpl::bool_<BFType::template rangeiteratorType<Space1Type::basis_type::TAG,Space2::basis_type::TAG>::hasnotfindrange_type::value>() )
                                            );
@@ -321,6 +323,7 @@ public:
              size_type graph_hints,
              BlocksStencilPattern block_pattern=BlocksStencilPattern(1,1,Pattern::HAS_NO_BLOCK_PATTERN),
              bool diag_is_nonzero=false,
+             bool close=true,
              rangeiterator_test_type r=rangeiterator_test_type())
         :
         _M_X1( Xh ),
@@ -351,7 +354,7 @@ public:
 
         if ( diag_is_nonzero && _M_X1->nLocalDofWithoutGhost()>0 && _M_X2->nLocalDofWithoutGhost()>0 ) M_graph->addMissingZeroEntriesDiagonal();
 
-        M_graph->close();
+        if ( close ) M_graph->close();
     }
 
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g, rangeiterator_test_type r=rangeiterator_test_type() )
@@ -564,6 +567,7 @@ BOOST_PARAMETER_FUNCTION(
       ( pattern_block,    *, default_block_pattern )
       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), false )
       ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
+      ( close,           *( boost::is_integral<mpl::_> ), true )
       ( range,           *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
     )
 )
@@ -606,7 +610,7 @@ BOOST_PARAMETER_FUNCTION(
         else
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
-            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, range ) );
+            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, close, range ) );
             if ( range.isNullRange() ) StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = s->graph();
             return s;
         }
