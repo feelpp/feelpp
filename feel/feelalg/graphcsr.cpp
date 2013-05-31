@@ -999,15 +999,15 @@ GraphCSR::close()
     if ( nRowLoc>1 || ( sum_nz>0 )/* nRowLoc==1 && this->worldComm().globalRank()==4)*/ )
         {
             M_ia.resize( nRowLoc+1,0 );
-            M_ja.resize( /*sum_n_nz*/sum_nz );
-            M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
+            M_ja.resize( /*sum_n_nz*/sum_nz, 0. );
+            //M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
             size_type col_cursor = 0;
             auto jait = M_ja.begin();
-            for ( int i = 0 ; i< ( int ) nRowLoc; ++i )
+
+            for ( size_type i = 0 ; i< nRowLoc; ++i )
                 {
                     if ( M_storage.find( this->firstRowEntryOnProc()+i )!=M_storage.end() )
                         {
-
                             row_type const& irow = this->row( this->firstRowEntryOnProc()+i );
                             //size_type localindex = boost::get<1>( irow );
                             M_ia[i/*localindex*/] = col_cursor;
@@ -1018,7 +1018,6 @@ GraphCSR::close()
 
                     else
                         {
-                            //std::cout << "\n STRANGE " << std::endl;
                             M_ia[i] = col_cursor;
                         }
                 }
