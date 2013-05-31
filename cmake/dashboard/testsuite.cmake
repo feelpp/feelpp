@@ -200,7 +200,8 @@ endif(UNIX)
 #dashboard. This helps immensely in figuring out some why some errors occur,
 #without necessarily even having access to the client machine.
 set(CTEST_USE_LAUNCHERS 1)
-SET (CTEST_CMAKE_COMMAND "/usr/bin/cmake")
+find_program(CTEST_CMAKE_COMMAND NAMES "cmake")
+message("${CTEST_CMAKE_COMMAND}")
 # Generating the CTEST_CONFIGURE_COMMAND variable (what is executed just after cmake)
 set(CTEST_CONFIGURE_COMMAND "${CTEST_CMAKE_COMMAND} ${CTEST_SOURCE_DIRECTORY}")
 set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
