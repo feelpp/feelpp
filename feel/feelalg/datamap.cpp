@@ -27,6 +27,7 @@
    \date 2008-02-28
  */
 #include <feel/feelalg/datamap.hpp>
+//#include <boost/thread/thread.hpp>
 
 namespace Feel
 {
@@ -247,7 +248,6 @@ DataMap::myGlobalElements() const
 }
 
 
-
 void
 DataMap::setNDof( size_type ndof )
 {
@@ -257,36 +257,36 @@ DataMap::setNDof( size_type ndof )
 void
 DataMap::setNLocalDofWithoutGhost( const size_type proc, const size_type n, bool inWorld )
 {
-    _M_n_localWithoutGhost_df[this->worldComm().globalRank()]=n;
+    _M_n_localWithoutGhost_df[proc]=n;
 }
 void
 DataMap::setNLocalDofWithGhost( const size_type proc, const size_type n, bool inWorld )
 {
-    _M_n_localWithGhost_df[this->worldComm().globalRank()]=n;
+    _M_n_localWithGhost_df[proc]=n;
 }
 void
 DataMap::setFirstDof( const size_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < _M_first_df.size() )( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
-    _M_first_df[this->worldComm().globalRank()]=df;
+    _M_first_df[proc]=df;
 }
 void
 DataMap::setLastDof( const size_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < _M_first_df.size() )( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
-    _M_last_df[this->worldComm().globalRank()]=df;
+    _M_last_df[proc]=df;
 }
 void
 DataMap::setFirstDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < _M_first_df_globalcluster.size() )( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
-    _M_first_df_globalcluster[this->worldComm().globalRank()]=df;
+    _M_first_df_globalcluster[proc]=df;
 }
 void
 DataMap::setLastDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < _M_first_df_globalcluster.size() )( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
-    _M_last_df_globalcluster[this->worldComm().globalRank()]=df;
+    _M_last_df_globalcluster[proc]=df;
 }
 
 
@@ -348,8 +348,44 @@ DataMap::updateDataInWorld()
 }
 
 
+uint16_type
+DataMap::procOnGlobalCluster( size_type globDof ) const
+{
+    uint16_type proc=0,res=0;
+    bool find=false;
+
+    while ( ( !find ) && ( proc<this->nProcessors() ) )
+    {
+        if ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) )
+        {
+            res = proc;
+            find=true;
+        }
+        else
+            ++proc;
+    }
+    return res;
+}
+
+boost::tuple<bool,size_type>
+DataMap::searchGlobalProcessDof( size_type gpdof ) const
+{
+    bool find=false;
+    size_type gDofProcess = 0;
+    const size_type startLoc = this->firstDof();
+    const size_type endLoc = startLoc+this->nLocalDofWithGhost();
+    for ( size_type k=startLoc ; k < endLoc && !find ; ++k )
+        if ( this->mapGlobalProcessToGlobalCluster(k) == gpdof )
+        {
+            gDofProcess=k;
+            find =true;
+        }
+
+    return boost::make_tuple( find,gDofProcess );
+}
+
 void
-DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
+DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out2  ) const
 {
     //__out << std::endl;
     this->comm().globalComm().barrier();
@@ -357,8 +393,9 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
     for ( int proc = 0; proc<this->comm().globalSize(); ++proc )
     {
         this->comm().globalComm().barrier();
-        if ( proc==this->worldComm().masterRank() )
+        if ( proc==this->worldComm().globalRank() )//this->worldComm().masterRank() )
         {
+            std::ostringstream __out;
             this->comm().globalComm().barrier();
             __out << "\n";
             __out << "-----------------------------------------------------------------------\n"
@@ -425,19 +462,44 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out  ) const
             }
 
             __out << "\n";
+            __out << " _M_n_localWithGhost_df : ";
+
+            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            {
+                __out << this->_M_n_localWithGhost_df[i] << " ";
+            }
+
+            __out << "\n";
+            __out << " _M_n_localWithoutGhost_df : ";
+
+            for ( int i=0; i<this->worldComm().globalSize(); ++i )
+            {
+                __out << this->_M_n_localWithoutGhost_df[i] << " ";
+            }
+
+            __out << "\n";
 
 #endif
             __out << "-----------------------------------------------------------------------\n";
 
-            __out << "\n" << std::endl;
+            __out << "\n";// << std::endl;
 
+            __out2 << __out.str() << std::endl;
         }
+        //else  sleep(1);
+
 
         //this->comm().barrier();
         this->comm().globalComm().barrier();
+        double mydelay=0.3;
+        sleep(mydelay);
+
+        //boost::this_thread::sleep( boost::posix_time::seconds(1) );
+
     }
 
     this->comm().globalComm().barrier();
+    //sleep(1);
 
 }
 

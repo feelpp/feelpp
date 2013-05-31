@@ -195,6 +195,11 @@ public:
         return _M_first_df_globalcluster[proc];
     }
 
+    std::vector<size_type> const& firstDofGlobalClusterWorld() const
+    {
+        return _M_first_df_globalcluster;
+    }
+
     /**
      * Returns the last dof index that is in local  subdomain
      */
@@ -229,42 +234,30 @@ public:
         return _M_last_df_globalcluster[proc];
     }
 
-    uint16_type procOnGlobalCluster( size_type globDof ) const
+    std::vector<size_type> const& lastDofGlobalClusterWorld() const
     {
-        uint16_type proc=0,res=0;
-        bool find=false;
-
-        while ( ( !find ) && ( proc<this->nProcessors() ) )
-        {
-            if ( ( this->nLocalDofWithGhost(proc) > 0 ) && ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) )
-            {
-                res = proc;
-                find=true;
-            }
-
-            else
-                ++proc;
-        }
-
-        return res;
+        return _M_last_df_globalcluster;
     }
+
+    uint16_type procOnGlobalCluster( size_type globDof ) const;
 
     bool dofGlobalClusterIsOnProc( size_type globDof ) const
     {
-        return dofGlobalClusterIsOnProc( globDof, this->worldComm().globalRank() );
+        return this->dofGlobalClusterIsOnProc( globDof, this->worldComm().globalRank() );
     }
 
     bool dofGlobalClusterIsOnProc( size_type globDof, int proc ) const
     {
-        return ( ( this->nLocalDofWithGhost(proc) > 0 ) && ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) );
+        return ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) );
     }
-
 
     bool dofGlobalProcessIsGhost( size_type dof) const
     {
-        return ( this->mapGlobalProcessToGlobalCluster( dof ) < this->firstDofGlobalCluster() ||
-                 this->mapGlobalProcessToGlobalCluster( dof ) > this->lastDofGlobalCluster() );
+        return this->dofGlobalClusterIsOnProc(this->mapGlobalProcessToGlobalCluster( dof ));
     }
+
+    boost::tuple<bool,size_type> searchGlobalProcessDof( size_type gpdof ) const;
+
 
     //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.
     size_type  lid( size_type GID ) const
