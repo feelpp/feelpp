@@ -91,7 +91,12 @@ public:
               size_type last_row_entry_on_proc = 0,
               size_type first_col_entry_on_proc = 0,
               size_type last_col_entry_on_proc = 0,
-              WorldComm const& worldcomm = Environment::worldComm() );
+              WorldComm const& worldcomm = Environment::worldComm(),
+              DataMap const& mapRow=DataMap(),
+              DataMap const& mapCol=DataMap() );
+
+    GraphCSR( DataMap const& mapRow,
+              DataMap const& mapCol );
 
     GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
               bool diagIsNonZero=true,
@@ -124,11 +129,11 @@ public:
 
     size_type nRows() const
     {
-        return M_last_row_entry_on_proc+1;
+        return M_last_row_entry_on_proc[this->worldComm().globalRank()]+1;
     }
     size_type nCols() const
     {
-        return M_last_col_entry_on_proc+1;
+        return M_last_col_entry_on_proc[this->worldComm().globalRank()]+1;
     }
 
     /**
@@ -136,7 +141,7 @@ public:
      */
     size_type firstRowEntryOnProc() const
     {
-        return M_first_row_entry_on_proc;
+        return M_first_row_entry_on_proc[this->worldComm().globalRank()];
     }
 
     /**
@@ -144,14 +149,14 @@ public:
      */
     size_type lastRowEntryOnProc() const
     {
-        return M_last_row_entry_on_proc;
+        return M_last_row_entry_on_proc[this->worldComm().globalRank()];
     }
     /**
      * \return the first entry index on proc
      */
     size_type firstColEntryOnProc() const
     {
-        return M_first_col_entry_on_proc;
+        return M_first_col_entry_on_proc[this->worldComm().globalRank()];
     }
 
     /**
@@ -159,7 +164,7 @@ public:
      */
     size_type lastColEntryOnProc() const
     {
-        return M_last_col_entry_on_proc;
+        return M_last_col_entry_on_proc[this->worldComm().globalRank()];
     }
 
     /**
@@ -306,22 +311,24 @@ public:
 
     void setFirstRowEntryOnProc( size_type entry )
     {
-        M_first_row_entry_on_proc = entry;
+        M_first_row_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
     void setFirstColEntryOnProc( size_type entry )
     {
-        M_first_col_entry_on_proc = entry;
+        M_first_col_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
 
     void setLastRowEntryOnProc( size_type entry )
     {
-        M_last_row_entry_on_proc = entry;
+        M_last_row_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
     void setLastColEntryOnProc( size_type entry )
     {
-        M_last_col_entry_on_proc = entry;
+        M_last_col_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
 
+    DataMap const& mapRow() { return M_mapRow; }
+    DataMap const& mapCol() { return M_mapCol; }
 
     //@}
 
@@ -344,7 +351,6 @@ public:
      * transpose graph
      */
     self_ptrtype transpose();
-    self_ptrtype transpose(DataMap const& dm);
 
     /**
      * add missing zero entries diagonal
@@ -365,6 +371,15 @@ private :
     void mergeBlockGraph( self_ptrtype const& g,
                           size_type start_i, size_type start_j );
 
+    void mergeBlockGraphMPI( self_ptrtype const& g, vf::BlocksBase<self_ptrtype> const & blockSet, int i, int j,
+                             size_type start_i, size_type start_j );
+
+    void updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet );
+
+    size_type nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex );
+    size_type nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex );
+    size_type nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex );
+    size_type nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex );
 
 protected:
 
@@ -373,10 +388,10 @@ private:
     //mpi::communicator M_comm;
     WorldComm M_worldComm;
 
-    size_type M_first_row_entry_on_proc;
-    size_type M_last_row_entry_on_proc;
-    size_type M_first_col_entry_on_proc;
-    size_type M_last_col_entry_on_proc;
+    std::vector<size_type> M_first_row_entry_on_proc;
+    std::vector<size_type> M_last_row_entry_on_proc;
+    std::vector<size_type> M_first_col_entry_on_proc;
+    std::vector<size_type> M_last_col_entry_on_proc;
     size_type M_max_nnz;
     nz_type M_n_total_nz;
     nz_type M_n_nz;
@@ -386,6 +401,8 @@ private:
     std::vector<double> M_a;
 
     self_ptrtype M_graphT;
+
+    DataMap M_mapRow, M_mapCol;
 };
 
 
