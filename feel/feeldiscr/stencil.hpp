@@ -593,7 +593,7 @@ BOOST_PARAMETER_FUNCTION(
 
         if ( git_trans != StencilManager::instance().end() && range.isNullRange() )
         {
-            auto g = git_trans->second->transpose();
+            auto g = git_trans->second->transpose(close);
             //auto g = git_trans->second->transpose();
             StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = g;
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g, range ) );
