@@ -618,7 +618,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
             gmshpts[id].parametric = true;
             CHECK( !binary ) << "GMSH Binary format not yet supported for parametric nodes\n";
-            int gdim, gtag;
+            int gdim = 0, gtag = 0;
             if ( !binary )
             {
                 __is >> gdim >> gtag;
