@@ -350,7 +350,7 @@ public:
     /**
      * transpose graph
      */
-    self_ptrtype transpose();
+    self_ptrtype transpose( bool doClose = true );
 
     /**
      * add missing zero entries diagonal
