@@ -392,15 +392,15 @@ private:
 private:
 
     std::string _M_version;
-    std::vector<int> _M_n_vertices;
-    std::vector<int> _M_n_b_vertices;
+    //std::vector<int> _M_n_vertices;
+    //std::vector<int> _M_n_b_vertices;
 
     std::set<int> _M_ignorePhysicalGroup;
     std::set<std::string> _M_ignorePhysicalName;
     bool M_use_elementary_region_as_physical_region;
 
     //std::map<int,int> itoii;
-    std::vector<int> ptseen;
+    //std::vector<int> ptseen;
 
 };
 
@@ -641,8 +641,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         // so that they are contiguous
         //itoii[idpts[__i]] = __i;
     }
-    ptseen.resize( __n );
-    std::fill( ptseen.begin(), ptseen.end(), -1 );
+    //ptseen.resize( __n );
+    //std::fill( ptseen.begin(), ptseen.end(), -1 );
     // eat  '\n' in binary mode otherwise the next binary read will get screwd
     if ( binary )
         __is.get();
@@ -897,10 +897,10 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     node_type coords( mesh_type::nRealDim );
 
-    _M_n_vertices.resize( __n );
-    _M_n_vertices.assign( __n, 0 );
-    _M_n_b_vertices.resize( __n );
-    _M_n_b_vertices.assign( __n, 0 );
+    //_M_n_vertices.resize( __n );
+    //_M_n_vertices.assign( __n, 0 );
+    //_M_n_b_vertices.resize( __n );
+    //_M_n_b_vertices.assign( __n, 0 );
 
     // add the element to the mesh
     for ( uint __i = 0; __i < numElements; ++__i )
@@ -1003,9 +1003,9 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     if (VLOG_IS_ON(4))
     {
-        for(int i = 0; i < ptseen.size();  ++i )
-            if ( ptseen[i] == -1 )
-                LOG(WARNING) << "Point with id " << i << " not in element connectivity";
+        //for(int i = 0; i < ptseen.size();  ++i )
+        //if ( ptseen[i] == -1 )
+        //LOG(WARNING) << "Point with id " << i << " not in element connectivity";
     }
     CHECK( mesh->numElements() > 0 ) << "The mesh does not have any elements.\n"
                                      << "something was not right with GMSH mesh importation.\n"
@@ -1015,7 +1015,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     if ( this->worldComm().localSize()>1 )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
 
-    mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0 ) );
+    //mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0 ) );
     if ( !mesh->markerNames().empty() &&
          ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
          ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
@@ -1047,14 +1047,14 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     pf.setNeighborPartitionIds( __e.ghosts );
 
     pf.setPoint( 0, mesh->point( __e.indices[0] ) );
-    ptseen[mesh->point( __e.indices[0] ).id()]=1;
+//    ptseen[mesh->point( __e.indices[0] ).id()]=1;
     if ( mesh->point( __e.indices[0] ).isOnBoundary() )
     {
         pf.setOnBoundary( true );
     }
-    _M_n_vertices[ __e.indices[0] ] = 1;
+    //_M_n_vertices[ __e.indices[0] ] = 1;
 
-    _M_n_b_vertices[ __e.indices[0] ] = 1;
+    //_M_n_b_vertices[ __e.indices[0] ] = 1;
 
     face_iterator fit;
     bool inserted;
@@ -1129,7 +1129,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
             e.setPoint( jj, mesh->point( __e.indices[jj] ) );
-            ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
                 ++count_pt_on_boundary;
         }
@@ -1143,8 +1143,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
+    //_M_n_vertices[ __e.indices[0] ] = 1;
+    //_M_n_vertices[ __e.indices[1] ] = 1;
     DVLOG(2) << "added edge with id :" << e.id()
                   << " n1: " << mesh->point( __e.indices[0] ).node()
                   << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
@@ -1181,11 +1181,11 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
 
     }
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
+    //_M_n_vertices[ __e.indices[0] ] = 1;
+    //_M_n_vertices[ __e.indices[1] ] = 1;
 
-    _M_n_b_vertices[ __e.indices[0] ] = 1;
-    _M_n_b_vertices[ __e.indices[1] ] = 1;
+    //_M_n_b_vertices[ __e.indices[0] ] = 1;
+    //_M_n_b_vertices[ __e.indices[1] ] = 1;
 
     bool inserted;
     face_iterator fit;
@@ -1229,11 +1229,11 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
         }
     }
 
-   _M_n_vertices[ __e.indices[0] ] = 1;
-   _M_n_vertices[ __e.indices[1] ] = 1;
+    //_M_n_vertices[ __e.indices[0] ] = 1;
+    //_M_n_vertices[ __e.indices[1] ] = 1;
 
-   _M_n_b_vertices[ __e.indices[0] ] = 1;
-   _M_n_b_vertices[ __e.indices[1] ] = 1;
+    //_M_n_b_vertices[ __e.indices[0] ] = 1;
+    //_M_n_b_vertices[ __e.indices[1] ] = 1;
 
     auto eit = mesh->addEdge( e );
     __idGmshToFeel=eit.id();
@@ -1283,7 +1283,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
         int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
-            ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
             if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
@@ -1308,13 +1308,15 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
-    _M_n_vertices[ __e.indices[2] ] = 1;
+#if 0
+    //_M_n_vertices[ __e.indices[0] ] = 1;
+    //_M_n_vertices[ __e.indices[1] ] = 1;
+    //_M_n_vertices[ __e.indices[2] ] = 1;
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 )
         _M_n_vertices[ __e.indices[3] ] = 1;
+#endif
 }
 template<typename MeshType>
 void
@@ -1346,7 +1348,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     {
         for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
         {
-            ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
         }
 
@@ -1358,7 +1360,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     boost::tie( fit, inserted ) = mesh->addFace( e );
 
     __idGmshToFeel=e.id();
-
+#if 0
     _M_n_vertices[ __e.indices[0] ] = 1;
     _M_n_vertices[ __e.indices[1] ] = 1;
     _M_n_vertices[ __e.indices[2] ] = 1;
@@ -1366,6 +1368,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 )
         _M_n_vertices[ __e.indices[3] ] = 1;
+#endif
 }
 
 template<typename MeshType>
@@ -1410,7 +1413,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
         int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
-            ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
@@ -1436,6 +1439,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
+#if 0
     _M_n_vertices[ __e.indices[0] ] = 1;
     _M_n_vertices[ __e.indices[1] ] = 1;
     _M_n_vertices[ __e.indices[2] ] = 1;
@@ -1448,7 +1452,7 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
         _M_n_vertices[ __e.indices[6] ] = 1;
         _M_n_vertices[ __e.indices[7] ] = 1;
     }
-
+#endif
 }
 
 template<typename MeshType>
