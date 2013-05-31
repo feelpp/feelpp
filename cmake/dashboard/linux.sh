@@ -16,5 +16,5 @@ if [ -x /usr/bin/g++-4.7 ]; then
     $COMMON,FEELPP_CXXNAME=gcc-4.7.0,FEELPP_CXX=/usr/bin/g++-4.7,FEELPP_EXPLICIT_VECTORIZATION=SSE2
 fi
 if [ -x /usr/bin/clang++ ]; then
-    $COMMON,FEELPP_CXXNAME=clang-3.1,FEELPP_CXX=/usr/bin/clang++,FEELPP_EXPLICIT_VECTORIZATION=SSE2
+    $COMMON,FEELPP_CXXNAME=clang-3.2,FEELPP_CXX=/usr/bin/clang++,FEELPP_EXPLICIT_VECTORIZATION=SSE2
 fi
