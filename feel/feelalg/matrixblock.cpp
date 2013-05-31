@@ -202,10 +202,25 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
     M_mat()
 {
     graph_ptrtype graph( new graph_type( blockgraph,diag_is_nonzero,true) );
+    //graph->mapRow().showMeMapGlobalProcessToGlobalCluster();
+    //graph->mapCol().showMeMapGlobalProcessToGlobalCluster();
+    //graph->printPython("GraphG.py");
 
+#if 0
     size_type size1 = graph->lastRowEntryOnProc()-graph->firstRowEntryOnProc()+1;
     size_type size2 = graph->lastColEntryOnProc()-graph->firstColEntryOnProc()+1;
     M_mat = backend.newMatrix( size1,size2,size1,size2,graph );
+#else
+
+    size_type properties = NON_HERMITIAN;
+    M_mat = backend.newMatrix( graph->mapRow(),  graph->mapCol(), properties, false );
+    M_mat->init( graph->mapRow().nDof(), graph->mapCol().nDof(),
+                 graph->mapRow().nLocalDofWithoutGhost(), graph->mapCol().nLocalDofWithoutGhost(),
+                 graph );
+
+#endif
+
+
     M_mat->zero();
 
     //TODO : index split
