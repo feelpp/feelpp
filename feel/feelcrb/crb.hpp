@@ -1309,7 +1309,8 @@ CRB<TruthModelType>::offline()
 
         if( proc_number == 0 ) std::cout<<"[CRB offline] M_error_type = "<<M_error_type<<std::endl;
 
-        std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
         ti.restart();
 
         if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
@@ -1530,7 +1531,8 @@ CRB<TruthModelType>::offline()
 
             }//end of if ( model_type::is_time_dependent )
         }//end of if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-        std::cout << " -- residual data init done in " << ti.elapsed() << "\n";
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << " -- residual data init done in " << ti.elapsed() << std::endl;
         ti.restart();
 
         // empty sets
@@ -2481,7 +2483,9 @@ CRB<TruthModelType>::offline()
             int count = std::count( M_index.begin(),M_index.end(),index );
             M_mode_number = count;
 
-            std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n";
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n";
+
             timer2.restart();
         }
 
@@ -2806,8 +2810,8 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
     time_index--;
 
     bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
-    if( this->worldComm().globalSize() > 1 )
-        solve_dual_problem=false;
+    //if( this->worldComm().globalSize() > 1 )
+    //    solve_dual_problem=false;
 
     double sum=0;
     if( solve_dual_problem )
@@ -3822,8 +3826,8 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
     int size=output_vector.size();
     double o =output_vector[size-1];
     bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
-    if( this->worldComm().globalSize() > 1 )
-        solve_dual_problem=false;
+    //if( this->worldComm().globalSize() > 1 )
+    //    solve_dual_problem=false;
 
     if( solve_dual_problem )
     {
@@ -4029,8 +4033,6 @@ CRB<TruthModelType>::delta( size_type N,
         //std::cout<<"dual_residual = "<<dual_residual<<std::endl;
 
         bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
-        if ( this->worldComm().globalSize() > 1 )
-            solve_dual_problem = false;
 
         if( solve_dual_problem )
         {
@@ -4252,7 +4254,8 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
     }
 
     int proc_number = this->worldComm().globalRank();
-    std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc_number<<" delta_pr : "<<delta_pr<<" at index : "<<_index<<std::endl;
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc_number<<" delta_pr : "<<delta_pr<<" - delta_du : "<<delta_du<<" at index : "<<_index<<std::endl;
     lb( N, mu, uN, uNdu , uNold ,uNduold );
 
     return boost::make_tuple( maxerr, mu , _index , delta_pr, delta_du);
@@ -4849,7 +4852,6 @@ typename CRB<TruthModelType>::residual_error_type
 CRB<TruthModelType>::steadyDualResidual( int Ncur,parameter_type const& mu, vectorN_type const& Undu, double time ) const
 {
 
-
     int __QLhs = M_model->Qa();
     int __QOutput = M_model->Ql( M_output_index );
     int __N = Ncur;
@@ -4927,7 +4929,6 @@ CRB<TruthModelType>::steadyDualResidual( int Ncur,parameter_type const& mu, vect
     coeffs_vector.push_back( __c0_du );
     coeffs_vector.push_back( __lambda_du );
     coeffs_vector.push_back( __gamma_du );
-
     return boost::make_tuple( delta_du,coeffs_vector );
 }
 
