@@ -44,7 +44,8 @@ cd $feelpp_source
 behind=$(git rev-list --left-right --count $branch...HEAD | awk '{print $1}')
 ahead=$(git rev-list --left-right --count $branch...HEAD | awk '{print $2}')
 
-if [ $behind -gt 0 ]; then
+#TODO -> Check the differences at the rsync time to check if there are differencies.
+#if [ $behind -gt 0 ]; then
 
   #Create the gh-pages and feelpp_sources copies if they does not exist.
   #echo "if [ ! -d $gh_pages ]; then mkdir $gh_pages; cd $gh_pages; git init; git remote add -t gh-pages -f origin https://github.com/feelpp/feelpp.git; git checkout gh-pages; fi"
@@ -55,4 +56,4 @@ if [ $behind -gt 0 ]; then
   # checkout in master branch
   # builddox master
   builddox $branch $feelpp_source $gh_pages
-fi
+#fi
