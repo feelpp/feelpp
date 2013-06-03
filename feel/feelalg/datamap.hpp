@@ -253,7 +253,7 @@ public:
 
     bool dofGlobalProcessIsGhost( size_type dof) const
     {
-        return this->dofGlobalClusterIsOnProc(this->mapGlobalProcessToGlobalCluster( dof ));
+        return !this->dofGlobalClusterIsOnProc(this->mapGlobalProcessToGlobalCluster( dof ));
     }
 
     boost::tuple<bool,size_type> searchGlobalProcessDof( size_type gpdof ) const;
