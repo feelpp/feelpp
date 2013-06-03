@@ -217,7 +217,7 @@ public:
                                      const size_type m_l,
                                      const size_type n_l,
                                      graph_ptrtype const & graph,
-                                     std::vector < std::vector<int> > indexSplit,
+                                     std::vector < std::vector<size_type> > indexSplit,
                                      size_type matrix_properties = NON_HERMITIAN )
     {
         auto mat = this->newMatrix( m,n,m_l,n_l,graph,matrix_properties );

@@ -246,7 +246,7 @@ public:
     /**
      *
      */
-    void setIndexSplit( std::vector< std::vector<int> > const &indexSplit );
+    void setIndexSplit( std::vector< std::vector<size_type> > const &indexSplit );
 
     /**
      * reinitialize the matrix
