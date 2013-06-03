@@ -1,33 +1,51 @@
 #! /opt/local/bin/bash
 
-function builddox
+#usage: $1 = repo, $2 = branch_name
+function check_repo
 {
-    branch=$1
-    cd feelpp.git && git pull && git checkout $branch && cd ..
-    [ -d doxygen-$branch ] && rm -rf doxygen-$branch
-    mkdir doxygen-$branch
-    cd doxygen-$branch
-    cmake -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.6 -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.6 ../feelpp.git
-    make doxygen
-    cd ../
-
-    # now work in feelpp.docs to push the newly created doxygen files
-    mkdir -p gh-pages/$branch
-    cd gh-pages  && git pull
-    
-    rsync -avz ../doxygen-$branch/doc/api/html/ $branch/
-    git add -f $branch/* 
-    git commit -m"update Feel++ online documentation of branch $branch" -a
-    git push origin gh-pages
-    cd ..
+  echo "if [ ! -d $1 ]; then mkdir $1; cd $1; git init; git remote add -t $2 -f origin https://github.com/feelpp/feelpp.git; git checkout $2; fi"
+  echo "cd $1 && git pull"
 }
 
+function builddox
+{
+  branch=$1
+  feel_git=${2:-feelpp.git}
+  cxx_compiler=${3:-/opt/local/bin/g++-mp-4.6}
+  c_compiler=${4:-/opt/local/bin/gcc-mp-4.6}
+  doxygen_dir=$HOME/doxygen-$branch
 
-if [ ! -d gh-pages ]; then mkdir gh-pages; cd gh-pages; git init; git remote add -t gh-pages -f origin https://github.com/feelpp/feelpp.git; git checkout gh-pages; cd ..; fi
-cd gh-pages && git pull && cd ..
-#if [ ! -d feelpp.git ]; then git clone  https://github.com/feelpp/feelpp.git feelpp.git; fi
-cd feelpp.git && git pull && cd ..
+  echo "cd $feel_git && git checkout $branch"
+  echo "[ -d $doxygen_dir ] && rm -rf $doxygen_dir"
+  echo "mkdir $doxygen_dir"
+  echo "cd $doxygen_dir"
+  #echo "cmake -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.6 -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.6 ../$feel_git"
+  echo "cmake $feel_git"
+  echo "make doxygen"
+
+  # now work in feelpp.docs to push the newly created doxygen files
+  echo "mkdir -p $gh_pages/$branch"
+  echo "cd $gh_pages  && git pull"
+
+  echo "rsync -avz $doxygen_dir/doc/api/html/ $branch/"
+  echo "git add -f $branch/* "
+  echo "git commit -m "update Feel++ online documentation of branch $branch" -a"
+  echo "git push origin gh-pages"
+}
+
+branch=${1:-develop}
+base_dir=${2:-$HOME}
+#Where the sources are stored
+feelpp_source=${3:-$base_dir/feelpp.git}
+#Where the gh-pages copy is
+gh_pages=${4:-$base_dir/gh-pages}
+
+#Create the gh-pages and feelpp_sources copies if they does not exist.
+#echo "if [ ! -d $gh_pages ]; then mkdir $gh_pages; cd $gh_pages; git init; git remote add -t gh-pages -f origin https://github.com/feelpp/feelpp.git; git checkout gh-pages; fi"
+check_repo $gh_pages gh-pages
+#echo "if [ ! -d $fellpp_source ]; then mkdir $fellpp_source; cd $fellpp_source; git init; git remote add -t $branch -f origin https://github.com/feelpp/feelpp.git; git checkout $branch; fi"
+check_repo $feelpp_source $branch
 
 # checkout in master branch
 # builddox master
-builddox develop
+builddox $branch $feelpp_source $gh_pages
