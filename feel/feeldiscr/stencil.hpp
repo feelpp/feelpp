@@ -76,7 +76,7 @@ struct compute_graph3
                 const size_type last2_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
 #endif
 #endif
-                typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( space2->map(), M_space1->map() ) );
+                typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( space2->dof(), M_space1->dof() ) );
                 zerograph->zero();
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , zerograph );
             }
@@ -152,7 +152,7 @@ struct compute_graph2
                 const size_type last2_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
 #endif
 #endif
-                typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type(  M_space1->map(), space2->map() ) );
+                typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type(  M_space1->dof(), space2->dof() ) );
                 zerograph->zero();
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
                                        M_stencil->trialSpace()->nDofStart( M_trial_index ),
@@ -330,7 +330,7 @@ public:
                                  Xh->nDofStart(), Xh->nDofStart()+ Xh->nLocalDof()-1,
                                  Yh->nDofStart(), Yh->nDofStart()+ Yh->nLocalDof()-1 ) ),
 #else
-        M_graph( new graph_type( Xh->map(),Yh->map() ) ),
+        M_graph( new graph_type( Xh->dof(),Yh->dof() ) ),
 #endif
         M_block_pattern( block_pattern ),
         M_rangeIteratorTest( r )
@@ -1223,7 +1223,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDofGlobalCluster( proc_id );
 #endif
 
-    graph_ptrtype sparsity_graph( new graph_type( _M_X1->map(),_M_X2->map() ) );
+    graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
     Feel::Context graph( hints );
     if ( graph.test( Pattern::ZERO ) ) { sparsity_graph->zero(); return sparsity_graph; }
@@ -1525,7 +1525,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 
-    graph_ptrtype sparsity_graph( new graph_type( _M_X1->map(),_M_X2->map() ) );
+    graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
 #if 0
     typedef typename test_mesh_type::element_const_iterator mesh_element_const_iterator;
