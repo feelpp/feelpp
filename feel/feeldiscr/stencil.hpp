@@ -742,7 +742,7 @@ Stencil<X1,X2,RangeItTestType>::mergeGraph( int row, int col, graph_ptrtype g )
 
                     else
                     {
-                        for ( auto it = row2_entries.begin(), en = row2_entries.end() ; it!=en; ++it ) row1_entries.insert( *it+col );
+                        for ( auto itcol = row2_entries.begin(), encol = row2_entries.end() ; itcol!=encol; ++itcol ) row1_entries.insert( *itcol+col );
                     }
 
                 }
@@ -771,58 +771,55 @@ Stencil<X1,X2,RangeItTestType>::mergeGraphMPI( size_type test_index, size_type t
                                DataMap const& mapOnTest, DataMap const& mapOnTrial,
                                graph_ptrtype g )
 {
+    const int myrank = this->testSpace()->worldComm().globalRank();
 
-    const size_type row = ( this->testSpace()->dof()->firstDofGlobalCluster()  +  this->testSpace()->nLocalDofWithoutGhostStart( test_index ) ) - mapOnTest.firstDofGlobalCluster();
-    const size_type col = ( this->trialSpace()->dof()->firstDofGlobalCluster() +  this->trialSpace()->nLocalDofWithoutGhostStart( trial_index ) ) - mapOnTrial.firstDofGlobalCluster();
+    const size_type globalDofRowStart = this->testSpace()->dof()->firstDofGlobalCluster()  +  this->testSpace()->nLocalDofWithoutGhostOnProcStart( myrank, test_index );
+    const size_type globalDofColStart = this->trialSpace()->dof()->firstDofGlobalCluster()  +  this->trialSpace()->nLocalDofWithoutGhostOnProcStart( myrank, trial_index );
+    const size_type locdofStart = this->testSpace()->nLocalDofWithGhostOnProcStart( myrank, test_index );
+
     typename graph_type::const_iterator it = g->begin();
     typename graph_type::const_iterator en = g->end();
-
-    const size_type locdofStart = this->testSpace()->nLocalDofWithGhostOnProcStart(this->testSpace()->worldComm().globalRank(), test_index );
-
     for ( ; it != en; ++it )
+    {
+        size_type theglobalrow = globalDofRowStart + ( it->first - mapOnTest.firstDofGlobalCluster() );
+        const size_type thelocalrow = locdofStart + it->second.get<1>();
+
+        if (it->second.get<0>()!=g->worldComm().globalRank() )
         {
-            int theglobalrow = row+it->first;
-            //int thelocalrow = this->testSpace()->nLocalDofWithoutGhostOnProcStart(this->testSpace()->worldComm().globalRank(), test_index ) + it->second.get<1>();
-            int thelocalrow = locdofStart + it->second.get<1>();
+            const int proc = it->second.get<0>();
+            const size_type realrowStart = this->testSpace()->dof()->firstDofGlobalCluster(proc)
+                + this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index );
+            theglobalrow = realrowStart+(it->first-mapOnTest.firstDofGlobalCluster(proc));
+        }
 
-            if (it->second.get<0>()!=g->worldComm().globalRank() )
+        std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
+        std::set<size_type> const& row2_entries = boost::get<2>( it->second );
+
+        DVLOG(2) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
+        M_graph->row( theglobalrow ).template get<1>() = thelocalrow;
+        M_graph->row( theglobalrow ).template get<0>() = this->testSpace()->worldComm().mapLocalRankToGlobalRank()[it->second.get<0>()];
+
+        if ( !row2_entries.empty() )
+        {
+            for ( auto itcol = row2_entries.begin(), encol = row2_entries.end() ; itcol!=encol; ++itcol )
+            {
+                if (mapOnTrial.dofGlobalClusterIsOnProc(*itcol))
                 {
-                    const int proc = it->second.get<0>();
-                    const size_type realrow = this->testSpace()->dof()->firstDofGlobalCluster(proc)
-                        + this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index )
-                        - mapOnTest.firstDofGlobalCluster(proc);
-                    theglobalrow = realrow+it->first;
-                    //thelocalrow = this->testSpace()->nLocalDofWithGhostOnProcStart(proc, test_index ) + it->second.get<1>();
+                    const size_type dofcol = globalDofColStart + (*itcol-mapOnTrial.firstDofGlobalCluster());
+                    row1_entries.insert( dofcol );
                 }
-
-            std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
-            std::set<size_type> const& row2_entries = boost::get<2>( it->second );
-
-            DVLOG(2) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
-            M_graph->row( theglobalrow ).template get<1>() = thelocalrow;
-            M_graph->row( theglobalrow ).template get<0>() = this->testSpace()->worldComm().mapLocalRankToGlobalRank()[it->second.get<0>()];
-
-            if ( !row2_entries.empty() )
+                else
                 {
-                    for ( auto it = row2_entries.begin(), en = row2_entries.end() ; it!=en; ++it )
-                        {
-                            const auto dofcol = *it+col;
-                            if (mapOnTrial.dofGlobalClusterIsOnProc(*it))
-                                row1_entries.insert( dofcol );
-                            else
-                                {
-                                    const int realproc = mapOnTrial.procOnGlobalCluster(*it);
-                                    const size_type realcol = this->trialSpace()->dof()->firstDofGlobalCluster(realproc)
-                                        + this->trialSpace()->nLocalDofWithoutGhostOnProcStart( realproc, trial_index )
-                                        - mapOnTrial.firstDofGlobalCluster(realproc);
-
-                                    row1_entries.insert(*it+realcol);
-                                }
-                        }
+                    const int realproc = mapOnTrial.procOnGlobalCluster(*itcol);
+                    const size_type realcolStart = this->trialSpace()->dof()->firstDofGlobalCluster(realproc)
+                        + this->trialSpace()->nLocalDofWithoutGhostOnProcStart( realproc, trial_index );
+                    const size_type dofcol = realcolStart + (*itcol - mapOnTrial.firstDofGlobalCluster(realproc));
+                    row1_entries.insert(dofcol);
                 }
+            }
+        }
 
-        } // for( ; it != en; ++it )
-
+    } // for( ; it != en; ++it )
 
 }
 
