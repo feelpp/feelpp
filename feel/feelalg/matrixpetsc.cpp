@@ -432,7 +432,7 @@ void MatrixPetsc<T>::init ( const size_type m,
 
 
 template <typename T>
-void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<int> > const &indexSplit )
+void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<size_type> > const &indexSplit )
 {
     this->M_IndexSplit=indexSplit;
 
@@ -445,12 +445,21 @@ void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<int> > const &index
         PetscInt nDofForThisField = indexSplit[i].size();
         //std::cout << "\n setIndexSplit " << i << " ndof:" << nDofForThisField << "\n";
 
+        PetscInt * petscSplit = new PetscInt[nDofForThisField];
+        std::copy( this->M_IndexSplit[i].begin(),
+                   this->M_IndexSplit[i].end(),
+                   petscSplit );
+
+
+
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-        ierr = ISCreateGeneral( this->comm(),nDofForThisField,this->M_IndexSplit[i].data(),PETSC_COPY_VALUES,&_M_petscIS[i] );
+        ierr = ISCreateGeneral( this->comm(),nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,PETSC_COPY_VALUES,&_M_petscIS[i] );
 #else
-        ierr = ISCreateGeneral( this->comm(),nDofForThisField,this->M_IndexSplit[i].data(),&_M_petscIS[i] );
+        ierr = ISCreateGeneral( this->comm(),nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,&_M_petscIS[i] );
 #endif
         CHKERRABORT( this->comm(),ierr );
+
+        delete[] petscSplit;
 
 #if 0
         ISView( _M_petscIS[i],PETSC_VIEWER_STDOUT_WORLD ); // PETSC_VIEWER_STDOUT_SELF
@@ -1715,6 +1724,7 @@ void MatrixPetscMPI<T>::init( const size_type m,
     //std::cout << "MatrixPetscMPI<T>::init with graph start on proc"<< this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
 
     this->setGraph( graph );
+    this->graph()->close();
 
     // Clear initialized matrices
     if ( this->isInitialized() )
@@ -1772,7 +1782,6 @@ void MatrixPetscMPI<T>::init( const size_type m,
     CHKERRABORT( this->comm(),ierr );
 
 
-    this->graph()->close();
 
     std::vector<PetscInt> ia( this->graph()->ia().size() );
     std::vector<PetscInt> ja( this->graph()->ja().size() );

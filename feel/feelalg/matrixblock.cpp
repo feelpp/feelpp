@@ -114,7 +114,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
 
     //std::cout << "[MatrixBlockBase::MatrixBlockBase] build FieldSplit index" << std::endl;
     // index container for field split preconditioner
-    std::vector < std::vector<int> > indexSplit( NR );
+    std::vector < std::vector<size_type> > indexSplit( NR );
     uint16_type startIS = 0;
 
     for ( uint i=0; i<NR; ++i )
