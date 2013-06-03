@@ -525,11 +525,9 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
     mesh_faces_ptrtype newMesh( new mesh_faces_type( M_mesh->worldComm()) );
-    //<<<<<<< HEAD
+
     newMesh->setSubStructuring(M_mesh->subStructuring());
     //mesh_faces_ptrtype newMesh( new mesh_faces_type );
-    //=======
-    //>>>>>>> develop
 
     //-----------------------------------------------------------//
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] extraction mesh faces" << "\n";

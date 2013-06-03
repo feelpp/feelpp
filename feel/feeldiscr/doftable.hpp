@@ -3099,7 +3099,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
     } // elements loop
 
-    //<<<<<<< HEAD
     // renumber dofs if substructuring is set
     if ( M.subStructuring() )
     {
@@ -3132,12 +3131,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         }
 #endif
     }
-// =======
-//     const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
 
-// >>>>>>> develop
     mpi::all_gather( M.worldComm().localComm(),
-                     thelastDof,//next_free_dof-1,
+                     next_free_dof-1,
                      this->_M_last_df );
 
     // access to _M_n_localWithGhost_df for each process
