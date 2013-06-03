@@ -91,12 +91,10 @@ public:
               size_type last_row_entry_on_proc = 0,
               size_type first_col_entry_on_proc = 0,
               size_type last_col_entry_on_proc = 0,
-              WorldComm const& worldcomm = Environment::worldComm(),
-              DataMap const& mapRow=DataMap(),
-              DataMap const& mapCol=DataMap() );
+              WorldComm const& worldcomm = Environment::worldComm() );
 
-    GraphCSR( DataMap const& mapRow,
-              DataMap const& mapCol );
+    GraphCSR( boost::shared_ptr<DataMap> const& mapRow,
+              boost::shared_ptr<DataMap> const& mapCol );
 
     GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
               bool diagIsNonZero=true,
@@ -327,8 +325,12 @@ public:
         M_last_col_entry_on_proc[this->worldComm().globalRank()] = entry;
     }
 
-    DataMap const& mapRow() { return M_mapRow; }
-    DataMap const& mapCol() { return M_mapCol; }
+    DataMap const& mapRow() const { return *M_mapRow; }
+    DataMap const& mapCol() const { return *M_mapCol; }
+    boost::shared_ptr<DataMap> const& mapRowPtr() const { return M_mapRow; }
+    boost::shared_ptr<DataMap> const& mapColPtr() const { return M_mapCol; }
+    boost::shared_ptr<DataMap> mapRowPtr() { return M_mapRow; }
+    boost::shared_ptr<DataMap> mapColPtr() { return M_mapCol; }
 
     //@}
 
@@ -376,10 +378,10 @@ private :
 
     void updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet );
 
-    size_type nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex );
-    size_type nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex );
-    size_type nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex );
-    size_type nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex );
+    size_type nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
+    size_type nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const;
 
 protected:
 
@@ -402,7 +404,7 @@ private:
 
     self_ptrtype M_graphT;
 
-    DataMap M_mapRow, M_mapCol;
+    boost::shared_ptr<DataMap> M_mapRow, M_mapCol;
 };
 
 
