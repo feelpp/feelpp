@@ -96,6 +96,9 @@ public:
     GraphCSR( boost::shared_ptr<DataMap> const& mapRow,
               boost::shared_ptr<DataMap> const& mapCol );
 
+    GraphCSR( DataMap const& mapRow,
+              DataMap const& mapCol );
+
     GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
               bool diagIsNonZero=true,
               bool close=true );
