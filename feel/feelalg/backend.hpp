@@ -267,6 +267,7 @@ public:
                    const size_type n_l ) =0;
 
     virtual sparse_matrix_ptrtype newZeroMatrix( DataMap const& dm1, DataMap const& dm2 ) = 0;
+    virtual sparse_matrix_ptrtype newZeroMatrix( boost::shared_ptr<DataMap> const& dm1, boost::shared_ptr<DataMap> const& dm2 ) = 0;
 
     /**
      * helper function
@@ -415,14 +416,12 @@ public:
                                      newZeroMatrix,
                                      tag,
                                      ( required
-                                       ( test,* )
-                                       ( trial,* )
+                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
                                      )
                                    )
     {
-        //return this->newZeroMatrix( trial->map(), test->map() );
-        return this->newZeroMatrix( trial->mapOnOff(), test->mapOn() );
-
+        return this->newZeroMatrix( trial->dofOnOff(), test->dofOn() );
     }
 
     /**
