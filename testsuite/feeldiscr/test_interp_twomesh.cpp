@@ -40,7 +40,7 @@ makeOptions()
 {
     po::options_description desc_options( "test_interp_twomesh options" );
     desc_options.add_options()
-    ( "hsize1", po::value<double>()->default_value( 0.1 ), "mesh size1" ) //0.05
+    ( "hsize1", po::value<double>()->default_value( 0.3 ), "mesh size1" ) //0.05
     ( "hsize2", po::value<double>()->default_value( 0.7 ), "mesh size2" ) //0.03
     ( "gmsh", po::value<float>()->default_value( 2.1 ), " version of gmsh(2.0 or 2.1)" )
     ;
@@ -553,8 +553,8 @@ BOOST_AUTO_TEST_CASE( interp_twomesh_interp )
     run_test_interp<2,8,2>( test_app );
     BOOST_MESSAGE(   "[main] ----------------<2,9,3>---------------\n" );
     run_test_interp<2,9,3>( test_app );
-    BOOST_MESSAGE(   "[main] ----------------<2,10,4>---------------\n" );
-    run_test_interp<2,10,4>( test_app );
+    //BOOST_MESSAGE(   "[main] ----------------<2,10,4>---------------\n" );
+    //run_test_interp<2,10,4>( test_app );
     //BOOST_MESSAGE(   "[main] ----------------<2,11,5>---------------\n");
     //run_test_interp<2,11,5>(test_app);
     BOOST_MESSAGE(   "[main] ----------TEST_INTERP_FINISH----------\n" );
