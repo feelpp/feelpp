@@ -62,6 +62,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
     for ( uint i=0; i<NR; ++i )
         _size1 += v[i*NC]->size1();
 
+#if 0
     //std::cout << "[MatrixBlockBase::MatrixBlockBase] build graph" << std::endl;
     graph_ptrtype graph( new graph_type( 0,0,_size1-1,0,_size2-1 ) ); //( new graph_type( ) );
     size_type start_i=0;
@@ -90,11 +91,20 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
     M_mat = backend.newMatrix( _size1,_size2,_size1,_size2,graph );
     M_mat->zero();
     //M_mat->graph()->showMe();
+#else
+    BlocksBaseGraphCSR blockGraph(NR,NC);
+    for ( uint i=0; i<NR; ++i )
+        for ( uint j=0; j<NC; ++j )
+            blockGraph(i,j) = blockSet(i,j)->graph();
+
+    M_mat = backend.newBlockMatrix(_block=blockGraph);
+
+#endif
 
     if ( copy_values )
     {
-        start_i=0;
-        start_j=0;
+        size_type start_i=0;
+        size_type start_j=0;
 
         for ( uint i=0; i<NR; ++i )
         {
