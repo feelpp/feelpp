@@ -134,169 +134,169 @@ endif()
 message("MAKE_ARGS -- ${MAKE_ARGS}")
 message("PARALLEL -- ${PARALLEL}")
 
-#
-#if(NOT FEELPP_CMAKE_DIR)
-#  SET(FEELPP_CMAKE_DIR "")
-#endif(NOT FEELPP_CMAKE_DIR)
-#
-#if (NOT FEELPP_CXX)
-#  MESSAGE(WARNING "NO CXX COMPILER PROVIDED - USING DEFAULT ONE")
-#  set(FEELPP_CXX "g++")
-#endif(NOT FEELPP_CXX)
-#
-##Generate default build string OS-VERSION-ARCH-COMPILER
-#if(NOT FEELPP_BUILD_STRING)
-#  # OS
-#  build_name(FEELPP_OS_VERSION)
-#
-#  # arch
-#  set(FEELPP_ARCH ${CMAKE_SYSTEM_PROCESSOR})
-#  if(WIN32)
-#    set(FEELPP_ARCH $ENV{PROCESSOR_ARCHITECTURE})
-#  else(WIN32)
-#    execute_process(COMMAND uname -m OUTPUT_VARIABLE FEELPP_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
-#  endif(WIN32)
-#
-#  set(FEELPP_BUILD_STRING ${FEELPP_OS_VERSION}${FEELPP_ARCH}-${FEELPP_CXXNAME})
-#
-#endif(NOT FEELPP_BUILD_STRING)
-#
-#if(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
-#  set(FEELPP_BUILD_STRING ${FEELPP_BUILD_STRING}-${FEELPP_EXPLICIT_VECTORIZATION})
-#endif(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
-#
-#if(NOT FEELPP_WORK_DIR)
-#  set(FEELPP_WORK_DIR ${CTEST_SCRIPT_DIRECTORY})
-#endif(NOT FEELPP_WORK_DIR)
-#
-#if(NOT CTEST_SOURCE_DIRECTORY)
-#  SET (CTEST_SOURCE_DIRECTORY "${FEELPP_WORK_DIR}/feelpp")
-#endif(NOT CTEST_SOURCE_DIRECTORY)
-#
-#if(NOT FEELPP_MODE)
-#  set(FEELPP_MODE Nightly)
-#endif(NOT FEELPP_MODE)
-#
-#if(NOT CTEST_BINARY_DIRECTORY)
-#  SET (CTEST_BINARY_DIRECTORY "${FEELPP_WORK_DIR}/${FEELPP_MODE}_${FEELPP_CXXNAME}")
-#endif(NOT CTEST_BINARY_DIRECTORY)
-#
-### mandatory variables (the default should be ok in most cases):
-#
-##if(NOT FEELPP_NO_UPDATE)
-#find_program(CTEST_GIT_COMMAND NAMES git)
-#find_program(CTEST_SVN_COMMAND NAMES svn)
-##SET (CTEST_SVN_CHECKOUT   "${CTEST_GIT_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
-##SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
-##SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://github.com/feelpp/feelpp.git")
-#set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
-#
-##SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
-##endif(NOT FEELPP_NO_UPDATE)
-#foreach(module ${FEELPP_MODULES})
-#  # update the modules using svn update
-#  execute_process(
-#    #COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update" 
-#    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_GIT_COMMAND} pull" 
-#    OUTPUT_VARIABLE MODULE_OUTPUT)
-#  message(STATUS "updated ${module} : ${MODULE_OUTPUT}")
-#endforeach()
-#####################################################################
-## The values in this section are optional you can either
-## have them or leave them commented out
-#####################################################################
-#
-## this make sure we get consistent outputs
-#SET($ENV{LC_MESSAGES} "en_EN")
-#
-#if (UNIX)
-#  set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
-#endif(UNIX)
-#
-##The idea behind ctest launchers is that they wrap each compile or link step so
-##the output can be saved and sent to CDash in the event of a warning or
-##error. Rather than trying to grep through and analyze the full build output
-##after thousands of compile and link calls, with this technique, ctest may
-##simply capture the error output directly and pass it in its entirety to the
-##dashboard. This helps immensely in figuring out some why some errors occur,
-##without necessarily even having access to the client machine.
-#set(CTEST_USE_LAUNCHERS 1)
-#find_program(CTEST_CMAKE_COMMAND NAMES "cmake")
-#message("${CTEST_CMAKE_COMMAND}")
-## Generating the CTEST_CONFIGURE_COMMAND variable (what is executed just after cmake)
-#set(CTEST_CONFIGURE_COMMAND "${CTEST_CMAKE_COMMAND} ${CTEST_SOURCE_DIRECTORY}")
-#set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
-#set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}")
-#
-#if(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
-#  if(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
-#    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON")
-#  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE3)
-#    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON")
-#  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSSE3)
-#    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON")
-#  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE4_1)
-#    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON -DFEELPP_TEST_SSE4_1=ON")
-#  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE4_2)
-#    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON -DFEELPP_TEST_SSE4_1=ON -DFEELPP_TEST_SSE4_2=ON")
-#  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES Altivec)
-#    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_ALTIVEC=ON")
-#  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES novec)
-#    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_NO_EXPLICIT_VECTORIZATION=ON")
-#  else(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
-#    message(FATAL_ERROR "Invalid value for FEELPP_EXPLICIT_VECTORIZATION (${FEELPP_EXPLICIT_VECTORIZATION}), must be: novec, SSE2, SSE3, Altivec")
-#  endif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
-#endif(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
-#
-###
-##please see: http://public.kitware.com/pipermail/cdash/2010-June/000820.html
-##note: CTEST_CMAKE_COMMAND is intended to be a read-only variable
-###
-#if(DEFINED FEELPP_CMAKE_ARGS)
-#  set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} ${FEELPP_CMAKE_ARGS}")
-#endif(DEFINED FEELPP_CMAKE_ARGS)
-#
-## raise the warning/error limit
-#set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS "33331")
-#set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS "33331")
-#
-## to get CTEST_PROJECT_SUBPROJECTS definition:
-#include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
-#
-## clear the binary directory and create an initial cache
-##CTEST_EMPTY_BINARY_DIRECTORY (${CTEST_BINARY_DIRECTORY})
-#set(CTEST_INITIAL_CACHE "CMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}")
-## site
-#set(CTEST_SITE "${FEELPP_SITE}")
-## build name
-#set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
-## should ctest wipe the binary tree before running
-##SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
-#
-#if(FEELPP_CXX AND NOT WIN32)
-#  set(CTEST_ENVIRONMENT "CXX=${FEELPP_CXX}")
-#endif(FEELPP_CXX AND NOT WIN32)
-#
-#ctest_start(${FEELPP_MODE})
-#ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
-#ctest_submit(PARTS Update Notes)
-#
-#foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
-#
-#  set_property(GLOBAL PROPERTY SubProject ${subproject})
-#  set_property(GLOBAL PROPERTY Label ${subproject})
-#
-#  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}")
-#  ctest_submit(PARTS Configure)
-#
-#  message(WARNING "build target "${subproject})
-#  #set(CTEST_BUILD_TARGET “${subproject}”)
-#  set(CTEST_BUILD_TARGET ${subproject})
-#  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
-#  ctest_submit(PARTS Build)
-#
-#  message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
-#  # runs only tests that have a LABELS property matching "${subproject}"
-#  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
-#  ctest_submit(PARTS Test)
-#endforeach()
+
+if(NOT FEELPP_CMAKE_DIR)
+  SET(FEELPP_CMAKE_DIR "")
+endif(NOT FEELPP_CMAKE_DIR)
+
+if (NOT FEELPP_CXX)
+  MESSAGE(WARNING "NO CXX COMPILER PROVIDED - USING DEFAULT ONE")
+  set(FEELPP_CXX "g++")
+endif(NOT FEELPP_CXX)
+
+#Generate default build string OS-VERSION-ARCH-COMPILER
+if(NOT FEELPP_BUILD_STRING)
+  # OS
+  build_name(FEELPP_OS_VERSION)
+
+  # arch
+  set(FEELPP_ARCH ${CMAKE_SYSTEM_PROCESSOR})
+  if(WIN32)
+    set(FEELPP_ARCH $ENV{PROCESSOR_ARCHITECTURE})
+  else(WIN32)
+    execute_process(COMMAND uname -m OUTPUT_VARIABLE FEELPP_ARCH OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif(WIN32)
+
+  set(FEELPP_BUILD_STRING ${FEELPP_OS_VERSION}${FEELPP_ARCH}-${FEELPP_CXXNAME})
+
+endif(NOT FEELPP_BUILD_STRING)
+
+if(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
+  set(FEELPP_BUILD_STRING ${FEELPP_BUILD_STRING}-${FEELPP_EXPLICIT_VECTORIZATION})
+endif(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
+
+if(NOT FEELPP_WORK_DIR)
+  set(FEELPP_WORK_DIR ${CTEST_SCRIPT_DIRECTORY})
+endif(NOT FEELPP_WORK_DIR)
+
+if(NOT CTEST_SOURCE_DIRECTORY)
+  SET (CTEST_SOURCE_DIRECTORY "${FEELPP_WORK_DIR}/feelpp")
+endif(NOT CTEST_SOURCE_DIRECTORY)
+
+if(NOT FEELPP_MODE)
+  set(FEELPP_MODE Nightly)
+endif(NOT FEELPP_MODE)
+
+if(NOT CTEST_BINARY_DIRECTORY)
+  SET (CTEST_BINARY_DIRECTORY "${FEELPP_WORK_DIR}/${FEELPP_MODE}_${FEELPP_CXXNAME}")
+endif(NOT CTEST_BINARY_DIRECTORY)
+
+## mandatory variables (the default should be ok in most cases):
+
+#if(NOT FEELPP_NO_UPDATE)
+find_program(CTEST_GIT_COMMAND NAMES git)
+find_program(CTEST_SVN_COMMAND NAMES svn)
+#SET (CTEST_SVN_CHECKOUT   "${CTEST_GIT_COMMAND} co svn://scm.forge.imag.fr/var/lib/gforge/chroot/scmrepos/svn/life/trunk/life/trunk ${CTEST_SOURCE_DIRECTORY}")
+#SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://code.google.com/p/feelpp/")
+#SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://github.com/feelpp/feelpp.git")
+set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
+
+#SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
+#endif(NOT FEELPP_NO_UPDATE)
+foreach(module ${FEELPP_MODULES})
+  # update the modules using svn update
+  execute_process(
+    #COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_SVN_COMMAND} update" 
+    COMMAND "cd ${CTEST_SOURCE_DIRECTORY}/${module} && ${CTEST_GIT_COMMAND} pull" 
+    OUTPUT_VARIABLE MODULE_OUTPUT)
+  message(STATUS "updated ${module} : ${MODULE_OUTPUT}")
+endforeach()
+####################################################################
+# The values in this section are optional you can either
+# have them or leave them commented out
+####################################################################
+
+# this make sure we get consistent outputs
+SET($ENV{LC_MESSAGES} "en_EN")
+
+if (UNIX)
+  set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
+endif(UNIX)
+
+#The idea behind ctest launchers is that they wrap each compile or link step so
+#the output can be saved and sent to CDash in the event of a warning or
+#error. Rather than trying to grep through and analyze the full build output
+#after thousands of compile and link calls, with this technique, ctest may
+#simply capture the error output directly and pass it in its entirety to the
+#dashboard. This helps immensely in figuring out some why some errors occur,
+#without necessarily even having access to the client machine.
+set(CTEST_USE_LAUNCHERS 1)
+find_program(CTEST_CMAKE_COMMAND NAMES "cmake")
+message("${CTEST_CMAKE_COMMAND}")
+# Generating the CTEST_CONFIGURE_COMMAND variable (what is executed just after cmake)
+set(CTEST_CONFIGURE_COMMAND "${CTEST_CMAKE_COMMAND} ${CTEST_SOURCE_DIRECTORY}")
+set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
+set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}")
+
+if(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
+  if(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
+    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON")
+  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE3)
+    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON")
+  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSSE3)
+    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON")
+  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE4_1)
+    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON -DFEELPP_TEST_SSE4_1=ON")
+  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE4_2)
+    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_SSE2=ON -DFEELPP_TEST_SSE3=ON -DFEELPP_TEST_SSSE3=ON -DFEELPP_TEST_SSE4_1=ON -DFEELPP_TEST_SSE4_2=ON")
+  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES Altivec)
+    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_ALTIVEC=ON")
+  elseif(FEELPP_EXPLICIT_VECTORIZATION MATCHES novec)
+    set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DFEELPP_TEST_NO_EXPLICIT_VECTORIZATION=ON")
+  else(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
+    message(FATAL_ERROR "Invalid value for FEELPP_EXPLICIT_VECTORIZATION (${FEELPP_EXPLICIT_VECTORIZATION}), must be: novec, SSE2, SSE3, Altivec")
+  endif(FEELPP_EXPLICIT_VECTORIZATION MATCHES SSE2)
+endif(DEFINED FEELPP_EXPLICIT_VECTORIZATION)
+
+##
+#please see: http://public.kitware.com/pipermail/cdash/2010-June/000820.html
+#note: CTEST_CMAKE_COMMAND is intended to be a read-only variable
+##
+if(DEFINED FEELPP_CMAKE_ARGS)
+  set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} ${FEELPP_CMAKE_ARGS}")
+endif(DEFINED FEELPP_CMAKE_ARGS)
+
+# raise the warning/error limit
+set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS "33331")
+set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS "33331")
+
+# to get CTEST_PROJECT_SUBPROJECTS definition:
+include("${CTEST_SOURCE_DIRECTORY}/CTestConfig.cmake")
+
+# clear the binary directory and create an initial cache
+#CTEST_EMPTY_BINARY_DIRECTORY (${CTEST_BINARY_DIRECTORY})
+set(CTEST_INITIAL_CACHE "CMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}")
+# site
+set(CTEST_SITE "${FEELPP_SITE}")
+# build name
+set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
+# should ctest wipe the binary tree before running
+#SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
+
+if(FEELPP_CXX AND NOT WIN32)
+  set(CTEST_ENVIRONMENT "CXX=${FEELPP_CXX}")
+endif(FEELPP_CXX AND NOT WIN32)
+
+ctest_start(${FEELPP_MODE})
+ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
+ctest_submit(PARTS Update Notes)
+
+foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
+
+  set_property(GLOBAL PROPERTY SubProject ${subproject})
+  set_property(GLOBAL PROPERTY Label ${subproject})
+
+  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}")
+  ctest_submit(PARTS Configure)
+
+  message(WARNING "build target "${subproject})
+  #set(CTEST_BUILD_TARGET “${subproject}”)
+  set(CTEST_BUILD_TARGET ${subproject})
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
+  ctest_submit(PARTS Build)
+
+  message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
+  # runs only tests that have a LABELS property matching "${subproject}"
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
+  ctest_submit(PARTS Test)
+endforeach()
