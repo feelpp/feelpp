@@ -54,7 +54,60 @@ GraphCSR::GraphCSR( size_type n,
     M_mapRow( new DataMap(worldcomm) ),
     M_mapCol( new DataMap(worldcomm) )
 {
-    //std::cout << "creating graph " << this << "\n";
+    const int myrank = this->worldComm().globalRank();
+    const int worldsize = this->worldComm().globalSize();
+    const size_type _size1 = last_row_entry_on_proc - first_row_entry_on_proc+1;
+    const size_type _size2 = last_col_entry_on_proc - first_col_entry_on_proc+1;
+
+    for (int proc = 0 ; proc < worldsize ; ++proc)
+    {
+        M_mapRow->setFirstDofGlobalCluster( proc,first_row_entry_on_proc );
+        M_mapRow->setLastDofGlobalCluster(proc, last_row_entry_on_proc );
+        M_mapCol->setFirstDofGlobalCluster( proc,first_col_entry_on_proc );
+        M_mapCol->setLastDofGlobalCluster(proc, last_col_entry_on_proc );
+
+
+        M_mapRow->setNLocalDofWithoutGhost( proc, _size1 );
+        M_mapRow->setNLocalDofWithGhost( proc, _size1 );
+        M_mapCol->setNLocalDofWithoutGhost( proc, _size2 );
+        M_mapCol->setNLocalDofWithGhost( proc, _size2 );
+
+        M_mapRow->setFirstDof( proc, 0 );
+        M_mapCol->setFirstDof( proc, 0 );
+        if (_size2==0)
+            M_mapCol->setLastDof( proc, 0 );
+        else
+            M_mapCol->setLastDof( proc, _size2-1 );
+
+        if ( _size1==0 )
+            M_mapRow->setLastDof( proc, 0 );
+        else
+            M_mapRow->setLastDof( proc, _size1-1 );
+
+        if ( proc==myrank )
+        {
+            M_mapRow->setNDof( _size1 );
+            M_mapCol->setNDof( _size2 );
+        }
+
+    }
+    M_mapRow->resizeMapGlobalProcessToGlobalCluster( M_mapRow->nLocalDofWithGhost(myrank ) );
+    M_mapRow->resizeMapGlobalClusterToGlobalProcess( M_mapRow->nLocalDofWithoutGhost(myrank) );
+    M_mapCol->resizeMapGlobalProcessToGlobalCluster( M_mapCol->nLocalDofWithGhost(myrank) );
+    M_mapCol->resizeMapGlobalClusterToGlobalProcess( M_mapCol->nLocalDofWithoutGhost(myrank) );
+
+    for ( size_type i=0;i<_size1;++i )
+    {
+        M_mapRow->setMapGlobalProcessToGlobalCluster( i,first_row_entry_on_proc+i );
+        M_mapRow->setMapGlobalClusterToGlobalProcess( first_row_entry_on_proc+i,i );
+    }
+
+    for( size_type j=0;j<_size2;++j )
+    {
+        M_mapCol->setMapGlobalProcessToGlobalCluster( j,first_col_entry_on_proc+j );
+        M_mapCol->setMapGlobalClusterToGlobalProcess( first_col_entry_on_proc+j,j );
+    }
+
 }
 
 
@@ -76,7 +129,23 @@ GraphCSR::GraphCSR( boost::shared_ptr<DataMap> const& mapRow,
     M_mapCol(mapCol)
 {}
 
-
+GraphCSR::GraphCSR( DataMap const& mapRow,
+                    DataMap const& mapCol )
+    :
+    M_is_closed( false ),
+    M_worldComm( mapRow.worldComm() ),
+    M_first_row_entry_on_proc( mapRow.firstDofGlobalClusterWorld() ),
+    M_last_row_entry_on_proc( mapRow.lastDofGlobalClusterWorld() ),
+    M_first_col_entry_on_proc( mapCol.firstDofGlobalClusterWorld() ),
+    M_last_col_entry_on_proc( mapCol.lastDofGlobalClusterWorld() ),
+    M_max_nnz( 0 ),
+    M_n_total_nz( 0 ),
+    M_n_nz( 0 ),
+    M_n_oz( 0 ),
+    M_storage(),
+    M_mapRow( new DataMap(mapRow) ),
+    M_mapCol( new DataMap(mapCol) )
+{}
 
 
 
