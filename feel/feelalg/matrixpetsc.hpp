@@ -454,7 +454,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
 
     void updatePCFieldSplit( PC & pc );
