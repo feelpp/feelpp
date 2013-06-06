@@ -312,10 +312,13 @@ public:
                               _pattern=pattern,
                               _pattern_block=pattern_block.transpose(),
                               _diag_is_nonzero=false,// because transpose(do just after)
+                              _close=false,
                               _collect_garbage=collect_garbage );
             // get the good graph
-            auto graph = s->graph()->transpose();
-            if ( diag_is_nonzero ) { graph->addMissingZeroEntriesDiagonal();graph->close(); }
+            auto graph = s->graph()->transpose(false);
+            if ( diag_is_nonzero )
+                graph->addMissingZeroEntriesDiagonal();
+            graph->close();
 
             //maybe do that
             //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
