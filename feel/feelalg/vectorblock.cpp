@@ -120,12 +120,12 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
 
     if ( copy_values )
     {
-        size_type start_i=0;
-
+        size_type start_i = M_vec->map().firstDof();
         for ( uint i=0; i<nRow; ++i )
         {
+            blockVec( i,0 )->close(); // not good but necessary here (TODO)
             this->updateBlockVec( blockVec( i,0 ),start_i );
-            start_i += blockVec( i,0 )->size();
+            start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
         }
     }
 }
@@ -134,9 +134,10 @@ template <typename T>
 void
 VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
 {
-    const size_type size = m->localSize();
+    auto const& blockmap = m->map();
+    const size_type size = blockmap.nLocalDofWithGhost() ;
 
-    for ( uint i=0; i<size; ++i )
+    for ( size_type i=0; i<size; ++i )
         M_vec->set( start_i+i,m->operator()( i ) );
 }
 
