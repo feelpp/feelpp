@@ -1337,8 +1337,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                         size_type neighbor_id = elem.neighbor( ms ).first;
                         size_type neighbor_process_id = elem.neighbor( ms ).second;
 
-                        if ( neighbor_id != invalid_size_type_value )
-                            //&& neighbor_process_id != proc_id )
+                        // warning ! the last condition is a temporary solution
+                        if ( neighbor_id != invalid_size_type_value
+                            && neighbor_process_id == proc_id )
                         {
 
                             neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
@@ -1346,7 +1347,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 
                             if ( neighbor_id == neighbor->id()  )
                             {
-                                neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
+                                //neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
+                                neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
 
                                 if ( do_less )
                                 {
