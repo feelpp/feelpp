@@ -508,7 +508,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     GModel* newGmshModel = new GModel();
     GModel::current()->setName( _name );
+#if !defined( __APPLE__ )
     GModel::current()->setFileName( _name );
+#endif
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
     LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
