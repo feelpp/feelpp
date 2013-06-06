@@ -1512,6 +1512,7 @@ MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vect
     const size_type nRowInBlock = mapRowBlock.nLocalDofWithGhost();
     const int myrank = mapRowBlock.worldComm().globalRank();
     int ierr = 0;
+    std::vector<PetscInt> idcXShift;
 
     for ( size_type k=0;k<nRowInBlock;++k )
     {
@@ -1524,8 +1525,8 @@ MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vect
             ierr = MatGetRow( blockMatrix->mat(), gDof, &ncolsX, &idcX, &valX );
             CHKERRABORT( this->comm(),ierr );
 
-            const PetscInt gDofShift=start_i[myrank]+ (gDof-firstDofGCrow);
-            std::vector<PetscInt> idcXShift(ncolsX);
+            const PetscInt gDofShift = start_i[myrank]+ (gDof-firstDofGCrow);
+            idcXShift.resize(ncolsX,0);
             for (int c=0;c<ncolsX;++c)
             {
                 if ( mapColBlock.dofGlobalClusterIsOnProc(idcX[c]) )
