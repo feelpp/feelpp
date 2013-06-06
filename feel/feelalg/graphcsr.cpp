@@ -455,13 +455,6 @@ GraphCSR::mergeBlockGraph( self_ptrtype const& g,
             //globGraph->row(theglobalrow).template get<2>().insert(ivec.begin(), ivec.end());
             row.get<2>().insert( ivec.begin(), ivec.end() );
         }
-#if 0
-        // update datamap
-        M_mapRow->setMapGlobalProcessToGlobalCluster(thelocalrow, theglobalrow);
-        M_mapCol->setMapGlobalProcessToGlobalCluster(thelocalrow, theglobalrow);
-        M_mapRow->setMapGlobalClusterToGlobalProcess( theglobalrow,thelocalrow );
-        M_mapCol->setMapGlobalClusterToGlobalProcess( theglobalrow,thelocalrow );
-#endif
     }
 
 }
@@ -485,11 +478,22 @@ GraphCSR::mergeBlockGraphMPI( self_ptrtype const& g,vf::BlocksBase<self_ptrtype>
 
         if (it->second.get<0>()!=g->worldComm().globalRank() )
         {
+            //continue;
             const size_type realrowStart = this->mapRow().firstDofGlobalCluster( proc )
-                + this->nLocalDofWithoutGhostOnProcStartRow( blockSet, proc, i, j )
-                -g->mapRow().firstDofGlobalCluster( proc );
-            theglobalrow = realrowStart+it->first;
+                + this->nLocalDofWithoutGhostOnProcStartRow( blockSet, proc, i, j );
+            theglobalrow = realrowStart+(it->first-g->mapRow().firstDofGlobalCluster( proc ));
 
+
+            DCHECK( this->mapRow().searchGlobalProcessDof(theglobalrow).get<0>() )
+                << " my rank " << g->worldComm().globalRank()
+                << " does not contain this ghost dof " << theglobalrow
+                << "in DataMapRow\n";
+#if 0
+            bool find=false;
+            size_type gDofProcess = 0;
+            boost::tie(find,gDofProcess) = this->mapRow().searchGlobalProcessDof(theglobalrow);
+            if (!find) { std::cout << "STRANGE(continue) "<< std::endl; continue; }
+#endif
             DCHECK(M_mapRow->mapGlobalProcessToGlobalCluster(thelocalrow) == theglobalrow)
                 << " my rank " << g->worldComm().globalRank()
                 << " thelocalrow " << thelocalrow
@@ -588,6 +592,7 @@ GraphCSR::nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const &
 void
 GraphCSR::zero()
 {
+#if 0
     const size_type firstRow = this->firstRowEntryOnProc();
     const size_type rowEnd = firstRow + std::min(this->mapRow().nLocalDofWithoutGhost(),this->mapCol().nLocalDofWithoutGhost());
     for ( size_type i = firstRow ; i<rowEnd ; ++i )
@@ -600,12 +605,22 @@ GraphCSR::zero()
             row.get<2>().clear(); //all is zero
         }
     }
+#else
+    if ( !this->empty() )
+    {
+        M_storage.clear();
+        M_is_closed = false;
+        this->close();
+    }
 
+#endif
 }
 
 GraphCSR::self_ptrtype
 GraphCSR::transpose( bool doClose )
 {
+    DVLOG(2) << " GraphCSR compute transpose graph\n";
+
     if ( M_graphT ) return M_graphT;
 
     //this->close();
@@ -666,20 +681,25 @@ GraphCSR::transpose( bool doClose )
 void
 GraphCSR::addMissingZeroEntriesDiagonal()
 {
-    size_type firstRow = this->firstRowEntryOnProc();
+    if ( this->mapRow().worldComm().size() >1 && this->mapRow().nDof()!=this->mapCol().nDof() )
+        return;
+
+    DVLOG(2) << " GraphCSR addMissingZeroEntriesDiagonal in graph\n";
+
+    const size_type firstRow = this->firstRowEntryOnProc();
     size_type firstCol = this->firstColEntryOnProc();
     const size_type rowEnd = firstRow+std::min(this->mapRow().nLocalDofWithoutGhost(),this->mapCol().nLocalDofWithoutGhost());
     for ( size_type i = firstRow ; i<rowEnd ; ++i,++firstCol )
     {
         if ( this->storage().find( firstRow )!=this->end() )
         {
-            this->row( i ).get<2>().insert( firstCol ); // insert col on diag
+            this->row( i ).get<2>().insert( i/*firstCol*/ ); // insert col on diag
         }
-        else
+        else // if (this->mapCol().dofGlobalClusterIsOnProc( i/*firstCol*/ ) ) //&& this->mapCol().dofGlobalClusterIsOnProc( firstCol ))
         {
-            this->row( i ).get<0>() = this->worldComm().globalRank();//proc
+            this->row( i ).get<0>() = this->mapRow().worldComm().globalRank();//proc
             this->row( i ).get<1>() = this->mapRow().mapGlobalClusterToGlobalProcess( i-firstRow );//local index
-            this->row( i ).get<2>().insert(firstCol); // insert col on diag
+            this->row( i ).get<2>().insert(i/*firstCol*/); // insert col on diag
         }
     }
 }
@@ -857,7 +877,7 @@ GraphCSR::close()
                 }
 
             //------------------------------------------------------
-            this->worldComm().globalComm().barrier();
+            //this->worldComm().globalComm().barrier();
             //------------------------------------------------------
 
             std::vector<size_type> nDataSize_vec(nProc);
@@ -887,7 +907,7 @@ GraphCSR::close()
                 }
 
             //------------------------------------------------------
-            this->worldComm().globalComm().barrier();
+            //this->worldComm().globalComm().barrier();
             //------------------------------------------------------
             for ( int proc=0; proc<nProc; ++proc )
                 {
@@ -899,7 +919,8 @@ GraphCSR::close()
 
                                     size_type globalindex = vecToRecv[proc][istart];
 
-                                    DCHECK( this->mapRow().dofGlobalClusterIsOnProc( globalindex ) ) << " GlobalCluster dofGlobalClusterIsOnProc Is not on proc \n";
+                                    DCHECK( this->mapRow().dofGlobalClusterIsOnProc( globalindex ) ) << " GlobalCluster dofGlobalClusterIsOnProc Is not on proc "
+                                                                                                     << " with globalindex " << globalindex << "\n";
 
                                     size_type localindex = this->mapRow().mapGlobalClusterToGlobalProcess( globalindex - this->mapRow().firstDofGlobalCluster()  );
 
