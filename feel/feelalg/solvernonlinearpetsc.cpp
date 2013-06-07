@@ -40,7 +40,6 @@
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 
-
 //--------------------------------------------------------------------
 // Functions with C linkage to pass to PETSc.  PETSc will call these
 // methods as needed.
@@ -139,8 +138,8 @@ extern "C"
 
         if ( solver->comm().size()>1 )
         {
-            R.reset( new Feel::VectorPetscMPI<double>( r,solver->mapRow() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
+            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapRowPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
         }
 
         else // MPI
@@ -188,8 +187,8 @@ extern "C"
 
         if ( solver->comm().size()>1 )
         {
-            Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRow(),solver->mapCol() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
+            Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
         }
 
         else
@@ -632,8 +631,8 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
         r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
         //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
-        this->setMapRow( jac_in->mapRow() );
-        this->setMapCol( jac_in->mapCol() );
+        this->setMapRow( jac_in->mapRowPtr() );
+        this->setMapCol( jac_in->mapColPtr() );
     }
     else
     {

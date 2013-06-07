@@ -49,7 +49,7 @@ MatrixPetsc<T>::MatrixPetsc()
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
     :
     super( dmRow,dmCol,worldComm ),
     _M_destroy_mat_on_exit( true )
@@ -68,8 +68,8 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     PetscInt ncol;
     ISGetSize(isrow,&nrow);
     ISGetSize(iscol,&ncol);
-    DataMap dmrow(nrow, nrow);
-    DataMap dmcol(ncol, ncol);
+    datamap_ptrtype dmrow( new datamap_type(nrow, nrow) );
+    datamap_ptrtype dmcol( new datamap_type(ncol, ncol) );
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
     ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
@@ -114,8 +114,8 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     PetscFree(rowMap);
     PetscFree(colMap);
 
-    DataMap dmrow(nrow, nrow);
-    DataMap dmcol(ncol, ncol);
+    datamap_ptrtype dmrow( new datamap_type(nrow, nrow) );
+    datamap_ptrtype dmcol( new datamap_type(ncol, ncol) );
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
     ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
@@ -144,7 +144,7 @@ MatrixPetsc<T>::MatrixPetsc( Mat m )
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( Mat m, DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
     :
     super( dmRow,dmCol,worldComm ),
     _M_destroy_mat_on_exit( false )
@@ -1620,7 +1620,7 @@ MatrixPetscMPI<T>::MatrixPetscMPI()
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm )
+MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
     :
     super( dmRow,dmCol,worldComm )
 {}
@@ -1629,9 +1629,9 @@ MatrixPetscMPI<T>::MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, W
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( Mat m, DataMap const& dmRow, DataMap const& dmCol )
+MatrixPetscMPI<T>::MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
     :
-    super( m, dmRow, dmCol, dmRow.worldComm() )
+    super( m, dmRow, dmCol, dmRow->worldComm() )
 {}
 
 //----------------------------------------------------------------------------------------------------//
@@ -2455,7 +2455,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 
     if ( false ) // on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
         {
-            VectorPetscMPI<value_type> diag( this->mapRow() );
+            VectorPetscMPI<value_type> diag( this->mapRowPtr() );
 
             //VectorPetsc<value_type> diag( this->mapRow().nLocalDofWithoutGhost(),this->mapRow().worldComm() );
             //diag( this->mapRow().nLocalDofWithGhost(),this->mapRow().worldComm().subWorldComm(this->mapRow().worldComm().mapColorWorld()[this->mapRow().worldComm().globalRank()  ] ));
@@ -2542,7 +2542,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
     {
         VectorPetscMPI<T> const& v   = dynamic_cast<VectorPetscMPI<T> const&>( __v );
         VectorPetscMPI<T> const& u   = dynamic_cast<VectorPetscMPI<T> const&>( __u );
-        VectorPetscMPI<value_type> z( this->mapRow() );
+        VectorPetscMPI<value_type> z( this->mapRowPtr() );
 
         if ( !transpose )
             MatMult( this->mat(), u.vec(), z.vec() );
@@ -2554,7 +2554,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
 
     else
     {
-        VectorPetscMPI<value_type> u( this->mapRow() );
+        VectorPetscMPI<value_type> u( this->mapRowPtr() );
         {
             //size_type s = u.localSize();
             size_type s = u.map().nLocalDofWithGhost();
@@ -2564,7 +2564,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
                 u.set( start + i, __u( start + i ) );
         }
 
-        VectorPetscMPI<value_type> v( this->mapRow() );
+        VectorPetscMPI<value_type> v( this->mapRowPtr() );
         {
             //size_type s = v.localSize();
             size_type s = v.map().nLocalDofWithGhost();
@@ -2573,7 +2573,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
             for ( size_type i = 0; i < s; ++i )
                 v.set( start + i, __v( start + i ) );
         }
-        VectorPetscMPI<value_type> z( this->mapRow() );
+        VectorPetscMPI<value_type> z( this->mapRowPtr() );
 
         u.close();
         v.close();
