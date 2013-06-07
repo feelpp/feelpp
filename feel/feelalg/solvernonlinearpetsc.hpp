@@ -96,6 +96,9 @@ public:
     typedef typename super::map_dense_matrix_type map_dense_matrix_type;
     typedef typename super::map_dense_vector_type map_dense_vector_type;
 
+    typedef DataMap datamap_type;
+    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -174,20 +177,28 @@ public:
 
 
     //@}
-    DataMap const& mapRow() const
+    datamap_type const& mapRow() const
+    {
+        return *M_mapRow;
+    }
+    datamap_type const& mapCol() const
+    {
+        return *M_mapCol;
+    }
+    datamap_ptrtype const& mapRowPtr() const
     {
         return M_mapRow;
     }
-    DataMap const& mapCol() const
+    datamap_ptrtype const& mapColPtr() const
     {
         return M_mapCol;
     }
 
-    void setMapRow( DataMap const& d )
+    void setMapRow( datamap_ptrtype const& d )
     {
         M_mapRow=d;
     }
-    void setMapCol( DataMap const& d )
+    void setMapCol( datamap_ptrtype const& d )
     {
         M_mapCol=d;
     }
@@ -230,7 +241,7 @@ private:
     KSP M_ksp;
 
 
-    DataMap M_mapRow,M_mapCol;
+    datamap_ptrtype M_mapRow,M_mapCol;
 
 };
 
@@ -239,8 +250,8 @@ inline
 SolverNonLinearPetsc<T>::SolverNonLinearPetsc(WorldComm const& worldComm)
 :
     super(worldComm),
-    M_mapRow(worldComm),
-    M_mapCol(worldComm)
+    M_mapRow(new datamap_type(worldComm)),
+    M_mapCol(new datamap_type(worldComm))
 {}
 
 

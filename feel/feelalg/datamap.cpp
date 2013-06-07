@@ -35,53 +35,38 @@ DataMap::DataMap( WorldComm const& _worldComm )
     :
     M_closed( false ),
     _M_n_dofs( 0 ),
-    _M_n_localWithoutGhost_df( ),
-    _M_n_localWithGhost_df( ),
-    _M_first_df( ),
-    _M_last_df(),
-    _M_first_df_globalcluster(),
-    _M_last_df_globalcluster(),
+    _M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
+    _M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
+    _M_first_df( _worldComm.globalSize(),0 ),
+    _M_last_df( _worldComm.globalSize(),0 ),
+    _M_first_df_globalcluster( _worldComm.globalSize(),0 ),
+    _M_last_df_globalcluster( _worldComm.globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
     M_worldComm( _worldComm )
-{
-    //std::cout << "\nDataMap : build empty! on godrank " << this->worldComm().godRank() << std::endl;
-    _M_n_localWithoutGhost_df.resize( this->worldComm().globalSize() );
-    _M_n_localWithGhost_df.resize( this->worldComm().globalSize() );
-    _M_first_df.resize( this->worldComm().globalSize() );
-    _M_last_df.resize( this->worldComm().globalSize() );
-    _M_first_df_globalcluster.resize( this->worldComm().globalSize() );
-    _M_last_df_globalcluster.resize( this->worldComm().globalSize() );
-}
+{}
+
 DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     :
     M_closed( false ),
     _M_n_dofs( n ),
-    _M_n_localWithoutGhost_df( ),
-    _M_n_localWithGhost_df( ),
-    _M_first_df(),
-    _M_last_df(),
-    _M_first_df_globalcluster(),
-    _M_last_df_globalcluster(),
+    _M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
+    _M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
+    _M_first_df( _worldComm.globalSize(),0 ),
+    _M_last_df( _worldComm.globalSize(),0 ),
+    _M_first_df_globalcluster( _worldComm.globalSize(),0 ),
+    _M_last_df_globalcluster( _worldComm.globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
     M_worldComm( _worldComm )
 {
-    _M_n_localWithoutGhost_df.resize( this->worldComm().globalSize() );
-    _M_n_localWithGhost_df.resize( this->worldComm().globalSize() );
-    _M_first_df.resize( this->worldComm().globalSize() );
-    _M_last_df.resize( this->worldComm().globalSize() );
-    _M_first_df_globalcluster.resize( this->worldComm().globalSize() );
-    _M_last_df_globalcluster.resize( this->worldComm().globalSize() );
 
     FEELPP_ASSERT ( n_local <= n )
     ( n_local )( n )
     ( this->worldComm().globalRank() )
     ( this->worldComm().globalSize() ).error( "Invalid local vector size" );
-
-    _M_n_dofs = n;
 
 #ifdef FEELPP_HAS_MPI
     std::vector<int> local_sizes     ( this->worldComm().size(), 0 );
