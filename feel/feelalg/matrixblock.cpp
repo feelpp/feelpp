@@ -97,7 +97,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
     //graph->printPython("GraphG.py");
 
     size_type properties = NON_HERMITIAN;
-    M_mat = backend.newMatrix( graph->mapCol(),  graph->mapRow(), properties, false );
+    M_mat = backend.newMatrix( graph->mapColPtr(),  graph->mapRowPtr(), properties, false );
     M_mat->init( graph->mapRow().nDof(), graph->mapCol().nDof(),
                  graph->mapRow().nLocalDofWithoutGhost(), graph->mapCol().nLocalDofWithoutGhost(),
                  graph );
