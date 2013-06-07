@@ -87,6 +87,10 @@ public:
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
     typedef VectorEigen<value_type> this_type;
     typedef typename super1::clone_ptrtype clone_ptrtype;
+
+    typedef typename super1::datamap_type datamap_type;
+    typedef typename super1::datamap_ptrtype datamap_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -97,7 +101,7 @@ public:
 
     VectorEigen( size_type __s );
 
-    VectorEigen( DataMap const& dm );
+    VectorEigen( datamap_ptrtype const& dm );
 
     VectorEigen( size_type __s, size_type __n_local );
 
@@ -136,7 +140,7 @@ public:
     /**
      * init from a \p DataMap
      */
-    void init( DataMap const& dm );
+    void init( datamap_ptrtype const& dm );
 
 
     //@}

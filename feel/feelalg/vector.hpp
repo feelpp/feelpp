@@ -57,12 +57,14 @@ public:
     typedef boost::shared_ptr<Vector<T> > self_ptrtype;
     typedef boost::shared_ptr<Vector<T> > clone_ptrtype;
 
+    typedef DataMap datamap_type;
+    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
     /**
      *  Dummy-Constructor. Dimension=0
      */
     Vector ();
 
-    Vector ( DataMap const& n );
+    Vector ( datamap_ptrtype const& n );
 
     /**
      * Constructor. Set dimension to \p n and initialize all elements with zero.
@@ -83,11 +85,17 @@ public:
      */
     virtual ~Vector ();
 
-    DataMap const& map() const
+    datamap_type const& map() const
+    {
+        return *M_map;
+    }
+
+    datamap_ptrtype const& mapPtr() const
     {
         return M_map;
     }
-    void setMap( DataMap const& d )
+
+    void setMap( datamap_ptrtype const& d )
     {
         M_map=d;
     }
@@ -185,7 +193,7 @@ public:
 
 
     // surement a virtualiser!!!
-    void init ( DataMap const& dm )
+    void init ( datamap_ptrtype const& dm )
     {
         M_is_closed = false;
         M_is_initialized = false;
@@ -279,7 +287,7 @@ public:
      */
     virtual size_type size () const
     {
-        return M_map.nDof();
+        return M_map->nDof();
     }
 
     /**
@@ -288,7 +296,7 @@ public:
      */
     virtual size_type localSize() const
     {
-        return M_map.nLocalDofWithGhost();
+        return M_map->nLocalDofWithGhost();
     }
 
     /**
@@ -298,7 +306,7 @@ public:
      */
     virtual size_type firstLocalIndex() const
     {
-        return M_map.minMyGID();
+        return M_map->minMyGID();
     }
 
     /**
@@ -308,12 +316,12 @@ public:
      */
     virtual size_type lastLocalIndex() const
     {
-        return M_map.maxMyGID()+1;
+        return M_map->maxMyGID()+1;
     }
 
     virtual bool localIndexIsGhost(size_type localDof) const
     {
-        return M_map.dofGlobalProcessIsGhost(localDof);
+        return M_map->dofGlobalProcessIsGhost(localDof);
     }
 
     /**
@@ -321,7 +329,7 @@ public:
      */
     WorldComm const& comm() const
     {
-        return M_map.comm();
+        return M_map->comm();
     }
 
     /**
@@ -549,7 +557,7 @@ protected:
     /**
      * data distribution map of the vector over the processors
      */
-    DataMap M_map;
+    datamap_ptrtype M_map;
 };
 
 typedef Vector<double> vector_type;

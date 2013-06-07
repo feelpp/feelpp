@@ -287,7 +287,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
     {
         // save current solution in case of failure
         x->close();
-        x_save = this->newVector(x->map());
+        x_save = this->newVector(x->mapPtr());
         *x_save=*x;
         this->setPrecMatrixStructure( SAME_PRECONDITIONER );
     }
@@ -363,7 +363,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     {
         // save current solution in case of failure
         x->close();
-        x_save = this->newVector(x->map());
+        x_save = this->newVector(x->mapPtr());
         *x_save=*x;
 
         // if first time or rebuild prec at first newton step, need to get matStructInitial
