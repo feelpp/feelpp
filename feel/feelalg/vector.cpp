@@ -75,8 +75,14 @@ Vector<T>::Vector ( const size_type n,
     M_map( new datamap_type(n, n_local, _worldComm) )
 {}
 
-
-
+template <typename T>
+Vector<T>::Vector ( Vector const& v )
+    :
+    M_is_closed( v.M_is_closed ),
+    M_is_initialized( v.M_is_initialized ),
+    M_map( v.M_map )
+{
+}
 template <typename T>
 
 Vector<T>::~Vector ()
