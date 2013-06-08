@@ -198,6 +198,9 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
+    typedef Preconditioner<double> preconditioner_type;
+    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+
     //here a fusion vector containing sequence 0 ... nb_spaces
     //useful to acces to a component of a composite space in ComputeIntegrals
     static const int nb_spaces = functionspace_type::nSpaces;
@@ -294,6 +297,13 @@ public:
         this->setTruthModel( model );
         if ( this->loadDB() )
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
+
+        M_preconditioner = preconditioner(_pc=(PreconditionerType) M_backend->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                          _backend= M_backend,
+                                          _pcfactormatsolverpackage=(MatSolverPackageType) M_backend->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                          _worldcomm=M_backend->comm(),
+                                          _prefix=M_backend->prefix() ,
+                                          _rebuild=true);
     }
 
 
@@ -1140,6 +1150,9 @@ private:
     bool M_use_newton;
 
     bool M_offline_step;
+
+    preconditioner_ptrtype M_preconditioner;
+
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1157,13 +1170,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_m
 
     int nl = M_model->Nl(); //number of outputs
 
-    std::vector< std::vector<sparse_matrix_ptrtype> > Aqm;
-    std::vector< std::vector<sparse_matrix_ptrtype> > Mqm;
-    std::vector< std::vector<std::vector<vector_ptrtype> > > Fqm;
-
-    beta_vector_type betaAqm;
-    std::vector<beta_vector_type> betaFqm;
-
     int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
     double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
     double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
@@ -1177,49 +1183,20 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu , sparse_m
     auto un = M_model->functionSpace()->element();
     un = *u;
 
-    //mu-independant terms of the affine decomposition
-    boost::tie( boost::tuples::ignore , Aqm, Fqm ) = M_model->computeAffineDecomposition();
-
     do
     {
-        //compute beta (eim) using the solution ( from fixed point - with affine decomposition )
-        boost::tie( boost::tuples::ignore, betaAqm, betaFqm ) = M_model->computeBetaQm( un , mu );
-
-        A->zero();
-        F[0]->zero();
-        for(int l=1; l<nl; l++ )
-            F[l]->zero();
-
-        //assemble matrix and vector
-        int q_max = M_model->Qa();
-        for ( size_type q = 0; q < q_max ; ++q )
-        {
-            int m_max = M_model->mMaxA(q);
-            for(size_type m = 0; m < m_max ; ++m )
-                A->addMatrix( betaAqm[q][m] , Aqm[q][m] );
-        }
-
-        int nb_output=1;
-        if( solve_dual_problem )
-            nb_output = nl;
-
-        for(int l=0; l<nb_output; l++)
-        {
-            q_max = M_model->Ql( l );
-            for ( size_type q = 0; q < q_max; ++q )
-            {
-                int m_max = M_model->mMaxF( l, q );
-                for ( size_type m = 0; m < m_max; ++m )
-                    F[l]->add( betaFqm[l][q][m] , Fqm[l][q][m] );
-            }
-        }
-
+        //merge all matrices/vectors contributions from affine decomposition
+        //result : a tuple : M , A and F
+        auto merge = M_model->update( mu );
+        A = merge.template get<1>();
+        F = merge.template get<2>();
         //backup
         uold = un;
 
         //solve
         //M_backend->solve( _matrix=A , _solution=un, _rhs=F[0]);
-        backend()->solve( _matrix=A , _solution=un, _rhs=F[0] );
+        M_preconditioner->setMatrix( A );
+        M_backend->solve( _matrix=A , _solution=un, _rhs=F[0] , _prec=M_preconditioner );
 
         //on each subspace the norme of the increment is computed and then we perform the sum
         increment_norm = M_model->computeNormL2( un , uold );
@@ -2187,9 +2164,9 @@ CRB<TruthModelType>::offline()
                     {
                         for ( size_type j = 0; j < M_N; ++j )
                         {
-                            M_Aqm_pr[q][m]( i, j ) = Aqm[q][m]->energy( M_WN[i], M_WN[j] );
-                            M_Aqm_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                            M_Aqm_pr_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WN[j] );
+                            M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_WN[i], M_WN[j] );//energy
+                            M_Aqm_du[q][m]( i, j ) = M_model->Aqm( q , m , M_WNdu[i], M_WNdu[j], true );
+                            M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_WNdu[i], M_WN[j] );
                         }
                     }
 
@@ -2197,9 +2174,9 @@ CRB<TruthModelType>::offline()
                     {
                         for ( size_type i = 0; i < M_N; ++i )
                         {
-                            M_Aqm_pr[q][m]( i, j ) = Aqm[q][m]->energy( M_WN[i], M_WN[j] );
-                            M_Aqm_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                            M_Aqm_pr_du[q][m]( i, j ) = Aqm[q][m]->energy( M_WNdu[i], M_WN[j] );
+                            M_Aqm_pr[q][m]( i, j ) = M_model->Aqm(q , m , M_WN[i], M_WN[j] );
+                            M_Aqm_du[q][m]( i, j ) = M_model->Aqm(q , m , M_WNdu[i], M_WNdu[j], true );
+                            M_Aqm_pr_du[q][m]( i, j ) = M_model->Aqm(q , m , M_WNdu[i], M_WN[j] );
                         }
                     }
                 }//loop over m
@@ -2303,18 +2280,18 @@ CRB<TruthModelType>::offline()
                 {
                     for ( size_type j = 0; j < M_N; ++j )
                     {
-                        M_Mqm_pr[q][m]( i, j ) = Mqm[q][m]->energy( M_WN[i], M_WN[j] );
-                        M_Mqm_du[q][m]( i, j ) = Mqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Mqm_pr_du[q][m]( i, j ) = Mqm[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        M_Mqm_pr[q][m]( i, j ) = M_model->Mqm(q , m , M_WN[i], M_WN[j] );
+                        M_Mqm_du[q][m]( i, j ) = M_model->Mqm(q , m , M_WNdu[i], M_WNdu[j], true );
+                        M_Mqm_pr_du[q][m]( i, j ) = M_model->Mqm( q , m , M_WNdu[i], M_WN[j] );
                     }
                 }
                 for ( size_type j = M_N-number_of_added_elements; j < M_N ; j++ )
                 {
                     for ( size_type i = 0; i < M_N; ++i )
                     {
-                        M_Mqm_pr[q][m]( i, j ) = Mqm[q][m]->energy( M_WN[i], M_WN[j] );
-                        M_Mqm_du[q][m]( i, j ) = Mqm[q][m]->energy( M_WNdu[i], M_WNdu[j], true );
-                        M_Mqm_pr_du[q][m]( i, j ) = Mqm[q][m]->energy( M_WNdu[i], M_WN[j] );
+                        M_Mqm_pr[q][m]( i, j ) = M_model->Mqm(q , m , M_WN[i], M_WN[j] );
+                        M_Mqm_du[q][m]( i, j ) = M_model->Mqm(q , m , M_WNdu[i], M_WNdu[j], true );
+                        M_Mqm_pr_du[q][m]( i, j ) = M_model->Mqm(q , m , M_WNdu[i], M_WN[j] );
                     }
                 }
             }//loop over m
@@ -3147,7 +3124,8 @@ CRB<TruthModelType>::check( size_type N ) const
         std::cout << "[check] uN( " << k << " ) = " << uN( k ) << "\n";
 #endif
         // }
-        double sfem = M_model->output( M_output_index, mu );
+        element_type u_fem; bool need_to_solve=true;
+        double sfem = M_model->output( M_output_index, mu , u_fem , need_to_solve );
 
         int size = mu.size();
         std::cout<<"    o mu = [ ";
@@ -3199,7 +3177,8 @@ CRB<TruthModelType>::computeErrorEstimationEfficiencyIndicator ( parameterspace_
     {
         parameter_type const& mu = M_Xi->at( k );
         double s = lb( RBsize, mu, uN, uNdu );//output
-        double sfem = M_model->output( M_output_index, mu ); //true ouput
+        element_type u_fem; bool need_to_solve = true;
+        double sfem = M_model->output( M_output_index, mu , u_fem , need_to_solve); //true ouput
         double error_estimation = delta( RBsize,mu,uN,uNdu );
         ei( k ) = error_estimation/math::abs( sfem-s );
         std::cout<<" efficiency indicator = "<<ei( k )<<" for parameters {";
