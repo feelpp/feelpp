@@ -165,6 +165,13 @@ public:
                                                       WorldComm const& worldComm=Environment::worldComm(),
                                                       std::string const& prefix="" );
 
+    static void setPetscMGCoarsePreconditionerType( PC& pc,
+                                                    WorldComm const& worldComm=Environment::worldComm(),
+                                                    std::string const& prefix="" );
+    static void setPetscMGLevelsPreconditionerType( PC& pc,
+                                                    WorldComm const& worldComm=Environment::worldComm(),
+                                                    std::string const& prefix="" );
+
 private:
     /**
      * Some PETSc preconditioners (ILU, LU) don't work in parallel.  This function

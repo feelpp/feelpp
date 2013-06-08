@@ -44,152 +44,41 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
     super(),
     M_mat()
 {
+    const uint16_type nRow = blockSet.nRow();
+    const uint16_type nCol = blockSet.nCol();
 
-    auto v = blockSet.getSetOfBlocks();
+    BlocksBaseGraphCSR blockGraph(nRow,nCol);
+    for ( uint16_type i=0; i<nRow; ++i )
+        for ( uint16_type j=0; j<nCol; ++j )
+            blockGraph(i,j) = blockSet(i,j)->graph();
 
-    auto NR = blockSet.nRow();
-    auto NC = blockSet.nCol();
-
-
-    //std::cout << "[MatrixBlockBase::MatrixBlockBase] compute size1 size2" << std::endl;
-    size_type _size2 = 0;
-
-    for ( uint i=0; i<NC; ++i )
-        _size2 += v[i]->size2();
-
-    size_type _size1 =0;
-
-    for ( uint i=0; i<NR; ++i )
-        _size1 += v[i*NC]->size1();
-
-    //std::cout << "[MatrixBlockBase::MatrixBlockBase] build graph" << std::endl;
-    graph_ptrtype graph( new graph_type( 0,0,_size1-1,0,_size2-1 ) ); //( new graph_type( ) );
-    size_type start_i=0;
-    size_type start_j=0;
-
-    for ( uint i=0; i<NR; ++i )
-    {
-        start_j=0;
-
-        for ( uint j=0; j<NC; ++j )
-        {
-            v[i*NC+j]->close();
-            this->mergeBlockGraph( graph,v[i*NC+j],start_i,start_j );
-
-            start_j += v[i*NC+j]->size2();
-        }
-
-        start_i += v[i*NC]->size1();
-    }
-
-    if ( diag_is_nonzero ) graph->addMissingZeroEntriesDiagonal();
-
-    graph->close();
-
-    // std::cout << "[MatrixBlockBase::MatrixBlockBase] build Matrix" << std::endl;
-    M_mat = backend.newMatrix( _size1,_size2,_size1,_size2,graph );
-    M_mat->zero();
-    //M_mat->graph()->showMe();
+    M_mat = backend.newBlockMatrix(_block=blockGraph);
 
     if ( copy_values )
     {
-        start_i=0;
-        start_j=0;
+        auto const& mapRow = M_mat->mapRow();
+        auto const& mapCol = M_mat->mapCol();
+        const int worldsize = mapRow.worldComm().globalSize();
+        const int myrank = mapRow.worldComm().globalRank();
 
-        for ( uint i=0; i<NR; ++i )
+        std::vector<size_type> start_i = M_mat->mapRow().firstDofGlobalClusterWorld();
+        for ( uint16_type i=0; i<nRow; ++i )
         {
-            start_j=0;
+            std::vector<size_type> start_j = M_mat->mapCol().firstDofGlobalClusterWorld();
 
-            for ( uint j=0; j<NC; ++j )
+            for ( uint16_type j=0; j<nCol; ++j )
             {
-                this->updateBlockMat( v[i*NC+j],start_i,start_j );
+                blockSet(i,j)->close();
+                this->updateBlockMat( blockSet(i,j),start_i,start_j );
 
-                start_j += v[i*NC+j]->size2();
+                for ( int proc=0 ;proc < worldsize;++proc )
+                    start_j[proc] += blockSet(i,j)->mapCol().nLocalDofWithoutGhost(proc);
             }
 
-            start_i += v[i*NC]->size1();
+            for ( int proc=0 ;proc < worldsize;++proc )
+                start_i[proc] += blockSet(i,0)->mapRow().nLocalDofWithoutGhost(proc);
         }
     }
-
-
-    //std::cout << "[MatrixBlockBase::MatrixBlockBase] build FieldSplit index" << std::endl;
-    // index container for field split preconditioner
-    std::vector < std::vector<int> > indexSplit( NR );
-    uint16_type startIS = 0;
-
-    for ( uint i=0; i<NR; ++i )
-    {
-        auto Loc_nDof = v[i*NC]->size1();
-        indexSplit[i].resize( Loc_nDof );
-
-        for ( uint l = 0; l< Loc_nDof ; ++l )
-        {
-            indexSplit[i][l] = startIS + l;
-        }
-
-        startIS += Loc_nDof;
-    }
-
-    // update
-    M_mat->setIndexSplit( indexSplit );
-
-}
-
-
-template <typename T>
-void
-MatrixBlockBase<T>::mergeBlockGraph( graph_ptrtype & globGraph,
-                                     matrix_ptrtype m,
-                                     size_type start_i, size_type start_j )
-{
-
-    //FEELPP_ASSERT(m->hasGraph()).error("sub matrix doesn t have a graph");
-
-    auto g = m->graph();
-
-    auto it = g->begin();
-    auto en = g->end();
-
-    for ( ; it != en; ++it )
-    {
-        int theglobalrow = start_i + it->first;
-        typename graph_type::row_type & row = globGraph->row( theglobalrow );
-
-        //globGraph->row(theglobalrow).template get<0>() = it->second.template get<0>();//rank
-        row.template get<0>() = it->second.template get<0>();//rank
-
-        int thelocalrow = start_i + it->second.template get<1>();
-        //globGraph->row(theglobalrow).template get<1>() = thelocalrow;
-        row.template get<1>() = thelocalrow;
-
-        auto nbDof = it->second.template get<2>().size();
-
-        if ( nbDof>0 )
-        {
-            // Get the row of the sparsity pattern
-#if 0
-            std::vector<size_type> ivec(  it->second.template get<2>().begin(),  it->second.template get<2>().end() );
-            std::for_each( ivec.begin(), ivec.end(), boost::phoenix::arg_names::arg1 += start_j );
-#else
-
-            std::vector<size_type> ivec( nbDof );
-            auto itDof=it->second.template get<2>().begin();
-
-            for ( int i=0; i<( int )nbDof; ++i,++itDof )
-                ivec[i]=*itDof+start_j;
-
-#endif
-            //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
-            //std::set<size_type> iout( ivec.begin(), ivec.end() );
-            //iout.insert( globGraph->row(theglobalrow).template get<2>().begin(),
-            //             globGraph->row(theglobalrow).template get<2>().end() );
-            //globGraph->row(theglobalrow).template get<2>() = iout;
-            //globGraph->row(theglobalrow).template get<2>().insert(ivec.begin(), ivec.end());
-            row.template get<2>().insert( ivec.begin(), ivec.end() );
-        }
-
-    }
-
 
 }
 
@@ -202,13 +91,51 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
     M_mat()
 {
     graph_ptrtype graph( new graph_type( blockgraph,diag_is_nonzero,true) );
+    //graph->showMe();
+    //graph->mapRow().showMeMapGlobalProcessToGlobalCluster();
+    //graph->mapCol().showMeMapGlobalProcessToGlobalCluster();
+    //graph->printPython("GraphG.py");
 
-    size_type size1 = graph->lastRowEntryOnProc()-graph->firstRowEntryOnProc()+1;
-    size_type size2 = graph->lastColEntryOnProc()-graph->firstColEntryOnProc()+1;
-    M_mat = backend.newMatrix( size1,size2,size1,size2,graph );
+    size_type properties = NON_HERMITIAN;
+    M_mat = backend.newMatrix( graph->mapColPtr(),  graph->mapRowPtr(), properties, false );
+    M_mat->init( graph->mapRow().nDof(), graph->mapCol().nDof(),
+                 graph->mapRow().nLocalDofWithoutGhost(), graph->mapCol().nLocalDofWithoutGhost(),
+                 graph );
+
     M_mat->zero();
 
-    //TODO : index split
+    bool computeIndexSplit = true;
+    if ( computeIndexSplit )
+    {
+        const uint16_type nRow = blockgraph.nRow();
+        const uint16_type nCol = blockgraph.nCol();
+        // index container for field split preconditioner
+        std::vector< std::vector<size_type> > indexSplit( nRow );
+        size_type startIS = M_mat->mapRow().firstDofGlobalCluster();
+        for ( uint16_type i=0; i<nRow; ++i )
+        {
+            auto const& mapRowBlock = blockgraph(i,0)->mapRow();
+            const size_type nLocDofWithoutGhostBlock = mapRowBlock.nLocalDofWithoutGhost();
+            const size_type nLocDofWithGhostBlock = mapRowBlock.nLocalDofWithGhost();
+            const size_type firstDofGCBlock = mapRowBlock.firstDofGlobalCluster();
+
+            indexSplit[i].resize( nLocDofWithoutGhostBlock );
+
+            for ( size_type l = 0; l< nLocDofWithGhostBlock ; ++l )
+            {
+                if ( mapRowBlock.dofGlobalProcessIsGhost(l) ) continue;
+
+                const size_type globalDof = mapRowBlock.mapGlobalProcessToGlobalCluster(i);
+                indexSplit[i][globalDof - firstDofGCBlock ] = startIS + (globalDof - firstDofGCBlock);
+            }
+
+            startIS += nLocDofWithoutGhostBlock;
+        }
+
+        // update
+        M_mat->setIndexSplit( indexSplit );
+    }
+
 }
 
 
@@ -454,7 +381,7 @@ MatrixBlockBase<T>::transpose( MatrixSparse<value_type>& Mt ) const
 
 template <typename T>
 void
-MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j )
+MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
 {
     M_mat->updateBlockMat( m,start_i,start_j );
 }

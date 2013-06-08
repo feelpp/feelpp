@@ -870,8 +870,17 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 if ( it == en )
                     continue;
 
-                gmc_ptrtype __c( new gmc_type( __form.gm(), *it, __geopc ) );
-                gmc1_ptrtype __c1( new gmc1_type( __form.gm1(), *it, __geopc1 ) );
+                size_type idEltTestInit = it->id();
+                if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                    idEltTestInit = it->mesh()->subMeshToMesh( idEltTestInit );
+                else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                    idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
+
+                auto const& eltTestInit = __form.testSpace()->mesh()->element( idEltTestInit );
+
+
+                gmc_ptrtype __c( new gmc_type( __form.gm(), eltTestInit, __geopc ) );
+                gmc1_ptrtype __c1( new gmc1_type( __form.gm1(), eltTestInit, __geopc1 ) );
 
 
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
@@ -903,7 +912,15 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 //
                 for ( ; it != en; ++it )
                 {
-                    if ( formc->isZero( it->id() ) )
+                    size_type idElt = it->id();
+                    if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                        idElt = it->mesh()->subMeshToMesh( idElt );
+                    else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                        idElt = __form.testSpace()->mesh()->meshToSubMesh( idElt );
+
+                    auto const& eltTest = __form.testSpace()->mesh()->element( idElt );
+
+                    if ( formc->isZero( idElt ) )
                         continue;
 
                     switch ( M_gt )
@@ -912,7 +929,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     case GeomapStrategyType::GEOMAP_HO:
                     {
                         //ti0.restart();
-                        __c->update( *it );
+                        __c->update( eltTest );
                         //t0+=ti0.elapsed();
 #if 0
                         std::cout << "Element: " << it->id() << "\n"
@@ -942,7 +959,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     case GeomapStrategyType::GEOMAP_O1:
                     {
                         //ti0.restart();
-                        __c1->update( *it );
+                        __c1->update( eltTest );
                         //t0+=ti0.elapsed();
 #if 0
                         DLOG(INFO) << "Element: " << it->id() << "\n"
@@ -974,7 +991,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         if ( it->isOnBoundary() )
                         {
                             //ti0.restart();
-                            __c->update( *it );
+                            __c->update( eltTest );
                             //t0+=ti0.elapsed();
 #if 0
                             DLOG(INFO) << "Element: " << it->id() << "\n"
@@ -1004,7 +1021,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                         else
                         {
                             //ti0.restart();
-                            __c1->update( *it );
+                            __c1->update( eltTest );
                             //t0+=ti0.elapsed();
 #if 0
                             DLOG(INFO) << "Element: " << it->id() << "\n"
@@ -1300,7 +1317,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
     //-----------------------------------------------//
 
-    pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), this->im().points() ) );
+    pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), __form.testSpace()->fe()->points() ) );
     gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcForm ) );
     map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
 
@@ -1960,7 +1977,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
     //-----------------------------------------------//
 
-    pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), this->im().points() ) );
+    pc_form_ptrtype geopcForm( new pc_form_type( __form.gm(), __form.testSpace()->fe()->points() ) );
     gmc_form_ptrtype gmcForm( new gmc_form_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcForm ) );
     map_gmc_form_type mapgmcForm( fusion::make_pair<vf::detail::gmc<0> >( gmcForm ) );
 

@@ -4,7 +4,7 @@
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 	     Guillaume Dollé <guillaume.dolle@math.unistra.fr>
- 
+
   Date 2013-02-18
 
   Copyright (C) 2013 Université de Strasbourg
@@ -22,22 +22,69 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file mylaplacian.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>,
-                 Guillaume Dollé <guillaume.dolle@math.unistra.fr>
-   \date 2013-02-11
-   This program show how to solve the Laplacian with dirichlet homogene 
-   conditions.
- */
+
 #include <feel/feel.hpp>
 using namespace Feel;
 
-/*
- *  Entry point
- */
-//\code
-//# marker_main #
+/** \page LaplacianTutorial Laplacian with homogeneous Dirichlet conditions
+\author Feel++ Consortium
+\date 2013-02-11
+
+\tableofcontents
+<br>
+<hr>
+<br>
+
+\section Laplacian_Theory Theory
+This part explains how to solve the Laplacian equation for homogeneous dirichlet conditions,
+<br><center>\f$
+\left\{
+\begin{aligned}
+   -\Delta u & =  f & \text{on}\;\Omega \;, \\
+            u & =  0 & \text{on}\;\partial\Omega \;,\\
+\end{aligned}
+\right.
+\f$</center><br>
+where \f$u\in\Omega\f$ is the unknown "trial" function and \f$\Omega\f$ the domain.
+
+We multiply each part of the first equation by a "test" function \f$v\in H_0^1(\Omega)\f$ and we integrate the resulting equation on the domain \f$\Omega\f$,
+<br><center>\f$
+\begin{aligned}
+ -\int_\Omega \Delta u v = \int_\Omega f v \;.
+\end{aligned}
+\f$</center><br>
+We can integrate by parts this equation (Green Theorem) to obtain the variationnal formulation,
+\f[
+\begin{aligned}
+\int_\Omega \nabla u \nabla v
+-\underbrace{ \int_{\partial\Omega} \frac{\partial u}{\partial n} v }_{= 0}
+=\int_\Omega f v \;
+\end{aligned}
+\f]
+where \f$n\f$ denotes a unit outward normal vector to the boundary. We can rewrite the problem as find \f$u\in H_0^1(\Omega)\f$ such that for all \f$v\in H_0^1(\Omega)\f$,
+<br><center>\f$
+\begin{aligned}
+a(u,v)=l(v) \;,
+\end{aligned}
+\f$</center><br>
+where \f$a\f$ is a bilinear form, continuous, coercive and \f$l\f$ a linear form.
+
+\section Laplacian_Implementation Implementation
+Let's take a look at the \feel code (source \c "doc/manual/tutorial/mylaplacian.cpp").<br>
+We consider for this example \f$f=1\f$ constant.
+\snippet mylaplacian.cpp marker1
+
+As you can see, the program looks very close to the mathematical formulation.<br>
+We use the \c form2() function to define the bilinear form and \c form1() for the linear one (see \ref Forms ).<br>
+The gradient for the trial functions is declared with the \c gradt() expression where as \c grad() is used for the test functions (see \ref Keywords).
+Note that we need to transpose the second vector to perform the scalar product.
+
+To introduce the homogeneous dirichlet conditions on the boundary, we use the function \c on(). Once the variationnal formulation and the boundary conditions are set, we call
+the solver with \c solve().
+
+*/
+
+/// [marker1]
 int main(int argc, char**argv )
 {
     // initialize feel++
@@ -50,7 +97,7 @@ int main(int argc, char**argv )
     // create mesh
     auto mesh = unitSquare();
 
-    // function space 
+    // function space
     auto Vh = Pch<1>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
@@ -77,6 +124,4 @@ int main(int argc, char**argv )
     e->add( "u", u );
     e->save();
 }
-//# endmarker_main #
-//\endcode
-
+/// [marker1]

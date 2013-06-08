@@ -242,6 +242,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
 
             _geo = boost::regex_replace( _geo, _regex, _ostr.str(), boost::match_default | boost::format_all );
         }
+
     }
 
     std::ostringstream __geoname;
@@ -332,9 +333,12 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
     }
     google::FlushLogFiles(INFO);
 
-    LOG(INFO) << "Broadcast mesh file " << fname << " to all other mpi processes\n";
-    mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
-
+	if ( mpi::environment::initialized() )
+    {
+		this->worldComm().barrier();
+        LOG(INFO) << "Broadcast mesh file " << fname << " to all other mpi processes\n";
+        mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
+    }
     return fname;
 }
 std::string
@@ -383,10 +387,11 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		CTX::instance()->mesh.secondOrderLinear = 1; // has to 1 to work
 
 
+        int partitions = newGmshModel->getMeshPartitions().size();
 		LOG(INFO) << "[Gmsh::refine] Original mesh : " << filename.str() << "\n";
-		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+		//LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
 		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
-		LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
+		LOG(INFO) << "[Gmsh::refine] partitions : " << partitions << "\n";
 		//std::cout << "secondOrderLinear=" << CTX::instance()->mesh.secondOrderLinear << std::endl << std::flush;
 		CTX::instance()->partitionOptions.num_partitions =  M_partitions;
 		CTX::instance()->partitionOptions.partitioner =  M_partitioner;
@@ -399,10 +404,14 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 		    newGmshModel->refineMesh( CTX::instance()->mesh.secondOrderLinear );
 		}
 
-		PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-		newGmshModel->writeMSH( filename.str() );
+		if ( partitions )
+            {
+                LOG(INFO) << "[Gmsh::refine] Repartioning mesh : " << filename.str() << "\n";
+                PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
+            }
+        newGmshModel->writeMSH( filename.str() );
 		LOG(INFO) << "[Gmsh::refine] Refined mesh : " << filename.str() << "\n";
-		LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
+		//LOG(INFO) << "[Gmsh::refine] vertices : " << newGmshModel->getNumMeshVertices() << "\n";
 		LOG(INFO) << "[Gmsh::refine] elements : " << newGmshModel->getNumMeshElements() << "\n";
 		LOG(INFO) << "[Gmsh::refine] partitions : " << newGmshModel->getMeshPartitions().size() << "\n";
 
@@ -417,7 +426,9 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 
 	if ( mpi::environment::initialized() )
     {
-		_name = filename.str();
+		this->worldComm().barrier();
+
+        _name = filename.str();
         mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
         LOG(INFO) << "[Gmsh::refine] broadcast mesh filename : " << _name << " to all other processes\n";
     }
@@ -444,6 +455,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
     else
         __str << BOOST_PP_STRINGIZE( GMSH_EXECUTABLE )
               << " -" << dim << " -part " << M_partitions  << " " << __geoname;
+
 
     LOG(INFO) << "[Gmsh::generate] execute '" <<  __str.str() << "\n";
     LOG(INFO) << "[Gmsh::generate] partitions: " <<  M_partitions << "\n";
@@ -496,7 +508,9 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     GModel* newGmshModel = new GModel();
     GModel::current()->setName( _name );
+#if !defined( __APPLE__ )
     GModel::current()->setFileName( _name );
+#endif
     GModel::current()->readGEO( _name+".geo" );
     GModel::current()->mesh( dim );
     LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
@@ -532,7 +546,11 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
+#if BOOST_FILESYSTEM_VERSION == 3
 		std::string _name = fs::path( nameMshInput ).stem().string();
+#elif BOOST_FILESYSTEM_VERSION == 2
+        std::string _name = fs::path( nameMshInput ).stem();
+#endif
 
         GModel* newGmshModel=new GModel();
         newGmshModel->readMSH( nameMshInput );
@@ -558,6 +576,7 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
 
     if ( mpi::environment::initialized() )
     {
+        this->worldComm().barrier();
         mpi::broadcast( this->worldComm().globalComm(), _name, this->worldComm().masterRank() );
         LOG(INFO) << "[Gmsh::rebuildPartitionMsh] broadcast mesh filename : " << _name << " to all other processes\n";
     }
@@ -742,7 +761,7 @@ unitSegment( double h )
     return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
                           _desc=domain( _name="segment",
                                         _shape="hypercube",
-                                        _dim=3,
+                                        _dim=1,
                                         _h=h ) );
 }
 

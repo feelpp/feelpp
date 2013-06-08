@@ -74,14 +74,36 @@ public:
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
 
+template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
+class FunctionSpaceDefinition
+{
+public:
+
+    static const uint16_type Dim = 2;
+
+    typedef Simplex<Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    typedef DiscontinuousInterfaces<fusion::vector<mpl::vector<mpl::int_<3>, mpl::int_<11>, mpl::int_<13> >,mpl::vector<mpl::int_<4>, mpl::int_<11>, mpl::int_<14> > > >  discontinuity_type;
+    typedef bases<Lagrange<OrderT, Scalar, discontinuity_type> > temp_basis_type;
+
+#if defined( OPUS_WITH_THERMAL_DISCONTINUITY )
+    typedef FunctionSpace<mesh_type, temp_basis_type, discontinuity_type,  Periodicity<Periodic<> > > temp_functionspace_type;
+#else
+    typedef FunctionSpace<mesh_type, temp_basis_type, Periodicity<Periodic<> > > temp_functionspace_type;
+#endif
+
+    typedef temp_functionspace_type space_type;
+
+};
 
 template<int OrderU=2, int OrderP=OrderU-1, int OrderT=OrderP>
-class OpusModelRB : public OpusModelBase, public ModelCrbBase< ParameterDefinition >
+class OpusModelRB : public OpusModelBase, public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<OrderU,OrderP,OrderT> >
 {
     typedef OpusModelBase super;
 public:
 
-    typedef ModelCrbBase<ParameterDefinition> super_type;
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition<OrderU,OrderP,OrderT> > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -235,13 +257,13 @@ public:
 
 
     typedef std::vector< std::vector< double > > beta_vector_type;
-    typedef boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type>, beta_vector_type> beta_vectors_type;
+    typedef boost::tuple<beta_vector_type, beta_vector_type, std::vector<beta_vector_type> > beta_vectors_type;
 
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -253,7 +275,7 @@ public:
     OpusModelRB( OpusModelRB const & );
     ~OpusModelRB();
 
-    void init();
+    void initModel();
     void initParametrization();
     //@}
 
@@ -298,14 +320,7 @@ public:
     int mMaxA( int q );
     int mMaxM( int q );
     int mMaxF( int output_index, int q );
-    int mMaxInitialGuess( int q );
 
-    /**
-     * return the number of terms of the initial guess used
-     * to deal with non linearities
-     * note : in this model we don't use this initial guess
-     */
-    int QInitialGuess() const;
 
     /**
      * \brief Returns the function space
@@ -382,12 +397,6 @@ public:
         return M_betaL[l][q][m];
     }
 
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_betaInitialGuessQm[q][m];
-    }
-
-
     /**
      * return true if initialized (init() was called), false otherwise
      */
@@ -433,7 +442,17 @@ public:
      */
     affine_decomposition_type computeAffineDecomposition()
     {
-        return boost::make_tuple( M_Mqm, M_Aqm, M_L, M_InitialGuessQm );
+        return boost::make_tuple( M_Mqm, M_Aqm, M_L );
+    }
+
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        element_ptrtype elt ( new element_type ( M_Th ) );
+        q[0][0] = elt;
+        return q;
     }
 
 
@@ -506,7 +525,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu );
+    value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
 
     /**
@@ -615,11 +634,9 @@ private:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_L;
-    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
-    beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaL;
 
 

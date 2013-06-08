@@ -14,7 +14,7 @@ int main(int argc, char**argv )
 
     //# marker2 #
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-    auto Vh = Pch<1>( mesh );
+    auto Vh = Pch<3>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
     //# endmarker2 #
@@ -24,7 +24,7 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
-    auto a = form2( _trial=Vh, _test=Vh );
+    auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,

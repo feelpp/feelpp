@@ -26,9 +26,9 @@ add_custom_target(check-ginac COMMAND ${CMAKE_CTEST_COMMAND})
 #add_custom_target(pdf)
 
 find_package(CLN 1.3.2)
-if ( CLN_FOUND )
-  include_directories(${CLN_INCLUDE_DIR})
-endif()
+#if ( CLN_FOUND )
+include_directories(${CLN_INCLUDE_DIR})
+#endif()
 
 include(CheckIncludeFile)
 check_include_file("stdint.h" HAVE_STDINT_H)
@@ -112,7 +112,7 @@ if (NOT CMAKE_SKIP_RPATH)
 endif()
 
 configure_file(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac.pc.cmake ${CMAKE_BINARY_DIR}/ginac.pc @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/ginac.pc DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
+#install(FILES ${CMAKE_BINARY_DIR}/ginac.pc DESTINATION "${LIB_INSTALL_DIR}/pkgconfig")
 
 # rpath for libginac.so itself, ginsh, and friends
 set(_ginac_rpath ${_ginac_rpath_reloc})
@@ -176,4 +176,3 @@ endif()
 #if (MAKEINFO)
 #	add_subdirectory(doc)
 #endif()
-

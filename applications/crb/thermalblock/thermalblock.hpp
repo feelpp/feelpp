@@ -111,6 +111,24 @@ public :
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
 
+class FunctionSpaceDefinition
+{
+public :
+    typedef double value_type;
+
+    static const uint16_type Order = 3;
+
+    //! geometry entities type composing the mesh, here Simplex in Dimension 2 of Order 1
+    typedef Simplex<2> convex_type;
+    //! mesh type
+    typedef Mesh<convex_type> mesh_type;
+
+    //! the basis type of our approximation space
+    typedef bases<Lagrange<Order,Scalar> > basis_type;
+
+    //! the approximation function space type
+    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
+};
 
 
 /**
@@ -123,7 +141,7 @@ public :
  */
 
 
-class ThermalBlock : public ModelCrbBase< ParameterDefinition >
+class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >
 {
 
     static const uint16_type nx = 3;
@@ -131,6 +149,10 @@ class ThermalBlock : public ModelCrbBase< ParameterDefinition >
 
 
 public:
+
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
     static const uint16_type ParameterSpaceDimension = nx*ny;
     static const bool is_time_dependent = false;
@@ -208,8 +230,8 @@ public:
 
     typedef boost::tuple<
         std::vector< std::vector<sparse_matrix_ptrtype> >,
-        std::vector< std::vector<std::vector<vector_ptrtype> > > ,
-        std::vector< std::vector< element_ptrtype > > > affine_decomposition_type;
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
 
 
     /**
@@ -225,12 +247,10 @@ public:
         gamma_dir( vm["gamma_dir"].as<double>() ),
         M_Dmu( new parameterspace_type ),
         timers()
-    {
-        this->init();
-    }
+    {}
 
     //! initialisation of the model and definition of parameters values
-    void init();
+    void initModel();
 
     int numberOfBlocks() const
     {
@@ -309,15 +329,6 @@ public:
             throw std::logic_error( "[Model thermalblock] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
     }
 
-    int QInitialGuess() const
-    {
-        return 1;
-    }
-
-    int mMaxInitialGuess( int q )
-    {
-        return 1;
-    }
 
     /**
      * \brief Returns the function space
@@ -345,13 +356,13 @@ public:
         return M_Dmu;
     }
 
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
     {
         return computeBetaQm( mu , time );
     }
 
-    boost::tuple<beta_vector_type, std::vector<beta_vector_type>, beta_vector_type>
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
     computeBetaQm( parameter_type const& mu , double time=0 )
     {
         M_betaAqm.resize( Qa() );
@@ -387,45 +398,10 @@ public:
         //compliant output
         for ( int i=0; i<Ql( 0 ); i++ ) M_betaFqm[0][i][0] = 1;
 
-        M_betaInitialGuessQm.resize( QInitialGuess() );
-        M_betaInitialGuessQm[0].resize( 1 );
-        M_betaInitialGuessQm[0][0] = 0;
-
-        return boost::make_tuple( M_betaAqm, M_betaFqm, M_betaInitialGuessQm );
+        return boost::make_tuple( M_betaAqm, M_betaFqm);
     }
 
 
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type betaAqm( int q, int m ) const
-    {
-        return M_betaAqm[q][m];
-    }
-
-
-
-    /**
-     * \brief return the coefficient vector
-     */
-    std::vector<beta_vector_type> const& betaFqm() const
-    {
-        return M_betaFqm;
-    }
-
-    value_type betaInitialGuessQm( int q, int m ) const
-    {
-        return M_betaInitialGuessQm[q][m];
-    }
-
-    /**
-     * \return the \p q -th term of the \p l -th output
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_betaFqm[l][q][m];
-    }
 
     /**
      * set the mesh characteristic length to \p s
@@ -440,6 +416,16 @@ public:
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
+
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        element_ptrtype elt ( new element_type ( Xh ) );
+        q[0][0] = elt;
+        return q;
+    }
 
     /**
      * \brief solve the model for parameter \p mu
@@ -487,7 +473,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu );
+    value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
     /**
      * create a new matrix
@@ -530,17 +516,15 @@ private:
 
     //vectors contain index of subdomains along south and north boudaries
     //useful to implement computeBetaQm
-    //they are filled in the init() function
+    //they are filled in the initModel() function
     std::vector<int> south_subdomain_index;
     std::vector<int> north_subdomain_index;
 
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
 
     beta_vector_type M_betaAqm;
-    beta_vector_type M_betaInitialGuessQm;
-    std::vector<beta_vector_type> M_betaFqm;
+    std::vector< beta_vector_type > M_betaFqm;
 
 }; // ThermalBlock
 
@@ -626,7 +610,7 @@ thermalBlockGeometry( int nx, int ny, double hsize )
 
 
 void
-ThermalBlock::init()
+ThermalBlock::initModel()
 {
 
     //std::string mshfile_name = M_vm["mshfile"].as<std::string>();
@@ -771,17 +755,11 @@ ThermalBlock::init()
     M_Aqm[last_index_Aqm][0]->close();
     LOG(INFO) <<"[ThermalBlock::init] done with boundaryMarkers\n";
 
-    auto ini_cond = Xh->elementPtr();
-    ini_cond->setZero();
-    M_InitialGuessQm.resize( 1 );
-    M_InitialGuessQm[0].resize( 1 );
-    M_InitialGuessQm[0][0] = ini_cond;
-
     M = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
-}//init()
+}//initModel()
 
 
 const uint16_type ThermalBlock::Order;
@@ -790,7 +768,7 @@ const uint16_type ThermalBlock::Order;
 typename ThermalBlock::affine_decomposition_type
 ThermalBlock::computeAffineDecomposition()
 {
-    return boost::make_tuple( M_Aqm, M_Fqm, M_InitialGuessQm );
+    return boost::make_tuple( M_Aqm, M_Fqm );
 }
 
 
@@ -884,13 +862,14 @@ ThermalBlock::newVector() const
 
 
 double
-ThermalBlock::output( int output_index, parameter_type const& mu )
+ThermalBlock::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
 
     using namespace vf;
-    this->solve( mu, pT );
-    vector_ptrtype U( M_backend->newVector( Xh ) );
-    *U = *pT;
+    if( need_to_solve )
+        this->solve( mu, pT );
+    else
+        *pT=u;
 
     double output=0;
 

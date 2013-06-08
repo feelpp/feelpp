@@ -121,23 +121,20 @@ public:
 
     typedef typename boost::tuple<sparse_matrix_ptrtype,
                                   sparse_matrix_ptrtype,
-                                  std::vector<vector_ptrtype>,
-                                  element_ptrtype
+                                  std::vector<vector_ptrtype>
                                   > offline_merge_type;
 
 
 
     typedef typename boost::tuple<std::vector< std::vector<sparse_matrix_ptrtype> >,
                                   std::vector< std::vector<sparse_matrix_ptrtype> >,
-                                  std::vector< std::vector< std::vector<vector_ptrtype> > >,
-                                  std::vector< std::vector< vector_ptrtype> >
+                                  std::vector< std::vector< std::vector<vector_ptrtype> > >
                                   > affine_decomposition_type;
 
 
     typedef typename boost::tuple< beta_vector_type,
                                    beta_vector_type,
-                                   std::vector<beta_vector_type>,
-                                   beta_vector_type
+                                   std::vector<beta_vector_type>
                                    > betaqm_type;
 
 
@@ -221,6 +218,15 @@ public:
     {
         if ( M_is_initialized )
             return;
+
+        M_is_initialized=true;
+
+        if( ! M_model->isInitialized() )
+        {
+            LOG( INFO ) << "CRBModel Model is not initialized";
+            M_model->initModel();
+            M_model->setInitialized( true );
+        }
 
         M_is_initialized=true;
     }
@@ -311,6 +317,12 @@ public:
     }
 
 
+    vectorN_type computeStatistics ( Eigen::VectorXd vector , std::string name )
+    {
+        return M_model->computeStatistics( vector , name );
+    }
+
+
     //! return the number of outputs
     size_type Nl() const
     {
@@ -356,19 +368,18 @@ public:
     betaqm_type computeBetaQm( parameter_type const& mu )
     {
         beta_vector_type betaAqm;
-        beta_vector_type betaMqm, betaInitialGuessQm;
+        beta_vector_type betaMqm;
         std::vector<beta_vector_type>  betaFqm;
         boost::tuple<
             beta_vector_type,
-            std::vector<beta_vector_type> ,
-            beta_vector_type >
-        model_beta;
+            std::vector<beta_vector_type> >
+            model_beta;
 
         model_beta = M_model->computeBetaQm( mu );
         betaAqm = model_beta.get<0>();
         betaFqm = model_beta.get<1>();
 
-        return boost::make_tuple( betaMqm, betaAqm, betaFqm, betaInitialGuessQm );
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
 
@@ -380,13 +391,12 @@ public:
      * independant part of the affine decomposition of the bilinear and linear
      * forms.
      */
-    affine_decomposition_type computeAffineDecomposition(  )
+    affine_decomposition_type computeAffineDecomposition()
     {
-        std::vector< std::vector< vector_ptrtype> > initial_guess;
         std::vector< std::vector<sparse_matrix_ptrtype> > mass;
-        boost::tie( M_Aqm, M_Fqm , boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+        boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
         // to have compatibility with SCM, we need to provide the same interface than CRBModel
-        return boost::make_tuple( mass, M_Aqm, M_Fqm , initial_guess );
+        return boost::make_tuple( mass, M_Aqm, M_Fqm );
     }
 
 
@@ -422,41 +432,6 @@ public:
     {
         return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
     }
-
-
-    /**
-     * \brief Returns the vector coefficients
-     */
-    beta_vector_type const& betaAqm() const
-    {
-        return M_model->betaAqm();
-    }
-
-    /**
-     * \brief Returns the value of the \f$A_{qm}\f$ coefficient at \f$\mu\f$
-     */
-    value_type betaAqm( int q, int m ) const
-    {
-        return M_model->betaAqm(q,m);
-    }
-
-
-    /**
-     * \brief Returns the vector coefficients
-     */
-    std::vector<beta_vector_type> const& betaL() const
-    {
-        return M_model->betaL();
-    }
-
-    /**
-     * \brief Returns the value of the \f$L_qm\f$ coefficient at \f$\mu\f$
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_model->betaL( l, q , m);
-    }
-
 
     /**
      * \brief the vector \c Fq[q][m] of the affine decomposition of the right hand side
@@ -565,13 +540,13 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu )
+    value_type output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve=false  )
     {
-        return M_model->output( output_index, mu );
+        return M_model->output( output_index, mu , u , need_to_solve);
     }
 
     //only to compile
-    element_type solveFemUsingOnlineEimPicard( parameter_type const& mu ){};
+    element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu ){};
     element_type solveFemUsingOfflineEim( parameter_type const& mu ){};
     offline_merge_type result_offline_merge_type;
     offline_merge_type update( parameter_type const& mu,  double time=0 )  // for scm

@@ -468,7 +468,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 {
 
     typedef typename MeshTraits<MeshType>::interprocess_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.interProcessFaces( __pid );
+    std::pair<iterator, iterator> p = mesh.interProcessFaces( /*__pid*/ );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               p.first, p.second );
 }
@@ -651,6 +651,7 @@ size_type meshrank ( MeshType const& mesh, mpl::bool_<false> )
     return mesh.comm().rank();
 }
 /**
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
 template<typename MeshType>
@@ -664,6 +665,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with pid \p flag
  */
 template<typename MeshType>
@@ -678,6 +681,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the mesh
  * which share a face with the boundary
  */
@@ -693,6 +698,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the mesh
  * which are stricly within the domain that is to say they do not
  * share a face with the boundary
@@ -708,6 +715,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the
  * mesh with marker \p flag
  */
@@ -722,6 +731,8 @@ markedelements( MeshType const& mesh, std::string const& flag )
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the
  * mesh with marker \p flag
  */
@@ -787,6 +798,8 @@ markedelements( MeshType const& mesh, std::list<std::string> const& flag )
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker2 \p flag
  */
@@ -801,6 +814,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker2 string
  */
@@ -833,6 +848,8 @@ marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker3 \p flag
  */
@@ -847,6 +864,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker3 string
  */
@@ -880,6 +899,8 @@ marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with id \p flag
  */
 template<typename MeshType>
@@ -893,6 +914,8 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over faces of the
  * mesh on processor \c __pid
  *
@@ -912,6 +935,8 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with id \p id
  */
 template<typename MeshType>
@@ -925,6 +950,8 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over faces of the
  * mesh marked
  *
@@ -944,6 +971,8 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over faces of the
  * mesh marked with \c __marker
  *
@@ -1115,6 +1144,8 @@ marked3faces( MeshType const& mesh,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over all boundary faces of the
  * mesh
  */
@@ -1130,6 +1161,8 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over all internal faces of the
  * mesh belong to process domain \p __pid
  */
@@ -1144,6 +1177,8 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over all interprocess faces of the
  * mesh belonging to process \p __pid
  */
@@ -1159,6 +1194,8 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over edges of the
  * mesh on processor \c __pid
  *
@@ -1179,6 +1216,8 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
 
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over edges of the
  * mesh marked with \c __marker
  *
@@ -1211,6 +1250,8 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
 }
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over all boundary edges of the
  * mesh
  */
@@ -1226,6 +1267,8 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
 
 
 /**
+ *
+ * \ingroup MeshIterators
  * \return a pair of iterators to iterate over all internal edges of the
  * mesh
  */
@@ -1240,7 +1283,8 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
 }
 
 /**
- * return the range of iterators [begin,end] over the points of the mesh
+ * \ingroup MeshIterators
+ * \return the range of iterators [begin,end] over the points of the mesh
  * \warning this filter is not parallelized
  */
 template<typename MeshType>
@@ -1254,7 +1298,8 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 }
 
 /**
- * return the range of iterators [begin,end] over the marked points with \p flag of the mesh
+ * \ingroup MeshIterators
+ * \return the range of iterators [begin,end] over the marked points with \p flag of the mesh
  * \warning this filter is not parallelized
  */
 template<typename MeshType>
@@ -1278,7 +1323,8 @@ markedpoints( MeshType const& mesh, std::string const& flag )
 }
 
 /**
- * return the range of iterators [begin,end] over the boundary points of the mesh
+ * \ingroup MeshIterators
+ * \return the range of iterators [begin,end] over the boundary points of the mesh
  * \warning this filter is not parallelized
  */
 template<typename MeshType>
@@ -1292,7 +1338,8 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 }
 
 /**
- * return the range of iterators [begin,end] over the internal(not on the boundary) points of the mesh
+ * \ingroup MeshIterators
+ * \return the range of iterators [begin,end] over the internal(not on the boundary) points of the mesh
  * \warning this filter is not parallelized
  */
 template<typename MeshType>
@@ -1307,7 +1354,8 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 }
 
 /**
- * return the number of elements given element iterators constructed
+ * \ingroup MeshIterators
+ * \return the number of elements given element iterators constructed
  * using the mesh filters
  * \param its the mesh iterators
  *

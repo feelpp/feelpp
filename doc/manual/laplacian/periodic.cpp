@@ -64,11 +64,17 @@ std::pair<std::string,std::string> createRing( int Dim, double h, double rmin, d
 
 namespace Feel
 {
-using namespace vf;
 /**
- * Fat boundary method for the laplacian
- *
- */
+   \page LaplacianPeriodic Periodic boundary condition
+   \author Feel++ Consortium
+
+   <br>
+   <br>
+
+   `feelpp_doc_laplacian_periodic` solves for the Laplacian in a square
+   with periodic boundary conditions.
+
+*/
 template<int Dim, int Order>
 class PeriodicLaplacian
     :
@@ -364,12 +370,3 @@ main( int argc, char** argv )
     app.add( new PeriodicLaplacian<2,4>() );
     app.run();
 }
-
-
-
-
-
-
-
-
-

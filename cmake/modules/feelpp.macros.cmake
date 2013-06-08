@@ -6,7 +6,7 @@ macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS;TEST"
-    "NO_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -44,18 +44,18 @@ macro(feelpp_add_application)
   target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
   #INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
   if ( NOT FEELPP_APP_NO_TEST )
-	IF(NProcs2 GREATER 1)
-    		add_test(NAME ${execname}-np-${NProcs2} COMMAND mpirun -np ${NProcs2} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST})
+	IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+    	  add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
 	ENDIF()
-    add_test(NAME ${execname}-np-1 COMMAND mpirun -np 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST})
+	add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
   endif()
   #add_dependencies(crb ${execname})
   # Add label if provided
   if ( FEELPP_APP_LABEL )
     set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
     if ( NOT FEELPP_APP_NO_TEST )
-	IF(NProcs2 GREATER 1)
-      		set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABEL})
+	IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+      	  set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABEL})
 	ENDIF()
       set_property(TEST ${execname}-np-1 PROPERTY LABELS ${FEELPP_APP_LABEL})
     endif()
@@ -64,50 +64,9 @@ macro(feelpp_add_application)
     endif()
   endif()
 
-  if ( FEELPP_ENABLE_SLURM )
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm "#! /bin/bash
-# type 'sbatch ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm' to submit the job,
-# sbatch will pich the number of cores
-# given in the script by '#SBATCH -n xxx', you can override this value by
-# typing 'sbatch -n xxxx ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm'
+  # include schedulers
+  include( feelpp.schedulers )
 
-#SBATCH -n 2048 #need 2048 cores (one thread by core)
-source $HOME/.bash_profile
-unset LC_CTYPE
-
-#export IMPORTANT_VAR=important_value
-
-#cd /workdir/math/whoami
-")
-    if ( FEELPP_APP_CFG )
-      foreach(  cfg ${FEELPP_APP_CFG} )
-        get_filename_component( CFG_NAME ${cfg} NAME )
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm "
-           mpirun --bind-to-core -x LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/${execname} --config-file=${cfg}  # add other fel++  options here")
-      endforeach()
-    else( FEELPP_APP_CFG )
-      file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${execname}.slurm
-        "mpirun --bind-to-core -x LD_LIBRARY_PATH ${CMAKE_CURRENT_BINARY_DIR}/${execname} # add other feel++ options here")
-    endif( FEELPP_APP_CFG )
-  endif( FEELPP_ENABLE_SLURM )
-
-  if (FEELPP_ENABLE_CCC )
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${execname}.msub "#! /bin/bash
-#MSUB -r ${execname}         # Request name
-#MSUB -n 64                  # Number of tasks to use
-#MSUB -T 1800                # Elapsed time limit in seconds of the job (default: 1800)
-#MSUB -o ${execname}_%I.o    # Standard output. %I is the job id
-#MSUB -e ${execname}_%I.e    # Error output. %I is the job id
-#MSUB -A ra0840              # Project ID
-#MSUB -q standard            # Choosing large nodes
-##MSUB -@ noreply@cea.fr:end # Uncomment this line for being notified at the end of the job by sending a mail at the given address
-
-#set -x
-cd \${BRIDGE_MSUB_PWD}        # BRIDGE_MSUB_PWD is a environment variable which contains the directory where the script was submitted
-unset LC_CTYPE
-ccc_mprun ${execname}  # you can add Feel++ options here
-")
-  endif()
 
   if ( FEELPP_APP_CFG )
     foreach(  cfg ${FEELPP_APP_CFG} )
@@ -259,3 +218,32 @@ if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   endif()
 endif( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
 endmacro(feelpp_ot_add_python_module)
+
+MACRO(find_directories_containing result_list)
+  PARSE_ARGUMENTS(FILE
+    "FILTER"
+    ${ARGN}
+    )
+  CAR(FILE_NAME ${FILE_DEFAULT_ARGS})
+
+  if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+    MESSAGE("*** Arguments for find_directories_containing " ${FILE_DEFAULT_ARGS})
+    MESSAGE("  Filters: ${FILE_FILTER}")
+  endif()
+
+    FILE(GLOB_RECURSE new_list ${FILE_NAME})
+    SET(dir_list "")
+    FOREACH(file_path ${new_list})
+        GET_FILENAME_COMPONENT(dir_path ${file_path} PATH)
+        #MESSAGE("    dir_path: ${dir_path}")
+        if ( FILE_FILTER )
+           if ( "${dir_path}" MATCHES "(.*)${FILE_FILTER}/(.*)" )
+              #MESSAGE(STATUS "${dir_path}")
+              LIST(APPEND dir_list ${dir_path})
+           endif()
+        endif()
+    ENDFOREACH()
+    LIST(REMOVE_DUPLICATES dir_list)
+    #MESSAGE("    LIST: ${dir_list}")
+    SET(${result_list} ${dir_list})
+ENDMACRO(find_directories_containing)
