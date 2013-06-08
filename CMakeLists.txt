@@ -119,10 +119,14 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 include(ProcessorCount)
 ProcessorCount(NProcs)
-##if(N GREATER 1)
-math (EXPR NProcs2 '${NProcs}/2')
-if(NProcs2 EQUAL 0)
-  set(NProcs2 1)
+IF(NOT CMAKE_NPROCS)
+  ##if(N GREATER 1)
+  math (EXPR NProcs2 '${NProcs}/2')
+  if(NProcs2 EQUAL 0)
+    set(NProcs2 1)
+  endif()
+else()
+  set(NProcs2 "${CMAKE_NPROCS}")
 endif()
 message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
@@ -251,7 +255,7 @@ foreach(project ${projects_list})
   #get shortname
   GET_FILENAME_COMPONENT(dirname ${project} NAME)
   MESSAGE(STATUS "      " ${dirname})
-  
+
   #define option to control doc generation
   string(TOUPPER ${dirname} PROJECT)
   option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${dirname}" OFF)

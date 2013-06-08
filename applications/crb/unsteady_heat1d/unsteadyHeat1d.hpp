@@ -242,6 +242,18 @@ public:
         std::vector< std::vector<std::vector<vector_ptrtype> > >
         > affine_decomposition_type;
 
+    typedef OperatorLinear< space_type , space_type > operator_type;
+    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+
+    typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
+    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+
+    typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
+    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+
+    typedef FsFunctionalLinear< space_type > functional_type;
+    typedef boost::shared_ptr<functional_type> functional_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -546,9 +558,22 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu , bool export_output=false );
+    value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false, bool export_output=false );
 
     static const bool is_time_dependent = true;
+
+    operatorcomposite_ptrtype operatorCompositeA()
+    {
+        return M_compositeA;
+    }
+    operatorcomposite_ptrtype operatorCompositeM()
+    {
+        return M_compositeM;
+    }
+    std::vector< functionalcomposite_ptrtype > functionalCompositeF()
+    {
+        return M_compositeF;
+    }
 
 
 
@@ -578,12 +603,20 @@ private:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
+    std::vector< std::vector<operator_ptrtype> > M_Aqm_free;
+    std::vector< std::vector<operator_ptrtype> > M_Mqm_free;
+    std::vector< std::vector<std::vector<functional_ptrtype> > > M_Fqm_free;
+    operatorcomposite_ptrtype M_compositeA;
+    operatorcomposite_ptrtype M_compositeM;
+    std::vector< functionalcomposite_ptrtype > M_compositeF;
+
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
     std::vector<beta_vector_type> M_betaFqm;
 
     bdf_ptrtype M_bdf;
 
+    element_type u,v;
 };
 
 UnsteadyHeat1D::UnsteadyHeat1D()
@@ -630,33 +663,26 @@ UnsteadyHeat1D::initModel()
     //M_bdf = bdf_ptrtype( new bdf_type(M_vm ,Xh, " " ) );
     M_bdf = bdf( _space=Xh, _vm=M_vm, _name="unsteadyHeat1d" , _prefix="unsteadyHeat1d" );
 
-    M_Aqm.resize( 3 );
-    for(int i=0;i<M_Aqm.size();i++) M_Aqm[i].resize(1);
-    M_Aqm[0][0] = backend->newMatrix( Xh, Xh );
-    M_Aqm[1][0] = backend->newMatrix( Xh, Xh );
-    M_Aqm[2][0] = backend->newMatrix( Xh, Xh );
+    M_Aqm_free.resize( 3 );
+    for(int i=0; i<Qa(); i++) M_Aqm_free[i].resize(1);
 
-    M_Fqm.resize( 2 );
-    M_Fqm[0].resize( 2 );
-    for(int i=0; i<M_Fqm[0].size(); i++) M_Fqm[0][i].resize(1);
-    M_Fqm[0][0][0] = backend->newVector( Xh );
-    M_Fqm[0][1][0] = backend->newVector( Xh );
+    M_Fqm_free.resize( 2 );
+    M_Fqm_free[0].resize( 2 );
+    M_Fqm_free[1].resize( 1 );
 
-    M_Fqm[1].resize( 1 );
-    for(int i=0; i<M_Fqm[1].size(); i++) M_Fqm[1][i].resize(1);
-    M_Fqm[1][0][0] = backend->newVector( Xh );
+    for(int i=0; i<M_Fqm_free[0].size(); i++) M_Fqm_free[0][i].resize(1);
+    for(int i=0; i<M_Fqm_free[1].size(); i++) M_Fqm_free[1][i].resize(1);
 
-    M_Mqm.resize( 1 );
-    for(int i=0; i<M_Mqm.size(); i++) M_Mqm[i].resize(1);
-    M_Mqm[0][0] = backend->newMatrix( Xh, Xh );
+    M_Mqm_free.resize( 1 );
+    for(int i=0; i<M_Mqm_free.size(); i++) M_Mqm_free[i].resize(1);
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
 
+    u = Xh->element();
+    v = Xh->element();
 
     using namespace Feel::vf;
-
-
 
     Feel::ParameterSpace<4>::Element mu_min( M_Dmu );
     mu_min << 0.2, 0.2, 0.01, 0.1;
@@ -665,26 +691,20 @@ UnsteadyHeat1D::initModel()
     mu_max << 50, 50, 5, 5;
     M_Dmu->setMax( mu_max );
 
-
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
-
-    Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=Mpod, _init=true ) =
+    Mpod = backend->newMatrix( Xh, Xh );
+    form2( Xh, Xh, Mpod, _init=true ) =
         //integrate( elements(mesh), id(u)*idt(v) );
         integrate( elements( mesh ), id( u )*idt( v ) + grad( v )*trans( gradt( u ) ) );
     Mpod->close();
 
 
-    M = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true ) =
+    M = backend->newMatrix( Xh, Xh );
+    form2( Xh, Xh, M, _init=true ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( v )*trans( gradt( u ) ) );
     //integrate( elements(mesh), id(u)*idt(v) );
     M->close();
 
-
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
-    std::cout << "Number of dof " << Xh->nLocalDof() << std::endl;
 
     assemble();
 
@@ -703,37 +723,59 @@ UnsteadyHeat1D::assemble()
 
     using namespace Feel::vf;
 
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
+    u = Xh->element();
+    v = Xh->element();
 
 
     //mass matrix
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0], _init=true ) = integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
-    M_Mqm[0][0]->close();
+    auto expr_mass = integrate ( elements( mesh ), alpha*idt( u )*id( v ) );
+    auto operator_mass=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_mass );
+    operator_mass->setName("mass operator");
+    M_Mqm_free[0][0]=operator_mass;
 
     // right hand side
-    form1( _test=Xh, _vector=M_Fqm[0][0][0], _init=true ) = integrate( markedfaces( mesh,"left" ), id( v ) );
-    form1( _test=Xh, _vector=M_Fqm[0][1][0], _init=true ) = integrate( elements( mesh ), id( v ) );
-    M_Fqm[0][0][0]->close();
-    M_Fqm[0][1][0]->close();
+    auto expr_f0 = integrate( markedfaces( mesh,"left" ), id( v ) );
+    auto f0 = functionalLinearFree( _space=Xh , _expr=expr_f0  );
+    f0->setName("F0");
+    M_Fqm_free[0][0][0]=f0;
+    auto expr_f1 = integrate( elements( mesh ), id( v ) );
+    auto f1 = functionalLinearFree( _space=Xh , _expr=expr_f1  );
+    f1->setName("F1");
+    M_Fqm_free[0][1][0]=f1;
 
     // output
-    form1( _test=Xh, _vector=M_Fqm[1][0][0], _init=true ) = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 );
-    form1( _test=Xh, _vector=M_Fqm[1][0][0] ) += integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
-    M_Fqm[1][0][0]->close();
+    auto expr_l0 = integrate( markedelements( mesh,"k1_2" ), id( v )/0.2 ) + integrate( markedelements( mesh,"k2_1" ), id( v )/0.2 );
+    auto l0 = functionalLinearFree( _space=Xh , _expr=expr_l0  );
+    l0->setName("L0");
+    M_Fqm_free[1][0][0]=l0;
 
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0], _init=true ) = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) += integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
+    auto expr_A0 = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) ) + integrate( markedfaces( mesh,"right" ), idt( u )*id( v ) );
+    auto operator_A0=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_A0 );
+    operator_A0->setName("A0");
+    M_Aqm_free[0][0]=operator_A0;
 
-    M_Aqm[0][0]->close();
+    auto expr_A1 = integrate( markedelements( mesh,"k1_1" ), ( gradt( u )*trans( grad( v ) ) ) )
+        + integrate( markedelements( mesh,"k1_2" ), ( gradt( u )*trans( grad( v ) ) ) );
+    auto operator_A1=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_A1 );
+    operator_A1->setName("A1");
+    M_Aqm_free[1][0]=operator_A1;
 
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0], _init=true ) = integrate( markedelements( mesh,"k1_1" ), ( gradt( u )*trans( grad( v ) ) ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate( markedelements( mesh,"k1_2" ), ( gradt( u )*trans( grad( v ) ) ) );
-    M_Aqm[1][0]->close();
+    auto expr_A2 = integrate( markedelements( mesh,"k2_1" ), ( gradt( u )*trans( grad( v ) ) ) )
+        + integrate( markedelements( mesh,"k2_2" ), ( gradt( u )*trans( grad( v ) ) ) );
+    auto operator_A2=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_A2 );
+    operator_A2->setName("A2");
+    M_Aqm_free[2][0]=operator_A2;
 
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0], _init=true ) = integrate( markedelements( mesh,"k2_1" ), ( gradt( u )*trans( grad( v ) ) ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate( markedelements( mesh,"k2_2" ), ( gradt( u )*trans( grad( v ) ) ) );
-    M_Aqm[2][0]->close();
+    M_compositeA = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
+    M_compositeM = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
+    M_compositeA->addList( M_Aqm_free );
+    M_compositeM->addList( M_Mqm_free );
+    M_compositeF.resize( this->Nl() );
+    for(int output=0; output<this->Nl(); output++)
+    {
+        M_compositeF[output]=functionalLinearComposite( _space=Xh );
+        M_compositeF[output]->addList( M_Fqm_free[output] );
+    }
 
 }
 
@@ -842,47 +884,75 @@ UnsteadyHeat1D::exportResults1d( double time, element_type& T, double output )
 void
 UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index )
 {
-    //first direct model
-    D->close();
-    D->zero();
-
-    for ( size_type q = 0; q < M_Aqm.size(); ++q )
+    if (option(_name="crb.stock-matrices"). as<bool>() )
     {
-        for ( size_type m = 0; m < mMaxA(q); ++m )
+
+        D->close();
+        D->zero();
+
+        for ( size_type q = 0; q < M_Aqm.size(); ++q )
         {
-            D->addMatrix( M_betaAqm[q][m] , M_Aqm[q][m] );
+            for ( size_type m = 0; m < mMaxA(q); ++m )
+                D->addMatrix( M_betaAqm[q][m] , M_Aqm[q][m] );
         }
-    }
 
-    F->close();
-    F->zero();
+        F->close();
+        F->zero();
 
-    for ( size_type q = 0; q < M_Fqm[output_index].size(); ++q )
-    {
-        for ( size_type m = 0; m < mMaxF(output_index,q); ++m )
+        for ( size_type q = 0; q < M_Fqm[output_index].size(); ++q )
         {
+            for ( size_type m = 0; m < mMaxF(output_index,q); ++m )
             F->add( M_betaFqm[output_index][q][m], M_Fqm[output_index][q][m] );
         }
-    }
 
-    auto vec_bdf_poly = backend->newVector( Xh );
+        auto vec_bdf_poly = backend->newVector( Xh );
 
-    //add contribution from mass matrix
-    for ( size_type q = 0; q < Qm(); ++q )
-    {
-        for ( size_type m = 0; m < mMaxM(q); ++m )
+        //add contribution from mass matrix
+        for ( size_type q = 0; q < Qm(); ++q )
         {
-            //left hand side
-            D->addMatrix( M_betaMqm[q][m]*bdf_coeff, M_Mqm[q][m] );
-            //right hand side
-            *vec_bdf_poly = bdf_poly;
-            vec_bdf_poly->close();
-            vec_bdf_poly->scale( M_betaMqm[q][m] );
-            F->addVector( *vec_bdf_poly, *M_Mqm[q][m] );
+            for ( size_type m = 0; m < mMaxM(q); ++m )
+            {
+                //left hand side
+                D->addMatrix( M_betaMqm[q][m]*bdf_coeff, M_Mqm[q][m] );
+                //right hand side
+                *vec_bdf_poly = bdf_poly;
+                vec_bdf_poly->close();
+                vec_bdf_poly->scale( M_betaMqm[q][m] );
+                F->addVector( *vec_bdf_poly, *M_Mqm[q][m] );
+            }
         }
     }
+    else
+    {
+        D->close();
+        D->zero();
+        F->close();
+        F->zero();
 
-    F->close();
+        M_compositeA->setScalars( M_betaAqm );
+        D = M_compositeA->sumAllMatrices();
+
+        M_compositeF[output_index]->setScalars( M_betaFqm[output_index] );
+        F = M_compositeF[output_index]->sumAllVectors();
+
+        auto vec_bdf_poly = backend->newVector( Xh );
+
+        for ( size_type q = 0; q < Qm(); ++q )
+        {
+            for ( size_type m = 0; m < mMaxM(q); ++m )
+            {
+                auto matrix = backend->newMatrix( _test=Xh , _trial=Xh );
+                M_compositeM->operatorlinear(q,m)->matPtr( matrix );
+                //left hand side
+                D->addMatrix( M_betaMqm[q][m]*bdf_coeff, matrix );
+                //right hand side
+                *vec_bdf_poly = bdf_poly;
+                vec_bdf_poly->close();
+                vec_bdf_poly->scale( M_betaMqm[q][m] );
+                F->addVector( *vec_bdf_poly, *matrix );
+            }
+        }
+    }
 }
 
 
@@ -910,9 +980,7 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
     this->computeBetaQm( mu );
 
     if ( M_is_steady )
-    {
         M_bdf->setSteady();
-    }
 
     for ( M_bdf->start(*T); !M_bdf->isFinished(); M_bdf->next() )
     {
@@ -920,23 +988,9 @@ UnsteadyHeat1D::solve( parameter_type const& mu, element_ptrtype& T , int output
 
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
-        auto ret = backend->solve( _matrix=D,  _solution=T, _rhs=F, _reuse_prec=( M_bdf->iteration() >=2 ) );
+        auto ret = backend->solve( _matrix=D,  _solution=T, _rhs=F , _reuse_prec=( M_bdf->iteration() >=2 ) );
         if ( !ret.get<0>() )
-        {
             LOG(INFO)<<"WARNING : at time "<<M_bdf->time()<<" we have not converged ( nb_it : "<<ret.get<1>()<<" and residual : "<<ret.get<2>() <<" ) \n";
-        }
-
-        //backend->solve( _matrix=D,  _solution=T, _rhs=F );
-
-
-#if( 0 )
-        //this->exportResults(M_bdf->time(), *T );
-        bool export_output=true;
-        double s = output( output_index,mu,export_output );
-
-        if ( s != 0 && output_index==1 ) this->exportResults1d( M_bdf->time(),*T,s );
-
-#endif
 
         M_bdf->shiftRight( *T );
     }
@@ -1003,15 +1057,15 @@ UnsteadyHeat1D::run( const double * X, unsigned long N, double * Y, unsigned lon
 
 //if we export output we call it in solve function so we don't need to recall it
 double
-UnsteadyHeat1D::output( int output_index, parameter_type const& mu, bool export_output )
+UnsteadyHeat1D::output( int output_index, parameter_type const& mu, element_type& u, bool need_to_solve, bool export_output )
 {
 
     using namespace vf;
 
-    if ( !export_output )
-    {
+    if ( need_to_solve )
         this->solve( mu, pT );
-    }
+    else
+        *pT = u;
 
     using namespace vf;
 

@@ -104,6 +104,23 @@ ginac_options( std::string const& prefix )
         ;
     return _options;
 }
+
+po::options_description 
+error_options( std::string const& prefix )
+{
+    po::options_description _options( "Error options (" + prefix + ")" );
+    _options.add_options()
+    // error options
+        ( prefixvm( prefix, "error.exact" ).c_str(), Feel::po::value<std::string>()->default_value(""), "exact solution" )
+        ( prefixvm( prefix, "error.params" ).c_str(), Feel::po::value<std::string>()->default_value(""), "exact solution parameters" )
+        ( prefixvm( prefix, "error.rhs" ).c_str(), Feel::po::value<std::string>()->default_value(""), "rhs" )
+        ( prefixvm( prefix, "error.rhs.computed" ).c_str(), Feel::po::value<bool>()->default_value( false ), "rhs computed" )
+        ( prefixvm( prefix, "error.convergence" ).c_str(), Feel::po::value<bool>()->default_value( false ), "convergence" )
+        ( prefixvm( prefix, "error.convergence.steps" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "number of convergence steps" )
+    ;
+    return _options;
+}
+
 po::options_description
 feel_options( std::string const& prefix  )
 {
@@ -137,6 +154,9 @@ feel_options( std::string const& prefix  )
 
         /* material options */
         .add( material_options( prefix ) )
+
+        /* error options */
+        .add( error_options( prefix ) )
 
         ;
 

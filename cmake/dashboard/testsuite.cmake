@@ -113,6 +113,29 @@ if ( EXISTS ${FEELPP_CTEST_CONFIG} )
   set(FEELPP_BUILD_STRING "${OS_VERSION}-${ARCH}")
 endif()
 
+#Check the compiler
+if (${FEELPP_CXXNAME} MATCHES "gcc-*")
+  message("GCC")
+  if (DEFINED GCC_MAKE_ARGS)
+    set(MAKE_ARGS "${GCC_MAKE_ARGS}")
+  endif()
+  if (DEFINED GCC_PARALLEL)
+    set(PARALLEL "${GCC_PARALLEL}")
+  endif()
+elseif (${FEELPP_CXXNAME} MATCHES "clang")
+  message("clang")
+  if (DEFINED CLANG_MAKE_ARGS)
+    set(MAKE_ARGS "${CLANG_MAKE_ARGS}")
+  endif()
+  if (DEFINED CLANG_PARALLEL)
+    set(PARALLEL "${CLANG_PARALLEL}")
+  endif()
+endif()
+set(CTEST_BUILD_FLAGS -j${PARALLEL})
+set(CTEST_PARALLEL_LEVEL ${PARALLEL})
+message("MAKE_ARGS -- ${MAKE_ARGS}")
+message("PARALLEL -- ${PARALLEL}")
+
 
 if(NOT FEELPP_CMAKE_DIR)
   SET(FEELPP_CMAKE_DIR "")
@@ -266,6 +289,7 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   set_property(GLOBAL PROPERTY Label ${subproject})
 
   ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}")
+  # Submit results to a dashboard server.
   ctest_submit(PARTS Configure)
 
   message(WARNING "build target "${subproject})
@@ -277,5 +301,6 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
   # runs only tests that have a LABELS property matching "${subproject}"
   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
+  # Submit results to a dashboard server.
   ctest_submit(PARTS Test)
 endforeach()

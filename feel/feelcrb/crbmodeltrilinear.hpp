@@ -540,13 +540,13 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu )
+    value_type output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve=false  )
     {
-        return M_model->output( output_index, mu );
+        return M_model->output( output_index, mu , u , need_to_solve);
     }
 
     //only to compile
-    element_type solveFemUsingOnlineEimPicard( parameter_type const& mu ){};
+    element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu ){};
     element_type solveFemUsingOfflineEim( parameter_type const& mu ){};
     offline_merge_type result_offline_merge_type;
     offline_merge_type update( parameter_type const& mu,  double time=0 )  // for scm
