@@ -78,6 +78,8 @@ public:
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
     typedef typename super::clone_ptrtype clone_ptrtype;
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
 
     //@}
 
@@ -120,13 +122,13 @@ public:
         this->init( n, n_local, false );
     }
 
-    VectorPetsc ( DataMap const& dm, bool doInit=true )
+    VectorPetsc ( datamap_ptrtype const& dm, bool doInit=true )
         :
         super( dm ),
         _M_destroy_vec_on_exit( true )
     {
         if ( doInit )
-            this->init( dm.nDof(), dm.nLocalDofWithoutGhost(), false );
+            this->init( dm->nDof(), dm->nLocalDofWithoutGhost(), false );
     }
 
 
@@ -146,7 +148,7 @@ public:
         this->M_is_initialized = true;
     }
 
-    VectorPetsc( Vec v, DataMap const& dm )
+    VectorPetsc( Vec v, datamap_ptrtype const& dm )
         :
         super( dm ),
         _M_destroy_vec_on_exit( false )
@@ -168,7 +170,7 @@ public:
         /* map */
         PetscInt n;
         ISGetSize(is,&n);
-        DataMap dm(n, n, v.comm());
+        datamap_ptrtype dm( new datamap_type(n, n, v.comm()) );
         this->setMap(dm);
         /* init */
         VecGetSubVector(v.vec(), is, &this->_M_vec);
@@ -197,7 +199,7 @@ public:
         CHKERRABORT( this->comm(),ierr );
         PetscFree(map);
 
-        DataMap dm(n, n, V->comm());
+        datamap_ptrtype dm( new datamap_type(n, n, V->comm()) );
         this->setMap(dm);
         /* init */
         ierr = VecGetSubVector(V->vec(), is, &this->_M_vec);
@@ -808,6 +810,8 @@ class VectorPetscMPI : public VectorPetsc<T>
 {
     typedef VectorPetsc<T> super;
     typedef typename super::value_type value_type;
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
 
 public:
 
@@ -816,9 +820,9 @@ public:
         super()
     {}
 
-    VectorPetscMPI( Vec v, DataMap const& dm );
+    VectorPetscMPI( Vec v, datamap_ptrtype const& dm );
 
-    VectorPetscMPI( DataMap const& dm );
+    VectorPetscMPI( datamap_ptrtype const& dm );
 
     ~VectorPetscMPI()
     {

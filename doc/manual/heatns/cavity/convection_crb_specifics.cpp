@@ -324,12 +324,6 @@ int ConvectionCrb::mMaxF( int output_index, int q)
             throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of output_index");
 }
 
-int ConvectionCrb::mMaxInitialGuess( int q )
-{
-    return 1;
-}
-
-
 /**
  * \param l the index of output
  * \return number of terms  in affine decomposition of the \p q th output term
@@ -339,13 +333,6 @@ int ConvectionCrb::Ql( int l ) const
     if ( l == 0 ) return 1;
     return 1;
 }
-
-
-int ConvectionCrb::QInitialGuess() const
-{
-    return 1;
-}
-
 
 
 /**
