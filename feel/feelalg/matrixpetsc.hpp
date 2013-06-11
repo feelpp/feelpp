@@ -106,6 +106,10 @@ public:
 
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
+
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -129,7 +133,7 @@ public:
      */
     MatrixPetsc();
 
-    MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
 
     /**
@@ -140,7 +144,7 @@ public:
      * and to simply provide additional functionality with the PetscMatrix.
      */
     MatrixPetsc ( Mat m );
-    MatrixPetsc ( Mat m, DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm );
+    MatrixPetsc ( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
     MatrixPetsc ( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol );
     MatrixPetsc ( MatrixSparse<value_type> const& M, std::vector<int> const& rowIndex, std::vector<int> const& colIndex );
     /**
@@ -511,11 +515,14 @@ public :
     typedef typename super::graph_ptrtype graph_ptrtype;
     typedef typename super::value_type value_type;
 
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
+
     MatrixPetscMPI();
 
-    MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
-    MatrixPetscMPI( Mat m, DataMap const& dmRow, DataMap const& dmCol );
+    MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
 
     ~MatrixPetscMPI()
     {

@@ -184,15 +184,14 @@ VectorUblas<T,Storage>::VectorUblas( size_type __s )
 }
 
 template <typename T, typename Storage>
-VectorUblas<T,Storage>::VectorUblas( DataMap const& dm )
+VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
     :
     super1( dm ),
     _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>, ublas::range() ) ),
     M_global_values_updated( false )
-    //M_global_values( dm.nGlobalElements() )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
-    this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
 }
 
 template <typename T, typename Storage>
@@ -201,7 +200,6 @@ VectorUblas<T,Storage>::VectorUblas( size_type __s, size_type __n_local )
     super1( __s, __n_local ),
     _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
     M_global_values_updated( false )
-    //M_global_values( this->size() )
 {
     this->init( this->size(), this->localSize(), false );
 }
@@ -212,19 +210,17 @@ VectorUblas<T,Storage>::VectorUblas( VectorUblas const & m )
     super1( m ),
     _M_vec( m._M_vec ),
     M_global_values_updated( m.M_global_values_updated )
-    //M_global_values( m.M_global_values )
 {
     DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
     DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->vec().size() << "\n";
 }
 
 template <typename T, typename Storage>
-VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type const& range, DataMap const& dm )
+VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm )
     :
     super1( dm ),
     _M_vec( detail::fake<Storage>( m.vec(), range ) ),
     M_global_values_updated( false )
-    //    M_global_values( range.size() )
 {
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
     DVLOG(2) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
@@ -236,7 +232,6 @@ VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type co
     super1( invalid_size_type_value, range.size() ),
     _M_vec( detail::fake<Storage>( m, range ) ),
     M_global_values_updated( false )
-    //M_global_values( range.size() )
 {
     //this->init( m.size(), m.size(), false );
 }
@@ -350,10 +345,10 @@ VectorUblas<T,Storage>::init ( const size_type n,
 
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::init( DataMap const& dm )
+VectorUblas<T,Storage>::init( datamap_ptrtype const& dm )
 {
     super1::init( dm );
-    this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
 }
 
 
@@ -658,7 +653,7 @@ template <typename T, typename Storage>
 typename VectorUblas<T,Storage>::this_type
 VectorUblas<T,Storage>::sqrt() const
 {
-    this_type _tmp( this->map() );
+    this_type _tmp( this->mapPtr() );
 
 #if defined( FEELPP_HAS_TBB )
     tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
@@ -677,7 +672,7 @@ template <typename T, typename Storage>
 typename VectorUblas<T,Storage>::this_type
 VectorUblas<T,Storage>::pow( int n ) const
 {
-    this_type _out( this->map() );
+    this_type _out( this->mapPtr() );
 
     for ( int i = 0; i < ( int )this->localSize(); ++i )
         _out[i] = math::pow( this->operator[]( i ), n );
