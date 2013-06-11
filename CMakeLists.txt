@@ -264,7 +264,7 @@ endforeach()
 #
 # data
 #
-IF(NOT APPLE AND EXISTS data)
+IF(NOT APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/data")
   ADD_SUBDIRECTORY ( data )
 ENDIF()
 
