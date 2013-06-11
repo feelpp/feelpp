@@ -193,28 +193,27 @@ public :
 
         ie->close();
 
-        // M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace(), _pattern=Pattern::EXTENDED );
-        // auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
+        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace(), _pattern=Pattern::EXTENDED );
+        auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
 
-        // if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
-        // {
-        //     bilinearForm +=
-        //         integrate( _range=range, _expr=
-        //                    ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
-        //                      -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
-        //                      + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
-        //                      *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
-        //                      ), _quad=quad, _quad1=quad1, _geomap=geomap );
-        // }
+        if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
+        {
+            bilinearForm +=
+                integrate( _range=range, _expr=
+                           ( -trans( id( this->dualImageSpace()->element() ) )*gradt( this->domainSpace()->element() )*vf::N()
+                             -trans( idt( this->domainSpace()->element() ) )* grad( this->dualImageSpace()->element() )*vf::N()
+                             + M_gamma * trans( idt( this->domainSpace()->element() ) ) /*trial*/
+                             *id( this->dualImageSpace()->element() ) / vf::hFace()   /*test*/
+                             ), _quad=quad, _quad1=quad1, _geomap=geomap );
+        }
 
-        // M_matrixFull->close();
-        // M_matrixFull->addMatrix( 1., M_matrix );
+        M_matrixFull->close();
+        M_matrixFull->addMatrix( 1., M_matrix );
 
-        // if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG )  )
-        //     this->applyOn(range, expr);
+        if ( ( M_proj_type == LIFT ) && ( M_dir == STRONG )  )
+            this->applyOn(range, expr);
 
-        // M_backend->solve( M_matrixFull, sol, ie );
-        M_backend->solve( M_matrix, sol, ie );
+        M_backend->solve( M_matrixFull, sol, ie );
 
         return sol;
     }
