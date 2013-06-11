@@ -1,0 +1,15 @@
+Description: this linking causes a FTBFS 
+Author: Anton Gladky <gladky.anton@gmail.com>
+Last-Update: 2012-04-08
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1071,7 +1071,7 @@
+     message(STATUS "Note: By enabling ENABLE_MSVC_STATIC_RUNTIME, shared library "
+             "won't link. In MSVC change /MT to /MD in the shared project properties")
+   endif(MSVC AND ENABLE_MSVC_STATIC_RUNTIME)		  
+-  target_link_libraries(shared ${LINK_LIBRARIES})
++  target_link_libraries(shared ${LINK_LIBRARIES} -shared -lgl2ps -lGL -lglut)
+ endif(ENABLE_BUILD_SHARED OR ENABLE_WRAP_PYTHON OR ENABLE_WRAP_JAVA)
+ 
+ # binary targets

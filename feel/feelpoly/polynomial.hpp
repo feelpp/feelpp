@@ -52,7 +52,7 @@ template<typename, template<uint16_type> class PolySetType > class PolynomialSet
  * coefficients of the polynomial in this basis are represented by a
  * matrix whose lines are the polymomial components coefficients (1 if
  * \code is_scalar == true \endcode, \p nDim if \code is_vectorial ==
- * true\endcode and columns are the basis
+ * true \endcode and columns are the basis
  *
  * Evaluating the polynomial at a set of points(or just one point) is
  * then simply a matrix-matrix product.

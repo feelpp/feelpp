@@ -225,12 +225,12 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                                               _shape="hypercube",
                                               _usenames=true,
                                               _dim=Dim,
-                                              _h=meshSizeInit() / std::pow(2,level()-1),
+                                              _h= meshSizeInit()/(std::pow(2, level())) ,
                                               _shear=shear,
                                               _xmin=-1.,_xmax=1.,
                                               _ymin=-1.,_ymax=1. ),
-                           //_refine=level(),
-                                _partitions=nparts );
+                           //                                _refine=level(),
+                           _partitions=nparts );
 
     M_stats.put( "t.init.mesh",t.elapsed() );t.restart();
 
@@ -453,7 +453,9 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
     double error_nod_kk = integrate(marked2elements(mesh, 1.),
                                (idv(kk_nod) -  1 / Radius_expr) * (idv(kk_nod) -  1 / Radius_expr) * Delta ).evaluate()(0,0) / perimeter ;
     error_nod_kk = std::sqrt(error_nod_kk);
-    if (error_nod_kk == error_nod_kk) // for P1 error_nod_kk = Nan and put crashes (get<double>)
+    if (error_nod_kk != error_nod_kk) // for P1 error_nod_kk = Nan and put crashes (get<double>)
+        M_stats.put( "e.nod.kk", 1.);
+    else
         M_stats.put( "e.nod.kk", error_nod_kk);
     LOG(INFO) << "e.nod.kk = " << error_nod_kk << "\n";
 
@@ -651,6 +653,7 @@ Curvature<Dim, BasisU, BasisU_Vec, Entity>::run()
                 exporter->step( 0 )->add("marker_delta", marker_delta);
 
                 exporter->step( 0 )->add("n_l2", n_l2);
+                exporter->step( 0 )->add("n_smooth", n_smooth);
 
                 exporter->step( 0 )->add("init_shape", init_shape);
                 exporter->save();

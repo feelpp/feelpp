@@ -113,7 +113,7 @@ There is an example :
 </table>
 </center>
 
-Note that image files has to be one of the following directory :
+Note that image files have to be in one of the following directory :
 \li "@FEELPP_HOME_DIR@/doc/manual/pngs/"
 \li "@CMAKE_CURRENT_SOURCE_DIR@/pngs/"
 \li "@FEELPP_HOME_DIR@/doc/figures/"

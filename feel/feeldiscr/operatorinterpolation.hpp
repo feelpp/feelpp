@@ -460,11 +460,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id );
     const size_type lastcol_dof_on_proc  = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id );
 #endif
+#if 0
     graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
                                                   firstcol_dof_on_proc, lastcol_dof_on_proc,
                                                   this->dualImageSpace()->mesh()->worldComm().subWorldComm() ) );
-
+#else
+    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
+#endif
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* imagebasis = this->dualImageSpace()->basis().get();
@@ -600,11 +603,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDof( proc_id );
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDof( proc_id );
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDof( proc_id );
-
+#if 0
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
                                                   firstcol_dof_on_proc, lastcol_dof_on_proc,
                                                   this->dualImageSpace()->mesh()->worldComm().subWorldCommSeq() ) );
+#else
+    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
+#endif
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -815,13 +821,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 #if 0
     graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstcol_dof_on_proc, lastcol_dof_on_proc,
-                                                  this->dualImageSpace()->worldComm() ) );
-#else
-    graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
                                                   thefirstCol,thelastCol,
                                                   this->dualImageSpace()->worldComm() ) );
+#else
+    graph_ptrtype sparsity_graph( new graph_type(this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
 #endif
 
     size_type new_nLocalDofWithoutGhost=this->domainSpace()->nDof()/nProc_row;

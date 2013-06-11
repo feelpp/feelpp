@@ -102,7 +102,6 @@ IF(NOT CMAKE_BUILD_TYPE)
     FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
-
 if(APPLE)
   set(FEELPP_OS "MacOSX")
 elseif(CYGWIN)
@@ -120,10 +119,14 @@ endif(CMAKE_COMPILER_IS_GNUCXX)
 
 include(ProcessorCount)
 ProcessorCount(NProcs)
-##if(N GREATER 1)
-math (EXPR NProcs2 '${NProcs}/2')
-if(NProcs2 EQUAL 0)
-  set(NProcs2 1)
+IF(NOT CMAKE_NPROCS)
+  ##if(N GREATER 1)
+  math (EXPR NProcs2 '${NProcs}/2')
+  if(NProcs2 EQUAL 0)
+    set(NProcs2 1)
+  endif()
+else()
+  set(NProcs2 "${CMAKE_NPROCS}")
 endif()
 message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
@@ -235,11 +238,28 @@ MESSAGE(STATUS "SIZE_FLOAT=${SIZE_FLOAT}")
 MESSAGE(STATUS "SIZE_DOUBLE=${SIZE_DOUBLE}")
 MESSAGE(STATUS "SIZE_LONG_DOUBLE=${SIZE_LONG_DOUBLE}")
 
-
 # Find Feel++ or at least it dependencies
 FIND_PACKAGE(Feel++ REQUIRED)
 
 include( feelpp.macros )
+
+# Load documented project for Doxygen
+# it assumes that a project is valid if :
+#   there is README.md file in the directory
+#   that the directory path include "research"
+# for each detected project it creates an FEELPP_ENABLE_${PROJECT}_DOCUMENTATION option
+SET(projects_list)
+find_directories_containing(projects_list FILE README.md FILTER research)
+MESSAGE(STATUS "Feel++ projects :")
+foreach(project ${projects_list})
+  #get shortname
+  GET_FILENAME_COMPONENT(dirname ${project} NAME)
+  MESSAGE(STATUS "      " ${dirname})
+
+  #define option to control doc generation
+  string(TOUPPER ${dirname} PROJECT)
+  option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${dirname}" OFF)
+endforeach()
 
 #
 # data

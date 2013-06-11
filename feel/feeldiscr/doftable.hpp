@@ -92,6 +92,7 @@ public:
 
     static const uint16_type nOrder = fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
+    static const uint16_type nRealDim = mesh_type::nRealDim;
     static const uint16_type Shape = mesh_type::Shape;
     static const uint16_type nComponents = fe_type::nComponents;
     static const uint16_type nComponents1 = fe_type::nComponents1;
@@ -909,7 +910,13 @@ public:
         // multi process
         if ( this->worldComm().localSize()>1 )
             {
-                if (this->_M_n_dofs>1 )
+                auto it_nlocDof = this->_M_n_localWithGhost_df.begin();
+                auto const en_nlocDof = this->_M_n_localWithGhost_df.end();
+                bool isP0continuous = true;
+                for ( ; it_nlocDof!=en_nlocDof && isP0continuous ; ++it_nlocDof )
+                    isP0continuous = isP0continuous && (*it_nlocDof==1);
+
+                if ( !isP0continuous )//this->_M_n_dofs>1 )
                     {
 #if defined(FEELPP_ENABLE_MPI_MODE)
                         VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
@@ -2968,6 +2975,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     // compute the number of dof on current processor
     auto it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
     auto en_elt = M.endElementWithProcessId( M.worldComm().localRank() );
+    bool hasNoElt = ( it_elt == en_elt );
+
     //size_type n_elts = std::distance( it_elt, en_elt);
     //DVLOG(2) << "[buildDofMap] n_elts =  " << n_elts << " on processor " << processor << "\n";
 
@@ -2990,12 +2999,18 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
     } // elements loop
 
+    const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
+
     mpi::all_gather( M.worldComm().localComm(),
-                     next_free_dof-1,
+                     thelastDof,//next_free_dof-1,
                      this->_M_last_df );
 
     // access to _M_n_localWithGhost_df for each process
-    size_type mynDofWithGhost = this->_M_last_df[M.worldComm().localRank()] - this->_M_first_df[M.worldComm().localRank()] + 1;
+    size_type mynDofWithGhost = ( !hasNoElt )?
+        this->_M_last_df[M.worldComm().localRank()] - this->_M_first_df[M.worldComm().localRank()] + 1 :
+        this->_M_first_df[M.worldComm().localRank()];
+
+    // update info with all_gather
     mpi::all_gather( M.worldComm().localComm(),
                      mynDofWithGhost,
                      this->_M_n_localWithGhost_df );

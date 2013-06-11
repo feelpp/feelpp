@@ -1010,12 +1010,14 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
 
     pf.setPoint( 0, mesh->point( __e.indices[0] ) );
     ptseen[mesh->point( __e.indices[0] ).id()]=1;
-
+    if ( mesh->point( __e.indices[0] ).isOnBoundary() )
+    {
+        pf.setOnBoundary( true );
+    }
     _M_n_vertices[ __e.indices[0] ] = 1;
 
     _M_n_b_vertices[ __e.indices[0] ] = 1;
 
-    pf.setOnBoundary( true );
     face_iterator fit;
     bool inserted;
     boost::tie( fit, inserted ) = mesh->addFace( pf );
@@ -1085,11 +1087,19 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
             e.setPoint( jj, mesh->point( __e.indices[jj] ) );
             ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
         }
+        if ( count_pt_on_boundary >= 1 )
+        {
+            e.setOnBoundary( true );
+        }
+
     }
 
     mesh->addElement( e );
@@ -1121,10 +1131,16 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
         {
             e.setPoint( jj, mesh->point( __e.indices[jj] ) );
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
         }
+        if ( count_pt_on_boundary >= 2 )
+            e.setOnBoundary( true );
+
     }
 
     _M_n_vertices[ __e.indices[0] ] = 1;
@@ -1133,7 +1149,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
     _M_n_b_vertices[ __e.indices[0] ] = 1;
     _M_n_b_vertices[ __e.indices[1] ] = 1;
 
-    e.setOnBoundary( true );
     bool inserted;
     face_iterator fit;
     boost::tie( fit, inserted ) = mesh->addFace( e );
@@ -1163,9 +1178,16 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
         {
             e.setPoint( jj, mesh->point( __e.indices[jj] ) );
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
+        }
+        if ( count_pt_on_boundary >= 2 )
+        {
+            e.setOnBoundary( true );
         }
     }
 
@@ -1175,7 +1197,6 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
    _M_n_b_vertices[ __e.indices[0] ] = 1;
    _M_n_b_vertices[ __e.indices[1] ] = 1;
 
-    e.setOnBoundary( true );
     auto eit = mesh->addEdge( e );
     __idGmshToFeel=eit.id();
 
@@ -1221,12 +1242,29 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_TRIANGLE_4 ||
          __e.type == GMSH_TRIANGLE_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
             ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
         }
+        if ( ( __e.type == GMSH_TRIANGLE ||
+               __e.type == GMSH_TRIANGLE_2 ||
+               __e.type == GMSH_TRIANGLE_3 ||
+               __e.type == GMSH_TRIANGLE_4 ||
+               __e.type == GMSH_TRIANGLE_5 ) &&
+             count_pt_on_boundary >= 2 )
+        {
+            e.setOnBoundary( true );
+        }
+        if ( (__e.type == GMSH_QUADRANGLE ||
+              __e.type == GMSH_QUADRANGLE_2) &&
+             count_pt_on_boundary >= 2 )
+            e.setOnBoundary( true );
+
     }
 
     mesh->addElement( e );
@@ -1255,6 +1293,11 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     e.setProcessId( __e.partition );
     e.setNeighborPartitionIds( __e.ghosts );
 
+    // we consider in 3D that all faces provided by Gmsh are on the boundary
+    // which might not be true
+    // \warning there might be a bug here
+    e.setOnBoundary( true );
+
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 ||
          __e.type == GMSH_TRIANGLE ||
@@ -1272,7 +1315,6 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
         //e.setPoint( jj, mesh->point( __e[jj] ) );
     }
 
-    e.setOnBoundary( true );
     bool inserted;
     face_iterator fit;
     boost::tie( fit, inserted ) = mesh->addFace( e );
@@ -1327,13 +1369,30 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
          __e.type == GMSH_TETRAHEDRON_4 ||
          __e.type == GMSH_TETRAHEDRON_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
             ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
             e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
+
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
         }
+        // the tet share a face with the boundary
+        if ( ( __e.type == GMSH_TETRAHEDRON ||
+               __e.type == GMSH_TETRAHEDRON_2 ||
+               __e.type == GMSH_TETRAHEDRON_3 ||
+               __e.type == GMSH_TETRAHEDRON_4 ||
+               __e.type == GMSH_TETRAHEDRON_5 )
+             && count_pt_on_boundary >= 3)
+            e.setOnBoundary( true );
+        // the hex share a face with the boundary
+        if ( ( __e.type == GMSH_HEXAHEDRON ||
+               __e.type == GMSH_HEXAHEDRON_2 )
+             && count_pt_on_boundary >= 4)
+            e.setOnBoundary( true );
     }
 
     mesh->addElement( e );
