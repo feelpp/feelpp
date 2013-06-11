@@ -114,11 +114,8 @@ public :
         M_dir( dirichlet_type )
 
     {
-        std::cout << "creating matrix"<<std::endl;
         M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace, _pattern=Pattern::EXTENDED ) ;
-        std::cout << "matrix created"<<std::endl;
         initMatrix();
-        std::cout << "matrix initialized"<<std::endl;
     }
 
     ~Projector() {}
@@ -391,13 +388,12 @@ private :
                            trans( idt( this->domainSpace()->element() ) ) /*trial*/
                            *id( this->dualImageSpace()->element() ) /*test*/
                            );
-            std::cout<<"adding jump contribution"<<std::endl;
+
             a += integrate( internalfaces( this->dualImageSpace()->mesh() ),
                             M_gamma * hFace() * hFace()
                            * trans(jumpt( gradt(this->domainSpace()->element()) ))
                            * jump( grad(this->dualImageSpace()->element()) )
                            );
-            std::cout<<"jump contribution added"<<std::endl;
         }
         break;
 
