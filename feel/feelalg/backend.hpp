@@ -217,7 +217,7 @@ public:
                                      const size_type m_l,
                                      const size_type n_l,
                                      graph_ptrtype const & graph,
-                                     std::vector < std::vector<int> > indexSplit,
+                                     std::vector < std::vector<size_type> > indexSplit,
                                      size_type matrix_properties = NON_HERMITIAN )
     {
         auto mat = this->newMatrix( m,n,m_l,n_l,graph,matrix_properties );
@@ -267,6 +267,7 @@ public:
                    const size_type n_l ) =0;
 
     virtual sparse_matrix_ptrtype newZeroMatrix( DataMap const& dm1, DataMap const& dm2 ) = 0;
+    virtual sparse_matrix_ptrtype newZeroMatrix( boost::shared_ptr<DataMap> const& dm1, boost::shared_ptr<DataMap> const& dm2 ) = 0;
 
     /**
      * helper function
@@ -311,10 +312,13 @@ public:
                               _pattern=pattern,
                               _pattern_block=pattern_block.transpose(),
                               _diag_is_nonzero=false,// because transpose(do just after)
+                              _close=false,
                               _collect_garbage=collect_garbage );
             // get the good graph
-            auto graph = s->graph()->transpose();
-            if ( diag_is_nonzero ) { graph->addMissingZeroEntriesDiagonal();graph->close(); }
+            auto graph = s->graph()->transpose(false);
+            if ( diag_is_nonzero )
+                graph->addMissingZeroEntriesDiagonal();
+            graph->close();
 
             //maybe do that
             //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
@@ -415,14 +419,12 @@ public:
                                      newZeroMatrix,
                                      tag,
                                      ( required
-                                       ( test,* )
-                                       ( trial,* )
+                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
                                      )
                                    )
     {
-        //return this->newZeroMatrix( trial->map(), test->map() );
-        return this->newZeroMatrix( trial->mapOnOff(), test->mapOn() );
-
+        return this->newZeroMatrix( trial->dofOnOff(), test->dofOn() );
     }
 
     /**

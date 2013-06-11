@@ -35,7 +35,9 @@
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
+#if BOOST_VERSION >= 104700
 #include <boost/math/special_functions/nonfinite_num_facets.hpp>
+#endif
 #include <feel/feelvf/vf.hpp>
 namespace Feel
 {
@@ -92,6 +94,7 @@ public:
         M_expr( expr ),
         M_pattern( pattern )
     {}
+
 
     virtual void
     init( domain_space_ptrtype     domainSpace,
@@ -404,14 +407,12 @@ public:
     // retrieve underlying matrix
     virtual void matPtr( matrix_ptrtype & matrix )
     {
-
         form2( _trial=this->domainSpace(),
                _test=this->dualImageSpace(),
                _matrix=matrix,
                _pattern=M_pattern) = M_expr;
 
         matrix->close();
-
     }
 
 private:

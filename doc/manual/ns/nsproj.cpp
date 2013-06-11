@@ -132,7 +132,7 @@ int main(int argc, char**argv )
         if ( exp->doExport() )
         {
             exp->step( time )->setMesh( mesh );
-            //exp->step( time )->addRegions();
+            exp->step( time )->addScalar( "viscosity", mu, true);
             exp->step( time )->add( "p", pn1 );
             exp->step( time )->add( "u", Un1 );
             exp->step( time )->add( "uT", UTn1 );

@@ -487,6 +487,7 @@ public:
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<SubFace::nDim>, mpl::int_<0> >, mpl::identity<self_type>, mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type element_type;
     typedef self_type point_type;
 
+    static const uint16_type numLocalVertices = super::numVertices;
 
     GeoElement0D()
         :

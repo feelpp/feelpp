@@ -112,7 +112,6 @@ namespace constants=boost::math::constants;
 const double pi = constants::pi<double>();
 const double two_pi = constants::two_pi<double>();
 
-
 namespace algorithm=boost::algorithm;
 using google::WARNING;
 using google::ERROR;

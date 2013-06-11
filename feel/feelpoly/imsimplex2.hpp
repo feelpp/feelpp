@@ -64,7 +64,6 @@ struct IMTriangle
 {
 };
 
-/// \cond detail
 template<typename T>
 struct IMTriangle<1,T>
 {
