@@ -480,7 +480,7 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, DataMap const& dm )
     ierr = ISDestroy ( isLoc );
     CHKERRABORT( this->comm(),ierr );
 #endif
-    delete idx;
+    delete[] idx;
 
     this->M_is_initialized = true;
 
@@ -568,7 +568,7 @@ VectorPetscMPI<T>::init( const size_type n,
     CHKERRABORT( this->comm(),ierr );
 #endif
 
-    delete idx;
+    delete[] idx;
 
     ierr = VecSetFromOptions( this->vec() );
     CHKERRABORT( this->comm(),ierr );

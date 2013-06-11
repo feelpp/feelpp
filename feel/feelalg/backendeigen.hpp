@@ -163,6 +163,13 @@ public:
         return A;
     }
 
+    sparse_matrix_ptrtype
+    newZeroMatrix( boost::shared_ptr<DataMap> const& d1, boost::shared_ptr<DataMap> const& d2 )
+    {
+        return newZeroMatrix( *d1,*d2 );
+    }
+
+
     template<typename SpaceT>
     static vector_ptrtype newVector( boost::shared_ptr<SpaceT> const& space )
     {

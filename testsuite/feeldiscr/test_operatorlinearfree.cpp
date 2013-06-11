@@ -34,6 +34,7 @@
 #include <feel/feel.hpp>
 #include <feel/feeldiscr/operatorlinearfree.hpp>
 #include <feel/feeldiscr/operatorlinearcomposite.hpp>
+#include <feel/feelcrb/eim.hpp>
 
 
 /** use Feel namespace */
@@ -100,7 +101,7 @@ testOperatorLinearFree()
     double norm_opfree = result.l2Norm();
 
     auto matrix_op = backend->newMatrix( Xh , Xh );
-    matrix_op=op->matPtr();
+    *matrix_op=op->mat();
 
     auto matrix_opfree = backend->newMatrix( Xh , Xh );
     opfree->matPtr(matrix_opfree);
@@ -226,6 +227,81 @@ testOperatorLinearComposite()
     BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_op), 1e-15 );
 
 }
+
+
+
+template<int Dim, int Order>
+void
+testExpression()
+{
+
+    typedef Backend<double> backend_type;
+    auto backend = backend_type::build( BACKEND_PETSC );
+
+    auto mesh=unitHypercube<Dim>();
+    auto Xh = Pch<Order>( mesh );
+
+    auto u = Xh->element();
+    auto v = Xh->element();
+
+    auto operatorlinear = opLinear( _domainSpace=Xh, _imageSpace=Xh, _backend=backend );
+
+    auto matrix = backend->newMatrix( _test=Xh , _trial=Xh );
+    double norm=0,normfree=0;
+
+    typedef decltype( operatorlinear ) operator_type;
+    typedef decltype( u ) element_type;
+
+    std::vector< operator_type > operators_vector;
+    std::vector< operator_type > operators_free_vector;
+    std::vector< element_type > elements_vector;
+
+    auto x = project( Xh, elements(mesh), Px() );         elements_vector.push_back( x );
+    auto xx = project( Xh, elements(mesh), Px()*Px() );   elements_vector.push_back( xx );
+    auto cosy = project( Xh, elements(mesh), cos(Py()) ); elements_vector.push_back( cosy );
+    auto xy = project( Xh, elements(mesh), Px()*Py() );   elements_vector.push_back( xy );
+
+    double last_value=0;
+
+    for(int i=0; i<4; i++)
+    {
+        auto expr = integrate( _range=elements(mesh),
+                               _expr=-idv(elements_vector[i])*gradt(u)*trans(grad(v)) );
+
+        //build operators
+        auto opfree = opLinearFree( _domainSpace=Xh, _imageSpace=Xh, _expr=expr, _backend=backend );
+        auto op = opLinear( _domainSpace=Xh, _imageSpace=Xh,  _backend=backend );
+        *op = expr;
+
+        //store operators
+        operators_vector.push_back( op );
+        operators_free_vector.push_back( opfree );
+
+        //compute norm of associated matrix
+        opfree->matPtr( matrix ); normfree=matrix->l1Norm();
+        *matrix=op->mat();            norm=matrix->l1Norm();
+
+        LOG(INFO)<<"during the construction loop, for i = "<<i<<" - norm : "<<norm<<" and normfree : "<<normfree;
+
+        //this test is ok
+        BOOST_CHECK_SMALL( norm-normfree , 1e-14 );
+
+        if( i == 3 ) last_value = norm;
+    }
+    for(int i=0; i<operators_vector.size(); i++)
+    {
+        //compute norm of the associated matrix
+        *matrix=operators_vector[i]->mat();            norm=matrix->l1Norm();
+        operators_free_vector[i]->matPtr(matrix);  normfree=matrix->l1Norm();
+        LOG(INFO)<<"outside the construction loop for i = "<<i<<" - norm : "<<norm<<" and normfree : "<<normfree;
+
+        //this test is not ok, except for the last value of i
+        BOOST_CHECK_SMALL( norm-normfree , 1e-14 );
+    }
+
+
+}
+
 /**
  * main code
  */
@@ -246,6 +322,9 @@ BOOST_AUTO_TEST_CASE( test_2 )
     //testOperatorLinearComposite<3,1>();
 }
 
+BOOST_AUTO_TEST_CASE( test_3 )
+{
+    testExpression<2,1>();
+}
+
 BOOST_AUTO_TEST_SUITE_END()
-
-

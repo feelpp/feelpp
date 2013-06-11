@@ -216,7 +216,7 @@ public:
     /**
      *
      */
-    virtual void setIndexSplit( std::vector< std::vector<int> > const &_indexSplit )
+    virtual void setIndexSplit( std::vector< std::vector<size_type> > const &_indexSplit )
     {
         M_IndexSplit=_indexSplit;
     }
@@ -224,7 +224,7 @@ public:
     /**
      *
      */
-    std::vector< std::vector<int> > indexSplit() const
+    std::vector< std::vector<size_type> > indexSplit() const
     {
         return M_IndexSplit;
     }
@@ -686,7 +686,7 @@ public:
     /**
      * update a block matrix
      */
-    virtual void  updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j ) = 0;
+    virtual void  updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j ) = 0;
 
 
     /**
@@ -749,7 +749,7 @@ protected:
 
     Context M_mprop;
 
-    std::vector < std::vector<int> > M_IndexSplit;
+    std::vector < std::vector<size_type> > M_IndexSplit;
 
     /**
      * data distribution map of the vector over the processors
