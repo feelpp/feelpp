@@ -990,7 +990,7 @@ struct InitializeContainersOff
     void operator()( boost::shared_ptr<T> & x ) const
     {
         if ( _M_cursor==i && !x )
-            x = boost::shared_ptr<T>( new T( _M_space->template functionSpace<i>()->map() ) );
+            x = boost::shared_ptr<T>( new T( _M_space->template functionSpace<i>()->dof() ) );
 
         ++_M_cursor;// warning _M_cursor < nb color
     }
@@ -2687,7 +2687,7 @@ public:
             if ( this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
             {
                 ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->map() );
+                            _M_functionspace->template functionSpace<i>()->dof() );
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
@@ -2727,7 +2727,7 @@ public:
                 // build a subrange view identical
                 ct_type ct( *fusion::at_c<i>( *_M_containersOffProcess ),
                             ublas::range( 0, space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->map() );
+                            _M_functionspace->template functionSpace<i>()->dof() );
 
                 DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                 DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
@@ -2754,7 +2754,7 @@ public:
             {
                 ct_type ct( const_cast<VectorUblas<value_type>&>( dynamic_cast<VectorUblas<value_type> const&>( *this ) ),
                             ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->map() );
+                            _M_functionspace->template functionSpace<i>()->dof() );
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
@@ -2791,7 +2791,7 @@ public:
                 // build a subrange view identical
                 ct_type ct( *fusion::at_c<i>( *_M_containersOffProcess ),
                             ublas::range( 0, space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->map() );
+                            _M_functionspace->template functionSpace<i>()->dof() );
 
                 DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                 DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
@@ -2923,7 +2923,7 @@ public:
         void setFunctionSpace( functionspace_ptrtype space )
         {
             _M_functionspace = space;
-            super::init( _M_functionspace->map() );
+            super::init( _M_functionspace->dof() );
             //super::init( _M_functionspace->nDof(),  _M_functionspace->nLocalDof() );
         }
 
@@ -4459,7 +4459,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
         size_type __start,
         ComponentType __ct )
     :
-    super( __functionspace->map() ),
+    super( __functionspace->dof() ),
     _M_functionspace( __functionspace ),
     _M_name( __name ),
     _M_start( __start ),
