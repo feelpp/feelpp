@@ -274,6 +274,22 @@ private:
     int _M_pid;
 };
 
+struct UpdateMarker
+{
+    UpdateMarker( flag_type v )
+        :
+        _M_v( v )
+    {}
+
+    template<typename ElementType>
+    void operator()( ElementType& element )
+    {
+        element.setMarker( _M_v );
+    }
+private:
+    flag_type _M_v;
+};
+
 
 } // detail
 /// \endcond detail

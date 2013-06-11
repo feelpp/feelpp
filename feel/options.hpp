@@ -93,5 +93,6 @@ po::options_description exporter_options( std::string const& prefix = "" );
 
 po::options_description material_options( std::string const& prefix = "" );
 
+po::options_description error_options( std::string const& prefix = "" );
 }
 #endif // _FEELPP_OPTIONS_HPP

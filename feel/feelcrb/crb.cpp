@@ -94,7 +94,7 @@ crbOptions( std::string const& prefix )
     ( "crb.compute-conditioning",Feel::po::value<bool>()->default_value( false ), "compute conditioning of reduced matrix if true")
 
     ( "crb.use-symmetric-matrix",Feel::po::value<bool>()->default_value( true ), "don't transpose to have the matrix associated to the dual problem if true")
-
+    ( "crb.stock-matrices",Feel::po::value<bool>()->default_value( true ), "assemble and stock all matrices/vectors if true, but it can takes a lot of memory")
     ;
 
     crboptions

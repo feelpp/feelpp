@@ -398,8 +398,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( this->dualImageSpace()->mesh()->numElements() == 0 )
         {
             //std::cout << "OperatorInterpolation : update nothing!" << std::endl;
-            this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->mapOnOff(),
-                                                             this->dualImageSpace()->mapOn() );
+            this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->dofOnOff(),
+                                                             this->dualImageSpace()->dofOn() );
             return;
         }
 
@@ -571,8 +571,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     sparsity_graph->close();
     //-----------------------------------------
     // create matrix
-    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->mapOnOff(),
-                                                 this->dualImageSpace()->mapOn(),
+    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
+                                                 this->dualImageSpace()->dofOn(),
                                                  sparsity_graph  );
     //-----------------------------------------
 
@@ -716,8 +716,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     sparsity_graph->close(); //sparsity_graph->printPython("mygraphpython.py");
     //-----------------------------------------
     // create matrix
-    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->mapOnOff(),
-                                                 this->dualImageSpace()->mapOn(),
+    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
+                                                 this->dualImageSpace()->dofOn(),
                                                  sparsity_graph );
     //-----------------------------------------
     // assemble matrix
@@ -771,8 +771,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI has One LocalActivity " << std::endl;
             if ( !this->dualImageSpace()->worldComm().isActive() && !this->domainSpace()->worldComm().isActive() )
                 {
-                    this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->mapOnOff(),
-                                                                     this->dualImageSpace()->mapOn() );
+                    this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->dofOnOff(),
+                                                                     this->dualImageSpace()->dofOn() );
                 }
             else
                 {
@@ -1141,17 +1141,17 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // build data map for the columns
     //this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
     //this->dualImageSpace()->worldComm().showMe();
-    DataMap mapColInterp(this->dualImageSpace()->worldComm());// this->domainSpace()->mapOnOff().worldComm());
-    mapColInterp.setNDof(this->domainSpace()->mapOnOff().nDof());
+    boost::shared_ptr<DataMap> mapColInterp( new DataMap(this->dualImageSpace()->worldComm()));// this->domainSpace()->mapOnOff().worldComm());
+    mapColInterp->setNDof(this->domainSpace()->mapOnOff().nDof());
 
-    mapColInterp.setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
-    mapColInterp.setNLocalDofWithGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithGhost()*/ );
-    mapColInterp.setFirstDof( proc_id, this->domainSpace()->mapOnOff().firstDof() );
-    mapColInterp.setLastDof( proc_id,  this->domainSpace()->mapOnOff().lastDof() );
-    mapColInterp.setFirstDofGlobalCluster( proc_id, new_firstdofcol );
-    mapColInterp.setLastDofGlobalCluster( proc_id, new_lastdofcol );
-    mapColInterp.setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);
-    mapColInterp.setMapGlobalClusterToGlobalProcess(new_mapGlobalClusterToGlobalProcess);
+    mapColInterp->setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
+    mapColInterp->setNLocalDofWithGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithGhost()*/ );
+    mapColInterp->setFirstDof( proc_id, this->domainSpace()->mapOnOff().firstDof() );
+    mapColInterp->setLastDof( proc_id,  this->domainSpace()->mapOnOff().lastDof() );
+    mapColInterp->setFirstDofGlobalCluster( proc_id, new_firstdofcol );
+    mapColInterp->setLastDofGlobalCluster( proc_id, new_lastdofcol );
+    mapColInterp->setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);
+    mapColInterp->setMapGlobalClusterToGlobalProcess(new_mapGlobalClusterToGlobalProcess);
     //if ( this->dualImageSpace()->worldComm().isActive() ) mapColInterp.showMeMapGlobalProcessToGlobalCluster();
 
     //-----------------------------------------
@@ -1162,7 +1162,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( this->dualImageSpace()->worldComm().isActive() )
         {
             this->matPtr() = this->backend()->newMatrix( mapColInterp,//this->domainSpace()->mapOnOff(),
-                                                         this->dualImageSpace()->mapOn(),
+                                                         this->dualImageSpace()->dofOn(),
                                                          sparsity_graph  );
         }
     //-----------------------------------------
@@ -1173,7 +1173,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( !this->dualImageSpace()->worldComm().isActive() && buildNonZeroMatrix )
         {
             this->matPtr() = this->backend()->newZeroMatrix( mapColInterp,//this->domainSpace()->mapOnOff(),
-                                                             this->dualImageSpace()->mapOn() );
+                                                             this->dualImageSpace()->dofOn() );
         }
     //-----------------------------------------
     //std::cout << "Op---6----- "  << this->worldCommFusion().godRank() << std::endl;

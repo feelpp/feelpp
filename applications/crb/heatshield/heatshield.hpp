@@ -56,6 +56,7 @@
 #include <Eigen/LU>
 #include <Eigen/Dense>
 
+#include <feel/feelcore/pslogger.hpp>
 
 
 
@@ -202,6 +203,19 @@ public:
         std::vector< std::vector<sparse_matrix_ptrtype> >,
         std::vector< std::vector<std::vector<vector_ptrtype> > >
         > affine_decomposition_type;
+
+
+    typedef OperatorLinear< space_type , space_type > operator_type;
+    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+
+    typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
+    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+
+    typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
+    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+
+    typedef FsFunctionalLinear< space_type > functional_type;
+    typedef boost::shared_ptr<functional_type> functional_ptrtype;
 
     //@}
 
@@ -392,6 +406,8 @@ public:
      */
     affine_decomposition_type computeAffineDecomposition();
 
+    void stockAffineDecomposition();
+
     std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition()
     {
         std::vector< std::vector<element_ptrtype> > q;
@@ -501,9 +517,22 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu, bool export_outputs=false );
+    value_type output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve=false, bool export_outputs=false );
 
     gmsh_ptrtype createGeo( double hsize );
+
+    virtual operatorcomposite_ptrtype operatorCompositeA()
+    {
+        return M_compositeA;
+    }
+    virtual operatorcomposite_ptrtype operatorCompositeM()
+    {
+        return M_compositeM;
+    }
+    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeF()
+    {
+        return M_compositeF;
+    }
 
 private:
 
@@ -535,15 +564,22 @@ private:
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
     std::vector< std::vector<sparse_matrix_ptrtype> > M_Mqm;
     std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
-    std::vector< std::vector< element_ptrtype> > M_InitialGuessQm;
+
+    std::vector< std::vector<operator_ptrtype> > M_Aqm_free;
+    std::vector< std::vector<operator_ptrtype> > M_Mqm_free;
+    std::vector< std::vector<std::vector<functional_ptrtype> > > M_Fqm_free;
+
+    operatorcomposite_ptrtype M_compositeA;
+    operatorcomposite_ptrtype M_compositeM;
+    std::vector< functionalcomposite_ptrtype > M_compositeF;
 
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
-    beta_vector_type M_betaInitialGuessQm;
     std::vector<beta_vector_type> M_betaFqm;
 
     bdf_ptrtype M_bdf;
 
+    element_type u,v;
 };
 HeatShield::HeatShield()
     :
@@ -674,41 +710,30 @@ void HeatShield::initModel()
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
-
-
     surface = integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()( 0,0 );
     //std::cout<<"surface : "<<surface<<std::endl;
 
     M_bdf = bdf( _space=Xh, _vm=M_vm, _name="heatshield" , _prefix="heatshield" );
 
 
-    M_Aqm.resize( this->Qa() );
+    M_Aqm_free.resize( this->Qa() );
     for(int q=0; q<Qa(); q++)
-        M_Aqm[q].resize( 1 );
+        M_Aqm_free[q].resize( 1 );
 
-    M_Mqm.resize( this->Qm() );
+    M_Mqm_free.resize( this->Qm() );
     for(int q=0; q<Qm(); q++)
-        M_Mqm[q].resize( 1 );
+        M_Mqm_free[q].resize( 1 );
 
-    M_Fqm.resize( this->Nl() );
+    M_Fqm_free.resize( this->Nl() );
     for(int l=0; l<Nl(); l++)
     {
-        M_Fqm[l].resize( Ql(l) );
+        M_Fqm_free[l].resize( Ql(l) );
         for(int q=0; q<Ql(l) ; q++)
         {
-            M_Fqm[l][q].resize(1);
-            M_Fqm[l][q][0] = backend->newVector( Xh );
+            M_Fqm_free[l][q].resize(1);
         }
     }
 
-    /*
-    M_InitialGuessQm.resize( this->QInitialGuess() );
-    for(int q=0; q<QInitialGuess(); q++)
-    {
-        M_InitialGuessQm[q].resize( 1 );
-        M_InitialGuessQm[q][0] = backend->newVector( Xh );
-    }
-    */
     Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;
     M_Dmu->setMin( mu_min );
@@ -718,10 +743,9 @@ void HeatShield::initModel()
 
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
-
-
     assemble();
-
+    if (option(_name="crb.stock-matrices"). as<bool>() )
+        stockAffineDecomposition();
 } // HeatShield::init
 
 
@@ -731,53 +755,64 @@ void HeatShield::assemble()
 
     using namespace Feel::vf;
 
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
+    u = Xh->element();
+    v = Xh->element();
 
-    M_Aqm[0][0] = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[0][0] ) = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+    auto expr_a00 = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+    auto operatorfree00=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a00 , _backend=backend );
+    operatorfree00->setName("A0");
+    M_Aqm_free[0][0]=operatorfree00;
 
-    M_Aqm[1][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
-    M_Aqm[2][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
+    auto expr_a10  = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
+    auto operatorfree10=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a10 , _backend=backend );
+    operatorfree10->setName("A1");
+    M_Aqm_free[1][0]=operatorfree10;
 
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] )  = integrate( _range= markedfaces( mesh, "left" ), _expr= idt( u )*id( v ) );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
+    auto expr_a20  = integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= idt( u )*id( v ) );
+    auto operatorfree20=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_a20 , _backend=backend );
+    operatorfree20->setName("A2");
+    M_Aqm_free[2][0]=operatorfree20;
 
-    form1( _test=Xh, _vector=M_Fqm[0][0][0] ) = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
-    form1( _test=Xh, _vector=M_Fqm[1][0][0] ) = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
-
-    M_Aqm[0][0]->close();
-    M_Aqm[1][0]->close();
-    M_Aqm[2][0]->close();
-
-    M_Fqm[0][0][0]->close();
-    M_Fqm[1][0][0]->close();
+    auto expr_f000 = integrate( _range=markedfaces( mesh,"left" ), _expr= id( v ) ) ;
+    auto functionalfree000 = functionalLinearFree( _space=Xh , _expr=expr_f000 , _backend=backend );
+    auto expr_f100 = integrate( _range=elements( mesh ), _expr= id( v ) ) ;
+    auto functionalfree100 = functionalLinearFree( _space=Xh , _expr=expr_f100 , _backend=backend );
+    M_Fqm_free[0][0][0]=functionalfree000;
+    M_Fqm_free[1][0][0]=functionalfree100;
 
     //mass matrix
-    M_Mqm[0][0] = backend->newMatrix( _test=Xh, _trial=Xh  );
-    form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
-    M_Mqm[0][0]->close();
-
-    auto ini_cond = Xh->elementPtr();
-    ini_cond->setZero();
-    M_InitialGuessQm.resize( 1 );
-    M_InitialGuessQm[0].resize( 1 );
-    M_InitialGuessQm[0][0] = ini_cond;
-
+    auto expr_m00 = integrate ( _range=elements( mesh ), _expr=idt( u )*id( v ) );
+    auto operatorfreeM10=opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr_m00 , _backend=backend );
+    operatorfreeM10->setName("mass");
+    M_Mqm_free[0][0]=operatorfreeM10;
 
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=M ) =
+    form2( Xh, Xh, M ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     M->close();
 
     Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
-    form2( _test=Xh, _trial=Xh, _matrix=Mpod ) =
+    form2( Xh, Xh, Mpod ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
     Mpod->close();
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
+
+
+    M_compositeA = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
+    M_compositeA->addList( M_Aqm_free );
+    M_compositeM = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh );
+    M_compositeM->addList( M_Mqm_free );
+    M_compositeF.resize( this->Nl() );
+    for(int output=0; output<this->Nl(); output++)
+    {
+        M_compositeF[output]=functionalLinearComposite( _space=Xh );
+        M_compositeF[output]->addList( M_Fqm_free[output] );
+    }
+
+
 
 }
 
@@ -800,6 +835,7 @@ HeatShield::computeAffineDecomposition()
 {
     return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
 }
+
 
 
 void HeatShield::solve( sparse_matrix_ptrtype& D,
@@ -833,48 +869,142 @@ void HeatShield::exportResults( double time, element_type& T, parameter_type con
 }
 
 
+void
+HeatShield::stockAffineDecomposition()
+{
+    auto compositeM = operatorCompositeM();
+    int q_max = this->Qm();
+    M_Mqm.resize( q_max);
+    for(int q=0; q<q_max; q++)
+    {
+        int m_max = this->mMaxM(q);
+        M_Mqm[q].resize(m_max);
+        for(int m=0; m<m_max;m++)
+        {
+            auto operatorfree = compositeM->operatorlinear(q,m);
+            size_type pattern = operatorfree->pattern();
+            auto trial = operatorfree->domainSpace();
+            auto test=operatorfree->dualImageSpace();
+            M_Mqm[q][m]= backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+            operatorfree->matPtr(M_Mqm[q][m]);//fill the matrix
+        }//m
+    }//q
+
+    auto compositeA = operatorCompositeA();
+    q_max = this->Qa();
+    M_Aqm.resize( q_max);
+    for(int q=0; q<q_max; q++)
+    {
+        int m_max = this->mMaxA(q);
+        M_Aqm[q].resize(m_max);
+        for(int m=0; m<m_max;m++)
+        {
+            auto operatorfree = compositeA->operatorlinear(q,m);
+            size_type pattern = operatorfree->pattern();
+            auto trial = operatorfree->domainSpace();
+            auto test=operatorfree->dualImageSpace();
+            M_Aqm[q][m]= backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+            operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
+        }//m
+    }//q
+
+    auto vector_compositeF = functionalCompositeF();
+    int number_outputs = vector_compositeF.size();
+    M_Fqm.resize(number_outputs);
+    for(int output=0; output<number_outputs; output++)
+    {
+        auto composite_f = vector_compositeF[output];
+        int q_max = this->Ql(output);
+        M_Fqm[output].resize( q_max);
+        for(int q=0; q<q_max; q++)
+        {
+            int m_max = this->mMaxF(output,q);
+            M_Fqm[output][q].resize(m_max);
+            for(int m=0; m<m_max;m++)
+            {
+                auto operatorfree = composite_f->functionallinear(q,m);
+                auto space = operatorfree->space();
+                M_Fqm[output][q][m]= backend->newVector( space );
+                operatorfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
+            }//m
+        }//q
+    }//output
+
+}
+
 void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index )
 {
 
-    D->close();
-    D->zero();
-
-
-    for ( size_type q = 0; q < Qa(); ++q )
+    if (option(_name="crb.stock-matrices"). as<bool>() )
     {
-        for ( size_type m = 0; m < mMaxA(q); ++m )
+        D->close();
+        D->zero();
+
+        for ( size_type q = 0; q < Qa(); ++q )
         {
-            D->addMatrix( M_betaAqm[q][m] , M_Aqm[q][m] );
+            for ( size_type m = 0; m < mMaxA(q); ++m )
+                D->addMatrix( M_betaAqm[q][m] , M_Aqm[q][m] );
+        }
+
+        F->close();
+        F->zero();
+
+        for ( size_type q = 0; q < Ql(output_index); ++q )
+        {
+            for ( size_type m = 0; m < mMaxF(output_index,q); ++m )
+                F->add( M_betaFqm[output_index][q][m], M_Fqm[output_index][q][m] );
+        }
+
+        auto vec_bdf_poly = backend->newVector( Xh );
+
+        //add contribution from mass matrix
+        for ( size_type q = 0; q < Qm(); ++q )
+        {
+            for ( size_type m = 0; m < mMaxM(q); ++m )
+            {
+                //left hand side
+                D->addMatrix( M_betaMqm[q][m]*bdf_coeff, M_Mqm[q][m] );
+                //right hand side
+                *vec_bdf_poly = bdf_poly;
+                vec_bdf_poly->close();
+                vec_bdf_poly->scale( M_betaMqm[q][m] );
+                F->addVector( *vec_bdf_poly, *M_Mqm[q][m] );
+            }
         }
     }
-
-    F->close();
-    F->zero();
-
-    for ( size_type q = 0; q < Ql(output_index); ++q )
+    else
     {
-        for ( size_type m = 0; m < mMaxF(output_index,q); ++m )
+        D->close();
+        D->zero();
+        F->close();
+        F->zero();
+
+        M_compositeA->setScalars( M_betaAqm );
+        D = M_compositeA->sumAllMatrices();
+
+        M_compositeF[output_index]->setScalars( M_betaFqm[output_index] );
+        F = M_compositeF[output_index]->sumAllVectors();
+
+        auto vec_bdf_poly = backend->newVector( Xh );
+
+        for ( size_type q = 0; q < Qm(); ++q )
         {
-            F->add( M_betaFqm[output_index][q][m], M_Fqm[output_index][q][m] );
+            for ( size_type m = 0; m < mMaxM(q); ++m )
+            {
+                auto matrix = backend->newMatrix( _test=Xh , _trial=Xh );
+                M_compositeM->operatorlinear(q,m)->matPtr( matrix );
+                //left hand side
+                D->addMatrix( M_betaMqm[q][m]*bdf_coeff, matrix );
+                //right hand side
+                *vec_bdf_poly = bdf_poly;
+                vec_bdf_poly->close();
+                vec_bdf_poly->scale( M_betaMqm[q][m] );
+                F->addVector( *vec_bdf_poly, *matrix );
+            }
         }
+
     }
 
-    auto vec_bdf_poly = backend->newVector( Xh );
-
-    //add contribution from mass matrix
-    for ( size_type q = 0; q < Qm(); ++q )
-    {
-        for ( size_type m = 0; m < mMaxM(q); ++m )
-        {
-            //left hand side
-            D->addMatrix( M_betaMqm[q][m]*bdf_coeff, M_Mqm[q][m] );
-            //right hand side
-            *vec_bdf_poly = bdf_poly;
-            vec_bdf_poly->close();
-            vec_bdf_poly->scale( M_betaMqm[q][m] );
-            F->addVector( *vec_bdf_poly, *M_Mqm[q][m] );
-        }
-    }
 
 }
 
@@ -898,14 +1028,10 @@ void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output
     initializationField( T,mu );
     initializationField( pT,mu );
 
-    assemble();
-
-    element_type v( Xh, "v" );//test functions
+    //assemble();
 
     if ( M_is_steady )
-    {
         M_bdf->setSteady();
-    }
 
 
     for ( M_bdf->start(*T); !M_bdf->isFinished() ; M_bdf->next() )
@@ -917,7 +1043,7 @@ void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output
         auto bdf_poly = M_bdf->polyDeriv();
         this->update( mu , bdf_coeff, bdf_poly );
 
-        backend->solve( _matrix=D,  _solution=T, _rhs=F );
+        backend->solve( _matrix=D,  _solution=T, _rhs=F  );
 
         if ( do_export )
         {
@@ -989,33 +1115,31 @@ void HeatShield::run( const double * X, unsigned long N, double * Y, unsigned lo
 
 
 
-double HeatShield::output( int output_index, parameter_type const& mu, bool export_outputs )
+double HeatShield::output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve , bool export_outputs )
 {
     using namespace vf;
 
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
 
-    if ( !export_outputs )
-    {
+    if ( need_to_solve )
         this->solve( mu, pT );
-    }
+    else
+        *pT = T;
 
     // vector_ptrtype U( backend->newVector( Xh ) );
     //*U = *pT;
     pT->close();
     double s=0;
 
+    auto fqm = backend->newVector( Xh );
     if ( output_index<2 )
     {
         for ( int q=0; q<Ql( output_index ); q++ )
         {
             for ( int m=0; m<mMaxF(output_index,q); m++ )
             {
-                //element_ptrtype eltF( new element_type( Xh ) );
-                //*eltF = *M_Fqm[output_index][q][m];
-                //s += M_betaFqm[output_index][q][m]*dot( *eltF, *pT );
-                s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m], *pT );
+                M_Fqm_free[output_index][q][m]->containerPtr( fqm );
+                s += M_betaFqm[output_index][q][m]*dot( *fqm , *pT );
+                // s += M_betaFqm[output_index][q][m]*dot( *M_Fqm[output_index][q][m], *pT );
             }
         }
     }

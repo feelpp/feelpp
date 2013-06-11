@@ -52,16 +52,16 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
     M_vec = backend.newVector( _size,_size );
 #else
 
-    DataMap dm(blockVec(0,0)->map().worldComm());
-    const int myrank = dm.worldComm().globalRank();
-    const int worldsize = dm.worldComm().globalSize();
+    boost::shared_ptr<DataMap> dm( new DataMap(blockVec(0,0)->map().worldComm()) );
+    const int myrank = dm->worldComm().globalRank();
+    const int worldsize = dm->worldComm().globalSize();
     for (int proc = 0 ; proc < worldsize ; ++proc)
     {
         size_type firstDofGlobalCluster=0;
         for ( int p=0; p<proc; ++p )
             for ( uint16_type i=0 ; i<nRow; ++i )
                 firstDofGlobalCluster += blockVec(i,0)->map().nLocalDofWithoutGhost( p );
-        dm.setFirstDofGlobalCluster( proc, firstDofGlobalCluster );
+        dm->setFirstDofGlobalCluster( proc, firstDofGlobalCluster );
 
         size_type sizeWithoutGhost=0, sizeWithGhost=0, sizeGlobalCluster=0;
         for ( uint16_type i=0 ; i<nRow; ++i)
@@ -70,20 +70,20 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
             sizeWithGhost += blockVec(i,0)->map().nLocalDofWithGhost( proc );
             sizeGlobalCluster += blockVec(i,0)->map().nDof();
         }
-        dm.setNLocalDofWithoutGhost( proc, sizeWithoutGhost );
-        dm.setNLocalDofWithGhost( proc, sizeWithGhost );
-        dm.setFirstDof( proc, 0 );
-        dm.setLastDof( proc, (sizeWithGhost == 0)?0:sizeWithGhost-1 );
-        dm.setLastDofGlobalCluster(proc,  (sizeWithoutGhost ==0)? firstDofGlobalCluster : ( firstDofGlobalCluster +sizeWithoutGhost-1 ));
+        dm->setNLocalDofWithoutGhost( proc, sizeWithoutGhost );
+        dm->setNLocalDofWithGhost( proc, sizeWithGhost );
+        dm->setFirstDof( proc, 0 );
+        dm->setLastDof( proc, (sizeWithGhost == 0)?0:sizeWithGhost-1 );
+        dm->setLastDofGlobalCluster(proc,  (sizeWithoutGhost ==0)? firstDofGlobalCluster : ( firstDofGlobalCluster +sizeWithoutGhost-1 ));
         if ( proc==myrank )
-            dm.setNDof( sizeGlobalCluster );
+            dm->setNDof( sizeGlobalCluster );
     }
 
-    dm.resizeMapGlobalProcessToGlobalCluster( dm.nLocalDofWithGhost(myrank) );
-    dm.resizeMapGlobalClusterToGlobalProcess( dm.nLocalDofWithoutGhost(myrank) );
-    const size_type firstDofGC = dm.firstDofGlobalCluster(myrank);
+    dm->resizeMapGlobalProcessToGlobalCluster( dm->nLocalDofWithGhost(myrank) );
+    dm->resizeMapGlobalClusterToGlobalProcess( dm->nLocalDofWithoutGhost(myrank) );
+    const size_type firstDofGC = dm->firstDofGlobalCluster(myrank);
     size_type start_i = firstDofGC;
-    size_type nLocalDofStart = dm.firstDof();
+    size_type nLocalDofStart = dm->firstDof();
     for ( uint16_type i=0 ; i<nRow; ++i)
     {
         const size_type firstBlockDofGC =  blockVec(i,0)->map().firstDofGlobalCluster(myrank);
@@ -94,17 +94,17 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
             if ( blockVec(i,0)->map().dofGlobalClusterIsOnProc( gdofGC ) )
             {
                 const size_type globalDof = start_i+(gdofGC-firstBlockDofGC);
-                dm.setMapGlobalProcessToGlobalCluster( localDof, globalDof );
-                dm.setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
+                dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
+                dm->setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
             }
             else
             {
                 const int realproc = blockVec(i,0)->map().procOnGlobalCluster(gdofGC);
-                size_type nDofStart=dm.firstDofGlobalCluster(realproc);
+                size_type nDofStart=dm->firstDofGlobalCluster(realproc);
                 for ( uint16_type k=0; k<i; ++k )
                     nDofStart += blockVec(k,0)->map().nLocalDofWithoutGhost( realproc );
                 const size_type globDof = nDofStart+(gdofGC- blockVec(i,0)->map().firstDofGlobalCluster(realproc));
-                dm.setMapGlobalProcessToGlobalCluster( localDof, globDof );
+                dm->setMapGlobalProcessToGlobalCluster( localDof, globDof );
             }
         }
         nLocalDofStart += blockVec(i,0)->map().nLocalDofWithGhost( myrank );
@@ -112,7 +112,7 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
         start_i += blockVec(i,0)->map().nLocalDofWithoutGhost( myrank );
     }
 
-    //dm.showMeMapGlobalProcessToGlobalCluster();
+    //dm->showMeMapGlobalProcessToGlobalCluster();
 
     M_vec = backend.newVector( dm );
 #endif

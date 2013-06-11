@@ -218,7 +218,7 @@ public:
     }
     double polyDerivCoefficient( int i ) const
     {
-        FEELPP_ASSERT( i >=0 && i < BDF_MAX_ORDER ).error( "[BDF] invalid index" );
+        FEELPP_ASSERT( i >=0 && i <= BDF_MAX_ORDER ).error( "[BDF] invalid index" );
         return M_alpha[this->timeOrder()-1][i]/math::abs( this->timeStep() );
         //return M_alpha[this->timeOrder()-1][i]/this->timeStep();
     }
