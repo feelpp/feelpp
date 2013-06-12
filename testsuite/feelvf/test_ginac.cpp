@@ -85,7 +85,7 @@ makeOptions()
 {
     Feel::po::options_description ginacoptions("Ginac options");
     ginacoptions.add_options()
-        ("dim", Feel::po::value<int>()->default_value( 0 ), "geometric dimension")
+        ("dim", Feel::po::value<int>()->default_value( 1 ), "geometric dimension")
         ("params", Feel::po::value<std::string>()->default_value( "" ), "name of parameters")
         ("exact", Feel::po::value<std::string>()->default_value( "" ), "name of the input")
         ;
@@ -174,7 +174,7 @@ int main( int argc, char* argv[] )
         break;
     }
     default: {
-        std::cerr << "wrong dimension - should be lesser or egal to 3\n";
+        std::cerr << "wrong dimension - should be lesser or egal to 3 - is equatl to " << dim << "\n";
         return 1;
     }
     }
