@@ -123,7 +123,7 @@ int main( int argc, char* argv[] )
     std::vector<std::string> lst_params;
     std::string exact;
     std::string params;
-    int dim;
+    int dim = 0;
 
     if ( option(_name="ginac.strict-parser").as<bool>() )
         std::cout << "Strict Ginac Parser enabled\n";
@@ -133,6 +133,8 @@ int main( int argc, char* argv[] )
             std::cin >> dim;
             std::cout << std::flush;
         }
+        else
+        dim = env.vm()["dim"].as<int>(); 
 
     // Load param list
     if ( !env.vm()["params"].as<std::string>().empty() )
