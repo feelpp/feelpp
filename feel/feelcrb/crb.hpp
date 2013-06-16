@@ -67,6 +67,8 @@
 #include <feel/feeldiscr/bdf2.hpp>
 #include <feel/feelfilters/exporter.hpp>
 
+#include <feel/feelcrb/crbelementsdb.hpp>
+
 
 namespace Feel
 {
@@ -136,6 +138,10 @@ public:
     //! scm
     typedef CRBSCM<truth_model_type> scm_type;
     typedef boost::shared_ptr<scm_type> scm_ptrtype;
+
+    //! elements database
+    typedef CRBElementsDB<truth_model_type> crb_elements_db_type;
+    typedef boost::shared_ptr<crb_elements_db_type> crb_elements_db_ptrtype;
 
     //! POD
     typedef POD<truth_model_type> pod_type;
@@ -221,6 +227,7 @@ public:
     CRB()
         :
         super(),
+        M_elements_database(),
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_output_index( 0 ),
@@ -245,6 +252,11 @@ public:
                name,
                ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                vm ),
+        M_elements_database(
+                            ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
+                            name,
+                            ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
+                            vm ),
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend_type::build( vm ) ),
@@ -277,7 +289,12 @@ public:
                name,
                ( boost::format( "%1%-%2%-%3%" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
                vm ),
-
+        M_elements_database(
+                            ( boost::format( "%1%" ) % vm["crb.error-type"].template as<int>() ).str(),
+                            name,
+                            ( boost::format( "%1%-%2%-%3%-elements" ) % name % vm["crb.output-index"].template as<int>() % vm["crb.error-type"].template as<int>() ).str(),
+                            vm ,
+                            model ),
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend_type::build( vm ) ),
@@ -297,6 +314,12 @@ public:
         this->setTruthModel( model );
         if ( this->loadDB() )
             LOG(INFO) << "Database " << this->lookForDB() << " available and loaded\n";
+        M_elements_database.setMN( M_N );
+        if( M_elements_database.loadDB() )
+            LOG(INFO) << "Element Database " << M_elements_database.lookForDB() << " available and loaded\n";
+        auto basis_functions = M_elements_database.wn();
+        M_WN = basis_functions.template get<0>();
+        M_WNdu = basis_functions.template get<1>();
 
         M_preconditioner = preconditioner(_pc=(PreconditionerType) M_backend->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
                                           _backend= M_backend,
@@ -311,6 +334,7 @@ public:
     CRB( CRB const & o )
         :
         super( o ),
+        M_elements_database( o.M_elements_database ),
         M_nlsolver( o.M_nlsolver ),
         M_output_index( o.M_output_index ),
         M_tolerance( o.M_tolerance ),
@@ -1011,6 +1035,8 @@ public:
 
 
 private:
+    crb_elements_db_type M_elements_database;
+
     boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 
     truth_model_ptrtype M_model;
@@ -2481,6 +2507,8 @@ CRB<TruthModelType>::offline()
 
         //save DB after adding an element
         this->saveDB();
+        M_elements_database.setWn( boost::make_tuple( M_WN , M_WNdu ) );
+        M_elements_database.saveDB();
     }
 
     if( proc_number == 0 )
@@ -6229,16 +6257,19 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
         ar & BOOST_SERIALIZATION_NVP( M_current_mu );
         ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
 
+#if 0
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
+#endif
 
         ar & BOOST_SERIALIZATION_NVP( M_maxerror );
         ar & BOOST_SERIALIZATION_NVP( M_use_newton );
         ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
         ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
 }
+
 
 template<typename TruthModelType>
 template<class Archive>
@@ -6252,6 +6283,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     LOG(INFO) <<"[CRB::load] version"<< version <<"\n";
 
+#if 0
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
@@ -6270,6 +6302,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         Xh = M_model->functionSpace();
         LOG(INFO) << "[load] get mesh/Xh from model done.\n";
     }
+#endif
 
     typedef boost::bimap< int, double > old_convergence_type;
     ar & boost::serialization::base_object<super>( *this );
@@ -6320,25 +6353,6 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
         ar & BOOST_SERIALIZATION_NVP( M_current_mu );
         ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
 
-        element_type temp = Xh->element();
-
-        M_WN.resize( M_N );
-        M_WNdu.resize( M_N );
-
-        for( int i = 0 ; i < M_N ; i++ )
-        {
-            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
-            ar & BOOST_SERIALIZATION_NVP( temp );
-            M_WN[i] = temp;
-        }
-
-        for( int i = 0 ; i < M_N ; i++ )
-        {
-            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
-            ar & BOOST_SERIALIZATION_NVP( temp );
-            M_WNdu[i] = temp;
-        }
-
         ar & BOOST_SERIALIZATION_NVP( M_maxerror );
         ar & BOOST_SERIALIZATION_NVP( M_use_newton );
         ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
@@ -6359,6 +6373,26 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
 
     for ( auto it = M_rbconv.begin(), en = M_rbconv.end();it != en; ++it )
         std::cout << "[loadDB] convergence: (" << it->left << ","  << it->right  << ")\n";
+
+        element_type temp = Xh->element();
+
+        M_WN.resize( M_N );
+        M_WNdu.resize( M_N );
+
+        for( int i = 0 ; i < M_N ; i++ )
+        {
+            temp.setName( (boost::format( "fem-primal-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( temp );
+            M_WN[i] = temp;
+        }
+
+        for( int i = 0 ; i < M_N ; i++ )
+        {
+            temp.setName( (boost::format( "fem-dual-%1%" ) % ( i ) ).str() );
+            ar & BOOST_SERIALIZATION_NVP( temp );
+            M_WNdu[i] = temp;
+        }
+
 #endif
     LOG(INFO) << "[CRB::load] end of load function" << std::endl;
 }
@@ -6388,6 +6422,7 @@ CRB<TruthModelType>::showMuSelection()
     return show;
 }
 
+
 template<typename TruthModelType>
 void
 CRB<TruthModelType>::saveDB()
@@ -6409,6 +6444,9 @@ CRB<TruthModelType>::loadDB()
 {
     if ( this->rebuildDB() )
         return false;
+
+    if( this->isDBLoaded() )
+        return true;
 
     fs::path db = this->lookForDB();
 
@@ -6434,6 +6472,7 @@ CRB<TruthModelType>::loadDB()
 
     return false;
 }
+
 } // Feel
 
 namespace boost
