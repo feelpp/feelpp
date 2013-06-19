@@ -178,6 +178,7 @@ Laplacian_insta<Dim,Order>::run()
  	// loading exact and rhs 
     std::string exact  = this->vm()["error.exact"].template as<std::string>();
     std::string rhs  = this->vm()["error.rhs"].template as<std::string>();
+	std::string params = this->vm()["error.params"].template as<std::string>();
     value_type nu = this->vm()["nu"].template as<double>();
 
 	// loading time loop variables
@@ -237,6 +238,16 @@ Laplacian_insta<Dim,Order>::run()
 
 	error_ptrtype cvg(new error_type(this->vm(), ""));
 
+	if( !exact.empty() )
+        {
+            if ( !params.empty() )
+                cvg->setParams ( params );
+            LOG(INFO) << "Loading function : " << exact << std::endl;
+            std::cout << "Loading function : " << exact << std::endl;
+            cvg->setSolution(exact, params);
+            cvg->print();
+        }
+
 	/**
 	* Add extra parameters ( t for example )
 	*/
@@ -245,14 +256,6 @@ Laplacian_insta<Dim,Order>::run()
 	/** \endcode */
 	if( parameters.size())
                 std::cout << "WARNING -- " << parameters.size() << " parameters have been defined\n";
-
-	if( !exact.empty() )
-        {
-            LOG(INFO) << "Loading function : " << exact << std::endl;
-            std::cout << "Loading function : " << exact << std::endl;
-            cvg->setSolution(exact, parameters);
-            cvg->print();
-        }
 
 	auto vars = cvg->getVars(); //symbols<Dim>();
 
