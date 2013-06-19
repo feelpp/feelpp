@@ -237,6 +237,15 @@ Laplacian_insta<Dim,Order>::run()
 
 	error_ptrtype cvg(new error_type(this->vm(), ""));
 
+	/**
+	* Add extra parameters ( t for example )
+	*/
+	/** \code */
+	auto parameters = cvg->getParams(); //symbols<Dim>();
+	/** \endcode */
+	if( parameters.size())
+                std::cout << "WARNING -- " << parameters.size() << " parameters have been defined\n";
+
 	if( !exact.empty() )
         {
             if ( !params.empty() )
@@ -248,16 +257,6 @@ Laplacian_insta<Dim,Order>::run()
         }
 
 	auto vars = cvg->getVars(); //symbols<Dim>();
-
-	/**
-	* Add extra parameters ( t for example )
-	*/
-	/** \code */
-	auto parameters = cvg->getParams(); //symbols<Dim>();
-	/** \endcode */
-	if( parameters.size())
-                std::cout << "WARNING -- " << parameters.size() << " parameters have been defined\n";
-
 
 	// if rhs should be computed
 	if(cvg->computedrhs())
