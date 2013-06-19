@@ -1116,7 +1116,7 @@ public:
 
     element_ptrtype  InitialGuessQm( uint16_type q, int m ) const
     {
-        return InitialGuessQm[q][m];
+        return M_InitialGuessV[q][m];
     }
 
     /**
