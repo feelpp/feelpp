@@ -29,9 +29,9 @@ makeOptions()
 {
     po::options_description desc_options( "test_normal3d options" );
     desc_options.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.4 ), "mesh size" )
-    ( "geomap", po::value<int>()->default_value( ( int )GeomapStrategyType::GEOMAP_HO ), "geomap (0=opt, 1=p1, 2=ho)" )
-    ( "straighten", po::value<int>()->default_value( 0 ), "straighten mesh" )
+    ( "hsize", po::value<double>()->default_value( 0.5 ), "mesh size" )
+    ( "geomap", po::value<int>()->default_value( ( int )GeomapStrategyType::GEOMAP_OPT ), "geomap (0=opt, 1=p1, 2=ho)" )
+    ( "straighten", po::value<int>()->default_value( 1 ), "straighten mesh" )
     ;
     return desc_options.add( Feel::feel_options() );
 }
@@ -81,7 +81,7 @@ runtest( Application_ptrtype test_app )
     GeoTool::Node Centre( 0,0,0 );
     GeoTool::Node Rayon( 1 );
     GeoTool::Node Dir( 1,0,0 );
-    GeoTool::Node Lg( 5,0,0 );
+    GeoTool::Node Lg( 3,0,0 );
     GeoTool::Cylindre C( meshSize,"UnCylindre",Centre,Dir,Rayon,Lg );
     C.setMarker( _type="surface",_name="Inlet",_marker1=true );
     C.setMarker( _type="surface",_name="Outlet",_marker2=true );
@@ -104,16 +104,16 @@ runtest( Application_ptrtype test_app )
 
     BOOST_MESSAGE( "testing Gauss formula on ( 1, 1, 1 )\n" );
     u = project( Xh,elements( mesh ),vec( cst( 1.0 ),cst( 1.0 ),cst( 1.0 ) ) );
-    auto value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
-    auto value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
+    auto value1 = integrate( _range=elements( mesh ),_expr=divv( u )/*, _quad=_Q<8>(),_quad1=_Q<8>(),*/,_geomap=geomap ).evaluate()( 0,0 );
+    auto value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N()/*,_quad=_Q<8>(),_quad1=_Q<8>()*/,_geomap=geomap ).evaluate()( 0,0 );
     BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
     BOOST_CHECK_SMALL( value1, 1e-12 );
     BOOST_CHECK_SMALL( value2, 1e-12 );
 
     BOOST_MESSAGE( "testing Gauss formula on ( cos(M_PI*Px()/5.),cos(M_PI*Py()/5.),cos(M_PI*Py()/5.))\n" );
     u = project( Xh,elements( mesh ),vec( cos( M_PI*Px()/5. ),cos( M_PI*Py()/5. ),cos( M_PI*Py()/5. ) ) );
-    value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
-    value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<15>(),_geomap=geomap ).evaluate()( 0,0 );
+    value1 = integrate( _range=elements( mesh ),_expr=divv( u ), _quad=_Q<8>(),_quad1=_Q<8>(),_geomap=geomap ).evaluate()( 0,0 );
+    value2 = integrate( _range=boundaryfaces( mesh ),_expr=trans( idv( u ) )*N(),_quad=_Q<8>(),_quad1=_Q<8>(),_geomap=geomap ).evaluate()( 0,0 );
     BOOST_MESSAGE( "\n value (div) =" << value1 << "\n value (n) =" << value2 <<"\n" );
     BOOST_CHECK_CLOSE( value1, value2, 1e-8 );
     //BOOST_CHECK_SMALL( value1-value2,1e-8);
@@ -151,8 +151,8 @@ BOOST_AUTO_TEST_CASE( normal3d )
 
     runtest<1>( test_app );
     runtest<2>( test_app );
-    runtest<3>( test_app );
-    runtest<4>( test_app );
+    //runtest<3>( test_app );
+    //runtest<4>( test_app );
 
 
 }

@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2012-05-03
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -24,13 +24,14 @@
 set(OS_VERSION debian-wheezy)
 set(ARCH x86_64)
 set(WORK_DIR /home/vhuber)
-set(MAKE_ARGS "-j2")
-set(PARALLEL "2")
+set(GCC_MAKE_ARGS "-j2")
+set(GCC_PARALLEL "2")
+set(CLANG_MAKE_ARGS "-j4")
+set(CLANG_PARALLEL "4")
 set(FEELPP_WORK_DIR ${WORK_DIR})
 set(FEELPP_ENABLE_CRB_ALL ON)
 set(FEELPP_ENABLE_BENCHMARKS ON)
 set(FEELPP_MAKE_ARGS ${MAKE_ARGS})
-set(CTEST_BUILD_FLAGS -j${PARALLEL})
-set(CTEST_PARALLEL_LEVEL ${PARALLEL})
+set(FEELPP_CMAKE_ARGS "-DCMAKE_BUILD_TYPE=release -DVTK_LEGACY_REMOVE:BOOL=ON")
 
 

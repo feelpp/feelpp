@@ -87,6 +87,9 @@ public:
     typedef typename super::solve_return_type solve_return_type;
     typedef typename super::nl_solve_return_type nl_solve_return_type;
 
+    typedef typename super::datamap_type datamap_type;
+    typedef typename super::datamap_ptrtype datamap_ptrtype;
+
     // -- CONSTRUCTOR --
     BackendEigen();
     BackendEigen( WorldComm const& worldComm=Environment::worldComm() );
@@ -136,9 +139,9 @@ public:
     }
 
     sparse_matrix_ptrtype
-    newMatrix( DataMap const& d1, DataMap const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
+    newMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2, size_type matrix_properties = NON_HERMITIAN, bool init = true )
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(), d2->nGlobalElements() ) );
         A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -156,9 +159,9 @@ public:
 
 
     sparse_matrix_ptrtype
-    newZeroMatrix( DataMap const& d1, DataMap const& d2 )
+    newZeroMatrix( datamap_ptrtype const& d1, datamap_ptrtype const& d2 )
     {
-        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1.nGlobalElements(), d2.nGlobalElements() ) );
+        auto A = sparse_matrix_ptrtype( new eigen_sparse_matrix_type( d1->nGlobalElements(), d2->nGlobalElements() ) );
         //A->setMatrixProperties( matrix_properties );
         return A;
     }
@@ -176,9 +179,9 @@ public:
     }
 
     vector_ptrtype
-    newVector( DataMap const& d )
+    newVector( datamap_ptrtype const& d )
     {
-        return vector_ptrtype( new eigen_vector_type( d.nGlobalElements() ) );
+        return vector_ptrtype( new eigen_vector_type( d->nGlobalElements() ) );
     }
 
     vector_ptrtype newVector( const size_type n, const size_type n_local )

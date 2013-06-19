@@ -468,7 +468,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 {
 
     typedef typename MeshTraits<MeshType>::interprocess_face_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.interProcessFaces( __pid );
+    std::pair<iterator, iterator> p = mesh.interProcessFaces( /*__pid*/ );
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               p.first, p.second );
 }

@@ -162,7 +162,8 @@ public:
                 M_current_path = fs::current_path();
 
                 std::srand( static_cast<unsigned>( std::time( 0 ) ) );
-                std::cout << this->about().appName() << std::endl;
+                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    std::cout << this->about().appName() << std::endl;
                 LOG(INFO) << "[OpusApp] constructor " << this->about().appName()  << "\n";
 
                 // Check if user have given a name for result files repo
@@ -183,13 +184,13 @@ public:
                 this->setLogs();
                 LOG(INFO) << "[OpusApp] set Logs" << "\n";
                 LOG(INFO) << "[OpusApp] mode:" << ( int )M_mode << "\n";
+
                 model = crbmodel_ptrtype( new crbmodel_type( this->vm(),M_mode ) );
                 LOG(INFO) << "[OpusApp] get model done" << "\n";
 
                 crb = crb_ptrtype( new crb_type( this->about().appName(),
                                                  this->vm() ,
                                                  model ) );
-
                 LOG(INFO) << "[OpusApp] get crb done" << "\n";
 
                 //VLOG(1) << "[OpusApp] get crb done" << "\n";
@@ -554,17 +555,17 @@ public:
                                     std::cout << "PFEM mode" << std::endl;
                                 boost::mpi::timer ti;
 
-                                auto u_fem = model->solve( mu );
+                                model->computeAffineDecomposition();
+                                auto u_fem =  model->solveFemUsingAffineDecompositionFixedPoint( mu );
                                 std::ostringstream u_fem_str;
                                 u_fem_str << "u_fem(" << mu_str.str() << ")";
                                 u_fem.setName( u_fem_str.str()  );
 
                                 LOG(INFO) << "compute output\n";
-                                google::FlushLogFiles(google::GLOG_INFO);
 
                                 exporter->step(0)->add( u_fem.name(), u_fem );
                                 //model->solve( mu );
-                                std::vector<double> o = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
+                                std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem) )( ti.elapsed() );
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                                 printEntry( ostr, mu, o );
 
@@ -615,7 +616,7 @@ public:
                                 double h1_error = -1;
                                 double time_fem = -1;
 
-                                element_type u_fem;
+                                element_type u_fem ;
 
                                 if ( compute_fem )
                                 {
@@ -629,7 +630,7 @@ public:
 
                                     if( boost::is_same<  crbmodel_type , crbmodelbilinear_type >::value && ! use_newton )
                                         //use affine decomposition
-                                        u_fem = model->solveFemUsingOnlineEimPicard( mu );
+                                        u_fem = model->solveFemUsingAffineDecompositionFixedPoint( mu );
                                     else
                                         u_fem = model->solve( mu );
 
@@ -640,7 +641,7 @@ public:
                                     LOG(INFO) << "export u_fem \n";
                                     exporter->step(0)->add( u_fem.name(), u_fem );
 
-                                    std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu ) )( ti.elapsed() );
+                                    std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
 
                                     relative_error = std::abs( ofem[0]-o.template get<0>() ) /ofem[0];
                                     relative_estimated_error = o.template get<1>() / ofem[0];
@@ -729,8 +730,8 @@ public:
                                     {
                                         LOG( INFO ) << "convergence eim with FEM-with-ad ";
                                         check_name = true;
-                                        //fem computed via solveFemUsingOnlineEim use the affine decomposition
-                                        auto fem_with_ad = model->solveFemUsingOnlineEimPicard( mu );
+                                        //fem computed via solveFemUsingAffineDecomposition use the affine decomposition
+                                        auto fem_with_ad = model->solveFemUsingAffineDecompositionFixedPoint( mu );
                                         this->studyEimConvergence( mu , fem_with_ad , curpar );
                                     }
                                     if( how_compute_unknown == "FEM-without-ad")
@@ -818,7 +819,8 @@ public:
                         case  CRBModelMode::SCM:
                             {
 
-                                std::cout << "SCM mode\n";
+                                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                                    std::cout << "SCM mode\n";
                                 int kmax = crb->scm()->KMax();
                                 auto o = crb->scm()->run( mu, kmax );
                                 printEntry( ostr, mu, o );
@@ -862,7 +864,7 @@ public:
 
                         }
 
-                    std::cout << "------------------------------------------------------------\n";
+                    LOG( INFO ) << "------------------------------------------------------------";
                 }
             }
 

@@ -622,10 +622,10 @@ struct updateDataMapProcessStandard
                                   WorldComm const& worldCommFusion,
                                   uint16_type lastCursor,
                                   std::vector<size_type> const& startDofGlobalCluster,
-                                  size_type nLocWithoutGhost, size_type nLocWithGhost)
+                                  std::vector<size_type> nLocWithoutGhost, std::vector<size_type> nLocWithGhost)
         :
         _M_cursor( 0 ),
-        _M_start_index( 0 ),
+        _M_start_index( worldCommFusion.globalSize(), 0 ),//  _M_startDofGlobalCluster[worldCommFusion.globalRank()] ),
         _M_startIndexWithGhost( 0 ),
         _M_lastCursor( lastCursor ),
         _M_worldsComm( worldsComm ),
@@ -634,63 +634,74 @@ struct updateDataMapProcessStandard
         _M_nLocWithoutGhost(nLocWithoutGhost),
         _M_nLocWithGhost(nLocWithGhost)
     {
-        _M_dm->setNLocalDofWithoutGhost( _M_dm->worldComm().globalRank(), nLocWithoutGhost );
-        _M_dm->setNLocalDofWithGhost( _M_dm->worldComm().globalRank(), nLocWithGhost );
-        _M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost );
-        _M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost );
+
+        const int myrank = _M_dm->worldComm().globalRank();
+        const int worldsize = _M_dm->worldComm().globalSize();
+        for (int proc = 0 ; proc < worldsize ; ++proc)
+        {
+            _M_dm->setNLocalDofWithoutGhost( proc, nLocWithoutGhost[proc] );
+            _M_dm->setNLocalDofWithGhost( proc, nLocWithGhost[proc] );
+            _M_start_index[proc] = _M_startDofGlobalCluster[proc];// nLocWithoutGhost;
+        }
+
+        _M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost[myrank] );
+        _M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost[myrank] );
     }
 
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
     {
-        const size_type nLocWithGhost=x->nLocalDofWithGhost();
-        const size_type nLocWithoutGhost=x->nLocalDofWithoutGhost();
-        const size_type currentRank = _M_dm->worldComm().globalRank();
+        const int myrank = _M_dm->worldComm().globalRank();
+        const int worldsize = _M_dm->worldComm().globalSize();
+        const size_type nLocWithGhost=x->dof()->nLocalDofWithGhost(myrank);
+        const size_type nLocWithoutGhost=x->dof()->nLocalDofWithoutGhost(myrank);
 
-        if ( _M_cursor==0 )
-            {
-                _M_dm->setFirstDof( currentRank,  x->dof()->firstDof() );
-                _M_dm->setFirstDofGlobalCluster( currentRank, _M_startDofGlobalCluster[currentRank] );
-                _M_dm->setLastDof( currentRank, x->dof()->lastDof() );
-                _M_dm->setLastDofGlobalCluster( currentRank, _M_startDofGlobalCluster[currentRank] + nLocWithoutGhost - 1 );
-            }
-        else
-            {
-                _M_dm->setLastDof( _M_dm->worldComm().globalRank(), _M_dm->lastDof() + nLocWithGhost  );
-                _M_dm->setLastDofGlobalCluster( _M_dm->worldComm().globalRank(), _M_dm->lastDofGlobalCluster() + nLocWithoutGhost  );
-            }
-
-        std::vector<size_type> startIndexWorld(_M_dm->worldComm().globalSize());
-        mpi::all_gather( _M_dm->worldComm().globalComm(),
-                         _M_start_index,
-                         startIndexWorld );
-
-        for ( size_type i=0; i<x->dof()->nLocalDofWithGhost(); ++i )
+        for (int proc = 0 ; proc < worldsize ; ++proc)
         {
-            if (!x->dof()->dofGlobalProcessIsGhost(i) )
-                {
-                    _M_dm->setMapGlobalProcessToGlobalCluster( _M_startIndexWithGhost + i,
-                                                               _M_startDofGlobalCluster[_M_dm->worldComm().globalRank()] + _M_start_index +
-                                                               x->dof()->mapGlobalProcessToGlobalCluster( i ) -  x->dof()->firstDofGlobalCluster()   );
-                }
+            if ( _M_cursor==0 )
+            {
+                _M_dm->setFirstDof( proc,  x->dof()->firstDof(proc) );
+                _M_dm->setFirstDofGlobalCluster( proc, _M_startDofGlobalCluster[proc] );
+                _M_dm->setLastDof( proc, x->dof()->lastDof(proc) );
+                if (x->dof()->nLocalDofWithoutGhost(proc) == 0)
+                    _M_dm->setLastDofGlobalCluster( proc, _M_startDofGlobalCluster[proc] );
+                else
+                    _M_dm->setLastDofGlobalCluster( proc, _M_startDofGlobalCluster[proc] + x->dof()->nLocalDofWithoutGhost(proc) - 1 );
+            }
             else
-                {
-                    const int realProc = x->dof()->procOnGlobalCluster(x->dof()->mapGlobalProcessToGlobalCluster( i ) );
-                    _M_dm->setMapGlobalProcessToGlobalCluster( _M_startIndexWithGhost + i,
-                                                               _M_startDofGlobalCluster[realProc] + startIndexWorld[realProc] +
-                                                               x->dof()->mapGlobalProcessToGlobalCluster( i ) -  x->dof()->firstDofGlobalCluster(realProc)   );
-                }
+            {
+                _M_dm->setLastDof( proc, _M_dm->lastDof(proc) + x->dof()->nLocalDofWithGhost(proc)  );
+                _M_dm->setLastDofGlobalCluster( proc, _M_dm->lastDofGlobalCluster(proc) + x->dof()->nLocalDofWithoutGhost(proc) );
+            }
         }
-        //for ( size_type i=0; i<x->dof()->nLocalDofWithoutGhost(); ++i )
-        //{
-        //_M_dmOnOff->setMapGlobalClusterToGlobalProcess( startGlobClusterDof + i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
-        //}
 
+        const size_type firstDofGC = _M_dm->firstDofGlobalCluster();
+        const size_type firstDofGCSubSpace = x->dof()->firstDofGlobalCluster();
 
-        _M_start_index+=nLocWithoutGhost;
+        for (size_type gdof = x->dof()->firstDof(myrank) ; gdof < x->dof()->nLocalDofWithGhost(myrank) ; ++gdof )
+        {
+            const size_type localDof = _M_startIndexWithGhost+gdof;//nLocalDofStart+gdof;
+            const size_type gdofGC = x->dof()->mapGlobalProcessToGlobalCluster(gdof);
+
+            if ( x->dof()->dofGlobalClusterIsOnProc( gdofGC ) )
+            {
+                const size_type globalDof = _M_start_index[myrank] + ( gdofGC-firstDofGCSubSpace );
+                _M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
+                _M_dm->setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
+            }
+            else
+            {
+                const int realproc = x->dof()->procOnGlobalCluster(gdofGC);
+                const size_type globalDof = _M_start_index[realproc] + (gdofGC- x->dof()->firstDofGlobalCluster(realproc));
+                _M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
+            }
+        }
+
+        for (int proc = 0 ; proc < worldsize ; ++proc)
+            _M_start_index[proc] += x->dof()->nLocalDofWithoutGhost(proc);
         _M_startIndexWithGhost+=nLocWithGhost;
 
-        ++_M_cursor;// warning _M_cursor < nb color
+        ++_M_cursor;
     }
 
     boost::shared_ptr<DofType> dataMap() const
@@ -703,12 +714,13 @@ struct updateDataMapProcessStandard
     }
 
     mutable uint16_type _M_cursor;
-    mutable size_type _M_start_index, _M_startIndexWithGhost;
+    mutable std::vector<size_type> _M_start_index;
+    mutable size_type _M_startIndexWithGhost;
     uint16_type _M_lastCursor;
     std::vector<WorldComm> _M_worldsComm;
     mutable boost::shared_ptr<DofType> _M_dm;
     std::vector<size_type> _M_startDofGlobalCluster;
-    size_type _M_nLocWithoutGhost, _M_nLocWithGhost;
+    std::vector<size_type> _M_nLocWithoutGhost, _M_nLocWithGhost;
 }; // updateDataMapProcessStandard
 
 
@@ -978,7 +990,7 @@ struct InitializeContainersOff
     void operator()( boost::shared_ptr<T> & x ) const
     {
         if ( _M_cursor==i && !x )
-            x = boost::shared_ptr<T>( new T( _M_space->template functionSpace<i>()->map() ) );
+            x = boost::shared_ptr<T>( new T( _M_space->template functionSpace<i>()->dof() ) );
 
         ++_M_cursor;// warning _M_cursor < nb color
     }
@@ -1138,7 +1150,7 @@ struct searchIndicesBySpace
 // get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
 struct computeStartOfFieldSplit
 {
-    typedef boost::tuple< uint , size_type > result_type;
+    typedef boost::tuple< uint16_type , size_type > result_type;
 
     template<typename T>
     result_type operator()( result_type const &  previousRes, T const& t )
@@ -1165,31 +1177,32 @@ struct computeNDofForEachSpace
         M_startSplit(startSplit)
     {}
 
-    typedef boost::tuple< uint, uint, std::vector<std::vector<int> > > result_type;
+    typedef boost::tuple< uint16_type, size_type, std::vector<std::vector<size_type> > > result_type;
 
     template<typename T>
     result_type operator()( result_type const & previousRes, T const& t )
     {
-        auto const nDofWithoutGhost = t->nLocalDofWithoutGhost();
-        auto const nDofWithGhost = t->nLocalDofWithGhost();
-        auto const firstDof = t->dof()->firstDofGlobalCluster();
-        auto cptSpaces = previousRes.get<0>();
-        auto start = previousRes.get<1>();
+        const size_type nDofWithoutGhost = t->dof()->nLocalDofWithoutGhost();
+        const size_type nDofWithGhost = t->dof()->nLocalDofWithGhost();
+        const size_type firstDof = t->dof()->firstDofGlobalCluster();
+        uint16_type cptSpaces = previousRes.get<0>();
+        const size_type start = previousRes.get<1>();
         auto is = previousRes.get<2>();
+
         //std::cout << "compo " << cptSpaces << " start " << start <<" split nDofWithout " << nDof << " with ghost "<< nDofWithGhost<< " M_startSplit " << M_startSplit <<std::endl;
 
-        is.push_back( std::vector<int>( nDofWithoutGhost ) );
+        //is.push_back( std::vector<size_type>( nDofWithoutGhost ) );
+        is[cptSpaces].resize(nDofWithoutGhost);
 
-        for ( uint i=0; i<nDofWithGhost; ++i )
+        for ( size_type i=0; i<nDofWithGhost; ++i )
         {
-            if (t->dof()->dofGlobalProcessIsGhost(i)) continue;
-            auto const globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
-            is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + globalDof - firstDof;
+            if ( t->dof()->dofGlobalProcessIsGhost(i) ) continue;
+            const size_type globalDof = t->dof()->mapGlobalProcessToGlobalCluster(i);
+            is[cptSpaces][globalDof - firstDof ] = M_startSplit + start + (globalDof - firstDof);
         }
 
         return boost::make_tuple( ++cptSpaces, ( start+nDofWithoutGhost ), is );
     }
-
 
     size_type M_startSplit;
 };
@@ -2674,7 +2687,7 @@ public:
             if ( this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
             {
                 ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->map() );
+                            _M_functionspace->template functionSpace<i>()->dof() );
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
@@ -2714,7 +2727,7 @@ public:
                 // build a subrange view identical
                 ct_type ct( *fusion::at_c<i>( *_M_containersOffProcess ),
                             ublas::range( 0, space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->map() );
+                            _M_functionspace->template functionSpace<i>()->dof() );
 
                 DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                 DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
@@ -2741,7 +2754,7 @@ public:
             {
                 ct_type ct( const_cast<VectorUblas<value_type>&>( dynamic_cast<VectorUblas<value_type> const&>( *this ) ),
                             ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->map() );
+                            _M_functionspace->template functionSpace<i>()->dof() );
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
@@ -2778,7 +2791,7 @@ public:
                 // build a subrange view identical
                 ct_type ct( *fusion::at_c<i>( *_M_containersOffProcess ),
                             ublas::range( 0, space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->map() );
+                            _M_functionspace->template functionSpace<i>()->dof() );
 
                 DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                 DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
@@ -2910,7 +2923,7 @@ public:
         void setFunctionSpace( functionspace_ptrtype space )
         {
             _M_functionspace = space;
-            super::init( _M_functionspace->map() );
+            super::init( _M_functionspace->dof() );
             //super::init( _M_functionspace->nDof(),  _M_functionspace->nLocalDof() );
         }
 
@@ -3642,13 +3655,13 @@ public:
         return _M_functionspaces;
     }
 
-    std::vector<std::vector<int> > dofIndexSplit()
+    std::vector<std::vector<size_type> > dofIndexSplit()
     {
         if ( nSpaces > 1 )
         {
-            uint cptSpaces=0;
-            uint start=0;
-            std::vector<std::vector<int> > is;
+            uint16_type cptSpaces=0;
+            size_type start=0;
+            std::vector<std::vector<size_type> > is(nSpaces);
             auto initial = boost::make_tuple( cptSpaces,start,is );
 
             // get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
@@ -3656,6 +3669,8 @@ public:
             // compute split
             auto result = boost::fusion::fold( functionSpaces(), initial,  detail::computeNDofForEachSpace(startSplit) );
             is = result.template get<2>();
+
+
 #if 0
             for ( int proc = 0; proc<this->worldComm().globalSize(); ++proc )
             {
@@ -3687,8 +3702,8 @@ public:
             return is;
         }
 
-        std::vector<std::vector<int> > is;
-        is.push_back( std::vector<int>( nLocalDof() ) );
+        std::vector<std::vector<size_type> > is;
+        is.push_back( std::vector<size_type>( nLocalDof() ) );
         int index = 0;
         //for( int& i : is[0] ) { i = index++; }
         BOOST_FOREACH( auto& i, is[0] )
@@ -4092,30 +4107,32 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                 // and each processors has entries for all subspaces
                 DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
                 // build usefull data for detail::updateDataMapProcessStandard
-                std::vector<size_type> startDofGlobalCluster(this->worldComm().globalSize());
-                std::vector<size_type> nLocalDofWithoutGhostWorld(this->worldComm().globalSize());
-                mpi::all_gather( this->worldComm(),
-                                 this->nLocalDofWithoutGhost(),
-                                 nLocalDofWithoutGhostWorld );
+                const int worldsize = this->worldComm().globalSize();
+                std::vector<size_type> startDofGlobalCluster(worldsize);
+                std::vector<size_type> nLocalDofWithoutGhostWorld(worldsize),nLocalDofWithGhostWorld(worldsize);
+                for (int proc = 0; proc<worldsize ; ++proc )
+                {
+                    nLocalDofWithoutGhostWorld[proc] = this->nLocalDofWithoutGhostOnProc(proc);
+                    nLocalDofWithGhostWorld[proc] = this->nLocalDofWithGhostOnProc(proc);
+                }
 
                 startDofGlobalCluster[0]=0;
-                for (int p=1;p<this->worldComm().globalSize();++p)
+                for (int p=1;p<worldsize;++p)
                     {
                         startDofGlobalCluster[p] = startDofGlobalCluster[p-1] + nLocalDofWithoutGhostWorld[p-1];
                     }
-
 
                 // build datamap
                 auto dofInitTool=detail::updateDataMapProcessStandard<dof_type>( this->worldsComm(), this->worldComm(),
                                                                                  this->nSubFunctionSpace()-1,
                                                                                  startDofGlobalCluster,
-                                                                                 this->nLocalDofWithoutGhost(),
-                                                                                 this->nLocalDofWithGhost() );
+                                                                                 nLocalDofWithoutGhostWorld,
+                                                                                 nLocalDofWithGhostWorld
+                                                                                 );
                 fusion::for_each( _M_functionspaces, dofInitTool );
                 // finish update datamap
                 _M_dof = dofInitTool.dataMap();
                 _M_dof->setNDof( this->nDof() );
-                _M_dof->updateDataInWorld();
                 _M_dofOnOff = _M_dof;
             }
         else
@@ -4442,7 +4459,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
         size_type __start,
         ComponentType __ct )
     :
-    super( __functionspace->map() ),
+    super( __functionspace->dof() ),
     _M_functionspace( __functionspace ),
     _M_name( __name ),
     _M_start( __start ),

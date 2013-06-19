@@ -574,7 +574,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
 protected:
 
@@ -1071,9 +1071,9 @@ MatrixEpetra::operator () ( const size_type i,
 
 inline
 void
-MatrixEpetra::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j )
+MatrixEpetra::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
 {
-#warning todo!
+    LOG(ERROR) << "Invalid call to updateBlockMat, not yet implemented\n";
 }
 
 

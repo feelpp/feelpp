@@ -1247,9 +1247,19 @@ OpusModelRB<OrderU,OrderP,OrderT>::scalarProductForPod( vector_type const& x, ve
 
 template<int OrderU, int OrderP, int OrderT>
 double
-OpusModelRB<OrderU,OrderP,OrderT>::output( int output_index, parameter_type const& mu )
+OpusModelRB<OrderU,OrderP,OrderT>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
-    this->solve( mu, pT );
+    if( need_to_solve )
+        this->solve( mu, pT );
+    else
+    {
+        if ( M_is_steady )
+        M_temp_bdf->setSteady();
+        this->computeBetaQm( mu , M_temp_bdf->timeFinal() );
+        this->update( mu , M_temp_bdf->timeFinal() );
+        *pT = u;
+    }
+
     vector_ptrtype U( backend->newVector( M_Th ) );
     *U = *pT;
     LOG(INFO) << "S1 = " << inner_product( *L[1], *U ) << "\n S2 = " << inner_product( *L[2], *U ) << "\n";
