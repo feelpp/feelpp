@@ -21,9 +21,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file laplacian_insta.cpp
+   \file laplacian_parabolic.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2010-07-15
+   \date 2013-06-19
  */
 
 #include <feel/feel.hpp>
@@ -44,8 +44,8 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description laplacian_insta_eqoptions( "Laplacian_insta options" );
-    laplacian_insta_eqoptions.add_options()
+    po::options_description laplacian_parabolic_eqoptions( "Laplacian_parabolic options" );
+    laplacian_parabolic_eqoptions.add_options()
         ( "hsize", po::value<double>()->default_value( 0.2 ), "mesh size" )
         ( "geofile", Feel::po::value<std::string>()->default_value( "" ), "name of the geofile input")
         ( "geo_depends", Feel::po::value<std::string>()->default_value(""), "list of dependants file")
@@ -56,12 +56,12 @@ makeOptions()
           "penalisation parameter for the weak boundary Dirichlet formulation" )
 		( "initial_u", po::value<std::string>()->default_value( "0.0"), "Value or function to initialize T (instationnary mode)")
         ;
-    return laplacian_insta_eqoptions.add( Feel::feel_options() );
+    return laplacian_parabolic_eqoptions.add( Feel::feel_options() );
 }
 
 
 /**
- * \class Laplacian_insta
+ * \class Laplacian_parabolic
  *
  * Laplacian equation with instationnary term solver using continuous approximation spaces
  * solve \f$ \dfrac{\partial u}{\partial t} - nu*\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
@@ -69,7 +69,7 @@ makeOptions()
  * \tparam Dim the geometric dimension of the problem = 2
  */
 template<int Dim, int Order = 1>
-class Laplacian_insta
+class Laplacian_parabolic
     :
 public Simget
 {
@@ -111,7 +111,7 @@ public:
     /**
      * Constructor
      */
-    Laplacian_insta()
+    Laplacian_parabolic()
         :
         super(),
         meshSize( this->vm()["hsize"].template as<double>() ),
@@ -130,12 +130,12 @@ private:
     std::string shape;
 
     mesh_ptrtype mesh;
-}; // Laplacian_insta
+}; // Laplacian_parabolic
 
 
-
-// Define edp to be solved
-// du/dt - nu*laplacian(u) = f
+/**
+*	\brief Defines the edp to be solved in the instationnary case : \f$ dfrac{\partial u}{\partial t} - nu*\Delta u = f \f$
+*/
 struct transient_edp {
     ex operator()(ex u, std::vector<symbol> vars, std::vector<symbol> p) const
     {
@@ -143,7 +143,9 @@ struct transient_edp {
     };
 };
 
-// -nu*laplacian(u) = f
+/**
+*	\brief Defines the edp to be solved in the stationnary case : \f$ - nu*\Delta u = f \f$
+*/
 struct steady_edp {
     ex operator()(ex u, std::vector<symbol> vars) const
     {
@@ -151,16 +153,18 @@ struct steady_edp {
     };
 };
 
-
+/**
+*	\brief Function to compute the equation and find the unknown
+*/
 template<int Dim, int Order>
 void
-Laplacian_insta<Dim,Order>::run()
+Laplacian_parabolic<Dim,Order>::run()
 {
     LOG(INFO) << "------------------------------------------------------------\n";
-    LOG(INFO) << "Execute Laplacian_insta<" << Dim << ">\n";
+    LOG(INFO) << "Execute Laplacian_parabolic<" << Dim << ">\n";
     
     std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute Laplacian_insta_eq<" << Dim << ">\n";
+    std::cout << "Execute Laplacian_parabolic<" << Dim << ">\n";
 
     Environment::changeRepository( boost::format( "doc/manual/laplacian/%1%/D%2%/P%3%/h_%4%/" )
                                    % this->about().appName()
@@ -553,7 +557,7 @@ if (!steady )
 }
 /* end of bdf implementation */
 
-} // Laplacian_insta::run
+} // Laplacian_parabolic::run
 
 /**
  * main function: entry point of the program
@@ -573,9 +577,9 @@ main( int argc, char** argv )
     Application app;
 
     //if ( app.nProcess() == 1 )
-    //    app.add( new Laplacian_insta_<1>() );
-    app.add( new Laplacian_insta<2>() );
-    //app.add( new Laplacian_insta<3>() );
+    //    app.add( new Laplacian_parabolic_<1>() );
+    app.add( new Laplacian_parabolic<2>() );
+    //app.add( new Laplacian_parabolic<3>() );
 
     app.run();
 
