@@ -127,7 +127,7 @@ int main( int argc, char** argv )
     }
 #if 1
     benchmark.add( new Curvature<2, Lagrange<1, Scalar>, Lagrange<1, Vectorial>, Simplex>( "2D-P1-Simplex") );
-    //    benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex") );
+    // benchmark.add( new Curvature<2, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P2-Simplex") );
     // benchmark.add( new Curvature<2, Lagrange<3, Scalar>, Lagrange<3, Vectorial>, Simplex>( "2D-P3-Simplex") );
     // benchmark.add( new Curvature<2, Lagrange<4, Scalar>, Lagrange<4, Vectorial>, Simplex>( "2D-P4-Simplex" ) );
     // benchmark.add( new Curvature<2, Lagrange<5, Scalar>, Lagrange<5, Vectorial>, Simplex>( "2D-P5-Simplex" ) );
@@ -138,7 +138,7 @@ int main( int argc, char** argv )
 #endif
     //    benchmark.add( new Curvature<3, Lagrange<2, Scalar>, Lagrange<2, Vectorial>, Simplex>( "2D-P3-Simplex" ) );
 
-    benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" )( "e.hs" )( "e.opt" )("n.space")("n.spacev") );
+    benchmark.setStats( boost::assign::list_of( "e.nod" )( "e.l2" )( "e.sm" )( "e.hs" )( "e.opt" )("e.ci")("n.space")("n.spacev") );
 
     benchmark.run();
     benchmark.printStats( std::cout );

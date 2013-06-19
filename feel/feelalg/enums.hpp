@@ -262,7 +262,8 @@ enum ProjectorType
     DIFF=2,
     HDIV=3,
     HCURL=4,
-    LIFT=5
+    LIFT=5,
+    CIP=6
 };
 
 enum MatSolverPackageType
