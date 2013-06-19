@@ -526,7 +526,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu, bool export_outputs=false );
+    value_type output( int output_index, parameter_type const& mu, element_type& u, bool need_to_solve=false, bool export_outputs=false );
 
     gmsh_ptrtype createGeo( double hsize, double mu2 );
 
@@ -1064,7 +1064,7 @@ void HeatSink2D::run( const double * X, unsigned long N, double * Y, unsigned lo
 
 
 
-double HeatSink2D::output( int output_index, parameter_type const& mu, bool export_outputs )
+double HeatSink2D::output( int output_index, parameter_type const& mu, element_type& unknown, bool need_to_solve, bool export_outputs )
 {
     using namespace vf;
 
@@ -1072,10 +1072,10 @@ double HeatSink2D::output( int output_index, parameter_type const& mu, bool expo
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    if ( !export_outputs )
-    {
+    if ( need_to_solve )
         this->solve( mu, pT );
-    }
+    else
+        *pT=unknown;
 
     vector_ptrtype U( backend->newVector( Xh ) );
     *U = *pT;

@@ -134,9 +134,13 @@ public:
 
         model->solve( mu );
 
+        auto Xh = model->functionSpace();
+        auto u = Xh->element();
+        bool need_to_solve=true;
+
         for ( int l =0; l < model->Nl(); ++l )
         {
-            double o = model->output( l,mu );
+            double o = model->output( l,mu , u , need_to_solve );
             std::cout << "[PFemApp] output " << l << " of  " << this->about().appName() << " = " << o << "\n";
         }
     }
