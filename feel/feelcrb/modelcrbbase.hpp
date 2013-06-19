@@ -84,6 +84,8 @@ public :
     typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
     typedef typename parameterspace_type::element_type parameter_type;
 
+    typedef typename FunctionSpaceDefinition::space_type space_type;
+
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
@@ -93,6 +95,18 @@ public :
     typedef Eigen::VectorXd vectorN_type;
 
     typedef std::vector< std::vector< double > > beta_vector_type;
+
+    typedef OperatorLinear< space_type , space_type > operator_type;
+    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+
+    typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
+    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+
+    typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
+    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+
+    typedef FsFunctionalLinear< space_type > functional_type;
+    typedef boost::shared_ptr<functional_type> functional_ptrtype;
 
     ModelCrbBase()
         :
@@ -121,6 +135,20 @@ public :
     }
 
     virtual void initModel() = 0;
+
+    virtual operatorcomposite_ptrtype operatorCompositeA()
+    {
+        return M_compositeA;
+    }
+    virtual operatorcomposite_ptrtype operatorCompositeM()
+    {
+        return M_compositeM;
+    }
+    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeF()
+    {
+        return M_compositeF;
+    }
+
 
     /**
      * note about the initial guess :
@@ -197,6 +225,10 @@ protected :
     funs_type M_funs;
     funsd_type M_funs_d;
     bool M_is_initialized;
+
+    operatorcomposite_ptrtype M_compositeA;
+    operatorcomposite_ptrtype M_compositeM;
+    std::vector< functionalcomposite_ptrtype > M_compositeF;
 
 };
 

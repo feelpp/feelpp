@@ -100,6 +100,9 @@ public:
     typedef Vector<T> vector_type;
     typedef boost::shared_ptr<Vector<T> > vector_ptrtype;
 
+    typedef DataMap datamap_type;
+    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+
     /**
      * Constructor; initializes the matrix to be empty, without any
      * structure, i.e.  the matrix is not usable at all. This
@@ -114,7 +117,7 @@ public:
      */
     MatrixSparse ();
 
-    MatrixSparse( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
+    MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
      * Destructor. Free all memory, but do not release the memory of
@@ -125,7 +128,23 @@ public:
     /**
      * Return datamap for rows
      */
-    DataMap const& mapRow() const
+    datamap_type const& mapRow() const
+    {
+        return *M_mapRow;
+    }
+
+    /**
+     * Return datamap for cols
+     */
+    datamap_type const& mapCol() const
+    {
+        return *M_mapCol;
+    }
+
+    /**
+     * Return datamap for rows
+     */
+    datamap_ptrtype const& mapRowPtr() const
     {
         return M_mapRow;
     }
@@ -133,16 +152,16 @@ public:
     /**
      * Return datamap for cols
      */
-    DataMap const& mapCol() const
+    datamap_ptrtype const& mapColPtr() const
     {
         return M_mapCol;
     }
 
-    void setMapRow( DataMap const& d )
+    void setMapRow( datamap_ptrtype const& d )
     {
         M_mapRow=d;
     }
-    void setMapCol( DataMap const& d )
+    void setMapCol( datamap_ptrtype const& d )
     {
         M_mapCol=d;
     }
@@ -216,7 +235,7 @@ public:
     /**
      *
      */
-    virtual void setIndexSplit( std::vector< std::vector<int> > const &_indexSplit )
+    virtual void setIndexSplit( std::vector< std::vector<size_type> > const &_indexSplit )
     {
         M_IndexSplit=_indexSplit;
     }
@@ -224,7 +243,7 @@ public:
     /**
      *
      */
-    std::vector< std::vector<int> > indexSplit() const
+    std::vector< std::vector<size_type> > indexSplit() const
     {
         return M_IndexSplit;
     }
@@ -686,7 +705,7 @@ public:
     /**
      * update a block matrix
      */
-    virtual void  updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j ) = 0;
+    virtual void  updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j ) = 0;
 
 
     /**
@@ -749,13 +768,13 @@ protected:
 
     Context M_mprop;
 
-    std::vector < std::vector<int> > M_IndexSplit;
+    std::vector < std::vector<size_type> > M_IndexSplit;
 
     /**
      * data distribution map of the vector over the processors
      */
-    DataMap M_mapRow;
-    DataMap M_mapCol;
+    datamap_ptrtype M_mapRow;
+    datamap_ptrtype M_mapCol;
 
 
 };
@@ -776,7 +795,7 @@ MatrixSparse<T>::MatrixSparse () :
 
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse ( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm ) :
+MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
     _M_is_initialized( false ),
     M_mprop( NON_HERMITIAN ),
