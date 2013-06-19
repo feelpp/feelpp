@@ -248,11 +248,9 @@ Laplacian_insta<Dim,Order>::run()
 
 	if( !exact.empty() )
         {
-            if ( !params.empty() )
-                cvg->setParams ( params );
             LOG(INFO) << "Loading function : " << exact << std::endl;
             std::cout << "Loading function : " << exact << std::endl;
-            cvg->setSolution(exact, params);
+            cvg->setSolution(exact, parameters);
             cvg->print();
         }
 
