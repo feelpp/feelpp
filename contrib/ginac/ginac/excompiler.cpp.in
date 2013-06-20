@@ -234,6 +234,7 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
         global_excompiler.compile_src_file(unique_filename, filename.empty());
     }
     world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+    boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -267,6 +268,7 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
         global_excompiler.compile_src_file(unique_filename, filename.empty());
     }
     world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+    boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
@@ -310,6 +312,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
         global_excompiler.compile_src_file(unique_filename, filename.empty());
     }
     world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+    boost::mpi::broadcast( world, unique_filename, 0);
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
