@@ -3027,10 +3027,10 @@ public:
                 VectorUblas<value_type> m( *this );
                 if ( gmsh )
                 {
-                    auto pid2dof = this->functionSpace()->dof()->pointIdToDofRelation();
+                    auto relation = this->functionSpace()->dof()->pointIdToDofRelation();
                     for( size_type i = 0; i < this->localSize(); ++i )
                     {
-                        m[pid2dof[i]-1] = this->operator[]( i );
+                        m[relation.first[i]-1] = this->operator[]( i );
                     }
                 }
                 m.printMatlab( fname );
