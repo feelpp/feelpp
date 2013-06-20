@@ -1207,7 +1207,8 @@ public:
     /**
      * build point id to dof id relationship
      */
-    std::map<size_type, size_type> pointIdToDofRelation(std::string fname="") const;
+    std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
+    pointIdToDofRelation(std::string fname="") const;
 private:
 
     void addVertexDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
@@ -3576,15 +3577,15 @@ DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType>
-std::map<size_type,size_type>
+std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
 DofTable<MeshType, FEType, PeriodicityType>::pointIdToDofRelation(std::string fname) const
 {
-    std::map<size_type,size_type> pidtodof;
+    std::map<size_type,size_type> pidtodof,doftopid;
     element_const_iterator it_elt = M_mesh->beginElementWithProcessId( M_mesh->worldComm().localRank() );
     element_const_iterator en_elt = M_mesh->endElementWithProcessId( M_mesh->worldComm().localRank() );
 
     if ( it_elt == en_elt )
-        return pidtodof;
+        return std::make_pair(doftopid,pidtodof);
 
     for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
     {
@@ -3596,14 +3597,18 @@ DofTable<MeshType, FEType, PeriodicityType>::pointIdToDofRelation(std::string fn
                     const size_type gDof = ( it_elt->point( i ).id() );
                     size_type thedof = boost::get<0>( localToGlobal( it_elt->id(), i, c1 ) );
                     //pidtodof[ncdof*it_elt->point(l).id()+c1] = thedof;
-                    pidtodof[thedof] = ncdof*gDof+c1;
+                    pidtodof[ncdof*gDof+c1] = thedof;
+                    doftopid[thedof] = ncdof*gDof+c1;
 
                 }
         }
     }
     if ( !fname.empty() )
     {
-        std::ofstream ofs( fname.c_str() );
+        std::ostringstream os1,os2;
+        os1 << fs::path( fname ).stem().string() << "_pidtodof" << fs::path( fname ).extension().string();
+        os2 << fs::path( fname ).stem().string() << "_doftopid" << fs::path( fname ).extension().string();
+        std::ofstream ofs( os1.str().c_str() );
         auto it = pidtodof.begin();
         auto en = pidtodof.end();
         std::for_each( it, en,
@@ -3611,9 +3616,17 @@ DofTable<MeshType, FEType, PeriodicityType>::pointIdToDofRelation(std::string fn
                        {
                            ofs << p.first << " " << p.second << "\n";
                        });
+        std::ofstream ofs2( os2.str().c_str() );
+        it = doftopid.begin();
+        en = doftopid.end();
+        std::for_each( it, en,
+                       [&ofs2]( std::pair<size_type, size_type> const& p )
+                       {
+                           ofs2 << p.first << " " << p.second << "\n";
+                       });
 
     }
-    return pidtodof;
+    return std::make_pair(doftopid,pidtodof);
 }
 } // namespace Feel
 
