@@ -114,7 +114,7 @@ if ( EXISTS ${FEELPP_CTEST_CONFIG} )
 endif()
 
 #Check the compiler
-if (${FEELPP_CXXNAME} MATCHES "g\+\+-*")
+if (${FEELPP_CXXNAME} MATCHES "g\\+\\+-*")
   message("G++")
   if (DEFINED GCC_MAKE_ARGS)
     set(MAKE_ARGS "${GCC_MAKE_ARGS}")
