@@ -33,6 +33,10 @@
 
 #if defined( FEELPP_HAS_PETSC_H )
 
+extern "C"
+{
+#include "petscsys.h"
+}
 
 
 
@@ -310,7 +314,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name ) const
     }
 
     const_cast<VectorPetsc<T>*>( this )->close();
-
+    PetscObjectSetName((PetscObject)_M_vec,fs::path(name).stem().string().c_str());
     //this->close();
     int ierr=0;
 
