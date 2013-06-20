@@ -3021,6 +3021,21 @@ public:
             }
             return true;
         }
+
+        void printMatlab( std::string fname, bool gmsh = false )
+            {
+                VectorUblas<value_type> m( *this );
+                if ( gmsh )
+                {
+                    auto pid2dof = this->functionSpace()->dof()->pointIdToDofRelation();
+                    for( size_type i = 0; i < this->localSize(); ++i )
+                    {
+                        m[pid2dof[i]-1] = this->operator[]( i );
+                    }
+                }
+                m.printMatlab( fname );
+            }
+
         //@}
     private:
 
