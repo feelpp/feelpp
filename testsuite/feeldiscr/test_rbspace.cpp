@@ -131,8 +131,8 @@ public :
         double norm_rb_evaluations = rb_evaluations.norm();
         double true_norm=true_values.norm();
 
-        BOOST_CHECK_SMALL( (norm_fem_evaluations-true_norm), 1e-14 );
-        BOOST_CHECK_SMALL( (norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
 
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
@@ -150,8 +150,8 @@ public :
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
 
-        BOOST_CHECK_SMALL( (norm_fem_evaluations-true_norm), 1e-14 );
-        BOOST_CHECK_SMALL( (norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
 
 
     }
