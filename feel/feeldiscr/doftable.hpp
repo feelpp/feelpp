@@ -1204,6 +1204,10 @@ public:
         this->generateDofPoints(M);
     }
 
+    /**
+     * build point id to dof id relationship
+     */
+    std::map<size_type, size_type> pointIdToDofRelation(std::string fname="") const;
 private:
 
     void addVertexDof( element_type const& __elt, uint16_type processor, size_type& next_free_dof,
@@ -2049,6 +2053,8 @@ private:
     }
     void generateDofPoints( mesh_type& M );
     void generatePeriodicDofPoints( mesh_type& M, periodic_element_list_type const& periodic_elements, dof_points_type& periodic_dof_points );
+
+
 
 private:
 
@@ -3569,7 +3575,46 @@ DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type
 
 }
 
+template<typename MeshType, typename FEType, typename PeriodicityType>
+std::map<size_type,size_type>
+DofTable<MeshType, FEType, PeriodicityType>::pointIdToDofRelation(std::string fname) const
+{
+    std::map<size_type,size_type> pidtodof;
+    element_const_iterator it_elt = M_mesh->beginElementWithProcessId( M_mesh->worldComm().localRank() );
+    element_const_iterator en_elt = M_mesh->endElementWithProcessId( M_mesh->worldComm().localRank() );
 
+    if ( it_elt == en_elt )
+        return pidtodof;
+
+    for ( size_type dof_id = 0; it_elt!=en_elt ; ++it_elt )
+    {
+        for ( uint16_type i = 0; i < M_mesh->numLocalVertices(); ++i )
+        {
+                int ncdof  = is_product?nComponents:1;
+                for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
+                {
+                    const size_type gDof = ( it_elt->point( i ).id() );
+                    size_type thedof = boost::get<0>( localToGlobal( it_elt->id(), i, c1 ) );
+                    //pidtodof[ncdof*it_elt->point(l).id()+c1] = thedof;
+                    pidtodof[thedof] = ncdof*gDof+c1;
+
+                }
+        }
+    }
+    if ( !fname.empty() )
+    {
+        std::ofstream ofs( fname.c_str() );
+        auto it = pidtodof.begin();
+        auto en = pidtodof.end();
+        std::for_each( it, en,
+                       [&ofs]( std::pair<size_type, size_type> const& p )
+                       {
+                           ofs << p.first << " " << p.second << "\n";
+                       });
+
+    }
+    return pidtodof;
+}
 } // namespace Feel
 
 
