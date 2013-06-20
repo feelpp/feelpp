@@ -92,10 +92,68 @@ public :
         auto Xh = Pch<Order>( mesh );
 
         auto RbSpace = RbSpacePch<Order>( this->shared_from_this() , mesh );
+
+        auto basis_x = vf::project( Xh , elements(mesh), Px() );
+        auto basis_y = vf::project( Xh , elements(mesh), Py() );
+        RbSpace->addBasisElement( basis_x );
+        RbSpace->addBasisElement( basis_y );
+
+        int rbspace_size = RbSpace->size();
+
+        LOG( INFO ) << " rbspace_size : "<<rbspace_size;
+
+        // FEM context and points
+        auto ctxfem = Xh->context();
+        std::vector< node_type > vec_t;
+        node_type t1(Dim), t2(Dim), t3(Dim);
+        /*x*/ t1(0)=0.1; /*y*/ t1(1)=0.2;
+        /*x*/ t2(0)=0.1; /*y*/ t2(1)=0.8;
+        /*x*/ t3(0)=0.75;   /*y*/ t3(1)=0.9;
+        ctxfem.add( t1 );
+        ctxfem.add( t2 );
+        ctxfem.add( t3 );
+
+        RbSpace->addContext( ctxfem );
+
+        auto ctxrb = RbSpace->context();
+        ctxrb.update( ctxfem );
+
         auto u = RbSpace->element();
         auto u_ptr = RbSpace->elementPtr();
 
-        int rbspace_size = RbSpace->size();
+        u.setCoefficient( 0 , 1 );
+        auto u_fem = u.expansion();
+        auto fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
+        auto rb_evaluations = u.evaluate( ctxfem , ctxrb );
+        Eigen::VectorXd true_values( 3 );
+        true_values(0)=t1(0); true_values(1)=t2(0); true_values(2)=t3(0);
+        double norm_fem_evaluations = fem_evaluations.norm();
+        double norm_rb_evaluations = rb_evaluations.norm();
+        double true_norm=true_values.norm();
+
+        BOOST_CHECK_SMALL( (norm_fem_evaluations-true_norm), 1e-14 );
+        BOOST_CHECK_SMALL( (norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
+
+        LOG( INFO ) << "rb unknown : \n"<<u;
+        LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
+
+        u.setCoefficient( 0 , 0 );
+        u.setCoefficient( 1 , 1 );
+        u_fem = u.expansion();
+        fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
+        rb_evaluations = u.evaluate( ctxfem , ctxrb );
+        true_values(0)=t1(1); true_values(1)=t2(1); true_values(2)=t3(1);
+        norm_fem_evaluations = fem_evaluations.norm();
+        norm_rb_evaluations = rb_evaluations.norm();
+        true_norm=true_values.norm();
+
+        LOG( INFO ) << "rb unknown : \n"<<u;
+        LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
+
+        BOOST_CHECK_SMALL( (norm_fem_evaluations-true_norm), 1e-14 );
+        BOOST_CHECK_SMALL( (norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
+
+
     }
 
 
