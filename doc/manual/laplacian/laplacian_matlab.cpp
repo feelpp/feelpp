@@ -29,6 +29,11 @@ int main(int argc, char**argv )
                   _expr=gradt(u)*trans(grad(v)) );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
           _expr=constant(0.) );
+    if ( Environment::numberOfProcessors() == 1 )
+    {
+        a.matrixPtr()->printMatlab("A.m");
+        l.vectorPtr()->printMatlab("b.m");
+    }
     a.solve(_rhs=l,_solution=u);
     //# endmarker3 #
     Vh->dof()->pointIdToDofRelation( "feelpp2msh.m" );
