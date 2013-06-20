@@ -392,7 +392,7 @@ private:
 private:
 
     std::string _M_version;
-    //std::vector<int> _M_n_vertices;
+    std::map<int,int> _M_n_vertices;
     //std::vector<int> _M_n_b_vertices;
 
     std::set<int> _M_ignorePhysicalGroup;
@@ -897,8 +897,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
     node_type coords( mesh_type::nRealDim );
 
-    //_M_n_vertices.resize( __n );
-    //_M_n_vertices.assign( __n, 0 );
     //_M_n_b_vertices.resize( __n );
     //_M_n_b_vertices.assign( __n, 0 );
 
@@ -923,7 +921,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
                 coords[j] = gmshpt.x[j];
 
-            point_type pt( ptid, coords );
+            point_type pt( ptid, coords, gmshpt.onbdy );
 
             if ( gmshpt.parametric )
             {
@@ -1015,7 +1013,11 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     if ( this->worldComm().localSize()>1 )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
 
-    //mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0 ) );
+    mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0,
+                                           []( int lhs, std::pair<int,int> const& rhs )
+                                           {
+                                               return lhs+rhs.second;
+                                           } ) );
     if ( !mesh->markerNames().empty() &&
          ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
          ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
@@ -1025,6 +1027,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         //LOG(INFO) << "[substructuring] n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
     }
     DVLOG(2) << "done with reading and creating mesh from gmsh file\n";
+    _M_n_vertices.clear();
 }
 
 template<typename MeshType>
@@ -1052,7 +1055,7 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     {
         pf.setOnBoundary( true );
     }
-    //_M_n_vertices[ __e.indices[0] ] = 1;
+    _M_n_vertices[ __e.indices[0] ] = 1;
 
     //_M_n_b_vertices[ __e.indices[0] ] = 1;
 
@@ -1143,8 +1146,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    //_M_n_vertices[ __e.indices[0] ] = 1;
-    //_M_n_vertices[ __e.indices[1] ] = 1;
+    _M_n_vertices[ __e.indices[0] ] = 1;
+    _M_n_vertices[ __e.indices[1] ] = 1;
     DVLOG(2) << "added edge with id :" << e.id()
                   << " n1: " << mesh->point( __e.indices[0] ).node()
                   << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
@@ -1181,8 +1184,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
 
     }
 
-    //_M_n_vertices[ __e.indices[0] ] = 1;
-    //_M_n_vertices[ __e.indices[1] ] = 1;
+    _M_n_vertices[ __e.indices[0] ] = 1;
+    _M_n_vertices[ __e.indices[1] ] = 1;
 
     //_M_n_b_vertices[ __e.indices[0] ] = 1;
     //_M_n_b_vertices[ __e.indices[1] ] = 1;
@@ -1229,8 +1232,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
         }
     }
 
-    //_M_n_vertices[ __e.indices[0] ] = 1;
-    //_M_n_vertices[ __e.indices[1] ] = 1;
+    _M_n_vertices[ __e.indices[0] ] = 1;
+    _M_n_vertices[ __e.indices[1] ] = 1;
 
     //_M_n_b_vertices[ __e.indices[0] ] = 1;
     //_M_n_b_vertices[ __e.indices[1] ] = 1;
@@ -1308,15 +1311,13 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-#if 0
-    //_M_n_vertices[ __e.indices[0] ] = 1;
-    //_M_n_vertices[ __e.indices[1] ] = 1;
-    //_M_n_vertices[ __e.indices[2] ] = 1;
+    _M_n_vertices[ __e.indices[0] ] = 1;
+    _M_n_vertices[ __e.indices[1] ] = 1;
+    _M_n_vertices[ __e.indices[2] ] = 1;
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 )
         _M_n_vertices[ __e.indices[3] ] = 1;
-#endif
 }
 template<typename MeshType>
 void
@@ -1360,7 +1361,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     boost::tie( fit, inserted ) = mesh->addFace( e );
 
     __idGmshToFeel=e.id();
-#if 0
+
     _M_n_vertices[ __e.indices[0] ] = 1;
     _M_n_vertices[ __e.indices[1] ] = 1;
     _M_n_vertices[ __e.indices[2] ] = 1;
@@ -1368,7 +1369,7 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 )
         _M_n_vertices[ __e.indices[3] ] = 1;
-#endif
+
 }
 
 template<typename MeshType>
@@ -1439,7 +1440,6 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-#if 0
     _M_n_vertices[ __e.indices[0] ] = 1;
     _M_n_vertices[ __e.indices[1] ] = 1;
     _M_n_vertices[ __e.indices[2] ] = 1;
@@ -1452,7 +1452,6 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
         _M_n_vertices[ __e.indices[6] ] = 1;
         _M_n_vertices[ __e.indices[7] ] = 1;
     }
-#endif
 }
 
 template<typename MeshType>
