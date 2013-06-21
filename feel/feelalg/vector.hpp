@@ -512,7 +512,7 @@ public:
      * matrix to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    virtual void printMatlab( const std::string name="NULL" ) const
+    virtual void printMatlab( const std::string name="NULL", bool renumber = false ) const
     {
         std::cerr << "ERROR: Not Implemented in base class yet!" << std::endl;
         std::cerr << "ERROR writing MATLAB file " << name << std::endl;
