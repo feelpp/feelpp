@@ -210,7 +210,7 @@ VectorEigen<T>::close() const
 
 template<typename T>
 void
-VectorEigen<T>::printMatlab( const std::string filename ) const
+VectorEigen<T>::printMatlab( const std::string filename, bool renumber  ) const
 {
     std::string name = filename;
     std::string separator = " , ";

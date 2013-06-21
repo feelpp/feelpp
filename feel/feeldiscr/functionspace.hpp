@@ -3022,7 +3022,7 @@ public:
             return true;
         }
 
-        void printMatlab( std::string fname, bool gmsh = false )
+        void printMatlab( std::string fname, bool gmsh ) const
             {
                 VectorUblas<value_type> m( *this );
                 if ( gmsh )
