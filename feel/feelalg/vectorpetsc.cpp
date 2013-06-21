@@ -404,7 +404,7 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
 
         if ( !V )
         {
-            VectorPetsc<T> tmp( V_in.map(), true );
+            VectorPetsc<T> tmp( V_in.mapPtr(), true );
             dynamic_cast<Vector<T>&>( tmp ) = V_in;
             ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp._M_vec, _M_vec, _M_vec );
         }
@@ -425,17 +425,17 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
 //----------------------------------------------------------------------------------------------------//
 
 template<typename T>
-VectorPetscMPI<T>::VectorPetscMPI( DataMap const& dm )
+VectorPetscMPI<T>::VectorPetscMPI( datamap_ptrtype const& dm )
     :
     super( dm,false ) //false for not init
 {
-    this->init( dm.nDof(), dm.nLocalDofWithoutGhost() );
+    this->init( dm->nDof(), dm->nLocalDofWithoutGhost() );
 }
 
 //----------------------------------------------------------------------------------------------------//
 
 template<typename T>
-VectorPetscMPI<T>::VectorPetscMPI( Vec v, DataMap const& dm )
+VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm )
     :
     super( v,dm )
 {
@@ -968,7 +968,7 @@ VectorPetscMPI<T>::dot( Vector<T> const& __v )
     this->close();
     PetscScalar e;
 
-    VectorPetscMPI<value_type> v( this->map() );
+    VectorPetscMPI<value_type> v( this->mapPtr() );
     {
         size_type s = v.map().nLocalDofWithGhost();
         size_type start = v.firstLocalIndex();

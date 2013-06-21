@@ -94,6 +94,10 @@ public:
         typedef VectorUblas<value_type,subtype> type;
     };
 
+
+    typedef typename super1::datamap_type datamap_type;
+    typedef typename super1::datamap_ptrtype datamap_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -104,13 +108,13 @@ public:
 
     VectorUblas( size_type __s );
 
-    VectorUblas( DataMap const& dm );
+    VectorUblas( datamap_ptrtype const& dm );
 
     VectorUblas( size_type __s, size_type __n_local );
 
     VectorUblas( VectorUblas const & m );
 
-    VectorUblas( VectorUblas<value_type>& m, range_type const& range, DataMap const& dm );
+    VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
 
     VectorUblas( ublas::vector<value_type>& m, range_type const& range );
 
@@ -146,7 +150,7 @@ public:
     /**
      * init from a \p DataMap
      */
-    void init( DataMap const& dm );
+    void init( datamap_ptrtype const& dm );
 
 
     /**
@@ -915,7 +919,7 @@ element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
 
     typedef typename type_traits<T>::real_type real_type;
 
-    VectorUblas<real_type> _t( v1.map() );
+    VectorUblas<real_type> _t( v1.mapPtr() );
     size_type s = v1.localSize();
     size_type start = v1.firstLocalIndex();
 

@@ -42,24 +42,90 @@ VectorBlockBase<T>::VectorBlockBase( vf::BlocksBase<vector_ptrtype> const & bloc
     :
     M_vec()
 {
-    auto NR = blockVec.nRow();
+    auto nRow = blockVec.nRow();
 
+#if 0
     size_type _size = 0;
-
-    for ( uint i=0; i<NR; ++i )
+    for ( uint i=0; i<nRow; ++i )
         _size += blockVec( i,0 )->size();
 
     M_vec = backend.newVector( _size,_size );
+#else
+
+    boost::shared_ptr<DataMap> dm( new DataMap(blockVec(0,0)->map().worldComm()) );
+    const int myrank = dm->worldComm().globalRank();
+    const int worldsize = dm->worldComm().globalSize();
+    for (int proc = 0 ; proc < worldsize ; ++proc)
+    {
+        size_type firstDofGlobalCluster=0;
+        for ( int p=0; p<proc; ++p )
+            for ( uint16_type i=0 ; i<nRow; ++i )
+                firstDofGlobalCluster += blockVec(i,0)->map().nLocalDofWithoutGhost( p );
+        dm->setFirstDofGlobalCluster( proc, firstDofGlobalCluster );
+
+        size_type sizeWithoutGhost=0, sizeWithGhost=0, sizeGlobalCluster=0;
+        for ( uint16_type i=0 ; i<nRow; ++i)
+        {
+            sizeWithoutGhost += blockVec(i,0)->map().nLocalDofWithoutGhost( proc );
+            sizeWithGhost += blockVec(i,0)->map().nLocalDofWithGhost( proc );
+            sizeGlobalCluster += blockVec(i,0)->map().nDof();
+        }
+        dm->setNLocalDofWithoutGhost( proc, sizeWithoutGhost );
+        dm->setNLocalDofWithGhost( proc, sizeWithGhost );
+        dm->setFirstDof( proc, 0 );
+        dm->setLastDof( proc, (sizeWithGhost == 0)?0:sizeWithGhost-1 );
+        dm->setLastDofGlobalCluster(proc,  (sizeWithoutGhost ==0)? firstDofGlobalCluster : ( firstDofGlobalCluster +sizeWithoutGhost-1 ));
+        if ( proc==myrank )
+            dm->setNDof( sizeGlobalCluster );
+    }
+
+    dm->resizeMapGlobalProcessToGlobalCluster( dm->nLocalDofWithGhost(myrank) );
+    dm->resizeMapGlobalClusterToGlobalProcess( dm->nLocalDofWithoutGhost(myrank) );
+    const size_type firstDofGC = dm->firstDofGlobalCluster(myrank);
+    size_type start_i = firstDofGC;
+    size_type nLocalDofStart = dm->firstDof();
+    for ( uint16_type i=0 ; i<nRow; ++i)
+    {
+        const size_type firstBlockDofGC =  blockVec(i,0)->map().firstDofGlobalCluster(myrank);
+        for (size_type gdof = blockVec(i,0)->map().firstDof(myrank) ; gdof < blockVec(i,0)->map().nLocalDofWithGhost(myrank) ; ++gdof )
+        {
+            const size_type localDof = nLocalDofStart+gdof;
+            size_type gdofGC = blockVec(i,0)->map().mapGlobalProcessToGlobalCluster(gdof);
+            if ( blockVec(i,0)->map().dofGlobalClusterIsOnProc( gdofGC ) )
+            {
+                const size_type globalDof = start_i+(gdofGC-firstBlockDofGC);
+                dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
+                dm->setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
+            }
+            else
+            {
+                const int realproc = blockVec(i,0)->map().procOnGlobalCluster(gdofGC);
+                size_type nDofStart=dm->firstDofGlobalCluster(realproc);
+                for ( uint16_type k=0; k<i; ++k )
+                    nDofStart += blockVec(k,0)->map().nLocalDofWithoutGhost( realproc );
+                const size_type globDof = nDofStart+(gdofGC- blockVec(i,0)->map().firstDofGlobalCluster(realproc));
+                dm->setMapGlobalProcessToGlobalCluster( localDof, globDof );
+            }
+        }
+        nLocalDofStart += blockVec(i,0)->map().nLocalDofWithGhost( myrank );
+
+        start_i += blockVec(i,0)->map().nLocalDofWithoutGhost( myrank );
+    }
+
+    //dm->showMeMapGlobalProcessToGlobalCluster();
+
+    M_vec = backend.newVector( dm );
+#endif
     M_vec->zero();
 
     if ( copy_values )
     {
-        size_type start_i=0;
-
-        for ( uint i=0; i<NR; ++i )
+        size_type start_i = M_vec->map().firstDof();
+        for ( uint i=0; i<nRow; ++i )
         {
+            blockVec( i,0 )->close(); // not good but necessary here (TODO)
             this->updateBlockVec( blockVec( i,0 ),start_i );
-            start_i += blockVec( i,0 )->size();
+            start_i += blockVec( i,0 )->map().nLocalDofWithGhost();
         }
     }
 }
@@ -68,9 +134,10 @@ template <typename T>
 void
 VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
 {
-    const size_type size = m->size();
+    auto const& blockmap = m->map();
+    const size_type size = blockmap.nLocalDofWithGhost() ;
 
-    for ( uint i=0; i<size; ++i )
+    for ( size_type i=0; i<size; ++i )
         M_vec->set( start_i+i,m->operator()( i ) );
 }
 

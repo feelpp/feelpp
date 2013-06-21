@@ -154,9 +154,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -170,9 +170,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -186,11 +186,11 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         *_v2 = ie;
-        vector_ptrtype _v3( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v3( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v3 );
         return inner_product( _v2, _v3 );
     }
@@ -205,9 +205,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -224,9 +224,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -240,9 +240,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -257,9 +257,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -274,9 +274,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -290,9 +290,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -307,9 +307,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -323,9 +323,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -343,9 +343,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -359,9 +359,9 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -380,10 +380,10 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        //vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        //vector_ptrtype _v2( M_backend->newVector( ie.space()->dof() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( M_matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -421,8 +421,8 @@ public:
             M_matrix->close();
         }
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
         *_v2 = ie.container();
         M_backend->solve( M_matrix, M_matrix, _v1, _v2 );
         de = *_v1;
@@ -453,7 +453,7 @@ public:
 
         domain_element_type de = this->domainSpace()->element();
 
-        auto ie = M_backend->newVector( this->dualImageSpace() );
+        auto ie = M_backend->newVector( _test=this->dualImageSpace() );
         form1( _test=this->dualImageSpace(), _vector=ie ) =
             integrate( elements( this->domainSpace()->mesh() ),
                        rhs_expr * id( this->dualImageSpace()->element() ) );

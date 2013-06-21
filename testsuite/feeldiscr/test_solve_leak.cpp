@@ -44,8 +44,6 @@
 #include <feel/feelvf/vf.hpp>
 
 
-
-
 inline
 Feel::po::options_description
 makeOptions()
@@ -83,6 +81,8 @@ makeAbout()
     return about;
 
 }
+
+
 
 
 namespace Feel
@@ -172,9 +172,9 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    Laplacian( int argc, char** argv, AboutData const& ad, po::options_description const& od )
+    Laplacian( int argc, char** argv, AboutData const& ad)
         :
-        super( argc, argv, ad, od ),
+        super( argc, argv, ad),
         meshSize( this->vm()["hsize"].template as<double>() ),
         shape( this->vm()["shape"].template as<std::string>() ),
         b( backend_type::build( this->vm() ) ),
@@ -699,7 +699,7 @@ main( int argc, char** argv )
 {
     using namespace Feel;
 
-    Feel::Environment env( argc,argv );
+    Feel::Environment env( argc,argv, makeOptions() );
 
     /* change parameters below */
     const int nDim = 2;
@@ -711,7 +711,7 @@ main( int argc, char** argv )
     typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
 
     /* define and run application */
-    laplacian_type laplacian( argc, argv, makeAbout(), makeOptions() );
+    laplacian_type laplacian( argc, argv, makeAbout() );
 
     laplacian.run();
 }

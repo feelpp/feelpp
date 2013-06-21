@@ -64,13 +64,13 @@ VectorEigen<T>::VectorEigen( size_type __s )
 }
 
 template <typename T>
-VectorEigen<T>::VectorEigen( DataMap const& dm )
+VectorEigen<T>::VectorEigen( datamap_ptrtype const& dm )
     :
     super1( dm ),
-    _M_vec( dm.nDof() )
+    _M_vec( dm->nDof() )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
-    this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
 }
 
 template <typename T>
@@ -180,10 +180,10 @@ VectorEigen<T>::init ( const size_type n,
 
 template<typename T>
 void
-VectorEigen<T>::init( DataMap const& dm )
+VectorEigen<T>::init( datamap_ptrtype const& dm )
 {
     super1::init( dm );
-    this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
 }
 
 
@@ -489,7 +489,7 @@ template <typename T>
 typename VectorEigen<T>::this_type
 VectorEigen<T>::sqrt() const
 {
-    this_type _tmp( this->map() );
+    this_type _tmp( this->mapPtr() );
 
 #if defined( FEELPP_HAS_TBB )
     tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
@@ -508,7 +508,7 @@ template <typename T>
 typename VectorEigen<T>::this_type
 VectorEigen<T>::pow( int n ) const
 {
-    this_type _out( this->map() );
+    this_type _out( this->mapPtr() );
 
     for ( int i = 0; i < ( int )this->localSize(); ++i )
         _out[i] = math::pow( this->operator[]( i ), n );
