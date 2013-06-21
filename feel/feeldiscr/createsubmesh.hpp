@@ -191,11 +191,19 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         new_elem.setMarker3(old_elem.marker3().value());
         */
         // partitioning update
-        new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
+        /*new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
         new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
         //new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());// TODO
+        */
+
+        // reset partitioning data
+        new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
+        new_elem.setNumberOfPartitions( 1 );
+        new_elem.setProcessId( old_elem.processId() );
+        new_elem.idInOthersPartitions().clear();
+        new_elem.neighborPartitionIds().clear();
 
 
         // Loop over the nodes on this element.
@@ -212,6 +220,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                 point_type pt( old_point );
                 pt.setId( n_new_nodes );
+                pt.setProcessId(old_point.processId());
 
                 // Add this node to the new mesh
                 newMesh->addPoint ( pt );
@@ -452,6 +461,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                         point_type pt( old_elem.point( n ) );
                         pt.setId( n_new_nodes );
+                        pt.setProcessId(invalid_uint16_type_value);//old_elem.point( n ).processId());
 
                         // Add this node to the new mesh
                         newMesh->addPoint ( pt );

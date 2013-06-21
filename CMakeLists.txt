@@ -114,15 +114,19 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS "-std=c++0x -pedantic  -ftemplate-depth-256 -Wno-inline" CACHE STRING "Default flags" FORCE)
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC" CACHE STRING "Debug flags" FORCE)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1" CACHE STRING "Release With Debug information flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions "  CACHE STRING "Release flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 include(ProcessorCount)
 ProcessorCount(NProcs)
-##if(N GREATER 1)
-math (EXPR NProcs2 '${NProcs}/2')
-if(NProcs2 EQUAL 0)
-  set(NProcs2 1)
+IF(NOT CMAKE_NPROCS)
+  ##if(N GREATER 1)
+  math (EXPR NProcs2 '${NProcs}/2')
+  if(NProcs2 EQUAL 0)
+    set(NProcs2 1)
+  endif()
+else()
+  set(NProcs2 "${CMAKE_NPROCS}")
 endif()
 message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
@@ -251,7 +255,7 @@ foreach(project ${projects_list})
   #get shortname
   GET_FILENAME_COMPONENT(dirname ${project} NAME)
   MESSAGE(STATUS "      " ${dirname})
-  
+
   #define option to control doc generation
   string(TOUPPER ${dirname} PROJECT)
   option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${dirname}" OFF)
@@ -260,7 +264,7 @@ endforeach()
 #
 # data
 #
-IF(NOT APPLE AND EXISTS data)
+IF(NOT APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/data")
   ADD_SUBDIRECTORY ( data )
 ENDIF()
 
