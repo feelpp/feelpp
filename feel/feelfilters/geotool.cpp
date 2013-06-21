@@ -1819,13 +1819,13 @@ computeBasisOrthogonal( node_type dir,node_type centre )
     {
         ptBis( 0 )=centre( 0 )+rayon;
 
-        if ( !std::abs( c )<1e-8 )
+        if ( !( std::abs( c )<1e-8 ) )
         {
             ptBis( 1 )=centre( 1 );
             ptBis( 2 )=( -b*ptBis( 1 )-d )/c;
         }
 
-        else if ( !std::abs( b )<1e-8 )
+        else if ( !( std::abs( b )<1e-8 ) )
         {
             ptBis( 2 )=centre( 2 );
             ptBis( 1 )=( -c*ptBis( 2 )-d )/b;
@@ -1836,13 +1836,13 @@ computeBasisOrthogonal( node_type dir,node_type centre )
     {
         ptBis( 1 )=centre( 1 )+rayon;
 
-        if ( !std::abs( c )<1e-8 )
+        if ( ! (std::abs( c )<1e-8 ) )
         {
             ptBis( 0 )=centre( 0 );
             ptBis( 2 )=( -a*ptBis( 0 )-d )/c;
         }
 
-        else if ( !std::abs( a )<1e-8 )
+        else if ( ! (std::abs( a )<1e-8 ) )
         {
             ptBis( 2 )=centre( 2 );
             ptBis( 0 )=( -c*ptBis( 2 )-d )/a;
