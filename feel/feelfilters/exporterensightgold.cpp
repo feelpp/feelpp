@@ -631,23 +631,6 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             if ( __var->second.is_vectorial )
                 nComponents = 3;
 
-#if 0
-            std::set<int> nodeset;
-            fit = pairit.first;
-            size_type nv = 0;
-            for( ; fit != fen; ++fit )
-            {
-                for ( size_type j = 0; j < nverts; j++ )
-                {
-                    int pid = fit->point( j ).id();
-                    auto ins = nodeset.insert( pid );
-                    if ( ins.second )
-                    {
-                        ++nv;
-                    }
-                }
-            }
-#endif
             std::vector<float> field( nComponents*mp.ids.size(), 0. );
             for( ; fit != fen; ++fit )
             {
@@ -670,6 +653,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                     }
                 }
             }
+            CHECK( field.size() == mp.ids.size() ) << "Invalid face field size, observed: " << field.size() << " expected: " << mp.ids.size() << "\n";
             __out.write( ( char * ) field.data(), field.size() * sizeof( float ) );
         } // boundaries loop
 
@@ -695,19 +679,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
             }
 
 
-            /**
-             * BE CAREFUL HERE some points in the mesh may not be present in the
-             * mesh element connectivity, we really need to have an array of the
-             * size of the number of points in the mesh even though if some are not
-             * in the connectivity and not an array of the dimension of the function
-             * space which has the "right" size.
-             */
-            size_type __field_size = __step->mesh()->numPoints();
-            if ( __var->second.is_vectorial )
-                __field_size *= 3;
-            ublas::vector<float> __field( __field_size, 0. );
 
-            __field.clear();
             //typename mesh_type::element_const_iterator elt_it, elt_en;
             //boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( *__step->mesh() );
 
@@ -717,6 +689,10 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                                                                                __var->second.worldComm().localRank() ); // important localRank!!!!
 
             Feel::detail::MeshPoints<float> mp( __step->mesh().get(), elt_it, elt_en, true, true );
+            size_type __field_size = mp.ids.size();
+            if ( __var->second.is_vectorial )
+                __field_size *= 3;
+            ublas::vector<float> __field( __field_size, 0. );
             size_type e = 0;
 
             if ( !__var->second.areGlobalValuesUpdated() )
@@ -747,7 +723,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
                     }
                 }
             }
-
+            CHECK( __field.size() == mp.ids.size() ) << "Invalid field size, observed: " << __field.size() << " expected: " << mp.ids.size() << "\n";
             __out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
 
         } // parts loop
@@ -829,7 +805,8 @@ ExporterEnsightGold<MeshType,N>::saveElement( typename timeset_type::step_ptrtyp
             size_type ncells = __evar->second.size()/__evar->second.nComponents;
             for ( int c = 0; c < nComponents; ++c )
             {
-
+                boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
+                                                                                   __evar->second.worldComm().localRank() ); // important localRank!!!!
                 for ( ; elt_it != elt_en; ++elt_it, ++e )
                 {
                     DVLOG(2) << "pid : " << this->worldComm().globalRank()
