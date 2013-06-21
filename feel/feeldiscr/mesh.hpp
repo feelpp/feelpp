@@ -1852,7 +1852,83 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
     return new_mesh;
 }
+namespace detail
+{
+template<typename T>
+struct MeshPoints
+{
+    template<typename MeshType, typename IteratorType>
+    MeshPoints( MeshType*, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false );
 
+    std::vector<int> ids;
+    std::map<int,int> new2old;
+    std::map<int,int> old2new;
+    std::map<int,int> nodemap;
+    std::vector<T> coords;
+};
+template<typename T>
+template<typename MeshType, typename IteratorType>
+MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, const bool outer, const bool renumber )
+{
+    std::set<int> nodeset;
+    size_type p = 0;
+    for( ; it != en; ++it )
+    {
+        for ( size_type j = 0; j < it->numLocalVertices; j++ )
+        {
+            int pid = it->point( j ).id();
+            auto ins = nodeset.insert( pid );
+            if ( ins.second )
+            {
+                if ( renumber )
+                    ids.push_back( p+1 );
+                else
+                    ids.push_back( pid );
+                old2new[pid]=ids[p];
+                new2old[ids[p]]=pid;
+                nodemap[pid] = p;
+                ++p;
+            }
+        }
+    }
+    CHECK( p == ids.size() ) << "Invalid number of points " << ids.size() << "!=" << p;
+    int nv = ids.size();
+
+    coords.resize( 3*nv, 0 );
+
+    auto pit = ids.begin();
+    auto pen = ids.end();
+    //for( auto i = 0; i < nv; ++i )
+    for( int i = 0; pit != pen; ++pit, ++i )
+    {
+        CHECK( *pit > 0 ) << "invalid id " << *pit;
+        LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
+        //int pid = (renumber)?nodemap[*pit]+1:*pit;
+        int pid = *pit;
+
+        auto const& p = mesh->point( new2old[*pit] );
+        if ( outer )
+            coords[i] = ( T ) p.node()[0];
+        else
+            coords[3*i] = ( T ) p.node()[0];
+
+        if ( MeshType::nRealDim >= 2 )
+        {
+            if ( outer )
+                coords[nv+i] = ( T ) p.node()[1];
+            else
+                coords[3*i+1] = ( T ) p.node()[1];
+        }
+        if ( MeshType::nRealDim >= 3 )
+        {
+            if ( outer )
+                coords[2*nv+i] = T( p.node()[2] );
+            else
+                coords[3*i+2] = T( p.node()[2] );
+        }
+    }
+}
+}
 
 } // Feel
 

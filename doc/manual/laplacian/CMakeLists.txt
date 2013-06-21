@@ -32,3 +32,5 @@ feelpp_add_application( doc_laplacian_with_holes SRCS laplacian_with_holes.cpp L
 
 feelpp_add_application( doc_laplacian_polar SRCS laplacian_polar.cpp LABEL doc GEO polar.geo  CFG laplacian_polar.cfg DEFS FEELPP_POLAR)
 feelpp_add_application( doc_laplacian_cartesian SRCS laplacian_polar.cpp LABEL doc GEO cartesian.geo CFG laplacian_cartesian.cfg )
+
+feelpp_add_application( doc_laplacian_matlab SRCS laplacian_matlab.cpp GEO feel.geo SCRIPTS laplacian_matlab.m )
