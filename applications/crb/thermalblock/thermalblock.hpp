@@ -473,7 +473,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu );
+    value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false);
 
     /**
      * create a new matrix
@@ -862,13 +862,14 @@ ThermalBlock::newVector() const
 
 
 double
-ThermalBlock::output( int output_index, parameter_type const& mu )
+ThermalBlock::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
 
     using namespace vf;
-    this->solve( mu, pT );
-    vector_ptrtype U( M_backend->newVector( Xh ) );
-    *U = *pT;
+    if( need_to_solve )
+        this->solve( mu, pT );
+    else
+        *pT=u;
 
     double output=0;
 

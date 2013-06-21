@@ -53,7 +53,7 @@ MatrixPetsc<T>::MatrixPetsc()
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
     :
     super( dmRow,dmCol,worldComm ),
     _M_destroy_mat_on_exit( true )
@@ -72,8 +72,8 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, IS& isrow, IS& i
     PetscInt ncol;
     ISGetSize(isrow,&nrow);
     ISGetSize(iscol,&ncol);
-    DataMap dmrow(nrow, nrow);
-    DataMap dmcol(ncol, ncol);
+    datamap_ptrtype dmrow( new datamap_type(nrow, nrow) );
+    datamap_ptrtype dmcol( new datamap_type(ncol, ncol) );
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
     ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
@@ -118,8 +118,8 @@ MatrixPetsc<T>::MatrixPetsc( MatrixSparse<value_type> const& M, std::vector<int>
     PetscFree(rowMap);
     PetscFree(colMap);
 
-    DataMap dmrow(nrow, nrow);
-    DataMap dmcol(ncol, ncol);
+    datamap_ptrtype dmrow( new datamap_type(nrow, nrow) );
+    datamap_ptrtype dmcol( new datamap_type(ncol, ncol) );
     this->setMapRow(dmrow);
     this->setMapCol(dmcol);
     ierr = MatGetSubMatrix(A->mat(), isrow, iscol, MAT_INITIAL_MATRIX, &this->_M_mat);
@@ -148,7 +148,7 @@ MatrixPetsc<T>::MatrixPetsc( Mat m )
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( Mat m, DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
     :
     super( dmRow,dmCol,worldComm ),
     _M_destroy_mat_on_exit( false )
@@ -436,7 +436,7 @@ void MatrixPetsc<T>::init ( const size_type m,
 
 
 template <typename T>
-void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<int> > const &indexSplit )
+void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<size_type> > const &indexSplit )
 {
     this->M_IndexSplit=indexSplit;
 
@@ -449,12 +449,21 @@ void MatrixPetsc<T>::setIndexSplit( std::vector< std::vector<int> > const &index
         PetscInt nDofForThisField = indexSplit[i].size();
         //std::cout << "\n setIndexSplit " << i << " ndof:" << nDofForThisField << "\n";
 
+        PetscInt * petscSplit = new PetscInt[nDofForThisField];
+        std::copy( this->M_IndexSplit[i].begin(),
+                   this->M_IndexSplit[i].end(),
+                   petscSplit );
+
+
+
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-        ierr = ISCreateGeneral( this->comm(),nDofForThisField,this->M_IndexSplit[i].data(),PETSC_COPY_VALUES,&_M_petscIS[i] );
+        ierr = ISCreateGeneral( this->comm(),nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,PETSC_COPY_VALUES,&_M_petscIS[i] );
 #else
-        ierr = ISCreateGeneral( this->comm(),nDofForThisField,this->M_IndexSplit[i].data(),&_M_petscIS[i] );
+        ierr = ISCreateGeneral( this->comm(),nDofForThisField,petscSplit/*this->M_IndexSplit[i].data()*/,&_M_petscIS[i] );
 #endif
         CHKERRABORT( this->comm(),ierr );
+
+        delete[] petscSplit;
 
 #if 0
         ISView( _M_petscIS[i],PETSC_VIEWER_STDOUT_WORLD ); // PETSC_VIEWER_STDOUT_SELF
@@ -1493,121 +1502,55 @@ MatrixPetsc<T>::energy( Vector<value_type> const& __v,
 
 template<typename T>
 void
-MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, size_type start_i, size_type start_j )
+MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vector<size_type> start_i, std::vector<size_type> start_j )
 {
-#if 1
+    m->close();
+
+    auto const& mapRowBlock = m->mapRow();
+    auto const& mapColBlock = m->mapCol();
+
     auto blockMatrix = const_cast<MatrixPetsc<double> *>( dynamic_cast<MatrixPetsc<double> const*>( &*( m ) ) );
 
-    auto nbRowInBlock = blockMatrix->size1();
-
+    const size_type firstDofGCrow = mapRowBlock.firstDofGlobalCluster();
+    const size_type firstDofGCcol = mapColBlock.firstDofGlobalCluster();
+    const size_type nRowInBlock = mapRowBlock.nLocalDofWithGhost();
+    const int myrank = mapRowBlock.worldComm().globalRank();
     int ierr = 0;
-#if 1
+    std::vector<PetscInt> idcXShift;
 
-    for ( size_type ii = 0 ; ii < nbRowInBlock ; ++ii )
+    for ( size_type k=0;k<nRowInBlock;++k )
     {
-
-        PetscInt row = ii;
-        PetscInt ncols;
-        const PetscInt *cols;
-        const PetscScalar *vals;
-
-        ierr = MatGetRow( blockMatrix->mat(), row, &ncols, &cols, &vals );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
-        FEELPP_ASSERT( size_type( ncols ) != invalid_size_type_value )( ncols ).error( "invalid number of columns value" );
-
-        for ( size_type jj = 0 ; jj < ( size_type )ncols ; ++jj )
+        if ( !mapRowBlock.dofGlobalProcessIsGhost(k) )
         {
-            //std::cout << "\n [updateBlockMat] i "<< start_i+row << " j " << start_j+cols[jj] << " val " << vals[jj] << std::endl;
-            this->set( start_i+row,
-                       start_j+cols[jj],
-                       vals[jj] );
+            const PetscInt gDof = mapRowBlock.mapGlobalProcessToGlobalCluster(k);
+            PetscInt ncolsX;
+            const PetscInt *idcX;
+            const PetscScalar *valX;
+            ierr = MatGetRow( blockMatrix->mat(), gDof, &ncolsX, &idcX, &valX );
+            CHKERRABORT( this->comm(),ierr );
+
+            const PetscInt gDofShift = start_i[myrank]+ (gDof-firstDofGCrow);
+            idcXShift.resize(ncolsX,0);
+            for (int c=0;c<ncolsX;++c)
+            {
+                if ( mapColBlock.dofGlobalClusterIsOnProc(idcX[c]) )
+                {
+                    idcXShift[c] = start_j[myrank]+ ( idcX[c]-firstDofGCcol ) ;
+                }
+                else
+                {
+                    const int realproc = mapColBlock.procOnGlobalCluster(idcX[c]);
+                    idcXShift[c] = start_j[realproc] + ( idcX[c]-mapColBlock.firstDofGlobalCluster(realproc) );
+                }
+            }
+            ierr = MatSetValues( this->mat(),1, &gDofShift,ncolsX,idcXShift.data(),valX, INSERT_VALUES );
+            CHKERRABORT( this->comm(),ierr );
+
+            // apply this when finish with MatGetRow
+            ierr = MatRestoreRow( blockMatrix->mat(), gDof, &ncolsX, &idcX, &valX );
+            CHKERRABORT( this->comm(),ierr );
         }
-
-        ierr = MatRestoreRow( blockMatrix->mat(),row,&ncols,&cols,&vals );
-        CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
     }
-
-#else
-
-    int row = ii;
-    int ncols;
-    const int *cols;
-    const double *vals;
-
-    ierr = MatGetRow( blockMatrix->mat(), row, &ncols, &cols, &vals );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
-    //PetscScalar petsc_value = static_cast<PetscScalar>(value);
-
-    int *aaa = new int[nbRowInBlock];
-
-    for ( size_type ii = 0 ; ii < nbRowInBlock ; ++ii ) aaa[start_i+ii];
-
-    int bbb=nbRowInBlock;
-
-    //int *aaa = new int[1];aaa[0]=start_i+row;
-    //int bbb=1;
-
-    //this->addMatrix ( aaa, 1,
-    //                  cols, ncols,
-    //                  vals );
-    ierr = MatSetValues( _M_mat,
-                         bbb, aaa/*(int*) rows*/,
-                         ncols, /*(int*)*/ cols,
-                         /*(PetscScalar*) data*/vals,
-                         INSERT_VALUES/*ADD_VALUES*/ );
-
-    ierr = MatRestoreRow( blockMatrix->mat(),row,&ncols,&cols,&vals );
-    CHKERRABORT( PETSC_COMM_WORLD,ierr );
-
-
-#endif
-
-#if 0
-
-
-
-
-    PetscInt shift=0;
-    PetscBool symmetric = PETSC_FALSE;
-    PetscBool inodecompressed = PETSC_FALSE;
-    PetscInt n;
-    PetscInt* ia;
-    PetscInt* ja;
-    PetscBool done;
-    ierr = MatGetRowIJ( blockMatrix->mat(),
-                        shift,
-                        symmetric,
-                        inodecompressed,
-                        &n,&ia,&ja,
-                        &done );
-
-
-    this->addMatrix ( int* rows, int nrows,
-                      int* cols, int ncols,
-                      value_type* data )
-
-    this->set( start_i+row,
-               start_j+cols[jj],
-               vals[jj] );
-
-
-    ierr = MatRestoreRowIJ( blockMatrix->mat(),
-                            shift,
-                            symmetric,
-                            inodecompressed,
-                            &n,&ia,&ja,
-                            &done );
-
-
-#endif
-
-#endif
-
-
-
 
 
 }
@@ -1681,7 +1624,7 @@ MatrixPetscMPI<T>::MatrixPetscMPI()
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm )
+MatrixPetscMPI<T>::MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
     :
     super( dmRow,dmCol,worldComm )
 {}
@@ -1690,9 +1633,9 @@ MatrixPetscMPI<T>::MatrixPetscMPI( DataMap const& dmRow, DataMap const& dmCol, W
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI( Mat m, DataMap const& dmRow, DataMap const& dmCol )
+MatrixPetscMPI<T>::MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
     :
-    super( m, dmRow, dmCol, dmRow.worldComm() )
+    super( m, dmRow, dmCol, dmRow->worldComm() )
 {}
 
 //----------------------------------------------------------------------------------------------------//
@@ -1719,6 +1662,7 @@ void MatrixPetscMPI<T>::init( const size_type m,
     //std::cout << "MatrixPetscMPI<T>::init with graph start on proc"<< this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
 
     this->setGraph( graph );
+    this->graph()->close();
 
     // Clear initialized matrices
     if ( this->isInitialized() )
@@ -1776,7 +1720,6 @@ void MatrixPetscMPI<T>::init( const size_type m,
     CHKERRABORT( this->comm(),ierr );
 
 
-    this->graph()->close();
 
     std::vector<PetscInt> ia( this->graph()->ia().size() );
     std::vector<PetscInt> ja( this->graph()->ja().size() );
@@ -2516,7 +2459,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 
     if ( false ) // on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
         {
-            VectorPetscMPI<value_type> diag( this->mapRow() );
+            VectorPetscMPI<value_type> diag( this->mapRowPtr() );
 
             //VectorPetsc<value_type> diag( this->mapRow().nLocalDofWithoutGhost(),this->mapRow().worldComm() );
             //diag( this->mapRow().nLocalDofWithGhost(),this->mapRow().worldComm().subWorldComm(this->mapRow().worldComm().mapColorWorld()[this->mapRow().worldComm().globalRank()  ] ));
@@ -2603,7 +2546,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
     {
         VectorPetscMPI<T> const& v   = dynamic_cast<VectorPetscMPI<T> const&>( __v );
         VectorPetscMPI<T> const& u   = dynamic_cast<VectorPetscMPI<T> const&>( __u );
-        VectorPetscMPI<value_type> z( this->mapRow() );
+        VectorPetscMPI<value_type> z( this->mapRowPtr() );
 
         if ( !transpose )
             MatMult( this->mat(), u.vec(), z.vec() );
@@ -2615,7 +2558,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
 
     else
     {
-        VectorPetscMPI<value_type> u( this->mapRow() );
+        VectorPetscMPI<value_type> u( this->mapRowPtr() );
         {
             //size_type s = u.localSize();
             size_type s = u.map().nLocalDofWithGhost();
@@ -2625,7 +2568,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
                 u.set( start + i, __u( start + i ) );
         }
 
-        VectorPetscMPI<value_type> v( this->mapRow() );
+        VectorPetscMPI<value_type> v( this->mapRowPtr() );
         {
             //size_type s = v.localSize();
             size_type s = v.map().nLocalDofWithGhost();
@@ -2634,7 +2577,7 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
             for ( size_type i = 0; i < s; ++i )
                 v.set( start + i, __v( start + i ) );
         }
-        VectorPetscMPI<value_type> z( this->mapRow() );
+        VectorPetscMPI<value_type> z( this->mapRowPtr() );
 
         u.close();
         v.close();

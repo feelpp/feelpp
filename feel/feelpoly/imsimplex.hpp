@@ -759,7 +759,6 @@ struct IMTriangle
   Gauss  quadrature  points  and  weights  on  the  reference  triangle  order  p=1
 */
 
-/// \cond detail
 template<typename T>
 struct IMTriangle<1,T>
 {
