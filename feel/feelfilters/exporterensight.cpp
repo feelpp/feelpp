@@ -460,6 +460,8 @@ template<typename Iterator>
 void
 ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
 {
+    auto mit = elements(__step->mesh());
+    Feel::detail::MeshPoints<float> mp( __step->mesh().get(), mit.template get<1>(), mit.template get<2>(), false, true );
     while ( __var != en )
     {
         if ( !__var->second.worldComm().isActive() ) return;
@@ -488,12 +490,10 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
          * in the connectivity and not an array of the dimension of the function
          * space which has the "right" size.
          */
-        size_type __field_size = __step->mesh()->numPoints();
-        if ( __var->second.is_vectorial )
-            __field_size *= 3;
-        ublas::vector<float> __field( __field_size );
+        std::vector<float> m_field( nComponents*mp.ids.size() );
+        CHECK( m_field.size() == __var->second.localSize() ) << "Invalid size : " << m_field.size() << "!=" << __var->second.localSize();
 
-        __field.clear();
+        //__field.clear();
         typename mesh_type::element_const_iterator elt_it, elt_en;
         boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( *__step->mesh() );
         size_type e = 0;
@@ -507,38 +507,30 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
             {
                 for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                 {
-                    size_type ptid = elt_it->point( p ).id();
+                    size_type ptid = mp.old2new[elt_it->point( p ).id()]-1;
                     size_type global_node_id = nComponents * ptid + c ;
+#if 0
                     DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
                                                                  << " local pt:" << p
                                                                  << " mesh numPoints: " << __step->mesh()->numPoints();
-                    DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
-
+                    //DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
+#endif
                     if ( c < __var->second.nComponents )
                     {
                         size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->id(),p, c ) );
 
-#if 0
-
-                        if ( dof_id >= __var->second.firstLocalIndex() &&
-                                dof_id < __var->second.lastLocalIndex()  )
-                            __field[global_node_id] = __var->second( dof_id );
-
-                        else
-                            __field[global_node_id] = 0;
-
-#else
-                        __field[global_node_id] = __var->second.globalValue( dof_id );
-#endif
+                        m_field[global_node_id] = __var->second.globalValue( dof_id );
                     }
-
                     else
-                        __field[global_node_id] = 0;
+                        m_field[global_node_id] = 0;
+                    LOG(INFO) << "m_field[" << global_node_id << "]=" << m_field[global_node_id];
                 }
             }
         }
 
-        __out.write( ( char * ) __field.data().begin(), __field.size() * sizeof( float ) );
+        //std::vector<float> field;
+        //std::for_each( m_field.begin(), m_field.end(), [&field]( std::pair<size_type, float> const& p ) { field.push_back( p.second ); });
+        __out.write( ( char * ) m_field.data(), m_field.size() * sizeof( float ) );
 
         DVLOG(2) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "done\n";
         ++__var;
@@ -677,41 +669,13 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     strcpy( buffer, "coordinates" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
-
-    size_type __nv = __mesh->numPoints();
+    auto mit = elements(__mesh);
+    Feel::detail::MeshPoints<float> mp( __mesh, mit.template get<1>(), mit.template get<2>(), false, true );
+    size_type __nv = mp.ids.size();
     __out.write( ( char * ) &__nv, sizeof( int ) );
-
-
-    idnode.resize( __nv );
-
-    size_type __coords_size = 3*__nv;
-    ublas::vector<float> __coords( __coords_size );
-    __coords.clear();
-    typename mesh_type::point_const_iterator pt_it = __mesh->beginPoint();
-    typename mesh_type::point_const_iterator pt_en = __mesh->endPoint();
-
-    for ( size_type __count = 0; pt_it != pt_en; ++pt_it, ++__count )
-    {
-        size_type __id = pt_it->id();
-        idnode[__count] = __id+1;
-        __coords[3*__count+0] = ( float ) pt_it->node()[0];
-
-        if ( mesh_type::nRealDim >= 2 )
-            __coords[3*__count+1] = ( float ) pt_it->node()[1];
-
-        else
-            __coords[3*__count+1] = float( 0 );
-
-        if ( mesh_type::nRealDim >= 3 )
-            __coords[3*__count+2] = float( pt_it->node()[2] );
-
-        else
-            __coords[3*__count+2] = float( 0 );
-    }
-
-    __out.write( ( char * ) & idnode.front(), idnode.size() * sizeof( int ) );
-    __out.write( ( char * ) __coords.data().begin(), __coords.size() * sizeof( float ) );
-
+    LOG(INFO) << "n pts = " << __nv << " numppoints=" << __mesh->numPoints();
+    __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
+    __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
 
     typename mesh_type::parts_const_iterator_type p_it = __mesh->beginParts();
     typename mesh_type::parts_const_iterator_type p_en = __mesh->endParts();
@@ -757,16 +721,19 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
         boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
                                                                    __mesh->worldComm().localRank() ); // important localRank!!!!
         //elt_it = __mesh->beginElementWithMarker(p_it->first);
-
-        for ( ; elt_it != elt_en; ++elt_it )
+        std::vector<int> eids( __mesh->numLocalVertices()*__ne );
+        size_type e= 0;
+        for ( ; elt_it != elt_en; ++elt_it, ++e )
         {
             for ( size_type j = 0; j < __mesh->numLocalVertices(); j++ )
             {
                 // ensight id start at 1
-                int __id = elt_it->point( j ).id()+1;
-                __out.write( ( char * ) & __id , sizeof( int ) );
+                int __id = mp.old2new[elt_it->point( j ).id()];
+                eids[__mesh->numLocalVertices()*e+j] = __id;
             }
         }
+        __out.write( ( char * ) eids.data() , eids.size()*sizeof( int ) );
+
     }
 }
 

@@ -222,6 +222,10 @@ public:
         return  _M_points.find( point_type( i ) );
     }
 
+    bool hasPoint( size_type i ) const
+        {
+            return _M_points.find( point_type( i ) ) != _M_points.end();
+        }
     /**
      * get the points container by id
      *
