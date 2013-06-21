@@ -302,7 +302,7 @@ VectorPetsc<T>:: sum () const
 }
 
 template <typename T>
-void VectorPetsc<T>::printMatlab ( const std::string name ) const
+void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
 {
     assert ( this->isInitialized() );
     FEELPP_ASSERT ( this->closed() ).warn( "vector is not closed" );
