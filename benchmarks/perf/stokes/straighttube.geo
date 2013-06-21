@@ -8,7 +8,7 @@ Mesh.Algorithm3D = 4;
 //Mesh.OptimizeNetgen=1;
 // partitioning data
 Mesh.Partitioner=1;
-Mesh.NbPartitions=1;
+// Mesh.NbPartitions=1;
 Mesh.MshFilePartitioned=0;
 h = 0.1;
 Mesh.RecombinationAlgorithm=0;
