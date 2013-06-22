@@ -3035,7 +3035,7 @@ public:
             return true;
         }
 
-        void printMatlab( std::string fname, bool gmsh ) const
+        void printMatlab( std::string fname, bool gmsh = false ) const
             {
                 container_type m( *this );
                 if ( gmsh )

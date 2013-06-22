@@ -763,7 +763,7 @@ public:
      * \param name filename of the matlab file
      * \sa MatrixEpetra::printMatlab
      */
-    void printMatlab ( const std::string name ) const;
+    void printMatlab ( const std::string name = "", bool renumber = false ) const;
 
     //   @}
 
