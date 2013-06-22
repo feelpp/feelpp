@@ -491,7 +491,7 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
          * space which has the "right" size.
          */
         std::vector<float> m_field( nComponents*mp.ids.size() );
-        CHECK( m_field.size() == __var->second.localSize() ) << "Invalid size : " << m_field.size() << "!=" << __var->second.localSize();
+        CHECK( m_field.size()/nComponents == __var->second.localSize()/__var->second.nComponents ) << "Invalid size : " << m_field.size() << "!=" << __var->second.localSize();
 
         //__field.clear();
         typename mesh_type::element_const_iterator elt_it, elt_en;
