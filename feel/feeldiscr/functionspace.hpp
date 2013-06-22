@@ -3037,7 +3037,7 @@ public:
 
         void printMatlab( std::string fname, bool gmsh ) const
             {
-                VectorUblas<value_type> m( *this );
+                container_type m( *this );
                 if ( gmsh )
                 {
                     auto relation = this->functionSpace()->dof()->pointIdToDofRelation();
