@@ -273,36 +273,36 @@ set(CTEST_SITE "${FEELPP_SITE}")
 # build name
 set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
 string(REPLACE "+" "%2B" CTEST_BUILD_NAME ${CTEST_BUILD_NAME})
-## set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
-## should ctest wipe the binary tree before running
-##SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
-#
-#if(FEELPP_CXX AND NOT WIN32)
-#  set(CTEST_ENVIRONMENT "CXX=${FEELPP_CXX}")
-#endif(FEELPP_CXX AND NOT WIN32)
-#
-#ctest_start(${FEELPP_MODE})
-#ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
-#ctest_submit(PARTS Update Notes)
-#
-#foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
-#
-#  set_property(GLOBAL PROPERTY SubProject ${subproject})
-#  set_property(GLOBAL PROPERTY Label ${subproject})
-#
-#  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}")
-#  # Submit results to a dashboard server.
-#  ctest_submit(PARTS Configure)
-#
-#  message(WARNING "build target "${subproject})
-#  #set(CTEST_BUILD_TARGET “${subproject}”)
-#  set(CTEST_BUILD_TARGET ${subproject})
-#  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
-#  ctest_submit(PARTS Build)
-#
-#  message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
-#  # runs only tests that have a LABELS property matching "${subproject}"
-#  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
-#  # Submit results to a dashboard server.
-#  ctest_submit(PARTS Test)
-#endforeach()
+# set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
+# should ctest wipe the binary tree before running
+#SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
+
+if(FEELPP_CXX AND NOT WIN32)
+  set(CTEST_ENVIRONMENT "CXX=${FEELPP_CXX}")
+endif(FEELPP_CXX AND NOT WIN32)
+
+ctest_start(${FEELPP_MODE})
+ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}")
+ctest_submit(PARTS Update Notes)
+
+foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
+
+  set_property(GLOBAL PROPERTY SubProject ${subproject})
+  set_property(GLOBAL PROPERTY Label ${subproject})
+
+  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}")
+  # Submit results to a dashboard server.
+  ctest_submit(PARTS Configure)
+
+  message(WARNING "build target "${subproject})
+  #set(CTEST_BUILD_TARGET “${subproject}”)
+  set(CTEST_BUILD_TARGET ${subproject})
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
+  ctest_submit(PARTS Build)
+
+  message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
+  # runs only tests that have a LABELS property matching "${subproject}"
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
+  # Submit results to a dashboard server.
+  ctest_submit(PARTS Test)
+endforeach()
