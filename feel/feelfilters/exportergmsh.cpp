@@ -652,7 +652,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
                 // verify that the dof points and mesh points coincide
 #if !defined(NDEBUG)
-
+#if 0
                 if ( ublas::norm_2( boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) )-elt_it->point( ordering.fromGmshId( l ) ).node() ) > 1e-10 )
                 {
                     std::cout << "------------------------------------------------------------\n";
@@ -662,7 +662,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
                     std::cout << "node dof:  " << boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) ) << "\n";
                     std::cout << "node element:  " << elt_it->point( ordering.fromGmshId( l ) ).node() << "\n";
                 }
-
+#endif
 #endif // NDEBUG
                 //out << " " << __u( globaldof);
                 out << " " <<__u.container()( globaldof );
