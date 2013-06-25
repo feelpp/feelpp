@@ -142,16 +142,18 @@ namespace Feel
              */
             //@{
 
-            explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms )
+            explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="")
                 :
                 M_fun( fun ),
                 M_syms( syms),
-                M_cfun()
+                M_cfun(),
+                M_filename(filename)
             {
+                DVLOG(2) << "Ginac constructor with expression_type \n";
                 GiNaC::lst exprs(fun);
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
 
             }
 
@@ -159,14 +161,26 @@ namespace Feel
             :
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
-            M_cfun()
+            M_cfun(),
+            M_filename( fun.M_filename )
             {
-                GiNaC::lst exprs(M_fun);
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-
-
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
+                {
+                    DVLOG(2) << "Ginac copy constructor : compile object file \n";
+                    GiNaC::lst exprs(M_fun);
+                    GiNaC::lst syml;
+                    std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
+                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+                }
+                else
+                {
+                    DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
+                    boost::mpi::communicator world;
+                    // std::string pid = boost::lexical_cast<std::string>(world.rank());
+                    // std::string filenameWithSuffix = M_filename + pid + ".so";
+                    std::string filenameWithSuffix = M_filename + ".so";
+                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                }
             }
 
             //@}
@@ -346,20 +360,21 @@ namespace Feel
             mutable expression_type  M_fun;
             std::vector<GiNaC::symbol> M_syms;
             GiNaC::FUNCP_CUBA M_cfun;
+            std::string M_filename;
         };
 
         inline
         Expr< GinacEx<2> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym ) );
+            return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ) );
         }
 
         inline
         Expr< GinacEx<2> >
-        expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym )
+        expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym ) );
+            return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename) );
         }
 
         /**
@@ -369,17 +384,17 @@ namespace Feel
         template<int Order>
         inline
         Expr< GinacEx<Order> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym ) );
+            return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ));
         }
 
         template<int Order>
         inline
         Expr< GinacEx<Order> >
-        expr( std::string const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(f,lsym), lsym ) );
+            return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename) );
         }
 
         template<int M=1, int N=1, int Order = 2>
@@ -428,45 +443,60 @@ namespace Feel
              */
             //@{
 
-            explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms )
+            explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="" )
                 :
                 M_fun( fun.evalm() ),
                 M_syms( syms),
-                M_cfun()
+                M_cfun(),
+                M_filename(filename)
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
 
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
             }
-            explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms )
+            explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename=""  )
                 :
                 M_fun(fun.evalm()),
                 M_syms( syms),
-                M_cfun()
+                M_cfun(),
+                M_filename(filename)
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
 
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
             }
 
             GinacMatrix( GinacMatrix const & fun )
             :
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
-            M_cfun()
+            M_cfun(),
+            M_filename( fun.M_filename )
             {
-                GiNaC::lst exprs;
-                for( int i = 0; i < fun.M_fun.nops(); ++i ) exprs.append( fun.M_fun.op(i) );
+                if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
+                {
+                    DVLOG(2) << "Ginac copy constructor : compile object file \n";
+                    GiNaC::lst exprs;
+                    for( int i = 0; i < fun.M_fun.nops(); ++i ) exprs.append( fun.M_fun.op(i) );
 
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                    GiNaC::lst syml;
+                    std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
+                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+                }
+                else
+                {
+                    DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
+                    boost::mpi::communicator world;
+                    std::string pid = boost::lexical_cast<std::string>(world.rank());
+                    std::string filenameWithSuffix = M_filename + pid + ".so";
+                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                }
             }
 
 
@@ -638,14 +668,15 @@ namespace Feel
             mutable expression_type  M_fun;
             std::vector<GiNaC::symbol> M_syms;
             GiNaC::FUNCP_CUBA M_cfun;
+            std::string M_filename;
         }; // GinacMatrix
         /// \endcond
 
         inline
         Expr< GinacMatrix<1,1,2> >
-        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="")
         {
-            return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym ) );
+            return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym, filename ) );
         }
 
         /**
@@ -655,17 +686,17 @@ namespace Feel
         template<int M, int N, int Order>
         inline
         Expr< GinacMatrix<M,N,Order> >
-        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym ) );
+            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename) );
         }
 
         template<int M, int N, int Order>
         inline
         Expr< GinacMatrix<M,N,Order> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym ) );
+            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename ) );
         }
 
 

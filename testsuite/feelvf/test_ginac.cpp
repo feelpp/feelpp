@@ -85,7 +85,7 @@ makeOptions()
 {
     Feel::po::options_description ginacoptions("Ginac options");
     ginacoptions.add_options()
-        ("dim", Feel::po::value<int>()->default_value( 0 ), "geometric dimension")
+        ("dim", Feel::po::value<int>()->default_value( 1 ), "geometric dimension")
         ("params", Feel::po::value<std::string>()->default_value( "" ), "name of parameters")
         ("exact", Feel::po::value<std::string>()->default_value( "" ), "name of the input")
         ;
@@ -123,7 +123,7 @@ int main( int argc, char* argv[] )
     std::vector<std::string> lst_params;
     std::string exact;
     std::string params;
-    int dim;
+    int dim = 0;
 
     if ( option(_name="ginac.strict-parser").as<bool>() )
         std::cout << "Strict Ginac Parser enabled\n";
@@ -133,6 +133,8 @@ int main( int argc, char* argv[] )
             std::cin >> dim;
             std::cout << std::flush;
         }
+        else
+        dim = env.vm()["dim"].as<int>(); 
 
     // Load param list
     if ( !env.vm()["params"].as<std::string>().empty() )
@@ -172,7 +174,7 @@ int main( int argc, char* argv[] )
         break;
     }
     default: {
-        std::cerr << "wrong dimension - should be lesser or egal to 3\n";
+        std::cerr << "wrong dimension - should be lesser or egal to 3 - is equatl to " << dim << "\n";
         return 1;
     }
     }

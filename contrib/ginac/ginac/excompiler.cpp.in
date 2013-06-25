@@ -110,8 +110,6 @@ public:
 	 */
 	void create_src_file(std::string& filename, std::ofstream& ofs)
 	{
-        boost::mpi::communicator world;
-        std::string pid = boost::lexical_cast<std::string>(world.rank());
 		if (filename.empty()) {
 			// fill filename with unique random word
 			const char* filename_pattern = "./GiNaCXXXXXX";
@@ -122,12 +120,11 @@ public:
 				throw std::runtime_error("mktemp failed");
 			}
 
-
-			filename = std::string(new_filename)+pid;
+            filename = std::string(new_filename);
 			ofs.open(filename.c_str(), std::ios::out);
 			delete[] new_filename;
 		} else {
-            filename = filename + pid;
+            //filename = filename + pid;
 			// use parameter as filename
 			ofs.open(filename.c_str(), std::ios::out);
 		}
@@ -217,19 +214,28 @@ void compile_ex(const ex& expr, const symbol& sym, FUNCP_1P& fp, const std::stri
 
 	std::ofstream ofs;
 	std::string unique_filename = filename;
-	global_excompiler.create_src_file(unique_filename, ofs);
 
-	ofs << "double compiled_ex(double x)" << std::endl;
-	ofs << "{" << std::endl;
-	ofs << "double res = ";
-	expr_with_x.print(GiNaC::print_csrc_double(ofs));
-	ofs << ";" << std::endl;
-	ofs << "return(res); " << std::endl;
-	ofs << "}" << std::endl;
+    boost::mpi::communicator world;
 
-	ofs.close();
+    if( world.rank() == 0 )
+    {
+        global_excompiler.create_src_file(unique_filename, ofs);
 
-	global_excompiler.compile_src_file(unique_filename, filename.empty());
+        ofs << "double compiled_ex(double x)" << std::endl;
+        ofs << "{" << std::endl;
+        ofs << "double res = ";
+        expr_with_x.print(GiNaC::print_csrc_double(ofs));
+        ofs << ";" << std::endl;
+        ofs << "return(res); " << std::endl;
+        ofs << "}" << std::endl;
+
+        ofs.close();
+
+        global_excompiler.compile_src_file(unique_filename, filename.empty());
+    }
+    world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+    boost::mpi::broadcast( world, unique_filename, 0);
+
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
 	fp = (FUNCP_1P) global_excompiler.link_so_file(unique_filename+".so", filename.empty());
@@ -242,19 +248,28 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 
 	std::ofstream ofs;
 	std::string unique_filename = filename;
-	global_excompiler.create_src_file(unique_filename, ofs);
 
-	ofs << "double compiled_ex(double x, double y)" << std::endl;
-	ofs << "{" << std::endl;
-	ofs << "double res = ";
-	expr_with_xy.print(GiNaC::print_csrc_double(ofs));
-	ofs << ";" << std::endl;
-	ofs << "return(res); " << std::endl;
-	ofs << "}" << std::endl;
+    boost::mpi::communicator world;
 
-	ofs.close();
+    if( world.rank() == 0 )
+    {
+        global_excompiler.create_src_file(unique_filename, ofs);
 
-	global_excompiler.compile_src_file(unique_filename, filename.empty());
+        ofs << "double compiled_ex(double x, double y)" << std::endl;
+        ofs << "{" << std::endl;
+        ofs << "double res = ";
+        expr_with_xy.print(GiNaC::print_csrc_double(ofs));
+        ofs << ";" << std::endl;
+        ofs << "return(res); " << std::endl;
+        ofs << "}" << std::endl;
+
+        ofs.close();
+
+        global_excompiler.compile_src_file(unique_filename, filename.empty());
+    }
+    world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+    boost::mpi::broadcast( world, unique_filename, 0);
+
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
 	fp = (FUNCP_2P) global_excompiler.link_so_file(unique_filename+".so", filename.empty());
@@ -276,20 +291,29 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 
 	std::ofstream ofs;
 	std::string unique_filename = filename;
-	global_excompiler.create_src_file(unique_filename, ofs);
 
-	ofs << "void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
-	ofs << "{" << std::endl;
-	for (std::size_t count=0; count<exprs.nops(); ++count) {
-		ofs << "f[" << count << "] = ";
-		expr_with_cname[count].print(GiNaC::print_csrc_double(ofs));
-		ofs << ";" << std::endl;
-	}
-	ofs << "}" << std::endl;
+    boost::mpi::communicator world;
 
-	ofs.close();
+    if( world.rank() == 0 )
+    {
+        global_excompiler.create_src_file(unique_filename, ofs);
 
-	global_excompiler.compile_src_file(unique_filename, filename.empty());
+        ofs << "void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
+        ofs << "{" << std::endl;
+        for (std::size_t count=0; count<exprs.nops(); ++count) {
+            ofs << "f[" << count << "] = ";
+            expr_with_cname[count].print(GiNaC::print_csrc_double(ofs));
+            ofs << ";" << std::endl;
+        }
+        ofs << "}" << std::endl;
+
+        ofs.close();
+
+        global_excompiler.compile_src_file(unique_filename, filename.empty());
+    }
+    world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+    boost::mpi::broadcast( world, unique_filename, 0);
+
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...
 	fp = (FUNCP_CUBA) global_excompiler.link_so_file(unique_filename+".so", filename.empty());

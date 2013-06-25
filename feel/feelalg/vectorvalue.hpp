@@ -232,7 +232,7 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
 
 
     //@}
@@ -258,7 +258,7 @@ VectorValue<T>::close() const
 
 template<typename T>
 void
-VectorValue<T>::printMatlab( const std::string /*filename*/ ) const
+VectorValue<T>::printMatlab( const std::string /*filename*/, bool renumber ) const
 {
 }
 
