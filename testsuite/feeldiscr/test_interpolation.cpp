@@ -475,7 +475,7 @@ init_unit_test_suite( int argc, char** argv )
 #else
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
-BOOST_AUTO_TEST_SUITE( interpolation )
+BOOST_AUTO_TEST_SUITE( interpolation_suite )
 
 BOOST_AUTO_TEST_CASE( test_interpolation12 )
 {

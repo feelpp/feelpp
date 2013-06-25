@@ -353,7 +353,7 @@ ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, s
 
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
-        out << pt_it->id()+1+indexPtStart
+        out << pt_it->id()+indexPtStart
             << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt_it->node()[0];
 
         if ( mesh_type::nRealDim >= 2 )
@@ -481,7 +481,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
         // node-number-list
         for ( uint16_type p=0; p<face_type::numPoints; ++p )
-            out << " " << face_it->point( ordering_face.fromGmshId( p ) ).id()+1+indexPtStart;
+            out << " " << face_it->point( ordering_face.fromGmshId( p ) ).id()+indexPtStart;
 
         out<<"\n";
     } // faces
@@ -518,7 +518,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
         for ( uint16_type p=0; p<element_type::numPoints; ++p )
         {
             //std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt_it->point( ordering.fromGmshId(p) ).id()+1 << " : " << elt_it->point( ordering.fromGmshId(p) ).node() << "\n";
-            out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+1+indexPtStart;
+            out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+indexPtStart;
         }
 
         out<<"\n";
@@ -631,8 +631,9 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "1\n";//n-component (1 is scalar) field
         out << mesh->numElements() << "\n";//number associated nodal values
 
-        element_mesh_const_iterator elt_it = mesh->beginElement();
-        element_mesh_const_iterator elt_en = mesh->endElement();
+        element_mesh_const_iterator elt_it;
+        element_mesh_const_iterator elt_en;
+        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
 
         if ( !__u.areGlobalValuesUpdated() )
             __u.updateGlobalValues();
@@ -652,7 +653,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
                 // verify that the dof points and mesh points coincide
 #if !defined(NDEBUG)
-
+#if 0
                 if ( ublas::norm_2( boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) )-elt_it->point( ordering.fromGmshId( l ) ).node() ) > 1e-10 )
                 {
                     std::cout << "------------------------------------------------------------\n";
@@ -662,7 +663,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
                     std::cout << "node dof:  " << boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) ) << "\n";
                     std::cout << "node element:  " << elt_it->point( ordering.fromGmshId( l ) ).node() << "\n";
                 }
-
+#endif
 #endif // NDEBUG
                 //out << " " << __u( globaldof);
                 out << " " <<__u.container()( globaldof );

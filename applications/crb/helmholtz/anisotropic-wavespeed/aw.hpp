@@ -422,7 +422,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu );
+    value_type output( int output_index, parameter_type const& mu ,  element_type &T, bool need_to_solve=false);
 
 
 private:
@@ -695,15 +695,20 @@ AnisotropicWavespeed::run( const double * X, unsigned long N, double * Y, unsign
 
 
 double
-AnisotropicWavespeed::output( int output_index, parameter_type const& mu )
+AnisotropicWavespeed::output( int output_index, parameter_type const& mu ,  element_type &T, bool need_to_solve )
 {
     using namespace vf;
-    this->solve( mu, pT );
-    vector_ptrtype U( backend->newVector( Xh ) );
-    *U = *pT;
-    }
+    if( need_to_solve )
+        this->solve( mu, pT );
+    else
+        *pT = T;
+    //vector_ptrtype U( backend->newVector( Xh ) );
+    //*U = *pT;
+}
 
 }
+
+
 
 
 #endif /* __AnisotropicWavespeed_H */

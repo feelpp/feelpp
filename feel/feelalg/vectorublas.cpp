@@ -375,7 +375,7 @@ VectorUblas<T,Storage>::close() const
 
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::printMatlab( const std::string filename ) const
+VectorUblas<T,Storage>::printMatlab( const std::string filename, bool renumber ) const
 {
     std::string name = filename;
     std::string separator = " , ";

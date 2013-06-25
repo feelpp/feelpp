@@ -125,7 +125,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
             {
                 if ( mapRowBlock.dofGlobalProcessIsGhost(l) ) continue;
 
-                const size_type globalDof = mapRowBlock.mapGlobalProcessToGlobalCluster(i);
+                const size_type globalDof = mapRowBlock.mapGlobalProcessToGlobalCluster(l);
                 indexSplit[i][globalDof - firstDofGCBlock ] = startIS + (globalDof - firstDofGCBlock);
             }
 
