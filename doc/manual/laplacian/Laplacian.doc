@@ -9,4 +9,8 @@ A list of various examples solving for \f$-\Delta u = f, u = g\f$.
  - \subpage LaplacianDG
  - \subpage LaplacianCoordinateSystem
  - \subpage LaplacianPeriodic
+
+An example for solving \f$\dfrac{\partial u}{\partial t}-nu\Delta u = f\f$.
+
+ - \subpage LaplacianParabolic
 */
