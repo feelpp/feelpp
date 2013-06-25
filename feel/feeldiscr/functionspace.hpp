@@ -3280,6 +3280,21 @@ public:
             }
             return true;
         }
+
+        void printMatlab( std::string fname, bool gmsh = false ) const
+            {
+                container_type m( *this );
+                if ( gmsh )
+                {
+                    auto relation = this->functionSpace()->dof()->pointIdToDofRelation();
+                    for( size_type i = 0; i < this->localSize(); ++i )
+                    {
+                        m[relation.first[i]-1] = this->operator[]( i );
+                    }
+                }
+                m.printMatlab( fname );
+            }
+
         //@}
     private:
 

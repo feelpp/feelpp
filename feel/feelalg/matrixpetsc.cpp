@@ -34,6 +34,10 @@
 
 #if defined( FEELPP_HAS_PETSC_H )
 
+extern "C"
+{
+#include "petscsys.h"
+}
 
 
 
@@ -914,7 +918,7 @@ MatrixPetsc<T>::printMatlab ( const std::string name ) const
 
     // assert (this->closed());
     this->close();
-
+    PetscObjectSetName((PetscObject)_M_mat,fs::path(name).stem().string().c_str());
     int ierr=0;
     PetscViewer petsc_viewer;
 

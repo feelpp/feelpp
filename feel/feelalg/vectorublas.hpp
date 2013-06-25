@@ -598,7 +598,7 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
 
     void close() {}
 

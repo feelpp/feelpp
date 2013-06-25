@@ -255,7 +255,7 @@ VectorEpetra<T>::checkInvariants () const
 }
 template<typename T>
 void
-VectorEpetra<T>::printMatlab ( const std::string name ) const
+VectorEpetra<T>::printMatlab ( const std::string name, bool renumber ) const
 {
     FEELPP_ASSERT ( this->closed() ).warn( "epetra vector not closed" );
 #if 0
