@@ -21,9 +21,38 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
+	\page LaplacianParabolic Parabolic equation example
    \file laplacian_parabolic.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-06-19
+
+	\tableofcontents
+
+	\section Description
+	This section is about another example easy to learn and understand. It is about the parabolic equation :
+	\f{equation}
+	\left\{
+	\begin{aligned}
+		\dfrac{\partial u}{\partial t} - nu*\Delta u = f & \text{on}\; \Omega \;, \
+		        u & =  0 & \text{on}\;\partial\Omega \;,\
+	\end{aligned}
+	\right.
+	\f}
+	\f{equation}
+	
+	where \f$u\in\Omega\f$ is the unknown "trial" function and \f$\Omega\f$ the domain.
+
+	\section Implementation
+	The overall code is based on the laplacian.cpp application; after having set the BDF structure, we dispatched terms between temporal ones and stationnary ones; thus we avoid doing useless and redundant computations.
+
+	\subsection Error class
+
+	\section Results
+	\subsection Stationnary study
+
+	\subsection Temporal study
+
+
  */
 
 #include <feel/feel.hpp>
