@@ -695,8 +695,9 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "3\n";//n-component (3 is vectorial) field
         out << mesh->numElements() << "\n";//number associated nodal values
 
-        element_mesh_const_iterator elt_it = mesh->beginElement();
-        element_mesh_const_iterator elt_en = mesh->endElement();
+        element_mesh_const_iterator elt_it;
+        element_mesh_const_iterator elt_en;
+        boost::tie( boost::tuples::ignore, elt_it, elt_en ) = elements( mesh );
 
         for ( ; elt_it!=elt_en ; ++elt_it )
         {
