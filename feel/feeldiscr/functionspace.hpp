@@ -1817,7 +1817,7 @@ public:
             return M_t_proc[point_number];
         }
 
-        functionspace_ptrtype functionSpace() const
+        virtual functionspace_ptrtype functionSpace() const
         {
             return M_Xh;
         }

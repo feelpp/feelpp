@@ -80,6 +80,11 @@ class Model:
 
 public :
 
+    typedef Mesh<Simplex<Dim> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<Order> > > space_type;
+    typedef boost::shared_ptr<space_type> space_ptrtype;
+
     Model()
         :
         Simget()
@@ -89,7 +94,7 @@ public :
     void run()
     {
         auto mesh=unitHypercube<Dim>();
-        auto Xh = Pch<Order>( mesh );
+        Xh = Pch<Order>( mesh );
 
         auto RbSpace = RbSpacePch<Order>( this->shared_from_this() , mesh );
 
@@ -113,10 +118,12 @@ public :
         ctxfem.add( t2 );
         ctxfem.add( t3 );
 
-        RbSpace->addContext( ctxfem );
-
         auto ctxrb = RbSpace->context();
-        ctxrb.update( ctxfem );
+        ctxrb.add( t1 );
+        ctxrb.add( t2 );
+        ctxrb.add( t3 );
+
+        ctxrb.update();
 
         auto u = RbSpace->element();
         auto u_ptr = RbSpace->elementPtr();
@@ -124,7 +131,10 @@ public :
         u.setCoefficient( 0 , 1 );
         auto u_fem = u.expansion();
         auto fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
-        auto rb_evaluations = u.evaluate( ctxfem , ctxrb );
+        auto rb_evaluations = u.evaluate( ctxrb );
+        //LOG( INFO ) << "call evaluate from context -- rb version --";
+        //auto rb_evaluate_from_context = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
+        //LOG( INFO ) << "rb_evaluate_from_context : \n"<<rb_evaluate_from_context;
         Eigen::VectorXd true_values( 3 );
         true_values(0)=t1(0); true_values(1)=t2(0); true_values(2)=t3(0);
         double norm_fem_evaluations = fem_evaluations.norm();
@@ -141,7 +151,7 @@ public :
         u.setCoefficient( 1 , 1 );
         u_fem = u.expansion();
         fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
-        rb_evaluations = u.evaluate( ctxfem , ctxrb );
+        rb_evaluations = u.evaluate( ctxrb );
         true_values(0)=t1(1); true_values(1)=t2(1); true_values(2)=t3(1);
         norm_fem_evaluations = fem_evaluations.norm();
         norm_rb_evaluations = rb_evaluations.norm();
@@ -154,7 +164,13 @@ public :
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
 
 
+
     }
+
+    space_ptrtype functionSpace() { return Xh; }
+
+private :
+    space_ptrtype Xh;
 
 
 };
