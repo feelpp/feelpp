@@ -62,6 +62,7 @@ class ReducedBasisSpace : public FunctionSpace<MeshType,A1,A2,A3,A4>
 {
 
     typedef FunctionSpace<MeshType,A1,A2,A3,A4> super;
+    typedef boost::shared_ptr<super> super_ptrtype;
 
 public :
 
@@ -79,9 +80,6 @@ public :
     typedef std::vector< space_element_type > basis_type;
     typedef boost::shared_ptr<basis_type> basis_ptrtype;
 
-    typedef typename super::Context  ctxfem_type;
-    typedef boost::shared_ptr<ctxfem_type> ctxfem_ptrtype;
-
     typedef ReducedBasisSpace<ModelType, MeshType, A1, A2, A3, A4> this_type;
     typedef boost::shared_ptr<this_type> this_ptrtype;
 
@@ -91,7 +89,8 @@ public :
     ReducedBasisSpace( boost::shared_ptr<ModelType> model , boost::shared_ptr<MeshType> mesh )
         :
         super ( mesh ),
-        M_mesh( mesh )
+        M_mesh( mesh ),
+        M_model( model )
     {
         LOG( INFO ) <<" ReducedBasisSpace constructor " ;
         this->init();
@@ -101,7 +100,6 @@ public :
     ReducedBasisSpace( ReducedBasisSpace const& rb )
         :
         super( rb.M_mesh ),
-        M_ctxfem( rb.M_ctxfem ),
         M_basis( rb.M_basis ),
         M_mesh( rb.M_mesh )
     {}
@@ -109,7 +107,6 @@ public :
     ReducedBasisSpace( this_ptrtype const& rb )
         :
         super ( rb->M_mesh ),
-        M_ctxfem( rb->M_ctxfem ),
         M_basis( rb->M_basis ),
         M_mesh( rb->M_mesh )
     {}
@@ -117,7 +114,6 @@ public :
     void init()
     {
         //M_basis = basis_ptrtype( new basis_type() );
-        M_ctxfem.clear();
     }
 
     /*
@@ -126,13 +122,6 @@ public :
     mesh_ptrtype mesh()
     {
         return M_mesh;
-    }
-    /*
-     * add a context from FunctionSpace
-     */
-    void addContext( ctxfem_type ctx)
-    {
-        M_ctxfem.push_back( ctx );
     }
 
     /*
@@ -148,14 +137,6 @@ public :
         M_basis.push_back( *e );
     }
 
-    /*
-    * evaluate the i^th basis function at nodes
-    * given by the FEM context ctx
-    */
-    eigen_vector_type evaluateBasis( int i , ctxfem_type const& ctx )
-    {
-        return evaluateFromContext( _context=ctx , _expr=idv(M_basis[i]) );
-    }
 
     /*
      * Get basis of the reduced basis space
@@ -193,18 +174,26 @@ public :
         return this_ptrtype ( new this_type( model ,  mesh) );
     }
 
+    model_ptrtype model()
+    {
+        return M_model;
+    }
 
     /*
      * class Context
      * stock the evaluation of basis functions in given points
      */
-    class Context
+    class ContextRb : public FunctionSpace<MeshType,A1,A2,A3,A4>::Context
     {
+
+        typedef typename FunctionSpace<MeshType,A1,A2,A3,A4>::Context super;
+
     public :
 
         typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
-        typedef rbspace_type::ctxfem_type ctxfem_type;
+
+        typedef rbspace_type::super_ptrtype functionspace_ptrtype;
 
         typedef rbspace_type::eigen_vector_type eigen_vector_type;
 
@@ -213,24 +202,32 @@ public :
 
         typedef Eigen::MatrixXd eigen_matrix_type;
 
-        Context() {}
-        ~Context() {}
 
-        Context( rbspace_ptrtype rbspace )
+        ~ContextRb() {}
+
+        ContextRb( rbspace_ptrtype rbspace )
             :
+            super( rbspace->model()->functionSpace() ),
             M_rbspace( rbspace )
         {}
 
-        void update ( ctxfem_type const& ctx )
+        //only because the function functionSpace()
+        //returns an object : functionspace_ptrtype
+        ContextRb( functionspace_ptrtype functionspace )
+            :
+            super( functionspace )
+        {}
+
+        void update ( )
         {
-            int nb_pts = ctx.nPoints();
-            int N = M_rbspace.size();
+            int nb_pts = this->nPoints();
+            int N = M_rbspace->size();
             M_phi.resize( N , nb_pts );
             for( int i=0; i<N; i++)
             {
                 //evaluation of the i^th basis function
                 //to all nodes in the FEM context ctx
-                auto evaluation = M_rbspace.evaluateBasis( i , ctx );
+                auto evaluation = M_rbspace->evaluateBasis( i , *this );
                 for(int j=0; j<evaluation.size(); j++)
                     M_phi( i , j ) = evaluation( j );
             }
@@ -240,10 +237,11 @@ public :
         /*
          * for given element coefficients, evaluate the element at node given in context_fem
          */
-        eigen_vector_type id( eigen_vector_type coeffs, ctxfem_type const & context_fem )
+        eigen_vector_type id( eigen_vector_type coeffs , bool need_to_update=true)
         {
-            this->update( context_fem );
-            int npts = context_fem.nPoints();
+            if( need_to_update )
+                this->update();
+            int npts = super::nPoints();
             auto prod = coeffs.transpose()*M_phi;
             Eigen::Matrix<value_type, Eigen::Dynamic, 1> result( npts );
             result = prod.transpose();
@@ -253,15 +251,29 @@ public :
             return result;
         }
 
+        virtual functionspace_ptrtype functionSpace() const
+        {
+            return M_rbspace;
+        }
+
     private :
-        rbspace_type M_rbspace;
+        rbspace_ptrtype M_rbspace;
         eigen_matrix_type M_phi;
     };
 
     /**
      * \return function space context
      */
-    Context context() { return Context( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >( this->shared_from_this() ) ); }
+    ContextRb context() { return ContextRb( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >( this->shared_from_this() ) ); }
+
+    /*
+    * evaluate the i^th basis function at nodes
+    * given by the FEM context ctx
+    */
+    eigen_vector_type evaluateBasis( int i , ContextRb const& ctx )
+    {
+        return evaluateFromContext( _context=ctx , _expr=idv(M_basis[i]) );
+    }
 
 
     /*
@@ -277,6 +289,7 @@ public :
     {
     public:
         typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
+        typedef rbspace_type functionspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
         typedef Eigen::MatrixXd eigen_matrix_type;
@@ -285,11 +298,8 @@ public :
         //element of the FEM function space
         typedef rbspace_type::space_element_type space_element_type;
 
-        //FEM context
-        typedef rbspace_type::ctxfem_type ctxfem_type;
-
         //RB context
-        typedef rbspace_type::Context ctxrb_type;
+        typedef rbspace_type::ContextRb ctxrb_type;
 
         typedef T value_type;
 
@@ -383,10 +393,15 @@ public :
             return M_rbspace.expansion( *this, N );
         }
 
-        //evaluate the element to nodes in context_fem
-        eigen_vector_type evaluate( ctxfem_type const & context_fem , ctxrb_type & context_rb )
+        //evaluate the element to nodes in context
+        eigen_vector_type evaluate(  ctxrb_type & context_rb )
         {
-           return context_rb.id( *this , context_fem );
+           return context_rb.id( *this );
+        }
+
+        void updateGlobalValues() const
+        {
+            //nothing to do
         }
 
         private:
@@ -412,10 +427,6 @@ public :
         return u;
     }
 
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> evaluate( ctxfem_type const & context_fem )
-    {
-    }
-
     space_element_type expansion( element_type const& unknown, int  N=-1)
     {
         int number_of_coeff;
@@ -429,9 +440,10 @@ public :
     }
 
 private :
-    std::vector< ctxfem_type > M_ctxfem ;
+    //std::vector< ctxfem_type > M_ctxfem ;
     basis_type M_basis;
     mesh_ptrtype M_mesh;
+    model_ptrtype M_model;
 
 };//ReducedBasisSpace
 
