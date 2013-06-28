@@ -167,8 +167,8 @@ Laplacian_parabolic<Dim,Order>::run()
                                    % meshSize );
 
 	/**
-	* Loading variables from cfg file
-	*/
+     * Loading variables from cfg file
+     */
     bool weak_dirichlet = this->vm()["weakdir"].template as<int>();
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     std::string geofile = this->vm()["geofile"].template as<std::string>();
@@ -190,8 +190,8 @@ Laplacian_parabolic<Dim,Order>::run()
 
 
 	/**
-	* Creation of a new mesh depending on the information of the geofile
-	*/
+     * Creation of a new mesh depending on the information of the geofile
+     */
 	/** \code */
 	// access to the geofile
     std::string access_geofile = ( boost::format( "%1%.geo" ) % geofile ).str();
@@ -207,13 +207,13 @@ Laplacian_parabolic<Dim,Order>::run()
 	/** \endcode */
 
 #if 0
-        //auto eit = mesh->beginElementWithProcessId( this->comm().rank() );
-        //for( int ne = 0; ne < 10; ++ne )
-        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
-        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
-        mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
-        mesh->eraseElement( boost::prior(mesh->endElementWithProcessId( this->comm().rank() ) ) );
-        std::cout << "n elements after: "  << mesh->numElements() << "\n";
+    //auto eit = mesh->beginElementWithProcessId( this->comm().rank() );
+    //for( int ne = 0; ne < 10; ++ne )
+    mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+    mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+    mesh->eraseElement( mesh->beginElementWithProcessId( this->comm().rank() ) );
+    mesh->eraseElement( boost::prior(mesh->endElementWithProcessId( this->comm().rank() ) ) );
+    std::cout << "n elements after: "  << mesh->numElements() << "\n";
 #endif
 
 
@@ -236,70 +236,70 @@ Laplacian_parabolic<Dim,Order>::run()
 	error_ptrtype cvg(new error_type(this->vm(), ""));
 
 	if( !exact.empty() )
-        {
-            /// [marker11]
-            if ( !params.empty() )
-                cvg->setParams ( params );
-            /// [marker11]
-            LOG(INFO) << "Loading function : " << exact << std::endl;
-            std::cout << "Loading function : " << exact << std::endl;
-            /// [marker12]
-            cvg->setSolution(exact, params);
-            /// [marker12]
-            cvg->print();
-        }
+    {
+        /// [marker11]
+        if ( !params.empty() )
+            cvg->setParams ( params );
+        /// [marker11]
+        LOG(INFO) << "Loading function : " << exact << std::endl;
+        std::cout << "Loading function : " << exact << std::endl;
+        /// [marker12]
+        cvg->setSolution(exact, params);
+        /// [marker12]
+        cvg->print();
+    }
 
 	/**
-	* Add extra parameters ( t for example )
-	*/
+     * Add extra parameters ( t for example )
+     */
 	/** \code */
 	auto parameters = cvg->getParams(); //symbols<Dim>();
 	/** \endcode */
 	if( parameters.size())
-                std::cout << "WARNING -- " << parameters.size() << " parameters have been defined\n";
+        std::cout << "WARNING -- " << parameters.size() << " parameters have been defined\n";
 
 	auto vars = cvg->getVars(); //symbols<Dim>();
 
     /// [marker13]
 	// if rhs should be computed
 	if(cvg->computedrhs())
+    {
+        // if it is not defined
+        if( rhs.empty() )
         {
-            // if it is not defined
-            if( rhs.empty() )
-                {
-                    // compute it from the exact function
-                    FEELPP_ASSERT( exact.size() ).error( "no exact function defined, no rhs function defined. Aborting...");
+            // compute it from the exact function
+            FEELPP_ASSERT( exact.size() ).error( "no exact function defined, no rhs function defined. Aborting...");
 
-					// with the edp of the parabolic equation
-                    if ( !steady )
-                        {
-							typedef typename boost::function<ex (ex u, std::vector<symbol> vars, std::vector<symbol> p)> t_edp_type;
-                            t_edp_type t_edp = transient_edp();
-                            cvg->setRhs(&t_edp);
-                        }
-					// or with the normal laplacian equation
-                    else
-                        {
-							typedef typename boost::function<ex (ex u, std::vector<symbol> vars)> edp_type;
-                            edp_type edp =  steady_edp();
-                            cvg->setRhs(&edp);
-                        }
-                    LOG(INFO) << "computed rhs is : " << cvg->getRhs() << "\n";
-
-                }
-            // else it is defined, so ok
+            // with the edp of the parabolic equation
+            if ( !steady )
+            {
+                typedef typename boost::function<ex (ex u, std::vector<symbol> vars, std::vector<symbol> p)> t_edp_type;
+                t_edp_type t_edp = transient_edp();
+                cvg->setRhs(&t_edp);
+            }
+            // or with the normal laplacian equation
             else
-                {
-                    cvg->setRhs();
-                    LOG(INFO) << "rhs is : " << cvg->getRhs() << "\n";
-                }
-            std::cout << "rhs is : " << cvg->getRhs() << "\n";
+            {
+                typedef typename boost::function<ex (ex u, std::vector<symbol> vars)> edp_type;
+                edp_type edp =  steady_edp();
+                cvg->setRhs(&edp);
+            }
+            LOG(INFO) << "computed rhs is : " << cvg->getRhs() << "\n";
+
         }
+        // else it is defined, so ok
+        else
+        {
+            cvg->setRhs();
+            LOG(INFO) << "rhs is : " << cvg->getRhs() << "\n";
+        }
+        std::cout << "rhs is : " << cvg->getRhs() << "\n";
+    }
     /// [marker13]
 
 	/**
-	* Initializing u, g and f from initial temperature expression
-	*/
+     * Initializing u, g and f from initial temperature expression
+     */
 
 	// initialising T (to 303K if nothing is specified)
 	ex initial_u_expr;
@@ -328,41 +328,41 @@ Laplacian_parabolic<Dim,Order>::run()
 
 
 
-/**
-* BDF implementation
-*/
-// set geometry exporting static
-auto exp = exporter(_mesh = mesh, _geo = EXPORTER_GEOMETRY_STATIC);
+    /**
+     * BDF implementation
+     */
+    // set geometry exporting static
+    auto exp = exporter(_mesh = mesh, _geo = EXPORTER_GEOMETRY_STATIC);
 
-/** \code */
-/// [marker1]
-// create the BDF structure
-bdf_ptrtype M_bdf = bdf( _space=Xh, _name="u" );
+    /** \code */
+    /// [marker1]
+    // create the BDF structure
+    bdf_ptrtype M_bdf = bdf( _space=Xh, _name="u" );
 
-// start the time at time-initial
-M_bdf->start();
-// create the finite difference polynome of the unknown
-M_bdf->initialize(u);
-/// [marker1]
-/** \endcode */
+    // start the time at time-initial
+    M_bdf->start();
+    // create the finite difference polynome of the unknown
+    M_bdf->initialize(u);
+    /// [marker1]
+    /** \endcode */
 
-// print some information
-if( !steady )
-{
-    std::cout<< " \n ****** Time loop ****** \n"
-             << "Initial time : "<< t0 << "\n"
-             << "Final time : "<< t_final << "\n"
-             << "Time step : "<< dt << "\n"
-             << "Initial condition : "<< initial_u << "\n"
-             << "BDF order : " << M_bdf->timeOrder() << "\n" << std::endl;
-}
-else
-    std::cout<< "\n****** Steady state ******"<< std::endl;
+    // print some information
+    if( !steady )
+    {
+        std::cout<< " \n ****** Time loop ****** \n"
+                 << "Initial time : "<< t0 << "\n"
+                 << "Final time : "<< t_final << "\n"
+                 << "Time step : "<< dt << "\n"
+                 << "Initial condition : "<< initial_u << "\n"
+                 << "BDF order : " << M_bdf->timeOrder() << "\n" << std::endl;
+    }
+    else
+        std::cout<< "\n****** Steady state ******"<< std::endl;
 
 
-std::cout << "t \t L2error \t H1error" << std::endl;
+    std::cout << "t \t L2error \t H1error" << std::endl;
 
-double L2Time_error = 0.0;
+    double L2Time_error = 0.0;
 
 	// time not depending terms
 
@@ -406,100 +406,100 @@ double L2Time_error = 0.0;
 		a += integrate( _range=elements( mesh ), _expr = cst(M_bdf->polyDerivCoefficient( 0 ))*idt(u)*id(v) );
     /// [marker8]
 
-// time depending term
+    // time depending term
 
-do{ // temporal loop start
+    do{ // temporal loop start
 
-    if(cvg->computedrhs())
-		if ( parameters.size() )
-		    Rhs = cvg->rhs_project(Xh, t0);
-		else
-		    Rhs = cvg->rhs_project(Xh);
-	else
-		Rhs = vf::project( Xh, elements(mesh), cst(0.0) );
+        if(cvg->computedrhs())
+            if ( parameters.size() )
+                Rhs = cvg->rhs_project(Xh, t0);
+            else
+                Rhs = cvg->rhs_project(Xh);
+        else
+            Rhs = vf::project( Xh, elements(mesh), cst(0.0) );
 
-    if ( !steady && parameters.size() && !cvg->getExactSolution().empty() )
-		gproj = cvg->exact_project(Xh, M_bdf->time() );
-	else
-		gproj = cvg->exact_project(Xh);
-
-
-    /**
-     * Construction of the right hand side. F is the vector that holds
-     * the algebraic representation of the right habd side of the
-     * problem
-     */
-    /** \code */
-    //# marker2 #
-    auto F = backend()->newVector( Xh );
-    auto l = form1( _test=Xh, _vector=F );
-    l = integrate( _range=elements( mesh ), _expr=idv(Rhs)*id( v ) );
-    //# endmarker2 #
-    if ( weak_dirichlet )
-    {
-        //# marker41 #
-        l += integrate( _range=markedfaces( mesh,"Dirichlet" ),
-                          _expr=nu*idv(gproj)*( -grad( v )*vf::N()
-                                      + penaldir*id( v )/hFace() ) );
-        //# endmarker41 #
-    }
-
-    /** \endcode */
-
-    //! add temporal term to the lhs and the rhs
-    /** \code */
-    /// [marker9]
-    if( !steady )
-    {
-        auto bdf_poly = M_bdf->polyDeriv();
-        l += integrate( _range = elements(mesh), _expr = idv( bdf_poly )*id(v));
-    }
-    /// [marker9]
-    /** \endcode */
+        if ( !steady && parameters.size() && !cvg->getExactSolution().empty() )
+            gproj = cvg->exact_project(Xh, M_bdf->time() );
+        else
+            gproj = cvg->exact_project(Xh);
 
 
-	/**
-	 * add time depending terms for the left hand side
-	 */
-    /** \code */
-	auto Dt = backend()->newMatrix( _test=Xh, _trial=Xh );
-	auto at = form2( _test=Xh, _trial=Xh, _matrix=Dt );
-	/** \endcode */
-    if( !weak_dirichlet )
-    {
-        /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
-         * -# first close the matrix (the matrix must be closed first before any manipulation )
-         * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
+        /**
+         * Construction of the right hand side. F is the vector that holds
+         * the algebraic representation of the right habd side of the
+         * problem
          */
         /** \code */
-        //# marker5 #
-        at = on( _range=markedfaces( mesh, "Dirichlet" ),
-                 _element=u, _rhs=F, _expr=idv(gproj) );
-        //# endmarker5 #
+        //# marker2 #
+        auto F = backend()->newVector( Xh );
+        auto l = form1( _test=Xh, _vector=F );
+        l = integrate( _range=elements( mesh ), _expr=idv(Rhs)*id( v ) );
+        //# endmarker2 #
+        if ( weak_dirichlet )
+        {
+            //# marker41 #
+            l += integrate( _range=markedfaces( mesh,"Dirichlet" ),
+                            _expr=nu*idv(gproj)*( -grad( v )*vf::N()
+                                                  + penaldir*id( v )/hFace() ) );
+            //# endmarker41 #
+        }
+
         /** \endcode */
 
-	}
-
-    /** \code */
-	at += a;
-	/** \endcode */
-
-    //! solve the system
-    /** \code */
-    //# marker6 #
-    backend( _rebuild=true  )->solve( _matrix=Dt, _solution=u, _rhs=F );
-    //# endmarker6 #
-    /** \endcode */
-
-	/**
-	* Computing L2 and H1 error
-	*/
-    /** \code */
-    //# marker7 #
-
-    if ( !cvg->getExactSolution().empty() )
+        //! add temporal term to the lhs and the rhs
+        /** \code */
+        /// [marker9]
+        if( !steady )
         {
-			ex solution;
+            auto bdf_poly = M_bdf->polyDeriv();
+            l += integrate( _range = elements(mesh), _expr = idv( bdf_poly )*id(v));
+        }
+        /// [marker9]
+        /** \endcode */
+
+
+        /**
+         * add time depending terms for the left hand side
+         */
+        /** \code */
+        auto Dt = backend()->newMatrix( _test=Xh, _trial=Xh );
+        auto at = form2( _test=Xh, _trial=Xh, _matrix=Dt );
+        /** \endcode */
+        if( !weak_dirichlet )
+        {
+            /** strong(algebraic) dirichlet conditions treatment for the boundaries marked 1 and 3
+             * -# first close the matrix (the matrix must be closed first before any manipulation )
+             * -# modify the matrix by cancelling out the rows and columns of D that are associated with the Dirichlet dof
+             */
+            /** \code */
+            //# marker5 #
+            at = on( _range=markedfaces( mesh, "Dirichlet" ),
+                     _element=u, _rhs=F, _expr=idv(gproj) );
+            //# endmarker5 #
+            /** \endcode */
+
+        }
+
+        /** \code */
+        at += a;
+        /** \endcode */
+
+        //! solve the system
+        /** \code */
+        //# marker6 #
+        backend( _rebuild=true  )->solve( _matrix=Dt, _solution=u, _rhs=F );
+        //# endmarker6 #
+        /** \endcode */
+
+        /**
+         * Computing L2 and H1 error
+         */
+        /** \code */
+        //# marker7 #
+
+        if ( !cvg->getExactSolution().empty() )
+        {
+            ex solution;
             if( !steady && parameters.size() )
                 solution  = cvg->getSolution(M_bdf->time() );
             else
@@ -509,7 +509,7 @@ do{ // temporal loop start
             auto gradg = expr<1,Dim,2>(grad(solution,vars), vars );
 
             /// [marker14]
-			double L2error = normL2( _range=elements( mesh ),_expr=( idv( u )-idv(gproj) ) );
+            double L2error = normL2( _range=elements( mesh ),_expr=( idv( u )-idv(gproj) ) );
             double H1seminorm = math::sqrt( integrate( elements(mesh), (gradv(u) - gradg)*trans(gradv(u) - gradg) ).evaluate()(0,0) );
             double H1error = math::sqrt( L2error*L2error + H1seminorm*H1seminorm);
             /// [marker14]
@@ -521,46 +521,46 @@ do{ // temporal loop start
             L2Time_error = L2Time_error + L2error*L2error;
         }
 
-    //# endmarker7 #
-    /** \endcode */
+        //# endmarker7 #
+        /** \endcode */
 
-    //! save the results
-    /** \code */
-   //! exporting exact and approached solution at t
-    if ( exp->doExport() )
-    {
-        LOG(INFO) << "exportResults starts at " << M_bdf->time() << "\n";
+        //! save the results
+        /** \code */
+        //! exporting exact and approached solution at t
+        if ( exp->doExport() )
+        {
+            LOG(INFO) << "exportResults starts at " << M_bdf->time() << "\n";
 
-        exp->step( M_bdf->time() )->add( "solution", u );
-        exp->step( M_bdf->time() )->add( "exact", gproj );
-		exp->step( M_bdf->time() )->add( "rhs", Rhs );
+            exp->step( M_bdf->time() )->add( "solution", u );
+            exp->step( M_bdf->time() )->add( "exact", gproj );
+            exp->step( M_bdf->time() )->add( "rhs", Rhs );
 
-        exp->save();
-        LOG(INFO) << "exportResults done\n";
+            exp->save();
+            LOG(INFO) << "exportResults done\n";
+        }
+        /** \endcode */
+
+        /// [marker15]
+        M_bdf->shiftRight(u);
+        /// [marker15]
+
+        /// [marker16]
+        M_bdf->next();
+        /// [marker16]
     }
-	/** \endcode */
-
-    /// [marker15]
-	M_bdf->shiftRight(u);
-    /// [marker15]
-
-    /// [marker16]
-	M_bdf->next();
-    /// [marker16]
-   }
-while( M_bdf->isFinished() == false );
+    while( M_bdf->isFinished() == false );
 
 
-if (!steady )
-{
-    L2Time_error = math::sqrt(M_bdf->timeStep()*L2Time_error);
+    if (!steady )
+    {
+        L2Time_error = math::sqrt(M_bdf->timeStep()*L2Time_error);
 
-    std::cout << "\n***************************\n";
-    std::cout << "BDF order : " << M_bdf->timeOrder() << "\t";
-    std::cout << "Time Step : "<< M_bdf->timeStep() << "\t";
-    std::cout << "Hsize : " << meshSize << "\t";
-    std::cout << "L2 Time error = " << L2Time_error << std::endl;
-}
+        std::cout << "\n***************************\n";
+        std::cout << "BDF order : " << M_bdf->timeOrder() << "\t";
+        std::cout << "Time Step : "<< M_bdf->timeStep() << "\t";
+        std::cout << "Hsize : " << meshSize << "\t";
+        std::cout << "L2 Time error = " << L2Time_error << std::endl;
+    }
 /* end of bdf implementation */
 
 } // Laplacian_parabolic::run
