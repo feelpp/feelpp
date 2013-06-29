@@ -822,7 +822,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
                             if ( n < new_element_type::numVertices )
                             {
-                                CHECK_ASSERT( new_vertex.find(oldPoint.id()) == new_vertex.end() ) << "already seen this point?";
+                                CHECK( new_vertex.find(oldPoint.id()) == new_vertex.end() ) << "already seen this point?";
                                 new_vertex[oldPoint.id()]=1;
                             }
                         }
