@@ -33,6 +33,10 @@
 #include <vector>
 #include <string>
 
+#include <feel/feelcore/parameter.hpp>
+
+
+
 
 namespace Feel
 {
