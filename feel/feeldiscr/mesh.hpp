@@ -1902,7 +1902,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     for( int i = 0; pit != pen; ++pit, ++i )
     {
         CHECK( *pit > 0 ) << "invalid id " << *pit;
-        LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
+        //LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
         //int pid = (renumber)?nodemap[*pit]+1:*pit;
         int pid = *pit;
 
