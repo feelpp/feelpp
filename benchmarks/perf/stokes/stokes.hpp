@@ -163,7 +163,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                             % nparts );
 
     //! init backend
-    M_backend = backend_type::build();
+    M_backend = backend(_rebuild=true);
 
 
     boost::mpi::timer t;
