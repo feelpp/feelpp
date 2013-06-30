@@ -87,7 +87,8 @@ public:
     //# marker1 #
     typedef BasisU basis_u_type;
     typedef BasisP basis_p_type;
-    typedef bases<basis_u_type,basis_p_type> basis_type;
+    typedef Lagrange<0,Scalar, Continuous> basis_l_type;
+    typedef bases<basis_u_type,basis_p_type,basis_l_type> basis_type;
     //# endmarker1 #
 
     /*space*/
@@ -219,6 +220,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto v = V.template element<0>();
     auto p = U.template element<1>();
     auto q = V.template element<1>();
+    auto nu = U.template element<2>();
+
 
     LOG(INFO) << "Data Summary:\n";
     LOG(INFO) << "   hsize = " << M_meshSize << "\n";
@@ -553,6 +556,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";
     subt.restart();
 
+    form2( Xh, Xh, D )+=integrate( _range=elements( mesh ),_expr=id( p )*idt( nu ) );
+    form2( Xh, Xh, D )+=integrate( _range=elements( mesh ),_expr=idt( p )*id( nu ) );
+    M_stats.put( "t.assembly.matrix.pl",subt.elapsed() );
+    LOG(INFO) << "   o time for pressure/multiplier terms: " << subt.elapsed() << "\n";
+    subt.restart();
+
     if ( this->vm()[ prefixvm( name(),"bctype" ) ].template as<int>() == 1  )
     {
         if (  !this->vm().count( "extra-terms" ) )
@@ -617,7 +626,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     if ( !this->vm().count( "no-solve" ) )
     {
-        auto r = M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+        //auto r = M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+        auto r = M_backend->solve( _matrix=D, _solution=U, _rhs=F );
         M_stats.put( "d.solver.bool.converged",r.template get<0>() );
         M_stats.put( "d.solver.int.nit",r.template get<1>() );
         M_stats.put( "d.solver.double.residual",r.template get<2>() );
