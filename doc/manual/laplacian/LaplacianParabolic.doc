@@ -1,13 +1,12 @@
 /* -*- mode: c++ -*- */
 /**
    \page LaplacianParabolic Parabolic equation example
-   \file laplacian_parabolic.cpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2013-06-19
 
 	\tableofcontents
 
-	\section Description
+	\section Description Description
 	This section is about another example easy to learn and understand :  the parabolic equation. The aim is to solve equations like :
 	\f{equation}
 	\left\{
@@ -17,12 +16,11 @@
 	\end{aligned}
 	\right.
 	\f}
-	\f{equation}
 
 	where \f$u\in\Omega\f$ is the unknown "trial" function and \f$\Omega\f$ the domain.
 
 	However this laplacian_parabolic can also be used in the stationnary form, that is to say, solving the equation :
-		\f{equation}
+	\f{equation}
 	\left\{
 	\begin{aligned}
 			 - nu*\Delta u = f & \text{on}\; \Omega \;, \
@@ -30,21 +28,20 @@
 	\end{aligned}
 	\right.
 	\f}
-	\f{equation}
 
-	\subsection{Time Discretization}
+	\subsection Discretization Time Discretization
 
 	The time derivative will be discretized following a backward method called \textit{Backward Differentiation Formula}. It is a finite differences method, used a lot in time discretization.
 
-	\section Implementation
+	\section Implementation Implementation
 	The overall code is based on the laplacian.cpp application in which we put the BDF structure and added some useful options also. Here, we don't go deeply in the implementation of the BDF method; a how-to about it can be get in Feel++'s pdf tutorial.
 
-    \subsection BDF set up
+    \subsection BDF BDF set up
     First we instantiate BDF stuffs :
     \snippet laplacian_parabolic.cpp marker1
 
-    Then we put a \textit{do..while} loop for the time iteration :
-    \verbatim
+    Then we put a \c do..while loop for the time iteration :
+    \code
     do{
         //set the linear form
         form1=...
@@ -55,7 +52,7 @@
 	//solve
 	backend(_rebuild=true)->solve(...);
     }while( M-bdf->isFinished() == false );
-    \endverbatim
+    \endcode
 
     \par
     The time derivative discretization is done in black box; we simply wrote :
@@ -75,10 +72,10 @@
     and increment the iteration :
     \snippet laplacian_parabolic.cpp marker16
 
-	\subsection Error class
+	\subsection Error Error class
 	The Error class allows users to define a test solution that has to be found by the application, to compute the Right Hand Side term of the equation and to compute L2 and H1 errors.
 
-	First we set the exact solution (if it is given in the .cfg file) and the associated parameter(s) :
+	First we set the exact solution (if it is given in the \c .cfg file) and the associated parameter(s) :
 	\snippet laplacian_parabolic.cpp marker11
 	\snippet laplacian_parabolic.cpp marker12
 
@@ -88,30 +85,29 @@
 	Eventually, compute the L2 and H1 error :
 	\snippet laplacian_parabolic.cpp marker14
 
-	\paragraph ! Be careful, do NOT use the L2 and H1 error computation of the Error class, because they are written in cylindrical coordinates !
+	\warning  Be careful, do NOT use the L2 and H1 error computation of the Error class, because they are written in cylindrical coordinates !
 
-	\section Results
+	\section Results Results
 
 	To verify and validate the implementation, we made convergence study in stationnary and in temporal modes.
 	The exact solution in the input is :
 	\f{equation}
 	\sin(\Pi(x-1)) \sin(\Pi\dfrac{y-0.05}{0.1})e^{-t}
-	\f{equation}
+	\f}
 	(in the border, it is indeed equal to 0).
 
 	For the time error, we implemented this formula :
 
 	\f{equation}
 	E_{r} = \left( \Delta t \: \sum\limits_{t=t_i}^{t_f} \| u - u^n \|_{L^2(\Omega^{tn})}^2 \right)^{\frac{1}{2}}
-	\f
-	\f{equation}
+	\f}
 
 	Here we go with the graphs :
-	\subsection Stationnary study
+	\subsection Stationnary Stationnary study
 	\image html Laplacian_parabolic_L2_error.png
     \image html Laplacian_parabolic_H1_error.png
 
-	\subsection Temporal study
+	\subsection Temporal Temporal study
 	\image html Laplacian_parabolic_BDF1.png
 	\image html Laplacian_parabolic_BDF2.png
 	\image html Laplacian_parabolic_BDF3.png
