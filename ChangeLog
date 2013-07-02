@@ -17,6 +17,7 @@
 
    \subsection issues0940 Issues
 
+   - <a href="https://github.com/feelpp/feelpp/issues/140">#140<a/>Mesh files refined twice the number of refinement levels at generation step
    - <a href="https://github.com/feelpp/feelpp/issues/128">#128</a> BDF not working in order 4
    - <a href="https://github.com/feelpp/feelpp/issues/126">#126</a> don't store all mesh points
    - <a href="https://github.com/feelpp/feelpp/issues/101">#101</a> Correspondence of gmsh and feel++ node numbering
