@@ -508,11 +508,12 @@ public:
      *        Useful if generateGeo has been called outside or if gmsh lybrary has changed.
      * \return the name of the mesh file generate by \c gmsh (with the \c .msh extension)
      */
-    std::string generate( std::string const& name,
-                          std::string const& geo,
-                          bool const forceRebuild = false,
-                          bool const parametric = false,
-                          bool const modifGeo = true ) const;
+    boost::tuple<std::string,bool>
+    generate( std::string const& name,
+              std::string const& geo,
+              bool const forceRebuild = false,
+              bool const parametric = false,
+              bool const modifGeo = true ) const;
 
     /**
      * refine the mesh uniformly by splitting
@@ -1028,10 +1029,13 @@ BOOST_PARAMETER_FUNCTION(
         desc->setRefinementLevels( refine );
         desc->setFileFormat( (GMSH_FORMAT)format );
 
-        std::string fname = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
+        std::string fname;
+        bool generated_or_modified;
+        boost::tie( fname, generated_or_modified ) = desc->generate( desc->prefix(), desc->description(), force_rebuild, parametricnodes );
 
         // refinement if option is enabled to a value greater or equal to 1
-        if ( refine )
+        // do not refine if the mesh/geo file was previously generated or modified
+        if ( refine && !generated_or_modified )
         {
             VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
             fname = desc->refine( fname, refine, parametricnodes );
