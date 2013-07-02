@@ -1431,7 +1431,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
     new_mesh.M_markername = this->markerNames();
     BOOST_FOREACH( auto marker, new_mesh.M_markername )
     {
-        std::cout << "marker name " << marker.first
+        LOG(INFO) << "marker name " << marker.first
                   << " id: " << marker.second[0]
                   << " geoe: " << marker.second[1] << "\n";
 
