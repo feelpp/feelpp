@@ -1759,8 +1759,10 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
     }
 
 
-    std::string fname = gmsh.generate( name,
-                                       ostr.str(),false,false,true );
+    std::string fname;
+    bool generated;
+    boost::tie( fname, generated ) = gmsh.generate( name,
+                                                    ostr.str(),false,false,true );
 
     ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 
