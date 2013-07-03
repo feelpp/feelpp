@@ -368,7 +368,7 @@ Stokes<nDim,uOrder,geoOrder>::run()
 #endif
     LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
-    auto r=0.5;
+    auto r=1;
     auto L=5;
     auto P_inlet=p_in;
     auto P_outlet=p_out;
@@ -377,7 +377,7 @@ Stokes<nDim,uOrder,geoOrder>::run()
 
     auto p_exact=(P_outlet-P_inlet)*Px()/L + P_inlet;
 #elif defined(DIM3)
-    auto u_exact=vec(  (P_inlet-P_outlet)*r*r*(1-(Py()*Py()+Pz()*Pz())/(r*r))/(4*L) , cst(0.) , cst(0.) );
+    auto u_exact=vec(  (P_inlet-P_outlet)*r*r*(1-(Py()*Py()+Pz()*Pz())/(r*r))/(4*mu*L) , cst(0.) , cst(0.) );
 
     auto p_exact=(-Px()*(P_inlet-P_outlet)/L + P_inlet);
 #endif
