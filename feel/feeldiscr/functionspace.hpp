@@ -1822,6 +1822,13 @@ public:
             return M_Xh;
         }
 
+        node_type node(int i) const
+        {
+            int size = M_t.size();
+            CHECK( i < size ) <<" i  = "<<i<<" and the context has "<< size<<" points \n";
+            return M_t[i];
+        }
+
     private:
 
         std::vector<node_type> M_t;
