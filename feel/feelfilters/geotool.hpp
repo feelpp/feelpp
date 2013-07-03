@@ -942,9 +942,12 @@ public:
                 geostring = _M_ostr->str();
             }
 
-            std::string fname = gmsh.generate( name,
-                                               geostring,
-                                               false,false,false );
+
+            std::string fname;
+            bool gen;
+            boost::tie( fname, gen ) = gmsh.generate( name,
+                                                      geostring,
+                                                      false,false,false );
 
             ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
             _mesh->accept( import );
