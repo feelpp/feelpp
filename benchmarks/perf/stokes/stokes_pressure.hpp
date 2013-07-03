@@ -292,8 +292,8 @@ Stokes<nDim,uOrder,geoOrder>::run()
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) - divt( u )*id( q ) );
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
-
-    auto t = vec(-Ny(),Nx());
+    stokes +=integrate( _range=markedfaces( mesh, "wall" ), _expr=- trans(SigmaNt)*id(v) - trans(SigmaN)*idt(v) + option(_name="bccoeff").template as<double>()*trans(idt(v))*id(v)/hFace());
+    auto t = vec(Ny(),-Nx());
 
 #if defined( FEELPP_USE_LM )
 #if defined( DIM2 )
@@ -304,11 +304,12 @@ Stokes<nDim,uOrder,geoOrder>::run()
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
     // set lagrange multipliers to 0 on boundary weakly
-    stokes += integrate( boundaryfaces(mesh_lag), 30*idt(nu1)*id(nu1)/hFace() );
+    stokes += integrate( boundaryfaces(mesh_lag), option(_name="bccoefflag").template as<double>()*idt(nu1)*id(nu1)/hFace() );
     LOG(INFO) << "chrono (lambda,lambda): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
 #elif defined( DIM3 )
-    auto C = mat<3,2>( cst(0.), Ny(), cs(0.), -Nx(), cst(1.), cst(0.) );
+    auto alpha = 1./sqrt(1-Nz()*Nz());
+    auto C = alpha*mat<3,2>( cst(0.), Ny(), cst(0.), -Nx(), cst(1.), cst(0.) );
     auto lagt=vec(idt(lambda1),idt(lambda2));
     auto lag=vec(id(lambda1),id(lambda2));
     stokes +=integrate( markedfaces( mesh,inlet ), -trans(cross(id(v),N()))*(C*lagt) -trans( cross(idt( u ),N()))*(C*lag) );
@@ -316,7 +317,7 @@ Stokes<nDim,uOrder,geoOrder>::run()
     //stokes += integrate( markedfaces( mesh,inlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
     //stokes += integrate( markedfaces( mesh,outlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
     // set lagrange multipliers to 0 on boundary weakly
-    stokes += integrate( boundaryfaces(mesh_lag), 30*(idt(nu1)*id(nu1)+idt(nu2)*id(nu2))/hFace() );
+    stokes += integrate( boundaryfaces(mesh_lag), option(_name="bccoefflag").template as<double>()*(idt(nu1)*id(nu1)+idt(nu2)*id(nu2))/hFace() );
 #endif // DIM3
 
 
@@ -338,7 +339,8 @@ Stokes<nDim,uOrder,geoOrder>::run()
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
     //# endmarker7 #
-    stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
+    //stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
+    //stokes+=on(_range=boundaryfaces(mesh), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
 
     chrono.restart();
     auto retsolver = stokes.solve( _solution=U, _rhs=stokes_rhs, _rebuild=true );
@@ -366,7 +368,7 @@ Stokes<nDim,uOrder,geoOrder>::run()
 #endif
     LOG(INFO) << "chrono solver: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
-    auto r=1;
+    auto r=0.5;
     auto L=5;
     auto P_inlet=p_in;
     auto P_outlet=p_out;
@@ -438,8 +440,8 @@ Stokes<nDim,uOrder,geoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_ex
     M_stats.put( "e.output.Fin", math::abs(pi-s.norm()) );
     M_stats.put( "d.output.Fin", s.norm() );
 
-    //v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
-    //q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
+    v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
+    q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
 #if defined( FEELPP_USE_LM )
     auto exporter1d1 = exporter( _mesh=lambda.mesh(), _name=this->about().appName()+"_lambda" );
@@ -450,11 +452,9 @@ Stokes<nDim,uOrder,geoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_ex
     auto myexporter = exporter( _mesh=mesh, _name=this->about().appName() );
     myexporter->add( "u", u );
     myexporter->add( "p", p );
+    myexporter->add( "u_exact", v );
+    myexporter->add( "p_exact", q );
     myexporter->save();
 
 } // Stokes::export
 } // Feel
-
-
-
-
