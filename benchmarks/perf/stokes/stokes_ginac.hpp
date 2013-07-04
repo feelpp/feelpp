@@ -229,32 +229,35 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
     double mu = option(_name="mu").template as<value_type>();
 
-    auto r=1.;
-    auto L=5.;
-    auto pin = 10.;
-    auto pout = 0.;
-    symbol x("x"),y("y"),z("z");
-    auto u1 = (1-y*y/r*r)*(pin-pout)/(2*mu*L);
-    auto u2 = 0.;
+    auto vars=symbols<Dim>();
+    auto u1 = parse( option(_name="2D.u_exact_x").template as<std::string>(), vars );
+    auto u2 = parse( option(_name="2D.u_exact_y").template as<std::string>(), vars );
+    ex u3;
+    if ( Dim == 3 )
+        u3 = parse( option(_name="2D.u_exact_z").template as<std::string>(), vars );
     matrix u_exact_g = matrix(Dim,1);
-    u_exact_g = u1,u2;
-    auto p_exact_g = (pout-pin)*x/L+pin;
+    if ( Dim == 2 )
+        u_exact_g = u1,u2;
+    else
+        u_exact_g = u1,u2,u3;
+    auto p_exact_g = parse( option(_name="2D.p_exact").template as<std::string>(), vars );
 
 
-    auto u_exact = expr<2,1,2>( u_exact_g, {x,y} );
-    auto p_exact = expr( p_exact_g, {x,y} );
-	auto f_g = -mu*laplacian( u_exact_g, {x,y} ) + grad( p_exact_g, {x,y} ).transpose();
-    auto f = expr<2,1,2>( f_g, {x,y} );
+
+    auto u_exact = expr<Dim,1,Dim>( u_exact_g, vars );
+    auto p_exact = expr( p_exact_g, vars );
+	auto f_g = -mu*laplacian( u_exact_g, vars ) + grad( p_exact_g, vars ).transpose();
+    auto f = expr<Dim,1,Dim>( f_g, vars );
     LOG(INFO) << "f = " << f_g << "\n";
     auto beta=u_exact;
 
 
-    auto gradu_exact_g = grad( u_exact_g, {x,y} );
-    auto divu_exact_g = div( u_exact_g, {x,y} );
+    auto gradu_exact_g = grad( u_exact_g, vars );
+    auto divu_exact_g = div( u_exact_g, vars );
     LOG(INFO) << "gradu_exact_g = " << gradu_exact_g;
     LOG(INFO) << "divu_exact_g = " << divu_exact_g;
-    auto gradu_exact = expr<2,2,2>( gradu_exact_g, {x,y} );
-    auto divu_exact = expr<1,1,2>( divu_exact_g, {x,y} );
+    auto gradu_exact = expr<Dim,Dim,2>( gradu_exact_g, vars );
+    auto divu_exact = expr<1,1,2>( divu_exact_g, vars );
     auto convection=gradu_exact*beta;
 
     boost::mpi::timer subt;
