@@ -60,14 +60,16 @@ public:
     /*basis*/
     typedef Lagrange<uOrder, Vectorial> basis_u_type;
     typedef Lagrange<uOrder-1, Scalar> basis_p_type;
-#if defined( DIM2 )
+
     typedef Lagrange<uOrder, Scalar> basis_l_type;
-#elif defined( DIM3 )
-    typedef Lagrange<uOrder, Vectorial> basis_l_type;
-#endif
+
     // use lagrange multipliers to ensure zero mean pressure
 #if defined( FEELPP_USE_LM )
+#if defined (DIM2)
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
+#else
+    typedef bases<basis_u_type,basis_p_type, basis_l_type, basis_l_type> basis_type;
+#endif
 #else
     typedef bases<basis_u_type,basis_p_type> basis_type;
 #endif
@@ -76,7 +78,11 @@ public:
     /*space*/
     //# marker2 #
 #if defined( FEELPP_USE_LM )
+#if defined(DIM2)
     typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag_type>, basis_type> space_type;
+#else
+    typedef FunctionSpace<meshes<mesh_type,mesh_type, mesh_lag_type, mesh_lag_type>, basis_type> space_type;
+#endif
 #else
     typedef FunctionSpace<mesh_type, basis_type> space_type;
 #endif
@@ -129,6 +135,7 @@ private:
     double penalbc;
 
     mesh_ptrtype mesh;
+    mesh_lag_ptrtype mesh_lag;
     space_ptrtype Xh;
 }; // Stokes
 
@@ -199,9 +206,13 @@ Stokes<nDim,uOrder,geoOrder>::init()
 #endif
 
 #if defined (FEELPP_USE_LM)
-    auto mesh_lag = merge( mesh->trace( markedfaces(mesh,"inlet") ),
-                           mesh->trace( markedfaces(mesh,"outlet") ) );
+    mesh_lag = merge( mesh->trace( markedfaces(mesh,"inlet") ),
+                      mesh->trace( markedfaces(mesh,"outlet") ) );
+#if defined( DIM2 )
     auto meshv = fusion::make_vector(mesh,mesh,mesh_lag);
+#else
+    auto meshv = fusion::make_vector(mesh,mesh,mesh_lag,mesh_lag);
+#endif
     Xh = space_type::New( _mesh=meshv );
 #else
     Xh = space_type::New( mesh );
@@ -222,8 +233,12 @@ Stokes<nDim,uOrder,geoOrder>::run()
     auto p = U.template element<1>( "p" );
     auto q = V.template element<1>( "p" );
 #if defined( FEELPP_USE_LM )
-    auto lambda = U.template element<2>();
-    auto nu = V.template element<2>();
+    auto lambda1 = U.template element<2>();
+    auto nu1 = V.template element<2>();
+#if defined(DIM3)
+    auto lambda2 = U.template element<3>();
+    auto nu2 = V.template element<3>();
+#endif
 #endif
     //# endmarker4 #
 
@@ -277,20 +292,34 @@ Stokes<nDim,uOrder,geoOrder>::run()
     stokes +=integrate( elements( mesh ), - div( v )*idt( p ) - divt( u )*id( q ) );
     LOG(INFO) << "chrono (u,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
-
-    auto t = vec(-Ny(),Nx());
+    stokes +=integrate( _range=markedfaces( mesh, "wall" ), _expr=- trans(SigmaNt)*id(v) - trans(SigmaN)*idt(v) + option(_name="bccoeff").template as<double>()*trans(idt(v))*id(v)/hFace());
+    auto t = vec(Ny(),-Nx());
 
 #if defined( FEELPP_USE_LM )
 #if defined( DIM2 )
-    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
-    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda ) -trans( idt( u ))*t*id( nu ) );
-#elif defined( DIM3 )
-    stokes +=integrate( markedfaces( mesh,inlet ), -trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
-    stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*idt( lambda ) -trans( cross(idt( u ),N()))*id( nu ) );
-    stokes += integrate( markedfaces( mesh,inlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
-    stokes += integrate( markedfaces( mesh,outlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(id( v ))*t*idt( lambda1 ));
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans( idt( u ))*t*id( nu1 ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -trans(id( v ))*t*idt( lambda1 ) );
+    stokes +=integrate( markedfaces( mesh,outlet ), -trans( idt( u ))*t*id( nu1 ) );
+    LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+    chrono.restart();
+    // set lagrange multipliers to 0 on boundary weakly
+    stokes += integrate( boundaryfaces(mesh_lag), option(_name="bccoefflag").template as<double>()*idt(nu1)*id(nu1)/hFace() );
+    LOG(INFO) << "chrono (lambda,lambda): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
+#elif defined( DIM3 )
+    auto alpha = 1./sqrt(1-Nz()*Nz());
+    auto C = alpha*mat<3,2>( cst(0.), Ny(), cst(0.), -Nx(), cst(1.), cst(0.) );
+    auto lagt=vec(idt(lambda1),idt(lambda2));
+    auto lag=vec(id(lambda1),id(lambda2));
+    stokes +=integrate( markedfaces( mesh,inlet ), -trans(cross(id(v),N()))*(C*lagt) -trans( cross(idt( u ),N()))*(C*lag) );
+    stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*(C*lagt) -trans( cross(idt( u ),N()))*(C*lag) );
+    //stokes += integrate( markedfaces( mesh,inlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
+    //stokes += integrate( markedfaces( mesh,outlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
+    // set lagrange multipliers to 0 on boundary weakly
+    stokes += integrate( boundaryfaces(mesh_lag), option(_name="bccoefflag").template as<double>()*(idt(nu1)*id(nu1)+idt(nu2)*id(nu2))/hFace() );
 #endif // DIM3
+
 
     LOG(INFO) << "chrono (lambda,p): " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
 
@@ -310,7 +339,8 @@ Stokes<nDim,uOrder,geoOrder>::run()
     LOG(INFO) << "chrono bc: " << chrono.elapsed() << "\n";google::FlushLogFiles(google::GLOG_INFO);
     chrono.restart();
     //# endmarker7 #
-    stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
+    //stokes+=on(_range=markedfaces(mesh,"wall"), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
+    //stokes+=on(_range=boundaryfaces(mesh), _element=u, _rhs=stokes_rhs, _expr=zero<nDim,1>());
 
     chrono.restart();
     auto retsolver = stokes.solve( _solution=U, _rhs=stokes_rhs, _rebuild=true );
@@ -347,7 +377,7 @@ Stokes<nDim,uOrder,geoOrder>::run()
 
     auto p_exact=(P_outlet-P_inlet)*Px()/L + P_inlet;
 #elif defined(DIM3)
-    auto u_exact=vec(  (P_inlet-P_outlet)*r*r*(1-(Py()*Py()+Pz()*Pz())/(r*r))/(4*L) , cst(0.) , cst(0.) );
+    auto u_exact=vec(  (P_inlet-P_outlet)*r*r*(1-(Py()*Py()+Pz()*Pz())/(r*r))/(4*mu*L) , cst(0.) , cst(0.) );
 
     auto p_exact=(-Px()*(P_inlet-P_outlet)/L + P_inlet);
 #endif
@@ -410,8 +440,8 @@ Stokes<nDim,uOrder,geoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_ex
     M_stats.put( "e.output.Fin", math::abs(pi-s.norm()) );
     M_stats.put( "d.output.Fin", s.norm() );
 
-    //v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
-    //q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
+    v = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
+    q = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
 
 #if defined( FEELPP_USE_LM )
     auto exporter1d1 = exporter( _mesh=lambda.mesh(), _name=this->about().appName()+"_lambda" );
@@ -422,11 +452,9 @@ Stokes<nDim,uOrder,geoOrder>::exportResults( ExprUExact u_exact, ExprPExact p_ex
     auto myexporter = exporter( _mesh=mesh, _name=this->about().appName() );
     myexporter->add( "u", u );
     myexporter->add( "p", p );
+    myexporter->add( "u_exact", v );
+    myexporter->add( "p_exact", q );
     myexporter->save();
 
 } // Stokes::export
 } // Feel
-
-
-
-

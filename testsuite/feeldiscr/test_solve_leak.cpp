@@ -589,6 +589,9 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
         f2_type& V,
         f3_type& E )
 {
+
+    if ( exporter->doExport() )
+    {
     timers["export"].first.restart();
 
     LOG(INFO) << "exportResults starts\n";
@@ -688,6 +691,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
 
     timers["export"].second = timers["export"].first.elapsed();
     LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
+    }
 } // Laplacian::export
 } // Feel
 
@@ -715,7 +719,3 @@ main( int argc, char** argv )
 
     laplacian.run();
 }
-
-
-
-

@@ -98,10 +98,10 @@ public:
         super( vm, ad ),
         M_backend(),
         M_basis_name( basis_name ),
-        exporter()
+        M_exporter()
     {
-        mu = this->vm()["mu"].template as<value_type>();
-        penalbc = this->vm()["bccoeff"].template as<value_type>();
+        mu = option(_name="mu").template as<value_type>();
+        penalbc = option(_name="bccoeff").template as<value_type>();
     }
 
 
@@ -133,7 +133,7 @@ private:
     double mu;
     double penalbc;
 
-    boost::shared_ptr<export_type> exporter;
+    boost::shared_ptr<export_type> M_exporter;
 }; // LaplacianV
 
 
@@ -143,18 +143,15 @@ LaplacianV<Dim, BasisU, Entity>::run()
 {
     using namespace Feel::vf;
 
-    if ( this->vm().count( "nochdir" ) == false )
-    {
-        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/" )
-                                % this->about().appName()
-                                % convex_type::name()
-                                % M_basis_name
-                                % meshSize() );
-    }
+    this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/" )
+                            % this->about().appName()
+                            % convex_type::name()
+                            % M_basis_name
+                            % meshSize() );
 
     //! init backend
-    M_backend = backend_type::build( this->vm() );
-    exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
+    M_backend = backend_type::build();
+
 
     boost::timer t;
 #if defined(KOVASZNAY)
@@ -164,8 +161,8 @@ LaplacianV<Dim, BasisU, Entity>::run()
     double xmin = -1, xmax=1;
     double ymin = -1, ymax=1;
 #endif
-    double shear = this->vm()["shear"].template as<value_type>();
-    bool recombine = this->vm()["recombine"].template as<bool>();
+    double shear = option(_name="shear").template as<value_type>();
+    bool recombine = option(_name="recombine").template as<bool>();
     /*
      * First we create the mesh, in the case of quads we wish to have
      * non-regular meshes to ensure that we don't have some super-convergence
@@ -213,8 +210,8 @@ LaplacianV<Dim, BasisU, Entity>::run()
     LOG(INFO) << "  -- time space and functions construction "<<t.elapsed()<<" seconds \n";
     t.restart() ;
 
-    double penalbc = this->vm()["bccoeff"].template as<value_type>();
-    double mu = this->vm()["mu"].template as<value_type>();
+    double penalbc = option(_name="bccoeff").template as<value_type>();
+    double mu = option(_name="mu").template as<value_type>();
 
     auto pi = M_PI;
     auto u_exact_s = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
@@ -384,15 +381,15 @@ template<int Dim, typename BasisU, template<uint16_type,uint16_type,uint16_type>
 void
 LaplacianV<Dim, BasisU, Entity>::exportResults( element_type& u, element_type& v )
 {
-    if ( exporter->doExport() )
+    M_exporter =  exporter( _mesh= u.functionSpace()->mesh() );
+    if ( M_exporter->doExport() )
     {
-        exporter->step( 0 )->setMesh( u.functionSpace()->mesh() );
-        exporter->step( 0 )->add( "u", u );
-        exporter->step( 0 )->add( "u_exact", v );
-        exporter->save();
+        M_exporter->step( 0 )->setMesh( u.functionSpace()->mesh() );
+        M_exporter->step( 0 )->add( "u", u );
+        M_exporter->step( 0 )->add( "u_exact", v );
+        M_exporter->save();
     }
 } // LaplacianV::export
 } // Feel
 
 #endif // __FEELPP_BENCH_LAPLACIANV_HPP
-
