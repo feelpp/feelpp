@@ -523,7 +523,6 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
                     }
                     else
                         m_field[global_node_id] = 0;
-                    LOG(INFO) << "m_field[" << global_node_id << "]=" << m_field[global_node_id];
                 }
             }
         }
