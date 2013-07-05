@@ -86,8 +86,8 @@ makeOptions()
     Feel::po::options_description ginacoptions("Ginac options");
     ginacoptions.add_options()
         ("dim", Feel::po::value<int>()->default_value( 1 ), "geometric dimension")
-        ("params", Feel::po::value<std::string>()->default_value( "" ), "name of parameters")
-        ("exact", Feel::po::value<std::string>()->default_value( "" ), "name of the input")
+        ("params", Feel::po::value<std::string>()->default_value( "a;b" ), "name of parameters")
+        ("exact", Feel::po::value<std::string>()->default_value( "a*x+b" ), "name of the input")
         ;
     return ginacoptions.add( Feel::feel_options() );
 }

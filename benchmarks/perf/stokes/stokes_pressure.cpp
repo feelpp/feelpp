@@ -51,6 +51,7 @@ makeOptions()
         ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "first h value to start convergence" )
         ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
         ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
+        ( "bccoefflag", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
         ( "eps", Feel::po::value<double>()->default_value( 1e-10 ), "penalisation parameter for lagrange multipliers" )
         ( "gamma-tau", Feel::po::value<double>()->default_value( 10 ), "penalty parameter for tangential velocity" )
         ;

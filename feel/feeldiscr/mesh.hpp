@@ -1431,7 +1431,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
     new_mesh.M_markername = this->markerNames();
     BOOST_FOREACH( auto marker, new_mesh.M_markername )
     {
-        std::cout << "marker name " << marker.first
+        LOG(INFO) << "marker name " << marker.first
                   << " id: " << marker.second[0]
                   << " geoe: " << marker.second[1] << "\n";
 
@@ -1520,7 +1520,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
         {
             if ( !old_elem.facePtr( s ) ) continue;
 
-#if 1
+#if 0
             std::cout << "local face id: " << s
                       << " global face id: " << old_elem.face( s ).id() << "\n";
 #endif
@@ -1546,7 +1546,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                 // update points info
                 for ( uint16_type p = 0; p < new_face.nPoints(); ++p )
                 {
-#if 1
+#if 0
                     std::cout << "add new point " << new_face.point( p ).id() << " to face \n";
                     std::cout << "add old point " << old_face.point( p ).id() << " to face \n";
                     std::cout << "new point id " << new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] << "\n";
@@ -1556,7 +1556,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                 }
 
                 new_face.setId( n_new_faces++ );
-#if 1
+#if 0
                 std::cout << "face id" << new_face.id()
                           << " marker1 : " << new_face.marker()
                           << " old marker1 : " << old_face.marker()
@@ -1902,7 +1902,7 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, IteratorType it, IteratorType en, con
     for( int i = 0; pit != pen; ++pit, ++i )
     {
         CHECK( *pit > 0 ) << "invalid id " << *pit;
-        LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
+        //LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
         //int pid = (renumber)?nodemap[*pit]+1:*pit;
         int pid = *pit;
 

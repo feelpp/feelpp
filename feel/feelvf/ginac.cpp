@@ -135,11 +135,11 @@ namespace GiNaC
             ff = f.transpose();
 
         matrix g( ff.rows(), l.size() );
-        for( int i = 0; i < f.rows(); ++i )
+        for( int i = 0; i < ff.rows(); ++i )
             {
                 for( int j = 0; j < l.size(); ++j )
                     {
-                        g.set( i, j, f(i,0).diff( l[j] ) );
+                        g.set( i, j, ff(i,0).diff( l[j] ) );
                     }
             }
         return g;
