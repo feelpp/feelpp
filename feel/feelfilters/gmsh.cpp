@@ -286,14 +286,14 @@ std::string
 Gmsh::generate( std::string const& name ) const
 {
     std::string descr = this->getDescription();
-    return this->generate( name, descr );
+    return this->generate( name, descr ).get<0>();
 }
 
-std::string
+boost::tuple<std::string,bool>
 Gmsh::generate( std::string const& __name, std::string const& __geo, bool const __forceRebuild, bool const parametric,bool const modifGeo ) const
 {
     std::string fname;
-
+    bool generated = false;
     if ( !mpi::environment::initialized() || ( mpi::environment::initialized()  && this->worldComm().globalRank() == this->worldComm().masterRank() ) )
     {
         LOG(INFO) << "Generate mesh on processor " <<  this->worldComm().globalRank() << "/" << this->worldComm().globalSize() << "\n";
@@ -311,35 +311,24 @@ Gmsh::generate( std::string const& __name, std::string const& __geo, bool const 
         if ( geochanged || __forceRebuild || !fs::exists( __meshpath ) )
         {
             LOG( INFO ) << "Generating " << __meshname.str() << "...\n";
-#if 0
 
-            if ( __geo.find( "Volume" ) != std::string::npos )
-                generate( __geoname.str(), 3, parametric );
-
-            else if ( __geo.find( "Surface" ) != std::string::npos )
-                generate( __geoname.str(), 2, parametric );
-
-            else //if ( __geo.find( "Line" )  != std::string::npos )
-                generate( __geoname.str(), 1, parametric );
-
-            //else
-            //generate( __geoname.str(), 3, parametric );
-#else
             generate( __geoname.str(), this->dimension(), parametric );
-#endif
+
             LOG( INFO ) << "Generating " << __meshname.str() << " done.\n";
+            generated = true;
         }
         fname=__meshname.str();
     }
     google::FlushLogFiles(INFO);
 
+    auto ret = boost::make_tuple(fname,generated);
 	if ( mpi::environment::initialized() )
     {
 		this->worldComm().barrier();
-        LOG(INFO) << "Broadcast mesh file " << fname << " to all other mpi processes\n";
-        mpi::broadcast( this->worldComm().globalComm(), fname, 0 );
+        LOG(INFO) << "Broadcast mesh file " << fname << " to all other mpi processes, (created: " << generated << ")";
+        mpi::broadcast( this->worldComm().globalComm(), ret, 0 );
     }
-    return fname;
+    return ret;
 }
 std::string
 Gmsh::refine( std::string const& name, int level, bool parametric  ) const

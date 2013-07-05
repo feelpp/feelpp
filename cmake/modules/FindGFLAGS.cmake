@@ -27,14 +27,21 @@
 
 # try to find gflags headers
 # and set GFLAGS_INCLUDE_DIR and GFLAGS_LIBRARIES
+# try local version
 FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
   ${CMAKE_BINARY_DIR}/contrib/gflags/include
   $ENV{FEELPP_DIR}/include/feel
+  NO_DEFAULT_PATH
+  )
+# try installed version
+FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h 
+  HINTS
+  /usr/include/gflags
   /usr/include/feel
   /usr/local/include/feel
   /opt/local/include/feel
-  NO_DEFAULT_PATH
-  )
+ )
+
 message(STATUS "Gflags first pass: ${GFLAGS_INCLUDE_DIR}")
 
 if (NOT GFLAGS_INCLUDE_DIR )
@@ -77,6 +84,8 @@ FIND_LIBRARY(GFLAGS_LIBRARY
   $ENV{FEELPP_DIR}/lib
   NO_DEFAULT_PATH
   )
+FIND_LIBRARY(GFLAGS_LIBRARY  NAMES gflags feelpp_gflags  )
+
 set(GFLAGS_LIBRARIES ${GFLAGS_LIBRARY})
 message(STATUS "Gflags includes: ${GFLAGS_INCLUDE_DIR} Libraries: ${GFLAGS_LIBRARIES} Dir: ${GFLAGS_DIR}" )
 

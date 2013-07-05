@@ -1101,11 +1101,13 @@ public:
 #endif
 
         typedef geometric_mapping_context_type gmc_type;
+        typedef Eigen::Matrix<value_type,Eigen::Dynamic, Eigen::Dynamic> matrix_eigen_type;
         typedef Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim> matrix_eigen_NP_type;
         typedef Eigen::Matrix<value_type,gmc_type::PDim,gmc_type::NDim> matrix_eigen_PN_type;
         typedef Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::NDim> matrix_eigen_NN_type;
         typedef Eigen::Matrix<value_type,nComponents1,NDim> matrix_eigen_grad_type;
         typedef typename Eigen::Map<const Eigen::Matrix<value_type,gmc_type::NDim,gmc_type::PDim,Eigen::RowMajor> > matrix_eigen_ublas_NP_type;
+        typedef typename Eigen::Map<const Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> > matrix_eigen_ublas_type;
 
 
         template<uint16_type TheRank = polyset_type::rank+2>
@@ -1466,14 +1468,12 @@ public:
                 const uint16_type I = nDof; //_M_ref_ele->nbDof();
 
 
-                matrix_eigen_ublas_NP_type Bt ( thegmc->B( 0 ).data().begin() );
+                matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                 matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
-                matrix_eigen_PN_type B=Bt.transpose();
 
                 for ( uint16_type i = 0; i < I; ++i )
                 {
-                    grad_real.noalias() = _M_gradphi[i][0]*B;
-
+                    grad_real.noalias() = _M_gradphi[i][0]*Bt.transpose();
                     for ( uint16_type q = 0; q < Q; ++q )
                     {
                         _M_grad[i][q] = grad_real;
@@ -1565,7 +1565,7 @@ public:
                 {
                     for ( uint16_type q = 0; q < Q; ++q )
                     {
-                        matrix_eigen_ublas_NP_type Bt ( thegmc->B( q ).data().begin() );
+                        matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                         _M_grad[i][q] = _M_gradphi[i][q]*Bt.transpose();
                         _M_dx[i][q] = _M_grad[i][q].col( 0 );
 
@@ -1660,7 +1660,7 @@ public:
                         for ( uint16_type q = 0; q < Q; ++q )
                         {
                             //uint16_type c1 = c;
-                            matrix_eigen_ublas_NP_type Bt ( thegmc->B( q ).data().begin() );
+                            matrix_eigen_ublas_type Bt ( thegmc->B( q ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                             //matrix_type const& Bq = thegmc->B( q );
                             _M_grad[i][q] = _M_gradphi[i][q]*Bt.transpose();
                             _M_dx[i][q] = _M_grad[i][q].col( 0 );
@@ -1731,9 +1731,9 @@ public:
 
                 typedef typename boost::multi_array<value_type,4>::index_range range;
 
-                matrix_eigen_ublas_NP_type Bt ( thegmc->B( 0 ).data().begin() );
+                matrix_eigen_ublas_type Bt ( thegmc->B( 0 ).data().begin(), gmc_type::NDim, gmc_type::PDim );
                 matrix_eigen_grad_type grad_real = matrix_eigen_grad_type::Zero();
-                matrix_eigen_PN_type B=Bt.transpose();
+                //matrix_eigen_PN_type B=Bt.transpose();
 
                 for ( uint16_type ii = 0; ii < I; ++ii )
                 {
@@ -1744,7 +1744,7 @@ public:
                         //std::cout << "component " << c << "\n";
                         uint16_type i = I*c + ii;
                         //uint16_type c1 = c;
-                        grad_real.noalias() = _M_gradphi[i][0]*B;
+                        grad_real.noalias() = _M_gradphi[i][0]*Bt.transpose();
 
                         for ( uint16_type q = 0; q < Q; ++q )
                         {

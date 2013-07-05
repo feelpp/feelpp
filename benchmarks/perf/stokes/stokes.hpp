@@ -87,7 +87,8 @@ public:
     //# marker1 #
     typedef BasisU basis_u_type;
     typedef BasisP basis_p_type;
-    typedef bases<basis_u_type,basis_p_type> basis_type;
+    typedef Lagrange<0,Scalar, Continuous> basis_l_type;
+    typedef bases<basis_u_type,basis_p_type,basis_l_type> basis_type;
     //# endmarker1 #
 
     /*space*/
@@ -98,16 +99,15 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    Stokes( std::string const& basis_name,
-            po::variables_map const& vm, AboutData const& ad )
+    Stokes( std::string const& basis_name )
         :
-        super( vm, ad ),
+        super(),
         M_backend(),
         M_basis_name( basis_name ),
-        exporter()
+        M_exp()
     {
-        mu = this->vm()["mu"].template as<value_type>();
-        penalbc = this->vm()[prefixvm( name(),"bccoeff" )].template as<value_type>();
+        mu = option(_name="mu").template as<value_type>();
+        penalbc = option(_name=prefixvm( name(),"bccoeff" )).template as<value_type>();
     }
 
 
@@ -139,7 +139,7 @@ private:
     double mu;
     double penalbc;
 
-    boost::shared_ptr<export_type> exporter;
+    boost::shared_ptr<export_type> M_exp;
 }; // Stokes
 
 
@@ -150,25 +150,22 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     using namespace Feel::vf;
 
     int nparts = Environment::worldComm().size();
-    bool prepare = this->vm()["benchmark.prepare"].template as<bool>();
+    bool prepare = option(_name="benchmark.prepare").template as<bool>();
     if ( prepare )
-        nparts = this->vm()["benchmark.partitions"].template as<int>();
+        nparts = option(_name="benchmark.partitions").template as<int>();
 
 
-    if ( this->vm().count( "nochdir" ) == false )
-    {
-        this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/l_%5%/parts_%6%/" )
-                                % this->about().appName()
-                                % convex_type::name()
-                                % M_basis_name
-                                % meshSizeInit()
-                                % level()
-                                % nparts );
-    }
+    this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/l_%5%/parts_%6%/" )
+                            % this->about().appName()
+                            % convex_type::name()
+                            % M_basis_name
+                            % meshSizeInit()
+                            % level()
+                            % nparts );
 
     //! init backend
-    M_backend = backend_type::build( this->vm() );
-    exporter =  boost::shared_ptr<export_type>( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) );
+    M_backend = backend(_rebuild=true);
+
 
     boost::mpi::timer t;
 #if defined(FEELPP_SOLUTION_KOVASZNAY)
@@ -185,8 +182,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     double xmin = -1, xmax=1;
     double ymin = -1, ymax=1;
 #endif
-    double shear = this->vm()["shear"].template as<value_type>();
-    bool recombine = this->vm()["recombine"].template as<bool>();
+    double shear = option(_name="shear").template as<value_type>();
+    bool recombine = option(_name="recombine").template as<bool>();
     /*
      * First we create the mesh, in the case of quads we wish to have
      * non-regular meshes to ensure that we don't have some super-convergence
@@ -204,10 +201,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
                                               _h=meshSizeInit(),
                                               _shear=shear,
                                               _xmin=xmin,_xmax=xmax,
-                                              _ymin=ymin,_ymax=ymax, 
+                                              _ymin=ymin,_ymax=ymax,
                                               _zmin=-1,_zmax=1 ),
                                 _refine=level() );
-    
+
     M_stats.put( "t.init.mesh",t.elapsed() );
     t.restart();
     /*
@@ -223,6 +220,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto v = V.template element<0>();
     auto p = U.template element<1>();
     auto q = V.template element<1>();
+    auto nu = U.template element<2>();
+
 
     LOG(INFO) << "Data Summary:\n";
     LOG(INFO) << "   hsize = " << M_meshSize << "\n";
@@ -261,9 +260,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto SigmaN = -id( p )*N()+mu*dn( u );
     //# endmarker6 #
 
-    double betacoeff = this->vm()["beta"].template as<value_type>();
+    double betacoeff = option(_name="beta").template as<value_type>();
     bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
-    double mu = this->vm()["mu"].template as<value_type>();
+    double mu = option(_name="mu").template as<value_type>();
 
 #if FEELPP_SOLUTION_1
     // u exact solution
@@ -557,6 +556,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";
     subt.restart();
 
+    form2( Xh, Xh, D )+=integrate( _range=elements( mesh ),_expr=id( p )*idt( nu ) );
+    form2( Xh, Xh, D )+=integrate( _range=elements( mesh ),_expr=idt( p )*id( nu ) );
+    M_stats.put( "t.assembly.matrix.pl",subt.elapsed() );
+    LOG(INFO) << "   o time for pressure/multiplier terms: " << subt.elapsed() << "\n";
+    subt.restart();
+
     if ( this->vm()[ prefixvm( name(),"bctype" ) ].template as<int>() == 1  )
     {
         if (  !this->vm().count( "extra-terms" ) )
@@ -621,7 +626,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     if ( !this->vm().count( "no-solve" ) )
     {
-        auto r = M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+        //auto r = M_backend->solve( _matrix=D, _solution=U, _rhs=F, _constant_null_space=true );
+        auto r = M_backend->solve( _matrix=D, _solution=U, _rhs=F );
         M_stats.put( "d.solver.bool.converged",r.template get<0>() );
         M_stats.put( "d.solver.int.nit",r.template get<1>() );
         M_stats.put( "d.solver.double.residual",r.template get<2>() );
@@ -700,17 +706,17 @@ template<int Dim, typename BasisU, typename BasisP, template<uint16_type,uint16_
 void
 Stokes<Dim, BasisU, BasisP, Entity>::exportResults( element_type& U, element_type& V )
 {
-    if ( exporter->doExport() )
+    M_exp =  exporter( _mesh=U.functionSpace()->mesh() );
+    if ( M_exp->doExport() )
     {
-        exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
-        exporter->step( 0 )->add( "u", U.template element<0>() );
-        exporter->step( 0 )->add( "p", U.template element<1>() );
-        exporter->step( 0 )->add( "u_exact", V.template element<0>() );
-        exporter->step( 0 )->add( "p_exact", V.template element<1>() );
-        exporter->save();
+        M_exp->step( 0 )->setMesh( U.functionSpace()->mesh() );
+        M_exp->step( 0 )->add( "u", U.template element<0>() );
+        M_exp->step( 0 )->add( "p", U.template element<1>() );
+        M_exp->step( 0 )->add( "u_exact", V.template element<0>() );
+        M_exp->step( 0 )->add( "p_exact", V.template element<1>() );
+        M_exp->save();
     }
 } // Stokes::export
 } // Feel
 
 #endif // __FEELPP_BENCH_STOKES_HPP
-

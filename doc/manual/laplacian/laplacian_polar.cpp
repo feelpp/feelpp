@@ -68,12 +68,14 @@ main(int argc, char**argv )
 #endif
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
-    //typedef Mesh<Hypercube<2> > mesh_type;
-    typedef Mesh<Simplex<2> > mesh_type;
+    typedef Mesh<Hypercube<2> > mesh_type;
+    //typedef Mesh<Simplex<2> > mesh_type;
 
     auto mesh =  loadMesh( _mesh=new mesh_type );
 
-    auto Vh = Pch<1>( mesh );
+    auto Vh = Pch<10>( mesh );
+    LOG(INFO) << "dim Vh : " << Vh->nDof();
+
     auto u = Vh->element();
     auto v = Vh->element();
 
