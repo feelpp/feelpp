@@ -942,9 +942,12 @@ public:
                 geostring = _M_ostr->str();
             }
 
-            std::string fname = gmsh.generate( name,
-                                               geostring,
-                                               false,false,false );
+
+            std::string fname;
+            bool gen;
+            boost::tie( fname, gen ) = gmsh.generate( name,
+                                                      geostring,
+                                                      false,false,false );
 
             ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
             _mesh->accept( import );
@@ -1759,8 +1762,10 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
     }
 
 
-    std::string fname = gmsh.generate( name,
-                                       ostr.str(),false,false,true );
+    std::string fname;
+    bool generated;
+    boost::tie( fname, generated ) = gmsh.generate( name,
+                                                    ostr.str(),false,false,true );
 
     ImporterGmsh<mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
 

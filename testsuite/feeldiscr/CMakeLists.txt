@@ -2,8 +2,10 @@
 foreach(TEST element elementminmax project bdf interpolation integration  integration_ifaces geomap mixed
     auto_order_integrate interp_twomesh submesh disc vect_comp operatorinterpolation normal3d aitken
     form_interpolation integration_opt lift
-    hcurl wire_basket solve_leak stencil
-    evaluator element_serialize lambda trace operatorlinearfree functionallinearfree fspace_context rbspace )
+    wire_basket solve_leak stencil
+    evaluator element_serialize lambda trace operatorlinearfree functionallinearfree fspace_context rbspace
+    lowerdim_entity integration_ginac
+    )
 
   feelpp_add_test( ${TEST} )
 
