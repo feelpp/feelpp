@@ -229,9 +229,15 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
     double mu = option(_name="mu").template as<value_type>();
 
+    std::string u1_str = option(_name="2D.u_exact_x").template as<std::string>();
+    std::string u2_str = option(_name="2D.u_exact_y").template as<std::string>();
+    std::string p_str = option(_name="2D.p_exact").template as<std::string>();
+    LOG(INFO) << "ux = " << u1_str;
+    LOG(INFO) << "uy = " << u2_str;
+    LOG(INFO) << "p = " << p_str;
     auto vars=symbols<Dim>();
-    auto u1 = parse( option(_name="2D.u_exact_x").template as<std::string>(), vars );
-    auto u2 = parse( option(_name="2D.u_exact_y").template as<std::string>(), vars );
+    auto u1 = parse( u1_str, vars );
+    auto u2 = parse( u2_str, vars );
     ex u3;
     if ( Dim == 3 )
         u3 = parse( option(_name="2D.u_exact_z").template as<std::string>(), vars );
@@ -240,14 +246,15 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         u_exact_g = u1,u2;
     else
         u_exact_g = u1,u2,u3;
-    auto p_exact_g = parse( option(_name="2D.p_exact").template as<std::string>(), vars );
+    auto p_exact_g = parse( p_str, vars );
 
+    LOG(INFO) << "u_exact = " << u_exact_g;
+    LOG(INFO) << "p_exact = " << p_exact_g;
 
-
-    auto u_exact = expr<Dim,1,Dim>( u_exact_g, vars );
+    auto u_exact = expr<Dim,1,2>( u_exact_g, vars );
     auto p_exact = expr( p_exact_g, vars );
 	auto f_g = -mu*laplacian( u_exact_g, vars ) + grad( p_exact_g, vars ).transpose();
-    auto f = expr<Dim,1,Dim>( f_g, vars );
+    auto f = expr<Dim,1,2>( f_g, vars );
     LOG(INFO) << "f = " << f_g << "\n";
     auto beta=u_exact;
 
@@ -401,14 +408,17 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << "[stokes] matrix NNZ "<< nnz << "\n";
     M_stats.put( "n.matrix.nnz",nnz );
     double u_errorL2 = normL2( _range=elements( mesh ), _expr=trans( idv( u )-u_exact ) );
-    double u_exactL2 = normL2( _range=elements( mesh ), _expr=trans( u_exact )*( u_exact ) );
+    //double u_exactL2 = normL2( _range=elements( mesh ), _expr=u_exact );
+    double u_exactL2 = integrate( _range=elements(mesh), _expr=trans(u_exact)*u_exact).evaluate()(0,0);
+    LOG(INFO) << "u_exactL2 = " << u_exactL2;
     LOG(INFO) << "||u_error_rel||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";
     LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
     M_stats.put( "e.l2.u",math::sqrt( u_errorL2 ) );
     M_stats.put( "e.l2.urel",math::sqrt( u_errorL2/u_exactL2 ) );
 
-    double u_errorsemiH1 = normL2( _range=elements( mesh ), _expr=trace( ( gradv( u )-gradu_exact ) ) );
-    double u_exactsemiH1 = normL2( _range=elements( mesh ), _expr=trace( ( gradu_exact )*trans( gradu_exact ) ) );
+    double u_errorsemiH1 = normL2( _range=elements( mesh ), _expr=gradv( u )-gradu_exact );
+    double u_exactsemiH1 = normL2( _range=elements( mesh ), _expr= gradu_exact );
+    LOG(INFO) << "u_exactsemiH1 = " << u_exactsemiH1;
     double u_error_rel_H1 = math::sqrt( ( u_errorL2+u_errorsemiH1 )/( u_exactL2+u_exactsemiH1 ) );
     double u_error_H1 = math::sqrt( u_errorL2+u_errorsemiH1 );
     LOG(INFO) << "||u_error||_1= " << u_error_H1 << "\n";
@@ -418,6 +428,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     double p_errorL2 = normL2( _range=elements( mesh ), _expr=( idv( p )-( p_exact-mean_pexact ) ) );
     double p_exactL2 = normL2( _range=elements( mesh ), _expr=( p_exact-mean_pexact ) );
+    LOG(INFO) << "p_exactL2=" << p_exactL2;
     LOG(INFO) << "||p_error_rel||_2 = " << math::sqrt( p_errorL2/p_exactL2 ) << "\n";
     LOG(INFO) << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
     M_stats.put( "e.l2.prel",math::sqrt( p_errorL2/p_exactL2 ) );
