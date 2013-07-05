@@ -161,7 +161,8 @@ int main( int argc, char** argv )
     //benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "3D-P2P1-Hypercube" ) );
     //benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "3D-P2P1-Simplex") );
 
-    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" )( "d.solver" ) );
+    //benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" )( "d.solver" ) );
+benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" ));
 
     benchmark.run();
     benchmark.printStats( std::cout );
