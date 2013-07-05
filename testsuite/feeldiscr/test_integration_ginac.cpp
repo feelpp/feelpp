@@ -48,9 +48,9 @@ BOOST_AUTO_TEST_SUITE( ginacsuite )
 typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
 //typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( ginacint, T, dim_types )
 {
-    BOOST_TEST_MESSAGE( "check 1 vf::sum and vf::evaluate for dim = " << T::value << "\n" );
+    BOOST_TEST_MESSAGE( "check 1 ginac int  = " << T::value << "\n" );
     typedef Mesh<Simplex<T::value,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -63,12 +63,17 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     auto P1h = Pch<1>( mesh );
-    auto vars = symbols<T::value>();
+    //auto vars = symbols<T::value>();
+    symbol x("x"), y ("y");
 
-    auto f1g = vars[0];auto f2g = vars[1];
-    auto f1= expr( f1g, vars ), f2 = expr(f2g, vars);
-    auto xg = mean(_range=elements(mesh), _expr=f1 )(0,0);
-    auto yg = mean(_range=elements(mesh), _expr=f2 )(0,0);
+    //auto f1g = vars[0];auto f2g = vars[1];
+    ex f1g = sin(x)/y ;
+    ex f2g = x*cos(y);
+    std::vector<symbol> s = {x,y};
+    auto f1= expr( f1g, s, "a" );
+    auto f2 = expr(f2g, s, "b");
+    auto xg = integrate(_range=elements(mesh), _expr=f1 ).evaluate()(0,0);
+    auto yg = integrate(_range=elements(mesh), _expr=f2 ).evaluate()(0,0);
 
     BOOST_CHECK_CLOSE( xg, 0.5, 1e-10 );
     BOOST_CHECK_CLOSE( yg, 0.5, 1e-10 );
