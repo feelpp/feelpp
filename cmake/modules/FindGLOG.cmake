@@ -32,11 +32,15 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   ${CMAKE_BINARY_DIR}/contrib/glog/include
   $ENV{FEELPP_DIR}/include
   $ENV{FEELPP_DIR}/include/feel
+  NO_DEFAULT_PATH
+  )
+# try installed version
+FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   /usr/include/feel
   /usr/local/include/feel
   /opt/local/include/feel
-  NO_DEFAULT_PATH
   )
+
 message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
 
 
@@ -75,6 +79,8 @@ FIND_LIBRARY(GLOG_LIBRARY
   $ENV{FEELPP_DIR}/lib
   NO_DEFAULT_PATH
   )
+FIND_LIBRARY(GLOG_LIBRARY  NAMES glog feelpp_glog   )
+
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )
 
