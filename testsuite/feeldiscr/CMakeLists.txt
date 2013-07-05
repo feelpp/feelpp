@@ -3,7 +3,9 @@ foreach(TEST element elementminmax project bdf interpolation integration  integr
     auto_order_integrate interp_twomesh submesh disc vect_comp operatorinterpolation normal3d aitken
     form_interpolation integration_opt lift
     wire_basket solve_leak stencil
-    evaluator element_serialize lambda trace operatorlinearfree functionallinearfree)
+    evaluator element_serialize lambda trace operatorlinearfree functionallinearfree
+    lowerdim_entity
+    )
 
   feelpp_add_test( ${TEST} )
 

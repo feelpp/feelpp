@@ -114,8 +114,8 @@ if ( EXISTS ${FEELPP_CTEST_CONFIG} )
 endif()
 
 #Check the compiler
-if (${FEELPP_CXXNAME} MATCHES "g\\+\\+-*")
-  message("G++")
+if (${FEELPP_CXXNAME} MATCHES "gcc*")
+  message("GCC")
   if (DEFINED GCC_MAKE_ARGS)
     set(MAKE_ARGS "${GCC_MAKE_ARGS}")
   endif()
@@ -272,6 +272,8 @@ set(CTEST_INITIAL_CACHE "CMAKE_CXX_COMPILER:STRING=${FEELPP_CXX}")
 set(CTEST_SITE "${FEELPP_SITE}")
 # build name
 set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
+# string(REPLACE "+" "%2B" CTEST_BUILD_NAME ${CTEST_BUILD_NAME})
+# set(CTEST_BUILD_NAME "${FEELPP_BUILD_STRING}-${FEELPP_CXXNAME}")
 # should ctest wipe the binary tree before running
 #SET(CTEST_START_WITH_EMPTY_BINARY_DIRECTORY TRUE)
 
