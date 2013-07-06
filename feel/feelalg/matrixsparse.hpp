@@ -114,6 +114,8 @@ public:
      */
     MatrixSparse ();
 
+    MatrixSparse( WorldComm const& worldComm );
+
     MatrixSparse( DataMap const& dmRow, DataMap const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
@@ -726,6 +728,10 @@ public:
         sqrt(*_m);
     }
 
+    virtual void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+
+    virtual void matInverse ( MatrixSparse<value_type> &Inv );
+
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -780,6 +786,15 @@ MatrixSparse<T>::MatrixSparse () :
     _M_is_initialized( false ),
     M_mprop( NON_HERMITIAN )
 {}
+
+template <typename T>
+inline
+MatrixSparse<T>::MatrixSparse ( WorldComm const& worldComm ) :
+    M_worldComm( worldComm ),
+    _M_is_initialized( false ),
+    M_mprop( NON_HERMITIAN )
+{}
+
 
 template <typename T>
 inline
@@ -881,6 +896,23 @@ void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m ) const
               << std::endl;
     FEELPP_ASSERT( 0 ).error( "invalid call" );
 }
+
+template <typename T>
+void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+template <typename T>
+void MatrixSparse<T>::matInverse ( MatrixSparse<value_type> &Inv )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
 
 } // Feel
 

@@ -92,7 +92,7 @@ public:
 
     MatrixEigenDense();
 
-    MatrixEigenDense( size_type r, size_type c );
+    MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixEigenDense( MatrixEigenDense const & m );
 
@@ -357,6 +357,32 @@ public:
      * \f$\texttt{this} = \_a*\_X + \texttt{this} \f$.
      */
     void addMatrix( value_type v, MatrixSparse<value_type>& _m );
+
+
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+
+    /**
+     * Multiply this by a Sparse matrix \p In,
+     * stores the result in \p Res:
+     * \f$ Res = \texttt{this}*In \f$.
+     */
+    void matInverse ( MatrixSparse<value_type> &Inv );
+
+    /**
+     * This function creates a matrix called "submatrix" which is defined
+     * by the row and column indices given in the "rows" and "cols" entries.
+     * Currently this operation is only defined for the PetscMatrix type.
+     */
+    void createSubmatrix( MatrixSparse<T>& submatrix,
+                          const std::vector<size_type>& rows,
+                          const std::vector<size_type>& cols ) const;
+
+
 
     /**
      * Add the full matrix to the

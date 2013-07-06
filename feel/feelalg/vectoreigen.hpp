@@ -98,11 +98,11 @@ public:
 
     VectorEigen();
 
-    VectorEigen( size_type __s );
+    VectorEigen( size_type __s, WorldComm const& _worldComm = Environment::worldComm() );
 
     VectorEigen( DataMap const& dm );
 
-    VectorEigen( size_type __s, size_type __n_local );
+    VectorEigen( size_type __s, size_type __n_local, WorldComm const& _worldComm = Environment::worldComm() );
 
     VectorEigen( VectorEigen const & m );
 
