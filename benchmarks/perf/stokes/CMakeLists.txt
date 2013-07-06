@@ -70,7 +70,7 @@ endforeach()
 endforeach()
 
 feelpp_add_application( perf_stokes_1 SRCS bench.cpp ${taylor_hood}  CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_1 DEPS gen_feel_perf_stokes)
-feelpp_add_application( perf_stokes_kovasnay SRCS bench.cpp ${taylor_hood}  CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_KOVASNAY DEPS gen_feel_perf_stokes)
+feelpp_add_application( perf_stokes_kovasnay SRCS bench.cpp ${taylor_hood}  CFG stokes.cfg poiseuille.cfg kovasnay.cfg ethiersteinmann.cfg  LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_KOVASNAY DEPS gen_feel_perf_stokes)
 feelpp_add_application( perf_stokes_ethiersteinmann SRCS bench.cpp ${taylor_hood3} CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_ETHIERSTEINMANN DEPS gen_feel_perf_stokes)
 feelpp_add_application( perf_stokes_bercovierengelman SRCS bench.cpp ${taylor_hood}  CFG stokes.cfg LINK_LIBRARIES ${FEELPP_LIBRARIES} DEFS FEELPP_SOLUTION_BERCOVIERENGELMAN DEPS gen_feel_perf_stokes)
 
