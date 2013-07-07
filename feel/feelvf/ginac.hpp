@@ -229,7 +229,7 @@ namespace Feel
                 typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
                 // change 0 into rank
                 typedef typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<0> >,
@@ -545,7 +545,7 @@ namespace Feel
                 typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
                 typedef typename mn_to_shape<gmc_type::nDim,M,N>::type shape;
@@ -703,4 +703,3 @@ namespace Feel
     } // vf
 } // Feel
 #endif /* __Ginac_H */
-

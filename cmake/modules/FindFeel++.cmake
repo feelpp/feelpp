@@ -169,7 +169,9 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 # generate different c++ codes and undefined references at link time.
 # in a short future, this should not be necessary anymore
 ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
-
+IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
+  ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+endif()
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
 
