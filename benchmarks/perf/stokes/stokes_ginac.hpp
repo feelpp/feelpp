@@ -155,8 +155,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         nparts = option(_name="benchmark.partitions").template as<int>();
 
 
-    this->changeRepository( boost::format( "perf/%1%/%2%/%3%/h_%4%/l_%5%/parts_%6%/" )
+    this->changeRepository( boost::format( "%1%/%2%/%3%/%4%/h_%5%/l_%6%/parts_%7%/" )
                             % this->about().appName()
+                            % option(_name="testcase").template as<std::string>()
                             % convex_type::name()
                             % M_basis_name
                             % meshSizeInit()
@@ -229,9 +230,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     bool add_convection = ( math::abs( betacoeff  ) > 1e-10 );
     double mu = option(_name="mu").template as<value_type>();
 
-    std::string u1_str = option(_name="2D.u_exact_x").template as<std::string>();
-    std::string u2_str = option(_name="2D.u_exact_y").template as<std::string>();
-    std::string p_str = option(_name="2D.p_exact").template as<std::string>();
+    std::string dim_str =  boost::str( boost::format( "%1%D" ) % Dim );
+    std::string u1_str = option(_name="u_exact_x",_prefix=dim_str).template as<std::string>();
+    std::string u2_str = option(_name="u_exact_y",_prefix=dim_str).template as<std::string>();
+    std::string p_str = option(_name="p_exact",_prefix=dim_str).template as<std::string>();
     LOG(INFO) << "ux = " << u1_str;
     LOG(INFO) << "uy = " << u2_str;
     LOG(INFO) << "p = " << p_str;
@@ -240,7 +242,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto u2 = parse( u2_str, vars );
     ex u3;
     if ( Dim == 3 )
-        u3 = parse( option(_name="2D.u_exact_z").template as<std::string>(), vars );
+        u3 = parse( option(_name="u_exact_z",_prefix=dim_str).template as<std::string>(), vars );
     matrix u_exact_g = matrix(Dim,1);
     if ( Dim == 2 )
         u_exact_g = u1,u2;
@@ -251,10 +253,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << "u_exact = " << u_exact_g;
     LOG(INFO) << "p_exact = " << p_exact_g;
 
-    auto u_exact = expr<Dim,1,2>( u_exact_g, vars, "u_exact" );
-    auto p_exact = expr( p_exact_g, vars, "p_exact" );
+    auto u_exact = expr<Dim,1,7>( u_exact_g, vars, "u_exact" );
+    auto p_exact = expr<7>( p_exact_g, vars, "p_exact" );
 	auto f_g = -mu*laplacian( u_exact_g, vars ) + grad( p_exact_g, vars ).transpose();
-    auto f = expr<Dim,1,2>( f_g, vars, "f" );
+    auto f = expr<Dim,1,7>( f_g, vars, "f" );
     LOG(INFO) << "f = " << f_g << "\n";
     auto beta=u_exact;
 
@@ -263,8 +265,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto divu_exact_g = div( u_exact_g, vars );
     LOG(INFO) << "gradu_exact_g = " << gradu_exact_g;
     LOG(INFO) << "divu_exact_g = " << divu_exact_g;
-    auto gradu_exact = expr<Dim,Dim,2>( gradu_exact_g, vars, "gradu_exact" );
-    auto divu_exact = expr<1,1,2>( divu_exact_g, vars, "divu_exact" );
+    auto gradu_exact = expr<Dim,Dim,7>( gradu_exact_g, vars, "gradu_exact" );
+    auto divu_exact = expr<1,1,7>( divu_exact_g, vars, "divu_exact" );
     auto convection=gradu_exact*beta;
 
     boost::mpi::timer subt;
