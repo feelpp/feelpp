@@ -53,9 +53,10 @@ makeOptions()
         ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
         ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
         ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
-        ( "2D.u_exact_x", Feel::po::value<std::string>()->default_value( "" ), "" )
-        ( "2D.u_exact_y", Feel::po::value<std::string>()->default_value( "" ), "" )
-        ( "2D.u_exact_z", Feel::po::value<std::string>()->default_value( "" ), "" )
+        ( "testcase", Feel::po::value<std::string>()->default_value( "default" ), "name of the testcase" )
+        ( "2D.u_exact_x", Feel::po::value<std::string>()->default_value( "" ), "velocity first component" )
+        ( "2D.u_exact_y", Feel::po::value<std::string>()->default_value( "" ), "velocity second component" )
+        ( "2D.u_exact_z", Feel::po::value<std::string>()->default_value( "" ), "velocity third component" )
         ( "2D.p_exact", Feel::po::value<std::string>()->default_value( "" ), "" )
         ( "3D.u_exact_x", Feel::po::value<std::string>()->default_value( "" ), "" )
         ( "3D.u_exact_y", Feel::po::value<std::string>()->default_value( "" ), "" )
@@ -145,6 +146,11 @@ int main( int argc, char** argv )
     Environment env( _argc=argc, _argv=argv,
                      _desc=cmdoptions,
                      _about=makeAbout() );
+
+    Environment::changeRepository( boost::format( "%1%/%2%" )
+                                   % makeAbout().appName()
+                                   % option(_name="testcase").template as<std::string>() );
+
 
     std::ofstream out;
     if ( env.worldComm().rank() == 0 )
