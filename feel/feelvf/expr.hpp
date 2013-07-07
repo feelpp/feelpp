@@ -293,7 +293,7 @@ public:
         typedef typename LambdaExpr1::value_type value_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
 
@@ -1280,7 +1280,7 @@ public:
         typedef typename Cst<T>::value_type value_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
 
@@ -1454,7 +1454,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
         static const bool theshape = ( shape::M == gmc_type::nDim && shape::N == 1 );
@@ -1969,7 +1969,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
@@ -2164,7 +2164,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
@@ -2372,7 +2372,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename l_type::shape shape;
 
@@ -2800,7 +2800,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<rank>,
