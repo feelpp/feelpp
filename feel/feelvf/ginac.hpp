@@ -147,7 +147,7 @@ namespace Feel
                 M_fun( fun ),
                 M_syms( syms),
                 M_cfun(),
-                M_filename(filename)
+                M_filename((fs::current_path()/filename).string())
             {
                 DVLOG(2) << "Ginac constructor with expression_type \n";
                 GiNaC::lst exprs(fun);
@@ -250,7 +250,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
                     M_nsyms( expr.syms().size() )
                 {}
 
@@ -259,7 +259,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
                     M_nsyms( expr.syms().size() )
                 {}
 
@@ -267,7 +267,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
                     M_nsyms( expr.syms().size() )
                 {
                 }
@@ -448,7 +448,7 @@ namespace Feel
                 M_fun( fun.evalm() ),
                 M_syms( syms),
                 M_cfun(),
-                M_filename(filename)
+                M_filename((fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -462,7 +462,7 @@ namespace Feel
                 M_fun(fun.evalm()),
                 M_syms( syms),
                 M_cfun(),
-                M_filename(filename)
+                M_filename((fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -493,8 +493,8 @@ namespace Feel
                 {
                     DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
                     boost::mpi::communicator world;
-                    std::string pid = boost::lexical_cast<std::string>(world.rank());
-                    std::string filenameWithSuffix = M_filename + pid + ".so";
+                    //std::string pid = boost::lexical_cast<std::string>(world.rank());
+                    std::string filenameWithSuffix = M_filename + ".so";
                     GiNaC::link_ex(filenameWithSuffix, M_cfun);
                 }
             }
@@ -562,7 +562,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
                     M_nsyms( expr.syms().size() )
                 {}
 
@@ -571,7 +571,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
                     M_nsyms( expr.syms().size() )
                 {}
 
@@ -579,7 +579,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
                     M_nsyms( expr.syms().size() )
                 {
                 }
@@ -611,6 +611,7 @@ namespace Feel
                             for( int k = gmc_type::nDim; k < xi.size(); ++k )
                                 xi[k] = 0;
                             M_fun(&ni,xi.data(),&no,M_y[q].data());
+;
                         }
 
                 }
