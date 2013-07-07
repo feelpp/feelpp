@@ -386,7 +386,7 @@ namespace Feel
         Expr< GinacEx<Order> >
         expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ));
+            return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym, filename ));
         }
 
         template<int Order>
@@ -394,7 +394,7 @@ namespace Feel
         Expr< GinacEx<Order> >
         expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename) );
+            return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(s,lsym), lsym, filename) );
         }
 
         template<int M=1, int N=1, int Order = 2>
