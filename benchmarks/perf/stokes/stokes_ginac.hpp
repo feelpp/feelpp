@@ -251,10 +251,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << "u_exact = " << u_exact_g;
     LOG(INFO) << "p_exact = " << p_exact_g;
 
-    auto u_exact = expr<Dim,1,2>( u_exact_g, vars );
-    auto p_exact = expr( p_exact_g, vars );
+    auto u_exact = expr<Dim,1,2>( u_exact_g, vars, "u_exact" );
+    auto p_exact = expr( p_exact_g, vars, "p_exact" );
 	auto f_g = -mu*laplacian( u_exact_g, vars ) + grad( p_exact_g, vars ).transpose();
-    auto f = expr<Dim,1,2>( f_g, vars );
+    auto f = expr<Dim,1,2>( f_g, vars, "f" );
     LOG(INFO) << "f = " << f_g << "\n";
     auto beta=u_exact;
 
@@ -263,8 +263,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto divu_exact_g = div( u_exact_g, vars );
     LOG(INFO) << "gradu_exact_g = " << gradu_exact_g;
     LOG(INFO) << "divu_exact_g = " << divu_exact_g;
-    auto gradu_exact = expr<Dim,Dim,2>( gradu_exact_g, vars );
-    auto divu_exact = expr<1,1,2>( divu_exact_g, vars );
+    auto gradu_exact = expr<Dim,Dim,2>( gradu_exact_g, vars, "gradu_exact" );
+    auto divu_exact = expr<1,1,2>( divu_exact_g, vars, "divu_exact" );
     auto convection=gradu_exact*beta;
 
     boost::mpi::timer subt;
