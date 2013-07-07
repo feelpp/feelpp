@@ -29,8 +29,8 @@
 #include <sstream>
 #include <boost/timer.hpp>
 
-#define BOOST_TEST_MODULE ginac integration testsuite
-#include <testsuite/testsuite.hpp>
+//#define BOOST_TEST_MODULE ginac integration testsuite
+//#include <testsuite/testsuite.hpp>
 
 #include <boost/mpl/list.hpp>
 
@@ -41,6 +41,7 @@
 
 using namespace Feel;
 
+#if 0
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( ginacsuite )
@@ -72,8 +73,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( ginacint, T, dim_types )
     std::vector<symbol> s = {x,y};
     auto f1= expr( f1g, s, "a" );
     auto f2 = expr(f2g, s, "b");
-    auto xg = integrate(_range=elements(mesh), _expr=f1 ).evaluate()(0,0);
-    auto yg = integrate(_range=elements(mesh), _expr=f2 ).evaluate()(0,0);
+    auto xg = integrate(_range=elements(mesh), _expr=cst(2.)*f1/2. ).evaluate()(0,0);
+    auto yg = integrate(_range=elements(mesh), _expr=cst(2.)*f2/2. ).evaluate()(0,0);
 
     BOOST_CHECK_CLOSE( xg, 0.5, 1e-10 );
     BOOST_CHECK_CLOSE( yg, 0.5, 1e-10 );
@@ -83,7 +84,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( ginacint, T, dim_types )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#if 0
+#if 1
 int BOOST_TEST_CALL_DECL
 main( int argc, char* argv[] )
 {
@@ -91,6 +92,58 @@ main( int argc, char* argv[] )
     int ret = ::boost::unit_test::unit_test_main( &init_unit_test, argc, argv );
 
     return ret;
+}
+
+#endif
+#else
+void ginacint()
+{
+    using namespace Feel;
+    typedef Mesh<Simplex<2,1> > mesh_type;
+    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+                                        _desc=domain( _name=( boost::format( "hypercube-%1%" )  % 2 ).str() ,
+                                                _usenames=true,
+                                                _addmidpoint=false,
+                                                _shape="hypercube",
+                                                _h=0.2 ),
+                                        _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+
+    auto P1h = Pch<1>( mesh );
+    auto vars = symbols<2>();
+    //symbol x("x"), y ("y");
+
+    //auto f1g = vars[0];auto f2g = vars[1];
+    //ex f1g = x;
+    //ex f2g = y;
+    //std::vector<symbol> s = {x,y};
+    auto f1g = parse( "x", vars );
+    auto f2g = parse( "y", vars );
+    auto f1= expr( f1g, vars, "a" );
+    auto f2 = expr("y", vars, "b");
+    auto xg = integrate(_range=elements(mesh), _expr=cst(2.)*f1/2. ).evaluate()(0,0);
+    auto yg = integrate(_range=elements(mesh), _expr=cst(2.)*f2/2. ).evaluate()(0,0);
+
+    CHECK( math::abs(xg- 0.5)< 1e-10 ) << "check failed : xg = " << xg;
+    CHECK( math::abs(yg- 0.5)< 1e-10 ) << "check failed : yg = " << yg;
+    LOG(INFO) << "test done\n";
+
+    matrix u_exact_g = matrix(2,1);
+    u_exact_g = f1g,f2g;
+    auto u_exact = expr<2,1,2>( u_exact_g, vars, "u_exact" );
+    auto Xg = integrate(_range=elements(mesh), _expr=u_exact ).evaluate();
+    LOG(INFO) << "Xg = " << Xg;
+    CHECK( math::abs(Xg(0,0) - 0.5)< 1e-10 ) << "check failed : xg = " << Xg(0,0);
+    CHECK( math::abs(Xg(1,0) - 0.5)< 1e-10 ) << "check failed : yg = " << Xg(1,0);
+}
+
+int main(int argc, char**argv )
+{
+    using namespace Feel;
+    Environment env( Feel::_argc=argc,
+                     Feel::_argv=argv );
+    ginacint();
 }
 
 #endif
