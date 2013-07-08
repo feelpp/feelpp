@@ -220,10 +220,10 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     //# marker6 #
     // total stress tensor (trial)
-    auto SigmaNt = -idt( p )*N()+mu*dnt( u );
+    auto SigmaNt = -idt( p )*N()+mu*gradt( u )*N();
 
     // total stress tensor (test)
-    auto SigmaN = -id( p )*N()+mu*dn( u );
+    auto SigmaN = -id( p )*N()+mu*grad( u )*N();
     //# endmarker6 #
 
     double betacoeff = option(_name="beta").template as<value_type>();
@@ -278,7 +278,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     rhs = integrate( elements( mesh ), trans( f )*id( v ) );
     M_stats.put( "t.assembly.rhs.source",subt.elapsed() );
     subt.restart();
-
+    rhs.vectorPtr()->printMatlab("f.m");
 
     if ( add_convection )
     {
@@ -319,7 +319,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     subt.restart();
     t.restart();
 
-    a =integrate( _range=elements( mesh ),_expr=mu*( inner( gradt( u ),grad( v ) ) ) );
+    a =integrate( _range=elements( mesh ),_expr=mu*( trace( trans(gradt( u ))*grad( v ) ) ) );
     M_stats.put( "t.assembly.lhs.diffusion",subt.elapsed() );
     LOG(INFO) << "   o time for diffusion terms: " << subt.elapsed() << "\n";
     subt.restart();
@@ -332,7 +332,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
         subt.restart();
     }
     a +=integrate( _range=elements( mesh ),_expr=-div( v )*idt( p ) );
-    a+=integrate( _range=elements( mesh ),_expr=divt( u )*id( q ) );
+    a+=integrate( _range=elements( mesh ),_expr=-divt( u )*id( q ) );
     M_stats.put( "t.assembly.lhs.up",subt.elapsed() );
     LOG(INFO) << "   o time for velocity/pressure terms: " << subt.elapsed() << "\n";
     subt.restart();
@@ -409,9 +409,9 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     LOG(INFO) << "[stokes] matrix NNZ "<< nnz << "\n";
     M_stats.put( "n.matrix.nnz",nnz );
-    double u_errorL2 = normL2( _range=elements( mesh ), _expr=trans( idv( u )-u_exact ) );
+    double u_errorL2 = normL2( _range=elements( mesh ), _expr=( idv( u )-u_exact ) );
     //double u_exactL2 = normL2( _range=elements( mesh ), _expr=u_exact );
-    double u_exactL2 = integrate( _range=elements(mesh), _expr=trans(u_exact)*u_exact).evaluate()(0,0);
+    double u_exactL2 = integrate( _range=elements(mesh), _expr=u_exact).evaluate()(0,0);
     LOG(INFO) << "u_exactL2 = " << u_exactL2;
     LOG(INFO) << "||u_error_rel||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";
     LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
@@ -448,8 +448,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
     q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
-    LOG(INFO) << "||proj_u - u_ex||_2 = " << normL2( _range=elements( mesh ), _expr=trans( idv( v )-u_exact ) );
-    LOG(INFO) << "||proj_p - p_ex||_2 = " << normL2( _range=elements( mesh ), _expr=trans( idv( q )-p_exact ) );
+    LOG(INFO) << "||proj_u - u_ex||_2 = " << normL2( _range=elements( mesh ), _expr=( idv( v )-u_exact ) );
+    LOG(INFO) << "||proj_p - p_ex||_2 = " << normL2( _range=elements( mesh ), _expr=( idv( q )-p_exact ) );
     this->exportResults( U, V );
 
 } // Stokes::run

@@ -135,6 +135,7 @@ int main( int argc, char** argv )
     std::vector<std::string> boptions = boost::assign::list_of( "2D-CR1P0-Simplex" )( "2D-CR1P0-Hypercube" )
         ( "2D-P2P1-Simplex" )( "2D-P2P1-Hypercube" )
         ( "3D-P2P1-Simplex" )( "3D-P2P1-Hypercube" )
+        ( "2D-P3P2-Simplex" )( "2D-P3P2-Hypercube" )
         ( "2D-P5P4-Simplex" )( "2D-P5P4-Hypercube" )
         ( "3D-P5P4-Simplex" )( "3D-P5P4-Hypercube" );
     auto cmdoptions = makeOptions();
@@ -160,6 +161,8 @@ int main( int argc, char** argv )
     //benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex"  ) );
     //benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube"  ) );
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex" ) );
+    //benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube") );
+    benchmark.add( new Stokes<2, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>( "2D-P3P2-Simplex" ) );
     //benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube") );
     //benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "2D-P5P4-Simplex" ) );
     //benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Hypercube>( "2D-P5P4-Hypercube" ) );
