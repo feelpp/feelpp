@@ -269,6 +269,21 @@ public:
         }
 
         /**
+         * \brief create add an element to a sampling
+         * \param mu : element_type
+         */
+        void addElement( element_type const mu )
+        {
+            CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                super::push_back( mu );
+            }
+
+            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+        }
+
+        /**
          * \brief create a sampling with random elements
          * \param N the number of samples
          */
@@ -688,6 +703,7 @@ public:
             {
                 return M_superindices[ index ];
             }
+
     private:
         Sampling() {}
     private:
