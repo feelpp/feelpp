@@ -1087,16 +1087,17 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     DVLOG(2) << "element2 process id: " << iv->processId() << "\n";
                 }
 
-                FEELPP_ASSERT( (__fit->processId() == __fit->proc_first()) ||
-                               (__fit->processId() == __fit->proc_second()) )
-                    ( __fit->processId() )( __fit->proc_first() )( __fit->proc_second() ).error( "invalid process id" );
+                CHECK( (__fit->processId() == __fit->proc_first()) ||
+                       (__fit->processId() == __fit->proc_second()) )
+                    << "invalid process id " << __fit->processId() << " with element proc first = " <<  __fit->proc_first()
+                    << " and element proc second " << __fit->proc_second();
             }
 
-            FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face error" );
+            LOG_IF( WARNING, !iv->facePtr( j ) ) << "invalid element " << iv->id() << " with local face id " << j;
         } // face loop
     } // element loop
 
-#if 0
+
     face_iterator f_it = this->beginFace();
     face_iterator f_en = this->endFace();
 
@@ -1112,10 +1113,8 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     }
 
-#endif
 
-
-    VLOG(2) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
+    VLOG(2) << "element/face connectivity : " << ti.elapsed() << "\n";
     ti.restart();
 }
 
