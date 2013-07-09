@@ -147,7 +147,7 @@ namespace Feel
                 M_fun( fun ),
                 M_syms( syms),
                 M_cfun(),
-                M_filename((fs::current_path()/filename).string())
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 DVLOG(2) << "Ginac constructor with expression_type \n";
                 GiNaC::lst exprs(fun);
@@ -448,7 +448,7 @@ namespace Feel
                 M_fun( fun.evalm() ),
                 M_syms( syms),
                 M_cfun(),
-                M_filename((fs::current_path()/filename).string())
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -462,7 +462,7 @@ namespace Feel
                 M_fun(fun.evalm()),
                 M_syms( syms),
                 M_cfun(),
-                M_filename((fs::current_path()/filename).string())
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
