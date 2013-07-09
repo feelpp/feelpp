@@ -159,6 +159,8 @@ int main( int argc, char* argv[] )
             std::cin >> exact;
             std::cout << std::flush;
         }
+    else
+      exact = env.vm()["exact"].as<std::string>();
 
     switch (dim) {
     case(1) : {
