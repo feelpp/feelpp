@@ -71,7 +71,7 @@ endforeach()
 
 feelpp_add_application( perf_stokes_convergence SRCS bench.cpp ${taylor_hood}
   CFG stokes.cfg poiseuille.cfg kovasnay.cfg ethiersteinmann.cfg
-  GEO poiseuille.geo
+  GEO poiseuille.geo ethiersteinmann.geo kovasnaystraight1.geo kovasnaystraight2.geo kovasnay_curve.geo straighttube.geo
   LINK_LIBRARIES ${FEELPP_LIBRARIES}
   DEPS gen_feel_perf_stokes)
 
