@@ -455,12 +455,12 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     auto Dv= gradv(v);//sym
     auto SigmaNi =-idv(p)*N()+mu*Du*N();//*2
 
-    //auto pI = integrate(markedfaces( mesh,"wallbas") , -idv(p)*N(), _quad=_Q<30>()).evaluate();
+    //auto pI = integrate(markedfaces( mesh,"bottomwall") , -idv(p)*N(), _quad=_Q<30>()).evaluate();
     auto pI = integrate(markedfaces( mesh,2) , -idv(p)*N(), _quad=_Q<30>()).evaluate();
     std::cout.precision(17);
     std::cout << "pI1 = "<<pI(0,0) << "\n" ;
     std::cout << "pI2 = "<<pI(1,0) << "\n" ;
-    //auto gradient = integrate(markedfaces( mesh,"wallbas") , mu*Du*N(), _quad=_Q<30>()).evaluate();
+    //auto gradient = integrate(markedfaces( mesh,"bottomwall") , mu*Du*N(), _quad=_Q<30>()).evaluate();
     auto gradient = integrate(markedfaces( mesh,2) , mu*Du*N(), _quad=_Q<30>()).evaluate();
     std::cout.precision(17);
     std::cout << "mu*Gradu.n1 = "<<gradient(0,0) << "\n" ;
@@ -478,7 +478,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     //**************  Somme des integrales  ******************
     double lambda2 = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
     auto v1=vec(cst(1.), cst(0.));
-    //v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, "wallbas"), v1 );
+    //v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, "bottomwall"), v1 );
     v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), v1 );
 
     auto sum1 =integrate( elements( mesh ),inner( -f,idv( v ) ), _quad=_Q<30>()).evaluate();
@@ -492,7 +492,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
 
     auto v2=vec(cst(0.), cst(1.));
-    //v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, "wallbas"), v2 );
+    //v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, "bottomwall"), v2 );
     v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), v2 );
     auto sum2 =integrate( elements( mesh ),inner( -f,idv( v ) ), _quad=_Q<30>()).evaluate();
     sum2 +=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p), _quad=_Q<30>()).evaluate();//*2
@@ -506,7 +506,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
 
     auto SigmaNNEx =-p_exact*N()+mu*gradu_exact*N();
-    //auto SigmaNEx = integrate( markedfaces(mesh, "wallbas"),SigmaNNEx, _quad=_Q<30>()).evaluate();
+    //auto SigmaNEx = integrate( markedfaces(mesh, "bottomwall"),SigmaNNEx, _quad=_Q<30>()).evaluate();
     auto SigmaNEx = integrate( markedfaces(mesh, 2),SigmaNNEx, _quad=_Q<30>()).evaluate();
 
     std::cout << "||Fex_h-Fapp||_2 = "<< math::sqrt((SigmaNN(0,0)-SigmaNEx(0,0))*(SigmaNN(0,0)-SigmaNEx(0,0))+(SigmaNN(1,0)-SigmaNEx(1,0))*(SigmaNN(1,0)-SigmaNEx(1,0))) << "\n" ;
