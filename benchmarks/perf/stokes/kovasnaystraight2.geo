@@ -27,8 +27,9 @@ Line(4) = {3,4};
 Line Loop(5) = {1,2,3,4};
 Plane Surface(6) = {5};
 Physical Line("inlet") = {1};
-Physical Line("wallbas") = {2};
-Physical Line("wallhaut") = {4};
+Physical Line("bottomwall") = {2};
+Physical Line("topwall") = {4};
+Physical Line("wall") = {2,4};
 Physical Line("outlet") = {3};
 Physical Surface(6) = {6};
 
