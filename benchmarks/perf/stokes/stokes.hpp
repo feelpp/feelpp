@@ -169,7 +169,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
 
     boost::mpi::timer t;
-    auto mesh = loadMesh( _mesh=new mesh_type, _refine=level() );
+    auto mesh = loadMesh( _mesh=new mesh_type, _refine=level()-1 );
 
     M_stats.put( "t.init.mesh",t.elapsed() );
     t.restart();
