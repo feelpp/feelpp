@@ -446,6 +446,76 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     M_stats.put( "e.l2.div_u",math::sqrt( div_u_error_L2 ) );
     LOG(INFO) << "[stokes] ||div(u)||_2=" << math::sqrt( div_u_error_L2 ) << "\n";
 
+
+
+
+
+    //************************** Stress tensor ***********************
+    auto Du= gradv(u);//sym
+    auto Dv= gradv(v);//sym
+    auto SigmaNi =-idv(p)*N()+mu*Du*N();//*2
+
+    //auto pI = integrate(markedfaces( mesh,"bottomwall") , -idv(p)*N(), _quad=_Q<30>()).evaluate();
+    auto pI = integrate(markedfaces( mesh,2) , -idv(p)*N(), _quad=_Q<30>()).evaluate();
+    std::cout.precision(17);
+    std::cout << "pI1 = "<<pI(0,0) << "\n" ;
+    std::cout << "pI2 = "<<pI(1,0) << "\n" ;
+    //auto gradient = integrate(markedfaces( mesh,"bottomwall") , mu*Du*N(), _quad=_Q<30>()).evaluate();
+    auto gradient = integrate(markedfaces( mesh,2) , mu*Du*N(), _quad=_Q<30>()).evaluate();
+    std::cout.precision(17);
+    std::cout << "mu*Gradu.n1 = "<<gradient(0,0) << "\n" ;
+    std::cout << "mu*Gradu.n2 = "<<gradient(1,0) << "\n" ;
+
+    auto SigmaNN = integrate(markedfaces( mesh,2) , SigmaNi, _quad=_Q<30>()).evaluate();
+    std::cout.precision(17);
+    std::cout << " Fapp1 = "<< SigmaNN(0,0) << "\n" ;
+    std::cout << " Fapp2 = "<< SigmaNN(1,0) << "\n" ;
+
+    std::cout << "||Fex-Fapp||_2 = "<< math::sqrt((0-SigmaNN(0,0))*(0-SigmaNN(0,0))+(-0.7540097150-SigmaNN(1,0))*(-0.7540097150-SigmaNN(1,0))) << "\n" ;
+    M_stats.put( "e.l2.surf",math::sqrt((0-SigmaNN(0,0))*(0-SigmaNN(0,0))+(-0.7540097150-SigmaNN(1,0))*(-0.7540097150-SigmaNN(1,0))) );
+
+
+    //**************  Somme des integrales  ******************
+    double lambda2 = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
+    auto v1=vec(cst(1.), cst(0.));
+    //v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, "bottomwall"), v1 );
+    v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), v1 );
+
+    auto sum1 =integrate( elements( mesh ),inner( -f,idv( v ) ), _quad=_Q<30>()).evaluate();
+    sum1 +=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p), _quad=_Q<30>()).evaluate();//*2
+    //sum1 +=integrate( markedfaces( mesh,"inlet"),inner(idv(p)*N()-mu*Du*N(),idv(v)), _quad=_Q<30>()).evaluate();//*2
+    //sum1 +=integrate( markedfaces( mesh,"outlet" ),inner(idv(p)*N()-mu*Du*N(),idv(v)),_quad=_Q<30>()).evaluate();//*2
+    sum1 +=integrate( markedfaces( mesh,1),inner(idv(p)*N()-mu*Du*N(),idv(v)), _quad=_Q<30>()).evaluate();//*2
+    sum1 +=integrate( markedfaces( mesh,3 ),inner(idv(p)*N()-mu*Du*N(),idv(v)),_quad=_Q<30>()).evaluate();//*2
+    std::cout << "Residual1 = "<< sum1 << "\n" ;
+
+
+
+    auto v2=vec(cst(0.), cst(1.));
+    //v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, "bottomwall"), v2 );
+    v=vf::project(Xh->template functionSpace<0>(), markedfaces(mesh, 2), v2 );
+    auto sum2 =integrate( elements( mesh ),inner( -f,idv( v ) ), _quad=_Q<30>()).evaluate();
+    sum2 +=integrate( elements( mesh ),mu*inner( Du,Dv ) - divv( v )*idv( p), _quad=_Q<30>()).evaluate();//*2
+    //sum2 +=integrate( markedfaces( mesh,"inlet" ),inner(idv(p)*N()-mu*Du*N(),idv(v)), _quad=_Q<30>()).evaluate();//*2
+    //sum2 +=integrate( markedfaces( mesh,"outlet" ),inner(idv(p)*vf::N()-mu*Du*N(),idv(v)),_quad=_Q<30>()).evaluate();//*2
+    sum2 +=integrate( markedfaces( mesh,1 ),inner(idv(p)*N()-mu*Du*N(),idv(v)), _quad=_Q<30>()).evaluate();//*2
+    sum2 +=integrate( markedfaces( mesh,3 ),inner(idv(p)*vf::N()-mu*Du*N(),idv(v)),_quad=_Q<30>()).evaluate();//*2
+    std::cout << "Residual2 = "<< sum2 << "\n" ;
+    std::cout << "||Fex-R||_2 = "<< math::sqrt((0-sum1(0,0))*(0-sum1(0,0))+(-0.7540097150-sum2(0,0))*(-0.7540097150-sum2(0,0))) << "\n" ;
+    M_stats.put( "e.l2.volum",math::sqrt((0-sum1(0,0))*(0-sum1(0,0))+(-0.7540097150-sum2(0,0))*(-0.7540097150-sum2(0,0))) );
+
+
+    auto SigmaNNEx =-p_exact*N()+mu*gradu_exact*N();
+    //auto SigmaNEx = integrate( markedfaces(mesh, "bottomwall"),SigmaNNEx, _quad=_Q<30>()).evaluate();
+    auto SigmaNEx = integrate( markedfaces(mesh, 2),SigmaNNEx, _quad=_Q<30>()).evaluate();
+
+    std::cout << "||Fex_h-Fapp||_2 = "<< math::sqrt((SigmaNN(0,0)-SigmaNEx(0,0))*(SigmaNN(0,0)-SigmaNEx(0,0))+(SigmaNN(1,0)-SigmaNEx(1,0))*(SigmaNN(1,0)-SigmaNEx(1,0))) << "\n" ;
+    std::cout << "||Fex_h-R||_2 = "<< math::sqrt((sum1(0,0)-SigmaNEx(0,0))*(sum1(0,0)-SigmaNEx(0,0))+(sum2(0,0)-SigmaNEx(1,0))*(sum2(0,0)-SigmaNEx(1,0))) << "\n" ;
+
+
+    auto u_ex = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
+    auto p_ex = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
+
     v = vf::project( Xh->template functionSpace<0>(), elements( Xh->mesh() ), u_exact );
     q = vf::project( Xh->template functionSpace<1>(), elements( Xh->mesh() ), p_exact );
     LOG(INFO) << "||proj_u - u_ex||_2 = " << normL2( _range=elements( mesh ), _expr=( idv( v )-u_exact ) );
