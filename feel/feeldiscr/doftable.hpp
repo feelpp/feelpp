@@ -246,9 +246,11 @@ public:
         return _M_n_dof_per_face_on_bdy;
     }
 
-    indices_per_element_type indices( size_type id_el ) const
+    indices_per_element_type const& indices( size_type id_el ) const
     {
-        return _M_el_l2g[id_el];
+        auto eit = _M_el_l2g.find( id_el );
+        DCHECK( eit != _M_el_l2g.end() ) << "Invalid element id " << id_el;
+        return eit->second;
     }
 
     size_type getIndicesSize() const
