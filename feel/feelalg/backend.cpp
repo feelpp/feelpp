@@ -146,6 +146,8 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
 template <typename T>
 Backend<T>::~Backend()
 {
+    if ( M_preconditioner )
+        M_preconditioner->clear();
     LOG(INFO) << "Sending delete signal to all observers...\n";
     this->sendDeleteSignal();
     //this->clear ();
