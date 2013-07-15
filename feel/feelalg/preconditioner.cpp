@@ -45,6 +45,7 @@ Preconditioner<T>::build( std::string const& name,
         return preconditioner_ptrtype( new PreconditionerPetsc<T>( name, worldComm ) );
     }
     }
+    return preconditioner_ptrtype();
 }
 
 template <typename T>
