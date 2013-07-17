@@ -308,8 +308,8 @@ class Stencil
 public:
     typedef X1 test_space_ptrtype;
     typedef X2 trial_space_ptrtype;
-    typedef typename X1::value_type test_space_type;
-    typedef typename X2::value_type trial_space_type;
+    typedef typename X1::element_type test_space_type;
+    typedef typename X2::element_type trial_space_type;
     typedef GraphCSR graph_type;
     typedef boost::shared_ptr<graph_type> graph_ptrtype;
     typedef Stencil<X1,X2,RangeIteratorTestType> self_type;

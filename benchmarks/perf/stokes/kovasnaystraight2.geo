@@ -8,14 +8,14 @@ Mesh.Algorithm3D = 4;
 //Mesh.OptimizeNetgen=1;
 // partitioning data
 Mesh.Partitioner=1;
-// Mesh.NbPartitions=1;
+Mesh.NbPartitions=1;
 Mesh.MshFilePartitioned=0;
 h = 0.1;
 Mesh.RecombinationAlgorithm=0;
-a=0;
-b=5;
-c=-1;
-d=1;
+a=-0.5;
+b=1;
+c=-0.5;
+d=1.5;
 Point(1) = {a,c,0.0,h};
 Point(2) = {b,c+0,0.0,h};
 Point(3) = {b+0,d,0.0,h};
@@ -32,3 +32,4 @@ Physical Line("topwall") = {4};
 Physical Line("wall") = {2,4};
 Physical Line("outlet") = {3};
 Physical Surface(6) = {6};
+
