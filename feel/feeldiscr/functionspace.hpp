@@ -1685,6 +1685,8 @@ public:
         public std::map<int,basis_context_ptrtype>
     {
     public:
+        typedef std::map<int,basis_context_ptrtype> super;
+        typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
         Context( functionspace_ptrtype Xh ) : M_Xh( Xh ) {}
         ~Context() {}
@@ -1841,6 +1843,8 @@ public:
      * \return function space context
      */
     Context context() { return Context( this->shared_from_this() ); }
+    
+    basis_context_ptrtype context( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) { return p.second; }
 
     /**
      * \class Element

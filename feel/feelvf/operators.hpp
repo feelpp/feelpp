@@ -481,6 +481,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ),   \
                                              M_fec = fusion::at_key<basis_context_key_type>( fev ).get() ) ; \
                 }                                                       \
+                template <typename CTX>                                 \
+                    void updateContext( CTX const& ctx )                \
+                {                                                       \
+                    M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc ); \
+                }                                                       \
                 void update( Geo_t const& geom )                        \
                 {                                                       \
                     /*BOOST_STATIC_ASSERT( dim_ok );*/                  \

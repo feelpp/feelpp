@@ -271,7 +271,7 @@ public :
         typedef typename FunctionSpace<MeshType,A1,A2,A3,A4>::Context super;
 
     public :
-
+        typedef typename super::value_type value_type;
         typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
@@ -339,7 +339,7 @@ public :
             return M_rbspace;
         }
 
-    private :
+    Private :
         rbspace_ptrtype M_rbspace;
         eigen_matrix_type M_phi;
     };
@@ -358,7 +358,20 @@ public :
         return evaluateFromContext( _context=ctx , _expr=idv(M_rb_basis[i]) );
     }
 
+    struct Context1 : public ContextRb::mapped_type
+    {
+        typedef typename ContextRb::mapped_type super;
+        Context1( super const& ctx, ContextRb const& rb )
+            :
+            super( ctx.second ),
+            M_index( ctx.first ),
+            M_rbctx( rb )
+        {}
+        int M_index;
+        ContextRb const& M_rbctx;
+    };
 
+    boost::shared_ptr<Context1> context( typename Context1::super const& p, ContextRb const& c ) { return new Context1( p, c ); }
     /*
      *  contains coefficients in the RB expression
      *  i.e. contains coefficients u_i in
