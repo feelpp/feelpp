@@ -35,6 +35,7 @@
 
 #include <feel/feel.hpp>
 #include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/modelcrbbase.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -43,6 +44,15 @@
 
 namespace Feel
 {
+
+
+typedef parameter::parameters<
+    parameter::required<tag::model_type, boost::is_base_and_derived<ModelCrbBase<>,_> >
+    , parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
+    , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<Feel::detail::bases_base,_> >
+    , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
+    , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<Feel::detail::periodicity_base,_> >
+> reducedbasisspace_signature;
 
 /**
  * \class ReducedBasisSpace
@@ -61,6 +71,8 @@ template<typename ModelType,
 class ReducedBasisSpace : public FunctionSpace<MeshType,A1,A2,A3,A4>
 {
 
+    typedef typename reducedbasisspace_signature::bind<ModelType,MeshType,A1,A2,A3,A4>::type args;
+
     typedef FunctionSpace<MeshType,A1,A2,A3,A4> super;
     typedef boost::shared_ptr<super> super_ptrtype;
 
@@ -77,14 +89,68 @@ public :
     typedef typename super::element_type space_element_type;
     typedef boost::shared_ptr<space_element_type> space_element_ptrtype;
 
-    typedef std::vector< space_element_type > basis_type;
-    typedef boost::shared_ptr<basis_type> basis_ptrtype;
+    typedef std::vector< space_element_type > rb_basis_type;
+    typedef boost::shared_ptr<rb_basis_type> rb_basis_ptrtype;
 
     typedef ReducedBasisSpace<ModelType, MeshType, A1, A2, A3, A4> this_type;
     typedef boost::shared_ptr<this_type> this_ptrtype;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_vector_type;
 
+
+    typedef typename parameter::binding<args, tag::bases_list, Feel::detail::bases<Lagrange<1,Scalar> > >::type bases_list; // FEM basis
+    typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
+
+    //static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+    static const bool is_composite = super::is_composite;
+    static const bool is_product = super::is_product ;
+
+
+    struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
+    static const uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                             mpl::identity<meshes_list >,
+                                             mpl::identity<nodim> >::type::type::nDim;
+    static const uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+                                                 mpl::identity<meshes_list>,
+                                                 mpl::identity<nodim> >::type::type::nRealDim;
+
+
+    // geomap
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm_type>, mpl::identity<mpl::void_> >::type::type gm_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::gm1_type>, mpl::identity<mpl::void_> >::type::type gm1_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
+    typedef boost::shared_ptr<gm_type> gm_ptrtype;
+    typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
+            mpl::identity<mpl::void_> >::type::type pts_gmc_type;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
+            mpl::identity<mpl::void_> >::type::type gmc_type;
+    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_ptrtype>, mpl::identity<mpl::void_> >::type::type geopc_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
+
+
+
+    template<typename MeshListType,int N>
+    struct GetMesh
+    {
+        typedef typename mpl::if_<mpl::or_<boost::is_base_of<MeshBase, MeshListType >,
+                                           is_shared_ptr<MeshListType> >,
+                                  mpl::identity<mpl::identity<MeshListType> >,
+                                  mpl::identity<mpl::at_c<MeshListType,N> > >::type::type::type type;
+    };
+
+
+
+    typedef typename mpl::at_c<bases_list,0>::type::template apply<GetMesh<meshes_list,0>::type::nDim,
+                                                                   GetMesh<meshes_list,0>::type::nRealDim,
+                                                                   value_type,
+                                                                   typename GetMesh<meshes_list,0>::type::element_type>::type basis_0_type;
+
+
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+            mpl::identity<bases_list>,
+            mpl::identity<basis_0_type> >::type::type basis_type;
 
     ReducedBasisSpace( boost::shared_ptr<ModelType> model , boost::shared_ptr<MeshType> mesh )
         :
@@ -99,22 +165,23 @@ public :
     //copy constructor
     ReducedBasisSpace( ReducedBasisSpace const& rb )
         :
-        super( rb.M_mesh ),
-        M_basis( rb.M_basis ),
+        super ( rb.M_mesh ),
+        M_rb_basis( rb.M_rb_basis ),
         M_mesh( rb.M_mesh )
     {}
 
     ReducedBasisSpace( this_ptrtype const& rb )
         :
         super ( rb->M_mesh ),
-        M_basis( rb->M_basis ),
+        M_rb_basis( rb->M_rb_basis ),
         M_mesh( rb->M_mesh )
     {}
 
     void init()
     {
-        //M_basis = basis_ptrtype( new basis_type() );
+        //M_rbbasis = rbbasis_ptrtype( new rb_basis_type() );
     }
+
 
     /*
      * Get the mesh
@@ -129,23 +196,30 @@ public :
      */
     void addBasisElement( space_element_type const & e )
     {
-        M_basis.push_back( e );
+        M_rb_basis.push_back( e );
     }
 
     void addBasisElement( space_element_ptrtype const & e )
     {
-        M_basis.push_back( *e );
+        M_rb_basis.push_back( *e );
     }
 
 
     /*
      * Get basis of the reduced basis space
      */
-    basis_type basis()
+    rb_basis_type rbBasis()
     {
-        return M_basis;
+        return M_rb_basis;
     }
 
+    //basis of RB space are elements of FEM function space
+    //return value of the N^th basis ( vector ) at index idx
+    //idx is the global dof ( fem )
+    double basis_value(int N, int idx) const
+    {
+        return M_rb_basis[N].globalValue( idx );
+    }
 
     /*
      * return true if the function space is composite
@@ -159,7 +233,7 @@ public :
      */
     int size()
     {
-        return M_basis.size();
+        return M_rb_basis.size();
     }
 
     /*
@@ -180,6 +254,14 @@ public :
     }
 
     /*
+     * Get the FEM functionspace
+     */
+    super_ptrtype functionSpace()
+    {
+        return M_model->functionSpace();
+    }
+
+    /*
      * class Context
      * stock the evaluation of basis functions in given points
      */
@@ -197,8 +279,8 @@ public :
 
         typedef rbspace_type::eigen_vector_type eigen_vector_type;
 
-        typedef rbspace_type::basis_type basis_type;
-        typedef boost::shared_ptr<basis_type> basis_ptrtype;
+        typedef rbspace_type::rb_basis_type rb_basis_type;
+        typedef boost::shared_ptr<rb_basis_type> basis_ptrtype;
 
         typedef Eigen::MatrixXd eigen_matrix_type;
 
@@ -207,12 +289,13 @@ public :
 
         ContextRb( rbspace_ptrtype rbspace )
             :
-            super( rbspace->model()->functionSpace() ),
+        //super( rbspace->model()->functionSpace() ),
+            super( rbspace->functionSpace() ),
             M_rbspace( rbspace )
         {}
 
         //only because the function functionSpace()
-        //returns an object : functionspace_ptrtype
+        //returns an object : rb_functionspaceptrtype
         ContextRb( functionspace_ptrtype functionspace )
             :
             super( functionspace )
@@ -251,7 +334,7 @@ public :
             return result;
         }
 
-        virtual functionspace_ptrtype functionSpace() const
+        rbspace_ptrtype rbFunctionSpace() const
         {
             return M_rbspace;
         }
@@ -268,11 +351,11 @@ public :
 
     /*
     * evaluate the i^th basis function at nodes
-    * given by the FEM context ctx
+    * given by the context ctx
     */
     eigen_vector_type evaluateBasis( int i , ContextRb const& ctx )
     {
-        return evaluateFromContext( _context=ctx , _expr=idv(M_basis[i]) );
+        return evaluateFromContext( _context=ctx , _expr=idv(M_rb_basis[i]) );
     }
 
 
@@ -289,8 +372,10 @@ public :
     {
     public:
         typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
-        typedef rbspace_type functionspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
+
+        typedef rbspace_type::super functionspace_type;
+        typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
 
         typedef Eigen::MatrixXd eigen_matrix_type;
         typedef rbspace_type::eigen_vector_type eigen_vector_type;
@@ -307,6 +392,39 @@ public :
         typedef Cont container_type;
 
 
+        typedef typename functionspace_type::gm_type gm_type;
+        typedef boost::shared_ptr<gm_type> gm_ptrtype;
+
+        /**
+         * geometry typedef
+         */
+        typedef typename mesh_type::element_type geoelement_type;
+        typedef typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> gmc_type;
+        typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+        typedef typename gm_type::precompute_type geopc_type;
+
+
+        static const bool is_composite = functionspace_type::is_composite;
+
+        typedef typename mpl::if_<mpl::bool_<is_composite>,
+                mpl::identity<boost::none_t>,
+                mpl::identity<typename basis_0_type::polyset_type> >::type::type polyset_type;
+
+        typedef typename mpl::if_<mpl::bool_<is_composite>,
+                mpl::identity<boost::none_t>,
+                mpl::identity<typename basis_0_type::PreCompute> >::type::type pc_type;
+        typedef boost::shared_ptr<pc_type> pc_ptrtype;
+
+        static const uint16_type nComponents1 = functionspace_type::nComponents1;
+        static const uint16_type nComponents2 = functionspace_type::nComponents2;
+
+        typedef boost::multi_array<value_type,3> array_type;
+        typedef Eigen::Matrix<value_type,nComponents1,1> _id_type;
+        typedef boost::multi_array<_id_type,1> id_array_type;
+
+        typedef typename matrix_node<value_type>::type matrix_node_type;
+
         friend class ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4>;
 
         Element()
@@ -314,17 +432,39 @@ public :
 
         Element( rbspace_ptrtype const& rbspace , std::string const& name="u")
             :
+            M_femfunctionspace( rbspace->functionSpace() ),
             M_rbspace( rbspace ),
             M_name( name )
         {
             this->resize( M_rbspace.size() );
         }
 
+        /**
+         * \return the mesh associated to the function
+         */
+        mesh_ptrtype mesh()
+        {
+            return M_femfunctionspace->mesh();
+        }
+        /**
+         * \return the mesh associated to the function
+         */
+        mesh_ptrtype mesh() const
+        {
+            return M_femfunctionspace->mesh();
+        }
+
+        /*
+         * return the reduced basis space associated
+         */
         void setReducedBasisSpace( rbspace_ptrtype rbspace )
         {
             M_rbspace = rbspace;
         }
 
+        /*
+         * return the size of the element
+         */
         int size() const
         {
             return super::size();
@@ -347,6 +487,11 @@ public :
         }
 
 
+        value_type globalValue( size_type i ) const
+        {
+            return this->operator()( i );
+        }
+
         void setCoefficient( int index , double value )
         {
             int size=super::size();
@@ -354,11 +499,17 @@ public :
             this->operator()( index ) = value;
         }
 
-        value_type  operator()( size_t i ) const
+        value_type operator()( size_t i ) const
         {
             int size=super::size();
             FEELPP_ASSERT( i < size )(i)(size).error("invalid index");
             return super::operator()( i );
+        }
+
+
+        int localSize() const
+        {
+            return super::size();
         }
 
         value_type& operator()( size_t i )
@@ -393,6 +544,13 @@ public :
             return M_rbspace.expansion( *this, N );
         }
 
+        //basis of RB space are elements of FEM function space
+        //return value of the N^th basis ( vector ) at index idx
+        double basis_value( int N, int idx) const
+        {
+            return M_rbspace.basis_value( N , idx );
+        }
+
         //evaluate the element to nodes in context
         eigen_vector_type evaluate(  ctxrb_type & context_rb )
         {
@@ -403,8 +561,108 @@ public :
         {
             //nothing to do
         }
+        bool areGlobalValuesUpdated() const
+        {
+            return true;
+        }
+
+
+        typedef Feel::detail::ID<value_type,nComponents1,nComponents2> id_type;
+
+        /**
+         * \return the extents of the interpolation of the function at
+         * a set of points
+         */
+        template<typename ContextType>
+        boost::array<typename array_type::index, 1>
+        idExtents( ContextType const & context ) const
+        {
+            boost::array<typename array_type::index, 1> shape;
+            shape[0] = context.xRefs().size2();
+            return shape;
+        }
+
+
+        template<typename Context_t>
+        id_type
+        id( Context_t const & context ) const
+        {
+            return id_type( *this, context );
+        }
+
+        //the function id_ (called by idv, idt or id) will do not the same things
+        //if it has a FEM context ( mpl::bool_<false> )
+        //or if it has a RB context ( mpl::bool<true> )
+        //with FEM context we use pre-computations of FEM basis functions whereas with RB context we use precomputations of RB basis functions
+        template<typename Context_t> void  id_( Context_t const & context, id_array_type& v ) const;
+        template<typename Context_t> void  id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const;
+        template<typename Context_t> void  id_( Context_t const & context, id_array_type& v , mpl::bool_<false>) const;
+
+        template<typename Context_t>
+        void
+        id( Context_t const & context, id_array_type& v ) const
+        {
+            id_( context, v );
+        }
+
+        void
+        idInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
+
+
+        /*
+         * Get the reals points matrix in a context
+         * 1 : Element
+         *
+         * \todo store a geometric mapping context to evaluate the real points
+         * from a set of point in the referene element, should probably done in
+         * the real element (geond)
+         */
+        template<typename Context_t>
+        matrix_node_type
+        ptsInContext( Context_t const & context, mpl::int_<1> ) const
+        {
+            //new context for evaluate the points
+            typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+            typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+
+            gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),  context.pc() ) );
+
+            return __c_interp->xReal();
+        }
+
+        /*
+         * Get the real point matrix in a context
+         * 2 : Face
+         * \todo see above
+         */
+        template<typename Context_t>
+        matrix_node_type
+        ptsInContext( Context_t const & context,  mpl::int_<2> ) const
+        {
+            //new context for the interpolation
+            typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+            typedef boost::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
+
+            typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::permutation_type permutation_type;
+            typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::precompute_ptrtype precompute_ptrtype;
+
+            std::vector<std::map<permutation_type, precompute_ptrtype> > __geo_pcfaces = context.pcFaces();
+            gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(), __geo_pcfaces , context.faceId() ) );
+
+            return __c_interp->xReal();
+        }
+
+
+        /**
+           \return the finite element space ( not reduced basis space )
+        */
+        functionspace_ptrtype const& functionSpace() const
+        {
+            return M_femfunctionspace;
+        }
 
         private:
+        functionspace_ptrtype M_femfunctionspace;
         rbspace_type M_rbspace;
         std::string M_name;
     };//Element of the reduced basis space
@@ -430,22 +688,128 @@ public :
     space_element_type expansion( element_type const& unknown, int  N=-1)
     {
         int number_of_coeff;
-        int basis_size = M_basis.size();
+        int basis_size = M_rb_basis.size();
         if ( N == -1 )
             number_of_coeff = basis_size;
         else
             number_of_coeff = N;
         FEELPP_ASSERT( number_of_coeff <= basis_size )( number_of_coeff )( basis_size ).error("invalid size");
-        return Feel::expansion( M_basis, unknown , number_of_coeff );
+        return Feel::expansion( M_rb_basis, unknown , number_of_coeff );
     }
 
 private :
-    //std::vector< ctxfem_type > M_ctxfem ;
-    basis_type M_basis;
+    rb_basis_type M_rb_basis;
     mesh_ptrtype M_mesh;
     model_ptrtype M_model;
 
 };//ReducedBasisSpace
+
+
+
+
+template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
+{
+    typedef decltype( context ) context_type;
+    bool is_rbctx=false;
+    if( boost::is_same< context_type , ctxrb_type >::value )
+        is_rbctx=true;
+    return id_( context, v, mpl::bool_<boost::is_same< context_type , ctxrb_type >::value>() );
+}
+
+
+//warning :
+//if we need to evaluate element at nodes in context
+//use u.evaluate( rb_context ) should go faster
+//because here we do the same thing ( context.id(*this) )
+//but we add a loop over points
+template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
+{
+    ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
+    //LOG( INFO ) << " id_ with a RB context";
+    //loop over points in the context
+    for(int t=0; t<rb_context.nPoints(); t++)
+    {
+        auto vector_eigen = rb_context.id( *this ); //contains evaluations of the rb element at nodes given from context
+        v[t]( 0,0 ) = vector_eigen(t);
+    }
+}
+
+template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+template<typename Context_t>
+void
+ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
+{
+
+    //LOG( INFO ) << "id_ with a FEM context";
+    if ( !this->areGlobalValuesUpdated() )
+        this->updateGlobalValues();
+
+    size_type elt_id = context.eId();
+    if ( context.gmContext()->element().mesh()->isSubMeshFrom( this->mesh() ) )
+        elt_id = context.gmContext()->element().mesh()->subMeshToMesh( context.eId() );
+    if ( context.gmContext()->element().mesh()->isParentMeshOf( this->mesh() ) )
+        elt_id = this->mesh()->meshToSubMesh( context.eId() );
+    if ( elt_id == invalid_size_type_value )
+        return;
+
+    const uint16_type nq = context.xRefs().size2();
+
+    for ( int l = 0; l < basis_type::nDof; ++l )
+    {
+        const int ncdof = is_product?nComponents1:1;
+
+        for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
+        {
+            typename array_type::index ldof = basis_type::nDof*c1+l;
+            size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+
+            //loop on RB dof
+            for(int N=0; N<this->size(); N++)
+            {
+                // the RB unknown can be written as
+                // u^N = \sum_i^N u_i^N \PHI_i where \PHI_i are RB basis functions (i.e. elements of FEM function space)
+                // u^N = \sum_i^N u_i^N \sum_j \PHI_ij \phi_j where PHI_ij is a scalar and phi_j is the j^th fem basis function
+                value_type u_i = this->operator()( N );
+
+                //N is the index of the RB basis function (i.e fem element)
+                value_type rb_basisij = this->basis_value( N , gdof );
+
+                //coefficient u_i^N * \PHI_ij
+                value_type coefficient = u_i*rb_basisij;
+
+                for ( uint16_type q = 0; q < nq; ++q )
+                {
+                    for ( typename array_type::index i = 0; i < nComponents1; ++i )
+                    {
+                        v[q]( i,0 ) += coefficient*context.id( ldof, i, 0, q );
+                    }
+                }
+
+            }//end of loop on RB dof
+
+        }
+    }
+
+}
+
+
+
+template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
+template<typename Y,  typename Cont>
+void
+ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
+{
+    LOG( INFO ) << "not yet implemented";
+}
 
 template<int Order, typename ModelType , typename MeshType>
 inline

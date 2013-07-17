@@ -73,7 +73,7 @@ public :
 
 
 
-template <typename ParameterDefinition, typename FunctionSpaceDefinition, typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition> >
+template <typename ParameterDefinition=ParameterDefinitionBase, typename FunctionSpaceDefinition=FunctionSpaceDefinitionBase, typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition> >
 class ModelCrbBase : public ModelCrbBaseBase
 {
 
