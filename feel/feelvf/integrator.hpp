@@ -146,9 +146,9 @@ public:
         typedef typename the_element_type::gm1_type gm1_type;
         typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
         //typedef typename gm_type::template Context<expression_type::context, the_element_type, im_type::numPoints> gmc_type;
-        typedef typename gm_type::template Context<expression_type::context, the_element_type> gmc_type;
+        typedef typename gm_type::template Context<expression_type::context|vm::JACOBIAN, the_element_type> gmc_type;
         typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-        typedef typename gm1_type::template Context<expression_type::context, the_element_type> gmc1_type;
+        typedef typename gm1_type::template Context<expression_type::context|vm::JACOBIAN, the_element_type> gmc1_type;
         typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
 #if 0
         typedef typename gm_type::template precompute<im_type::numPoints>::type gmpc_type;
@@ -1109,7 +1109,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 {
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
-    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
     typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
@@ -1271,7 +1271,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
-    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
     typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
     typedef typename gm_expr_type::precompute_type pc_expr_type;
     typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
@@ -1281,7 +1281,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     typedef vf::detail::LinearForm<FE,VectorType,ElemContType> FormType;
     typedef typename FormType::gm_type gm_form_type;
     typedef typename FormType::mesh_test_element_type geoelement_form_type;
-    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
+    typedef typename gm_form_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN,geoelement_form_type> gmc_form_type;
     typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
     typedef typename gm_form_type::precompute_type pc_form_type;
     typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
@@ -1463,7 +1463,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         auto en = lit->template get<2>();
 
         // check that we have elements to iterate over
-        if ( it == en )
+        if ( (it == en) || (it->isConnectedTo0() == false) )
             continue;
 
         uint16_type __face_id_in_elt_0 = it->pos_first();
@@ -2337,12 +2337,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 
         // make sure that we have elements to iterate over (return 0
         // otherwise)
-        if ( it == en )
+        if ( (it == en) || (it->isConnectedTo0()==false) )
             continue;
         //return typename eval::matrix_type( eval::matrix_type::Zero() );
 
-        FEELPP_ASSERT( it->isConnectedTo0() )( it->id() ).error( "invalid face" );
-        FEELPP_ASSERT( it->element(0).gm() )( it->id() ).error( "invalid geometric transformation" );
+        CHECK( it->isConnectedTo0() ) << "invalid face with id=" << it->id();
+        CHECK( it->element(0).gm() ) << "invalid geometric transformation assocated to face id="
+                                     <<  it->id() << " and element id " << it->element(0).id();
         gm_ptrtype gm = it->element( 0 ).gm();
 
         //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
@@ -2455,7 +2456,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 
             else
             {
-                FEELPP_ASSERT( it->isConnectedTo0() ).warn( "integration invalid boundary face" );
+                //LOG_IF( !it->isConnectedTo0(), WARN ) << "integration invalid boundary face";
                 if ( !it->isConnectedTo0() || it->pos_first() == invalid_uint16_type_value )
                     continue;
                 uint16_type __face_id_in_elt_0 = it->pos_first();
