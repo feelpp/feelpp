@@ -8,15 +8,15 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        14732
+svn.revision        16130
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh-devel
-version             2.6.2-svn-${svn.revision}
+version             2.7.1-svn-${svn.revision}
 categories          science
 platforms           darwin
-maintainers         ujf-grenoble.fr:Christophe.Prudhomme
+maintainers         feelpp.org:christophe.prudhomme
 description         Finite element mesh generator in 1D, 2D and 3D
 long_description    \
         Gmsh is an automatic 3D finite element mesh generator (primarily   \
@@ -31,15 +31,15 @@ conflicts           gmsh
 
 # https://trac.macports.org/ticket/33925
 compiler.blacklist  clang
-configure.compiler macports-gcc-4.6
+configure.compiler macports-gcc-4.8
 
 worksrcdir	build
 configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../trunk" }
 
 #configure.pre_args
 configure.args-append \
-    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.6\
-    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.6\
+    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8\
+    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8\
     -DCMAKE_INSTALL_PREFIX=${prefix}\
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DCMAKE_COLOR_MAKEFILE=ON \

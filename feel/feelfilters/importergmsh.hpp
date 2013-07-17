@@ -834,7 +834,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         << "invalid end elements string " << __buf
         << " in gmsh importer. It should be either $ENDELM or $EndElements\n";
 
-#if 1
+#if 0
     //
     // FILL Mesh Data Structure
     //
@@ -901,7 +901,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     //_M_n_b_vertices.assign( __n, 0 );
 
     // add the element to the mesh
-    for ( uint __i = 0; __i < numElements; ++__i )
+    for ( int __i = 0; __i < numElements; ++__i )
     {
         // if the element is not associated to the processor (in partition or ghost) or
         // if the physical entity is ignored
@@ -910,7 +910,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             continue;
 
         // add the points associates to the element on the processor
-        for ( uint16_type p = 0; p < npoints_per_element; ++p )
+        for ( uint16_type p = 0; p < __et[__i].numVertices; ++p )
         {
             int ptid = __et[__i].indices[p];
             // don't do anything if the point is already registered

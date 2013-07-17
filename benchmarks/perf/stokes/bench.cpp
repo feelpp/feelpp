@@ -29,7 +29,7 @@
 #include <boost/assign/list_of.hpp>
 #include <feel/feelcore/application.hpp>
 
-#include <stokes_ginac.hpp>
+#include <stokes.hpp>
 
 /**
  * This routine returns the list of options using the
@@ -53,9 +53,10 @@ makeOptions()
         ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
         ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
         ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
-        ( "2D.u_exact_x", Feel::po::value<std::string>()->default_value( "" ), "" )
-        ( "2D.u_exact_y", Feel::po::value<std::string>()->default_value( "" ), "" )
-        ( "2D.u_exact_z", Feel::po::value<std::string>()->default_value( "" ), "" )
+        ( "testcase", Feel::po::value<std::string>()->default_value( "default" ), "name of the testcase" )
+        ( "2D.u_exact_x", Feel::po::value<std::string>()->default_value( "" ), "velocity first component" )
+        ( "2D.u_exact_y", Feel::po::value<std::string>()->default_value( "" ), "velocity second component" )
+        ( "2D.u_exact_z", Feel::po::value<std::string>()->default_value( "" ), "velocity third component" )
         ( "2D.p_exact", Feel::po::value<std::string>()->default_value( "" ), "" )
         ( "3D.u_exact_x", Feel::po::value<std::string>()->default_value( "" ), "" )
         ( "3D.u_exact_y", Feel::po::value<std::string>()->default_value( "" ), "" )
@@ -134,6 +135,7 @@ int main( int argc, char** argv )
     std::vector<std::string> boptions = boost::assign::list_of( "2D-CR1P0-Simplex" )( "2D-CR1P0-Hypercube" )
         ( "2D-P2P1-Simplex" )( "2D-P2P1-Hypercube" )
         ( "3D-P2P1-Simplex" )( "3D-P2P1-Hypercube" )
+        ( "2D-P3P2-Simplex" )( "2D-P3P2-Hypercube" )
         ( "2D-P5P4-Simplex" )( "2D-P5P4-Hypercube" )
         ( "3D-P5P4-Simplex" )( "3D-P5P4-Hypercube" );
     auto cmdoptions = makeOptions();
@@ -146,6 +148,11 @@ int main( int argc, char** argv )
                      _desc=cmdoptions,
                      _about=makeAbout() );
 
+    Environment::changeRepository( boost::format( "%1%/%2%" )
+                                   % makeAbout().appName()
+                                   % option(_name="testcase").template as<std::string>() );
+
+
     std::ofstream out;
     if ( env.worldComm().rank() == 0 )
         out.open( (boost::format("res-%1%.dat") % env.numberOfProcessors() ).str().c_str() );
@@ -155,14 +162,16 @@ int main( int argc, char** argv )
     //benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube"  ) );
     benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex" ) );
     //benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube") );
+    benchmark.add( new Stokes<2, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>( "2D-P3P2-Simplex" ) );
+    //benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube") );
     //benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "2D-P5P4-Simplex" ) );
     //benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Hypercube>( "2D-P5P4-Hypercube" ) );
 
     //benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "3D-P2P1-Hypercube" ) );
     //benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "3D-P2P1-Simplex") );
 
-    //benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" )( "d.solver" ) );
-benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" ));
+    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" )( "d.solver" ) );
+    //benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" ));
 
     benchmark.run();
     benchmark.printStats( std::cout );

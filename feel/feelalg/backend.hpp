@@ -1001,6 +1001,8 @@ public:
      */
     void attachPreconditioner( preconditioner_ptrtype preconditioner )
     {
+        if ( M_preconditioner && M_preconditioner != preconditioner )
+            M_preconditioner->clear();
         M_preconditioner = preconditioner;
     }
 
