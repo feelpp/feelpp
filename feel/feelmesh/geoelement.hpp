@@ -211,6 +211,8 @@ public:
         M_element1 = connect;
     }
 
+    bool isConnected() const { return isConnectedTo0() && isConnectedTo1(); }
+
     bool isConnectedTo0() const
     {
         return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
