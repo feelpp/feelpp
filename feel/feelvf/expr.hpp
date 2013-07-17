@@ -536,7 +536,7 @@ public:
             M_tensor_expr.updateContext( ctx );
         }
 
-        
+
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
@@ -1712,6 +1712,11 @@ public:
         {
             M_t_expr.update( geom, face );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_t_expr.updateContext( ctx );
+        }
 
         value_type
         evalij( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2 ) const
@@ -1872,6 +1877,12 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             M_t_expr.update( geom, face );
+        }
+
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_t_expr.updateContext( ctx );
         }
 
         value_type
