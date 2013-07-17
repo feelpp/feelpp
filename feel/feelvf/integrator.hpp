@@ -1463,7 +1463,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         auto en = lit->template get<2>();
 
         // check that we have elements to iterate over
-        if ( it == en )
+        if ( (it == en) || (it->isConnectedTo0() == false) )
             continue;
 
         uint16_type __face_id_in_elt_0 = it->pos_first();
@@ -2337,12 +2337,13 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 
         // make sure that we have elements to iterate over (return 0
         // otherwise)
-        if ( it == en )
+        if ( (it == en) || (it->isConnectedTo0()==false) )
             continue;
         //return typename eval::matrix_type( eval::matrix_type::Zero() );
 
-        FEELPP_ASSERT( it->isConnectedTo0() )( it->id() ).error( "invalid face" );
-        FEELPP_ASSERT( it->element(0).gm() )( it->id() ).error( "invalid geometric transformation" );
+        CHECK( it->isConnectedTo0() ) << "invalid face with id=" << it->id();
+        CHECK( it->element(0).gm() ) << "invalid geometric transformation assocated to face id="
+                                     <<  it->id() << " and element id " << it->element(0).id();
         gm_ptrtype gm = it->element( 0 ).gm();
 
         //DDLOG(INFO) << "[integrator] evaluate(faces), gm is cached: " << gm->isCached() << "\n";
@@ -2455,7 +2456,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
 
             else
             {
-                FEELPP_ASSERT( it->isConnectedTo0() ).warn( "integration invalid boundary face" );
+                //LOG_IF( !it->isConnectedTo0(), WARN ) << "integration invalid boundary face";
                 if ( !it->isConnectedTo0() || it->pos_first() == invalid_uint16_type_value )
                     continue;
                 uint16_type __face_id_in_elt_0 = it->pos_first();
