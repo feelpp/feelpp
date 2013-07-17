@@ -265,7 +265,7 @@ public :
      * class Context
      * stock the evaluation of basis functions in given points
      */
-    class ContextRb : public FunctionSpace<MeshType,A1,A2,A3,A4>::Context
+    class ContextRBSet : public FunctionSpace<MeshType,A1,A2,A3,A4>::Context
     {
 
         typedef typename FunctionSpace<MeshType,A1,A2,A3,A4>::Context super;
@@ -284,9 +284,9 @@ public :
         typedef Eigen::MatrixXd eigen_matrix_type;
 
 
-        ~ContextRb() {}
+        ~ContextRBSet() {}
 
-        ContextRb( rbspace_ptrtype rbspace )
+        ContextRBSet( rbspace_ptrtype rbspace )
             :
         //super( rbspace->model()->functionSpace() ),
             super( rbspace->functionSpace() ),
@@ -295,7 +295,7 @@ public :
 
         //only because the function functionSpace()
         //returns an object : rb_functionspaceptrtype
-        ContextRb( functionspace_ptrtype functionspace )
+        ContextRBSet( functionspace_ptrtype functionspace )
             :
             super( functionspace )
         {}
@@ -333,6 +333,15 @@ public :
             return result;
         }
 
+        double id( eigen_vector_type coeffs , int node_index, bool need_to_update=true)
+        {
+            if( need_to_update )
+                this->update();
+            int npts = super::nPoints();
+            DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
+            return coeffs.transpose()*M_phi.col(node_index);
+        }
+
         rbspace_ptrtype rbFunctionSpace() const
         {
             return M_rbspace;
@@ -346,31 +355,42 @@ public :
     /**
      * \return function space context
      */
-    ContextRb context() { return ContextRb( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >( this->shared_from_this() ) ); }
+    ContextRBSet context() { return ContextRBSet( boost::dynamic_pointer_cast< ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> >( this->shared_from_this() ) ); }
 
     /*
     * evaluate the i^th basis function at nodes
     * given by the context ctx
     */
-    eigen_vector_type evaluateBasis( int i , ContextRb const& ctx )
+    eigen_vector_type evaluateBasis( int i , ContextRBSet const& ctx )
     {
         return evaluateFromContext( _context=ctx , _expr=idv(M_rb_basis[i]) );
     }
 
-    struct Context1 : public ContextRb::mapped_type
+    struct ContextRB : public ContextRBSet::mapped_type
     {
-        typedef typename ContextRb::mapped_type super;
-        Context1( super const& ctx, ContextRb const& rb )
+        typedef typename ContextRBSet::mapped_type super;
+        ContextRB( super const& ctx, ContextRBSet const& rb )
             :
             super( ctx.second ),
             M_index( ctx.first ),
             M_rbctx( rb )
-        {}
+        {
+            LOG( INFO ) << "M_index : "<<M_index;
+        }
+
+
+        //return the evaluation of an element (of RB space) at the node indexed by node_index
+        double id( eigen_vector_type coeffs, bool need_to_update=true)
+        {
+            return M_rbctx.id( coeffs, M_index, need_to_update);
+        }
+
+    private :
         int M_index;
-        ContextRb const& M_rbctx;
+        ContextRBSet const& M_rbctx;
     };
 
-    boost::shared_ptr<Context1> context( typename Context1::super const& p, ContextRb const& c ) { return new Context1( p, c ); }
+    boost::shared_ptr<ContextRB> context( typename ContextRB::super const& p, ContextRBSet const& c ) { LOG(INFO)<<"constructor ContextRB===";return new ContextRB( p, c ); }
     /*
      *  contains coefficients in the RB expression
      *  i.e. contains coefficients u_i in
@@ -396,7 +416,7 @@ public :
         typedef rbspace_type::space_element_type space_element_type;
 
         //RB context
-        typedef rbspace_type::ContextRb ctxrb_type;
+        typedef rbspace_type::ContextRBSet ctxrb_type;
 
         typedef T value_type;
 
