@@ -834,7 +834,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         << "invalid end elements string " << __buf
         << " in gmsh importer. It should be either $ENDELM or $EndElements\n";
 
-#if 1
+#if 0
     //
     // FILL Mesh Data Structure
     //
