@@ -160,7 +160,7 @@ public:
 		}
 
 		if (clean_up) {
-			remove(filename.c_str());
+			//remove(filename.c_str());
 		}
 	}
 	/**
