@@ -202,6 +202,20 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             //element associated with the geometrical mapping
             auto const& e = ctx.second->gmContext()->element();
 
+#if 0
+            //project the expression only on element containing point
+            auto proj_expr = vf::project( _space=Xh, _expr=M_expr , _range=idedelements( Xh->mesh(), e.id() ) );
+
+            //evaluate the projected expression at point p
+            bool do_communications=false;//we don't want that each proc have the result now ( but latter )
+            auto val = proj_expr.evaluate( vec_ctx , do_communications );
+
+            //global index of the local point
+            int global_p = it->first;
+
+            __localv( global_p ) = val( 0 );
+
+#else
             tensor_expr.updateContext( Xh->context( ctx, M_ctx ) );
 
             //global index of the local point
@@ -212,6 +226,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
                     __localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
                 }
 
+#endif
             vec_ctx.removeCtx();
 
 #if 0
