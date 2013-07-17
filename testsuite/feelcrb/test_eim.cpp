@@ -264,6 +264,7 @@ public:
                     }
                     if( cvg_study )
                     {
+                        *solution = solve(p);
                         fun->studyConvergence( p , *solution );
                     }
                     boost::mpi::timer timer;
