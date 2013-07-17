@@ -128,13 +128,16 @@ public :
         auto u = RbSpace->element();
         auto u_ptr = RbSpace->elementPtr();
 
+
+        /*
+         * evaluation at specific points
+         */
+
+        //test with u = (1 0)
         u.setCoefficient( 0 , 1 );
         auto u_fem = u.expansion();
         auto fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
         auto rb_evaluations = u.evaluate( ctxrb );
-        //LOG( INFO ) << "call evaluate from context -- rb version --";
-        //auto rb_evaluate_from_context = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
-        //LOG( INFO ) << "rb_evaluate_from_context : \n"<<rb_evaluate_from_context;
         Eigen::VectorXd true_values( 3 );
         true_values(0)=t1(0); true_values(1)=t2(0); true_values(2)=t3(0);
         double norm_fem_evaluations = fem_evaluations.norm();
@@ -144,9 +147,20 @@ public :
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
 
+        auto rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
+        auto rb_evaluate_from_contextfem = evaluateFromContext( _context=ctxfem , _expr=idv(u) );
+        double norm_rb_evaluations_from_ctxrb = rb_evaluate_from_contextrb.norm();
+        double norm_rb_evaluations_from_ctxfem = rb_evaluate_from_contextfem.norm();
+
+        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-norm_rb_evaluations_from_ctxfem), 1e-14 );
+
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
+        LOG( INFO ) << " rb evaluate from contextrb :\n"<<rb_evaluate_from_contextrb;
+        LOG( INFO ) << " rb evaluate from contextfem :\n"<<rb_evaluate_from_contextfem;
 
+        //test with u = ( 0 1 )
         u.setCoefficient( 0 , 0 );
         u.setCoefficient( 1 , 1 );
         u_fem = u.expansion();
@@ -157,13 +171,36 @@ public :
         norm_rb_evaluations = rb_evaluations.norm();
         true_norm=true_values.norm();
 
-        LOG( INFO ) << "rb unknown : \n"<<u;
-        LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
 
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
 
+        rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
+        norm_rb_evaluations_from_ctxrb = rb_evaluate_from_contextrb.norm();
+        BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-14 );
 
+        LOG( INFO ) << "rb unknown : \n"<<u;
+        LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
+        LOG( INFO ) << " rb evaluate from contextrb :\n"<<rb_evaluate_from_contextrb;
+
+
+        /*
+         * test with lambda expression
+         * integrate over the domain
+         */
+        auto LambdaIntegrate = integrate( _range=elements(mesh), _expr=_e1 );
+        auto IntegrateFem = integrate( _range=elements(mesh), _expr=idv(u_fem) );
+        auto IntegrateRb = integrate( _range=elements(mesh), _expr=idv(u) );
+        double value_integrate_fem = IntegrateFem.evaluate()(0,0);
+        double value_integrate_rb = IntegrateRb.evaluate()(0,0);
+        double value_lambda_integrate_fem = LambdaIntegrate( idv( u_fem ) ).evaluate()(0,0);
+        double value_lambda_integrate_rb = LambdaIntegrate( idv( u ) ).evaluate()(0,0);
+        double true_integrate = integrate( _range=elements(mesh) , _expr=Py() ).evaluate()(0,0);
+        LOG( INFO ) << "value_lambda_integrate_fem : "<<value_lambda_integrate_fem ;
+        LOG( INFO ) << "value_lambda_integrate_rb : "<<value_lambda_integrate_rb ;
+        LOG( INFO ) << "true value : "<<true_integrate;
+        BOOST_CHECK_SMALL( math::abs(value_lambda_integrate_rb-value_lambda_integrate_fem), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(value_lambda_integrate_rb-true_integrate), 1e-14 );
 
     }
 
