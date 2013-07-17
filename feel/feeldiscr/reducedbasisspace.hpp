@@ -271,7 +271,6 @@ public :
         typedef typename FunctionSpace<MeshType,A1,A2,A3,A4>::Context super;
 
     public :
-        typedef typename super::value_type value_type;
         typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
@@ -339,7 +338,7 @@ public :
             return M_rbspace;
         }
 
-    Private :
+    private :
         rbspace_ptrtype M_rbspace;
         eigen_matrix_type M_phi;
     };
