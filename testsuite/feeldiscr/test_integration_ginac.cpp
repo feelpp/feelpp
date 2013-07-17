@@ -131,7 +131,7 @@ void ginacint()
 
     matrix u_exact_g = matrix(2,1);
     u_exact_g = f1g,f2g;
-    auto u_exact = expr<2,1,2>( u_exact_g, vars, "u_exact" );
+    auto u_exact = expr<2,1,2>( u_exact_g, vars, "x_exact" );
     auto Xg = integrate(_range=elements(mesh), _expr=u_exact ).evaluate();
     LOG(INFO) << "Xg = " << Xg;
     CHECK( math::abs(Xg(0,0) - 0.5)< 1e-10 ) << "check failed : xg = " << Xg(0,0);
@@ -162,6 +162,7 @@ void poiseuille()
     ex u_exact_y=0;
     ex p_exact_exp=-2*x+5;
 
+#if 0
     std::string dim_str =  boost::str( boost::format( "2D" ) );
     std::string u1_str = option(_name="u_exact_x",_prefix=dim_str).template as<std::string>();
     std::string u2_str = option(_name="u_exact_y",_prefix=dim_str).template as<std::string>();
@@ -169,10 +170,11 @@ void poiseuille()
     LOG(INFO) << "ux = " << u1_str;
     LOG(INFO) << "uy = " << u2_str;
     LOG(INFO) << "p = " << p_str;
+#endif
 
-    auto u1 = parse( u1_str, vars );
-    auto u2 = parse( u2_str, vars );
-    auto p_exact_g = parse( p_str, vars );
+    auto u1 = parse( "1-y*y" , vars );
+    auto u2 = parse( "0", vars );
+    auto p_exact_g = parse( "-2*x+5", vars );
     matrix u_exact_g = matrix(2,1);
     u_exact_g = u1,u2;
     auto gradu_exact_g = grad( u_exact_g, vars );
@@ -183,6 +185,8 @@ void poiseuille()
     LOG(INFO) << "divu_exact_g = " << divu_exact_g;
 
     auto u_exact = expr<2,1,7>( u_exact_g, vars, "u_exact" );
+    auto u1_exact = expr<7>( u1, vars, "u1_exact" );
+    auto u2_exact = expr<7>( u2, vars, "u2_exact" );
     auto p_exact = expr<7>( p_exact_g, vars, "p_exact" );
     auto gradu_exact = expr<2,2,7>( gradu_exact_g, vars, "gradu_exact" );
     auto divu_exact = expr<1,1,7>( divu_exact_g, vars, "divu_exact" );
@@ -202,15 +206,22 @@ void poiseuille()
     auto gradu_exact_strong =  mat<2,2>( du_dx, du_dy, dv_dx, dv_dy) ;
     auto divu_exact_strong = du_dx + dv_dy;
 
-    double u_errorL2 = normL2( _range=elements( mesh ), _expr=( u_exact - u_exact_strong ) );
+    double u_errorL2 = normL2( _range=elements( mesh ), _expr=( print(print(u_exact,"gu") - print(u_exact_strong,"fu"),"error") ) );
+    LOG(INFO) << "u mean g = " << mean( _range=elements( mesh ), _expr=u_exact );
+    LOG(INFO) << "u mean f = " << mean( _range=elements( mesh ), _expr=u_exact_strong );
+    double u1_errorL2 = normL2( _range=elements( mesh ), _expr=( u11 - u1_exact ) );
+    double u2_errorL2 = normL2( _range=elements( mesh ), _expr=( u22 - u2_exact ) );
     double p_errorL2 = normL2( _range=elements( mesh ), _expr=( p_exact-p_exact_strong ) );
     double gradu_errorL2 = normL2( _range=elements( mesh ), _expr=( gradu_exact-gradu_exact_strong ) );
     double divu_errorL2 = normL2( _range=elements( mesh ), _expr=( divu_exact-divu_exact_strong ) );
 
+    
     LOG(INFO) <<"u-error-L2 = "<<u_errorL2<< "\n" ;
-    LOG(INFO) <<"p-error-L2 = "<<u_errorL2<< "\n" ;
-    LOG(INFO) <<"gradu-error-L2 = "<<u_errorL2<< "\n" ;
-    LOG(INFO) <<"divu-error-L2 = "<<u_errorL2<< "\n" ;
+    LOG(INFO) <<"u1-error-L2 = "<<u1_errorL2<< "\n" ;
+    LOG(INFO) <<"u2-error-L2 = "<<u2_errorL2<< "\n" ;
+    LOG(INFO) <<"p-error-L2 = "<<p_errorL2<< "\n" ;
+    LOG(INFO) <<"gradu-error-L2 = "<<gradu_errorL2<< "\n" ;
+    LOG(INFO) <<"divu-error-L2 = "<<divu_errorL2<< "\n" ;
 
 }
 
