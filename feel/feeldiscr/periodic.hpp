@@ -177,6 +177,7 @@ private:
 class NoPeriodicity : public detail:: periodicity_base
 {
 public:
+
     /** @name Constants
      */
     //@{
@@ -186,6 +187,16 @@ public:
     //static const uint16_type tag2 = invalid_uint16_type_value;
 
     typedef node<double>::type node_type;
+
+    //@}
+
+    /** @name Constructors, destructor
+     */
+    //@{
+
+    NoPeriodicity() {}
+    /* for compatibility reasons with Periodic( int, int, node_type) */
+    NoPeriodicity( uint16_type tag1, uint16_type tag2, node_type const& trans ) {}
 
     //@}
 
