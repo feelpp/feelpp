@@ -179,6 +179,15 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
     if ( !M_ctx.empty() )
     {
+        /**
+         * be careful there is no guarantee that the set of contexts will
+         * have the reference points. We should probably have a flag set by
+         * the programmer so that we don't have to re-create the expression
+         * context if the reference points are the same
+         */
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(it->second->gmContext() ) );
+
+        t_expr_type tensor_expr( M_expr, mapgmc );
 
         auto Xh = M_ctx.functionSpace();
         context_type vec_ctx ( Xh );
@@ -190,28 +199,18 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             vec_ctx.clear();
             vec_ctx.addCtx(  it->second , proc_number );
 
-            /**
-             * be careful there is no guarantee that the set of contexts will
-             * have the reference points. We should probably have a flag set by
-             * the programmer so that we don't have to re-create the expression
-             * context if the reference points are the same
-             */
-            map_gmc_type mapgmci( fusion::make_pair<vf::detail::gmc<0> >(ctx.second->gmContext() ) );
-
             //element associated with the geometrical mapping
             auto const& e = ctx.second->gmContext()->element();
 
-            //project the expression only on element containing point
-            auto proj_expr = vf::project( _space=Xh, _expr=M_expr , _range=idedelements( Xh->mesh(), e.id() ) );
-
-            //evaluate the projected expression at point p
-            bool do_communications=false;//we don't want that each proc have the result now ( but latter )
-            auto val = proj_expr.evaluate( vec_ctx , do_communications );
+            tensor_expr.updateContext( Xh->context( ctx, M_ctx ) );
 
             //global index of the local point
             int global_p = it->first;
 
-            __localv( global_p ) = val( 0 );
+            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                {
+                    __localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
+                }
 
             vec_ctx.removeCtx();
 
