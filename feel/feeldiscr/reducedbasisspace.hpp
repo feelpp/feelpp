@@ -267,10 +267,11 @@ public :
      */
     class ContextRBSet : public FunctionSpace<MeshType,A1,A2,A3,A4>::Context
     {
-
         typedef typename FunctionSpace<MeshType,A1,A2,A3,A4>::Context super;
 
     public :
+        static const bool is_rb_context = true;
+
         typedef ReducedBasisSpace<ModelType,MeshType,A1,A2,A3,A4> rbspace_type;
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
@@ -347,6 +348,12 @@ public :
             return M_rbspace;
         }
 
+        rbspace_type* ptrFunctionSpace() const
+        {
+            LOG( INFO ) << "rb ptrFunctionSpace()";
+            return M_rbspace.get();
+        }
+
     private :
         rbspace_ptrtype M_rbspace;
         eigen_matrix_type M_phi;
@@ -369,7 +376,8 @@ public :
     struct ContextRB : public ContextRBSet::mapped_type
     {
         typedef typename ContextRBSet::mapped_type super;
-        ContextRB( super const& ctx, ContextRBSet const& rb )
+        typedef std::pair<int,super> ctx_type;
+        ContextRB( ctx_type const& ctx, ContextRBSet const& rb )
             :
             super( ctx.second ),
             M_index( ctx.first ),
@@ -377,7 +385,6 @@ public :
         {
             LOG( INFO ) << "M_index : "<<M_index;
         }
-
 
         //return the evaluation of an element (of RB space) at the node indexed by node_index
         double id( eigen_vector_type coeffs, bool need_to_update=true)
@@ -390,7 +397,7 @@ public :
         ContextRBSet const& M_rbctx;
     };
 
-    boost::shared_ptr<ContextRB> context( typename ContextRB::super const& p, ContextRBSet const& c ) { LOG(INFO)<<"constructor ContextRB===";return new ContextRB( p, c ); }
+    boost::shared_ptr<ContextRB> context( typename ContextRB::ctx_type const& p, ContextRBSet const& c ) { LOG(INFO)<<"constructor ContextRB===";return new ContextRB( p, c ); }
     /*
      *  contains coefficients in the RB expression
      *  i.e. contains coefficients u_i in
@@ -416,7 +423,8 @@ public :
         typedef rbspace_type::space_element_type space_element_type;
 
         //RB context
-        typedef rbspace_type::ContextRBSet ctxrb_type;
+        typedef rbspace_type::ContextRBSet ctxrbset_type;
+        typedef rbspace_type::ContextRB ctxrb_type;
 
         typedef T value_type;
 
@@ -584,7 +592,7 @@ public :
         }
 
         //evaluate the element to nodes in context
-        eigen_vector_type evaluate(  ctxrb_type & context_rb )
+        eigen_vector_type evaluate(  ctxrbset_type & context_rb )
         {
            return context_rb.id( *this );
         }
@@ -745,10 +753,7 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
-    typedef decltype( context ) context_type;
-    bool is_rbctx=false;
-    if( boost::is_same< context_type , ctxrb_type >::value )
-        is_rbctx=true;
+    typedef Context_t context_type;
     return id_( context, v, mpl::bool_<boost::is_same< context_type , ctxrb_type >::value>() );
 }
 
@@ -765,7 +770,7 @@ void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
-    //LOG( INFO ) << " id_ with a RB context";
+    LOG( INFO ) << " id_ with a RB context";
     //loop over points in the context
     for(int t=0; t<rb_context.nPoints(); t++)
     {
@@ -781,7 +786,7 @@ void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
 {
 
-    //LOG( INFO ) << "id_ with a FEM context";
+    LOG( INFO ) << "id_ with a FEM context";
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
