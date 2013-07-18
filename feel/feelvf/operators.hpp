@@ -484,6 +484,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 template <typename CTX>                                 \
                     void updateContext( CTX const& ctx )                \
                 {                                                       \
+                    std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), loc_type::Zero() ); \
                     M_expr.e().VF_OPERATOR_SYMBOL( O )( *ctx, M_loc ); \
                 }                                                       \
                 void update( Geo_t const& geom )                        \
