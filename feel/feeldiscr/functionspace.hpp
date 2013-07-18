@@ -4971,6 +4971,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
 
     const uint16_type nq = context.xRefs().size2();
 
+    //double vsum=0;
+
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
@@ -5000,12 +5002,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
                     //for( typename array_type::index j = 0; j < nComponents2; ++j )
                 {
                     v[q]( i,0 ) += v_*context.id( ldof, i, 0, q );
+                    //vsum +=v_*context.id( ldof, i, 0, q );
                     //v[q](i,0) += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                 }
             }
         }
     }
 
+    //LOG( INFO ) << "vsum : "<<vsum;
     //return v;
 }
 
