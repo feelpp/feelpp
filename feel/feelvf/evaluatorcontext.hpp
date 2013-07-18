@@ -187,20 +187,23 @@ EvaluatorContext<CTX, ExprT>::operator()() const
          */
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >(it->second->gmContext() ) );
 
+        t_expr_type tensor_expr( M_expr, mapgmc );
 
         auto Xh = M_ctx.functionSpace();
-        context_type vec_ctx ( Xh );
 
         //loop on local points
         for ( int p = 0; it!=en ; ++it, ++p )
         {
             auto const& ctx = *it;
-            vec_ctx.clear();
-            vec_ctx.addCtx(  it->second , proc_number );
+
+#if 0
+            context_type vec_ctx ( Xh );
 
             //element associated with the geometrical mapping
             auto const& e = ctx.second->gmContext()->element();
-#if 0
+
+            vec_ctx.clear();
+            vec_ctx.addCtx(  it->second , proc_number );
 
             //project the expression only on element containing point
             auto proj_expr = vf::project( _space=Xh, _expr=M_expr , _range=idedelements( Xh->mesh(), e.id() ) );
@@ -214,28 +217,27 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
             __localv( global_p ) = val( 0 );
 
-#else
+            vec_ctx.removeCtx();
 
-            //if the tensor is built outside the loop then
-            //values of all points will be combined in M_loc ( operators.hpp )
-            t_expr_type tensor_expr( M_expr, mapgmc );
+#else
 
             //if( CTX::is_rb_context )
             //    LOG( INFO ) << "we have a RB context ";
             //else
             //    LOG( INFO ) << "we have a FEM context";
             //auto Xh=M_ctx.ptrFunctionSpace();
-            auto Xh=M_ctx.functionSpace();
+            int global_p = it->first;
+
             tensor_expr.updateContext( Xh->context( ctx, M_ctx ) );
 
             for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
             {
-                __localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
+                //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
+                __localv(global_p) = tensor_expr.evalq( c1, 0, 0 );
+                //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
             }
 
 #endif
-
-            vec_ctx.removeCtx();
 
 
 #if 0
@@ -252,7 +254,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
     //bring back each proc contribution in __globalv
     mpi::all_reduce( Environment::worldComm() , __localv, __globalv, std::plus< element_type >() );
-
+    //LOG( INFO ) << "__globalv : "<<__globalv;
     return __globalv;
 }
 
