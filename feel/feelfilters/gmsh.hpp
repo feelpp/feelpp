@@ -1415,7 +1415,7 @@ BOOST_PARAMETER_FUNCTION(
     LOG_IF( WARNING, mesh_name.extension() != ".geo" && mesh_name.extension() != ".msh" )
         << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
 
-    if ( mesh_name.extension() == ".geo" )
+    if ( mesh_name.extension() == ".geo" && fs::exists( mesh_name ) )
     {
         return createGMSHMesh( _mesh=mesh,
                                _desc=geo( _filename=mesh_name.string(),
@@ -1433,7 +1433,7 @@ BOOST_PARAMETER_FUNCTION(
             );
     }
 
-    if ( mesh_name.extension() == ".msh" )
+    if ( mesh_name.extension() == ".msh"  && fs::exists( mesh_name )  )
     {
         return loadGMSHMesh( _mesh=mesh,
                              _filename=mesh_name.string(),
