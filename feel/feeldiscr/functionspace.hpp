@@ -1685,6 +1685,7 @@ public:
         public std::map<int,basis_context_ptrtype>
     {
     public:
+        static const bool is_rb_context = false;
         typedef std::map<int,basis_context_ptrtype> super;
         typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
@@ -1824,6 +1825,12 @@ public:
             return M_Xh;
         }
 
+        virtual functionspace_type* ptrFunctionSpace() const
+        {
+            LOG( INFO ) << "fem ptrFunctionSpace()";
+            return M_Xh.get();
+        }
+
         node_type node(int i) const
         {
             int size = M_t.size();
@@ -1843,7 +1850,7 @@ public:
      * \return function space context
      */
     Context context() { return Context( this->shared_from_this() ); }
-    
+
     basis_context_ptrtype context( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) { return p.second; }
 
     /**
