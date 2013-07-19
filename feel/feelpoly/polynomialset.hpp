@@ -1354,7 +1354,7 @@ public:
 
             update( __gmc );
         }
-
+	virtual ~Context() {}
         /**
          * if isTransformationEquivalent is set to true in basis then no
          * transformation is required

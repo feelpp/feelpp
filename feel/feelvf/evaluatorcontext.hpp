@@ -189,7 +189,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
         t_expr_type tensor_expr( M_expr, mapgmc );
 
-        auto Xh = M_ctx.functionSpace();
+        auto Xh = M_ctx.ptrFunctionSpace();
 
         //loop on local points
         for ( int p = 0; it!=en ; ++it, ++p )
@@ -225,10 +225,11 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             //    LOG( INFO ) << "we have a RB context ";
             //else
             //    LOG( INFO ) << "we have a FEM context";
-            //auto Xh=M_ctx.ptrFunctionSpace();
             int global_p = it->first;
 
-            tensor_expr.updateContext( Xh->context( ctx, M_ctx ) );
+            tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
+            //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
+
 
             for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
             {
