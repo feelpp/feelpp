@@ -1399,6 +1399,7 @@ BOOST_PARAMETER_FUNCTION(
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( physical_are_elementary_regions,		   (bool), option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
       ( worldcomm,       (WorldComm), Environment::worldComm() )
+      ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
@@ -1423,7 +1424,8 @@ BOOST_PARAMETER_FUNCTION(
                                _straighten=straighten,
                                _refine=refine,
                                _update=update,
-                               _physical_are_elementary_regions=physical_are_elementary_regions//,
+                               _physical_are_elementary_regions=physical_are_elementary_regions,
+                               _force_rebuild=force_rebuild
                                //_worldcomm=worldcomm,
                                //_rebuild_partitions=rebuild_partitions,
                                //_rebuild_partitions_filename=rebuild_partitions_filename,
@@ -1448,7 +1450,10 @@ BOOST_PARAMETER_FUNCTION(
                              _partitioner=partitioner,
                              _partition_file=partition_file
             );
+
     }
+
+    LOG(WARNING) << "file " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     return unitHypercube<_mesh_type::nDim, typename _mesh_type::shape_type>();
 }
 
