@@ -1851,7 +1851,7 @@ public:
      */
     Context context() { return Context( this->shared_from_this() ); }
 
-    basis_context_ptrtype context( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) { return p.second; }
+    /*virtual*/ basis_context_ptrtype contextBasis( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) {LOG( INFO ) << "constructor FEM=="; return p.second; }
 
     /**
      * \class Element

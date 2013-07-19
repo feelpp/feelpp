@@ -292,14 +292,18 @@ public :
         //super( rbspace->model()->functionSpace() ),
             super( rbspace->functionSpace() ),
             M_rbspace( rbspace )
-        {}
+        {
+            update();
+        }
 
         //only because the function functionSpace()
         //returns an object : rb_functionspaceptrtype
         ContextRBSet( functionspace_ptrtype functionspace )
             :
             super( functionspace )
-        {}
+        {
+            update();
+        }
 
         void update ( )
         {
@@ -320,10 +324,10 @@ public :
         /*
          * for given element coefficients, evaluate the element at node given in context_fem
          */
-        eigen_vector_type id( eigen_vector_type coeffs , bool need_to_update=true)
+        eigen_vector_type id( eigen_vector_type coeffs , bool need_to_update=true) const
         {
-            if( need_to_update )
-                this->update();
+            //if( need_to_update )
+            //    this->update();
             int npts = super::nPoints();
             auto prod = coeffs.transpose()*M_phi;
             Eigen::Matrix<value_type, Eigen::Dynamic, 1> result( npts );
@@ -334,10 +338,10 @@ public :
             return result;
         }
 
-        double id( eigen_vector_type coeffs , int node_index, bool need_to_update=true)
+        double id( eigen_vector_type coeffs , int node_index, bool need_to_update=true) const
         {
-            if( need_to_update )
-                this->update();
+            //if( need_to_update )
+            //    this->update();
             int npts = super::nPoints();
             DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
             return coeffs.transpose()*M_phi.col(node_index);
@@ -387,17 +391,19 @@ public :
         }
 
         //return the evaluation of an element (of RB space) at the node indexed by node_index
-        double id( eigen_vector_type coeffs, bool need_to_update=true)
+        double id( eigen_vector_type coeffs, bool need_to_update=true) const
         {
             return M_rbctx.id( coeffs, M_index, need_to_update);
         }
 
+        int nPoints() const { return M_rbctx.nPoints();}
     private :
         int M_index;
         ContextRBSet const& M_rbctx;
     };
 
-    boost::shared_ptr<ContextRB> context( typename ContextRB::ctx_type const& p, ContextRBSet const& c ) { LOG(INFO)<<"constructor ContextRB===";return new ContextRB( p, c ); }
+    ContextRB contextBasis( typename ContextRB::ctx_type const& p, ContextRBSet const& c ) { LOG(INFO)<<"constructor ContextRB== ";return ContextRB( p, c ); }
+
     /*
      *  contains coefficients in the RB expression
      *  i.e. contains coefficients u_i in
@@ -753,8 +759,27 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
+    //LOG( INFO ) << "function if of RBSpace is called with a context of type \n"<< typeid( Context_t ).name();
+    ctxrb_type const* rb_context = dynamic_cast< ctxrb_type const* >( &context );
+    if( rb_context == 0 )
+    {
+        LOG( INFO ) << "will call id_ with a FEM context";
+        return id_( context, v, mpl::bool_<false>() );
+    }
+    else
+    {
+        LOG( INFO ) << "will call id_ with a RB context";
+        return id_( context, v, mpl::bool_<true>() );
+    }
+#if 0
+    LOG( INFO ) << "function if of RBSpace is called with a context of type \n"<< typeid( Context_t ).name();
     typedef Context_t context_type;
-    return id_( context, v, mpl::bool_<boost::is_same< context_type , ctxrb_type >::value>() );
+    if( boost::is_same< context_type , ctxrb_type >::value )
+        LOG( INFO ) << "rb_id_function called with a RB context";
+    else
+        LOG( INFO ) << "rb_id_function called with a FEM context";
+#endif
+    //return id_( context, v, mpl::bool_<boost::is_same< context_type , ctxrb_type >::value>() );
 }
 
 
@@ -774,8 +799,9 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
     //loop over points in the context
     for(int t=0; t<rb_context.nPoints(); t++)
     {
-        auto vector_eigen = rb_context.id( *this ); //contains evaluations of the rb element at nodes given from context
-        v[t]( 0,0 ) = vector_eigen(t);
+        //auto vector_eigen = rb_context.id( *this ); //contains evaluations of the rb element at nodes given from context
+        v[t]( 0,0 ) = rb_context.id( *this );
+        //v[t]( 0,0 ) = vector_eigen(t);
     }
 }
 
