@@ -40,7 +40,7 @@ add_subdirectory (feeldiscr)
 add_subdirectory (feelfilters)
 add_subdirectory (feelmaterial)
 add_subdirectory (feelvf )
-#add_subdirectory (feelsystem)
+add_subdirectory (feelpde)
 
 
 if( NOT cmake_build_type_tolower STREQUAL "debug" AND NOT FEELPP_ENABLE_BUILD_STATIC )
