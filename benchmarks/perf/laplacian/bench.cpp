@@ -181,7 +181,7 @@ int main( int argc, char** argv )
     //benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube") );
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex" ) );
 #endif
-    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
+    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "e.semih1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
     benchmark.run();
     benchmark.printStats( std::cout );
     benchmark.printStats( out );
