@@ -220,6 +220,9 @@ GmshHypercubeDomain::getDescription3D() const
          << "d=" << this->M_I[1].second << ";\n"
          << "e=" << this->M_I[2].first << ";\n"
          << "f=" << this->M_I[2].second << ";\n"
+         << "nx = 1/h;\n"
+         << "ny = 1/h;\n"
+         << "nz = 1/h;\n"
          << "Point(1) = {a,c,e,h};\n"
          << "Point(2) = {b,c,e,h};\n"
          << "Point(3) = {b,d,e,h};\n"
@@ -234,12 +237,24 @@ GmshHypercubeDomain::getDescription3D() const
          << "Extrude Surface {6, {0,0,f-e} } {\n"
          << "  Layers { {(f-e)/h}, {1.0} };\n";
 
+
+
     if ( M_use_hypercube )
         ostr << "  Recombine;\n";
 
     ostr << "};\n";
 
 
+    ostr << "Transfinite Line {4,10,2,8} = nx + 1  Using Progression 1;\n"
+         << "Transfinite Line {3,9,1,11} = ny + 1 Using Progression 1;\n"
+         << "Transfinite Line {14,18,13,22} = nz + 1 Using Progression 1;\n"
+         << "\n"
+         << "Transfinite Surface {6} = {3,2,1,4};\n"
+         << "Transfinite Surface {23} = {14,2,1,10};\n"
+         << "Transfinite Surface {19} = {6,10,1,4};\n"
+         << "Transfinite Surface {15} = {5,3,4,6};\n"
+         << "Transfinite Surface {27} = {5,14,2,3};\n"
+         << "Transfinite Surface {28} = {6,10,14,5};\n";
     if ( this->usePhysicalNames() == false && this->subStructuring() == false )
     {
         ostr << "Physical Line(1) = {1};\n"
@@ -276,10 +291,7 @@ GmshHypercubeDomain::getDescription3D() const
 
     if ( M_use_hypercube )
     {
-        ostr << "nx = 1/h;\n"
-             << "ny = 1/h;\n"
-             << "nz = 1/h;\n"
-             << "\n"
+        ostr << "\n"
              << "Transfinite Line {4,10,2,8} = nx + 1  Using Progression 1;\n"
              << "Transfinite Line {3,9,1,11} = ny + 1 Using Progression 1;\n"
              << "Transfinite Line {14,18,13,22} = nz + 1 Using Progression 1;\n"

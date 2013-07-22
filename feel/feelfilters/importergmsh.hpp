@@ -52,33 +52,37 @@ namespace Feel
 {
 namespace detail
 {
-struct GMSHPoint
+class GMSHPoint
 {
-    int id;
+public:
     Eigen::Vector3d x;
+    Eigen::Vector2d uv;
+    int id;
     bool onbdy;
     bool parametric;
     int gdim,gtag;
-    Eigen::Vector2d uv;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     GMSHPoint()
         :
-        id( 0 ),
         x( Eigen::Vector3d::Zero() ),
+        uv( Eigen::Vector2d::Zero() ),
+        id( 0 ),
         onbdy( false ),
         parametric( false ),
         gdim( 0 ),
-        gtag( 0 ),
-        uv( Eigen::Vector2d::Zero() )
+        gtag( 0 )
         {}
     GMSHPoint(GMSHPoint const& p )
         :
-        id ( p.id ),
         x( p.x ),
+        uv( p.uv ),
+        id ( p.id ),
         onbdy( p.onbdy ),
         parametric( p.parametric ),
         gdim( p.gdim ),
-        gtag( p.gtag ),
-        uv( p.uv )
+        gtag( p.gtag )
         {}
 };
 struct GMSHElement
