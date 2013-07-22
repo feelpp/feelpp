@@ -165,8 +165,8 @@ Laplacian<Dim, BasisU, Entity>::run()
     double xmin = -0.5, xmax=1.5;
     double ymin =  0, ymax=2;
 #else
-    double xmin = -1, xmax=1;
-    double ymin = -1, ymax=1;
+    double xmin = 0, xmax=1, zmin=0, zmax=1;
+    double ymin = 0, ymax=1;
 #endif
     double shear = option(_name="shear").template as<value_type>();
     bool recombine = option(_name="recombine").template as<bool>();
@@ -189,6 +189,7 @@ Laplacian<Dim, BasisU, Entity>::run()
                                               _h=meshSizeInit(),
                                               _shear=shear,
                                               _xmin=xmin,_xmax=xmax,
+                                              _zmin=zmin,_zmax=zmax,
                                               _ymin=ymin,_ymax=ymax ),
                                 _force_rebuild=true,
                                 _refine=level()-1,
@@ -243,13 +244,13 @@ Laplacian<Dim, BasisU, Entity>::run()
     auto vars=symbols<Dim>();
     auto u_exact_g = parse( option(_name="exact",_prefix=dim_str).template as<std::string>(), vars );
     LOG(INFO) << "u_exact=" << u_exact_g;
-    auto u_exact = expr<7>( u_exact_g, vars, "u_exact" );
-	auto f_g = -laplacian( u_exact_g, vars );
+    auto u_exact = expr<3>( u_exact_g, vars, "u_exact" );
+	auto f_g = -mu*laplacian( u_exact_g, vars );
     LOG(INFO) << "f=" << f_g;
-    auto f = expr<7>( f_g, vars, "f" );
+    auto f = expr<3>( f_g, vars, "f" );
     auto grad_exact_g = grad( u_exact_g, vars );
     LOG(INFO) << "grad_exact = " << grad_exact_g;
-    auto grad_exact = expr<1,Dim,7>( grad_exact_g, vars, "grad_exact" );
+    auto grad_exact = expr<1,Dim,3>( grad_exact_g, vars, "grad_exact" );
 #endif
 
     boost::mpi::timer subt;
@@ -265,11 +266,10 @@ Laplacian<Dim, BasisU, Entity>::run()
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=-trans( u_exact )*dn( u ) );
+        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=-mu*trans( u_exact )*dn( u ) );
         M_stats.put( "t.assembly.vector.dirichlet1",subt.elapsed() );
         subt.restart();
-        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=penalbc*inner( u_exact,id( v ) )/hFace() );
-        //form1( Xh, F ) += integrate( _range=boundaryfaces(mesh), _expr=penalbc*max(betacoeff,mu/hFace())*(trans(id(v))*N())*N());
+        form1( Xh, F ) += integrate( _range=boundaryfaces( mesh ), _expr=mu*penalbc*inner( u_exact,id( v ) )/hFace() );
         M_stats.put( "t.assembly.vector.dirichlet2",subt.elapsed() );
         LOG(INFO) << "   o time for rhs weak dirichlet terms: " << subt.elapsed() << "\n";
         subt.restart();
@@ -282,28 +282,6 @@ Laplacian<Dim, BasisU, Entity>::run()
     /*
      * Construction of the left hand side
      */
-    size_type pattern = Pattern::COUPLED;
-    size_type patternsym = Pattern::COUPLED;
-
-    if ( this->vm()[ "faster" ].template as<int>() == 1 )
-    {
-        pattern = Pattern::COUPLED;
-        patternsym = Pattern::COUPLED|Pattern::SYMMETRIC;
-    }
-
-    if ( this->vm()[ "faster" ].template as<int>() == 2 )
-    {
-        pattern = Pattern::DEFAULT;
-        patternsym = Pattern::DEFAULT;
-    }
-
-    if ( this->vm()[ "faster" ].template as<int>() == 3 )
-    {
-        pattern = Pattern::DEFAULT;
-        patternsym = Pattern::DEFAULT|Pattern::SYMMETRIC;
-    }
-
-    //# marker7 #
     t.restart();
     auto D = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, D, _init=true );
@@ -314,17 +292,17 @@ Laplacian<Dim, BasisU, Entity>::run()
     subt.restart();
     t.restart();
 
-    form2( Xh, Xh, D, _pattern=patternsym ) =integrate( _range=elements( mesh ),_expr=mu*( inner( gradt( u ),grad( v ) ) ) );
+    form2( Xh, Xh, D ) =integrate( _range=elements( mesh ),_expr=mu*( gradt( u )*trans(grad( v ) )) );
     M_stats.put( "t.assembly.matrix.diffusion",subt.elapsed() );
     LOG(INFO) << "   o time for diffusion terms: " << subt.elapsed() << "\n";
     subt.restart();
 
     if ( this->vm()[ "bctype" ].template as<int>() == 1  )
     {
-        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=-trans( dnt( u ) )*id( v )-trans( dn( u ) )*idt( v ) );
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces( mesh ),_expr=mu*(-trans( dnt( u ) )*id( v )-trans( dn( u ) )*idt( v ) ) );
         M_stats.put( "t.assembly.matrix.dirichlet1",subt.elapsed() );
         subt.restart();
-        form2( Xh, Xh, D, _pattern=patternsym )+=integrate( _range=boundaryfaces( mesh ),_expr=+penalbc*inner( idt( u ),id( v ) )/hFace() );
+        form2( Xh, Xh, D )+=integrate( _range=boundaryfaces( mesh ),_expr=mu*penalbc*inner( idt( u ),id( v ) )/hFace() );
         M_stats.put( "t.assembly.matrix.dirichlet2",subt.elapsed() );
         subt.restart();
         LOG(INFO) << "   o time for weak dirichlet terms: " << subt.elapsed() << "\n";
@@ -372,11 +350,6 @@ Laplacian<Dim, BasisU, Entity>::run()
     LOG(INFO) << "[laplacian] mean(u)=" << mean_u << "\n";
     std::cout << "[laplacian] mean(u)=" << mean_u << "\n";
 
-    // get the zero mean pressure
-    u.add( - mean_u );
-    mean_u = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 )/meas;
-    LOG(INFO) << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
-    std::cout << "[laplacian] mean(u-mean(u))=" << mean_u << "\n";
     double mean_uexact = integrate( elements( mesh ), u_exact ).evaluate()( 0, 0 )/meas;
     std::cout << "[laplacian] mean(uexact)=" << mean_uexact << "\n";
     M_stats.put( "t.integrate.mean",t.elapsed() );
@@ -400,17 +373,22 @@ Laplacian<Dim, BasisU, Entity>::run()
     t.restart();
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
     LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
-    M_stats.put( "e.l2.u",math::sqrt( u_errorL2/u_exactL2 ) );
+    M_stats.put( "e.l2.u",math::sqrt( u_errorL2 ) );
+    M_stats.put( "e.l2.u.n",math::sqrt( u_errorL2/u_exactL2 ) );
 
     double u_errorsemiH1 = integrate( _range=elements( mesh ),
                                       _expr=trace( ( gradv( u )-grad_exact )*trans( gradv( u )-grad_exact ) ) ).evaluate()( 0, 0 );
     double u_exactsemiH1 = integrate( _range=elements( mesh ),
                                       _expr=trace( ( grad_exact )*trans( grad_exact ) ) ).evaluate()( 0, 0 );
     double u_error_H1 = math::sqrt( ( u_errorL2+u_errorsemiH1 )/( u_exactL2+u_exactsemiH1 ) );
+
     M_stats.put( "t.integrate.h1norm",t.elapsed() );
     t.restart();
     std::cout << "||u_error||_1= " << u_error_H1 << "\n";
-    M_stats.put( "e.h1.u",u_error_H1 );
+    M_stats.put( "e.h1.u",  math::sqrt( u_errorsemiH1 + u_errorL2 ));
+    M_stats.put( "e.h1.u.n",u_error_H1 );
+    M_stats.put( "e.semih1.u.n", math::sqrt( u_errorsemiH1/u_exactsemiH1 ) );
+    M_stats.put( "e.semih1.u", math::sqrt( u_errorsemiH1 ) );
 
     v = vf::project( Xh, elements( Xh->mesh() ), u_exact );
     M_stats.put( "t.export.projection",t.elapsed() );
