@@ -672,7 +672,7 @@ namespace detail
 template<typename S>
 struct space_ptr
 {
-    typedef typename S::value_type type;
+    typedef typename S::element_type type;
 };
 
 template<typename S>
@@ -745,4 +745,3 @@ BOOST_PARAMETER_FUNCTION(
 
 
 #endif /* __Projectors_H */
-

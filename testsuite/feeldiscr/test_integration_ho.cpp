@@ -165,7 +165,7 @@ createMesh( double hsize )
          << "Physical Line(20) = {2,4};\n"
          << "Physical Surface(6) = {5};\n";
     nameStr << "square." << meshSize;
-    fname = __gmsh.generate( nameStr.str(), ostr.str() );
+    fname = __gmsh.generate( nameStr.str(), ostr.str() ).get<0>();
 #endif
 
 
@@ -227,7 +227,7 @@ createCircle( double hsize )
 
     nameStr << "circle." << meshSize;
     __gmsh.setOrder( Order );
-    fname = __gmsh.generate( nameStr.str(), ostr.str() );
+    fname = __gmsh.generate( nameStr.str(), ostr.str() ).get<0>();
 
 
 
@@ -346,7 +346,7 @@ createSin( double hsize )
 
     nameStr << "test_integration_ho";
     __gmsh.setOrder( Order );
-    fname = __gmsh.generate( nameStr.str(), ostr.str(), true );
+    fname = __gmsh.generate( nameStr.str(), ostr.str(), true ).get<0>();
 
     ImporterGmsh<typename imesh<T, 2,Order>::type> import( fname, "2.0" );
     mesh->accept( import );
@@ -547,7 +547,7 @@ makeAbout()
 }
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( integration )
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>,boost::mpl::int_<5>  > order_types;
