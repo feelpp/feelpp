@@ -25,7 +25,7 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 project( feel-research )
 
-foreach(project dot fsi hifimagnet idf ifp  hamm maxwell cabine pmp m2cssi rb publications rb4areo )
+foreach(project dot fsi hifimagnet idf ifp  hamm maxwell cabine pmp m2cssi rb publications rb4areo cemosis)
 
 if ( EXISTS ${FEELPP_SOURCE_DIR}/research/${project} )
   add_subdirectory( ${project} )
