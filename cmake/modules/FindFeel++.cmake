@@ -40,12 +40,20 @@ endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 
 OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
-
+OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
 
 # enable mpi mode
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
 ENDIF()
+
+# disable alignement
+MARK_AS_ADVANCED(FEELPP_DISABLE_EIGEN_ALIGNMENT)
+if ( FEELPP_DISABLE_EIGEN_ALIGNMENT )
+  add_definitions(-DEIGEN_DONT_ALIGN=1 -DEIGEN_DONT_VECTORIZE=1)
+  message(STATUS "Disabling alignment and vectorisation in Feel++/Eigen")
+endif()
+
 
 # enable move semantics
 MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
