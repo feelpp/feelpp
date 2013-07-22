@@ -398,14 +398,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             __face_it != this->endElement();
             ++__face_it )
     {
-        FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
-        ( __face_it->marker() )
-        ( __face_it->isOnBoundary() )
-        ( __face_it->ad_first() )
-        ( __face_it->pos_first() )
-        ( __face_it->ad_second() )
-        ( __face_it->pos_second() )
-        ( __face_it->id() ).warn( "inconsistent data face" );
+        if ( !__face_it->isConnectedTo0() )
+        {
+            LOG( WARNING ) << "face not connected" << *__face_it;
+
+            continue;
+        }
         DVLOG(2) << "FACE_ID = " << __face_it->id()
                       << " element id= " << __face_it->ad_first()
                       << " pos in elt= " << __face_it->pos_first()
