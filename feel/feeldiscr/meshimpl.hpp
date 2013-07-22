@@ -786,7 +786,10 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
         face_iterator __it = this->beginFace();
         face_iterator __en = this->endFace();
-
+        LOG(INFO) << "We have " << std::distance( __it, __en ) << " faces in the database";
+        auto itb = this->beginFaceOnBoundary();
+        auto enb = this->beginFaceOnBoundary();
+        LOG(INFO) << "We have " << std::distance( itb, enb ) << " faces on the boundary in the database";
         for ( ; __it!=__en; )
         {
             std::set<int> s;
@@ -1010,7 +1013,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     face.setConnection0( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
                     // set the process id from element
                     face.setProcessId( __element.processId() );
-
+                    face.setOnBoundary( true );
                     //this->faces().modify( __fit,
                     //detail::UpdateFaceConnection0<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
 
@@ -1087,35 +1090,39 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     DVLOG(2) << "element2 process id: " << iv->processId() << "\n";
                 }
 
-                FEELPP_ASSERT( (__fit->processId() == __fit->proc_first()) ||
-                               (__fit->processId() == __fit->proc_second()) )
-                    ( __fit->processId() )( __fit->proc_first() )( __fit->proc_second() ).error( "invalid process id" );
+                CHECK( (__fit->processId() == __fit->proc_first()) ||
+                       (__fit->processId() == __fit->proc_second()) )
+                    << "invalid process id " << __fit->processId() << " with element proc first = " <<  __fit->proc_first()
+                    << " and element proc second " << __fit->proc_second();
             }
 
-            FEELPP_ASSERT( iv->facePtr( j ) )( j )( iv->id() ).warn( "invalid element face error" );
+            LOG_IF( WARNING, !iv->facePtr( j ) ) << "invalid element " << iv->id() << " with local face id " << j;
         } // face loop
     } // element loop
 
-#if 0
+
     face_iterator f_it = this->beginFace();
     face_iterator f_en = this->endFace();
 
-    for ( ; f_it!=f_en; ++f_it )
+    for ( ; f_it!=f_en;  )
     {
         // cleanup the face data structure :
 
-        if ( !f_it->isConnectedTo0() )
+        if ( !f_it->isConnected() )
         {
             // remove all faces that are not connected to any elements
-            this->faces().erase( f_it );
+            //f_it = this->faces().erase( f_it );
+            ++f_it;
+        }
+        else
+        {
+            ++f_it;
         }
 
     }
 
-#endif
 
-
-    VLOG(2) << "[Mesh::updateFaces] element/face connectivity : " << ti.elapsed() << "\n";
+    VLOG(2) << "element/face connectivity : " << ti.elapsed() << "\n";
     ti.restart();
 }
 
@@ -1510,18 +1517,31 @@ Mesh<Shape, T, Tag>::check() const
     typedef typename super::location_face_const_iterator location_face_const_iterator;
     location_face_const_iterator itf = this->beginFaceOnBoundary();
     location_face_const_iterator ite = this->endFaceOnBoundary();
-
+    std::map<int,int> nf;
     for ( ; itf != ite; ++ itf )
     {
         face_type const& __face = *itf;
         DLOG_IF( WARNING, !__face.isConnectedTo0() && !__face.isConnectedTo1() ) << "face not connected to an element face:" << __face << "\n";
+        if ( !__face.isConnectedTo0() && !__face.isConnectedTo1() )
+        {
+            auto it = nf.find( (int)__face.marker().value() );
+            if (  it == nf.end() )
+                nf[(int)__face.marker().value()] = 1;
+            else
+                it->second += 1;
+        }
         DLOG_IF( WARNING, !__face.isConnectedTo0() && __face.isConnectedTo1() ) << "face  connected to element 1 but not element 0. face:" << __face << "\n";
         DLOG_IF( WARNING, __face.isConnectedTo0() && __face.isConnectedTo1() )<< "invalid boundary face (connected to 2 elements):" << __face << "\n";
 
         DLOG_IF( WARNING, __face.isConnectedTo0() &&  !__face.element( 0 ).facePtr( __face.pos_first() ) ) << "invalid face in element, face: " << __face << " in element " << __face.element(0) << "\n";
 
     }
-
+    auto itt = nf.begin();
+    auto ent = nf.end();
+    for(; itt != ent; ++itt )
+    {
+        LOG(INFO ) << "face with marker " << itt->first << " not attached " << itt->second << "\n";
+    }
 #endif
 }
 template<typename Shape, typename T, int Tag>

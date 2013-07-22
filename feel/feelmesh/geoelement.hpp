@@ -211,6 +211,8 @@ public:
         M_element1 = connect;
     }
 
+    bool isConnected() const { return isConnectedTo0() && isConnectedTo1(); }
+
     bool isConnectedTo0() const
     {
         return ( boost::get<1>( M_element0 ) != invalid_size_type_value &&
@@ -995,13 +997,9 @@ public:
         :
         super( id ),
         super2(),
-        M_edges( numLocalEdges ),
-        M_edge_permutation( numLocalEdges )
+        M_edges( numLocalEdges, nullptr ),
+        M_edge_permutation( numLocalEdges, edge_permutation_type( edge_permutation_type::IDENTITY ) )
     {
-        std::fill( M_edges.begin(), M_edges.end(), ( edge_type* )0 );
-        std::fill( M_edge_permutation.begin(),
-                   M_edge_permutation.end(),
-                   edge_permutation_type( edge_permutation_type::IDENTITY ) );
     }
 
     /**
@@ -1106,8 +1104,8 @@ public:
      */
     edge_type const& edge( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         return boost::cref( *M_edges[i] );
     }
 
@@ -1117,14 +1115,15 @@ public:
     edge_type& edge( uint16_type i )
     {
         DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
-        DCHECK( M_edges[i] ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         return boost::ref( *M_edges[i] );
     }
 
     edge_type & face( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return boost::ref( *M_edges[i] );
     }
 
@@ -1133,15 +1132,17 @@ public:
      */
     edge_type const& face( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return boost::cref( *M_edges[i] );
     }
 
     edge_type const* facePtr( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( this->id() )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return M_edges[i];
     }
 
@@ -1151,7 +1152,8 @@ public:
      */
     void setFace( uint16_type const i, edge_type const & p )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
@@ -1160,7 +1162,8 @@ public:
      */
     edge_permutation_type edgePermutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         return M_edge_permutation[i];
     }
     /**
@@ -1168,7 +1171,8 @@ public:
      */
     edge_permutation_type facePermutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i )( numLocalEdges ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         return M_edge_permutation[i];
     }
 
@@ -1187,18 +1191,19 @@ public:
      */
     void setEdge( uint16_type i, edge_type const & p )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
     }
 
     void setEdgePermutation( uint16_type i, edge_permutation_type o )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         M_edge_permutation[i] = o;
     }
 
-    typedef typename ublas::bounded_array<edge_type*, numLocalEdges>::iterator face_iterator;
-    typedef typename ublas::bounded_array<edge_type*, numLocalEdges>::const_iterator face_const_iterator;
+    typedef typename std::vector<edge_type*>::iterator face_iterator;
+    typedef typename std::vector<edge_type*>::const_iterator face_const_iterator;
 
     /**
      * \return the iterator pair (begin,end) of faces
@@ -1241,8 +1246,8 @@ private:
 
 private:
 
-    ublas::bounded_array<edge_type*, numLocalEdges> M_edges;
-    ublas::bounded_array<edge_permutation_type, numLocalEdges> M_edge_permutation;
+    std::vector<edge_type*> M_edges;
+    std::vector<edge_permutation_type> M_edge_permutation;
 };
 
 /*-------------------------------------------------------------------------
@@ -1307,15 +1312,13 @@ public:
         :
         super( id ),
         super2(),
-        M_edges( numLocalEdges ),
+        M_edges( numLocalEdges, nullptr ),
         M_faces( numLocalFaces ),
-        M_edge_permutation( numLocalEdges ),
+        M_edge_permutation( numLocalEdges, edge_permutation_type( edge_permutation_type::IDENTITY ) ),
         M_face_permutation( numLocalFaces )
     {
-        std::fill( M_edges.begin(), M_edges.end(), ( edge_type* )0 );
         std::fill( M_faces.begin(), M_faces.end(), ( face_type* )0 );
 
-        std::fill( M_edge_permutation.begin(), M_edge_permutation.end(), edge_permutation_type( edge_permutation_type::IDENTITY ) );
         std::fill( M_face_permutation.begin(), M_face_permutation.end(), face_permutation_type( face_permutation_type::IDENTITY ) );
     }
 
@@ -1326,8 +1329,8 @@ public:
         :
         super( g ),
         super2( g ),
-        M_edges( numLocalEdges ),
-        M_faces( numLocalFaces ),
+        M_edges( g.M_edges ),
+        M_faces( g.M_faces ),
         M_edge_permutation( g.M_edge_permutation ),
         M_face_permutation( g.M_face_permutation )
     {}
@@ -1436,30 +1439,33 @@ public:
 
     edge_type const& edge( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return *M_edges[i];
     }
 
     edge_type& edge( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return *M_edges[i];
     }
 
     edge_type const* edgePtr( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
+
         return M_edges[i];
     }
 
     edge_permutation_type edgePermutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( M_edges[i] != nullptr ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
 
-        FEELPP_ASSERT( M_edges[i] )( i ).warn( "invalid edge (null pointer)" );
 
         return M_edge_permutation[i];
     }
@@ -1469,15 +1475,15 @@ public:
      */
     void setEdge( uint16_type const i, edge_type const & p )
     {
-        FEELPP_ASSERT( boost::addressof( p ) )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+        DCHECK( boost::addressof( p ) ) << "invalid edge (null pointer) for edge local id " << i << " in element " << this->id();
         M_edges[i] = const_cast<edge_type*>( boost::addressof( p ) );
-        FEELPP_ASSERT( M_edges[i] )( i ).error( "invalid edge (null pointer)" );
-
     }
 
     void setEdgePermutation( uint16_type i, edge_permutation_type o )
     {
-        FEELPP_ASSERT( i < numLocalEdges )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalEdges ) << "invalid local edge index " << i << " should be less than " << numLocalEdges ;
+
         M_edge_permutation[i] = o;
     }
 

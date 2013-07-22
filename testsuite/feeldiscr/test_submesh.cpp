@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     a = integrate( _range=elements(mesh2), _expr=idt(u)*id(v) );
     u = project( _space=Yh, _range=elements(mesh2), _expr=Px()*Py() );
     double mass1 = a( v, u );
-    BOOST_CHECK_CLOSE( mass1, .25, 1e-13 );
+    BOOST_CHECK_CLOSE( mass1, .25, 4e-13 );
     BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
 
     LOG(INFO) << "non optimized version\n";     google::FlushLogFiles(google::GLOG_INFO);

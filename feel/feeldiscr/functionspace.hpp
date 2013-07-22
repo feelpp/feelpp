@@ -1683,7 +1683,7 @@ public:
         {
             typedef T value_type;
             BOOST_MPL_ASSERT_NOT( ( boost::is_same<BasisType,mpl::void_> ) );
-            typedef typename ChangeBasis<BasisType>::type::value_type fs_type;
+            typedef typename ChangeBasis<BasisType>::type::element_type fs_type;
             typedef typename fs_type::template Element<value_type, typename VectorUblas<T>::range::type > element_type;
             typedef element_type type;
         };
@@ -6313,10 +6313,10 @@ expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
  */
 template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>>>
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>>>
 Pch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( mesh );
 }
 
 /**

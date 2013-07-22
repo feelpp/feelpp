@@ -40,12 +40,20 @@ endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 
 OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
-
+OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
 
 # enable mpi mode
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
 ENDIF()
+
+# disable alignement
+MARK_AS_ADVANCED(FEELPP_DISABLE_EIGEN_ALIGNMENT)
+if ( FEELPP_DISABLE_EIGEN_ALIGNMENT )
+  add_definitions(-DEIGEN_DONT_ALIGN=1 -DEIGEN_DONT_VECTORIZE=1)
+  message(STATUS "Disabling alignment and vectorisation in Feel++/Eigen")
+endif()
+
 
 # enable move semantics
 MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
@@ -169,7 +177,9 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 # generate different c++ codes and undefined references at link time.
 # in a short future, this should not be necessary anymore
 ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
-
+IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
+  ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+endif()
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
 

@@ -41,8 +41,26 @@ auto dy_coord = project( _space=Xhv, _range=elements(mesh), _expr=dyv(coord) );
 
 A projection operator is available that supports
 
- - \f$L_2\f$ projection
- - \f$H_1\f$ projection
+ - \f $L_2$ \f projection
+ - \f $H_1$ \f projection
+
+\section ProjectionExpression  Project Specific Expressions
+
+You may want to customise the projected expression, that is to define your own expression.
+We have based that mechanism over the GiNaC librarie or the Functor.
+
+The idea with GiNaC is to provide a string which will be parsed to generate a function:
+
+\snippet ../../manual/tutorial/myexpression.cpp marker2
+
+To use the Functor, you have to define in the Feel namespace a struct with some variable.
+That struct will provide an \c operator() interface with specific signature.
+
+\snippet ../../manual/tutorial/myexpression.cpp marker1
+
+and then, you are allowed to define a functor based expression on that way:
+
+\snippet ../../manual/tutorial/myexpression.cpp marker3
 
 <a href="#" class="top">top</a>
 <hr>

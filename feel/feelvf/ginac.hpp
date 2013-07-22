@@ -147,7 +147,7 @@ namespace Feel
                 M_fun( fun ),
                 M_syms( syms),
                 M_cfun(),
-                M_filename(filename)
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 DVLOG(2) << "Ginac constructor with expression_type \n";
                 GiNaC::lst exprs(fun);
@@ -229,7 +229,7 @@ namespace Feel
                 typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
                 // change 0 into rank
                 typedef typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<0> >,
@@ -250,7 +250,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
                     M_nsyms( expr.syms().size() )
                 {}
 
@@ -259,7 +259,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
                     M_nsyms( expr.syms().size() )
                 {}
 
@@ -267,7 +267,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
                     M_nsyms( expr.syms().size() )
                 {
                 }
@@ -386,7 +386,7 @@ namespace Feel
         Expr< GinacEx<Order> >
         expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ));
+            return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym, filename ));
         }
 
         template<int Order>
@@ -394,7 +394,7 @@ namespace Feel
         Expr< GinacEx<Order> >
         expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename) );
+            return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(s,lsym), lsym, filename) );
         }
 
         template<int M=1, int N=1, int Order = 2>
@@ -448,7 +448,7 @@ namespace Feel
                 M_fun( fun.evalm() ),
                 M_syms( syms),
                 M_cfun(),
-                M_filename(filename)
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -462,7 +462,7 @@ namespace Feel
                 M_fun(fun.evalm()),
                 M_syms( syms),
                 M_cfun(),
-                M_filename(filename)
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
@@ -493,8 +493,8 @@ namespace Feel
                 {
                     DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
                     boost::mpi::communicator world;
-                    std::string pid = boost::lexical_cast<std::string>(world.rank());
-                    std::string filenameWithSuffix = M_filename + pid + ".so";
+                    //std::string pid = boost::lexical_cast<std::string>(world.rank());
+                    std::string filenameWithSuffix = M_filename + ".so";
                     GiNaC::link_ex(filenameWithSuffix, M_cfun);
                 }
             }
@@ -545,7 +545,7 @@ namespace Feel
                 typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
                 typedef typename mn_to_shape<gmc_type::nDim,M,N>::type shape;
@@ -562,7 +562,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
                     M_nsyms( expr.syms().size() )
                 {}
 
@@ -571,7 +571,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
                     M_nsyms( expr.syms().size() )
                 {}
 
@@ -579,7 +579,7 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
+                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
                     M_nsyms( expr.syms().size() )
                 {
                 }
@@ -611,6 +611,7 @@ namespace Feel
                             for( int k = gmc_type::nDim; k < xi.size(); ++k )
                                 xi[k] = 0;
                             M_fun(&ni,xi.data(),&no,M_y[q].data());
+;
                         }
 
                 }
@@ -703,4 +704,3 @@ namespace Feel
     } // vf
 } // Feel
 #endif /* __Ginac_H */
-
