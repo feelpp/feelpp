@@ -52,33 +52,37 @@ namespace Feel
 {
 namespace detail
 {
-struct GMSHPoint
+class GMSHPoint
 {
-    int id;
+public:
     Eigen::Vector3d x;
+    Eigen::Vector2d uv;
+    int id;
     bool onbdy;
     bool parametric;
     int gdim,gtag;
-    Eigen::Vector2d uv;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     GMSHPoint()
         :
-        id( 0 ),
         x( Eigen::Vector3d::Zero() ),
+        uv( Eigen::Vector2d::Zero() ),
+        id( 0 ),
         onbdy( false ),
         parametric( false ),
         gdim( 0 ),
-        gtag( 0 ),
-        uv( Eigen::Vector2d::Zero() )
+        gtag( 0 )
         {}
     GMSHPoint(GMSHPoint const& p )
         :
-        id ( p.id ),
         x( p.x ),
+        uv( p.uv ),
+        id ( p.id ),
         onbdy( p.onbdy ),
         parametric( p.parametric ),
         gdim( p.gdim ),
-        gtag( p.gtag ),
-        uv( p.uv )
+        gtag( p.gtag )
         {}
 };
 struct GMSHElement
@@ -834,7 +838,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         << "invalid end elements string " << __buf
         << " in gmsh importer. It should be either $ENDELM or $EndElements\n";
 
-#if 1
+#if 0
     //
     // FILL Mesh Data Structure
     //
@@ -901,7 +905,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     //_M_n_b_vertices.assign( __n, 0 );
 
     // add the element to the mesh
-    for ( uint __i = 0; __i < numElements; ++__i )
+    for ( int __i = 0; __i < numElements; ++__i )
     {
         // if the element is not associated to the processor (in partition or ghost) or
         // if the physical entity is ignored
@@ -910,7 +914,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             continue;
 
         // add the points associates to the element on the processor
-        for ( uint16_type p = 0; p < npoints_per_element; ++p )
+        for ( uint16_type p = 0; p < __et[__i].numVertices; ++p )
         {
             int ptid = __et[__i].indices[p];
             // don't do anything if the point is already registered

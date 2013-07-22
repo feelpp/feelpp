@@ -342,7 +342,9 @@ Gmsh::refine( std::string const& name, int level, bool parametric  ) const
 #if BOOST_FILESYSTEM_VERSION == 3
 		filename << fs::path( name ).stem().string() << "-refine-" << level << ".msh";
 		boost::system::error_code ec;
-		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists, ec );
+        auto na = fs::path( name );
+        auto fi= fs::path( filename.str() );
+		fs::copy_file( na, fi, fs::copy_option::overwrite_if_exists, ec );
 #elif BOOST_FILESYSTEM_VERSION == 2
 		filename << fs::path( name ).stem() << "-refine-" << level << ".msh";
 		fs::copy_file( fs::path( name ), fs::path( filename.str() ), fs::copy_option::overwrite_if_exists );
