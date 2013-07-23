@@ -76,7 +76,7 @@ int main(int argc, char**argv )
 
   //Define symbols, ie "x", "y"...
   std::vector<GiNaC::symbol> vars = symbols<Dim>();
-  std::string _u = option(_name="_ex_").template as<std::string>();
+  std::string _u = option(_name="_ex_").as<std::string>();
 
   //Create the expression from the string
   GiNaC::ex expr_u = parse(_u,vars);
