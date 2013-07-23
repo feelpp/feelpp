@@ -4,7 +4,7 @@ foreach(TEST element elementminmax project bdf interpolation integration  integr
     form_interpolation integration_opt lift
     wire_basket solve_leak stencil
     evaluator element_serialize lambda trace operatorlinearfree functionallinearfree
-    lowerdim_entity integration_ginac spaces on_inside
+    lowerdim_entity integration_ginac spaces lm on_inside
     )
 
   feelpp_add_test( ${TEST} )
