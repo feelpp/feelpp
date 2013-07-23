@@ -72,6 +72,7 @@ functions_options( std::string const& prefix )
 {
     po::options_description _options( "Functions " + prefix + " options" );
     _options.add_options()
+        ( prefixvm( prefix,"functions.f" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "f" )
         ( prefixvm( prefix,"functions.alpha" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "alpha" )
         ( prefixvm( prefix,"functions.beta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta" )
         ( prefixvm( prefix,"functions.beta_x" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta x" )
@@ -79,6 +80,7 @@ functions_options( std::string const& prefix )
         ( prefixvm( prefix,"functions.beta_z" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta z" )
         ( prefixvm( prefix,"functions.epsilon" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "epsilon" )
         ( prefixvm( prefix,"functions.gamma" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "gamma" )
+        ( prefixvm( prefix,"functions.delta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "delta" )
         ;
     return _options;
 }

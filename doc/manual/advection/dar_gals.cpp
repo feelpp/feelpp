@@ -47,21 +47,28 @@ int main( int argc, char**argv )
     //# endmarker2 #
 
     auto vars = symbols<2>();
+    auto f = expr( option(_name="f",_prefix="functions").as<std::string>(), vars );
     auto beta_x = expr( option(_name="beta_x",_prefix="functions").as<std::string>(), vars );
     auto beta_y = expr( option(_name="beta_y",_prefix="functions").as<std::string>(), vars );
     auto beta = vec( beta_x, beta_y );
     auto epsilon = expr( option(_name="epsilon",_prefix="functions").as<std::string>(), vars );
     auto gamma = expr( option(_name="gamma",_prefix="functions").as<std::string>(), vars );
+    auto stab = expr( option(_name="delta",_prefix="functions").as<std::string>(), vars );
+    auto delta = stab*constant(1.0)/(1.0/h() + epsilon/(h()*h()));
+
+    auto  Aepsi = -epsilon*trace(hess(v))+ grad(v)*beta + gamma*id(v);
+    auto  Aepsit = -epsilon*trace(hesst(u))+ gradt(u)*beta + gamma*idt(u);
 
     //# marker3 #
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
-                  _expr=id(v));
-
+                  _expr=f*(id(v) + delta*Aepsi));
 
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
                   _expr=(gradt(u)*beta)*id(v)+epsilon*gradt(u)*trans(grad(v))+gamma*idt(u)*id(v) );
+    a+= integrate(_range=elements(mesh),
+                  _expr=delta*Aepsi*Aepsit );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
           _expr=constant(0.) );
     a.solve(_rhs=l,_solution=u);
