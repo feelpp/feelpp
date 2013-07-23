@@ -67,7 +67,21 @@ generic_options()
         ;
     return generic;
 }
-
+po::options_description
+functions_options( std::string const& prefix )
+{
+    po::options_description _options( "Functions " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"functions.alpha" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "alpha" )
+        ( prefixvm( prefix,"functions.beta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta" )
+        ( prefixvm( prefix,"functions.beta_x" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta x" )
+        ( prefixvm( prefix,"functions.beta_y" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta y" )
+        ( prefixvm( prefix,"functions.beta_z" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta z" )
+        ( prefixvm( prefix,"functions.epsilon" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "epsilon" )
+        ( prefixvm( prefix,"functions.gamma" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "gamma" )
+        ;
+    return _options;
+}
 po::options_description
 gmsh_options( std::string const& prefix )
 {
@@ -105,7 +119,7 @@ ginac_options( std::string const& prefix )
     return _options;
 }
 
-po::options_description 
+po::options_description
 error_options( std::string const& prefix )
 {
     po::options_description _options( "Error options (" + prefix + ")" );
@@ -157,6 +171,9 @@ feel_options( std::string const& prefix  )
 
         /* error options */
         .add( error_options( prefix ) )
+
+        /* functions options */
+        .add( functions_options( prefix ) )
 
         ;
 
