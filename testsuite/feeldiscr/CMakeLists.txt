@@ -4,13 +4,13 @@ foreach(TEST element elementminmax project bdf interpolation integration  integr
     form_interpolation integration_opt lift
     wire_basket solve_leak stencil
     evaluator element_serialize lambda trace operatorlinearfree functionallinearfree
-    lowerdim_entity integration_ginac spaces
+    lowerdim_entity integration_ginac spaces on_inside
     )
 
   feelpp_add_test( ${TEST} )
 
 endforeach()
 
-feelpp_add_test( integration_ho GEO test_integration_ho_geometry.geo )
+feelpp_add_test( integration_ho GEO test_integration_ho_geometry.geo test_on_inside.geo)
 # add_executable( test_wirebasket test_wirebasket.cpp )
 # target_link_libraries( test_wirebasket ${FEELPP_LIBRARIES})
