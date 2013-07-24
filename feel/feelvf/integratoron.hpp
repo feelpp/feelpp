@@ -341,12 +341,11 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     element_iterator __face_en = this->endElement();
     if ( __face_it != __face_en )
     {
-        if ( !__face_it->isConnectedTo0() )
-        {
-            LOG( WARNING ) << "face not connected" << *__face_it;
+        // get the first face properly connected
+        for( ; __face_it != __face_en; ++__face_it )
+            if ( !__face_it->isConnectedTo0() )
+                continue;
 
-            continue;
-        }
 
         dof_type const* __dof = _M_u.functionSpace()->dof().get();
 
@@ -404,6 +403,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
               __face_it != this->endElement();
               ++__face_it )
         {
+            if ( !__face_it->isConnectedTo0() )
+            {
+                LOG( WARNING ) << "face not connected" << *__face_it;
+
+                continue;
+            }
+
             DVLOG(2) << "FACE_ID = " << __face_it->id()
                      << " element id= " << __face_it->ad_first()
                      << " pos in elt= " << __face_it->pos_first()
