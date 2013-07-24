@@ -43,7 +43,7 @@ main( int argc, char** argv )
     typedef FunctionSpace<mesh_type,bases<Lagrange<2,Scalar>>,double> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
 
-    auto mesh = loadMesh(_mesh = new mesh_type, _filename="test_on_inside.geo" );
+    auto mesh = loadMesh(_mesh = new mesh_type );
     space_ptrtype Xh;
     Xh = space_type::New(mesh);
     auto u = Xh->element( "u" );
