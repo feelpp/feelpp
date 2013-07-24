@@ -1706,15 +1706,17 @@ void MatrixPetscMPI<T>::init( const size_type m,
                              /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
                              /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
                              //&_M_matttt);
-                             &( this->mat() ) ); //(&this->_M_mat));
+                             &this->_M_mat);
+                             //&( this->mat() ) ); //(&this->_M_mat));
 #else
     ierr = MatCreateAIJ ( this->comm(),
-                             m_local, n_local,
-                             m_global, n_global,
-                             /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
-                             /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
-                             //&_M_matttt);
-                             &( this->mat() ) ); //(&this->_M_mat));
+                          m_local, n_local,
+                          m_global, n_global,
+                          /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
+                          /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
+                          //&_M_matttt);
+                          &this->_M_mat);
+    //&( this->mat() ) ); //(&this->_M_mat));
 
 #endif
     CHKERRABORT( this->comm(),ierr );
