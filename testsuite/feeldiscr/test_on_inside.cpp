@@ -54,7 +54,10 @@ main( int argc, char** argv )
 
     l += integrate(_range=elements( mesh ), _expr=cst(1.));
     a += integrate(_range=elements( mesh ), _expr=idt(u)*id(v));
-    a += on(_range=markedfaces(mesh,"toto"),_expr=cst(0.1),_rhs=l,_element=u);
+    a += on(_range=markedfaces(mesh,"toto"),_expr=cst(1),_rhs=l,_element=u);
+    double _a_ = integrate( _range = markedfaces(mesh,"toto"),_expr = cst(1.0) ).evaluate()( 0,0 );
+    if(Feel::detail::Environment::rank() == 0) std::cout << "_a_ = " << _a_ << std::endl;
+
     a += on(_range=boundaryfaces(mesh),_expr=cst(0.1),_rhs=l,_element=u);
     a += on(_range=markedfaces(mesh,"toto"),_expr=cst(0.1),_rhs=l,_element=u);
     
