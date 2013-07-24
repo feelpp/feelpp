@@ -482,13 +482,15 @@ private:
     // disable
     MatrixPetsc( MatrixPetsc const & );
 
-
-private:
+protected:
 
     /**
      * Petsc matrix datatype to store values
      */
     Mat _M_mat;
+
+private:
+
 
     std::vector<IS> _M_petscIS;
 
