@@ -343,8 +343,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     {
         // get the first face properly connected
         for( ; __face_it != __face_en; ++__face_it )
-            if ( !__face_it->isConnectedTo0() )
-                continue;
+            if ( __face_it->isConnectedTo0() )
+                break;
 
 
         dof_type const* __dof = _M_u.functionSpace()->dof().get();
