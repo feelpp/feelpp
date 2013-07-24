@@ -454,7 +454,8 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
 
     auto err = ::system( __str.str().c_str() );
 #else
-    std::string _name = fs::path( __geoname ).stem().string();
+    fs::path gp = __geoname;
+    std::string _name = gp.stem().string();
 
     static bool gmshIsInit =false;
 
