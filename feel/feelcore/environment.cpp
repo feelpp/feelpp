@@ -55,8 +55,8 @@ class Env{
 public:
     static std::string getUserName()
         {
-            register struct passwd *pw;
-            register uid_t uid;
+            struct passwd *pw;
+            uid_t uid;
             int c;
 
             uid = geteuid ();
@@ -487,7 +487,7 @@ fs::path scratchdir()
     const char* env;
     // if scratsch dir not defined, define it
     env = getenv("FEELPP_SCRATCHDIR");
-    if (env != NULL && env[0] != '\0')
+    if (env == NULL || env[0] == '\0')
     {
         env = getenv("SCRATCHDIR");
         if (env != NULL && env[0] != '\0')
@@ -568,7 +568,9 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
-    S_scratchdir = scratchdir()/fs::path(argv[0]).filename();
+    S_scratchdir = scratchdir();
+    fs::path a0 = std::string(argv[0]);
+    S_scratchdir/= a0.filename();
     if ( !fs::exists( S_scratchdir ) )
         fs::create_directories( S_scratchdir );
     FLAGS_log_dir=S_scratchdir.string();
@@ -842,8 +844,8 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     if ( Environment::vm().count( "nochdir" ) )
         return;
 
-    fs::path rep_path = fs::current_path();
-    S_paths.push_back( rep_path );
+    fs::path rep_path;
+    S_paths.push_back( fs::current_path() );
 
     typedef std::vector< std::string > split_vector_type;
 
