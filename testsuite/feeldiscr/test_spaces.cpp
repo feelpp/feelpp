@@ -38,8 +38,8 @@ int main( int argc, char** argv)
 
     typedef Lagrange<2,Vectorial> b1_type;
     typedef Lagrange<1,Scalar> b2_type;
-    typedef Lagrange<0,Scalar,Continuous> b4_type;
-    typedef Lagrange<1,Scalar> b3_type;
+    typedef Lagrange<0,Scalar,Continuous> b3_type;
+    typedef Lagrange<1,Scalar> b4_type;
     typedef bases<b1_type,b2_type,b3_type,b4_type> basis_type;
     typedef Mesh<Simplex<2>> mesh_type;
     typedef FunctionSpace<mesh_type,basis_type> fspace_type;
