@@ -33,7 +33,7 @@ main( int argc, char** argv )
     typedef Lagrange<2, Scalar,Continuous,PointSetFekete> basis_t_type; // temperature
     typedef Lagrange<0, Scalar, Continuous> basis_l_type; // lagrange
 
-    typedef bases< basis_u_type , basis_p_type , basis_t_type, basis_l_type> basis_type;
+    typedef bases< basis_u_type , basis_p_type , basis_l_type, basis_t_type> basis_type;
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
@@ -43,11 +43,10 @@ main( int argc, char** argv )
 
 
 
-    backend_ptrtype backend( backend_type::build() );
     auto mesh = unitSquare();
 
     space_ptrtype Xh = space_type::New( mesh );
 
-    vector_ptrtype R( backend->newVector( Xh ) );
-    sparse_matrix_ptrtype J( backend->newMatrix( Xh,Xh ) );
+    vector_ptrtype R( backend()->newVector( Xh ) );
+    sparse_matrix_ptrtype J( backend()->newMatrix( Xh,Xh ) );
 }
