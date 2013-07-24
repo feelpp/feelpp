@@ -10,7 +10,7 @@
 #ifndef EIGEN_SELFADJOINT_MATRIX_VECTOR_H
 #define EIGEN_SELFADJOINT_MATRIX_VECTOR_H
 
-namespace Eigen { 
+namespace Eigen {
 
 namespace internal {
 
@@ -56,7 +56,7 @@ static EIGEN_DONT_INLINE void run(
   // FIXME this copy is now handled outside product_selfadjoint_vector, so it could probably be removed.
   // if the rhs is not sequentially stored in memory we copy it to a temporary buffer,
   // this is because we need to extract packets
-  ei_declare_aligned_stack_constructed_variable(Scalar,rhs,size,rhsIncr==1 ? const_cast<Scalar*>(_rhs) : 0);  
+  ei_declare_aligned_stack_constructed_variable(Scalar,rhs,size,rhsIncr==1 ? const_cast<Scalar*>(_rhs) : 0);
   if (rhsIncr!=1)
   {
     const Scalar* it = _rhs;
@@ -71,8 +71,8 @@ static EIGEN_DONT_INLINE void run(
   for (Index j=FirstTriangular ? bound : 0;
        j<(FirstTriangular ? size : bound);j+=2)
   {
-    register const Scalar* EIGEN_RESTRICT A0 = lhs + j*lhsStride;
-    register const Scalar* EIGEN_RESTRICT A1 = lhs + (j+1)*lhsStride;
+    const Scalar* EIGEN_RESTRICT A0 = lhs + j*lhsStride;
+    const Scalar* EIGEN_RESTRICT A1 = lhs + (j+1)*lhsStride;
 
     Scalar t0 = cjAlpha * rhs[j];
     Packet ptmp0 = pset1<Packet>(t0);
@@ -139,7 +139,7 @@ static EIGEN_DONT_INLINE void run(
   }
   for (Index j=FirstTriangular ? 0 : bound;j<(FirstTriangular ? bound : size);j++)
   {
-    register const Scalar* EIGEN_RESTRICT A0 = lhs + j*lhsStride;
+    const Scalar* EIGEN_RESTRICT A0 = lhs + j*lhsStride;
 
     Scalar t1 = cjAlpha * rhs[j];
     Scalar t2(0);
@@ -155,7 +155,7 @@ static EIGEN_DONT_INLINE void run(
 }
 };
 
-} // end namespace internal 
+} // end namespace internal
 
 /***************************************************************************
 * Wrapper to product_selfadjoint_vector
@@ -185,7 +185,7 @@ struct SelfadjointProductMatrix<Lhs,LhsMode,false,Rhs,0,true>
     typedef typename Dest::Scalar ResScalar;
     typedef typename Base::RhsScalar RhsScalar;
     typedef Map<Matrix<ResScalar,Dynamic,1>, Aligned> MappedDest;
-    
+
     eigen_assert(dest.rows()==m_lhs.rows() && dest.cols()==m_rhs.cols());
 
     typename internal::add_const_on_value_type<ActualLhsType>::type lhs = LhsBlasTraits::extract(m_lhs);
@@ -198,16 +198,16 @@ struct SelfadjointProductMatrix<Lhs,LhsMode,false,Rhs,0,true>
       EvalToDest = (Dest::InnerStrideAtCompileTime==1),
       UseRhs = (_ActualRhsType::InnerStrideAtCompileTime==1)
     };
-    
+
     internal::gemv_static_vector_if<ResScalar,Dest::SizeAtCompileTime,Dest::MaxSizeAtCompileTime,!EvalToDest> static_dest;
     internal::gemv_static_vector_if<RhsScalar,_ActualRhsType::SizeAtCompileTime,_ActualRhsType::MaxSizeAtCompileTime,!UseRhs> static_rhs;
 
     ei_declare_aligned_stack_constructed_variable(ResScalar,actualDestPtr,dest.size(),
                                                   EvalToDest ? dest.data() : static_dest.data());
-                                                  
+
     ei_declare_aligned_stack_constructed_variable(RhsScalar,actualRhsPtr,rhs.size(),
         UseRhs ? const_cast<RhsScalar*>(rhs.data()) : static_rhs.data());
-    
+
     if(!EvalToDest)
     {
       #ifdef EIGEN_DENSE_STORAGE_CTOR_PLUGIN
@@ -216,7 +216,7 @@ struct SelfadjointProductMatrix<Lhs,LhsMode,false,Rhs,0,true>
       #endif
       MappedDest(actualDestPtr, dest.size()) = dest;
     }
-      
+
     if(!UseRhs)
     {
       #ifdef EIGEN_DENSE_STORAGE_CTOR_PLUGIN
@@ -225,8 +225,8 @@ struct SelfadjointProductMatrix<Lhs,LhsMode,false,Rhs,0,true>
       #endif
       Map<typename _ActualRhsType::PlainObject>(actualRhsPtr, rhs.size()) = rhs;
     }
-      
-      
+
+
     internal::selfadjoint_matrix_vector_product<Scalar, Index, (internal::traits<_ActualLhsType>::Flags&RowMajorBit) ? RowMajor : ColMajor, int(LhsUpLo), bool(LhsBlasTraits::NeedToConjugate), bool(RhsBlasTraits::NeedToConjugate)>::run
       (
         lhs.rows(),                             // size
@@ -235,7 +235,7 @@ struct SelfadjointProductMatrix<Lhs,LhsMode,false,Rhs,0,true>
         actualDestPtr,                          // result info
         actualAlpha                             // scale factor
       );
-    
+
     if(!EvalToDest)
       dest = MappedDest(actualDestPtr, dest.size());
   }
