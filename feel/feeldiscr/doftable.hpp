@@ -3086,11 +3086,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 
     for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
     {
-        FEELPP_ASSERT( __face_it->isConnectedTo0() )
-        ( __face_it->id() )
-        ( __face_it->marker() )
-        ( __face_it->isConnectedTo0() )
-        ( __face_it->isConnectedTo1() ).warn( "[Dof::buildFaceDofMap] face not connected" );
+        LOG_IF(WARNING, !__face_it->isConnectedTo0() )
+            << "face " << __face_it->id() << " not connected"
+            << " marker : " << __face_it->marker()
+            << " connectedTo0 : " << __face_it->isConnectedTo0()
+            << " connectedTo1 : " << __face_it->isConnectedTo1();
 
         if ( !__face_it->isConnectedTo0() ) continue;
 
