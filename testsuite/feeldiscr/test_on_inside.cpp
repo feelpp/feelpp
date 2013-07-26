@@ -52,18 +52,18 @@ main( int argc, char** argv )
         nEle_glob, 
         std::plus<int>());
   }
+  double length = integrate( _range = markedfaces(mesh,"toto"),_expr = cst(1.0) ).evaluate()( 0,0 );
+
+  LOG(INFO) << "number of faces : " << nEle_glob ;
+  LOG(INFO) << "length : " << length << " expected value : " << math::sqrt(2*.8*.8) << " error " << std::fabs(length -  math::sqrt(2*.8*.8))/std::fabs(math::sqrt(2*.8*.8));
 
   CHECK( nEle_glob > 1 )
     << "Invalid number of faces marked toto: "
     << nEle_glob ;
-
-  double length = integrate( _range = markedfaces(mesh,"toto"),_expr = cst(1.0) ).evaluate()( 0,0 );
 
   CHECK( math::abs( length - math::sqrt(2*.8*.8) ) < 1e-10 )
     << "wrong line interface length between (.1,.1) amd (.9,.9)"
     << " length : " << length
     << " expected value : " << math::sqrt(2*.8*.8);
 
-  LOG(INFO) << "number of faces : " << nEle_glob ;
-  LOG(INFO) << "length : " << length << " expected value : " << math::sqrt(2*.8*.8) << " error " << std::fabs(length -  math::sqrt(2*.8*.8))/std::fabs(math::sqrt(2*.8*.8));
 }
