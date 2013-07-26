@@ -40,7 +40,8 @@ int main( int argc, char** argv)
     typedef Lagrange<1,Scalar> b2_type;
     typedef Lagrange<0,Scalar,Continuous> b3_type;
     typedef Lagrange<1,Scalar> b4_type;
-    typedef bases<b1_type,b2_type,b3_type,b4_type> basis_type;
+    //typedef bases<b1_type,b2_type,b3_type,b4_type> basis_type;
+    typedef bases<b1_type,b2_type,b3_type> basis_type;
     typedef Mesh<Simplex<2>> mesh_type;
     typedef FunctionSpace<mesh_type,basis_type> fspace_type;
     auto mesh = loadMesh( _mesh = new mesh_type );
@@ -52,21 +53,23 @@ int main( int argc, char** argv)
     auto u = U.element<0>();
     auto p = U.element<1>();
     auto l = U.element<2>();
-    auto t = U.element<3>();
+    //auto t = U.element<3>();
     auto a = form2( Xh, Xh );
     a  = integrate( elements(mesh), trans(idt(u))*id(u) );
     a += integrate( elements(mesh), trans(idt(p))*id(p) );
     a += integrate( elements(mesh), trans(idt(l))*id(l) );
-    a += integrate( elements(mesh), trans(idt(t))*id(t) );
+    //a += integrate( elements(mesh), trans(idt(t))*id(t) );
     auto b = form1( Xh );
     b  = integrate( elements(mesh), trans(vec(cst(1.),cst(1.)))*id(u) );
     b += integrate( elements(mesh), id(p) );
     b += integrate( elements(mesh), id(l) );
-    b += integrate( elements(mesh), id(t) );
+    //b += integrate( elements(mesh), id(t) );
     a.solve( _solution=U, _rhs=b );
 #if 0
     a.matrixPtr()->printMatlab( "a.m" );
     b.vectorPtr()->printMatlab( "b.m" );
     U.printMatlab( "U.m" );
 #endif
+    U.setOnes();
+    CHECK( math::abs(a(U,U)- 4)< 1e-10 ) << "invalid result a(1,1)=" << a(U,U) << " != " << 4;
 }
