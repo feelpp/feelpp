@@ -1548,6 +1548,11 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
         //
         for ( ; it != en; ++it )
         {
+            if ( it->isGhostFace() )
+            {
+                LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
+                continue;
+            }
             if ( it->isConnectedTo1() )
             {
                 if ( !isInitConnectionTo1 )
@@ -2407,7 +2412,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
         //
         for ( ; it != en; ++it )
         {
-
+            if ( it->isGhostFace() )
+            {
+                LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
+                continue;
+            }
             if ( it->isConnectedTo1() )
             {
                 FEELPP_ASSERT( it->isOnBoundary() == false   )

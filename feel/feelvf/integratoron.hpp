@@ -409,6 +409,14 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
                 continue;
             }
+            // do not process the face if it is a ghost face: beloging to two
+            // processes and being in a process id greater than the one
+            // corresponding face
+            if ( __face_it->isGhostFace() )
+            {
+                LOG(WARNING) << "face id : " << __face_it->id() << " is a ghost face";
+                continue;
+            }
 
             DVLOG(2) << "FACE_ID = " << __face_it->id()
                      << " element id= " << __face_it->ad_first()
