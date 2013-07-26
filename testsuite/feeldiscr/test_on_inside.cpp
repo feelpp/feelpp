@@ -49,6 +49,9 @@ main( int argc, char** argv )
     auto u = Xh->element( "u" );
     auto v = Xh->element( "v" );
 
+    CHECK( nelements( markedfaces(mesh,"toto") ) > 1 )
+        << "Invalid number of faces marked toto: "
+        << nelements( markedfaces(mesh,"toto") );
     double length = integrate( _range = markedfaces(mesh,"toto"),_expr = cst(1.0) ).evaluate()( 0,0 );
     CHECK( math::abs( length - math::sqrt(2*.8*.8) ) < 1e-10 )
         << "wrong line interface length between (.1,.1) amd (.9,.9)"
