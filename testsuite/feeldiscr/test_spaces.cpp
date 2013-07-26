@@ -48,6 +48,7 @@ int main( int argc, char** argv)
     auto Xh = fspace_type::New( mesh );
     auto v = backend()->newVector( Xh );
     auto M = backend()->newMatrix( Xh, Xh );
+    M->graph()->showMe( std::cout );
 
     auto U = Xh->element();
     auto u = U.element<0>();
