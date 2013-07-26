@@ -1108,11 +1108,13 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     {
         // cleanup the face data structure :
 
-        if ( !f_it->isConnected() )
+        if ( !f_it->isConnectedTo0() )
         {
+            LOG(INFO) << "removing face id : " << f_it->id()
+                      << " marker : " << f_it->marker();
             // remove all faces that are not connected to any elements
-            //f_it = this->faces().erase( f_it );
-            ++f_it;
+            f_it = this->faces().erase( f_it );
+            //++f_it;
         }
         else
         {
