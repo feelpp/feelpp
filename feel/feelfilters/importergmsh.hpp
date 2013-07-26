@@ -93,7 +93,7 @@ struct GMSHElement
         type( MSH_PNT ),
         physical( 0 ),
         elementary( 0 ),
-        numPartitions( 0 ),
+        numPartitions( 1 ),
         partition( 0 ),
         ghosts(),
         is_on_processor( false ),
@@ -684,11 +684,13 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     {
         for(int i = 0; i < numElements; i++)
         {
-          int num, type, physical = 0, elementary = 0, partition = 0, parent = 0;
+          int num, type, physical = 0, elementary = 0, parent = 0;
           int dom1 = 0, dom2 = 0, numVertices;
           std::vector<int> ghosts;
           int numTags;
-
+          // some faces may not be associated to a partition in the mesh file,
+          // hence will be read given the partition id 0 and will be discarded
+          int partition = this->worldComm().localRank();
           __is >> num  // elm-number
                >> type // elm-type
                >> numTags; // number-of-tags
@@ -907,12 +909,16 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     // add the element to the mesh
     for ( int __i = 0; __i < numElements; ++__i )
     {
+        LOG(INFO) << "element type : " << __et[__i].type << " id: " << __et[__i].num
+                  << " partition : " << __et[__i].partition << " isOnProc: " << __et[__i].isOnProcessor();
         // if the element is not associated to the processor (in partition or ghost) or
         // if the physical entity is ignored
         if ( __et[__i].isOnProcessor() == false ||
              __et[__i].isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
             continue;
-
+        LOG(INFO) << "Loading element type : " << __et[__i].type << " id: " << __et[__i].num
+                  << " partition : " << __et[__i].partition << " isOnProc: " << __et[__i].isOnProcessor()
+                  << " ....";
         // add the points associates to the element on the processor
         for ( uint16_type p = 0; p < __et[__i].numVertices; ++p )
         {
