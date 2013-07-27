@@ -463,16 +463,15 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
          this->version() != FEELPP_GMSH_FORMAT_VERSION )
         throw std::logic_error( "invalid gmsh file format version" );
 
-    DVLOG(2) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit()] starts\n";
-
-    DVLOG(2) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] starts\n";
-    DVLOG(2) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] filename = " << this->filename() << "\n";
+    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
+    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) filename = " << this->filename() << "\n";
 
     std::ifstream __is ( this->filename().c_str() );
 
     if ( !__is.is_open() )
     {
         std::ostringstream ostr;
+        LOG(ERROR) << "Invalid file name " << this->filename() << " (file not found)";
         ostr << "Invalid file name " << this->filename() << " (file not found)\n";
         throw std::invalid_argument( ostr.str() );
     }
