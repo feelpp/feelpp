@@ -1721,7 +1721,8 @@ void MatrixPetscMPI<T>::init( const size_type m,
 #endif
     CHKERRABORT( this->comm(),ierr );
 
-
+    // free
+    delete[] dnzOffProc;
 
     std::vector<PetscInt> ia( this->graph()->ia().size() );
     std::vector<PetscInt> ja( this->graph()->ja().size() );
