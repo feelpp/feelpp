@@ -37,7 +37,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
-
+#include <boost/assign/std/vector.hpp>
 #include <gflags/gflags.h>
 
 #include <feel/feelconfig.h>
@@ -346,28 +346,32 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
         parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
         processGenericOptions();
 
+        VLOG(2) << "options parsed and stored in database";
         /**
          * parse config file if given to command line
          */
         if ( S_vm.count( "config-file" ) )
         {
-            VLOG(2)<< " parsing " << S_vm["config-file"].as<std::string>() << "\n";
 
             if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
+                VLOG(2) << " parsing " << S_vm["config-file"].as<std::string>() << "...";
 
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
                 po::store( parse_config_file( ifs, desc, true ), S_vm );
                 po::notify( S_vm );
             }
         }
-
-        std::vector<fs::path> prefixes = boost::assign::list_of( fs::current_path() )
+        using namespace boost::assign;
+        std::vector<fs::path> prefixes = S_paths;
+#if 0
+        prefixes += boost::assign::list_of( fs::current_path() )
             ( fs::path ( Environment::localConfigRepository() ) )
             ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
             ( fs::path ( "/usr/share/feel/config" ) )
             ( fs::path ( "/usr/local/share/feel/config" ) )
             ( fs::path ( "/opt/local/share/feel/config" ) );
+#endif
         char* env;
         env = getenv("FEELPP_DIR");
         if (env != NULL && env[0] != '\0')
@@ -731,18 +735,22 @@ Environment::findFile( std::string const& filename )
 {
     fs::path cp = fs::current_path();
 
-    if ( fs::exists( fs::path( filename ) ) )
+    fs::path p( filename );
+    if ( p.is_absolute() && fs::exists( p ) )
     {
         LOG(INFO) << "File " << filename << " found";
         return filename;
     }
 
+#if 0
     // first try in the current path
     if ( fs::exists( cp / filename ) )
     {
         LOG(INFO) << "File " << (cp/filename) << " found";
         return ( cp/filename ).string();
     }
+#endif
+
     // look in to paths list from end-1 to begin
     auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
                             [&filename] ( fs::path const& p ) -> bool
@@ -755,6 +763,12 @@ Environment::findFile( std::string const& filename )
     {
         LOG(INFO) << "File " << (*it/filename) << " found";
         return ( *it / filename ).string();
+    }
+
+    if ( fs::exists( cp / filename ) )
+    {
+        LOG(INFO) << "File " << (cp/filename) << " found";
+        return ( cp/filename ).string();
     }
 
     if ( fs::path( filename ).extension() == ".geo" || fs::path( filename ).extension() == ".msh" )
