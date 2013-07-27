@@ -1412,11 +1412,15 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
-    fs::path mesh_name=filename;
+    // look for mesh_name in various directories (executable directory, current directory. ...)
+    // return an empty string if the file is not found
+
+    fs::path mesh_name=fs::path(Environment::findFile(filename));
     LOG_IF( WARNING, mesh_name.extension() != ".geo" && mesh_name.extension() != ".msh" )
         << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
 
-    if ( mesh_name.extension() == ".geo" && fs::exists( mesh_name ) )
+
+    if ( mesh_name.extension() == ".geo" )
     {
         return createGMSHMesh( _mesh=mesh,
                                _desc=geo( _filename=mesh_name.string(),
@@ -1435,7 +1439,7 @@ BOOST_PARAMETER_FUNCTION(
             );
     }
 
-    if ( mesh_name.extension() == ".msh"  && fs::exists( mesh_name )  )
+    if ( mesh_name.extension() == ".msh"  )
     {
         return loadGMSHMesh( _mesh=mesh,
                              _filename=mesh_name.string(),
@@ -1453,7 +1457,7 @@ BOOST_PARAMETER_FUNCTION(
 
     }
 
-    LOG(WARNING) << "file " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
+    LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     return unitHypercube<_mesh_type::nDim, typename _mesh_type::shape_type>();
 }
 

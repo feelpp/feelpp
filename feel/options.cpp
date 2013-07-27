@@ -43,7 +43,7 @@ file_options( std::string const& appname )
 {
     po::options_description file( "File options" );
     file.add_options()
-        ( "config-file", po::value<std::string>()->default_value(appname), "specify .cfg file" )
+        ( "config-file", po::value<std::string>()->default_value(appname+".cfg"), "specify .cfg file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
         ;
