@@ -506,7 +506,11 @@ void MatrixPetsc<T>::updatePCFieldSplit( PC & pc )
 
     if ( _M_mapPC[&pc]==false )
     {
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         const PCType pcName;
+#else
+        PCType pcName;
+#endif
         ierr = PCGetType( pc,&pcName );
         CHKERRABORT( this->comm(),ierr );
 
