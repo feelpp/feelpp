@@ -88,7 +88,11 @@ void PreconditionerPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         ierr = PCSetFromOptions ( M_pc );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         const PCType pc_type;
+#else
+        PCType pc_type;
+#endif
         ierr = PCGetType ( M_pc, &pc_type );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
@@ -481,7 +485,11 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string 
     // error messages...
     ierr = PCSetUp( pc );
     CHKERRABORT( worldComm.globalComm(),ierr );
+#if PETSC_VERSION_LESS_THAN(3,4,0)
     const PCType thepctype;
+#else
+    PCType thepctype;
+#endif
     ierr = PCGetType( pc, &thepctype );
     CHKERRABORT( worldComm.globalComm(),ierr );
     // To store array of local KSP contexts on this processor
