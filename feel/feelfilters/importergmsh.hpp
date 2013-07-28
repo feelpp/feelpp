@@ -133,7 +133,12 @@ struct GMSHElement
         indices( _indices )
         {
             int rank = Environment::worldComm().localRank();
-            if ( rank == partition )
+            if ( Environment::worldComm().globalSize() == 1 )
+            {
+                is_on_processor = true;
+                is_ghost = false;
+            }
+            else if ( rank == partition )
             {
                 is_on_processor = true;
                 is_ghost = false;
@@ -689,7 +694,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
           int numTags;
           // some faces may not be associated to a partition in the mesh file,
           // hence will be read given the partition id 0 and will be discarded
-          int partition = this->worldComm().localRank();
+          int partition = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
           __is >> num  // elm-number
                >> type // elm-type
                >> numTags; // number-of-tags
