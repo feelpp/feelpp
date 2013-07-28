@@ -241,7 +241,11 @@ void SolverLinearPetsc<T>::init ()
 #if PETSC_VERSION_LESS_THAN(3,0,0)
         KSPType ksp_type;
 #else
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         const KSPType ksp_type;
+#else
+        KSPType ksp_type;
+#endif
 #endif
 
         ierr = KSPGetType ( _M_ksp, &ksp_type );
@@ -280,7 +284,11 @@ void SolverLinearPetsc<T>::init ()
             PCShellSetContext( _M_pc,( void* )this->M_preconditioner.get() );
             PCShellSetSetUp( _M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( _M_pc,__feel_petsc_preconditioner_apply );
+#if PETSC_VERSION_LESS_THAN(3,4,0)
             const PCType pc_type;
+#else
+            PCType pc_type;
+#endif
             ierr = PCGetType ( _M_pc, &pc_type );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
 
