@@ -563,13 +563,13 @@ void MatrixPetsc<T>::updatePCFieldSplit( PC & pc )
 template <typename T>
 void MatrixPetsc<T>::zero ()
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" ) ;
+    CHECK( this->isInitialized() ) << "petsc matrix not properly initialized";
 
     int ierr=0;
 
     PetscBool is_assembled;
     MatAssembled( _M_mat, &is_assembled );
-
+    VLOG(2) << "Matrix is assembled : " << (is_assembled?"true":"false");
     if ( is_assembled )
     {
         ierr = MatZeroEntries( _M_mat );
@@ -2132,12 +2132,12 @@ template <typename T>
 void
 MatrixPetscMPI<T>::zero()
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" ) ;
+    CHECK ( this->isInitialized() ) <<  "petsc matrix not properly initialized";
     int ierr=0;
-
+    LOG(INFO) << "assembly status of the matrix";
     PetscBool is_assembled;
     MatAssembled( this->mat(), &is_assembled );
-
+    VLOG(2) << "Matrix is assembled : " << (is_assembled?"true":"false");
     if ( is_assembled )
     {
         ierr = MatZeroEntries( this->mat() );
@@ -2258,7 +2258,7 @@ void
 MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
 {
 
-    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" ) ;
+    CHECK ( this->isInitialized() ) <<  "petsc matrix not properly initialized";
 
     int ierr=0;
 
