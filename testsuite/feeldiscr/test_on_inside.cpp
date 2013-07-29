@@ -43,23 +43,15 @@ main( int argc, char** argv )
 
   auto mesh = loadMesh(_mesh = new mesh_type );
 
-  double nEle_Loc = nelements( markedfaces(mesh,"toto") );
-  double nEle_glob = nEle_Loc;
-
-  if (Environment::worldComm().size() > 1) {
-    mpi::all_reduce(Environment::worldComm().globalComm(),
-        nEle_Loc,
-        nEle_glob, 
-        std::plus<int>());
-  }
+  double nFaces_glob = nelements( markedfaces(mesh,"toto"), true );
   double length = integrate( _range = markedfaces(mesh,"toto"),_expr = cst(1.0) ).evaluate()( 0,0 );
 
-  LOG(INFO) << "number of faces : " << nEle_glob ;
+  LOG(INFO) << "global number of faces : " << nFaces_glob ;
   LOG(INFO) << "length : " << length << " expected value : " << math::sqrt(2*.8*.8) << " error " << std::fabs(length -  math::sqrt(2*.8*.8))/std::fabs(math::sqrt(2*.8*.8));
 
-  CHECK( nEle_glob > 1 )
+  CHECK( nFaces_glob > 1 )
     << "Invalid number of faces marked toto: "
-    << nEle_glob ;
+    << nFaces_glob ;
 
   CHECK( math::abs( length - math::sqrt(2*.8*.8) ) < 1e-10 )
     << "wrong line interface length between (.1,.1) amd (.9,.9)"
