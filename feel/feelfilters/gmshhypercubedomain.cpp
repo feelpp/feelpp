@@ -244,17 +244,21 @@ GmshHypercubeDomain::getDescription3D() const
 
     ostr << "};\n";
 
-
-    ostr << "Transfinite Line {4,10,2,8} = nx + 1  Using Progression 1;\n"
-         << "Transfinite Line {3,9,1,11} = ny + 1 Using Progression 1;\n"
-         << "Transfinite Line {14,18,13,22} = nz + 1 Using Progression 1;\n"
-         << "\n"
-         << "Transfinite Surface {6} = {3,2,1,4};\n"
-         << "Transfinite Surface {23} = {14,2,1,10};\n"
-         << "Transfinite Surface {19} = {6,10,1,4};\n"
-         << "Transfinite Surface {15} = {5,3,4,6};\n"
-         << "Transfinite Surface {27} = {5,14,2,3};\n"
-         << "Transfinite Surface {28} = {6,10,14,5};\n";
+    // if one wants a mesh which is regular using transfinite, remove
+    // the 'if' however tre is a bug in gmsh which prevent of doing
+    // thatat momentsee // https://github.com/feelpp/feelpp/issues/147
+    // for more details
+    if ( M_use_hypercube )
+        ostr << "Transfinite Line {4,10,2,8} = nx + 1  Using Progression 1;\n"
+             << "Transfinite Line {3,9,1,11} = ny + 1 Using Progression 1;\n"
+             << "Transfinite Line {14,18,13,22} = nz + 1 Using Progression 1;\n"
+             << "\n"
+             << "Transfinite Surface {6} = {3,2,1,4};\n"
+             << "Transfinite Surface {23} = {14,2,1,10};\n"
+             << "Transfinite Surface {19} = {6,10,1,4};\n"
+             << "Transfinite Surface {15} = {5,3,4,6};\n"
+             << "Transfinite Surface {27} = {5,14,2,3};\n"
+             << "Transfinite Surface {28} = {6,10,14,5};\n";
     if ( this->usePhysicalNames() == false && this->subStructuring() == false )
     {
         ostr << "Physical Line(1) = {1};\n"
