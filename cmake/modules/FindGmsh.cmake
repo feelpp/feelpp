@@ -32,13 +32,8 @@ find_program( GMSH_EXECUTABLE gmsh
   PATH
   $ENV{GMSH_DIR}/bin
   NO_DEFAULT_PATH
-  DOC "GMSH mesh generator" )
-find_program( GMSH_EXECUTABLE gmsh
-  PATH
-  $ENV{GMSH_DIR}/bin
   PATH_SUFFIXES bin
   DOC "GMSH mesh generator" )
-
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
@@ -48,16 +43,8 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     Gmsh.h Context.h GModel.h
     PATHS
     $ENV{GMSH_DIR}
-    NO_DEFAULT_PATH
     PATH_SUFFIXES include include/gmsh
     DOC "Directory where GMSH header files are stored" )
-  FIND_PATH(GMSH_INCLUDE_DIR
-    Gmsh.h Context.h GModel.h
-    PATHS
-    $ENV{GMSH_DIR}
-    PATH_SUFFIXES include include/gmsh
-    DOC "Directory where GMSH header files are stored" )
-
 
   include_directories(${GMSH_INCLUDE_DIR})
   if ( GMSH_INCLUDE_DIR )
@@ -85,10 +72,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
 
   FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
     PATH
-    $ENV{GMSH_DIR}/lib
-    NO_DEFAULT_PATH)
-  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATH
+    $ENV{GMSH_DIR}
     ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib )
@@ -103,9 +87,6 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       PATHS
       $ENV{GMSH_DIR}/lib
 	  NO_DEFAULT_PATH)
-    FIND_PATH(GMSH_LIBRARY_PATH
-      ${GMSHLIB}
-      $ENV{GMSH_DIR}/lib )
 
     set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
   endif(NOT GMSH_LIBRARY)
