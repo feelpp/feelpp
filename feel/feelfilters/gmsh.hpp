@@ -1005,6 +1005,8 @@ BOOST_PARAMETER_FUNCTION(
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
+      ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
+      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
@@ -1039,6 +1041,12 @@ BOOST_PARAMETER_FUNCTION(
         {
             VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
             fname = desc->refine( fname, refine, parametricnodes );
+        }
+
+        if ( rebuild_partitions )
+        {
+            desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);
+            fname=rebuild_partitions_filename;
         }
 
         ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
