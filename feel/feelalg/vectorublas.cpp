@@ -166,7 +166,7 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas()
     :
     super1(),
-    _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>, ublas::range() ) ),
+    _M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
     M_global_values_updated( false )
     //M_global_values()
 {
@@ -176,7 +176,7 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s )
     :
     super1( __s ),
-    _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>, ublas::range() ) ),
+    _M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
     M_global_values_updated( false )
     //M_global_values( __s )
 {
@@ -187,7 +187,7 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
     :
     super1( dm ),
-    _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>, ublas::range() ) ),
+    _M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
     M_global_values_updated( false )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
