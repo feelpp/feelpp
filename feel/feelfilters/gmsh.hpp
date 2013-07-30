@@ -35,6 +35,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/algorithm/for_each.hpp>
+#include <boost/icl/type_traits/is_map.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -242,6 +243,23 @@ public:
             return M_desc;
         }
 
+    //! \brief Get the value of a GMSH geometry parameter.
+    //! If the parameter does not match any parameter, the function throws
+    //! an out_of_range exception.
+    //!     \param _name Geo parameter name.
+    //! \return Return the geo parameter value.
+    double getGeoParameter( std::string const& _name )
+        {
+            return M_geoParamMap.at( _name );
+        }
+
+    //! \brief Get all GMSH geometry parameters.
+    //! \return Return a map containing the geo gmsh geometry parameters as {par,value}.
+    std::map<std::string, double> getGeoParameters()
+        {
+            return M_geoParamMap;
+        }
+
     /**
      * add the mid point of the domain
      */
@@ -439,6 +457,32 @@ public:
             M_addmidpoint = add;
         }
 
+    //! \brief Modify an existing geo parameter.
+    //! If the parameter does not match any parameter, the function throws
+    //! an out_of_range exception.
+    //!     \param _name Geo parameter name.
+    //!     \param _value Geo parameter value.
+    //! \return Return the current Gmsh object.
+    void setGeoParameter( std::string const& _name, double _value )
+        {
+            M_geoParamMap.at( _name ) = _value;
+        }
+
+    //! \brief Modify geo gmsh geometry parameters from a map of parameters.
+    //! If the parameter does not match any parameter, the function throws
+    //! an out_of_range exception.
+    //!     \param geomap A map containing the geo parameters (param,value).
+    void setGeoParameters( std::map<std::string, double> const& geomap, bool _update=1 )
+        {
+            if( _update )
+            {
+                for( const auto& iter : geomap)
+                    M_geoParamMap.at(iter.first) = iter.second;
+            }
+            else
+                M_geoParamMap = geomap;
+        }
+
     /**
      * Set the use of physical names to describe the boundaries of the domain: if \p option
      * is set to true then the generator will generate a PhysicalNames Section and replace
@@ -535,6 +579,19 @@ public:
      */
     void rebuildPartitionMsh( std::string const& nameMshInput,std::string const& nameMshOutput ) const;
 
+    //! Extract all parameters from a geo gmsh geometry description and store them into a map.
+    //! \param geo Gmsh geometry description.
+    //! \return Geo parameter map containing each parameter and its value.
+    std::map<std::string, double>  retrieveGeoParameters( std::string const& geo ) const;
+
+    //! \brief Create a map from a list of geometry parameters string and separated
+    //! by a character `:`.
+    //!     \param geopars List of parameters as `key=value`. Each new parameter
+    //! is separated by a char `:`.
+    //! \return Return a map of GMSH geometry parameters and their values. If the string
+    //! is empty, it returns an empty map.
+    static std::map<std::string, double> gpstr2map( std::string const& geopars );
+
     //@}
 
 protected:
@@ -583,6 +640,9 @@ protected:
 
     // description of the geometry
     mutable std::string M_desc;
+
+    // geometry parameters map
+    std::map< std::string, double > M_geoParamMap;
 
     //! bounding box
     std::vector<std::pair<double,double> > M_I;
@@ -999,8 +1059,9 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( format,         *, option(_name="gmsh.format").template as<int>() )
       ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
-      ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
-      ( straighten,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
+      ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
+      ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
+      ( straighten,      *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
@@ -1114,6 +1175,7 @@ BOOST_PARAMETER_FUNCTION(
       ( recombine,      *( boost::is_integral<mpl::_> )    , 0 )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
+      ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
       ( h,              *( boost::is_arithmetic<mpl::_> ), double( 0.1 ) )
       ( convex,         *( boost::is_convertible<mpl::_,std::string> ), "Simplex" )
       ( addmidpoint,    *( boost::is_integral<mpl::_> ), true )
@@ -1129,6 +1191,8 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
     gmsh_ptr->setPrefix( name );
+    gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
+    gmsh_ptr->setGeoParameters( geo_parameters );
     gmsh_ptr->setCharacteristicLength( h );
     gmsh_ptr->setAddMidPoint( addmidpoint );
     gmsh_ptr->usePhysicalNames( usenames );
@@ -1157,6 +1221,7 @@ BOOST_PARAMETER_FUNCTION(
       ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
     ( optional
       ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
+      ( geo_parameters,    *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map( option(_name="gmsh.geo-variables-list").template as<std::string>() ) )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
@@ -1183,6 +1248,8 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( filename_with_path ) );
+    gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
+    gmsh_ptr->setGeoParameters( geo_parameters );
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
