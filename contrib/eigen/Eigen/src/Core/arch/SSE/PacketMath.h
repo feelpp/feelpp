@@ -38,7 +38,7 @@ template<> struct is_arithmetic<__m128d> { enum { value = true }; };
 
 #define vec2d_swizzle1(v,p,q) \
   (_mm_castsi128_pd(_mm_shuffle_epi32( _mm_castpd_si128(v), ((q*2+1)<<6|(q*2)<<4|(p*2+1)<<2|(p*2)))))
-  
+
 #define vec4f_swizzle2(a,b,p,q,r,s) \
   (_mm_shuffle_ps( (a), (b), ((s)<<6|(r)<<4|(q)<<2|(p))))
 
@@ -491,8 +491,8 @@ template<> EIGEN_STRONG_INLINE int predux_min<Packet4i>(const Packet4i& a)
   // for GCC (eg., it does not like using std::min after the pstore !!)
   EIGEN_ALIGN16 int aux[4];
   pstore(aux, a);
-  register int aux0 = aux[0]<aux[1] ? aux[0] : aux[1];
-  register int aux2 = aux[2]<aux[3] ? aux[2] : aux[3];
+  int aux0 = aux[0]<aux[1] ? aux[0] : aux[1];
+  int aux2 = aux[2]<aux[3] ? aux[2] : aux[3];
   return aux0<aux2 ? aux0 : aux2;
 }
 
@@ -512,8 +512,8 @@ template<> EIGEN_STRONG_INLINE int predux_max<Packet4i>(const Packet4i& a)
   // for GCC (eg., it does not like using std::min after the pstore !!)
   EIGEN_ALIGN16 int aux[4];
   pstore(aux, a);
-  register int aux0 = aux[0]>aux[1] ? aux[0] : aux[1];
-  register int aux2 = aux[2]>aux[3] ? aux[2] : aux[3];
+  int aux0 = aux[0]>aux[1] ? aux[0] : aux[1];
+  int aux2 = aux[2]>aux[3] ? aux[2] : aux[3];
   return aux0>aux2 ? aux0 : aux2;
 }
 

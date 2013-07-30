@@ -6581,10 +6581,10 @@ expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
  */
 template<int Order,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>>>
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>>>
 Pch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( mesh );
 }
 
 /**

@@ -149,6 +149,7 @@ macro(feelpp_add_test)
   if ( NOT FEELPP_TEST_SRCS )
     set(targetname test_${FEELPP_TEST_NAME})
     set(filename test_${FEELPP_TEST_NAME}.cpp)
+
     add_executable(${targetname} ${filename})
     target_link_libraries(${targetname} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
     set_property(TARGET ${targetname} PROPERTY LABELS testsuite)
@@ -162,7 +163,10 @@ macro(feelpp_add_test)
       )
 
     set_property(TEST ${targetname} PROPERTY LABELS testsuite)
-
+    set(cfgname test_${FEELPP_TEST_NAME}.cfg)
+    if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${cfgname} )
+      configure_file(  ${cfgname} ${cfgname} )
+    endif()
     if ( FEELPP_TEST_GEO )
       foreach(  geo ${FEELPP_TEST_GEO} )
         # extract geo filename  to be copied in binary dir

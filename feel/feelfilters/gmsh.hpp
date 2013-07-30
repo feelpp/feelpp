@@ -1005,6 +1005,8 @@ BOOST_PARAMETER_FUNCTION(
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
+      ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
+      ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
@@ -1039,6 +1041,12 @@ BOOST_PARAMETER_FUNCTION(
         {
             VLOG(1) << "Refine mesh ( level: " << refine << ")\n";
             fname = desc->refine( fname, refine, parametricnodes );
+        }
+
+        if ( rebuild_partitions )
+        {
+            desc->rebuildPartitionMsh(fname,rebuild_partitions_filename);
+            fname=rebuild_partitions_filename;
         }
 
         ImporterGmsh<_mesh_type> import( fname, FEELPP_GMSH_FORMAT_VERSION, worldcomm );
@@ -1399,6 +1407,7 @@ BOOST_PARAMETER_FUNCTION(
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( physical_are_elementary_regions,		   (bool), option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
       ( worldcomm,       (WorldComm), Environment::worldComm() )
+      ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
@@ -1411,11 +1420,15 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
-    fs::path mesh_name=filename;
+    // look for mesh_name in various directories (executable directory, current directory. ...)
+    // return an empty string if the file is not found
+
+    fs::path mesh_name=fs::path(Environment::findFile(filename));
     LOG_IF( WARNING, mesh_name.extension() != ".geo" && mesh_name.extension() != ".msh" )
         << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
 
-    if ( mesh_name.extension() == ".geo" && fs::exists( mesh_name ) )
+
+    if ( mesh_name.extension() == ".geo" )
     {
         return createGMSHMesh( _mesh=mesh,
                                _desc=geo( _filename=mesh_name.string(),
@@ -1423,17 +1436,18 @@ BOOST_PARAMETER_FUNCTION(
                                _straighten=straighten,
                                _refine=refine,
                                _update=update,
-                               _physical_are_elementary_regions=physical_are_elementary_regions//,
-                               //_worldcomm=worldcomm,
-                               //_rebuild_partitions=rebuild_partitions,
-                               //_rebuild_partitions_filename=rebuild_partitions_filename,
-                               //_partitions=partitions,
-                               //_partitioner=partitioner,
-                               //_partition_file=partition_file
+                               _physical_are_elementary_regions=physical_are_elementary_regions,
+                               _force_rebuild=force_rebuild,
+                               _worldcomm=worldcomm,
+                               _rebuild_partitions=rebuild_partitions,
+                               _rebuild_partitions_filename=rebuild_partitions_filename,
+                               _partitions=partitions,
+                               _partitioner=partitioner,
+                               _partition_file=partition_file
             );
     }
 
-    if ( mesh_name.extension() == ".msh"  && fs::exists( mesh_name )  )
+    if ( mesh_name.extension() == ".msh"  )
     {
         return loadGMSHMesh( _mesh=mesh,
                              _filename=mesh_name.string(),
@@ -1448,7 +1462,10 @@ BOOST_PARAMETER_FUNCTION(
                              _partitioner=partitioner,
                              _partition_file=partition_file
             );
+
     }
+
+    LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     return unitHypercube<_mesh_type::nDim, typename _mesh_type::shape_type>();
 }
 

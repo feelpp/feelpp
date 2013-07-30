@@ -67,6 +67,11 @@ public:
     {
     }
     bool
+    isGhostFace( size_type p ) const
+    {
+        return false;
+    }
+    bool
     isInterProcessDomain( size_type /*p*/ ) const
     {
         return false;
@@ -226,6 +231,13 @@ public:
                  boost::get<3>( M_element1 ) != invalid_size_type_value );
     }
 
+    bool
+    isGhostFace( size_type p ) const
+    {
+        return ( ( boost::get<3>( M_element1 ) != invalid_size_type_value ) &&
+                 ( ( ( boost::get<3>( M_element0 ) == p ) && ( boost::get<3>( M_element1 ) < p ) ) ||
+                   ( ( boost::get<3>( M_element0 ) < p ) && ( boost::get<3>( M_element1 ) == p ) ) ) );
+    }
 
     bool
     isInterProcessDomain( size_type p ) const
@@ -566,6 +578,11 @@ public:
         return super::processId();
     }
 
+    bool isGhostFace() const
+    {
+        return super2::isGhostFace( super::processId()  );
+    }
+
     /**
      * \return \p true if interprocess domain face, \p false otherwise
      */
@@ -777,6 +794,12 @@ public:
     {
         return super::id();
     }
+
+    bool isGhostFace() const
+    {
+        return super2::isGhostFace( super::processId()  );
+    }
+
 
     /**
      * \return \p true if interprocess domain face, \p false otherwise
@@ -1064,6 +1087,12 @@ public:
     {
         return super::marker3();
     }
+
+    bool isGhostFace() const
+    {
+        return super2::isGhostFace( super::processId()  );
+    }
+
 
     /**
      * \return \p true if interprocess domain face, \p false otherwise
@@ -1387,6 +1416,12 @@ public:
     {
         return super::marker3();
     }
+
+    bool isGhostFace() const
+    {
+        return super2::isGhostFace( super::processId()  );
+    }
+
 
     /**
      * \return \p true if interprocess domain face, \p false otherwise
