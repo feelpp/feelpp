@@ -86,6 +86,9 @@ public :
 
     typedef typename FunctionSpaceDefinition::space_type space_type;
 
+    typedef typename space_type::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
+
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
