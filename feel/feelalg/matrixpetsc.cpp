@@ -343,7 +343,7 @@ void MatrixPetsc<T>::init ( const size_type m,
                                  //(int*) this->graph()->nNzOnProc().data(),
                                  &_M_mat );
         CHKERRABORT( this->comm(),ierr );
-
+        delete[] dnz;
         //ierr = MatSeqAIJSetPreallocation( _M_mat, 0, (int*)this->graph()->nNzOnProc().data() );
 #if 0
         ierr = MatSeqAIJSetPreallocation( _M_mat, 0, dnz );
