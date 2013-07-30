@@ -92,10 +92,9 @@ public:
     /* export */
     typedef Exporter<mesh_type> export_type;
 
-    LaplacianV( std::string const& basis_name,
-                po::variables_map const& vm, AboutData const& ad )
+    LaplacianV( std::string const& basis_name )
         :
-        super( vm, ad ),
+        super(),
         M_backend(),
         M_basis_name( basis_name ),
         M_exporter()

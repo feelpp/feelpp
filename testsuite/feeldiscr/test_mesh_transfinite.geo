@@ -1,4 +1,4 @@
-h = 0.4;
+h = 10;
 
 // Mesh.CharacteristicLengthExtendFromBoundary=1;
 // Mesh.CharacteristicLengthFromPoints=1;
@@ -39,7 +39,7 @@ Surface Loop(26) = {16, 18, 24, 22, 14, 20};
 Volume(26) = {26};
 
 
-Transfinite Line {1,2,3,4,5,6,7,8,9,10,11,12} = 10 Using Progression 1;
+Transfinite Line {1,2,3,4,5,6,7,8,9,10,11,12} = 2 Using Progression 1;
 Transfinite Surface {14,16,18,20,22,24};
 Transfinite Volume {26};
 
