@@ -320,6 +320,11 @@ namespace Feel
                         }
                 }
 
+                template<typename CTX>
+                void updateContext( CTX const& ctx )
+                {
+                    update( ctx->gmContext() );
+                }
 
                 value_type
                 evalij( uint16_type i, uint16_type j ) const
