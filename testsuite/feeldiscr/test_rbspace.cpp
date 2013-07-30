@@ -84,6 +84,8 @@ public :
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
     typedef FunctionSpace<mesh_type,bases<Lagrange<Order> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
+    typedef typename space_type::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
 
     Model()
         :
@@ -100,8 +102,8 @@ public :
 
         auto basis_x = vf::project( Xh , elements(mesh), Px() );
         auto basis_y = vf::project( Xh , elements(mesh), Py() );
-        RbSpace->addBasisElement( basis_x );
-        RbSpace->addBasisElement( basis_y );
+        RbSpace->addPrimalBasisElement( basis_x );
+        RbSpace->addPrimalBasisElement( basis_y );
 
         int rbspace_size = RbSpace->size();
 
@@ -164,6 +166,7 @@ public :
         u.setCoefficient( 0 , 0 );
         u.setCoefficient( 1 , 1 );
         u_fem = u.expansion();
+        LOG( INFO ) << "call evaluate from context fem idv(ufem)";
         fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
         rb_evaluations = u.evaluate( ctxrb );
         true_values(0)=t1(1); true_values(1)=t2(1); true_values(2)=t3(1);
@@ -175,6 +178,7 @@ public :
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
 
+        LOG( INFO ) << "call evaluate from context rb idv(u)";
         rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
         norm_rb_evaluations_from_ctxrb = rb_evaluate_from_contextrb.norm();
         BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-14 );
