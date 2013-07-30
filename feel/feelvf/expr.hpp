@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -1556,7 +1556,7 @@ public:
         FEELPP_STRONG_INLINE value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( (uint16_type)CType==-1 ) );
             //return M_one[c1];
         }
         vector_type M_one;
