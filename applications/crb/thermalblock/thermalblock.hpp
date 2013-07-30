@@ -46,6 +46,7 @@
 #include <vector>
 
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 namespace Feel
 {
@@ -139,9 +140,8 @@ public :
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
  */
-
-
-class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >
+class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >,
+                     public boost::enable_shared_from_this< ThermalBlock >
 {
 
     static const uint16_type nx = 3;
@@ -197,6 +197,10 @@ public:
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
 
     //! an element type of the approximation function space
@@ -336,6 +340,13 @@ public:
     functionspace_ptrtype functionSpace()
     {
         return Xh;
+    }
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
     }
 
     /**
@@ -496,6 +507,7 @@ private:
     parameterspace_ptrtype M_Dmu;
 
     functionspace_ptrtype Xh;
+    rbfunctionspace_ptrtype RbXh;
     element_ptrtype pT;
 
     mesh_ptrtype mmesh;
@@ -661,6 +673,8 @@ ThermalBlock::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = functionspace_type::New( mmesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mmesh );
+
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
