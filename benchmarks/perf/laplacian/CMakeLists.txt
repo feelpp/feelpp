@@ -25,8 +25,8 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 add_custom_target(gen_feel_perf_laplacian ALL )
 #foreach(N 2 3 4 5)
-foreach(S "Simplex" "Hypercube")
-#foreach(S "Hypercube")
+#foreach(S "Simplex" "Hypercube")
+foreach(S "Simplex")
 foreach(P "Lagrange")
 foreach(D 2 3)
   foreach(N 1 2 3)
@@ -78,6 +78,7 @@ endforeach()
 endforeach()
 
 
+#add_executable(feel_perf_laplacian  ${lagrange} bench.cpp)
 add_executable(feel_perf_laplacian  ${lagrange} ${cr} bench.cpp)
 #add_executable(feel_perf_laplacian ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_laplacian_Hypercube_2D_CrouzeixRaviart_1.cpp  bench.cpp)
 add_dependencies(feel_perf_laplacian gen_feel_perf_laplacian)
@@ -85,4 +86,3 @@ target_link_libraries(feel_perf_laplacian ${FEELPP_LIBRARIES})
 
 
 configure_file(laplacian.cfg laplacian.cfg)
-

@@ -40,12 +40,20 @@ endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 
 OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
-
+OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
 
 # enable mpi mode
 IF ( FEELPP_ENABLE_MPI_MODE )
   SET( FEELPP_ENABLE_MPI_MODE 1 )
 ENDIF()
+
+# disable alignement
+MARK_AS_ADVANCED(FEELPP_DISABLE_EIGEN_ALIGNMENT)
+if ( FEELPP_DISABLE_EIGEN_ALIGNMENT )
+  add_definitions(-DEIGEN_DONT_ALIGN=1 -DEIGEN_DONT_VECTORIZE=1)
+  message(STATUS "Disabling alignment and vectorisation in Feel++/Eigen")
+endif()
+
 
 # enable move semantics
 MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
@@ -82,7 +90,7 @@ if ( APPLE )
   MESSAGE(STATUS "Use mpi compiler ${MPI_COMPILER}")
 
 endif( APPLE )
-FIND_PACKAGE(MPI)
+FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
   SET( FEELPP_HAS_MPI 1 )
@@ -262,17 +270,13 @@ if ( GLPK_FOUND )
 endif()
 
 # google perf tools
-if (APPLE)
-  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" OFF)
-else()
-  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
-endif()
+option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" OFF)
 if ( FEELPP_ENABLE_GOOGLEPERFTOOLS )
   find_package(GooglePerfTools)
   if ( GOOGLE_PERFTOOLS_FOUND )
     message(STATUS "Google PerfTools: ${TCMALLOC_LIBRARIES} ${STACKTRACE_LIBRARIES} ${PROFILER_LIBRARIES}")
     include_directories(${GOOGLE_PERFTOOLS_INCLUDE_DIR})
-    SET(FEELPP_LIBRARIES ${TCMALLOC_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_LIBRARIES  ${FEELPP_LIBRARIES} ${TCMALLOC_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GooglePerfTools" )
   endif()
 endif( FEELPP_ENABLE_GOOGLEPERFTOOLS )

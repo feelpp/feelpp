@@ -52,33 +52,37 @@ namespace Feel
 {
 namespace detail
 {
-struct GMSHPoint
+class GMSHPoint
 {
-    int id;
+public:
     Eigen::Vector3d x;
+    Eigen::Vector2d uv;
+    int id;
     bool onbdy;
     bool parametric;
     int gdim,gtag;
-    Eigen::Vector2d uv;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     GMSHPoint()
         :
-        id( 0 ),
         x( Eigen::Vector3d::Zero() ),
+        uv( Eigen::Vector2d::Zero() ),
+        id( 0 ),
         onbdy( false ),
         parametric( false ),
         gdim( 0 ),
-        gtag( 0 ),
-        uv( Eigen::Vector2d::Zero() )
+        gtag( 0 )
         {}
     GMSHPoint(GMSHPoint const& p )
         :
-        id ( p.id ),
         x( p.x ),
+        uv( p.uv ),
+        id ( p.id ),
         onbdy( p.onbdy ),
         parametric( p.parametric ),
         gdim( p.gdim ),
-        gtag( p.gtag ),
-        uv( p.uv )
+        gtag( p.gtag )
         {}
 };
 struct GMSHElement
@@ -89,7 +93,7 @@ struct GMSHElement
         type( MSH_PNT ),
         physical( 0 ),
         elementary( 0 ),
-        numPartitions( 0 ),
+        numPartitions( 1 ),
         partition( 0 ),
         ghosts(),
         is_on_processor( false ),
@@ -129,7 +133,12 @@ struct GMSHElement
         indices( _indices )
         {
             int rank = Environment::worldComm().localRank();
-            if ( rank == partition )
+            if ( Environment::worldComm().globalSize() == 1 )
+            {
+                is_on_processor = true;
+                is_ghost = false;
+            }
+            else if ( rank == partition )
             {
                 is_on_processor = true;
                 is_ghost = false;
@@ -459,16 +468,15 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
          this->version() != FEELPP_GMSH_FORMAT_VERSION )
         throw std::logic_error( "invalid gmsh file format version" );
 
-    DVLOG(2) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit()] starts\n";
-
-    DVLOG(2) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] starts\n";
-    DVLOG(2) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] filename = " << this->filename() << "\n";
+    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
+    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) filename = " << this->filename() << "\n";
 
     std::ifstream __is ( this->filename().c_str() );
 
     if ( !__is.is_open() )
     {
         std::ostringstream ostr;
+        LOG(ERROR) << "Invalid file name " << this->filename() << " (file not found)";
         ostr << "Invalid file name " << this->filename() << " (file not found)\n";
         throw std::invalid_argument( ostr.str() );
     }
@@ -680,11 +688,13 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     {
         for(int i = 0; i < numElements; i++)
         {
-          int num, type, physical = 0, elementary = 0, partition = 0, parent = 0;
+          int num, type, physical = 0, elementary = 0, parent = 0;
           int dom1 = 0, dom2 = 0, numVertices;
           std::vector<int> ghosts;
           int numTags;
-
+          // some faces may not be associated to a partition in the mesh file,
+          // hence will be read given the partition id 0 and will be discarded
+          int partition = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
           __is >> num  // elm-number
                >> type // elm-type
                >> numTags; // number-of-tags
@@ -908,7 +918,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         if ( __et[__i].isOnProcessor() == false ||
              __et[__i].isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
             continue;
-
         // add the points associates to the element on the processor
         for ( uint16_type p = 0; p < __et[__i].numVertices; ++p )
         {

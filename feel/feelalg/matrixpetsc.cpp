@@ -343,7 +343,7 @@ void MatrixPetsc<T>::init ( const size_type m,
                                  //(int*) this->graph()->nNzOnProc().data(),
                                  &_M_mat );
         CHKERRABORT( this->comm(),ierr );
-
+        delete[] dnz;
         //ierr = MatSeqAIJSetPreallocation( _M_mat, 0, (int*)this->graph()->nNzOnProc().data() );
 #if 0
         ierr = MatSeqAIJSetPreallocation( _M_mat, 0, dnz );
@@ -506,7 +506,11 @@ void MatrixPetsc<T>::updatePCFieldSplit( PC & pc )
 
     if ( _M_mapPC[&pc]==false )
     {
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         const PCType pcName;
+#else
+        PCType pcName;
+#endif
         ierr = PCGetType( pc,&pcName );
         CHKERRABORT( this->comm(),ierr );
 
@@ -563,13 +567,13 @@ void MatrixPetsc<T>::updatePCFieldSplit( PC & pc )
 template <typename T>
 void MatrixPetsc<T>::zero ()
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" ) ;
+    CHECK( this->isInitialized() ) << "petsc matrix not properly initialized";
 
     int ierr=0;
 
     PetscBool is_assembled;
     MatAssembled( _M_mat, &is_assembled );
-
+    VLOG(2) << "Matrix is assembled : " << (is_assembled?"true":"false");
     if ( is_assembled )
     {
         ierr = MatZeroEntries( _M_mat );
@@ -1706,20 +1710,23 @@ void MatrixPetscMPI<T>::init( const size_type m,
                              /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
                              /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
                              //&_M_matttt);
-                             &( this->mat() ) ); //(&this->_M_mat));
+                             &this->_M_mat);
+                             //&( this->mat() ) ); //(&this->_M_mat));
 #else
     ierr = MatCreateAIJ ( this->comm(),
-                             m_local, n_local,
-                             m_global, n_global,
-                             /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
-                             /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
-                             //&_M_matttt);
-                             &( this->mat() ) ); //(&this->_M_mat));
+                          m_local, n_local,
+                          m_global, n_global,
+                          /*PETSC_DECIDE*//*n_dnz*/0, /*PETSC_NULL*/dnz,
+                          /*PETSC_DECIDE*/0/*n_dnzOffProc*/, dnzOffProc,
+                          //&_M_matttt);
+                          &this->_M_mat);
+    //&( this->mat() ) ); //(&this->_M_mat));
 
 #endif
     CHKERRABORT( this->comm(),ierr );
 
-
+    // free
+    delete[] dnzOffProc;
 
     std::vector<PetscInt> ia( this->graph()->ia().size() );
     std::vector<PetscInt> ja( this->graph()->ja().size() );
@@ -2129,12 +2136,12 @@ template <typename T>
 void
 MatrixPetscMPI<T>::zero()
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" ) ;
+    CHECK ( this->isInitialized() ) <<  "petsc matrix not properly initialized";
     int ierr=0;
-
+    LOG(INFO) << "assembly status of the matrix";
     PetscBool is_assembled;
     MatAssembled( this->mat(), &is_assembled );
-
+    VLOG(2) << "Matrix is assembled : " << (is_assembled?"true":"false");
     if ( is_assembled )
     {
         ierr = MatZeroEntries( this->mat() );
@@ -2255,7 +2262,7 @@ void
 MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
 {
 
-    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" ) ;
+    CHECK ( this->isInitialized() ) <<  "petsc matrix not properly initialized";
 
     int ierr=0;
 

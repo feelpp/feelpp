@@ -38,8 +38,12 @@ namespace Feel
     static const bool imIsPoly = true;
     double operator()( uint16_type, uint16_type, ublas::vector<double> const& x, ublas::vector<double> const& /*n*/ ) const
     {
-      return math::cos( x[0] ) * math::sin( x[1] );
+      double a = x[0];
+      double b = x[1];
+      return _esp*std::min(a,b); 
     }
+    void setEps(double _a=0.){ _esp = _a;}
+    double _esp;
   };
 }
 /// [marker1]
@@ -72,7 +76,7 @@ int main(int argc, char**argv )
 
   //Define symbols, ie "x", "y"...
   std::vector<GiNaC::symbol> vars = symbols<Dim>();
-  std::string _u = option(_name="_ex_").template as<std::string>();
+  std::string _u = option(_name="_ex_").as<std::string>();
 
   //Create the expression from the string
   GiNaC::ex expr_u = parse(_u,vars);
@@ -83,7 +87,9 @@ int main(int argc, char**argv )
   e->add( "u", u );
 
 /// [marker3]
-  v = vf::project( _space=Vh, _range=elements(mesh), _expr=idf(myFunctor()));
+  Feel::myFunctor _f;
+ _f.setEps(0.1); 
+  v = vf::project( _space=Vh, _range=elements(mesh), _expr=idf(_f));
 /// [marker3]
 
   // export results
