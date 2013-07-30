@@ -86,7 +86,8 @@ public :
     typedef MeshType mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef typename super::element_type space_element_type;
+    //typedef typename super::element_type space_element_type;
+    typedef typename model_type::element_type space_element_type;
     typedef boost::shared_ptr<space_element_type> space_element_ptrtype;
 
     typedef std::vector< space_element_type > rb_basis_type;
@@ -101,9 +102,11 @@ public :
     typedef typename parameter::binding<args, tag::bases_list, Feel::detail::bases<Lagrange<1,Scalar> > >::type bases_list; // FEM basis
     typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
 
+
     //static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
     static const bool is_composite = super::is_composite;
     static const bool is_product = super::is_product ;
+    static const uint16_type nSpaces = super::nSpaces;
 
 
     struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
@@ -152,6 +155,23 @@ public :
             mpl::identity<bases_list>,
             mpl::identity<basis_0_type> >::type::type basis_type;
 
+
+    typedef typename super::periodicity_type periodicity_type;
+    typedef boost::shared_ptr<periodicity_type> periodicity_ptrtype;
+
+
+    ReducedBasisSpace( model_ptrtype const& model,
+                       mesh_ptrtype const& mesh,
+                       size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
+                       periodicity_type  periodicity = periodicity_type(),
+                       std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
+        :
+        super( mesh, mesh_components, periodicity, _worldsComm ),
+        M_mesh( mesh ),
+        M_model( model )
+    {
+        this->init();
+    }
     ReducedBasisSpace( boost::shared_ptr<ModelType> model , boost::shared_ptr<MeshType> mesh )
         :
         super ( mesh ),
@@ -162,18 +182,31 @@ public :
         this->init();
     }
 
+
+    ReducedBasisSpace( boost::shared_ptr<ModelType> model , boost::shared_ptr<MeshType> mesh,  periodicity_ptrtype & periodicity )
+        :
+        super ( mesh , MESH_RENUMBER | MESH_CHECK , periodicity ),
+        M_mesh( mesh ),
+        M_model( model )
+    {
+        LOG( INFO ) <<" ReducedBasisSpace constructor ( with periodicity )" ;
+        this->init();
+    }
+
     //copy constructor
     ReducedBasisSpace( ReducedBasisSpace const& rb )
         :
         super ( rb.M_mesh ),
-        M_rb_basis( rb.M_rb_basis ),
+        M_primal_rb_basis( rb.M_primal_rb_basis ),
+        M_dual_rb_basis( rb.M_dual_rb_basis ),
         M_mesh( rb.M_mesh )
     {}
 
     ReducedBasisSpace( this_ptrtype const& rb )
         :
         super ( rb->M_mesh ),
-        M_rb_basis( rb->M_rb_basis ),
+        M_primal_rb_basis( rb->M_primal_rb_basis ),
+        M_dual_rb_basis( rb->M_dual_rb_basis ),
         M_mesh( rb->M_mesh )
     {}
 
@@ -191,34 +224,80 @@ public :
         return M_mesh;
     }
 
+
     /*
      * add a new basis
      */
-    void addBasisElement( space_element_type const & e )
+    void addPrimalBasisElement( space_element_type const & e )
     {
-        M_rb_basis.push_back( e );
+        M_primal_rb_basis.push_back( e );
     }
 
-    void addBasisElement( space_element_ptrtype const & e )
+    void addPrimalBasisElement( space_element_ptrtype const & e )
     {
-        M_rb_basis.push_back( *e );
+        M_primal_rb_basis.push_back( *e );
     }
 
+    space_element_type& primalBasisElement( int index )
+    {
+        int size = M_primal_rb_basis.size();
+        CHECK( index < size ) << "bad index value, size of the RB "<<size<<" and index given : "<<index;
+        return M_primal_rb_basis[index];
+    }
+    void addDualBasisElement( space_element_type const & e )
+    {
+        M_dual_rb_basis.push_back( e );
+    }
+
+    void addDualBasisElement( space_element_ptrtype const & e )
+    {
+        M_dual_rb_basis.push_back( *e );
+    }
+
+    space_element_type& dualBasisElement( int index )
+    {
+        int size = M_dual_rb_basis.size();
+        CHECK( index < size ) << "bad index value, size of the RB "<<size<<" and index given : "<<index;
+        return M_dual_rb_basis[index];
+    }
 
     /*
      * Get basis of the reduced basis space
      */
-    rb_basis_type rbBasis()
+    rb_basis_type & primalRB()
     {
-        return M_rb_basis;
+        return M_primal_rb_basis;
+    }
+    rb_basis_type & dualRB()
+    {
+        return M_dual_rb_basis;
+    }
+    rb_basis_type & primalRB() const
+    {
+        return M_primal_rb_basis;
+    }
+    rb_basis_type & dualRB() const
+    {
+        return M_dual_rb_basis;
+    }
+
+    /*
+     * Set basis of the reduced basis space
+     */
+    void setBasis( boost::tuple< rb_basis_type , rb_basis_type > & tuple )
+    {
+        auto primal = tuple.template get<0>();
+        auto dual = tuple.template get<1>();
+        M_primal_rb_basis = primal;
+        M_dual_rb_basis = dual;
     }
 
     //basis of RB space are elements of FEM function space
     //return value of the N^th basis ( vector ) at index idx
     //idx is the global dof ( fem )
-    double basis_value(int N, int idx) const
+    double basisValue(int N, int idx) const
     {
-        return M_rb_basis[N].globalValue( idx );
+        return M_primal_rb_basis[N].globalValue( idx );
     }
 
     /*
@@ -233,7 +312,7 @@ public :
      */
     int size()
     {
-        return M_rb_basis.size();
+        return M_primal_rb_basis.size();
     }
 
     /*
@@ -243,10 +322,34 @@ public :
     {
     }
 
-    static this_ptrtype New ( boost::shared_ptr<ModelType>  const& model, mesh_ptrtype const& mesh)
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( this_ptrtype ),
+                                     static New,
+                                     tag,
+                                     ( required
+                                       ( model, *)
+                                       ( mesh,* )
+                                     )
+                                     ( optional
+                                       ( worldscomm, *, Environment::worldsComm(nSpaces) )
+                                       ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
+                                       ( periodicity,*,periodicity_type() )
+                                     )
+                                   )
     {
-        return this_ptrtype ( new this_type( model ,  mesh) );
+        LOG( INFO ) << "ReducedBasis NEW (new impl)";
+        return NewImpl( model, mesh, worldscomm, components, periodicity );
     }
+
+    static this_ptrtype NewImpl( model_ptrtype const& model,
+                                 mesh_ptrtype const& __m,
+                                 std::vector<WorldComm> const& worldsComm = Environment::worldsComm(nSpaces),
+                                 size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
+                                 periodicity_type periodicity = periodicity_type() )
+    {
+
+        return this_ptrtype( new this_type( model, __m, mesh_components, periodicity, worldsComm ) );
+    }
+
 
     model_ptrtype model()
     {
@@ -374,7 +477,7 @@ public :
     */
     eigen_vector_type evaluateBasis( int i , ContextRBSet const& ctx )
     {
-        return evaluateFromContext( _context=ctx , _expr=idv(M_rb_basis[i]) );
+        return evaluateFromContext( _context=ctx , _expr=idv(M_primal_rb_basis[i]) );
     }
 
     struct ContextRB : public ContextRBSet::mapped_type
@@ -592,9 +695,9 @@ public :
 
         //basis of RB space are elements of FEM function space
         //return value of the N^th basis ( vector ) at index idx
-        double basis_value( int N, int idx) const
+        double basisValue( int N, int idx) const
         {
-            return M_rbspace.basis_value( N , idx );
+            return M_rbspace.basisValue( N , idx );
         }
 
         //evaluate the element to nodes in context
@@ -734,17 +837,18 @@ public :
     space_element_type expansion( element_type const& unknown, int  N=-1)
     {
         int number_of_coeff;
-        int basis_size = M_rb_basis.size();
+        int basis_size = M_primal_rb_basis.size();
         if ( N == -1 )
             number_of_coeff = basis_size;
         else
             number_of_coeff = N;
         FEELPP_ASSERT( number_of_coeff <= basis_size )( number_of_coeff )( basis_size ).error("invalid size");
-        return Feel::expansion( M_rb_basis, unknown , number_of_coeff );
+        return Feel::expansion( M_primal_rb_basis, unknown , number_of_coeff );
     }
 
 private :
-    rb_basis_type M_rb_basis;
+    rb_basis_type M_primal_rb_basis;
+    rb_basis_type M_dual_rb_basis;
     mesh_ptrtype M_mesh;
     model_ptrtype M_model;
 
@@ -844,7 +948,7 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
                 value_type u_i = this->operator()( N );
 
                 //N is the index of the RB basis function (i.e fem element)
-                value_type rb_basisij = this->basis_value( N , gdof );
+                value_type rb_basisij = this->basisValue( N , gdof );
 
                 //coefficient u_i^N * \PHI_ij
                 value_type coefficient = u_i*rb_basisij;
@@ -881,7 +985,6 @@ RbSpacePch(  boost::shared_ptr<ModelType> const& model , boost::shared_ptr<MeshT
 {
     return ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>>::New( model , mesh );
 }
-
 
 
 }//namespace Feel
