@@ -424,7 +424,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     //
     //size_type pattern = Pattern::COUPLED | Pattern::EXTENDED;
     // matrix to merge all Aq
-    std::cout<<"D ..."<<std::endl;
     form2( M_Th, M_Th, D, _init=true, _pattern=pattern ) =
         integrate( elements( M_mesh ), 0*idt( u )*id( v ) )+
         integrate( markedfaces( M_Th->mesh(), M_Th->mesh()->markerName( "AIR4" ) ),
@@ -433,7 +432,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                         rightfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                         leftfacet( dyt( u )*Ny() ) * rightface( dy( w )*Ny() )+
                         rightfacet( dyt( u )*Ny() ) * leftface( dy( w )*Ny() ) ) );
-    std::cout<<"D done"<<std::endl;
     D->close();
     LOG(INFO) << "   - D  done\n";
 
