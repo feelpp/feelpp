@@ -317,7 +317,7 @@ ResistanceLaplacian<Dim,Order>::createLine()
 
 
     Gmsh gmsh;
-    std::string fname = gmsh.generate( "line", ostr.str()  );
+    std::string fname = gmsh.generate( "line", ostr.str()  ).template get<0>();
 
     ImporterGmsh<line_mesh_type> import( fname );
     mesh->accept( import );
@@ -478,13 +478,3 @@ main( int argc, char** argv )
 
     laplacian_resistance.run();
 }
-
-
-
-
-
-
-
-
-
-
