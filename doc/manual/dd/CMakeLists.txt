@@ -25,13 +25,13 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 # Overlapping schwartz domain decomposition method
-feelpp_add_application( doc_overlapping SRCS overlapping_ddmethodgeo.cpp overlapping_ddmethod.cpp LABEL doc  )
+feelpp_add_application( doc_overlapping SRCS overlapping_ddmethodgeo.cpp overlapping_ddmethod.cpp LABEL doc NO_MPI_TEST  )
 
 # Non-overlapping schwartz domain decomposition method
-feelpp_add_application( doc_nonoverlapping SRCS nonoverlappinggeo.cpp nonoverlapping.cpp LABEL doc  )
+feelpp_add_application( doc_nonoverlapping SRCS nonoverlappinggeo.cpp nonoverlapping.cpp LABEL doc NO_MPI_TEST  )
 
 # eigenmodes of Dirichlet to Neumann operator
-feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp LABEL doc  )
+feelpp_add_application( doc_multi_levels SRCS multi_levels.cpp LABEL doc NO_MPI_TEST  )
 
 # Non-conforming domain decomposition methods
 feelpp_add_application( doc_mortar SRCS mortar.cpp LABEL doc  NO_MPI_TEST )
