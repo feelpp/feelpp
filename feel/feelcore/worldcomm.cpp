@@ -152,6 +152,7 @@ WorldComm::WorldComm( WorldComm const& wc )
     M_mapColorWorld( wc.M_mapColorWorld ),
     M_mapLocalRankToGlobalRank( wc.M_mapLocalRankToGlobalRank ),
     M_mapGlobalRankToGodRank( wc.M_mapGlobalRankToGodRank ),
+    M_subworlds( wc.M_subworlds ),
     M_masterRank( wc.M_masterRank ),
     M_isActive( wc.M_isActive )
 {}
@@ -773,4 +774,3 @@ WorldComm::setColorMap( std::vector<int> const& colormap )
 }
 
 } //namespace Feel
-
