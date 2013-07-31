@@ -265,7 +265,7 @@ ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::createMesh( double meshSize, 
         throw std::logic_error( os.str() );
     }
 
-    std::string fname = __gmsh.generate( nameStr.str(), ostr.str() );
+    std::string fname = __gmsh.generate( nameStr.str(), ostr.str() ).template get<0>();
     ImporterGmsh<trace_mesh_type> import( fname );
     mesh->accept( import );
 
