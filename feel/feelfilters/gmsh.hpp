@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:set syntax=cpp fenc=utf-8 ft=tcl et sw=4 ts=4 sts=4 tw=0
 
   This file is part of the Feel library
 
@@ -248,14 +248,14 @@ public:
     //! an out_of_range exception.
     //!     \param _name Geo parameter name.
     //! \return Return the geo parameter value.
-    double getGeoParameter( std::string const& _name )
+    double geoParameter( std::string const& _name )
         {
             return M_geoParamMap.at( _name );
         }
 
     //! \brief Get all GMSH geometry parameters.
     //! \return Return a map containing the geo gmsh geometry parameters as {par,value}.
-    std::map<std::string, double> getGeoParameters()
+    std::map<std::string, double> geoParameters()
         {
             return M_geoParamMap;
         }
