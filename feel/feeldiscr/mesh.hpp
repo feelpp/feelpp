@@ -244,6 +244,12 @@ public:
      */
     Mesh( WorldComm const& worldComm = Environment::worldComm() );
 
+    ~Mesh()
+        {
+            _M_gm.reset();
+            _M_gm1.reset();
+            M_tool_localization.reset();
+        }
     /**
      * generate a new Mesh shared pointer
      * \return the Mesh shared pointer

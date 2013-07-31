@@ -235,6 +235,12 @@ public:
      */
     DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
 
+    ~DofTable()
+        {
+            _M_el_l2g.clear();
+            _M_face_l2g.clear();
+            M_dof_points.clear();
+        }
     mesh_type* mesh() { return M_mesh; }
     mesh_type* mesh() const { return M_mesh; }
 
