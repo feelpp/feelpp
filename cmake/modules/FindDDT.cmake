@@ -25,12 +25,18 @@ FIND_LIBRARY(DDT_DMALLOC_LIBRARY
   NAMES dmalloc
   PATHS
   /opt/allinea/tools/lib
+  /opt/allinea/tools/4.0/lib
+  /opt/allinea/tools/4.1/lib
   PATH_SUFFIXES
   64
   )
 
 message(STATUS "ddt malloc lib: ${DDT_DMALLOC_LIBRARY}" )
 set(DDT_LIBRARIES ${DDT_DMALLOC_LIBRARY})
+
+set ( FEELPP_DISABLE_EIGEN_ALIGNMENT OFF CACHE BOOL "disable alignement (hence vectorization) in Eigen" FORCE )
+add_definitions(-DEIGEN_DONT_ALIGN=1 -DEIGEN_DONT_VECTORIZE=1)
+message(STATUS "Disabling alignment and vectorisation in Feel++/Eigen due do DDT")
 
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(DDT REQUIRED_VARS DDT_LIBRARIES)
