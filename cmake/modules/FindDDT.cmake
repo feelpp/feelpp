@@ -34,7 +34,7 @@ FIND_LIBRARY(DDT_DMALLOC_LIBRARY
 message(STATUS "ddt malloc lib: ${DDT_DMALLOC_LIBRARY}" )
 set(DDT_LIBRARIES ${DDT_DMALLOC_LIBRARY})
 
-set ( FEELPP_DISABLE_EIGEN_ALIGNMENT OFF CACHE BOOL "disable alignement (hence vectorization) in Eigen" FORCE )
+set ( FEELPP_DISABLE_EIGEN_ALIGNMENT ON CACHE BOOL "disable alignement (hence vectorization) in Eigen" FORCE )
 add_definitions(-DEIGEN_DONT_ALIGN=1 -DEIGEN_DONT_VECTORIZE=1)
 message(STATUS "Disabling alignment and vectorisation in Feel++/Eigen due do DDT")
 
