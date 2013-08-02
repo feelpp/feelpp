@@ -25,7 +25,7 @@
 set(DOXYFILE_LATEX 1)
 
 find_program(DOXYGEN doxygen)
-if ( DOXYGEN )
+if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
    # doxygen is optional
    include(UseDoxygen OPTIONAL)
 
