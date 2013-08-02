@@ -193,8 +193,11 @@ find_program(CTEST_SVN_COMMAND NAMES svn)
 #SET (CTEST_CHECKOUT_COMMAND "${CTEST_GIT_COMMAND} clone https://github.com/feelpp/feelpp.git")
 set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
 
-#SET(CTEST_BACKUP_AND_RESTORE TRUE) # the backup is SVN related ...
-#endif(NOT FEELPP_NO_UPDATE)
+#########################################
+# UPDATE source dir & modules if defined
+#########################################
+#execute_process(COMMAND "cd ${CTEST_SOURCE_DIRECTORY} && ${CTEST_GIT_COMMAND} pull" OUTPUT_VARIABLE MODULE_OUTPUT)
+#message(STATUS "updated ${CTEST_SOURCE_DIRECTORY} : ${MODULE_OUTPUT}")
 foreach(module ${FEELPP_MODULES})
   # update the modules using svn update
   execute_process(
@@ -224,7 +227,7 @@ endif(UNIX)
 #without necessarily even having access to the client machine.
 set(CTEST_USE_LAUNCHERS 1)
 find_program(CTEST_CMAKE_COMMAND NAMES "cmake")
-message("${CTEST_CMAKE_COMMAND}")
+message("CMAKE FOUND -- ${CTEST_CMAKE_COMMAND}")
 # Generating the CTEST_CONFIGURE_COMMAND variable (what is executed just after cmake)
 set(CTEST_CONFIGURE_COMMAND "${CTEST_CMAKE_COMMAND} ${CTEST_SOURCE_DIRECTORY}")
 set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
