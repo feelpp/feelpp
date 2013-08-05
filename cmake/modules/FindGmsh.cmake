@@ -31,7 +31,6 @@ include (FindPackageHandleStandardArgs)
 find_program( GMSH_EXECUTABLE gmsh
   PATH
   $ENV{GMSH_DIR}/bin
-  NO_DEFAULT_PATH
   PATH_SUFFIXES bin
   DOC "GMSH mesh generator" )
 
