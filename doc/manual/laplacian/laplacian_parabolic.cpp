@@ -22,7 +22,7 @@
 */
 #include <feel/feel.hpp>
 /** error management **/
-#include <research/hifimagnet/applications/Tools/error.hpp>
+#include "error.hpp"
 
 /** use Feel namespace */
 using namespace Feel;
