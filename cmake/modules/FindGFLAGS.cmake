@@ -35,11 +35,13 @@ FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h
   )
 # try installed version
 FIND_PATH(GFLAGS_INCLUDE_DIR gflags/gflags.h 
-  HINTS
+  #HINTS
+  PATHS
   /usr/include/gflags
-  /usr/include/feel
+  #/usr/include/feel
   /usr/local/include/feel
   /opt/local/include/feel
+  NO_DEFAULT_PATH
  )
 
 message(STATUS "Gflags first pass: ${GFLAGS_INCLUDE_DIR}")
