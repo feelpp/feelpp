@@ -235,6 +235,12 @@ public:
      */
     DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm );
 
+    ~DofTable()
+        {
+            _M_el_l2g.clear();
+            _M_face_l2g.clear();
+            M_dof_points.clear();
+        }
     mesh_type* mesh() { return M_mesh; }
     mesh_type* mesh() const { return M_mesh; }
 
@@ -3086,11 +3092,11 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 
     for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
     {
-        FEELPP_ASSERT( __face_it->isConnectedTo0() )
-        ( __face_it->id() )
-        ( __face_it->marker() )
-        ( __face_it->isConnectedTo0() )
-        ( __face_it->isConnectedTo1() ).warn( "[Dof::buildFaceDofMap] face not connected" );
+        LOG_IF(WARNING, !__face_it->isConnectedTo0() )
+            << "face " << __face_it->id() << " not connected"
+            << " marker : " << __face_it->marker()
+            << " connectedTo0 : " << __face_it->isConnectedTo0()
+            << " connectedTo1 : " << __face_it->isConnectedTo1();
 
         if ( !__face_it->isConnectedTo0() ) continue;
 

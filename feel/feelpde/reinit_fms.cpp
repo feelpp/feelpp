@@ -21,7 +21,7 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
 {
     using namespace Feel;
 
-    Debug( 5065 ) << "ReinitializerFMS constructor from space and iterator range\n";
+    LOG(INFO) << "ReinitializerFMS constructor from space and iterator range";
 
     fe_type* __fe = __functionspace->fe().get();
 
@@ -85,7 +85,8 @@ ReinitializerFMS<FunctionSpaceType, IteratorRange, periodicity_type>::operator()
     //BOOST_STATIC_ASSERT(( boost::is_same<return_value_type, typename functionspace_type::return_value_type>::value ));
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
-    FEELPP_ASSERT( __v.size() == _M_functionspace->dof()->nDof() )( __v.size() )( _M_functionspace->dof()->nDof() ).warn( "invalid size" );
+    CHECK( __v.size() == _M_functionspace->dof()->nDof() )
+        << "Invalid size : " <<  __v.size() << "!=" <<  _M_functionspace->dof()->nDof();
     // assert functionspace_type::nComponents == 1
     __v.resize( _M_functionspace->dof()->nDof() );
     iterator_type it, en;

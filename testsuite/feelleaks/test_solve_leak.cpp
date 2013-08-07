@@ -701,21 +701,23 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
 int
 main( int argc, char** argv )
 {
-    using namespace Feel;
+    std::cout << "Start with Feel++\n";
+    {
+        using namespace Feel;
+        Feel::Environment env( argc,argv, makeOptions() );
+        /* change parameters below */
+        const int nDim = 2;
+        const int nOrder = 2;
+        //typedef Continuous MyContinuity;
+        typedef Discontinuous MyContinuity;
+        //typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Hypercube, Scalar> laplacian_type;
 
-    Feel::Environment env( argc,argv, makeOptions() );
+        typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
 
-    /* change parameters below */
-    const int nDim = 2;
-    const int nOrder = 2;
-    //typedef Continuous MyContinuity;
-    typedef Discontinuous MyContinuity;
-    //typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Hypercube, Scalar> laplacian_type;
+        /* define and run application */
+        laplacian_type laplacian( argc, argv, makeAbout() );
 
-    typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
-
-    /* define and run application */
-    laplacian_type laplacian( argc, argv, makeAbout() );
-
-    laplacian.run();
+        laplacian.run();
+    }
+    std::cout << "Done with Feel++\n";
 }
