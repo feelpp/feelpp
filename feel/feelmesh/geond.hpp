@@ -141,7 +141,7 @@ public:
         :
         super( 0 ),
         M_points( numPoints ),
-        M_face_points( numTopologicalFaces ),
+        //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
@@ -171,7 +171,7 @@ public:
         :
         super( id ),
         M_points( numPoints ),
-        M_face_points( numTopologicalFaces ),
+        //M_face_points( numTopologicalFaces ),
         M_G( nRealDim, numPoints ),
         M_barycenter( nRealDim ),
         M_barycenterfaces( nRealDim, numTopologicalFaces ),
@@ -195,7 +195,7 @@ public:
         :
         super( e ),
         M_points( numPoints ),
-        M_face_points( e.M_face_points ),
+        //M_face_points( e.M_face_points ),
         M_G( nRealDim, numPoints ),
         M_barycenter( e.M_barycenter ),
         M_barycenterfaces( e.M_barycenterfaces ),
@@ -222,9 +222,11 @@ public:
     /**
      * destructor, make it virtual for derived classes
      */
-    virtual ~GeoND()
+    ~GeoND()
     {
+
     }
+
 #if 0
     /**
      * set the mesh to which this geometric entity belongs to
@@ -296,7 +298,7 @@ public:
             for ( uint16_type i = 0; i < numLocalPoints; ++i )
                 M_points[ i ] = G.M_points[ i ];
 
-            M_face_points = G.M_face_points;
+            //M_face_points = G.M_face_points;
             M_G = G.M_G;
 
             M_barycenter = G.M_barycenter;
@@ -844,10 +846,10 @@ private:
 
 private:
     /** geometric nodes of the element */
-    ublas::bounded_array<point_type*, numPoints> M_points;
+    std::vector<point_type*> M_points;
 
     /** geometric nodes of the faces of the element */
-    std::vector<ublas::bounded_array<point_type*, numPoints> > M_face_points;
+    std::vector<std::vector<point_type*> > M_face_points;
 
     /**< matrix of the geometric nodes */
     matrix_node_type M_G;

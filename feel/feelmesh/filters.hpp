@@ -1358,6 +1358,7 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
  * \return the number of elements given element iterators constructed
  * using the mesh filters
  * \param its the mesh iterators
+ * \param global all reduce number of elements if set to true
  *
  * The following code prints in the logfile the number of elements in
  * the mesh that are marked with marker1 equal to 1:
@@ -1365,16 +1366,40 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
  * \code
  * LOG(INFO) << "number of elements = " << nelements( markedelements(mesh,1) ) << "\n";
  * \endcode
+ *
  */
 template<typename MT, typename Iterator>
 size_type
-nelements( boost::tuple<MT,Iterator,Iterator> const& its )
+nelements( boost::tuple<MT,Iterator,Iterator> const& its, bool global = false )
 {
-    return std::distance( boost::get<1>( its ), boost::get<2>( its ) );
+    size_type d = std::distance( boost::get<1>( its ), boost::get<2>( its ) );
+    size_type gd = d;
+    if ( global )
+        mpi::all_reduce(Environment::worldComm().globalComm(),
+                        d,
+                        gd,
+                        std::plus<size_type>());
+    return gd;
+
 }
+/**
+ * \ingroup MeshIterators
+ * \return the number of elements given element iterators constructed
+ * using the mesh filters
+ * \param a list of mesh iterators
+ * \param global all reduce number of elements if set to true
+ *
+ * The following code prints in the logfile the number of elements in
+ * the mesh that are marked with marker1 equal to 1:
+ *
+ * \code
+ * LOG(INFO) << "number of elements = " << nelements( markedelements(mesh,{1,2,3}) ) << "\n";
+ * \endcode
+ *
+ */
 template<typename MT, typename Iterator>
 size_type
-nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its )
+nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool global = false )
 {
     size_type d = 0;
     std::for_each( its.begin(), its.end(),
@@ -1382,7 +1407,13 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its )
                    {
                        d+=std::distance( boost::get<1>( t ), boost::get<2>( t ) );
                    } );
-    return d;
+    size_type gd = d;
+    if ( global )
+        mpi::all_reduce(Environment::worldComm().globalComm(),
+                        d,
+                        gd,
+                        std::plus<size_type>());
+    return gd;
 }
 
 template<typename ElementType>
