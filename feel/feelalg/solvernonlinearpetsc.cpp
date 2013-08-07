@@ -382,7 +382,12 @@ extern "C"
         MatGetSize( *jac, &size1, &size2 );
 
         PetscScalar *ja;
+
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         MatGetArray( *jac, &ja );
+#else
+        MatDenseGetArray( *jac, &ja );
+#endif
 
         int jac_size = size1*size2;
         //Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > map_jac ( ja, size1, size2 );
@@ -396,7 +401,11 @@ extern "C"
 
 
         VecRestoreArray( x, &xa );
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         MatRestoreArray(*jac, &ja);
+#else
+        MatDenseRestoreArray(*jac, &ja);
+#endif
 
         /*
           Assemble matrix
@@ -497,14 +506,22 @@ void SolverNonLinearPetsc<T>::init ()
         {
         case LINE_SEARCH :
         {
+#if PETSC_VERSION_LESS_THAN(3,4,0)
             ierr = SNESSetType( M_snes, SNESLS );
+#else
+            ierr = SNESSetType( M_snes, SNESNEWTONLS );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         break;
 
         case TRUST_REGION :
         {
+#if PETSC_VERSION_LESS_THAN(3,4,0)
             ierr = SNESSetType( M_snes, SNESTR );
+#else
+            ierr = SNESSetType( M_snes, SNESNEWTONTR );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         break;

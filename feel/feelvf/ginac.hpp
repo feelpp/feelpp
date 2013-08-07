@@ -50,6 +50,9 @@ namespace GiNaC
     ex substitute(ex const& f, symbol const& l, const double val );
     ex substitute(ex const& f, symbol const& l, ex const & g );
 
+    matrix substitute(matrix const& f, symbol const& l, const double val );
+    matrix substitute(matrix const& f, symbol const& l, ex const & g );
+
     //ex parse( std::string const& str, std::vector<symbol> const& syms );
     ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
 

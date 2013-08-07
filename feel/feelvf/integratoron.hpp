@@ -281,14 +281,14 @@ template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr
 template<typename Elem1, typename Elem2, typename FormType>
 void
 IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-        boost::shared_ptr<Elem2> const& /*__v*/,
-        FormType& __form,
-        mpl::bool_<true> ) const
+                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+                                                                  FormType& __form,
+                                                                  mpl::bool_<true> ) const
 {
 #if 0
 
     if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
-            !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
+         !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
         return;
 
 #endif
@@ -341,146 +341,160 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     element_iterator __face_en = this->endElement();
     if ( __face_it != __face_en )
     {
-
-    dof_type const* __dof = _M_u.functionSpace()->dof().get();
-
-    fe_type const* __fe = _M_u.functionSpace()->fe().get();
-
-    gm_ptrtype __gm( new gm_type );
+        // get the first face properly connected
+        for( ; __face_it != __face_en; ++__face_it )
+            if ( __face_it->isConnectedTo0() )
+                break;
 
 
-    //
-    // Precompute some data in the reference element for
-    // geometric mapping and reference finite element
-    //
-    typedef typename geoelement_type::permutation_type permutation_type;
-    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-    typedef typename gm_type::precompute_type geopc_type;
-    DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
-    std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
+        dof_type const* __dof = _M_u.functionSpace()->dof().get();
 
-    for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
-    {
-        for ( permutation_type __p( permutation_type::IDENTITY );
-                __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+        fe_type const* __fe = _M_u.functionSpace()->fe().get();
+
+        gm_ptrtype __gm( new gm_type );
+
+
+        //
+        // Precompute some data in the reference element for
+        // geometric mapping and reference finite element
+        //
+        typedef typename geoelement_type::permutation_type permutation_type;
+        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+        typedef typename gm_type::precompute_type geopc_type;
+        DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+        std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
+
+        for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
         {
-            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-            //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-            FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+            for ( permutation_type __p( permutation_type::IDENTITY );
+                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+                //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+            }
         }
-    }
-
-    uint16_type __face_id = __face_it->pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
-
-    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-    //t_expr_type expr( _M_expr, mapgmc );
-
-
-    DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                   << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
-
-    size_type nbFaceDof = invalid_size_type_value;
-
-    if ( !fe_type::is_modal )
-        nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                      face_type::numEdges * fe_type::nDofPerEdge +
-                      face_type::numFaces * fe_type::nDofPerFace );
-
-    else
-        nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
-
-    DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
-    //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
-
-    for ( ;
-            __face_it != this->endElement();
-            ++__face_it )
-    {
-        if ( !__face_it->isConnectedTo0() )
-        {
-            LOG( WARNING ) << "face not connected" << *__face_it;
-
-            continue;
-        }
-        DVLOG(2) << "FACE_ID = " << __face_it->id()
-                      << " element id= " << __face_it->ad_first()
-                      << " pos in elt= " << __face_it->pos_first()
-                      << " marker: " << __face_it->marker() << "\n";
-        DVLOG(2) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
 
         uint16_type __face_id = __face_it->pos_first();
-        __c->update( __face_it->element( 0 ), __face_id );
-
-        DVLOG(2) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-        DVLOG(2) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+        gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+        //t_expr_type expr( _M_expr, mapgmc );
 
-        t_expr_type expr( _M_expr, mapgmc );
-        expr.update( mapgmc );
 
-        std::pair<size_type,size_type> range_dof( std::make_pair( _M_u.start(),
-                _M_u.functionSpace()->nDof() ) );
-        DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
-        DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
+        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
+                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
+                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
 
-        for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-            for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+        size_type nbFaceDof = invalid_size_type_value;
+
+        if ( !fe_type::is_modal )
+            nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
+                          face_type::numEdges * fe_type::nDofPerEdge +
+                          face_type::numFaces * fe_type::nDofPerFace );
+
+        else
+            nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+
+        DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
+        //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
+
+        for ( ;
+              __face_it != this->endElement();
+              ++__face_it )
+        {
+            if ( !__face_it->isConnectedTo0() )
             {
-                for ( uint16_type l = 0; l < nbFaceDof; ++l )
+                LOG( WARNING ) << "face not connected" << *__face_it;
+
+                continue;
+            }
+            // do not process the face if it is a ghost face: beloging to two
+            // processes and being in a process id greater than the one
+            // corresponding face
+            if ( __face_it->isGhostFace() )
+            {
+                LOG(WARNING) << "face id : " << __face_it->id() << " is a ghost face";
+                continue;
+            }
+
+            DVLOG(2) << "FACE_ID = " << __face_it->id()
+                     << " element id= " << __face_it->ad_first()
+                     << " pos in elt= " << __face_it->pos_first()
+                     << " marker: " << __face_it->marker() << "\n";
+            DVLOG(2) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
+
+            uint16_type __face_id = __face_it->pos_first();
+            __c->update( __face_it->element( 0 ), __face_id );
+
+            DVLOG(2) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+
+            t_expr_type expr( _M_expr, mapgmc );
+            expr.update( mapgmc );
+
+            std::pair<size_type,size_type> range_dof( std::make_pair( _M_u.start(),
+                                                                      _M_u.functionSpace()->nDof() ) );
+            DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
+            DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
+
+            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
-                    DVLOG(2) << "[integratoronexpr] local dof=" << l
-                                  << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
-                    typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-                    DVLOG(2) << "[integratoronexpr] value=" << __value << "\n";
-
-                    // global Dof
-                    size_type thedof =  _M_u.start() +
-                                        boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
-
-                    //size_type thedof_nproc = __dof->dofNProc( thedof );
-                    if ( std::find( dofs.begin(),
-                                    dofs.end(),
-                                    thedof ) != dofs.end() )
-                        continue;
-
-                    if ( _M_on_strategy.test( ON_ELIMINATION ) )
+                    for ( uint16_type l = 0; l < nbFaceDof; ++l )
                     {
-                        DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+                        DVLOG(2) << "[integratoronexpr] local dof=" << l
+                                 << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
+                        typename expression_type::value_type __value = expr.evalq( c1, c2, l );
+                        DVLOG(2) << "[integratoronexpr] value=" << __value << "\n";
 
-                        // this can be quite expensive depending on the
-                        // matrix storage format.
-                        //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-                        dofs.push_back( thedof );
-                        values.push_back( __value );
-#else
+                        // global Dof
+                        size_type thedof =  _M_u.start() +
+                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
 
-                        // only the real dof ( not the ghosts )
-                        //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                        //size_type thedof_nproc = __dof->dofNProc( thedof );
+                        if ( std::find( dofs.begin(),
+                                        dofs.end(),
+                                        thedof ) != dofs.end() )
+                            continue;
+
+                        if ( _M_on_strategy.test( ON_ELIMINATION ) )
                         {
+                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+
+                            // this can be quite expensive depending on the
+                            // matrix storage format.
+                            //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
+#if !defined(FEELPP_ENABLE_MPI_MODE)
                             dofs.push_back( thedof );
                             values.push_back( __value );
-                        }
+#else
+
+                            // only the real dof ( not the ghosts )
+                            //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                            {
+                                dofs.push_back( thedof );
+                                values.push_back( __value );
+                            }
 
 #endif
 
 
-                        //_M_rhs.set( thedof, __value );
-                    }
+                            //_M_rhs.set( thedof, __value );
+                        }
 
-                    else if (  _M_on_strategy.test( ON_PENALISATION ) &&
-                               !_M_on_strategy.test( ON_ELIMINATION ) )
-                    {
-                        __form.set( thedof, thedof, 1.0*1e30 );
-                        _M_rhs->set( thedof, __value*1e30 );
-                    }
-                } // loop on space components
+                        else if (  _M_on_strategy.test( ON_PENALISATION ) &&
+                                   !_M_on_strategy.test( ON_ELIMINATION ) )
+                        {
+                            __form.set( thedof, thedof, 1.0*1e30 );
+                            _M_rhs->set( thedof, __value*1e30 );
+                        }
+                    } // loop on space components
 
-            } // loop on face dof
-    }
+                } // loop on face dof
+        }
 
     } // __face_it != __face_en
 
