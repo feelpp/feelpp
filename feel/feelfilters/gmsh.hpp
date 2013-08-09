@@ -1108,23 +1108,24 @@ BOOST_PARAMETER_FUNCTION(
     tag,           // 3. namespace of tag types
     ( required
       ( name,           *( boost::is_convertible<mpl::_,std::string> ) )
-      ( shape,          *( boost::is_convertible<mpl::_,std::string> ) ) )
+      )
     ( optional
-      ( shear,          *( boost::is_arithmetic<mpl::_> )    , 0 )
-      ( recombine,      *( boost::is_integral<mpl::_> )    , 0 )
+      ( shape,          *( boost::is_convertible<mpl::_,std::string> ),  option(_name="gmsh.domain.shape").template as<std::string>() )
+      ( shear,          *( boost::is_arithmetic<mpl::_> )    ,  option(_name="gmsh.domain.shear").template as<double>() )
+      ( recombine,      *( boost::is_integral<mpl::_> )    , option(_name="gmsh.domain.recombine").template as<bool>() )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), double( 0.1 ) )
-      ( convex,         *( boost::is_convertible<mpl::_,std::string> ), "Simplex" )
-      ( addmidpoint,    *( boost::is_integral<mpl::_> ), true )
-      ( usenames,       *( boost::is_integral<mpl::_> ), false )
-      ( xmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( xmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( ymin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( ymax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( zmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( substructuring, *( boost::is_integral<mpl::_> ), 0 ) ) )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
+      ( convex,         *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.domain.convex").template as<std::string>() )
+      ( addmidpoint,    *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.addmidpoint").template as<bool>() )
+      ( usenames,       *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.usenames").template as<bool>() )
+      ( xmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.xmin").template as<double>() )
+      ( xmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.xmax").template as<double>())
+      ( ymin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ymin").template as<double>() )
+      ( ymax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ymax").template as<double>() )
+      ( zmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmin").template as<double>() )
+      ( zmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmax").template as<double>() )
+      ( substructuring, *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.substructuring").template as<bool>() ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
@@ -1466,7 +1467,18 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
-    return unitHypercube<_mesh_type::nDim, typename _mesh_type::shape_type>();
+    return createGMSHMesh(_mesh=mesh,
+                          _desc=domain( _name=mesh_name.stem().string() ),
+                          _refine=refine,
+                          _update=update,
+                          _physical_are_elementary_regions=physical_are_elementary_regions,
+                          _force_rebuild=force_rebuild,
+                          _worldcomm=worldcomm,
+                          _rebuild_partitions=rebuild_partitions,
+                          _rebuild_partitions_filename=rebuild_partitions_filename,
+                          _partitions=partitions,
+                          _partitioner=partitioner,
+                          _partition_file=partition_file );
 }
 
 } // Feel
