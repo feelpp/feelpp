@@ -33,7 +33,7 @@
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
-
+#include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
@@ -1123,7 +1123,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     }
 
-
+    LOG(INFO) << "We have now " << nelements(boundaryfaces(this)) << " faces on the boundary in the database";
     VLOG(2) << "element/face connectivity : " << ti.elapsed() << "\n";
     ti.restart();
 }
@@ -1153,24 +1153,47 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<2> )
 {
-    element_iterator iv,en;
-    boost::tie( iv, en ) = this->elementsRange();
-    for ( ; iv != en; ++iv )
+    // first go through all the faces and set the points of the boundary
+    // faces to be on the boundary
+    LOG(INFO) << "update boundary points...";
+    for( auto it = this->beginFace(), en = this->endFace(); it != en; ++ it )
+    {
+        if ( it->isOnBoundary() == true )
+        {
+            // loop over face points
+            for ( int f = 0; f < face_type::numPoints; ++f )
+            {
+                if ( it->point( f ).isOnBoundary() == false )
+                {
+                    auto pit = this->pointIterator( it->point(f).id() );
+                    this->points().modify( pit,
+                                           []( point_type& p )
+                    {p.setOnBoundary(true);} );
+                }
+
+            }
+        }
+    }
+    LOG(INFO) << "We have " << nelements(boundarypoints(this)) <<  " boundary points";
+    LOG(INFO) << "update boundary elements...";
+    // loop through faces to set the elements having a face on the boundary
+    for ( auto iv = this->beginElement(), en = this->endElement();
+          iv != en; ++iv )
     {
         bool isOnBoundary = false;
 
-        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-        {
-            //if ( !iv->facePtr( j ) ) { LOG(INFO) << "[Mesh::updateOnBoundary] Warning : a face access is missing in elt;\n"
-            //                                    << "this->numLocalFaces " << this->numLocalFaces() << std::endl; continue; }
-
-            isOnBoundary |= iv->face( j ).isOnBoundary();
+        for ( size_type j = 0; j < iv->nPoints(); j++ )
+        {            
+            isOnBoundary |= iv->point( j ).isOnBoundary();
         }
 
         // an element on the boundary means that is shares a face
         // with the boundary
-        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+        this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary ); } );
     }
+    LOG(INFO) << "[updateOnBoundary] We have " << nelements(boundaryelements(this))
+              << " elements sharing a point, a edge or a face with the boundary in the database";
+
 }
 template<typename Shape, typename T, int Tag>
 void
