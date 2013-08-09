@@ -195,7 +195,7 @@ Laplacian<Dim, BasisU, Entity>::run()
                                 _refine=level()-1,
                                 _partitions=nparts );
 #else
-    auto mesh = loadMesh( _mesh=new mesh_type, _refine=level()-1, _partitions=nparts );
+    auto mesh = loadMesh( _mesh=new mesh_type, _h=meshSizeInit(), _refine=level()-1, _partitions=nparts );
 #endif
 
     M_stats.put( "t.init.mesh",t.elapsed() );
