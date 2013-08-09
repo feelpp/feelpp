@@ -32,6 +32,7 @@
 
 #include <utility>
 
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelmesh/traits.hpp>
 
 namespace Feel
@@ -597,15 +598,6 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
                               mesh.beginPointWithMarker( flag ),
                               mesh.endPointWithMarker( flag ) );
 }
-
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::location_point_const_iterator,
-      typename MeshTraits<MeshType>::location_point_const_iterator>
-      boundarypoints( MeshType const& mesh, mpl::bool_<true> )
-{
-    return boundarypoints( *mesh, mpl::bool_<false>() );
-}
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
       typename MeshTraits<MeshType>::location_point_const_iterator,
@@ -616,6 +608,15 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
                               mesh.beginPointOnBoundary( ),
                               mesh.endPointOnBoundary() );
 }
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+      typename MeshTraits<MeshType>::location_point_const_iterator,
+      typename MeshTraits<MeshType>::location_point_const_iterator>
+      boundarypoints( MeshType const& mesh, mpl::bool_<true> )
+{
+    return boundarypoints( *mesh, mpl::bool_<false>() );
+}
+
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
