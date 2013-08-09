@@ -155,7 +155,7 @@ int main( int argc, char** argv )
 #if 1
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex") );
     benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Simplex>( "2D-P2-Simplex") );
-    benchmark.add( new Laplacian<2, Lagrange<3, Scalar>, Simplex>( "2D-P3-Simplex") );
+    //benchmark.add( new Laplacian<2, Lagrange<3, Scalar>, Simplex>( "2D-P3-Simplex") );
 
 #if 0
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube") );
@@ -173,15 +173,15 @@ int main( int argc, char** argv )
     benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
     benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
 #endif
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex") );
-    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
-    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
+    //benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex") );
+    //benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
+    //benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
 
 #else
     //benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube") );
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex" ) );
 #endif
-    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "e.semih1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
+    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "e.semih1" )( "e.flux" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
     benchmark.run();
     benchmark.printStats( std::cout );
     benchmark.printStats( out );

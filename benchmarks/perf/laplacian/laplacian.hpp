@@ -384,12 +384,36 @@ Laplacian<Dim, BasisU, Entity>::run()
 
     M_stats.put( "t.integrate.h1norm",t.elapsed() );
     t.restart();
-    std::cout << "||u_error||_1= " << u_error_H1 << "\n";
+    LOG(INFO) << "||u_error||_1= " << u_error_H1 << "\n";
     M_stats.put( "e.h1.u",  math::sqrt( u_errorsemiH1 + u_errorL2 ));
     M_stats.put( "e.h1.u.n",u_error_H1 );
     M_stats.put( "e.semih1.u.n", math::sqrt( u_errorsemiH1/u_exactsemiH1 ) );
     M_stats.put( "e.semih1.u", math::sqrt( u_errorsemiH1 ) );
 
+    // compute flux through the boundary
+    // first using normal derivative
+    double flux1_exact = integrate( _range=boundaryfaces(mesh), _expr=-mu*grad_exact*N(), _quad=_Q<10>()).evaluate()(0,0);
+    LOG(INFO) << "flux exact : "  << std::scientific << std::setprecision(5) << flux1_exact;
+    double flux1_approx = integrate( _range=boundaryfaces(mesh), _expr=-mu*gradv(u)*N()).evaluate()(0,0);
+    LOG(INFO) << "flux approx : "  << std::scientific << std::setprecision(5) << flux1_approx;
+    //double flux1_error = math::abs(flux1_exact-flux1_approx)/math::abs(flux1_exact);
+    double flux1_error = math::abs(flux1_exact-flux1_approx);
+    LOG(INFO) << "relative error flux = " <<   flux1_error;
+    M_stats.put( "e.flux.dn", flux1_error );
+
+    // second using residual from equation without dirichlet conditions
+    v.zero();
+    v = vf::project( Xh, boundaryfaces(mesh), cst(1.) );
+    double flux2_approx = integrate( _range=boundaryelements(mesh), _expr=f*idv(v)-gradv(u)*trans(gradv(v))).evaluate()(0,0);
+    double flux2_error = math::abs(flux1_exact-flux2_approx);
+    LOG(INFO) << "residual approx : "  << std::scientific << std::setprecision(5) << flux2_approx;
+    LOG(INFO) << "relative error flux 2 = " <<   flux2_error;
+    M_stats.put( "e.flux.residual", flux2_error );
+    double flux2_exact = integrate( _range=boundaryelements(mesh), _expr=f*idv(v)-grad_exact*trans(gradv(v)),_quad=_Q<10>()).evaluate()(0,0);
+    double flux3_error = math::abs(flux2_exact-flux2_approx);
+    LOG(INFO) << "relative error flux 3 = " <<   flux3_error;
+    M_stats.put( "e.flux.residual2", flux3_error );
+    // export results
     v = vf::project( Xh, elements( Xh->mesh() ), u_exact );
     M_stats.put( "t.export.projection",t.elapsed() );
     t.restart();
