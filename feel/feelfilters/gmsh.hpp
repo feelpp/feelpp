@@ -998,7 +998,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( format,         *, option(_name="gmsh.format").template as<int>() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
       ( straighten,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
@@ -1403,6 +1403,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.filename").template as<std::string>() )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( straighten,          (bool), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
@@ -1434,6 +1435,7 @@ BOOST_PARAMETER_FUNCTION(
         return createGMSHMesh( _mesh=mesh,
                                _desc=geo( _filename=mesh_name.string(),
                                           _depends=depends ),
+                               _h=h,
                                _straighten=straighten,
                                _refine=refine,
                                _update=update,
@@ -1468,7 +1470,8 @@ BOOST_PARAMETER_FUNCTION(
 
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     return createGMSHMesh(_mesh=mesh,
-                          _desc=domain( _name=mesh_name.stem().string() ),
+                          _desc=domain( _name=option(_name="gmsh.domain.shape").template as<std::string>(), _h=h ),
+                          _h=h,
                           _refine=refine,
                           _update=update,
                           _physical_are_elementary_regions=physical_are_elementary_regions,
