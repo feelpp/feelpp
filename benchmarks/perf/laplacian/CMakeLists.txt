@@ -80,7 +80,7 @@ endforeach()
 feelpp_add_application( perf_laplacian
                         SRCS ${lagrange} bench.cpp
                         DEPS gen_feel_perf_laplacian
-                        CFG laplacian.cfg )
+                        CFG laplacian.cfg laplacian-ellipsoid.cfg )
 #add_executable(feel_perf_laplacian  ${lagrange} bench.cpp)
 #add_executable(feel_perf_laplacian  ${lagrange} ${cr} bench.cpp)
 #add_executable(feel_perf_laplacian ${CMAKE_CURRENT_BINARY_DIR}/feel_perf_laplacian_Hypercube_2D_CrouzeixRaviart_1.cpp  bench.cpp)
