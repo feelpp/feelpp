@@ -17,8 +17,12 @@
 
    - support up to PETSc 3.4.2
    - support up to Boost 1.53
+   - support up to Eigen 3.2
    - Correspondence table between gmsh and feel++ node numbering allowing to
      easily couple different codes for example a feel++ code and a matlab code
+   - now the boundary elements set correspond to all elements sharing a
+     sub-entity with the boundary (point edge or face ) and not only a face
+     this affects \c boundaryelements and \c internalelements
 
    \subsection issues0940 Noteworthy Issues
 
