@@ -140,7 +140,26 @@ BOOST_AUTO_TEST_CASE( test_lambda_int )
 
     BOOST_TEST_MESSAGE( "test_lambda_int done" );
 }
+#if 0
+BOOST_AUTO_TEST_CASE( test_lambda_op )
+{
+    BOOST_TEST_MESSAGE( "test_lambda_op" );
+    using namespace Feel;
+    auto mesh = unitSquare();
+    BOOST_TEST_MESSAGE( "test_lambda_op mesh generated" );
+    auto I = integrate( elements(mesh), _expr=0.1*_e1, _verbose=true );
+    BOOST_TEST_MESSAGE( "test_lambda_op integral defined" );
 
+    auto I1 = integrate( elements(mesh), Px()*Px()+Py()*Py() );
+    auto Xh = Pch<2>( mesh );
+    auto u = project( _space=Xh, _range=elements(mesh), _expr=Px()*Px()+Py()*Py() );
+
+    BOOST_CHECK_CLOSE( I1.evaluate()( 0, 0 ), 0.1*2./3., 1e-10 );
+    BOOST_CHECK_CLOSE( I( Px()*Px()+Py()*Py() ).evaluate()( 0, 0 ), 0.1*2./3., 1e-10 );
+    BOOST_CHECK_CLOSE( I( idv(u) ).evaluate()( 0, 0 ), 0.1*2./3., 1e-10 );
+
+    BOOST_TEST_MESSAGE( "test_lambda_op done" );
+}
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
-
