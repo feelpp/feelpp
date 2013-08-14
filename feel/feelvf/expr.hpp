@@ -1230,7 +1230,7 @@ public:
 
     typedef Cst<T> expression_type;
 
-    explicit Cst( const T& value )
+    constexpr explicit Cst( const T& value )
         :
         M_constant( value )
     {
@@ -1250,16 +1250,16 @@ public:
             return *this;
         }
 
-    value_type value() const
+    constexpr value_type value() const
     {
         return M_constant;
     }
 
-    value_type evaluate() const
+    constexpr value_type evaluate() const
     {
         return M_constant;
     }
-    value_type evaluate( bool ) const
+    constexpr value_type evaluate( bool ) const
     {
         return M_constant;
     }
@@ -1330,32 +1330,32 @@ public:
         {
         }
 
-        value_type
+        constexpr value_type
         evalij( uint16_type /*i*/, uint16_type /*j*/ ) const
         {
             return M_constant;
         }
 
 
-        value_type
+        constexpr value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/  ) const
         {
             return M_constant;
         }
         template<int PatternContext>
-        value_type
+        constexpr value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/,
                  mpl::int_<PatternContext> ) const
         {
             return M_constant;
         }
 
-        value_type
+        constexpr value_type
         evaliq( uint16_type /*i*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/  ) const
         {
             return M_constant;
         }
-        value_type
+        constexpr value_type
         evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
             return M_constant;
