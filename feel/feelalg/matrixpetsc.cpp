@@ -1176,6 +1176,13 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
 #else
     MatSetOption( _M_mat,MAT_KEEP_ZEROED_ROWS );
 #endif
+    //PetscErrorCode  MatZeroRowsColumns(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
+    VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
+    MatZeroRowsColumns(_M_mat, rows.size(), rows.data(), 1.0, PETSC_NULL, prhs->vec() );
+    PetscBool b;
+    MatIsSymmetric( _M_mat, 1e-13, &b );
+    LOG(INFO) << "Mat is symmetric : " << b;
+    return;
     int start=0, stop=0, ierr=0;
 
     ierr = MatGetOwnershipRange( _M_mat, &start, &stop );
