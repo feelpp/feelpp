@@ -32,7 +32,8 @@
 #define _BACKENDEIGEN_HPP_
 
 #include <boost/program_options/variables_map.hpp>
-
+#include <feel/feelcore/feelpetsc.hpp>
+#undef MatType
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/matrixeigendense.hpp>
@@ -40,10 +41,11 @@
 #include <feel/feelalg/vectoreigen.hpp>
 
 
-#include <feel/feelalg/backend.hpp>
+
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
+#include <feel/feelalg/backend.hpp>
 namespace Feel
 {
 namespace po = boost::program_options;
