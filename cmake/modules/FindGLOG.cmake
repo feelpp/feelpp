@@ -25,20 +25,22 @@
 # GLOG_INCLUDE_DIR - headers location
 # GLOG_LIBRARIES - libraries
 
-# try to find glog headers, if not found then install glog from contrib into
-# build directory and set GLOG_INCLUDE_DIR and GLOG_LIBRARIES
 FIND_PACKAGE(GFLAGS)
-FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
-  ${CMAKE_BINARY_DIR}/contrib/glog/include
-  $ENV{FEELPP_DIR}/include
-  $ENV{FEELPP_DIR}/include/feel
-  NO_DEFAULT_PATH
-  )
+
 # try installed version
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   /usr/include/feel
   /usr/local/include/feel
   /opt/local/include/feel
+  )
+
+# try to find glog headers, if not found then install glog from contrib into
+# build directory and set GLOG_INCLUDE_DIR and GLOG_LIBRARIES
+FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
+  ${CMAKE_BINARY_DIR}/contrib/glog/include
+  $ENV{FEELPP_DIR}/include
+  $ENV{FEELPP_DIR}/include/feel
+  NO_DEFAULT_PATH
   )
 
 message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
@@ -71,6 +73,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog/ )
   endif()
 endif()
 
+FIND_LIBRARY(GLOG_LIBRARY  NAMES glog feelpp_glog   )
 FIND_LIBRARY(GLOG_LIBRARY
   NAMES feelpp_glog glog
   PATHS
@@ -79,7 +82,6 @@ FIND_LIBRARY(GLOG_LIBRARY
   $ENV{FEELPP_DIR}/lib
   NO_DEFAULT_PATH
   )
-FIND_LIBRARY(GLOG_LIBRARY  NAMES glog feelpp_glog   )
 
 set(GLOG_LIBRARIES ${GLOG_LIBRARY})
 message(STATUS "GLog includes: ${GLOG_INCLUDE_DIR} Libraries: ${GLOG_LIBRARIES}" )
