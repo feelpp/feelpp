@@ -17,7 +17,7 @@
 
    - support up to PETSc 3.4.2
    - support up to SLEPc 3.4.1
-   - support up to Boost 1.53
+   - support up to Boost 1.54
    - support up to Eigen 3.2
    - Correspondence table between gmsh and feel++ node numbering allowing to
      easily couple different codes for example a feel++ code and a matlab code
