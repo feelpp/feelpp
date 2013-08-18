@@ -700,7 +700,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    virtual void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context ) = 0;
+    virtual void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context ) = 0;
 
     /**
      * update a block matrix
@@ -889,4 +889,3 @@ std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m )
 } // Feel
 
 #endif // #ifndef __sparse_matrix_h__
-

@@ -214,7 +214,7 @@ MatrixEigenSparse<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type>
 template<typename T>
 void
 MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
-                                std::vector<value_type> const& vals,
+                                Vector<value_type> const& vals,
                                 Vector<value_type>& rhs,
                                 Context const& on_context )
 {
@@ -230,13 +230,13 @@ MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
             double value = 1.0;
             if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
                 value = it.value();
-            rhs.add( it.row(), -it.value() * vals[k] );
+            rhs.add( it.row(), -it.value() * vals(rows[k]) );
             it.valueRef() = 0;
 
             if ( it.row() == it.col() )
             {
                 it.valueRef() = value;
-                rhs.set( it.row(), value * vals[k] );
+                rhs.set( it.row(), value * vals(rows[k]) );
             }
         }
     }

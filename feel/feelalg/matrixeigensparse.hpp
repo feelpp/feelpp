@@ -51,7 +51,7 @@ namespace Feel
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * 
+ *
  * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
@@ -333,7 +333,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
     void init() {}
 

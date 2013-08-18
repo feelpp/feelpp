@@ -453,7 +453,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
     /**
      * update a block matrix
@@ -578,7 +578,7 @@ public :
     void zero( size_type start1, size_type stop1, size_type start2, size_type stop2 );
     //void zeroEntriesDiagonal();
     void zeroRows( std::vector<int> const& rows,
-                   std::vector<value_type> const& values,
+                   Vector<value_type> const& values,
                    Vector<value_type>& rhs,
                    Context const& on_context );
 

@@ -223,14 +223,7 @@ public:
      * Creates a copy of this vector and returns it in an \p
      * shared_ptr<>.  This must be overloaded in the derived classes.
      */
-    clone_ptrtype clone () const
-    {
-        clone_ptrtype cloned_vector ( new VectorPetsc<T> );
-
-        *cloned_vector = *this;
-
-        return cloned_vector;
-    }
+    clone_ptrtype clone () const;
 
 
     /**
@@ -332,7 +325,7 @@ public:
      */
     size_type size () const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
+        DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
 
         if ( !this->isInitialized() )
@@ -349,7 +342,7 @@ public:
      */
     size_type localSize() const
     {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
+        DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
         int petsc_size=0;
         int ierr = VecGetLocalSize( _M_vec, &petsc_size );
@@ -702,102 +695,6 @@ protected:
     bool _M_destroy_vec_on_exit;
 };
 
-template <typename T>
-inline
-void
-VectorPetsc<T>::init ( const size_type n,
-                       const size_type n_local,
-                       const bool fast )
-{
-    int ierr=0;
-    int petsc_n=static_cast<int>( n );
-    int petsc_n_local=static_cast<int>( n_local );
-
-
-    // Clear initialized vectors
-    if ( this->isInitialized() )
-        this->clear();
-
-
-    // create a sequential vector if on only 1 processor
-    if ( n_local == n )
-    {
-        ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n, &_M_vec );
-        CHKERRABORT( PETSC_COMM_SELF,ierr );
-
-        ierr = VecSetFromOptions ( _M_vec );
-        CHKERRABORT( PETSC_COMM_SELF,ierr );
-    }
-
-    // otherwise create an MPI-enabled vector
-    else
-    {
-        FEELPP_ASSERT( n_local < n )( n_local )( n ).error( "invalid local size" );
-
-        ierr = VecCreateMPI ( this->comm(), petsc_n_local, petsc_n,
-                              &_M_vec );
-        CHKERRABORT( this->comm(),ierr );
-
-        ierr = VecSetFromOptions ( _M_vec );
-        CHKERRABORT( this->comm(),ierr );
-    }
-
-    this->M_is_initialized = true;
-
-
-    if ( fast == false )
-        this->zero ();
-}
-template <typename T>
-void
-VectorPetsc<T>::set ( const value_type& value )
-{
-    int ierr=0;
-    PetscScalar petsc_value = static_cast<PetscScalar>( value );
-
-    ierr = VecSet ( _M_vec, petsc_value );
-    CHKERRABORT( this->comm(),ierr );
-}
-template <typename T>
-void
-VectorPetsc<T>::set ( size_type i, const value_type& value )
-{
-    FEELPP_ASSERT( i<size() )( i )( size() ).error( "invalid index" );
-
-
-    int ierr=0;
-    int i_val = static_cast<int>( i );
-    PetscScalar petsc_value = static_cast<PetscScalar>( value );
-
-    ierr = VecSetValues ( _M_vec, 1, &i_val, &petsc_value, INSERT_VALUES );
-    CHKERRABORT( this->comm(),ierr );
-}
-
-template <typename T>
-void
-VectorPetsc<T>::add ( const size_type i, const value_type& value )
-{
-    FEELPP_ASSERT( i<size() )( i )( size() ).error( "invalid index" );
-
-    int ierr=0;
-    int i_val = static_cast<int>( i );
-    PetscScalar petsc_value = static_cast<PetscScalar>( value );
-
-    ierr = VecSetValues ( _M_vec, 1, &i_val, &petsc_value, ADD_VALUES );
-    CHKERRABORT( this->comm(),ierr );
-}
-
-template <typename T>
-void
-VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
-{
-    //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
-
-    int ierr=0;
-    ierr = VecSetValues ( _M_vec, n, i, v, ADD_VALUES );
-    CHKERRABORT( this->comm(),ierr );
-
-}
 
 //----------------------------------------------------------------------------------------------------//
 //----------------------------------------------------------------------------------------------------//

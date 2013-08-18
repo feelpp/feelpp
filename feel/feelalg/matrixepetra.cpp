@@ -331,7 +331,7 @@ MatrixEpetra::printKonsole () const
 
 
 void
-MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
+MatrixEpetra::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );
 
@@ -404,7 +404,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                             if ( RowIndices[k] == myRow )
                             {
                                 found=true;
-                                rhs.add( gid, -values[i]*RowValues[k] );
+                                rhs.add( gid, -values(gid)*RowValues[k] );
                                 RowValues[k] = 0.0;
                                 break;
                             }
@@ -442,7 +442,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
             // warning: a row index may belong to another
             // processor, so make sure that we access only the
             // rows that belong to this processor
-            rhs.set( *rit, values[i]*Diagonal[myRow] );
+            rhs.set( *rit, values(*rit)*Diagonal[myRow] );
 
         }
     }

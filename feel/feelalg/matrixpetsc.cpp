@@ -1164,7 +1164,7 @@ MatrixPetsc<T>::operator () ( const size_type i,
 
 template<typename T>
 void
-MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
+MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
     // the matrix needs to be closed for this to work
     this->close();
@@ -1176,13 +1176,18 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
 #else
     MatSetOption( _M_mat,MAT_KEEP_ZEROED_ROWS );
 #endif
+
+#if 1
     //PetscErrorCode  MatZeroRowsColumns(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
     VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
-    MatZeroRowsColumns(_M_mat, rows.size(), rows.data(), 1.0, PETSC_NULL, prhs->vec() );
+    const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
+    MatZeroRowsColumns(_M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
     PetscBool b;
     MatIsSymmetric( _M_mat, 1e-13, &b );
     LOG(INFO) << "Mat is symmetric : " << b;
     return;
+#else
+
     int start=0, stop=0, ierr=0;
 
     ierr = MatGetOwnershipRange( _M_mat, &start, &stop );
@@ -1210,7 +1215,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
             // processor, so make sure that we access only the
             // rows that belong to this processor
             if ( rows[i] >= start && rows[i] < stop )
-                rhs.set( rows[i], values[i]*diag( rows[i] ) );
+                rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
         }
     }
 
@@ -1289,7 +1294,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> 
             MatRestoreRow( _M_mat, myRow, &ncols, &cols, &vals );
         } // i
     }
-
+#endif //
 
 }
 template<typename T>
@@ -2446,7 +2451,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 template<typename T>
 void
 MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
-                             std::vector<value_type> const& values,
+                             Vector<value_type> const& values,
                              Vector<value_type>& rhs,
                              Context const& on_context )
 {
@@ -2503,7 +2508,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                     // processor, so make sure that we access only the
                     // rows that belong to this processor
                     if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values[i]*diag( rows[i] ) );
+                        rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
                 }
         }
 
@@ -2523,7 +2528,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                     // processor, so make sure that we access only the
                     // rows that belong to this processor
                     if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values[i] );
+                        rhs.set( rows[i], values(rows[i]) );
                 }
         }
 

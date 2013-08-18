@@ -50,7 +50,7 @@ namespace Feel
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * 
+ *
  * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
@@ -330,7 +330,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
     void init() {}
 
@@ -431,7 +431,7 @@ private:
 template<typename T>
 void
 MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
-                               std::vector<value_type> const& vals,
+                               Vector<value_type> const& vals,
                                Vector<value_type>& rhs,
                                Context const& on_context )
 {
@@ -450,7 +450,7 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
         _M_mat( rows[i], rows[i] ) = value;
 
         // multiply rhs by value of the diagonal entry value
-        rhs.set( rows[i], value * vals[i] );
+        rhs.set( rows[i], value * vals(rows[i]) );
     }
 }
 
