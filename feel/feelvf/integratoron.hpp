@@ -336,7 +336,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     std::vector<int> dofs;
     std::vector<value_type> values;
-
     element_iterator __face_it = this->beginElement();
     element_iterator __face_en = this->endElement();
     if ( __face_it != __face_en )
@@ -409,7 +408,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
                 continue;
             }
-            // do not process the face if it is a ghost face: beloging to two
+            // do not process the face if it is a ghost face: belonging to two
             // processes and being in a process id greater than the one
             // corresponding face
             if ( __face_it->isGhostFace() )
@@ -467,20 +466,13 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                             // this can be quite expensive depending on the
                             // matrix storage format.
                             //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-                            dofs.push_back( thedof );
-                            values.push_back( __value );
-#else
 
                             // only the real dof ( not the ghosts )
                             //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
                             {
                                 dofs.push_back( thedof );
-                                values.push_back( __value );
+                                values.push_back(  __value );
                             }
-
-#endif
-
 
                             //_M_rhs.set( thedof, __value );
                         }
@@ -498,13 +490,20 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     } // __face_it != __face_en
 
+
     if ( __form.rowStartInMatrix()!=0)
     {
         auto const thedofshift = __form.rowStartInMatrix();
         for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
             *itd+=thedofshift;
     }
-    __form.zeroRows( dofs, values, *_M_rhs, _M_on_strategy );
+    auto x = _M_rhs->clone();
+    x->zero();
+    x->addVector( dofs.data(), dofs.size(), values.data() );
+    //values->zero();
+
+    __form.zeroRows( dofs, *x, *_M_rhs, _M_on_strategy );
+    x.reset();
 }
 
 #if 1
