@@ -1166,7 +1166,7 @@ public:
      * side \p rhs is modified accordingly.
      */
     void zeroRows( std::vector<int> const& __dofs,
-                   std::vector<value_type> const& __values,
+                   Vector<value_type> const& __values,
                    Vector<value_type>& rhs,
                    Feel::Context const& on_context );
 
@@ -1457,9 +1457,9 @@ BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 template<typename FE1,  typename FE2, typename ElemContType>
 void
 BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
-        std::vector<value_type> const&__values,
-        Vector<value_type>& rhs,
-        Feel::Context const& on_context )
+                                              Vector<value_type> const&__values,
+                                              Vector<value_type>& rhs,
+                                              Feel::Context const& on_context )
 {
     _M_matrix->zeroRows( __dofs, __values, rhs, on_context );
 }
