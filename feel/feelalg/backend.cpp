@@ -27,9 +27,13 @@
    \date 2007-12-23
  */
 #include <feel/feelalg/backend.hpp>
+// PETSc defines MatType which is used as a typename by eigen3 and it conflicts
+// undef MatType here to ensure compilation since it is not needed to compile this file
+#undef MatType
+#include <feel/feelalg/backendeigen.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
-#include <feel/feelalg/backendeigen.hpp>
+
 
 namespace Feel
 {
