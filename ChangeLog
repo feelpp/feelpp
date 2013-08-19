@@ -16,13 +16,20 @@
    \subsection features0940 Features
 
    - support up to PETSc 3.4.2
-   - support up to Boost 1.53
+   - support up to SLEPc 3.4.1
+   - support up to Boost 1.54
+   - support up to Eigen 3.2
    - Correspondence table between gmsh and feel++ node numbering allowing to
      easily couple different codes for example a feel++ code and a matlab code
+   - now the boundary elements set correspond to all elements sharing a
+     sub-entity with the boundary (point edge or face ) and not only a face
+     this affects \c boundaryelements and \c internalelements
 
    \subsection issues0940 Noteworthy Issues
 
-   - <a href="https://github.com/feelpp/feelpp/issues/140">#140<a/>Mesh files refined twice the number of refinement levels at generation step
+   - <a href="https://github.com/feelpp/feelpp/issues/157">#157</a> Do not ship eigen, cln, glog and gflags when releasing Feel++
+   - <a href="https://github.com/feelpp/feelpp/issues/156">#156</a> extend boundary elements to all elements sharing a sub-entity with the boundary
+   - <a href="https://github.com/feelpp/feelpp/issues/140">#140</a> Mesh files refined twice the number of refinement levels at generation step
    - <a href="https://github.com/feelpp/feelpp/issues/128">#128</a> BDF not working in order 4
    - <a href="https://github.com/feelpp/feelpp/issues/126">#126</a> don't store all mesh points
    - <a href="https://github.com/feelpp/feelpp/issues/101">#101</a> Correspondence of gmsh and feel++ node numbering
