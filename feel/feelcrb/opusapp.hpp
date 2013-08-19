@@ -392,7 +392,12 @@ public:
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
-            std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %crb->dimension() ).str().c_str() ,std::ios::out | std::ios::app );
+            int dim=0;
+            if( M_mode==CRBModelMode::CRB )
+                dim=crb->dimension();
+            if( M_mode==CRBModelMode::SCM )
+                dim=crb->scm()->KMax();
+            std::ofstream file_summary_of_simulations( ( boost::format( "summary_of_simulations_%d" ) %dim ).str().c_str() ,std::ios::out | std::ios::app );
 
             int curpar = 0;
             if( crb->useWNmu() )
@@ -450,29 +455,45 @@ public:
 
 
             //Statistics
-            vectorN_type l2_error_vector( Sampling->size() );
-            vectorN_type h1_error_vector( Sampling->size() );
-            vectorN_type relative_error_vector( Sampling->size() );
-            vectorN_type time_fem_vector ( Sampling->size() );
-            vectorN_type time_crb_vector ( Sampling->size() );
+            vectorN_type l2_error_vector;
+            vectorN_type h1_error_vector;
+            vectorN_type relative_error_vector;
+            vectorN_type time_fem_vector;
+            vectorN_type time_crb_vector;
             vectorN_type relative_estimated_error_vector;
-            if( crb->errorType()!=2 )
-                relative_estimated_error_vector.resize( Sampling->size() );
 
-            crb->setOfflineStep( false );
+            vectorN_type scm_relative_error;
 
-
-            if (option(_name="eim.cvg-study").template as<bool>())
+            if( M_mode==CRBModelMode::CRB )
             {
-                this->initializeConvergenceEimMap( Sampling->size() );
-                compute_fem=false;
+
+                l2_error_vector.resize( Sampling->size() );
+                h1_error_vector.resize( Sampling->size() );
+                relative_error_vector.resize( Sampling->size() );
+                time_fem_vector.resize( Sampling->size() );
+                time_crb_vector.resize( Sampling->size() );
+
+                if( crb->errorType()!=2 )
+                    relative_estimated_error_vector.resize( Sampling->size() );
+
+                crb->setOfflineStep( false );
+
+                if (option(_name="eim.cvg-study").template as<bool>() )
+                {
+                    this->initializeConvergenceEimMap( Sampling->size() );
+                    compute_fem=false;
+                }
+
+                if (option(_name="crb.cvg-study").template as<bool>() )
+                    this->initializeConvergenceCrbMap( Sampling->size() );
             }
+            if( M_mode==CRBModelMode::SCM )
+            {
+                if (option(_name="crb.scm.cvg-study").template as<bool>() )
+                    this->initializeConvergenceScmMap( Sampling->size() );
 
-            if (option(_name="crb.cvg-study").template as<bool>())
-                this->initializeConvergenceCrbMap( Sampling->size() );
-
-            if (option(_name="crb.scm.cvg-study").template as<bool>())
-                this->initializeConvergenceScmMap( Sampling->size() );
+                scm_relative_error.resize( Sampling->size() );
+            }
 
             int crb_dimension = option(_name="crb.dimension").template as<int>();
             int crb_dimension_max = option(_name="crb.dimension-max").template as<int>();
@@ -565,7 +586,7 @@ public:
 
                                 exporter->step(0)->add( u_fem.name(), u_fem );
                                 //model->solve( mu );
-                                std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem) )( ti.elapsed() );
+                                std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem, true) )( ti.elapsed() );
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
                                 printEntry( ostr, mu, o );
 
@@ -748,7 +769,10 @@ public:
                                 if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
                                 {
                                     LOG(INFO) << "start convergence study...\n";
-                                    std::map<int, boost::tuple<double,double,double,double,double,double> > conver;
+                                    std::map<int, boost::tuple<double,double,double,double,double,double,double> > conver;
+                                    auto all_beta=model->computeBetaQm( mu );
+                                    auto betaAqm = all_beta.template get<1>();
+
                                     for( int N = 1; N <= crb->dimension(); N++ )
                                     {
                                         //auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
@@ -757,21 +781,83 @@ public:
                                         u_error = u_fem - u_crbN;
                                         auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         double rel_err = std::abs( output_fem-o.template get<0>() ) /output_fem;
-                                        double estimated_error = o.template get<1>();
-                                        double relative_estimated_error = estimated_error / output_fem;
+                                        double output_estimated_error = o.template get<1>();
+
+                                        double solution_estimated_error = o.template get<5>();
+                                        double output_relative_estimated_error = output_estimated_error / output_fem;
+
+
+                                        double primal_residual_norm = o.template get<6>();
+                                        double dual_residual_norm = o.template get<7>();
+
+                                        double solution_error=0;
+                                        if( model->isSteady() )
+                                        {
+#if 0
+                                            //let ufem-ucrb = e
+                                            //||| e |||_mu = sqrt( a( e , e ; mu ) ) = solution_error
+                                            for(int q=0; q<model->Qa();q++)
+                                            {
+                                                for(int m=0; m<model->mMaxA(q); m++)
+                                                {
+                                                    solution_error += math::sqrt( betaAqm[q][m]*model->Aqm(q,m,u_error,u_error) );
+                                                }
+                                            }
+#else
+                                            solution_error = math::sqrt( model->scalarProduct( u_error, u_error ) );
+#endif
+                                        }
+                                        else
+                                        {
+                                            double dt = model->timeStep();
+                                            double ti = model->timeInitial();
+                                            double tf = model->timeFinal();
+                                            int K = ( tf - ti )/dt;
+                                            auto all_beta=model->computeBetaQm( mu , tf );
+                                            auto betaMqm = all_beta.template get<0>();
+
+                                            for(int q=0; q<model->Qm();q++)
+                                            {
+                                                for(int m=0; m<model->mMaxM(q); m++)
+                                                {
+                                                    solution_error +=  betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
+                                                }
+                                            }
+                                            for(int time_index=0; time_index<K; time_index++)
+                                            {
+                                                double t=time_index*dt;
+                                                all_beta=model->computeBetaQm( mu , t);
+                                                betaAqm = all_beta.template get<1>();
+                                                for(int q=0; q<model->Qa();q++)
+                                                {
+                                                    for(int m=0; m<model->mMaxA(q); m++)
+                                                    {
+                                                        solution_error +=  betaAqm[q][m]*model->Aqm(q,m,u_error,u_error) * dt;
+                                                    }
+                                                }
+                                            }
+                                            solution_error = math::sqrt( solution_error );
+                                        }
+
                                         double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
                                         double condition_number = o.template get<3>();
-                                        double error_bound_efficiency = relative_estimated_error / rel_err;
-                                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , error_bound_efficiency );
+                                        double output_error_bound_efficiency = output_relative_estimated_error / rel_err;
+                                        double solution_error_bound_efficiency = solution_estimated_error / solution_error;
+
+                                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , solution_error_bound_efficiency );
+
                                         LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
                                             std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<relative_estimated_error<<" "<<condition_number<<std::endl;
                                         M_mapConvCRB["L2"][N-1](curpar - 1) = l2_error;
                                         M_mapConvCRB["H1"][N-1](curpar - 1) = h1_error;
                                         M_mapConvCRB["Rel"][N-1](curpar - 1) = rel_err;
-                                        M_mapConvCRB["EstimatedError"][N-1](curpar - 1) = relative_estimated_error;
-                                        M_mapConvCRB["ErrorBoundEfficiency"][N-1](curpar - 1) =  error_bound_efficiency;
+                                        M_mapConvCRB["OutputEstimatedError"][N-1](curpar - 1) = output_relative_estimated_error;
+                                        M_mapConvCRB["OutputErrorBoundEfficiency"][N-1](curpar - 1) =  output_error_bound_efficiency;
+                                        M_mapConvCRB["SolutionErrorBoundEfficiency"][N-1](curpar - 1) =  solution_error_bound_efficiency;
+                                        M_mapConvCRB["PrimalResidualNorm"][N-1](curpar - 1) =  primal_residual_norm;
+                                        M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
                                         LOG(INFO) << "N=" << N << " done.\n";
                                     }
                                     if( proc_number == Environment::worldComm().masterRank() )
@@ -823,7 +909,10 @@ public:
                                     std::cout << "SCM mode\n";
                                 int kmax = crb->scm()->KMax();
                                 auto o = crb->scm()->run( mu, kmax );
+                                printEntry( file_summary_of_simulations, mu, o );
                                 printEntry( ostr, mu, o );
+
+                                scm_relative_error[curpar-1] = o[6];
 
                                 if (option(_name="crb.scm.cvg-study").template as<bool>()  )
                                 {
@@ -873,16 +962,16 @@ public:
             exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
-            if (option(_name="eim.cvg-study").template as<bool>() )
+            if (option(_name="eim.cvg-study").template as<bool>() && M_mode==CRBModelMode::CRB)
                 this->doTheEimConvergenceStat( Sampling->size() );
 
-            if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
+            if (option(_name="crb.cvg-study").template as<bool>() && compute_fem && M_mode==CRBModelMode::CRB )
                 this->doTheCrbConvergenceStat( Sampling->size() );
 
-            if (option(_name="crb.scm.cvg-study").template as<bool>() )
+            if (option(_name="crb.scm.cvg-study").template as<bool>() && M_mode==CRBModelMode::SCM )
                 this->doTheScmConvergenceStat( Sampling->size() );
 
-            if ( compute_stat && compute_fem )
+            if ( compute_stat && compute_fem && M_mode==CRBModelMode::CRB )
             {
                 LOG( INFO ) << "compute statistics \n";
                 Eigen::MatrixXf::Index index_max_l2;
@@ -945,7 +1034,26 @@ public:
                     file_summary_of_simulations <<"min of time CRB : "<<min_time_crb<<" at the "<<index_min_time_crb+1<<"^th simulation\n";
                     file_summary_of_simulations <<"mean of time CRB : "<<mean_time_crb<<"\n\n";
                 }
-            }//end of compute-stat
+            }//end of compute-stat CRB
+            if( M_mode==CRBModelMode::SCM )
+            {
+                LOG( INFO ) << "compute statistics \n";
+                Eigen::MatrixXf::Index index_max_error;
+                Eigen::MatrixXf::Index index_min_error;
+                double max_error = scm_relative_error.maxCoeff(&index_max_error);
+                double min_error = scm_relative_error.minCoeff(&index_min_error);
+                double mean_error = scm_relative_error.mean();
+                if( proc_number == Environment::worldComm().masterRank() )
+                {
+                    file_summary_of_simulations <<"\n\nStatistics\n";
+                    file_summary_of_simulations <<"max of relative error : "<<max_error<<" at the "<<index_max_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"min of relative error : "<<min_error<<" at the "<<index_min_error+1<<"^th simulation\n";
+                    file_summary_of_simulations <<"mean of relative error : "<<mean_error<<"\n\n";
+                }
+
+            }//end of compute-stat SCM
+
+
         }
     void run( const double * X, unsigned long N,
               double * Y, unsigned long P )
@@ -1078,16 +1186,22 @@ private:
         M_mapConvCRB["L2"] = std::vector<vectorN_type>(N);
         M_mapConvCRB["H1"] = std::vector<vectorN_type>(N);
         M_mapConvCRB["Rel"] = std::vector<vectorN_type>(N);//true error
-        M_mapConvCRB["EstimatedError"] = std::vector<vectorN_type>(N);//estimated error
-        M_mapConvCRB["ErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["OutputEstimatedError"] = std::vector<vectorN_type>(N);//estimated error
+        M_mapConvCRB["OutputErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["SolutionErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["PrimalResidualNorm"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["DualResidualNorm"] = std::vector<vectorN_type>(N);
 
         for(int j=0; j<N; j++)
             {
                 M_mapConvCRB["L2"][j].resize(sampling_size);
                 M_mapConvCRB["H1"][j].resize(sampling_size);
                 M_mapConvCRB["Rel"][j].resize(sampling_size);
-                M_mapConvCRB["EstimatedError"][j].resize(sampling_size);
-                M_mapConvCRB["ErrorBoundEfficiency"][j].resize(sampling_size);
+                M_mapConvCRB["OutputEstimatedError"][j].resize(sampling_size);
+                M_mapConvCRB["OutputErrorBoundEfficiency"][j].resize(sampling_size);
+                M_mapConvCRB["SolutionErrorBoundEfficiency"][j].resize(sampling_size);
+                M_mapConvCRB["PrimalResidualNorm"][j].resize( sampling_size );
+                M_mapConvCRB["DualResidualNorm"][j].resize( sampling_size );
             }
     }
 
@@ -1203,7 +1317,7 @@ private:
     {
         auto N = crb->dimension();
         //std::list<std::string> list_error_type;
-        std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("Rel")("EstimatedError")("ErrorBoundEfficiency");
+        std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("Rel")("OutputEstimatedError")("OutputErrorBoundEfficiency")("SolutionErrorBoundEfficiency")("PrimalResidualNorm")("DualResidualNorm");
         BOOST_FOREACH( auto error_name, list_error_type)
             {
                 std::ofstream conv;
