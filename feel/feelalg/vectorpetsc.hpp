@@ -257,26 +257,7 @@ public:
      */
     //@{
 
-    value_type operator() ( const size_type i ) const
-    {
-        FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
-        FEELPP_ASSERT ( ( ( i >= this->firstLocalIndex() ) &&
-                          ( i <  this->lastLocalIndex() ) ) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).error( "invalid vector index" );
-
-        int ierr=0;
-        PetscScalar *values, value=0.;
-
-
-        ierr = VecGetArray( _M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        value = values[i - this->firstLocalIndex()];
-
-        ierr = VecRestoreArray ( _M_vec, &values );
-        CHKERRABORT( this->comm(),ierr );
-
-        return static_cast<value_type>( value );
-    }
+    value_type operator() ( const size_type i ) const;
 
 
     /**
@@ -709,7 +690,7 @@ class VectorPetscMPI : public VectorPetsc<T>
     typedef typename super::value_type value_type;
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
-
+    typedef typename super::clone_ptrtype clone_ptrtype;
 public:
 
     VectorPetscMPI()
@@ -725,7 +706,7 @@ public:
     {
         this->clear();
     }
-
+    clone_ptrtype clone () const;
     void init( const size_type N,
                const size_type n_local,
                const bool fast=false );

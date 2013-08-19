@@ -2456,8 +2456,8 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                              Context const& on_context )
 {
     bool withClose=true;
-    // the matrix doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
-    // this->close();
+    // \warning the matrix may not be closed because not all processors are
+    // present here with composite spaces(this call must be done after)
     if (!withClose)
         {
 #if !PETSC_VERSION_LESS_THAN(3,2,0)
@@ -2473,66 +2473,14 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     MatSetOption( this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE );
 #endif
 
-    int start=0, stop=this->mapRow().nLocalDofWithGhost(), ierr=0;
-    //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
+    VectorPetscMPI<T>* prhs = dynamic_cast<VectorPetscMPI<T>*> ( &rhs );
+    CHECK( prhs != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for rhs";
+    const VectorPetscMPI<T>* pvalues = dynamic_cast<const VectorPetscMPI<T>*> ( &values );
+    CHECK( pvalues != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for values";
+    MatZeroRowsColumnsLocal(this->_M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
 
-    if ( false ) // on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-        {
-            VectorPetscMPI<value_type> diag( this->mapRowPtr() );
-
-            //VectorPetsc<value_type> diag( this->mapRow().nLocalDofWithoutGhost(),this->mapRow().worldComm() );
-            //diag( this->mapRow().nLocalDofWithGhost(),this->mapRow().worldComm().subWorldComm(this->mapRow().worldComm().mapColorWorld()[this->mapRow().worldComm().globalRank()  ] ));
-            ierr =MatGetDiagonal( this->mat(), diag.vec() );
-            CHKERRABORT( this->comm(),ierr );
-            // in Petsc 3.2, we might want to look at the new interface so that
-            // right hand side is automatically changed wrt to zeroing out the
-            // matrix entries
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,2,0)
-            ierr = MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL );
-            //CHKERRABORT(this->comm(),ierr);
-#else
-            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
-#endif
-            // doesn't work with composite space
-            ierr=MatDiagonalSet( this->mat(), diag.vec(), INSERT_VALUES );
-            //CHKERRABORT(this->comm(),ierr);
-
-            // important close
-            diag.close();
-
-            for ( size_type i = 0; i < rows.size(); ++i )
-                {
-                    // eliminate column
-
-                    // warning: a row index may belong to another
-                    // processor, so make sure that we access only the
-                    // rows that belong to this processor
-                    if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
-                }
-        }
-
-    else
-        {
-#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL );
-            //CHKERRABORT(this->comm(),ierr);
-#else
-            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
-#endif
-            for ( size_type i = 0; i < rows.size(); ++i )
-                {
-                    // eliminate column
-
-                    // warning: a row index may belong to another
-                    // processor, so make sure that we access only the
-                    // rows that belong to this processor
-                    if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values(rows[i]) );
-                }
-        }
-
-    // rsh doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
+    // rsh may not be closed because not all processors are present here with
+    // composite spaces(this call must be done after)
     if (withClose)
         {
             rhs.close();
