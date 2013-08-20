@@ -191,7 +191,12 @@ GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
 
         for ( int j=0; j<nCol; ++j )
         {
-            if ( blockSet(i,j)->empty() ) continue;
+            if ( blockSet(i,j)->empty() )
+            {
+                start_j += blockSet(i,j)->mapCol().nLocalDofWithoutGhost( myrank );
+                continue;
+            }
+
             //blockSet(i,j)->close();
             if (this->worldComm().globalSize()==1)
                 this->mergeBlockGraph( blockSet(i,j),start_i,start_j );
