@@ -38,6 +38,8 @@ set(lib_convection
   ${CMAKE_CURRENT_SOURCE_DIR}/convection_crb_other.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/convection_crb_residual.cpp )
 
+if(FEELPP_DOC_ENABLE_CAVITY_CRB)
 add_subdirectory( cavity )
+endif()
 #add_subdirectory( cabin )
 #add_subdirectory( room )

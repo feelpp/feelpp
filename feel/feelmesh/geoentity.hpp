@@ -185,16 +185,16 @@ public:
     bool operator==( GeoEntity const& e ) const
     {
         return M_id == e.id();
-    };
+    }
     bool operator<( GeoEntity const& e ) const
     {
         return M_id < e.id();
-    };
+    }
 
     bool operator<( size_type __i ) const
     {
         return M_id < __i;
-    };
+    }
 
     //@}
 
@@ -411,7 +411,7 @@ public:
     bool isOnBoundary() const
     {
         return M_entity.test( MESH_ENTITY_BOUNDARY );
-    };
+    }
 
     /**
      * \return \c true if ghost cell, \c false otherwise
