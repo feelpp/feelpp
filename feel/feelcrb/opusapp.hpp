@@ -789,6 +789,8 @@ public:
 
                                         double primal_residual_norm = o.template get<6>();
                                         double dual_residual_norm = o.template get<7>();
+                                        double delta_pr = o.template get<8>();
+                                        double delta_du = o.template get<9>();
 
                                         double solution_error=0;
                                         if( model->isSteady() )
@@ -856,8 +858,12 @@ public:
                                         M_mapConvCRB["OutputEstimatedError"][N-1](curpar - 1) = output_relative_estimated_error;
                                         M_mapConvCRB["OutputErrorBoundEfficiency"][N-1](curpar - 1) =  output_error_bound_efficiency;
                                         M_mapConvCRB["SolutionErrorBoundEfficiency"][N-1](curpar - 1) =  solution_error_bound_efficiency;
+                                        M_mapConvCRB["SolutionError"][N-1](curpar - 1) =  solution_error;
+                                        M_mapConvCRB["SolutionErrorEstimated"][N-1](curpar - 1) =  solution_estimated_error;
                                         M_mapConvCRB["PrimalResidualNorm"][N-1](curpar - 1) =  primal_residual_norm;
                                         M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
+                                        M_mapConvCRB["DeltaPr"][N-1](curpar - 1) =  delta_pr;
+                                        M_mapConvCRB["DeltaDu"][N-1](curpar - 1) =  delta_du;
                                         LOG(INFO) << "N=" << N << " done.\n";
                                     }
                                     if( proc_number == Environment::worldComm().masterRank() )
@@ -1189,8 +1195,12 @@ private:
         M_mapConvCRB["OutputEstimatedError"] = std::vector<vectorN_type>(N);//estimated error
         M_mapConvCRB["OutputErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
         M_mapConvCRB["SolutionErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["SolutionError"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["SolutionErrorEstimated"] = std::vector<vectorN_type>(N);
         M_mapConvCRB["PrimalResidualNorm"] = std::vector<vectorN_type>(N);
         M_mapConvCRB["DualResidualNorm"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["DeltaPr"] = std::vector<vectorN_type>(N);
+        M_mapConvCRB["DeltaDu"] = std::vector<vectorN_type>(N);
 
         for(int j=0; j<N; j++)
             {
@@ -1200,8 +1210,12 @@ private:
                 M_mapConvCRB["OutputEstimatedError"][j].resize(sampling_size);
                 M_mapConvCRB["OutputErrorBoundEfficiency"][j].resize(sampling_size);
                 M_mapConvCRB["SolutionErrorBoundEfficiency"][j].resize(sampling_size);
+                M_mapConvCRB["SolutionError"][j].resize(sampling_size);
+                M_mapConvCRB["SolutionErrorEstimated"][j].resize(sampling_size);
                 M_mapConvCRB["PrimalResidualNorm"][j].resize( sampling_size );
                 M_mapConvCRB["DualResidualNorm"][j].resize( sampling_size );
+                M_mapConvCRB["DeltaPr"][j].resize( sampling_size );
+                M_mapConvCRB["DeltaDu"][j].resize( sampling_size );
             }
     }
 
@@ -1317,7 +1331,9 @@ private:
     {
         auto N = crb->dimension();
         //std::list<std::string> list_error_type;
-        std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("Rel")("OutputEstimatedError")("OutputErrorBoundEfficiency")("SolutionErrorBoundEfficiency")("PrimalResidualNorm")("DualResidualNorm");
+        std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("Rel")("OutputEstimatedError")("OutputErrorBoundEfficiency")
+            ("SolutionErrorBoundEfficiency")("PrimalResidualNorm")("DualResidualNorm")("DeltaPr")("DeltaDu")("SolutionError")("SolutionErrorEstimated");
+
         BOOST_FOREACH( auto error_name, list_error_type)
             {
                 std::ofstream conv;
