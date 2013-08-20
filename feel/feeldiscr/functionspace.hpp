@@ -3300,7 +3300,12 @@ public:
     }
 
     //! destructor: do nothing thanks to shared_ptr<>
-    ~FunctionSpace() {}
+    ~FunctionSpace()
+        {
+            _M_dof.reset();
+            _M_dofOnOff.reset();
+            _M_ref_fe.reset();
+        }
 
 
     void setWorldsComm( std::vector<WorldComm> const& _worldsComm )
