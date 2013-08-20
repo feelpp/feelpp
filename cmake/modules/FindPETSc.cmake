@@ -99,8 +99,11 @@ elseif (PETSC_DIR)
   message (SEND_ERROR "The pair PETSC_DIR=${PETSC_DIR} PETSC_ARCH=${PETSC_ARCH} do not specify a valid PETSc installation")
 endif ()
 petsc_get_version()
+IF(NOT DEFINED _BLOCK_)
+  set(_BLOCK_ false)
+endif()
 
-if (petsc_conf_rules AND petsc_conf_variables AND NOT petsc_config_current)
+if (petsc_conf_rules AND petsc_conf_variables AND NOT petsc_config_current AND NOT _BLOCK_)
   # Put variables into environment since they are needed to get
   # configuration (petscvariables) in the PETSc makefile
   set (ENV{PETSC_DIR} "${PETSC_DIR}")

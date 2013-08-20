@@ -655,6 +655,9 @@ Environment::~Environment()
 
     if ( i_initialized )
     {
+        VLOG(2) << "clearing known paths\n";
+        S_paths.clear();
+
         VLOG(2) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
