@@ -460,7 +460,7 @@ struct InitializeSpace
 {
     InitializeSpace( MeshPtrType const& mesh,
                      PeriodicityType const& periodicity,
-                     std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                     std::vector<Dof> const& dofindices,
                      std::vector<WorldComm> const & worldsComm )
         :
         _M_cursor( 0 ),
@@ -501,7 +501,7 @@ struct InitializeSpace
     mutable uint16_type _M_cursor;
     std::vector<WorldComm> _M_worldsComm;
     MeshPtrType _M_mesh;
-    std::vector<boost::tuple<size_type, uint16_type, size_type> > const& _M_dofindices;
+    std::vector<Dof> const& _M_dofindices;
     PeriodicityType _M_periodicity;
 };
 template<typename DofType>
@@ -3193,7 +3193,7 @@ public:
     }
 
     FunctionSpace( mesh_ptrtype const& mesh,
-                   std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                   std::vector<Dof > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
         :
@@ -3214,7 +3214,7 @@ public:
     }
 #endif // 0
 
-    static pointer_type New( mesh_ptrtype const& __m, std::vector<boost::tuple<size_type, uint16_type, size_type> > const dofindices )
+    static pointer_type New( mesh_ptrtype const& __m, std::vector<Dof > const& dofindices )
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
@@ -3279,13 +3279,13 @@ public:
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         DVLOG(2) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
-        this->init( mesh, mesh_components, periodicity, std::vector<boost::tuple<size_type, uint16_type, size_type> >(), mpl::bool_<is_composite>() );
+        this->init( mesh, mesh_components, periodicity, std::vector<Dof >(), mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
     }
 
     void init( mesh_ptrtype const& mesh,
                size_type mesh_components,
-               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+               std::vector<Dof > const& dofindices,
                periodicity_type periodicity = periodicity_type() )
     {
 
@@ -3887,12 +3887,12 @@ private:
     void init( mesh_ptrtype const& mesh,
                size_type mesh_components,
                periodicity_type const& periodicity,
-               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+               std::vector<Dof > const& dofindices,
                mpl::bool_<false> );
     void init( mesh_ptrtype const& mesh,
                size_type mesh_components,
                periodicity_type const& periodicity,
-               std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+               std::vector<Dof > const& dofindices,
                mpl::bool_<true> );
 
     size_type nDof( mpl::bool_<false> ) const;
@@ -4024,7 +4024,7 @@ void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
         size_type mesh_components,
         periodicity_type const& periodicity,
-        std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+        std::vector<Dof> const& dofindices,
         mpl::bool_<false> )
 {
     DVLOG(2) << "calling init(<space>) begin\n";
@@ -4097,7 +4097,7 @@ void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          size_type mesh_components,
                                          periodicity_type const& periodicity,
-                                         std::vector<boost::tuple<size_type, uint16_type, size_type> > const& dofindices,
+                                         std::vector<Dof> const& dofindices,
                                          mpl::bool_<true> )
 {
     DVLOG(2) << "calling init(<composite>) begin\n";
