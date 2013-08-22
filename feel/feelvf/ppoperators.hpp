@@ -394,6 +394,15 @@
                 {;}                                                     \
         ~VF_OP_NAME( O )()                                              \
         {}                                                              \
+        template<typename TheExpr>                                      \
+        struct Lambda                                                   \
+        {                                                               \
+            typedef VF_OP_NAME( O )<TheExpr,TheExpr> type;              \
+        };                                                              \
+                                                                        \
+        template<typename TheExpr>                                      \
+            typename Lambda<TheExpr>::type                              \
+            operator()( TheExpr const& e ) { return VF_OP_NAME(O)<TheExpr,TheExpr>( e ); } \
                                                                         \
         L_type VF_TYPE_CV(L) left() const { return _M_left; }           \
         R_type VF_TYPE_CV(R) right() const { return _M_right; }         \
