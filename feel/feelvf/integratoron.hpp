@@ -498,7 +498,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             *itd+=thedofshift;
     }
     auto x = _M_rhs->clone();
-    x->zero();
+    //x->zero();
     x->addVector( dofs.data(), dofs.size(), values.data() );
     //values->zero();
 
