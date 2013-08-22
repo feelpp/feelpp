@@ -236,10 +236,13 @@ struct test_integration_internal_faces_lf : public Application
 
 
         auto F = backend->newVector( Xh );
-        form1( _test=Xh, _vector=F, _init=true ) = integrate( internalfaces( mesh ),
-                //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
-                trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() )
-                                                            );
+        auto _F_ = integrate( internalfaces( mesh ),
+                trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() ) );
+        form1( _test=Xh, _vector=F, _init=true ) = _F_; 
+        //  integrate( internalfaces( mesh ),
+        //        //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
+        //        trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() )
+        //                                                    );
 
         F->close();
         F->printMatlab( "F.m" );
@@ -314,7 +317,7 @@ makeAbout()
 
 }
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( integration )
 
