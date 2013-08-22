@@ -185,6 +185,34 @@ public:
             std::cout << "Database " << this->lookForDB() << " available and loaded\n";
     }
 
+    //! constructor from command line options
+    CRBSCM( std::string const& name,
+            po::variables_map const& vm ,
+            truth_model_ptrtype const & model ,
+            bool scm_for_mass_matrix )
+        :
+        super( "scm",
+               ( boost::format( "%1%" ) % name ).str(),
+               ( boost::format( "%1%" ) % name ).str(),
+               vm ),
+        M_is_initialized( false ),
+        M_model(),
+        M_tolerance( vm["crb.scm.tol"].template as<double>() ),
+        M_iter_max( vm["crb.scm.iter-max"].template as<int>() ),
+        M_Mplus( vm["crb.scm.Mplus"].template as<int>() ),
+        M_Malpha( vm["crb.scm.Malpha"].template as<int>()  ),
+        M_Dmu( new parameterspace_type ),
+        M_Xi( new sampling_type( M_Dmu ) ),
+        M_C( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_C_complement( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_vm( vm ),
+        M_scm_for_mass_matrix( scm_for_mass_matrix )
+    {
+        this->setTruthModel( model );
+        if ( this->loadDB() )
+            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+    }
+
     //! copy constructor
     CRBSCM( CRBSCM const & o )
         :
@@ -1563,7 +1591,6 @@ CRBSCM<TruthModelType>::loadDB()
 
     std::cout << "Loading " << db << "...\n";
     fs::ifstream ifs( db );
-
     if ( ifs )
     {
         boost::archive::text_iarchive ia( ifs );
