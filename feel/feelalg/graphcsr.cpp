@@ -1137,16 +1137,16 @@ GraphCSR::printPython( std::string const& nameFile ) const
     std::vector<size_type> first_col_entry( this->worldComm().globalSize() );
     std::vector<size_type> last_col_entry( this->worldComm().globalSize() );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->firstRowEntryOnProc(),
+                     (this->mapRow().nLocalDofWithoutGhost()>0)? this->firstRowEntryOnProc() : 0,
                      first_row_entry );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->lastRowEntryOnProc(),
+                     (this->mapRow().nLocalDofWithoutGhost()>0)? this->lastRowEntryOnProc() : 0,
                      last_row_entry );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->firstColEntryOnProc(),
+                     (this->mapCol().nLocalDofWithoutGhost()>0)? this->firstColEntryOnProc() : 0,
                      first_col_entry );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->lastColEntryOnProc(),
+                     (this->mapCol().nLocalDofWithoutGhost()>0)? this->lastColEntryOnProc() : 0,
                      last_col_entry );
     size_type thefirstRow = *std::min_element( first_row_entry.begin(),first_row_entry.end() );
     size_type thelastRow = *std::max_element( last_row_entry.begin(),last_row_entry.end() );
