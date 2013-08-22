@@ -1243,7 +1243,8 @@ public:
      */
     element_type solve( parameter_type const& mu )
     {
-        return this->solveFemUsingAffineDecompositionFixedPoint( mu );
+        //return this->solveFemUsingAffineDecompositionFixedPoint( mu );
+        return M_model->solve( mu );
     }
 
 
