@@ -798,8 +798,10 @@ template <typename T>
 void
 VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
 {
-    //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
+    DCHECK( this->isInitialized() ) << "vector not initialized";
+    DCHECK(n<=this->size()) << "invalid local index array size: " << n << " > " << this->size();
 
+    if ( n == 0 || i == 0 || v == 0 ) return;
     int ierr=0;
     ierr=VecSetValuesLocal( this->vec(), n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
