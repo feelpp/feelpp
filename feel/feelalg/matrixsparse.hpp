@@ -117,6 +117,8 @@ public:
      */
     MatrixSparse ();
 
+    MatrixSparse( WorldComm const& worldComm );
+
     MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
     /**
@@ -738,6 +740,17 @@ public:
         }
     }
 #endif
+    virtual void sqrt( MatrixSparse<value_type>& _m ) const;
+
+    void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m ) const
+    {
+        sqrt(*_m);
+    }
+
+    virtual void matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res );
+
+    virtual void matInverse ( MatrixSparse<value_type> &Inv );
+
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -789,6 +802,14 @@ typedef boost::shared_ptr<d_sparse_matrix_type> sparse_matrix_ptrtype;
 template <typename T>
 inline
 MatrixSparse<T>::MatrixSparse () :
+    _M_is_initialized( false ),
+    M_mprop( NON_HERMITIAN )
+{}
+
+template <typename T>
+inline
+MatrixSparse<T>::MatrixSparse ( WorldComm const& worldComm ) :
+    M_worldComm( worldComm ),
     _M_is_initialized( false ),
     M_mprop( NON_HERMITIAN )
 {}
@@ -886,7 +907,31 @@ std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m )
     return os;
 }
 
+template <typename T>
+void MatrixSparse<T>::sqrt( MatrixSparse<value_type>& _m ) const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+template <typename T>
+void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSparse<value_type> &Res )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+template <typename T>
+void MatrixSparse<T>::matInverse ( MatrixSparse<value_type> &Inv )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+
 } // Feel
 
 #endif // #ifndef __sparse_matrix_h__
-
