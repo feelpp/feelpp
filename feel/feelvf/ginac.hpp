@@ -253,8 +253,9 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
+                    M_nsyms( expr.syms().size() ),
                     M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_nsyms( expr.syms().size() )
+                    M_x( vec_type::Zero( M_nsyms ) )
                 {}
 
                 tensor( this_type const& expr,
@@ -262,16 +263,17 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
+                    M_nsyms( expr.syms().size() ),
                     M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_nsyms( expr.syms().size() )
+                    M_x( vec_type::Zero( M_nsyms ) )
                 {}
 
                 tensor( this_type const& expr, Geo_t const& geom )
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
                     M_nsyms( expr.syms().size() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
                     M_x( vec_type::Zero( M_nsyms ) )
 
                 {
@@ -569,7 +571,7 @@ namespace Feel
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( M_nsyms, vec_type::Zero() )
+                    M_x( vec_type::Zero(M_nsyms) )
                 {}
 
                 tensor( this_type const& expr,
@@ -579,7 +581,7 @@ namespace Feel
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( M_nsyms, vec_type::Zero() )
+                    M_x( vec_type::Zero(M_nsyms) )
 
                 {}
 
@@ -589,7 +591,7 @@ namespace Feel
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( M_nsyms, vec_type::Zero() )
+                    M_x( vec_type::Zero(M_nsyms) )
                 {
                 }
 
