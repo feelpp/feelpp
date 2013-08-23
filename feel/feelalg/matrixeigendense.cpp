@@ -23,9 +23,12 @@
 */
 /**
    \file matrixgmm.cpp
+
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-15
  */
+
+#include <Eigen/Dense>
 #include <feel/feelalg/matrixeigendense.hpp>
 
 namespace Feel
