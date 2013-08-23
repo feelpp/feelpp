@@ -559,7 +559,11 @@ Gmsh::rebuildPartitionMsh( std::string const& nameMshInput,std::string const& na
         CTX::instance()->mesh.mshFileVersion = std::atof( this->version().c_str() );
         PartitionMesh( newGmshModel, newPartionOption );
 
-        newGmshModel->writeMSH( nameMshOutput );
+        CTX::instance()->mesh.binary = M_format;
+        //newGmshModel.mesh.binary = M_format;
+
+        //newGmshModel->writeMSH( nameMshOutput );
+        newGmshModel->writeMSH( nameMshOutput, 2.2, CTX::instance()->mesh.binary );
 
         newGmshModel->destroy();
         delete newGmshModel;

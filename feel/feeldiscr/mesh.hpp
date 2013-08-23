@@ -1591,19 +1591,9 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.
-    std::vector<size_type> new_node_numbers ( this->numPoints() );
-    std::vector<size_type> new_vertex ( this->numPoints() );
+    boost::unordered_map<size_type,size_type> new_node_numbers;// ( this->numPoints() );
+    boost::unordered_map<size_type,int> new_vertex;// ( this->numPoints() );
     std::vector<size_type> new_element_numbers ( this->numElements() );
-
-    std::fill ( new_node_numbers.begin(),
-                new_node_numbers.end(),
-                invalid_size_type_value );
-
-    std::fill ( new_vertex.begin(),
-                new_vertex.end(),
-                0 );
-
-
 
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
@@ -1654,27 +1644,31 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         // Loop over the P1 nodes on this element.
         for ( uint16_type n=0; n < element_type::numVertices; n++ )
             {
-                if ( new_node_numbers[old_elem.point( n ).id()] == invalid_size_type_value )
+                auto const& old_point = old_elem.point( n );
+
+                //if ( !new_node_numbers[old_point.id()] )
+                if ( new_node_numbers.find( old_point.id() ) == new_node_numbers.end() )
                     {
-                        new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
-                        DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_elem.point( n ) << "\n";
-                        typename P1_mesh_type::point_type pt( old_elem.point( n ) );
+                        new_node_numbers[old_point.id()] = n_new_nodes;
+                        DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_point << "\n";
+                        typename P1_mesh_type::point_type pt( old_point );
                         pt.setId( n_new_nodes );
+                        pt.setProcessId(old_point.processId());
                         // Add this node to the new mesh
                         new_mesh->addPoint( pt );
                         DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
                         // Increment the new node counter
                         n_new_nodes++;
-                        FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
-                        new_vertex[old_elem.point( n ).id()]=1;
+                        FEELPP_ASSERT( !new_vertex[old_point.id()] ).error( "already seen this point?" );
+                        new_vertex[old_point.id()]=1;
                     }
             // Define this element's connectivity on the new mesh
-            FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh->numPoints() ).error( "invalid connectivity" );
-            DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_elem.point( n ).id()
-                          << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
+                //FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < new_mesh->numPoints() ).error( "invalid connectivity" );
+            DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] adding point old(" << old_point.id()
+                          << ") as point new(" << new_node_numbers[old_point.id()]
                           << ") in element " << new_elem.id() << "\n";
             // add point in element
-            new_elem.setPoint( n, new_mesh->point( new_node_numbers[old_elem.point( n ).id()] ) );
+            new_elem.setPoint( n, new_mesh->point( new_node_numbers[old_point.id()] ) );
         } //for ( uint16_type n=0; n < element_type::numVertices; n++ )
 
         // Add an equivalent element type to the new_mesh
@@ -1845,11 +1839,17 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
 
 
-    new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
+    new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0,
+                                               //[]( size_type lhs, std::pair<size_type,int> const& rhs )
+                                               []( size_type lhs, std::pair<size_type,int> const& rhs )
+                                               {
+                                                   return lhs+rhs.second;
+                                               } ) );
+
 
     DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
-    new_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    new_mesh->components().set ( /*MESH_RENUMBER|*/MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     // run intensive job
     new_mesh->updateForUse();
 

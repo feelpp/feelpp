@@ -203,14 +203,20 @@ public:
                size_type matrix_properties = NON_HERMITIAN )
     {
         sparse_matrix_ptrtype mat;
-
+        auto const& mapGraphRow = graph->mapRowPtr();
+        auto const& mapGraphCol = graph->mapColPtr();
         if ( this->comm().globalSize()>1 )
-            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type );
+            mat = sparse_matrix_ptrtype( new petscMPI_sparse_matrix_type( mapGraphRow,mapGraphCol,mapGraphRow->worldComm() ) );
         else
-            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type );
+            mat = sparse_matrix_ptrtype( new petsc_sparse_matrix_type( mapGraphRow,mapGraphCol,mapGraphRow->worldComm() ) ) ;
 
         mat->setMatrixProperties( matrix_properties );
-        mat->init( m,n,m_l,n_l,graph );
+        //mat->init( m,n,m_l,n_l,graph );
+        mat->init( mapGraphRow->nDof(), mapGraphCol->nDof(),
+                   mapGraphRow->nLocalDofWithoutGhost(), mapGraphCol->nLocalDofWithoutGhost(),
+                   graph );
+
+
         return mat;
     }
 
