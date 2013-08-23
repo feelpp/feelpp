@@ -556,7 +556,13 @@ namespace Feel
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
                 typedef typename mn_to_shape<gmc_type::nDim,M,N>::type shape;
-                typedef Eigen::Matrix<value_type,shape::M,shape::N,Eigen::RowMajor> mat_type;
+                // be careful that the matrix passed to ginac must be Row Major,
+                // however if the number of columns is 1 then eigen3 fails with
+                // an assertion, so we have a special when N=1 and have the
+                // matrix column major which is ok in this case
+                typedef typename mpl::if_<mpl::equal_to<mpl::int_<shape::N>, mpl::int_<1>>,
+                                          mpl::identity<Eigen::Matrix<value_type,shape::M,1>>,
+                                          mpl::identity<Eigen::Matrix<value_type,shape::M,shape::N,Eigen::RowMajor>>>::type::type mat_type;
                 typedef std::vector<mat_type> loc_type;
                 typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
                 struct is_zero
