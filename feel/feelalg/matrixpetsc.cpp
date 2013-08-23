@@ -148,9 +148,9 @@ MatrixPetsc<T>::MatrixPetsc( Mat m )
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm )
+MatrixPetsc<T>::MatrixPetsc( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
     :
-    super( dmRow,dmCol,worldComm ),
+    super( dmRow,dmCol,dmRow->worldComm() ),
     _M_destroy_mat_on_exit( false )
 {
     this->_M_mat = m;
@@ -1651,7 +1651,7 @@ template <typename T>
 inline
 MatrixPetscMPI<T>::MatrixPetscMPI( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
     :
-    super( m, dmRow, dmCol, dmRow->worldComm() )
+    super( m, dmRow, dmCol )
 {}
 
 //----------------------------------------------------------------------------------------------------//

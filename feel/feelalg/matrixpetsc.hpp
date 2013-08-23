@@ -144,7 +144,7 @@ public:
      * and to simply provide additional functionality with the PetscMatrix.
      */
     MatrixPetsc ( Mat m );
-    MatrixPetsc ( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm );
+    MatrixPetsc ( Mat m, datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
     MatrixPetsc ( MatrixSparse<value_type> const& M, IS& isrow, IS& iscol );
     MatrixPetsc ( MatrixSparse<value_type> const& M, std::vector<int> const& rowIndex, std::vector<int> const& colIndex );
     /**
