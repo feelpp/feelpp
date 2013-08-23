@@ -271,7 +271,9 @@ namespace Feel
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_x( vec_type::Zero( M_nsyms ) )
+
                 {
                 }
 
@@ -294,14 +296,14 @@ namespace Feel
 
                     int no = 1;
                     int ni = M_nsyms;///gmc_type::nDim;
-                    Eigen::VectorXd xi( M_nsyms );
+
                     for(int q = 0; q < M_gmc->nPoints();++q )
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
-                                xi[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < xi.size(); ++k )
-                                xi[k] = 0;
-                            M_fun(&ni,xi.data(),&no,&M_y[q]);
+                                M_x[k]=M_gmc->xReal( q )[k];
+                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
+                                M_x[k] = 0;
+                            M_fun(&ni,M_x.data(),&no,&M_y[q]);
                         }
 
                 }
@@ -312,14 +314,13 @@ namespace Feel
 
                     int no = 1;
                     int ni = M_nsyms;//gmc_type::nDim;
-                    Eigen::VectorXd xi( M_nsyms );
                     for(int q = 0; q < M_gmc->nPoints();++q )
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
-                                xi[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < xi.size(); ++k )
-                                xi[k] = 0;
-                            M_fun(&ni,xi.data(),&no,&M_y[q]);
+                                M_x[k]=M_gmc->xReal( q )[k];
+                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
+                                M_x[k] = 0;
+                            M_fun(&ni,M_x.data(),&no,&M_y[q]);
                         }
                 }
 
@@ -354,9 +355,10 @@ namespace Feel
                 GiNaC::FUNCP_CUBA M_fun;
                 gmc_ptrtype M_gmc;
 
-
-                vec_type M_y;
                 int M_nsyms;
+                vec_type M_y;
+                vec_type M_x;
+
             };
 
         private:
@@ -552,9 +554,9 @@ namespace Feel
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
                 typedef typename mn_to_shape<gmc_type::nDim,M,N>::type shape;
-                typedef Eigen::Matrix<value_type,shape::M,shape::N,Eigen::RowMajor> vec_type;
-                typedef std::vector<vec_type> loc_type;
-
+                typedef Eigen::Matrix<value_type,shape::M,shape::N,Eigen::RowMajor> mat_type;
+                typedef std::vector<mat_type> loc_type;
+                typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
                 struct is_zero
                 {
                     static const bool value = false;
@@ -565,8 +567,9 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
+                    M_x( M_nsyms, vec_type::Zero() )
                 {}
 
                 tensor( this_type const& expr,
@@ -574,16 +577,19 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
+                    M_x( M_nsyms, vec_type::Zero() )
+
                 {}
 
                 tensor( this_type const& expr, Geo_t const& geom )
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints(), vec_type::Zero() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
+                    M_x( M_nsyms, vec_type::Zero() )
                 {
                 }
 
@@ -606,14 +612,13 @@ namespace Feel
 
                     int no = M*N;
                     int ni = M_nsyms;//gmc_type::nDim;
-                    Eigen::VectorXd xi( M_nsyms );
                     for(int q = 0; q < M_gmc->nPoints();++q )
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
-                                xi[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < xi.size(); ++k )
-                                xi[k] = 0;
-                            M_fun(&ni,xi.data(),&no,M_y[q].data());
+                                M_x[k]=M_gmc->xReal( q )[k];
+                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
+                                M_x[k] = 0;
+                            M_fun(&ni,M_x.data(),&no,M_y[q].data());
 ;
                         }
 
@@ -625,14 +630,13 @@ namespace Feel
 
                     int no = M*N;
                     int ni = M_nsyms;//gmc_type::nDim;
-                    Eigen::VectorXd xi( M_nsyms );
                     for(int q = 0; q < M_gmc->nPoints();++q )
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
-                                xi[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < xi.size(); ++k )
-                                xi[k] = 0;
-                            M_fun(&ni,xi.data(),&no,M_y[q].data());
+                                M_x[k]=M_gmc->xReal( q )[k];
+                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
+                                M_x[k] = 0;
+                            M_fun(&ni,M_x.data(),&no,M_y[q].data());
                         }
                 }
 
@@ -664,8 +668,9 @@ namespace Feel
 
                 GiNaC::FUNCP_CUBA M_fun;
                 gmc_ptrtype M_gmc;
-                loc_type M_y;
                 int M_nsyms;
+                loc_type M_y;
+                vec_type M_x;
             };
 
         private:
