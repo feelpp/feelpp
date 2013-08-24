@@ -37,3 +37,5 @@ feelpp_add_application( doc_laplacian_matlab SRCS laplacian_matlab.cpp GEO feel.
 
 feelpp_add_application( doc_laplacian_block SRCS laplacian_block.cpp LABEL doc CFG laplacian_block.cfg )
 feelpp_add_application( doc_laplacian_parabolic SRCS laplacian_parabolic.cpp LABEL doc CFG laplacian_parabolic.cfg GEO laplacian_parabolic.geo )
+
+feelpp_add_application( doc_laplacian_substructured SRCS laplacian_substructured.cpp LABEL doc  )
