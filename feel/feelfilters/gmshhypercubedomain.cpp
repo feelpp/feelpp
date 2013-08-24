@@ -184,7 +184,16 @@ GmshHypercubeDomain::getDescription2D() const
              << "Physical Line(4) = {4};\n"
              << "Physical Surface(6) = {6};\n";
     }
+    else if ( this->subStructuring() == true )
+    {
+        ostr << "Physical Point(\"CrossPoints\") = {1,2,3,4};\n";
+        ostr << "Physical Line(\"NORTH\") = {4};\n"
+             << "Physical Line(\"WEST\") = {1};\n"
+             << "Physical Line(\"SOUTH\") = {2};\n"
+             << "Physical Line(\"EAST\") = {3};\n"
+             << "Physical Surface(\"Omega\") = {6};\n";
 
+    }
     else
     {
         ostr << "Physical Line(\"Dirichlet\") = {1,3};\n"

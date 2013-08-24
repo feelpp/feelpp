@@ -768,7 +768,7 @@ unitSquare( double h )
                           _desc=domain( _name="square",
                                         _shape="hypercube",
                                         _dim=2,
-                                        _h=h ) );
+                                        _h=h) );
 }
 
 boost::shared_ptr<Mesh<Simplex<3> > >
