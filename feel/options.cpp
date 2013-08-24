@@ -106,6 +106,19 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
         ( prefixvm( prefix,"gmsh.substructuring" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "Generate substructuration (0=false, 1=true)" );
 
+        // domain
+        ( prefixvm( prefix,"gmsh.domain.dim" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Gmsh domain dimension" )
+        ( prefixvm( prefix,"gmsh.domain.xmin" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "Gmsh domain xmin" )
+        ( prefixvm( prefix,"gmsh.domain.xmax" ).c_str(), Feel::po::value<double>()->default_value( 1. ), "Gmsh domain xmax" )
+        ( prefixvm( prefix,"gmsh.domain.ymin" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "Gmsh domain ymin" )
+        ( prefixvm( prefix,"gmsh.domain.ymax" ).c_str(), Feel::po::value<double>()->default_value( 1. ), "Gmsh domain ymax" )
+        ( prefixvm( prefix,"gmsh.domain.zmin" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "Gmsh domain zmin" )
+        ( prefixvm( prefix,"gmsh.domain.zmax" ).c_str(), Feel::po::value<double>()->default_value( 1. ), "Gmsh domain zmax" )
+
+        ( prefixvm( prefix,"gmsh.domain.usenames" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "Gmsh domain use string name for physicals" )
+
+        ( prefixvm( prefix,"gmsh.domain.substructuring" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "Generate substructuration (0=false, 1=true)" );
+
 
     return _options;
 
