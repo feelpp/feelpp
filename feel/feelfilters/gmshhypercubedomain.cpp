@@ -284,7 +284,8 @@ GmshHypercubeDomain::getDescription3D() const
              << "Physical Surface(\"SOUTH\") = {23};\n"
              << "Physical Surface(\"EAST\") = {27};\n"
              << "Physical Surface(\"BOTTOM\") = {28};\n"
-             << "Physical Volume(30) = {1};\n";
+             << "Physical Volume(\"Omega\") = {1};\n";
+            //<< "Physical Volume(30) = {1};\n";
     }
     else
     {
