@@ -50,6 +50,7 @@ Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     M_gm1( new gm1_type ),
     M_meas( 0 ),
     M_measbdy( 0 ),
+    M_substructuring( false ),
     //M_part(),
     M_tool_localization( new Localization() )
 {
