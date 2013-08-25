@@ -193,8 +193,8 @@ extern "C"
 
         else
         {
-            Jac.reset( new Feel::MatrixPetsc<double>( *jac ) );
-            X_global.reset( new Feel::VectorPetsc<double>( x ) );
+            Jac.reset( new Feel::MatrixPetsc<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetsc<double>( x,solver->mapColPtr() ) );
         }
 
 #endif
@@ -648,8 +648,6 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
         r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
         //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
-        this->setMapRow( jac_in->mapRowPtr() );
-        this->setMapCol( jac_in->mapColPtr() );
     }
     else
     {
@@ -657,6 +655,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
         r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
     }
+
+    this->setMapRow( jac_in->mapRowPtr() );
+    this->setMapCol( jac_in->mapColPtr() );
 
 #endif
 

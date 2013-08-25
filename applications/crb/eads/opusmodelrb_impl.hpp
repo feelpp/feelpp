@@ -1083,6 +1083,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu )
     LT[3] = inner_product( *L[3], *pV );
     LOG(INFO) << "LT(" << 3 << ")=" << LT[3] << "\n";
 
+    return *pT;
 }
 
 template<int OrderU, int OrderP, int OrderT>

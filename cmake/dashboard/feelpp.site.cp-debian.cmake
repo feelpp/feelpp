@@ -24,8 +24,8 @@
 set(OS_VERSION debian-wheezy)
 set(ARCH x86_64)
 set(WORK_DIR /home/vhuber)
-set(GCC_MAKE_ARGS "-j2")
-set(GCC_PARALLEL "2")
+set(GCC_MAKE_ARGS "-j4")
+set(GCC_PARALLEL "4")
 set(CLANG_MAKE_ARGS "-j4")
 set(CLANG_PARALLEL "4")
 set(FEELPP_WORK_DIR ${WORK_DIR})
@@ -33,5 +33,6 @@ set(FEELPP_ENABLE_CRB_ALL ON)
 set(FEELPP_ENABLE_BENCHMARKS ON)
 set(FEELPP_MAKE_ARGS ${MAKE_ARGS})
 set(FEELPP_CMAKE_ARGS "-DCMAKE_BUILD_TYPE=release -DVTK_LEGACY_REMOVE:BOOL=ON")
+set(FEELPP_MODULES "research/hifimagnet" "research/fluid" )
 
 
