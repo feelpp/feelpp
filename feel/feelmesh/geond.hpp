@@ -222,9 +222,11 @@ public:
     /**
      * destructor, make it virtual for derived classes
      */
-    virtual ~GeoND()
+    ~GeoND()
     {
+
     }
+
 #if 0
     /**
      * set the mesh to which this geometric entity belongs to
