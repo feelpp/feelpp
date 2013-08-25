@@ -1243,7 +1243,8 @@ public:
      */
     element_type solve( parameter_type const& mu )
     {
-        return this->solveFemUsingAffineDecompositionFixedPoint( mu );
+        //return this->solveFemUsingAffineDecompositionFixedPoint( mu );
+        return M_model->solve( mu );
     }
 
 
@@ -2087,7 +2088,7 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
-        boost::tie(M, A, F, boost::tuples::ignore) = this->update( mu , mybdf->time() );
+        boost::tie(M, A, F) = this->update( mu , mybdf->time() );
         *Rhs = *F[0];
         if( !isSteady() )
         {
