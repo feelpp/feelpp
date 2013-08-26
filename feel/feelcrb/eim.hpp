@@ -174,11 +174,10 @@ public:
         M_WN(),
         M_offline_done( false ),
         M_tol( 1e-8 ),
-        M_q(),
         M_index_max(),
         M_model( 0 )
         {}
-    EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8 )
+    EIM( po::variables_map const& vm, model_type* model, sampling_ptrtype sampling, double __tol = 1e-8, bool offline_done=false )
         :
         super(model->modelName(), model->name(), model->name(), vm ),
         M_vm( vm ),
@@ -189,20 +188,19 @@ public:
         M_M( 1 ),
         M_M_max( 1 ),
         M_WN( M_vm["eim.dimension-max"].template as<int>() ),
-        M_offline_done( false ),
+        M_offline_done( offline_done ),
         M_tol( __tol ),
-        M_q(),
         M_index_max(),
         M_model( model )
         {
-            if ( !loadDB() || M_vm["eim.rebuild-database"].template as<bool>() )
+            if ( !M_offline_done || M_vm["eim.rebuild-database"].template as<bool>() )
             {
                 LOG(INFO) << "construct EIM approximation...\n";
-                M_offline_done = false;
-            }
-            if ( !this->isOfflineDone() )
+                std::cout<<"do offline !!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
                 offline();
-
+            }
+            else
+                std::cout<<"on ne fait rien :)"<<std::endl;
         }
 
     EIM( EIM const & __bbf )
@@ -216,7 +214,6 @@ public:
         M_WN(__bbf.M_WN ),
         M_offline_done( __bbf.M_offline_done ),
         M_tol( __bbf.M_tol ),
-        M_q( __bbf.M_q ),
         M_index_max( __bbf.M_index_max ),
         M_model( __bbf.M_model )
         {}
@@ -244,18 +241,7 @@ public:
     /**
      * return the set of reduced basis functions associated with the eim
      */
-    std::vector<element_type> const& q() const {  return M_q; }
-
-    /**
-     * return the m-th reduced basis function associated with the eim
-     */
-    element_type const&
-    q( size_type __m ) const
-        {
-            FEELPP_ASSERT( __m >= 0 && __m < M_M )( __m )( M_M ).error( "out of bounds access" );
-
-            return M_q[ __m ];
-        }
+    std::vector<element_type> const& q() const {  return M_model->q(); }
 
     size_type mMax() const { return M_M_max; }
 
@@ -287,56 +273,6 @@ public:
     //@{
 
     /**
-     * save the CRB database
-     */
-    void saveDB()
-        {
-            fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
-
-            if ( ofs )
-            {
-                boost::archive::text_oarchive oa( ofs );
-                // write class instance to archive
-                oa << *this;
-                // archive and stream closed when destructors are called
-            }
-        }
-
-    /**
-     * load the CRB database
-     */
-    bool loadDB()
-        {
-            //if ( this->rebuildDB() )
-            //return false;
-
-            fs::path db = this->lookForDB();
-
-            if ( db.empty() )
-                return false;
-
-            if ( !fs::exists( db ) )
-                return false;
-
-            //std::cout << "Loading " << db << "...\n";
-            fs::ifstream ifs( db );
-
-            if ( ifs )
-            {
-                boost::archive::text_iarchive ia( ifs );
-                // write class instance to archive
-                ia >> *this;
-                //std::cout << "Loading " << db << " done...\n";
-                this->setIsLoaded( true );
-                // archive and stream closed when destructors are called
-                return true;
-            }
-            return false;
-        }
-
-
-
-    /**
        \brief Online stage of the coefficient-function interpolation.
 
        Our coefficient function approximation is the interpolant of
@@ -364,67 +300,16 @@ public:
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
 
-    element_type operator()( parameter_type const& mu , int N) const { return expansion( M_q, M_model->beta( mu ) , N); }
-    element_type operator()( parameter_type const& mu, solution_type const& T , int N ) const { return expansion( M_q, M_model->beta( mu, T ) , N ); }
+    element_type operator()( parameter_type const& mu , int N) const { return expansion( M_model->q(), M_model->beta( mu ) , N); }
+    element_type operator()( parameter_type const& mu, solution_type const& T , int N ) const { return expansion( M_model->q(), M_model->beta( mu, T ) , N ); }
+
     /**
        orthonormalize
     */
     void orthonormalize( std::vector<element_type>& );
 
 
-#if 0
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & __ar, const unsigned int __version )
-        {
-            LOG(INFO) << "serializing...\n";
-            __ar & BOOST_SERIALIZATION_NVP( M_name );
-
-            LOG(INFO) << "name saved/loaded...\n";
-
-            __ar & BOOST_SERIALIZATION_NVP( M_offline_done );
-            LOG(INFO) << "offline status...\n";
-
-            __ar & BOOST_SERIALIZATION_NVP( M_M_max );
-            LOG(INFO) << "M saved/loaded\n";
-            M_M = M_M_max;
-
-            //max of eim basis function projected on function space
-            __ar & BOOST_SERIALIZATION_NVP( M_max_q );
-            LOG(INFO) << "max-q saved/loaded ("<<M_max_q<<")";
-
-            // save index
-            __ar & BOOST_SERIALIZATION_NVP( M_index_max );
-            LOG(INFO) << "index saved/loaded\n";
-
-
-            // save t
-            __ar & BOOST_SERIALIZATION_NVP( M_t );
-            LOG(INFO) << "t saved/loaded\n";
-
-            if ( Archive::is_loading::value )
-            {
-                //for( int i = 0; i < M_M_max; ++ i )
-                for(int i = 0; i < M_max_q; i++ )
-                    M_q.push_back( M_model->functionSpace()->element() );
-
-                for( int i = 0; i < M_max_q; ++ i )
-                    __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
-                // save q
-                LOG(INFO) << "q saved/loaded ( "<<M_max_q<<" elements ) ";
-
-
-            }
-            else
-            {
-                for( int i = 0; i < M_max_q; ++ i )
-                    __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
-            }
-
-        }
     //@}
-#endif
-
 protected:
 
     po::variables_map M_vm;
@@ -442,8 +327,6 @@ protected:
     mutable bool M_offline_done;
 
     double M_tol;
-
-    std::vector<element_type> M_q;
 
     std::vector<size_type> M_index_max;
 
@@ -533,7 +416,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         //auto proj_g = M_model->operator()( mu );
         auto solution = M_model->solve( mu );
         rhs = M_model->computeExpansionCoefficients( mu , solution, __M );
-        auto z = expansion( M_q, rhs, __M );
+        auto z = expansion( M_model->q(), rhs, __M );
         auto resmax = M_model->computeMaximumOfResidual( mu , solution, z );
 
         //DCHECK( rhs.size() == __M ) << "Invalid size rhs: " << rhs.size() << " M=" << __M  << " rhs = " << rhs << "\n";
@@ -556,7 +439,6 @@ template<typename ModelType>
 void
 EIM<ModelType>::offline(  )
 {
-
     using namespace vf;
 
     if ( this->isOfflineDone() )
@@ -628,17 +510,7 @@ EIM<ModelType>::offline(  )
     auto t = zmax.template get<1>();
     M_model->addInterpolationPoint( t );
     DVLOG( 2 )<<"add the interpolation point : \n"<<t;
-    M_model->setMax(M_M, M_max_q,  max_z, max_solution);
     DVLOG( 2 ) << "norm Linf = " << zmax.template get<0>() << " at " << zmax.template get<1>() << "\n";
-    M_model->fillInterpolationMatrixFirstTime( );
-
-
-    auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0) );
-    if( expression_expansion )
-    {
-        M_model->addZ( zero );
-        max_z++;
-    }
 
     //if( ! expression_expansion ) // fill M_g and M_q
     if( 1 )
@@ -648,7 +520,6 @@ EIM<ModelType>::offline(  )
         auto q = M_model->operator()( solution , mu );
         //q.scale( 1./zmax.template get<0>() );
         q.scale( 1./ q( t )( 0, 0, 0 ) );
-        M_q.push_back( q );
         M_max_q++;
         LOG( INFO ) << "max-q : "<<M_max_q;
         M_model->addBasis( q );
@@ -661,11 +532,20 @@ EIM<ModelType>::offline(  )
         if (!boost::any_cast<element_type>(&any_q))
             throw std::logic_error( "[EIM::offline] not cast possible for eim basis function projected in function space" );
         auto q_projected = boost::any_cast<element_type>( any_q );
-
-        M_q.push_back( q_projected );
+        //M_q.push_back( q_projected );
     }
 
+    auto zero = vf::project( _space=M_model->functionSpace() , _expr=cst(0) );
+    if( expression_expansion )
+    {
+        M_model->addZ( zero );
+        max_z++;
+    }
+
+    M_model->setMax(M_M, M_max_q,  max_z, max_solution);
     ++M_M;
+
+    M_model->fillInterpolationMatrixFirstTime( );
 
     /**
        \par build \f$W^g_M\f$
@@ -726,7 +606,7 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "[offline] compute arg sup |residual|..." <<"\n";
         //auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
         auto coeff = M_model->computeExpansionCoefficients( mu ,  solution , M_M-1 );
-        auto z = expansion( M_q, coeff , M_M-1 );
+        auto z = expansion( M_model->q(), coeff , M_M-1 );
 
         if( expression_expansion )
         {
@@ -746,8 +626,6 @@ EIM<ModelType>::offline(  )
             LOG(INFO) << "[offline] scale new basis function by " << 1./resmax.template get<0>() << "..." <<"\n";
             res.scale( 1./res( t )(0,0,0) );
             LOG(INFO) << "store new basis function..." <<"\n";
-            M_q.push_back( res );
-            M_max_q++;
             M_model->addBasis( res );
         }
         else
@@ -757,11 +635,10 @@ EIM<ModelType>::offline(  )
             if (!boost::any_cast<element_type>(&any_q))
                 throw std::logic_error( "[EIM::offline] not cast possible for eim basis function projected in function space" );
             auto q_projected = boost::any_cast<element_type>( any_q );
-
-            M_q.push_back( q_projected );
+            //M_q.push_back( q_projected );
         }
 
-
+        M_max_q++;
         M_model->setMax(M_M, M_max_q,  max_z, max_solution);
         M_model->fillInterpolationMatrix( );
 
@@ -774,13 +651,11 @@ EIM<ModelType>::offline(  )
         }
     }
 
+
     LOG(INFO) << "[offline] M_max = " << M_M-1 << "...\n";
     this->M_M_max = this->M_M-1;
 
     this->M_offline_done = true;
-    //LOG(INFO) << "[offline] saving DB...\n";
-    //saveDB();
-    //LOG(INFO) << "[offline] done with offline stage ...\n";
 }
 
 template<typename ModelType>
@@ -972,6 +847,7 @@ public:
     virtual vector_type operator()( solution_type const& T, context_type const& ctx, parameter_type const& mu ) = 0;
 
     virtual element_type const& q( int m )  const = 0;
+    virtual std::vector<element_type> const& q() const = 0;
     virtual vector_type  beta( parameter_type const& mu ) const = 0;
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual vector_type  beta( parameter_type const& mu , size_type M )  = 0;
@@ -1086,17 +962,16 @@ public:
         M_expr( expr ),
         M_u( u ),
         M_mu( mu ),
-        M_mu_sampling( new sampling_type ( model->parameterSpace() ) ),
+        M_mu_sampling( new sampling_type ( model->parameterSpace() , 1 , sampling ) ),
         M_q_vector(),
         M_z_vector(),
         M_solution_vector(),
         M_t(),
         M_ctx( this->functionSpace() ),
         M_B(),
-        M_eim( new eim_type( vm, this, sampling ) )
+        M_eim( new eim_type( vm, this, sampling , 1e-8, loadDB() ) )
         {
-
-            if ( !loadDB() || M_vm["eim.rebuild-database"].template as<bool>() )
+            if ( !loadDB() )
             {
                 LOG(INFO) << "No EIMFunction database ";
             }
@@ -1125,6 +1000,9 @@ public:
      */
     bool loadDB()
     {
+        if( M_q_vector.size() > 0 && M_t.size() > 0 )
+            return true;
+
         fs::path db = this->lookForDB();
 
         if ( db.empty() )
@@ -1139,7 +1017,7 @@ public:
         if ( ifs )
         {
             boost::archive::text_iarchive ia( ifs );
-            // write class instance to archive
+            //write class instance to archive
             ia >> *this;
             //std::cout << "Loading " << db << " done...\n";
             this->setIsLoaded( true );
@@ -1739,16 +1617,30 @@ public:
     }
 
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
-    element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu , M_eim->mMax() ); }
+    element_type interpolant( parameter_type const& mu )
+    {
+        auto beta = this->beta( mu );
+        return expansion( M_q_vector, this->beta( mu ) , M_M_max);
+    }
+    //return M_eim->operator()( mu , M_eim->mMax() ); }
 
-    element_type const& q( int m ) const { return M_eim->q( m ); }
+    //element_type const& q( int m ) const { return M_eim->q( m ); }
+    element_type const& q( int m ) const
+    {
+        int size = M_q_vector.size();
+        FEELPP_ASSERT( m >= 0 && m < size )( m )( size ).error( "out of bounds access" );
+        return M_q_vector[m];
+    }
+
+    std::vector<element_type> const& q() const { return M_q_vector; }
 
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
     std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const { return M_eim->studyConvergence( mu , solution ) ; };
 
-    size_type mMax() const { return M_eim->mMax(); }
+    //size_type mMax() const { return M_eim->mMax(); }
+    size_type mMax() const { return M_M_max; }
 
     void setMax(double m, double max_q, double max_z, double max_solution)
     {
@@ -1781,42 +1673,56 @@ public:
 
         if ( Archive::is_loading::value )
         {
-            //for( int i = 0; i < M_M_max; ++ i )
-            for(int i = 0; i < M_max_q; i++ )
+            if( M_q_vector.size() == 0 )
             {
-                M_q_vector.push_back( this->functionSpace()->element() );
+                for(int i = 0; i < M_max_q; i++ )
+                {
+                    M_q_vector.push_back( this->functionSpace()->element() );
+                }
+                for( int i = 0; i < M_max_q; ++ i )
+                {
+                    __ar & BOOST_SERIALIZATION_NVP( M_q_vector[i] );
+                }
             }
-            for( int i = 0; i < M_max_q; ++ i )
-                __ar & BOOST_SERIALIZATION_NVP( M_q_vector[i] );
+
             // save q
             LOG(INFO) << "q saved/loaded ( "<<M_max_q<<" elements ) ";
 
-            for(int i = 0; i < M_max_z; i++ )
+            if( M_z_vector.size() == 0 )
             {
-                M_z_vector.push_back( this->functionSpace()->element() );
+                for(int i = 0; i < M_max_z; i++ )
+                {
+                    M_z_vector.push_back( this->functionSpace()->element() );
+                }
+                for( int i = 0; i < M_max_z; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
             }
-            for( int i = 0; i < M_max_z; ++ i )
-                __ar & BOOST_SERIALIZATION_NVP( M_z_vector[i] );
             LOG(INFO) << "z saved/loaded ( "<<M_max_z<<" elements ) ";
 
-            for(int i = 0; i < M_max_solution; i++ )
+            if( M_solution_vector.size() == 0 )
             {
-                M_solution_vector.push_back( this->modelFunctionSpace()->element() );
+                for(int i = 0; i < M_max_solution; i++ )
+                {
+                    M_solution_vector.push_back( this->modelFunctionSpace()->element() );
+                }
+                for( int i = 0; i < M_max_solution; ++ i )
+                    __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
             }
-            for( int i = 0; i < M_max_solution; ++ i )
-                __ar & BOOST_SERIALIZATION_NVP( M_solution_vector[i] );
             LOG(INFO) << "vector of solutions saved/loaded ( "<<M_max_solution<<" elements ) ";
 
-            //add interpolation points to the context
-            typename Feel::node<value_type>::type no(nDim);
-            for(int i=0 ; i<M_t.size(); i++)
-            {
-                node_type t = M_t[i];
-                for(int dim =0; dim < nDim; ++dim )
-                    no(dim) = t(dim);
-                M_ctx.add( no );
-            }
 
+            //add interpolation points to the context
+            if( M_ctx.nPoints()==0 )
+            {
+                typename Feel::node<value_type>::type no(nDim);
+                for(int i=0 ; i<M_t.size(); i++)
+                {
+                    node_type t = M_t[i];
+                    for(int dim =0; dim < nDim; ++dim )
+                        no(dim) = t(dim);
+                    M_ctx.add( no );
+                }
+            }
         }
         else
         {
@@ -1836,7 +1742,6 @@ public:
         // save B
         __ar & BOOST_SERIALIZATION_NVP( M_B );
         LOG(INFO) << "B saved/loaded\n";
-
     }
 
 private:
