@@ -183,7 +183,10 @@ public:
      * Type that hold the map between a global dof and the elements
      */
     typedef std::map<size_type, std::list<local_dof_type> >  dof_element_type;
-    typedef std::map<size_type,int> dof_marker_type;
+
+    typedef boost::bimap<size_type,boost::bimaps::multiset_of<size_type> > dof_marker_type;
+    typedef typename dof_marker_type::value_type dof2marker;
+
     typedef typename dof_element_type::iterator dof_iterator;
     typedef typename dof_element_type::const_iterator dof_const_iterator;
 
@@ -253,21 +256,23 @@ public:
     }
     constexpr size_type nLocalDof( bool per_component = false ) const
     {
-        size_type nldof =
-            fe_type::nDofPerVolume * element_type::numVolumes +
-            fe_type::nDofPerFace * element_type::numGeometricFaces +
-            fe_type::nDofPerEdge * element_type::numEdges +
-            fe_type::nDofPerVertex * element_type::numVertices;
-        size_type ntdof = (is_product&&!per_component)?nComponents*nldof:nldof;
-        return ntdof;
+        return  (is_product&&!per_component)?(nComponents*(fe_type::nDofPerVolume * element_type::numVolumes +
+                                                           fe_type::nDofPerFace * element_type::numGeometricFaces +
+                                                           fe_type::nDofPerEdge * element_type::numEdges +
+                                                           fe_type::nDofPerVertex * element_type::numVertices)):
+            (fe_type::nDofPerVolume * element_type::numVolumes +
+             fe_type::nDofPerFace * element_type::numGeometricFaces +
+             fe_type::nDofPerEdge * element_type::numEdges +
+             fe_type::nDofPerVertex * element_type::numVertices);
     }
     constexpr size_type nLocalDofOnFace( bool per_component = false ) const
     {
-        size_type nDofF = ( face_type::numVertices * fe_type::nDofPerVertex +
-                            face_type::numEdges * fe_type::nDofPerEdge +
-                            face_type::numFaces * fe_type::nDofPerFace );
-        size_type ntdof = (is_product&&!per_component)?nComponents*nDofF:nDofF;
-        return ntdof;
+        return (is_product&&!per_component)?(nComponents*( face_type::numVertices * fe_type::nDofPerVertex +
+                                                          face_type::numEdges * fe_type::nDofPerEdge +
+                                                           face_type::numFaces * fe_type::nDofPerFace )):
+            ( face_type::numVertices * fe_type::nDofPerVertex +
+              face_type::numEdges * fe_type::nDofPerEdge +
+              face_type::numFaces * fe_type::nDofPerFace );
     }
     local_dof_set_type const&
     localDofSet( size_type eid ) const
@@ -1074,6 +1079,29 @@ public:
         map_gdof = mapdof;
     }
 
+    typename dof_marker_type::right_range_type
+    markerToDof( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return _M_dof_marker.right.range( id <= _key, _key<id+1 );
+        }
+
+    typename dof_marker_type::right_range_type
+    markerToDofLessThan( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return _M_dof_marker.right.range( unbounded, _key<id );
+        }
+    typename dof_marker_type::right_range_type
+    markerToDofGreaterThan( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return _M_dof_marker.right.range( id<_key, unbounded );
+        }
+
     void printDofMarker(std::string const& filename )
         {
             std::ofstream ofs( filename.c_str() );
@@ -1164,10 +1192,10 @@ public:
                     _M_dof_procset[ itdof->second+shift ].insert( processor );
 
                     auto res = _M_el_l2g.insert( dof_relation( LocalDof( ie, lc_dof ),
-                                                               Dof( itdof->second+shift, sign, is_dof_periodic ) ) );
+                                                               Dof( itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
                     DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
                         ie << "," << lc_dof << ")";
-                    _M_dof_marker[itdof->second+shift] = marker.value();
+                    _M_dof_marker.insert( dof2marker( itdof->second+shift,  marker.value() ) );
 
 
 #if !defined(NDEBUG)
@@ -2973,6 +3001,13 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     {
         this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
     } // elements loop
+
+#if 0
+        for ( auto mit = _M_dof_marker.right.begin(), men = _M_dof_marker.right.end() ; mit != men ; ++mit )
+        {
+            LOG(INFO) << "marker " << mit->first << " dof id " << mit->second;
+        }
+#endif
 
 #if 0
     LOG(INFO) << "local to global view";
