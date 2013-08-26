@@ -196,11 +196,8 @@ public:
             if ( !M_offline_done || M_vm["eim.rebuild-database"].template as<bool>() )
             {
                 LOG(INFO) << "construct EIM approximation...\n";
-                std::cout<<"do offline !!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
                 offline();
             }
-            else
-                std::cout<<"on ne fait rien :)"<<std::endl;
         }
 
     EIM( EIM const & __bbf )
