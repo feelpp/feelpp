@@ -34,7 +34,7 @@ int main(int argc, char**argv )
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                     _about=about(_name="qs_laplacian",
+                     _about=about(_name="laplacian_dirac",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
@@ -44,9 +44,9 @@ int main(int argc, char**argv )
     auto v = Vh->element();
 
     auto l = form1( _test=Vh );
-    BOOST_FOREACH( size_type i, Vh->dof()->markerToDof( "mesh" ) )
+    BOOST_FOREACH( auto i, Vh->dof()->markerToDof( std::string("center") ) )
     {
-        l.add( i, 1 );
+        l.add( i.second, 1 );
     }
 
 
