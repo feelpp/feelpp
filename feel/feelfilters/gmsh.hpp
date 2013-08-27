@@ -1176,20 +1176,7 @@ BOOST_PARAMETER_FUNCTION(
       ( recombine,      *( boost::is_integral<mpl::_> )    , option(_name="gmsh.domain.recombine").template as<bool>() )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
-<<<<<<< HEAD
       ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), double( 0.1 ) )
-      ( convex,         *( boost::is_convertible<mpl::_,std::string> ), "Simplex" )
-      ( addmidpoint,    *( boost::is_integral<mpl::_> ), true )
-      ( usenames,       *( boost::is_integral<mpl::_> ), false )
-      ( xmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( xmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( ymin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( ymax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( zmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( substructuring, *( boost::is_integral<mpl::_> ), 0 ) ) )
-=======
       ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( convex,         *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.domain.convex").template as<std::string>() )
       ( addmidpoint,    *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.addmidpoint").template as<bool>() )
@@ -1201,7 +1188,6 @@ BOOST_PARAMETER_FUNCTION(
       ( zmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmin").template as<double>() )
       ( zmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmax").template as<double>() )
       ( substructuring, *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.substructuring").template as<bool>() ) ) )
->>>>>>> 4b01edbcec5e6edc693a7edb35feddaebabb662f
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
