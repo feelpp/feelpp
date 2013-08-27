@@ -1105,7 +1105,7 @@ public:
     void printDofMarker(std::string const& filename )
         {
             std::ofstream ofs( filename.c_str() );
-            BOOST_FOREACH( auto dof, _M_dof_marker )
+            BOOST_FOREACH( auto dof, _M_dof_marker.left )
             {
                 ofs << dof.first << " " << dof.second << "\n";
             }
