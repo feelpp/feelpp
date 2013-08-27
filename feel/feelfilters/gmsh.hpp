@@ -1058,7 +1058,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( format,         *, option(_name="gmsh.format").template as<int>() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
       ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
       ( straighten,      *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
@@ -1169,12 +1169,14 @@ BOOST_PARAMETER_FUNCTION(
     tag,           // 3. namespace of tag types
     ( required
       ( name,           *( boost::is_convertible<mpl::_,std::string> ) )
-      ( shape,          *( boost::is_convertible<mpl::_,std::string> ) ) )
+      )
     ( optional
-      ( shear,          *( boost::is_arithmetic<mpl::_> )    , 0 )
-      ( recombine,      *( boost::is_integral<mpl::_> )    , 0 )
+      ( shape,          *( boost::is_convertible<mpl::_,std::string> ),  option(_name="gmsh.domain.shape").template as<std::string>() )
+      ( shear,          *( boost::is_arithmetic<mpl::_> )    ,  option(_name="gmsh.domain.shear").template as<double>() )
+      ( recombine,      *( boost::is_integral<mpl::_> )    , option(_name="gmsh.domain.recombine").template as<bool>() )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
+<<<<<<< HEAD
       ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
       ( h,              *( boost::is_arithmetic<mpl::_> ), double( 0.1 ) )
       ( convex,         *( boost::is_convertible<mpl::_,std::string> ), "Simplex" )
@@ -1187,6 +1189,19 @@ BOOST_PARAMETER_FUNCTION(
       ( zmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
       ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
       ( substructuring, *( boost::is_integral<mpl::_> ), 0 ) ) )
+=======
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
+      ( convex,         *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.domain.convex").template as<std::string>() )
+      ( addmidpoint,    *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.addmidpoint").template as<bool>() )
+      ( usenames,       *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.usenames").template as<bool>() )
+      ( xmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.xmin").template as<double>() )
+      ( xmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.xmax").template as<double>())
+      ( ymin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ymin").template as<double>() )
+      ( ymax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ymax").template as<double>() )
+      ( zmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmin").template as<double>() )
+      ( zmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmax").template as<double>() )
+      ( substructuring, *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.substructuring").template as<bool>() ) ) )
+>>>>>>> 4b01edbcec5e6edc693a7edb35feddaebabb662f
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
@@ -1469,12 +1484,13 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.filename").template as<std::string>() )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( straighten,          (bool), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( physical_are_elementary_regions,		   (bool), option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
       ( worldcomm,       (WorldComm), Environment::worldComm() )
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
+      ( force_rebuild,   *( boost::is_integral<mpl::_> ), option(_name="gmsh.rebuild").template as<bool>() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
@@ -1500,6 +1516,7 @@ BOOST_PARAMETER_FUNCTION(
         return createGMSHMesh( _mesh=mesh,
                                _desc=geo( _filename=mesh_name.string(),
                                           _depends=depends ),
+                               _h=h,
                                _straighten=straighten,
                                _refine=refine,
                                _update=update,
@@ -1533,7 +1550,19 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
-    return unitHypercube<_mesh_type::nDim, typename _mesh_type::shape_type>();
+    return createGMSHMesh(_mesh=mesh,
+                          _desc=domain( _name=option(_name="gmsh.domain.shape").template as<std::string>(), _h=h ),
+                          _h=h,
+                          _refine=refine,
+                          _update=update,
+                          _physical_are_elementary_regions=physical_are_elementary_regions,
+                          _force_rebuild=force_rebuild,
+                          _worldcomm=worldcomm,
+                          _rebuild_partitions=rebuild_partitions,
+                          _rebuild_partitions_filename=rebuild_partitions_filename,
+                          _partitions=partitions,
+                          _partitioner=partitioner,
+                          _partition_file=partition_file );
 }
 
 } // Feel
