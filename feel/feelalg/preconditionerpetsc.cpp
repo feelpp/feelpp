@@ -168,7 +168,7 @@ void PreconditionerPetsc<T>::clear ()
 void
 configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::string prefix = "" )
 {
-    LOG(INFO) << "configuring PC...\n";
+    LOG(INFO) << "configuring PC... (sub: " << sub << ")";
     google::FlushLogFiles(google::INFO);
     const char* pctype;
     int ierr = PCGetType ( pc, &pctype );
@@ -502,7 +502,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string 
     // This is not used, so we just pass PETSC_NULL instead.
     // int first_local;
     // Fill array of local KSP contexts
-    LOG(INFO) << "[setPetscSubpreconditionerType] preconditioner type: " << thepctype << "\n";
+    LOG(INFO) << "[setPetscSubpreconditionerType] set local preconditioner for preconditioner : " << thepctype << "\n";
     google::FlushLogFiles(google::INFO);
     if ( std::string( thepctype ) == "block_jacobi" || std::string( thepctype ) == "bjacobi" )
         ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
@@ -512,28 +512,31 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string 
     else if ( std::string( thepctype ) == "gasm" )
         ierr = PCGASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
 #endif
-
     CHKERRABORT( worldComm.globalComm(),ierr );
-    std::string subpctype =  Environment::vm(_name="pc-type",_sub="sub",_prefix=prefix).template as<std::string>();
-    LOG(INFO) << "subpctype: " << subpctype << "\n";
-    google::FlushLogFiles(google::INFO);
-    // Loop over sub-ksp objects, set ILU preconditioner
-    for ( int i=0; i<n_local; ++i )
+
+    LOG(INFO) << "number of sub ksp : " << n_local;
+    if ( Environment::numberOfProcessors() > 1 )
     {
-        // Get pointer to sub KSP object's PC
-        PC subpc;
-
-        ierr = KSPGetPC( subksps[i], &subpc );
-        CHKERRABORT( worldComm.globalComm(),ierr );
-
-        // Set requested type on the sub PC
-        ierr = PCSetType( subpc, subpctype.c_str() );
-        CHKERRABORT( worldComm.globalComm(),ierr );
-        LOG(INFO) << "pc " << i << "\n";
+        std::string subpctype =  Environment::vm(_name="pc-type",_sub="sub",_prefix=prefix).template as<std::string>();
+        LOG(INFO) << "subpctype: " << subpctype ;
         google::FlushLogFiles(google::INFO);
-        configurePC( subpc, worldComm, "sub", prefix );
-    }
+        // Loop over sub-ksp objects, set ILU preconditioner
+        for ( int i=0; i<n_local; ++i )
+        {
+            // Get pointer to sub KSP object's PC
+            PC subpc;
 
+            ierr = KSPGetPC( subksps[i], &subpc );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+
+            // Set requested type on the sub PC
+            ierr = PCSetType( subpc, subpctype.c_str() );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+            LOG(INFO) << "sub pc " << i << "\n";
+            google::FlushLogFiles(google::INFO);
+            configurePC( subpc, worldComm, "sub", prefix );
+        }
+    }
 }
 
 
