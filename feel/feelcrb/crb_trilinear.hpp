@@ -374,7 +374,7 @@ public:
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
 
-    boost::tuple<double,double,double,double, vectorN_type > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double,double,double, vectorN_type ,double, double, double, double, double> run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
     void run( const double * X, unsigned long N, double * Y, unsigned long P ){};
 
     //! set the truth offline model
@@ -1328,7 +1328,7 @@ CRBTrilinear<TruthModelType>::printMuSelection( void )
 }
 
 template<typename TruthModelType>
-boost::tuple<double,double,double,double,typename CRBTrilinear<TruthModelType>::vectorN_type >
+boost::tuple<double,double,double,double,typename CRBTrilinear<TruthModelType>::vectorN_type , double, double, double, double, double>
 CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
@@ -1355,7 +1355,7 @@ CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     double e = 0;
     double condition_number = o.template get<1>();
 
-    return boost::make_tuple( output , e, Nwn , condition_number, uN);
+    return boost::make_tuple( output , e, Nwn , condition_number, uN , 0, 0, 0, 0, 0);
 }
 
 
