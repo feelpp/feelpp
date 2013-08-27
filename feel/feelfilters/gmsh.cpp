@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:set syntax=cpp fenc=utf-8 ft=tcl et sw=4 ts=4 sts=4 tw=0
 
   This file is part of the Feel library
 
@@ -103,6 +103,7 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_order( __g.M_order ),
     M_version( __g.M_version ),
     M_format( __g.M_format ),
+    M_geoParamMap( __g.M_geoParamMap ),
     M_I( __g.M_I ),
     M_h( __g.M_h ),
     M_addmidpoint( __g.M_addmidpoint ),
@@ -127,6 +128,7 @@ Gmsh::operator=( Gmsh const& __g )
         M_order = __g.M_order;
         M_version = __g.M_version;
         M_format = __g.M_format;
+        M_geoParamMap = __g.M_geoParamMap;
         M_addmidpoint = __g.M_addmidpoint;
         M_usePhysicalNames = __g.M_usePhysicalNames;
         M_shear = __g.M_shear;
@@ -192,57 +194,117 @@ Gmsh::getDescriptionFromFile( std::string const& file ) const
     return  __geostream.str();
 }
 
+//
+// We split the geo parameters list in two times. First at the `:`, then
+// for each character `=`. We add each key and value to the map.
+// Example : "key1=val1:key2=val2:key3=val3"
+//
+std::map<std::string, double>
+Gmsh::gpstr2map( std::string const& _geopars )
+{
+    std::map<std::string, double> geopm;
+    std::string geopars = _geopars;
+    if(!geopars.empty())
+    {
+        boost::algorithm::trim( geopars );
+        boost::char_separator<char> sep(":");
+        boost::char_separator<char> sep2("=");
+        boost::tokenizer< boost::char_separator<char> > kvlist(geopars, sep);
+        for( const auto& ikvl : kvlist )
+        {
+            boost::tokenizer< boost::char_separator<char> > kv( ikvl, sep2);
+
+            assert( distance( kv.begin(), kv.end() ) == 2 ); //! TODO modify message !
+
+            try{
+                geopm[ *(kv.begin()) ] = boost::lexical_cast<double>( *(++(kv.begin())) );
+            }
+            catch( boost::bad_lexical_cast& e )
+            {
+                std::cerr<< "Error : " << e.what() << std::endl;
+            }
+        }
+    }
+    return geopm;
+}
+
+std::map<std::string, double>
+Gmsh::retrieveGeoParameters( std::string const& __geo ) const
+{
+    std::map<std::string, double> __geopm;
+    // (TODO should strip C/CPP comments)
+    // Regex for a `keyword=value;` expression. We capture only [keyword]
+    // and the [value] (ex : `h_2=-1,3e+4`).
+    boost::regex kvreg("([[:word:]]*)[[:blank:]]*=[[:blank:]]*([+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?)));" );
+    boost::sregex_token_iterator iRex( __geo.begin(), __geo.end(), kvreg, 0 );
+    boost::sregex_token_iterator end;
+
+    for( ; iRex != end; ++iRex )
+    {
+        boost::smatch what;
+        boost::regex_search( (*iRex).str(), what, kvreg );
+        try
+        {
+            auto par = std::string( what[1].first, what[1].second );
+            auto val = boost::lexical_cast<double>( std::string( what[2].first, what[2].second ) );
+
+            LOG(INFO) << "[Gmsh::retrieveGeoParameter] New geometry parameter : "<< par << " = " << val << std::endl;
+            __geopm[ par ] = val;
+        }
+        catch( boost::bad_lexical_cast& e )
+        {
+            std::cerr<< "Error : " << e.what() << std::endl;
+        }
+    }
+
+    return __geopm;
+}
+
 bool
 Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool const modifGeo ) const
 {
-    std::string _geo;
-
-    _geo = __geo;
+    std::string _geo = __geo;
 
     if ( modifGeo )
     {
-        // Get the 'h' for hsize and modify its value in the geo file.
-        boost::regex regex( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
+        // Create a new geo description from mapped parameters.
+        for( const auto& iGpm : M_geoParamMap )
+        {
+            // Check any regular expression `mykey=myvalue;` in the description (see
+            // retrieveGeoParameters()).
+            boost::regex regex1( "(?:(" + iGpm.first  + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
+            std::ostringstream _ostr;
+            try{
+                _ostr << "(?1$1) = " << boost::lexical_cast<std::string>( iGpm.second ) << ";";
+                LOG(INFO) << "[Gmsh::generateGeo] Geo geometry parameter "
+                          << ( ( regex_search( __geo, regex1, boost::match_default) )?
+                             ( iGpm.first + "=" + boost::lexical_cast<std::string>( iGpm.second ) + " now !" )
+                             : iGpm.first + " not found ! " )
+                          << std::endl;
+            }
+            catch( boost::bad_lexical_cast& e )
+            {
+                std::cerr<< "Error : " << e.what() << std::endl;
+            }
+
+            _geo = boost::regex_replace( _geo, regex1, _ostr.str(), boost::match_default | boost::format_all );
+        }
+
+        // Get the 'h' for hsize and modify its value in the geo file. (TODO could be included in the
+        // geo-variables-list option (previous loop).
+        // -----------
+        boost::regex regex2( "(?:(lc|h))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
         std::ostringstream hstr;
         hstr << "(?1$1) = " << M_h << ";";
 
-        LOG(INFO) << __name << ".geo  hsize was  " << regex_search(_geo, regex, boost::match_default)
-                  << " and is now "  << hstr.str();
+        LOG(INFO) << "[Gmsh::generateGeo] Parameter "
+                  << ( ( regex_search( __geo, regex2, boost::match_default) )?
+                     ( "hsize  = " + hstr.str() + " now ! (overwrite geo param h !)" )
+                     : "h parameter (hsize) not found ! " )
+                  << std::endl;
 
-        _geo = boost::regex_replace( _geo, regex, hstr.str(), boost::match_default | boost::format_all );
-
-        // Split the variable string to get the `key=value` token list.
-        boost::char_separator<char> separator1( ":" );
-        boost::tokenizer< boost::char_separator<char> > tok(
-            option(_name="gmsh.geo-variables-list").as<std::string>(),
-            separator1 );
-
-        // Split each token to get the key and the value and put them into a vector.
-        boost::char_separator<char> separator2( "=" );
-        for( auto iSep = tok.begin(); iSep != tok.end(); ++iSep )
-        {
-            boost::tokenizer< boost::char_separator<char> > tok2( *iSep, separator2 );
-
-            assert( distance( tok2.begin(), tok2.end() ) == 2 ); //! TODO modify message !
-
-            std::vector<std::string> keyvalVec;
-            for( auto iSep2 = tok2.begin(); iSep2 != tok2.end(); ++iSep2 )
-                keyvalVec.push_back(*iSep2);
-
-            // Get the `key` and modify its `value` in the geo file.
-            boost::regex _regex( "(?:(" + keyvalVec.at(0) + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
-            std::ostringstream _ostr;
-            _ostr << "(?1$1) = " << keyvalVec.at(1) << ";";
-
-            LOG(INFO) << "Modify " << __name << ".geo : "
-                      << "Key " << keyvalVec.at(0)
-                      << ( ( regex_search( __geo, _regex, boost::match_default) )?
-                           ( " found ! "+ keyvalVec.at(0) + "=" + keyvalVec.at(1) + " now." ) : " not found ! " )
-                      << std::endl;
-
-            _geo = boost::regex_replace( _geo, _regex, _ostr.str(), boost::match_default | boost::format_all );
-        }
-
+        _geo = boost::regex_replace( _geo, regex2, hstr.str(), boost::match_default | boost::format_all );
+        // -----------
     }
 
     std::ostringstream __geoname;
@@ -253,7 +315,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
     // Create a new .geo.
     if ( !fs::exists( __path ) )
     {
-        LOG(INFO) << "Creating " << __geoname.str();
+        LOG(INFO) << "[Gmsh::generateGeo] file :" << __path << "/" << __geoname.str() << std::endl;
         std::ofstream __geofile( __geoname.str().c_str() );
         __geofile << _geo;
         __geofile.close();
@@ -267,7 +329,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
 
         if ( s != _geo )
         {
-            LOG(INFO) << __geoname.str() << " exists but is different from the expected geometry, we overwrite it now";
+            LOG(INFO) << __path << " exists but is different from the expected geometry, we overwrite it now";
             std::ofstream __geofile( __geoname.str().c_str() );
             __geofile << _geo;
             __geofile.close();
@@ -275,7 +337,7 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
         }
         else
         {
-            LOG(INFO) << __geoname.str() << " exists and its content correspond to the expected geometry";
+            LOG(INFO) << __path << " exists and its content correspond to the expected geometry";
         }
     }
 
