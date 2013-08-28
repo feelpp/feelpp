@@ -287,6 +287,13 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
     }
 }
 
+template<typename T>
+void
+MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m )
+{
+    MatrixEigenDense<value_type>* _md = dynamic_cast<MatrixEigenDense<value_type>*>(&_m);
+    _md->mat() = this->M_mat.sqrt();
+}
 
 template <typename T>
 void

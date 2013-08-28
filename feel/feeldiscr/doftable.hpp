@@ -947,10 +947,15 @@ public:
 
     void printDofMarker(std::string const& filename )
         {
+            // std::ofstream ofs( filename.c_str() );
+            // BOOST_FOREACH( auto dof, _M_dof_marker )
+            // {
+            //     //ofs << dof.first << " " << dof.second << "\n";
+            // }
             std::ofstream ofs( filename.c_str() );
-            BOOST_FOREACH( auto dof, M_dof_marker.left )
+            for( auto dofleft : M_dof_marker.left )
             {
-                ofs << dof.first << " " << dof.second << "\n";
+                ofs << dofleft.first << " " << dofleft.second << "\n";
             }
         }
     /**
