@@ -605,6 +605,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         mu.check();
         LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
         // evaluate model at mu
+
         auto Z = M_model->operator()( mu );
 
         vector_type rhs( __M );
@@ -1206,7 +1207,9 @@ public:
             //LOG( INFO ) << "[computational] mu = \n"<<mu;
             boost::mpi::timer tcrb;
             auto o = M_crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
-            auto uN = o.template get<4>();
+            auto solutions=o.template get<2>();
+            auto uN = solutions.template get<0>();
+
             auto u_crb = M_crb->expansion( uN , N , WN );
 
             boost::mpi::timer teim;
