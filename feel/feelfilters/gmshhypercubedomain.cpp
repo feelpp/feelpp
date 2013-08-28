@@ -176,15 +176,7 @@ GmshHypercubeDomain::getDescription2D() const
          << "Line Loop(5) = {1,2,3,4};\n"
          << "Plane Surface(6) = {5};\n";
 
-    if ( this->usePhysicalNames() == false )
-    {
-        ostr << "Physical Line(1) = {1};\n"
-             << "Physical Line(2) = {2};\n"
-             << "Physical Line(3) = {3};\n"
-             << "Physical Line(4) = {4};\n"
-             << "Physical Surface(6) = {6};\n";
-    }
-    else if ( this->subStructuring() == true )
+    if ( this->subStructuring() == true )
     {
         ostr << "Physical Point(\"CrossPoints\") = {1,2,3,4};\n";
         ostr << "Physical Line(\"NORTH\") = {4};\n"
@@ -193,6 +185,14 @@ GmshHypercubeDomain::getDescription2D() const
              << "Physical Line(\"EAST\") = {3};\n"
              << "Physical Surface(\"Omega\") = {6};\n";
 
+    }
+    else if ( this->usePhysicalNames() == false )
+    {
+        ostr << "Physical Line(1) = {1};\n"
+             << "Physical Line(2) = {2};\n"
+             << "Physical Line(3) = {3};\n"
+             << "Physical Line(4) = {4};\n"
+             << "Physical Surface(6) = {6};\n";
     }
     else
     {

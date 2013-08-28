@@ -72,7 +72,7 @@ extern "C"
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
 
-        LOG(INFO) << "__feel_petsc_preconditioner_setup:: init prec\n";
+        VLOG(2) << "__feel_petsc_preconditioner_setup:: init prec\n";
 
         return 0;
     }
@@ -97,7 +97,7 @@ extern "C"
         CHKERRQ( ierr );
         Preconditioner<double> * preconditioner = static_cast<Preconditioner<double>*>( ctx );
         preconditioner->init();
-        LOG(INFO) << "__feel_petsc_preconditioner_setup: init prec\n";
+        VLOG(2) << "__feel_petsc_preconditioner_setup: init prec\n";
         return 0;
     }
 
