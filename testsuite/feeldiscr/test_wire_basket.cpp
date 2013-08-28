@@ -180,6 +180,7 @@ void run( Application_ptrtype & theApp )
     auto Wh = Xh3D->wireBasket();
     FEELPP_ASSERT( Wh->mesh()->numElements() != 0 )( Wh->mesh()->numElements() ).error( "invalid wirebasket mesh" );
 
+    saveGMSHMesh(_mesh=Wh->mesh(), _filename="wirebasket.msh");
     auto w = Wh->element();
     auto z = Wh->element();
 
