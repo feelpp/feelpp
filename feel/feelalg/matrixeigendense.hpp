@@ -40,6 +40,7 @@
 #endif /* BOOST_VERSION >= 103400 */
 
 #include <Eigen/Core>
+#include <unsupported/Eigen/MatrixFunctions>
 
 #include <feel/feelalg/matrixsparse.hpp>
 #include <feel/feelalg/vectorublas.hpp>
@@ -428,6 +429,37 @@ public:
     real_type linftyNorm() const
     {
         return real_type( 0 );
+    }
+
+    /**
+     * Return the square root of the matrix
+     */
+    //typename Eigen::MatrixSquareRootReturnValue<matrix_type> sqrt() const
+    void sqrt( MatrixSparse<value_type>& _m );
+
+    // void sqrt( boost::shared_ptr<MatrixSparse<value_type> >& _m )
+    // {
+    //     this->sqrt(*_m);
+    // }
+
+    MatrixEigenDense<T>  operator * ( MatrixEigenDense<T> const& M )
+    {
+        MatrixEigenDense<T>  R;
+        R.mat() = this->mat() * M.mat();
+        return R;
+    }
+
+    MatrixEigenDense<T>  operator - ( MatrixEigenDense<T> const& M )
+    {
+        MatrixEigenDense<T>  R;
+        R.mat() = this->mat() - M.mat();
+        return R;
+    }
+
+    MatrixEigenDense<T> & operator = ( MatrixEigenDense<T> const& M )
+    {
+        _M_mat = M.mat();
+        return *this;
     }
 
     /**
