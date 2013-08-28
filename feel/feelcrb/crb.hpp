@@ -126,7 +126,7 @@ public:
     typedef boost::tuple<double, parameter_type, size_type, double, double> relative_error_type;
     typedef relative_error_type max_error_type;
 
-    typedef boost::tuple<double, std::vector< std::vector<double> > , std::vector< std::vector<double> >, double, double, double > error_estimation_type;
+    typedef boost::tuple<double, std::vector< std::vector<double> > , std::vector< std::vector<double> >, double, double, double, double > error_estimation_type;
     typedef boost::tuple<double, std::vector<double> > residual_error_type;
 
     typedef boost::bimap< int, boost::tuple<double,double,double> > convergence_type;
@@ -179,7 +179,7 @@ public:
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
 
-
+    typedef boost::tuple< vectorN_type , vectorN_type > solutions_tuple;
 
     typedef std::vector<element_type> mode_set_type;
     typedef boost::shared_ptr<mode_set_type> mode_set_ptrtype;
@@ -939,7 +939,7 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<double,double,double,double, vectorN_type, double , double, double, double, double> run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double, solutions_tuple, double, double, double, boost::tuple<double,double,double>, double, double > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -1486,7 +1486,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
         do
         {
-            boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_primal->time() );
+            boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_dual->time() );
 
             if( ! M_model->isSteady() )
             {
@@ -2048,7 +2048,6 @@ CRB<TruthModelType>::offline()
             M_iter_max = sampling_size;
         }
         mu = M_WNmu->at( M_N ); // first element
-        std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
 
         if( proc_number == this->worldComm().masterRank() )
             std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
@@ -2090,8 +2089,6 @@ CRB<TruthModelType>::offline()
             if( solve_dual_problem )
                 udu = offlineFixedPointDual( mu , dual_initial_field ,  A , u, zero_iteration );
         }
-
-        std::cout<<std::setprecision(14)<<"offline u : "<<u.l2Norm()<<std::endl;
 
 		if ( M_model->isSteady() && M_use_newton )
         {
@@ -4114,10 +4111,10 @@ CRB<TruthModelType>::delta( size_type N,
     double delta_pr=0;
     double delta_du=0;
     if ( M_error_type == CRB_NO_RESIDUAL )
-        return boost::make_tuple( -1,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du , -1);
+        return boost::make_tuple( -1,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du , -1, -1);
 
     else if ( M_error_type == CRB_EMPIRICAL )
-        return boost::make_tuple( empiricalErrorEstimation ( N, mu , k ) , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du, -1);
+        return boost::make_tuple( empiricalErrorEstimation ( N, mu , k ) , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du, -1, -1);
 
     else
     {
@@ -4219,6 +4216,7 @@ CRB<TruthModelType>::delta( size_type N,
 
         double output_upper_bound;
         double solution_upper_bound;
+        double solution_dual_upper_bound;
 
         if ( M_model->isSteady() )
         {
@@ -4228,8 +4226,8 @@ CRB<TruthModelType>::delta( size_type N,
             else
                 delta_du = 1;
             output_upper_bound = delta_pr * delta_du;
-            solution_upper_bound =  math::sqrt( primal_sum ) / alphaA ;
             solution_upper_bound =  delta_pr;
+            solution_dual_upper_bound =  delta_du;
         }
         else
         {
@@ -4237,9 +4235,10 @@ CRB<TruthModelType>::delta( size_type N,
             delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
             output_upper_bound = delta_pr * delta_du;
             solution_upper_bound = delta_pr;
+            solution_dual_upper_bound =  delta_du;
         }
 
-        return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du , solution_upper_bound);
+        return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du , solution_upper_bound, solution_dual_upper_bound);
 
     }//end of else
 }
@@ -5937,7 +5936,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
 
 
 template<typename TruthModelType>
-boost::tuple<double,double,double,double, typename CRB<TruthModelType>::vectorN_type, double, double, double, double, double>
+boost::tuple<double,double, typename CRB<TruthModelType>::solutions_tuple, double, double, double, boost::tuple<double,double,double>, double, double >
 CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
@@ -5984,6 +5983,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     double output_upper_bound = error_estimation.template get<0>();
     double solution_upper_bound = error_estimation.template get<5>();
+    double solution_dual_upper_bound = error_estimation.template get<6>();
     double condition_number = o.template get<1>();
     auto primal_coeffcients = error_estimation.template get<1>();
     auto dual_coefficients = error_estimation.template get<2>();
@@ -6026,7 +6026,10 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     double delta_pr = error_estimation.template get<3>();
     double delta_du = error_estimation.template get<4>();
     int size = uN.size();
-    return boost::make_tuple( output , output_upper_bound, Nwn , condition_number, uN[size-1] , solution_upper_bound , primal_residual_norm , dual_residual_norm , delta_pr , delta_du);
+
+    auto upper_bounds = boost::make_tuple(output_upper_bound , solution_upper_bound , solution_dual_upper_bound );
+    auto solutions = boost::make_tuple( uN[size-1] , uNdu[0]);
+    return boost::make_tuple( output , Nwn , solutions, condition_number , primal_residual_norm , dual_residual_norm, upper_bounds, delta_pr, delta_du );
 }
 
 
