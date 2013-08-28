@@ -33,7 +33,7 @@ int main(int argc, char**argv )
 {
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
+                     _desc=feel_options().add(backend_options( "diffusion" )),
                      _about=about(_name="laplacian_dirac",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -42,24 +42,42 @@ int main(int argc, char**argv )
     auto Vh = Pch<3>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
-
+    auto ts = bdf( _space=Vh );
+    ts->start();
     auto l = form1( _test=Vh );
-    BOOST_FOREACH( auto i, Vh->dof()->markerToDof( std::string("center") ) )
-    {
-        l.add( i.second, 1 );
-    }
-
-
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) );
-    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=constant(0.) );
-    a.solve(_rhs=l,_solution=u);
-
+                  _expr=idt(u)*id(u)*ts->polyDerivCoefficient( 0 ) + gradt(u)*trans(grad(v)) );
+    a+=integrate(_range=boundaryfaces(mesh),
+                 _expr=-gradt(u)*N()*id(v)-gradt(v)*N()*id(u)
+                 +50*idt(u)*id(v)/hFace() );
+    auto backend_diffusion = backend(_prefix="diffusion");
+    auto prec_diffusion = preconditioner( _prefix="diffusion",_matrix=a.matrixPtr(),
+                                          _pc=backend_diffusion->pcEnumType()/*LU_PRECOND*/,
+                                          _pcfactormatsolverpackage=backend_diffusion->matSolverPackageEnumType(),
+                                          _backend=backend_diffusion );
     auto e = exporter( _mesh=mesh );
-    e->add( "u", u );
-    e->save();
+    ts->initialize( u );
+    for( ts->start(); !ts->isFinished(); ts->next() )
+    {
+        auto time = ts->time();
+        LOG(INFO) << "Time = " << time << "s";
+        if ( ts->iteration() == 1 )
+        {
+            BOOST_FOREACH( auto i, Vh->dof()->markerToDof( std::string("center") ) )
+            {
+                l.add( i.second, 1 );
+            }
+        }
+        l += integrate( _range=elements(mesh),
+                        _expr= idv(ts->polyDeriv())*id(v) );
+        a.solveb(_rhs=l,_solution=u, _backend=backend_diffusion, _prec=prec_diffusion);
+        ts->shiftRight( u );
+
+        e->step(time)->add( "u", u );
+        e->save();
+        l.zero();
+    }
     return 0;
 
 }
