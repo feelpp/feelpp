@@ -256,7 +256,7 @@ MatrixEigenDense<T>::printMatlab( const std::string filename ) const
 
 template<typename T>
 void
-MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m )
+MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m ) const
 {
     MatrixEigenDense<value_type>* _md = dynamic_cast<MatrixEigenDense<value_type>*>(&_m);
     _md->mat() = this->_M_mat.sqrt();
