@@ -34,11 +34,14 @@
 #include <Eigen/Core>
 #include <feel/feelcore/application.hpp>
 #include <feel/feelalg/vector.hpp>
-
+#include <feel/feelalg/matrixsparse.hpp>
+#include <feel/feelalg/matrixeigendense.hpp>
 
 
 namespace Feel
 {
+//template<typename T> class MatrixEigenDense;
+
 template<typename T>
 struct get_real_type
 {};
@@ -420,10 +423,10 @@ public:
      * and a \p Vector \p V to \p this, where \p this=U.
      */
     void addVector ( const Vector<value_type>& /*V_in*/,
-                     const MatrixSparse<value_type>& /*A_in*/ )
-    {
-        FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
-    }
+                     const MatrixSparse<value_type>& /*A_in*/ );
+    // {
+    //     FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+    // }
 
     /**
      * \f$U+=V \f$ where U and V are type

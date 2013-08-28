@@ -524,6 +524,19 @@ VectorEigen<T>::insert ( const ublas::vector<T>& V,
     FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
 }
 
+template <typename T>
+void VectorEigen<T>::addVector ( const Vector<value_type>& V_in,
+                                 const MatrixSparse<value_type>& A_in )
+{
+    //FEELPP_ASSERT( 0 ).error( "invalid call, not implemented yet" );
+    const VectorEigen<T>* V = dynamic_cast<const VectorEigen<T>*>( &V_in );
+    //const MatrixEigenDense<T>* A = dynamic_cast<const MatrixEigenDense<T>*>( &A_in );
+    const MatrixEigenDense<T>* A = dynamic_cast<const MatrixEigenDense<T>*>( &A_in );
+
+    CHECK ( A != 0 ) << "Invalid Eigen matrix\n";
+
+    _M_vec += A->mat()*V->vec();
+}
 //
 // instantiation
 //
