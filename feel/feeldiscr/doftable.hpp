@@ -565,7 +565,7 @@ public:
         {}
         global_dof_type const& operator()( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
         {
-            return *_M_d._M_el_l2g.find( LocalDof(__id, _M_d.nLocalDof(true) * c+ __loc ) );
+            return _M_d._M_el_l2g.left.find( LocalDof(__id, _M_d.nLocalDof(true) * c+ __loc ) )->second;
         }
         uint16_type localDofInElement( size_type __id, uint16_type __loc, uint16_type c = 0 ) const
         {
