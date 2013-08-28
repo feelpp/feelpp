@@ -590,6 +590,7 @@ public:
     }
 
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
+    element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
 
@@ -2144,7 +2145,6 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     mybdf->setTimeFinal( time_final );
 
     u=*InitialGuess;
-
     double norm=0;
     int iter=0;
 
@@ -2177,6 +2177,104 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         mybdf->shiftRight(u);
     }
     return u;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+{
+    int output_index = option(_name="crb.output-index").template as<int>();
+
+    auto Xh= this->functionSpace();
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype A,Adu;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    auto udu = Xh->element();
+    auto uold = Xh->element();
+    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
+    auto dual_initial_field = Xh->elementPtr();
+
+    double time_initial;
+    double time_step;
+    double time_final;
+
+    if ( this->isSteady() )
+    {
+        time_initial=0;
+        time_step = 1e30;
+        time_final = 1e30;
+        //InitialGuess = this->assembleInitialGuess( mu ) ;
+    }
+    else
+    {
+        time_initial=this->timeFinal()+this->timeStep();
+        time_step=-this->timeStep();
+        time_final=this->timeInitial()+this->timeStep();
+    }
+
+    mybdf->setTimeInitial( time_initial );
+    mybdf->setTimeStep( time_step );
+    mybdf->setTimeFinal( time_final );
+
+    double norm=0;
+    int iter=0;
+
+    double bdf_coeff ;
+    auto vec_bdf_poly = M_backend->newVector( Xh );
+
+    if ( this->isSteady() )
+        udu.zero() ;
+    else
+    {
+        boost::tie( M, A, F) = this->update( mu , mybdf->timeInitial() );
+        *Rhs=*F[output_index];
+        M_preconditioner->setMatrix( M );
+        M_backend->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner );
+        udu=*dual_initial_field;
+    }
+
+
+    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
+    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
+    {
+        iter=0;
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+        auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
+        do {
+            boost::tie(M, A, F) = this->update( mu , udu , mybdf->time() );
+
+            if( ! isSteady() )
+            {
+                A->addMatrix( bdf_coeff, M );
+                Rhs->zero();
+                *vec_bdf_poly = bdf_poly;
+                Rhs->addVector( *vec_bdf_poly, *M );
+            }
+            else
+            {
+                *Rhs = *F[output_index];
+                Rhs->scale( -1 );
+            }
+
+            if( option("crb.use-symmetric-matrix").template as<bool>() )
+                Adu = A;
+            else
+                A->transpose( Adu );
+
+            uold = udu;
+            M_preconditioner->setMatrix( Adu );
+            M_backend->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner);
+            norm = this->computeNormL2( uold , udu );
+            iter++;
+        } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
+        mybdf->shiftRight(udu);
+    }
+    return udu;
 }
 
 
