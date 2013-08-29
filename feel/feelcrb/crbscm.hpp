@@ -600,7 +600,7 @@ CRBSCM<TruthModelType>::offline()
 
     size_type index;
 
-    bool use_predefined_C = false;
+    bool use_predefined_C = option(_name="crb.scm.use-predefined-C").template as<bool>();
     int N_log_equi = this->vm()["crb.scm.use-logEquidistributed-C"].template as<int>() ;
     int N_equi = this->vm()["crb.scm.use-equidistributed-C"].template as<int>() ;
     std::vector<int> index_vector;

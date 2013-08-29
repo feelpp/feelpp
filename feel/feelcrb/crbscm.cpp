@@ -57,6 +57,7 @@ crbSCMOptions( std::string const& prefix )
     ( "crb.scm.run-on-C",Feel::po::value<bool>()->default_value( true ), "use parameters selected in offline step if true ( in that case, Lb=Ub=FEM )")
     ( "crb.scm.use-logEquidistributed-C",Feel::po::value<int>()->default_value( 0 ), "parameters are log-equidistributed for the offline step (the value indicates the number of parameters)")
     ( "crb.scm.use-equidistributed-C",Feel::po::value<int>()->default_value( 0 ), "parameters are equidistributed for the offline step (the value indicates the number of parameters)")
+    ( "crb.scm.use-predefined-C",Feel::po::value<bool>()->default_value( false ), "use a predefined sampling C ( parameters written on the file SamplingC")
     ;
 
     crbscmoptions
