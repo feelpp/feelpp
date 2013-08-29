@@ -105,8 +105,7 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
 #endif
         ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" )
-        ( prefixvm( prefix,"gmsh.substructuring" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "Generate substructuration (0=false, 1=true)" );
-
+        ( prefixvm( prefix,"gmsh.substructuring" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "Generate substructuration (0=false, 1=true)" )
         // domain
         ( prefixvm( prefix,"gmsh.domain.dim" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Gmsh domain dimension" )
         ( prefixvm( prefix,"gmsh.domain.xmin" ).c_str(), Feel::po::value<double>()->default_value( 0. ), "Gmsh domain xmin" )

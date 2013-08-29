@@ -51,7 +51,7 @@ namespace Feel
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * 
+ *
  * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
@@ -480,8 +480,6 @@ private:
      */
     mutable matrix_type _M_mat;
 };
-
-
 template<typename T>
 void
 MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
@@ -507,6 +505,10 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
         rhs.set( rows[i], value * vals[i] );
     }
 }
+
+#if !defined (FEELPP_NO_EXTERN)
+extern template class MatrixEigenDense<double>;
+#endif
 
 } // Feel
 #endif /* __MatrixEigenDense_H */

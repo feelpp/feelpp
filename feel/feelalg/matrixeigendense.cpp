@@ -28,6 +28,9 @@
    \date 2007-07-15
  */
 
+// define this macro to disable all extern declarations
+#define FEELPP_NO_EXTERN
+
 #include <Eigen/Dense>
 #include <feel/feelalg/matrixeigendense.hpp>
 
@@ -315,6 +318,7 @@ MatrixEigenDense<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 
     A->mat() = this->_M_mat.block(rows[0],cols[0],rows.size(),cols.size());
 }
+
 
 //
 // Explicit instantiations
