@@ -680,7 +680,7 @@ public:
                                 auto all_upper_bounds = o.template get<6>();
                                 double output_estimated_error = all_upper_bounds.template get<0>();
                                 double solution_estimated_error = all_upper_bounds.template get<1>();
-                                double solution_dual_estimated_error = all_upper_bounds.template get<2>();
+                                double dual_solution_estimated_error = all_upper_bounds.template get<2>();
 
                                 if ( compute_fem )
                                 {
@@ -856,7 +856,7 @@ public:
                                         auto all_upper_bounds = o.template get<6>();
                                         output_estimated_error = all_upper_bounds.template get<0>();
                                         solution_estimated_error = all_upper_bounds.template get<1>();
-                                        solution_dual_estimated_error = all_upper_bounds.template get<2>();
+                                        dual_solution_estimated_error = all_upper_bounds.template get<2>();
 
                                         //auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         double rel_err = std::abs( output_fem-ocrb ) /output_fem;
@@ -869,7 +869,9 @@ public:
                                         double delta_du = o.template get<8>();
 
                                         double solution_error=0;
-                                        double solution_dual_error=0;
+                                        double dual_solution_error=0;
+                                        double ref_primal=0;
+                                        double ref_dual=0;
                                         if( model->isSteady() )
                                         {
                                             //let ufem-ucrb = e
@@ -879,13 +881,7 @@ public:
                                                 for(int m=0; m<model->mMaxA(q); m++)
                                                 {
                                                     solution_error += math::sqrt( betaAqm[q][m]*model->Aqm(q,m,u_error,u_error) );
-                                                }
-                                            }
-                                            for(int q=0; q<model->Qa();q++)
-                                            {
-                                                for(int m=0; m<model->mMaxA(q); m++)
-                                                {
-                                                    solution_error += math::sqrt( betaAqm[q][m]*model->Aqm(q,m,u_error,u_error) );
+                                                    ref_primal += math::sqrt( betaAqm[q][m]*model->Aqm(q,m,u_fem,u_fem) );
                                                 }
                                             }
 
@@ -895,19 +891,12 @@ public:
                                                 {
                                                     for(int m=0; m<model->mMaxA(q); m++)
                                                     {
-                                                        solution_dual_error += math::sqrt( betaAqm[q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) );
+                                                        dual_solution_error += math::sqrt( betaAqm[q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) );
+                                                        ref_dual += math::sqrt( betaAqm[q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) );
                                                     }
                                                 }
-                                                for(int q=0; q<model->Qa();q++)
-                                                {
-                                                    for(int m=0; m<model->mMaxA(q); m++)
-                                                    {
-                                                        solution_dual_error += math::sqrt( betaAqm[q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) );
-                                                    }
-                                                }
-
                                             }
-                                            //solution_dual_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
+                                            //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
                                         }
                                         else
                                         {
@@ -923,6 +912,7 @@ public:
                                                 for(int m=0; m<model->mMaxM(q); m++)
                                                 {
                                                     solution_error +=  betaMqm[q][m]*model->Mqm(q,m,u_error,u_error);
+                                                    ref_primal +=  betaMqm[q][m]*model->Mqm(q,m,u_fem,u_fem);
                                                 }
                                             }
                                             for(int time_index=0; time_index<K; time_index++)
@@ -935,10 +925,12 @@ public:
                                                     for(int m=0; m<model->mMaxA(q); m++)
                                                     {
                                                         solution_error +=  betaAqm[q][m]*model->Aqm(q,m,u_error,u_error) * dt;
+                                                        ref_primal +=  betaAqm[q][m]*model->Aqm(q,m,u_fem,u_fem) * dt;
                                                     }
                                                 }
                                             }
                                             solution_error = math::sqrt( solution_error );
+                                            ref_primal = math::sqrt( ref_primal );
 
                                             if( solve_dual_problem )
                                             {
@@ -952,7 +944,8 @@ public:
                                                 {
                                                     for(int m=0; m<model->mMaxM(q); m++)
                                                     {
-                                                        solution_dual_error +=  betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
+                                                        dual_solution_error +=  betaMqm[q][m]*model->Mqm(q,m,u_dual_error,u_dual_error);
+                                                        ref_dual +=  betaMqm[q][m]*model->Mqm(q,m,u_dual_fem,u_dual_fem);
                                                     }
                                                 }
 
@@ -965,10 +958,15 @@ public:
                                                     {
                                                         for(int m=0; m<model->mMaxA(q); m++)
                                                         {
-                                                            solution_dual_error +=  betaAqm[q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) * dt;
+                                                            dual_solution_error +=  betaAqm[q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) * dt;
+                                                            ref_dual +=  betaAqm[q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) * dt;
                                                         }
                                                     }
                                                 }
+
+                                                dual_solution_error = math::sqrt( dual_solution_error );
+                                                ref_dual = math::sqrt( ref_dual );
+
                                             }//if solve-dual
 
                                         }//transient case
@@ -977,12 +975,21 @@ public:
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
                                         double condition_number = o.template get<3>();
                                         double output_error_bound_efficiency = output_relative_estimated_error / rel_err;
-                                        double solution_error_bound_efficiency = solution_estimated_error / solution_error;
-                                        double solution_dual_error_bound_efficiency = 0;
-                                        if( solve_dual_problem )
-                                            solution_dual_error_bound_efficiency = solution_dual_estimated_error / solution_dual_error;
 
-                                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , solution_error_bound_efficiency );
+                                        double relative_primal_solution_error = solution_error / ref_primal ;
+                                        double relative_primal_solution_estimated_error = solution_estimated_error / ref_primal;
+                                        double relative_primal_solution_error_bound_efficiency = relative_primal_solution_estimated_error / relative_primal_solution_error;
+
+                                        double relative_dual_solution_error = 0;
+                                        double relative_dual_solution_estimated_error = 0;
+                                        double relative_dual_solution_error_bound_efficiency = 0;
+                                        if( solve_dual_problem )
+                                        {
+                                            relative_dual_solution_error = dual_solution_error / ref_dual ;
+                                            relative_dual_solution_estimated_error = dual_solution_estimated_error / ref_dual;
+                                            relative_dual_solution_error_bound_efficiency = relative_dual_solution_estimated_error / relative_dual_solution_error;
+                                        }
+                                        conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , relative_primal_solution_error_bound_efficiency );
 
                                         LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
@@ -992,12 +999,12 @@ public:
                                         M_mapConvCRB["Rel"][N-1](curpar - 1) = rel_err;
                                         M_mapConvCRB["OutputEstimatedError"][N-1](curpar - 1) = output_relative_estimated_error;
                                         M_mapConvCRB["OutputErrorBoundEfficiency"][N-1](curpar - 1) =  output_error_bound_efficiency;
-                                        M_mapConvCRB["SolutionErrorBoundEfficiency"][N-1](curpar - 1) =  solution_error_bound_efficiency;
-                                        M_mapConvCRB["SolutionError"][N-1](curpar - 1) =  solution_error;
-                                        M_mapConvCRB["SolutionErrorEstimated"][N-1](curpar - 1) =  solution_estimated_error;
-                                        M_mapConvCRB["SolutionDualErrorBoundEfficiency"][N-1](curpar - 1) =  solution_dual_error_bound_efficiency;
-                                        M_mapConvCRB["SolutionDualError"][N-1](curpar - 1) =  solution_dual_error;
-                                        M_mapConvCRB["SolutionDualErrorEstimated"][N-1](curpar - 1) =  solution_dual_estimated_error;
+                                        M_mapConvCRB["SolutionErrorBoundEfficiency"][N-1](curpar - 1) =  relative_primal_solution_error_bound_efficiency;
+                                        M_mapConvCRB["SolutionError"][N-1](curpar - 1) =  relative_primal_solution_error;
+                                        M_mapConvCRB["SolutionErrorEstimated"][N-1](curpar - 1) =  relative_primal_solution_estimated_error;
+                                        M_mapConvCRB["SolutionDualErrorBoundEfficiency"][N-1](curpar - 1) =  relative_dual_solution_error_bound_efficiency;
+                                        M_mapConvCRB["SolutionDualError"][N-1](curpar - 1) =  relative_dual_solution_error;
+                                        M_mapConvCRB["SolutionDualErrorEstimated"][N-1](curpar - 1) =  relative_dual_solution_estimated_error;
                                         M_mapConvCRB["PrimalResidualNorm"][N-1](curpar - 1) =  primal_residual_norm;
                                         M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
                                         M_mapConvCRB["DeltaPr"][N-1](curpar - 1) =  delta_pr;
@@ -1488,7 +1495,7 @@ private:
                 if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                     {
                         conv.open(file_name, std::ios::app);
-                        conv << "Nb_basis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+                        conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
                     }
 
                 for(int j=0; j<N; j++)
