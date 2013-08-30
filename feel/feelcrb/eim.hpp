@@ -170,7 +170,6 @@ public:
         M_is_written( false ),
         M_name( "default" ),
         M_M( 1 ),
-        M_M_max( 1 ),
         M_WN(),
         M_offline_done( false ),
         M_tol( 1e-8 ),
@@ -186,7 +185,6 @@ public:
         M_name( model->name() ),
         M_trainset( sampling ),
         M_M( 1 ),
-        M_M_max( 1 ),
         M_WN( M_vm["eim.dimension-max"].template as<int>() ),
         M_offline_done( offline_done ),
         M_tol( __tol ),
@@ -207,7 +205,6 @@ public:
         M_is_written( __bbf.M_is_written ),
         M_name( __bbf.M_name ),
         M_M( __bbf.M_M ),
-        M_M_max (__bbf.M_M_max ),
         M_WN(__bbf.M_WN ),
         M_offline_done( __bbf.M_offline_done ),
         M_tol( __bbf.M_tol ),
@@ -239,8 +236,6 @@ public:
      * return the set of reduced basis functions associated with the eim
      */
     std::vector<element_type> const& q() const {  return M_model->q(); }
-
-    size_type mMax() const { return M_M_max; }
 
 
     /**
@@ -285,8 +280,8 @@ public:
        Note that \f$ \Omega \f$ is given and $D^\mu$ is handled by the \c parameterset_type
        data structure.
     */
-    vector_type beta( parameter_type const& mu  ) const { return M_model->beta( mu, this->mMax() ); }
-    vector_type beta( parameter_type const& mu, solution_type const& T  ) const { return M_model->beta( mu, T, this->mMax() ); }
+    vector_type beta( parameter_type const& mu  ) const { return M_model->beta( mu, M_model->mMax() ); }
+    vector_type beta( parameter_type const& mu, solution_type const& T  ) const { return M_model->beta( mu, T, M_model->mMax() ); }
     vector_type beta( parameter_type const& mu, size_type M  ) const { return M_model->beta( mu , M ); }
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const {return M_model->beta( mu , T , M ); }
 
@@ -316,7 +311,6 @@ protected:
     std::string M_name;
     sampling_ptrtype M_trainset;
     size_type M_M;
-    size_type M_M_max;
     size_type M_max_q;//size of vector M_q ( to save/load )
 
     size_type M_WN;
@@ -650,7 +644,6 @@ EIM<ModelType>::offline(  )
 
 
     LOG(INFO) << "[offline] M_max = " << M_M-1 << "...\n";
-    this->M_M_max = this->M_M-1;
 
     this->M_offline_done = true;
 }
@@ -662,7 +655,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
     LOG(INFO) << " Convergence study \n";
     int proc_number =  Environment::worldComm().globalRank();
 
-    std::vector<double> l2ErrorVec(this->mMax(), 0.0);
+    std::vector<double> l2ErrorVec(M_model->mMax(), 0.0);
 
     std::string mu_str;
     for ( int i=0; i<mu.size(); i++ )
@@ -680,7 +673,7 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         }
 
     bool use_expression = option(_name="eim.compute-error-with-truth-expression").template as<bool>();
-    int max = this->mMax();
+    int max = M_model->mMax();
     for(int N=1; N<=max; N++)
     {
 
@@ -1033,6 +1026,7 @@ public:
         //M_mu = mu;
         //__beta = evaluateFromContext( _context=M_ctx, _expr=M_expr );
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
+
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
 
         return __beta;
@@ -1048,6 +1042,7 @@ public:
         //M_u=T;
         //__beta = evaluateFromContext( _context=M_ctx, _expr=M_expr );
         DCHECK( __beta.size() == __M ) << "Invalid size beta: " << __beta.size() << " M=" << __M  << " beta = " << __beta << "\n";
+
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
 
         return __beta;
