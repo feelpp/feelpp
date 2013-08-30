@@ -62,7 +62,7 @@ if(NOT DEFINED HAS_GCC_WALL)
 endif()
 
 if(HAS_GCC_WALL)
-  set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wall -Wno-unused -Wno-sign-compare")
+  set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wall -Wno-unused -Wno-sign-compare -Wno-deprecated-register")
 endif()
 if(FEELPP_EXTRA_WARNINGS)
   if(HAS_GCC_WEXTRA)
