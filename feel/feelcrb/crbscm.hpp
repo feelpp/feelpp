@@ -492,6 +492,10 @@ public:
     //@}
 
 
+    sampling_ptrtype c() const
+    {
+        return M_C;
+    }
 
 protected:
 
@@ -594,10 +598,41 @@ CRBSCM<TruthModelType>::offline()
     M_Y_ub.clear();
     M_C_alpha_lb.clear();
 
-    // start with M_C = { arg min mu, mu \in Xi }
     size_type index;
-    boost::tie( mu, index ) = M_Xi->min();
-    M_C->push_back( mu, index );
+
+    bool use_predefined_C = option(_name="crb.scm.use-predefined-C").template as<bool>();
+    int N_log_equi = this->vm()["crb.scm.use-logEquidistributed-C"].template as<int>() ;
+    int N_equi = this->vm()["crb.scm.use-equidistributed-C"].template as<int>() ;
+    std::vector<int> index_vector;
+
+    if( N_log_equi > 0 || N_equi > 0 )
+        use_predefined_C = true;
+
+    if( use_predefined_C )
+    {
+        std::string file_name = ( boost::format("SamplingC") ).str();
+        std::ifstream file ( file_name );
+        if( ! file )
+            throw std::logic_error( "[CRBSCM::offline] ERROR the file SamplingC doesn't exist so it's impossible to known which parameters you want to use to build the database" );
+        else
+        {
+            M_C->clear();
+            index_vector = M_C->closestSamplingFromFile(file_name);
+            int sampling_size = index_vector.size();
+            M_iter_max = sampling_size;
+        }
+        mu = M_C->at( 0 ); // first element
+        index = index_vector[0];
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout<<"[CRBSCM::offline] read sampling C ( sampling size : "<<M_iter_max<<" )"<<std::endl;
+    }
+    else
+    {
+        // start with M_C = { arg min mu, mu \in Xi }
+        boost::tie( mu, index ) = M_Xi->min();
+        M_C->push_back( mu, index );
+    }
 
     M_C_complement = M_C->complement();
     //std::cout << " -- start with mu = " << mu << "\n";
@@ -635,7 +670,6 @@ CRBSCM<TruthModelType>::offline()
         M_Y_ub[K-1].resize( Qmax );
         for(int q=0; q<Qmax; q++)
             M_Y_ub[K-1][q].resize( mMax(q) );
-
 
         M_model->solve( mu );
 
@@ -702,7 +736,6 @@ CRBSCM<TruthModelType>::offline()
             return ckconv;
         }
 
-
         LOG( INFO ) << "[fe eig] mu=" << std::setprecision( 4 ) << mu ;
         LOG( INFO ) << "[fe eig] eigmin : " << std::setprecision( 16 ) << modes.begin()->second.template get<0>() ;
         LOG( INFO ) << "[fe eig] ndof:" << M_model->functionSpace()->nDof() ;
@@ -720,6 +753,7 @@ CRBSCM<TruthModelType>::offline()
         M_eig.push_back( M_C_eigenvalues[index] );
         //BOOST_FOREACH( value_type eig, M_eig )
 	    //std::cout << "[fe eig] stored/vec eig=" << eig << "\n";
+
 
         /*
          * now apply eigenvector to the Aq to compute
@@ -749,7 +783,19 @@ CRBSCM<TruthModelType>::offline()
 	    LOG( INFO )<<"scm is done for a( . , . ; mu )";
 
         double minerr, meanerr;
-        boost::tie( relative_error, mu, index, minerr, meanerr ) = maxRelativeError( K );
+        if( use_predefined_C )
+        {
+            relative_error = M_tolerance+10;
+            minerr = relative_error;
+            meanerr = relative_error;
+            if( K < M_iter_max )
+            {
+                mu = M_C->at( K );
+                index = index_vector[ K ];
+            }
+        }
+        else
+            boost::tie( relative_error, mu, index, minerr, meanerr ) = maxRelativeError( K );
 #if 0
         std::cout << " -- max relative error = " << relative_error
                   << " at mu = " << mu
@@ -760,7 +806,7 @@ CRBSCM<TruthModelType>::offline()
 
         // could be that the max relative error is smaller than the tolerance if
         // the coercivity constant is independant of the parameter set
-        if ( relative_error > M_tolerance && K < M_iter_max )
+        if ( relative_error > M_tolerance && K < M_iter_max  && ! use_predefined_C )
         {
             if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 std::cout << " -- inserting mu - index : "<<index<<" -  in C (" << M_C->size() << ")\n";
