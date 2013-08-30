@@ -104,10 +104,11 @@ void ginacint()
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "hypercube-%1%" )  % 2 ).str() ,
-                                                _usenames=true,
-                                                _addmidpoint=false,
-                                                _shape="hypercube",
-                                                _h=0.2 ),
+                                                      _usenames=true,
+                                                      _addmidpoint=false,
+                                                      _shape="hypercube",
+                                                      _h=0.2,
+                                                      _xmin=0., _ymin=0., _zmin=0. ),
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     auto P1h = Pch<1>( mesh );
@@ -143,16 +144,17 @@ void ginacint()
 
 void poiseuille()
 {
- using namespace Feel;
+    using namespace Feel;
     typedef Mesh<Simplex<2,1> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "hypercube-%1%" )  % 2 ).str() ,
-                                                _usenames=true,
-                                                _addmidpoint=false,
-                                                _shape="hypercube",
-                                                _h=0.2 ),
+                                                      _usenames=true,
+                                                      _addmidpoint=false,
+                                                      _shape="hypercube",
+                                                      _h=0.2,
+                                                      _xmin=0., _ymin=0., _zmin=0. ),
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
 
     auto P1h = Pch<1>( mesh );
@@ -215,7 +217,7 @@ void poiseuille()
     double gradu_errorL2 = normL2( _range=elements( mesh ), _expr=( gradu_exact-gradu_exact_strong ) );
     double divu_errorL2 = normL2( _range=elements( mesh ), _expr=( divu_exact-divu_exact_strong ) );
 
-    
+
     LOG(INFO) <<"u-error-L2 = "<<u_errorL2<< "\n" ;
     LOG(INFO) <<"u1-error-L2 = "<<u1_errorL2<< "\n" ;
     LOG(INFO) <<"u2-error-L2 = "<<u2_errorL2<< "\n" ;
