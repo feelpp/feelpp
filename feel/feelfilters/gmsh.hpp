@@ -1537,7 +1537,7 @@ BOOST_PARAMETER_FUNCTION(
 
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
     return createGMSHMesh(_mesh=mesh,
-                          _desc=domain( _name=option(_name="gmsh.domain.shape").template as<std::string>() ),
+                          _desc=domain( _name=option(_name="gmsh.domain.shape").template as<std::string>(), _h=h ),
                           _h=h,
                           _refine=refine,
                           _update=update,
