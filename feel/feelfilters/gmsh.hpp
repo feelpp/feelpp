@@ -250,12 +250,12 @@ public:
     //! \return Return the geo parameter value.
     double geoParameter( std::string const& _name )
         {
-            return M_geoParamMap.at( _name );
+            return boost::lexical_cast<double>( M_geoParamMap.at( _name ) );
         }
 
     //! \brief Get all GMSH geometry parameters.
     //! \return Return a map containing the geo gmsh geometry parameters as {par,value}.
-    std::map<std::string, double> geoParameters()
+    std::map<std::string, std::string> geoParameters()
         {
             return M_geoParamMap;
         }
@@ -366,6 +366,7 @@ public:
     void setOrder( int o )
         {
             M_order = ( GMSH_ORDER ) o;
+            M_geoParamMap["ElementOrder"]=boost::lexical_cast<std::string>(o);
         }
 
     /**
@@ -414,8 +415,8 @@ public:
         {
             FEELPP_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
             M_I[0] = x;
-            M_geoParamMap["xmin"]=x.first;
-            M_geoParamMap["xmax"]=x.second;
+            M_geoParamMap["xmin"]=boost::lexical_cast<std::string>(x.first);
+            M_geoParamMap["xmax"]=boost::lexical_cast<std::string>(x.second);
         }
     virtual void setY( std::pair<double,double> const& y )
         {
@@ -424,8 +425,8 @@ public:
             if ( dimension() >= 2 )
             {
                 M_I[1] = y;
-                M_geoParamMap["ymin"]=y.first;
-                M_geoParamMap["ymax"]=y.second;
+                M_geoParamMap["ymin"]=boost::lexical_cast<std::string>(y.first);
+                M_geoParamMap["ymax"]=boost::lexical_cast<std::string>(y.second);
             }
         }
     virtual void setZ( std::pair<double,double> const& z )
@@ -435,8 +436,8 @@ public:
             if ( dimension() >= 3 )
             {
                 M_I[2] = z;
-                M_geoParamMap["zmin"]=z.first;
-                M_geoParamMap["zmax"]=z.second;
+                M_geoParamMap["zmin"]=boost::lexical_cast<std::string>(z.first);
+                M_geoParamMap["zmax"]=boost::lexical_cast<std::string>(z.second);
             }
         }
 
@@ -475,14 +476,14 @@ public:
     //! \return Return the current Gmsh object.
     void setGeoParameter( std::string const& _name, double _value )
         {
-            M_geoParamMap.at( _name ) = _value;
+            M_geoParamMap.at( _name ) = boost::lexical_cast<std::string>( _value );
         }
 
     //! \brief Modify geo gmsh geometry parameters from a map of parameters.
     //! If the parameter does not match any parameter, the function throws
     //! an out_of_range exception.
     //!     \param geomap A map containing the geo parameters (param,value).
-    void setGeoParameters( std::map<std::string, double> const& geomap, bool _update=1 )
+    void setGeoParameters( std::map<std::string, std::string> const& geomap, bool _update=1 )
         {
             if( _update )
             {
@@ -592,7 +593,7 @@ public:
     //! Extract all parameters from a geo gmsh geometry description and store them into a map.
     //! \param geo Gmsh geometry description.
     //! \return Geo parameter map containing each parameter and its value.
-    std::map<std::string, double>  retrieveGeoParameters( std::string const& geo ) const;
+    std::map<std::string, std::string>  retrieveGeoParameters( std::string const& geo ) const;
 
     //! \brief Create a map from a list of geometry parameters string and separated
     //! by a character `:`.
@@ -600,7 +601,7 @@ public:
     //! is separated by a char `:`.
     //! \return Return a map of GMSH geometry parameters and their values. If the string
     //! is empty, it returns an empty map.
-    static std::map<std::string, double> gpstr2map( std::string const& geopars );
+    static std::map<std::string, std::string> gpstr2map( std::string const& geopars );
 
     //@}
 
@@ -652,7 +653,7 @@ protected:
     mutable std::string M_desc;
 
     // geometry parameters map
-    std::map< std::string, double > M_geoParamMap;
+    std::map< std::string, std::string > M_geoParamMap;
 
     //! bounding box
     std::vector<std::pair<double,double> > M_I;

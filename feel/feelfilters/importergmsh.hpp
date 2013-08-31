@@ -1181,6 +1181,9 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
          __e.type == GMSH_LINE_4 ||
          __e.type == GMSH_LINE_5 )
     {
+        DCHECK( __e.indices.size() == npoints_per_edge )
+            << "Invalid element indices, "
+            << "indices size : " << __e.indices.size() << " points per edge : " << npoints_per_edge;
         int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
         {
