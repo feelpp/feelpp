@@ -414,20 +414,30 @@ public:
         {
             FEELPP_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
             M_I[0] = x;
+            M_geoParamMap["xmin"]=x.first;
+            M_geoParamMap["xmax"]=x.second;
         }
     virtual void setY( std::pair<double,double> const& y )
         {
             FEELPP_ASSERT( dimension() >= 2 )( dimension() ).warn( "invalid dimension" );
 
             if ( dimension() >= 2 )
+            {
                 M_I[1] = y;
+                M_geoParamMap["ymin"]=y.first;
+                M_geoParamMap["ymax"]=y.second;
+            }
         }
     virtual void setZ( std::pair<double,double> const& z )
         {
             FEELPP_ASSERT( dimension() >= 3 )( dimension() ).warn( "invalid dimension" );
 
             if ( dimension() >= 3 )
+            {
                 M_I[2] = z;
+                M_geoParamMap["zmin"]=z.first;
+                M_geoParamMap["zmax"]=z.second;
+            }
         }
 
     //! the gmsh generator to generate a reference domain
