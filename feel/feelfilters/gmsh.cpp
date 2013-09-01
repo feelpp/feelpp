@@ -255,8 +255,9 @@ Gmsh::retrieveGeoParameters( std::string const& __geo ) const
             //auto val = boost::lexical_cast<double>( std::string( what[2].first, what[2].second ) );
             std::string val = std::string( what[2].first, what[2].second );
 
-            LOG(INFO) << "[Gmsh::retrieveGeoParameter] New geometry parameter : "<< par << " = " << val << std::endl;
-            __geopm[ par ] = std::string( what[2].first, what[2].second );
+
+            __geopm[ par ] = val;
+            LOG(INFO) << "[Gmsh::retrieveGeoParameter] New geometry parameter : "<< par << " = " << __geopm[par] << std::endl;
         }
         catch( boost::bad_lexical_cast& e )
         {
@@ -282,10 +283,10 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
             boost::regex regex1( "(?:(" + iGpm.first  + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
             std::ostringstream _ostr;
             try{
-                _ostr << "(?1$1) = " << boost::lexical_cast<std::string>( iGpm.second ) << ";";
+                _ostr << "(?1$1) = " << iGpm.second << ";";
                 LOG(INFO) << "[Gmsh::generateGeo] Geo geometry parameter "
                           << ( ( regex_search( __geo, regex1, boost::match_default) )?
-                             ( iGpm.first + "=" + boost::lexical_cast<std::string>( iGpm.second ) + " now !" )
+                             ( iGpm.first + "=" + iGpm.second  + " now !" )
                              : iGpm.first + " not found ! " )
                           << std::endl;
             }
