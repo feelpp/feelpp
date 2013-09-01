@@ -227,8 +227,8 @@ GmshHypercubeDomain::getDescription3D() const
          << "xmax=" << this->M_I[0].second << ";\n"
          << "ymin=" << this->M_I[1].first << ";\n"
          << "ymax=" << this->M_I[1].second << ";\n"
-         << "xmin=" << this->M_I[2].first << ";\n"
-         << "xmax=" << this->M_I[2].second << ";\n"
+         << "zmin=" << this->M_I[2].first << ";\n"
+         << "zmax=" << this->M_I[2].second << ";\n"
          << "nx = 1/h;\n"
          << "ny = 1/h;\n"
          << "nz = 1/h;\n"
@@ -243,8 +243,8 @@ GmshHypercubeDomain::getDescription3D() const
          << "Line Loop(5) = {2,3,4,1};\n"
          << "Plane Surface(6) = {5};\n"
          << "\n"
-         << "Extrude Surface {6, {0,0,f-e} } {\n"
-         << "  Layers { {(f-e)/h}, {1.0} };\n";
+         << "Extrude Surface {6, {0,0,zmax-zmin} } {\n"
+         << "  Layers { {(zmax-zmin)/h}, {1.0} };\n";
 
 
 
