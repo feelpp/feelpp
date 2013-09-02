@@ -520,6 +520,12 @@ public:
         return M_compositeF;
     }
 
+
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
 private:
 
     po::variables_map M_vm;

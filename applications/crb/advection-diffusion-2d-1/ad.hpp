@@ -452,6 +452,12 @@ public:
      */
     value_type output( int output_index, parameter_type const& mu , element_type &u, bool need_to_solve=false);
 
+
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
 private:
 
 
