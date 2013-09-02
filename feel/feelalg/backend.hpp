@@ -93,7 +93,7 @@ boost::shared_ptr<DataMap> datamap( T const& t )
 }
 
 template<typename T>
-typename T::reference ref( T t, mpl::true_ )
+typename boost::detail::sp_dereference< typename T::element_type >::type ref( T t, mpl::true_ )
 {
     return *t;
 }
@@ -848,9 +848,9 @@ public:
             rhs->printMatlab( M_export+"_b.m" );
         }
 
-        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
         // initialize
-        *_sol = detail::ref( solution );
+        *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
 
