@@ -336,6 +336,12 @@ public:
         return M_Dmu;
     }
 
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
+
     /**
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
