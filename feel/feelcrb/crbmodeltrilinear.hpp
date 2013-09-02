@@ -341,6 +341,12 @@ public:
         return M_model->parameterSpace();
     }
 
+    parameter_type refParameter()
+    {
+        return M_model->refParameter();
+    }
+
+
     //@}
 
     /** @name  Mutators
@@ -501,6 +507,21 @@ public:
         return M_model->scalarProduct( X, Y );
     }
 
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+
 
 
     /**
@@ -612,6 +633,12 @@ public:
         auto zero=this->functionSpace()->element();
         return zero;
     }
+    element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+    {
+        auto zero=this->functionSpace()->element();
+        return zero;
+    }
+
     element_type solveFemUsingOfflineEim( parameter_type const& mu ){};
     offline_merge_type result_offline_merge_type;
     offline_merge_type update( parameter_type const& mu,  double time=0 )  // for scm
@@ -622,6 +649,11 @@ public:
     {
         return sparse_matrix ;
     }
+    sparse_matrix_ptrtype const& innerProductForMassMatrix() const //  for the scm
+    {
+        return sparse_matrix ;
+    }
+
     sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
         return sparse_matrix;
