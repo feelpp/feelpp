@@ -375,6 +375,25 @@ public:
     }
 
     /**
+     * \brief Returns the matrix associated with the inner product
+     */
+    sparse_matrix_ptrtype const& innerProductForMassMatrix() const
+    {
+        return M_model->innerProductForMassMatrix();
+    }
+
+    /**
+     * \brief Returns the matrix associated with the inner product
+     */
+    sparse_matrix_ptrtype  innerProductForMassMatrix()
+    {
+        return M_model->innerProductForMassMatrix();
+    }
+
+
+
+
+    /**
      * \brief Returns the matrix associated with the \f$H_1\f$ inner product
      */
     sparse_matrix_ptrtype const& h1() const
@@ -470,6 +489,11 @@ public:
         return M_model->parameterSpace();
     }
 
+
+    parameter_type refParameter()
+    {
+        return M_model->refParameter();
+    }
     //@}
 
     /** @name  Mutators
@@ -1202,6 +1226,22 @@ public:
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
         return M_model->scalarProduct( X, Y );
+    }
+
+
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
     }
 
 
