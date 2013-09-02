@@ -204,10 +204,10 @@ Gmsh::getDescriptionFromFile( std::string const& file ) const
 // for each character `=`. We add each key and value to the map.
 // Example : "key1=val1:key2=val2:key3=val3"
 //
-std::map<std::string, double>
+std::map<std::string, std::string>
 Gmsh::gpstr2map( std::string const& _geopars )
 {
-    std::map<std::string, double> geopm;
+    std::map<std::string, std::string> geopm;
     std::string geopars = _geopars;
     if(!geopars.empty())
     {
@@ -222,7 +222,8 @@ Gmsh::gpstr2map( std::string const& _geopars )
             assert( distance( kv.begin(), kv.end() ) == 2 ); //! TODO modify message !
 
             try{
-                geopm[ *(kv.begin()) ] = boost::lexical_cast<double>( *(++(kv.begin())) );
+                //geopm[ *(kv.begin()) ] = boost::lexical_cast<double>( *(++(kv.begin())) );
+                geopm[ *(kv.begin()) ] = *(++(kv.begin()));
             }
             catch( boost::bad_lexical_cast& e )
             {
@@ -233,10 +234,10 @@ Gmsh::gpstr2map( std::string const& _geopars )
     return geopm;
 }
 
-std::map<std::string, double>
+std::map<std::string, std::string>
 Gmsh::retrieveGeoParameters( std::string const& __geo ) const
 {
-    std::map<std::string, double> __geopm;
+    std::map<std::string, std::string> __geopm;
     // (TODO should strip C/CPP comments)
     // Regex for a `keyword=value;` expression. We capture only [keyword]
     // and the [value] (ex : `h_2=-1,3e+4`).
@@ -251,10 +252,12 @@ Gmsh::retrieveGeoParameters( std::string const& __geo ) const
         try
         {
             auto par = std::string( what[1].first, what[1].second );
-            auto val = boost::lexical_cast<double>( std::string( what[2].first, what[2].second ) );
+            //auto val = boost::lexical_cast<double>( std::string( what[2].first, what[2].second ) );
+            std::string val = std::string( what[2].first, what[2].second );
 
-            LOG(INFO) << "[Gmsh::retrieveGeoParameter] New geometry parameter : "<< par << " = " << val << std::endl;
+
             __geopm[ par ] = val;
+            LOG(INFO) << "[Gmsh::retrieveGeoParameter] New geometry parameter : "<< par << " = " << __geopm[par] << std::endl;
         }
         catch( boost::bad_lexical_cast& e )
         {
@@ -280,10 +283,10 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
             boost::regex regex1( "(?:(" + iGpm.first  + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
             std::ostringstream _ostr;
             try{
-                _ostr << "(?1$1) = " << boost::lexical_cast<std::string>( iGpm.second ) << ";";
+                _ostr << "(?1$1) = " << iGpm.second << ";";
                 LOG(INFO) << "[Gmsh::generateGeo] Geo geometry parameter "
                           << ( ( regex_search( __geo, regex1, boost::match_default) )?
-                             ( iGpm.first + "=" + boost::lexical_cast<std::string>( iGpm.second ) + " now !" )
+                             ( iGpm.first + "=" + iGpm.second  + " now !" )
                              : iGpm.first + " not found ! " )
                           << std::endl;
             }
