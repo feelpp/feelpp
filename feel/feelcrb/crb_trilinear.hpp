@@ -144,6 +144,8 @@ public:
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
 
+    typedef boost::tuple< vectorN_type , vectorN_type > solutions_tuple;
+
     // ! export
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
@@ -344,6 +346,13 @@ public:
     }
 
 
+    //only to compile
+    wn_type wndu() const
+    {
+        return M_WN;
+    }
+
+
 
     /**
      * print max errors (total error and also primal and dual contributions)
@@ -374,7 +383,8 @@ public:
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
 
-    boost::tuple<double,double,double,double, vectorN_type ,double, double, double, double, double> run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double, solutions_tuple, double, double, double, boost::tuple<double,double,double> > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+
     void run( const double * X, unsigned long N, double * Y, unsigned long P ){};
 
     //! set the truth offline model
@@ -1328,7 +1338,7 @@ CRBTrilinear<TruthModelType>::printMuSelection( void )
 }
 
 template<typename TruthModelType>
-boost::tuple<double,double,double,double,typename CRBTrilinear<TruthModelType>::vectorN_type , double, double, double, double, double>
+boost::tuple<double,double, typename CRBTrilinear<TruthModelType>::solutions_tuple, double, double, double, boost::tuple<double,double,double> >
 CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
@@ -1352,10 +1362,10 @@ CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     auto o = lb( Nwn, mu, uN );
     double output = o.template get<0>();
 
-    double e = 0;
     double condition_number = o.template get<1>();
-
-    return boost::make_tuple( output , e, Nwn , condition_number, uN , 0, 0, 0, 0, 0);
+    auto upper_bounds = boost::make_tuple(1 , 1, 1 );
+    auto solutions = boost::make_tuple( uN , uN );
+    return boost::make_tuple( output , Nwn , solutions, condition_number,  1, 1, upper_bounds);
 }
 
 
