@@ -133,12 +133,15 @@ public:
 			throw std::runtime_error("could not create source code file for compilation");
 		}
 
-		ofs << "#include <stddef.h> " << std::endl;
+		/*****
+        ofs << "#include <stddef.h> " << std::endl;
 		ofs << "#include <stdlib.h> " << std::endl;
 		ofs << "#include <math.h> " << std::endl;
         ofs << "#define Pi M_PI" << std::endl;
         ofs << "#define pi M_PI" << std::endl;
-		//ofs << "#include <ginac/constant.h> " << std::endl;
+		*****/
+        ofs << "#include <ginac-extern-math.h> " << std::endl;
+        //ofs << "#include <ginac/constant.h> " << std::endl;
 		ofs << std::endl;
 	}
 	/**
@@ -148,16 +151,21 @@ public:
 	 */
 	void compile_src_file(const std::string filename, bool clean_up)
 	{
-		std::string strcompile = "ginac-excompiler " + filename + " > /dev/null 2>&1";
-		if (system(strcompile.c_str()) )
-		{
-			// try the compiler in Feel++ source
-			strcompile = "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler " + filename;
-			if (system(strcompile.c_str()))
+		//std::string strcompile = "ginac-excompiler " + filename + " > /dev/null 2>&1";
+		//int status = system(strcompile.c_str());
+        //if (status )
+		//{
+        //std::cout << "ginac::compile_src_file fails (" << WEXITSTATUS(status) << ")\n";
+            // try the compiler in Feel++ source
+        std::string strcompile = "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler " + filename;
+        int status = system(strcompile.c_str());
+        if (status)
 			{
-				throw std::runtime_error("excompiler::compile_src_file: error compiling source file!");
+                std::ostringstream ostr;
+                ostr << "contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
+                throw std::runtime_error(ostr.str());
 			}
-		}
+		//}
 
 		if (clean_up) {
 			//remove(filename.c_str());
