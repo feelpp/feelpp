@@ -42,15 +42,15 @@ namespace detail
 template<typename Args>
 struct projector_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
-    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::value_type image_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::element_type image_type;
     typedef boost::shared_ptr<Projector<domain_type,image_type> > return_type;
 };
 
 template<typename Args>
 struct lift_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
     typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
 };
 

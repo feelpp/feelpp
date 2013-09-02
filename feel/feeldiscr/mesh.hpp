@@ -33,7 +33,7 @@
 #include <boost/unordered_map.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -1257,7 +1257,7 @@ public:
     /**
      * mesh changed its connectivity
      */
-    boost::signal<void ( MESH_CHANGES )> meshChanged;
+    boost::signals2::signal<void ( MESH_CHANGES )> meshChanged;
 
     template<typename Observer>
     void addObserver( Observer& obs )
