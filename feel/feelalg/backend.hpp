@@ -93,7 +93,12 @@ boost::shared_ptr<DataMap> datamap( T const& t )
 }
 
 template<typename T>
-typename boost::detail::sp_dereference< typename T::element_type >::type ref( T t, mpl::true_ )
+#if BOOST_VERSION >= 105300
+typename boost::detail::sp_dereference< typename T::element_type >::type
+#else
+typename T::reference
+#endif
+ref( T t, mpl::true_ )
 {
     return *t;
 }
