@@ -31,7 +31,6 @@
 #define __Projectors_H 1
 
 #include <boost/timer.hpp>
-#include <boost/signal.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 

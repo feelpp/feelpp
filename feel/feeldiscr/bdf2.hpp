@@ -1337,7 +1337,7 @@ Bdf<SpaceType>::poly() const
 
 
 BOOST_PARAMETER_FUNCTION(
-    ( boost::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::value_type> > ),
+    ( boost::shared_ptr<Bdf<typename meta::remove_all<typename parameter::binding<Args, tag::space>::type>::type::element_type> > ),
     bdf, tag,
     ( required
       ( space,*( boost::is_convertible<mpl::_,boost::shared_ptr<Feel::FunctionSpaceBase> > ) ) )
@@ -1359,7 +1359,7 @@ BOOST_PARAMETER_FUNCTION(
       ( rank_proc_in_files_name,*( boost::is_integral<mpl::_> ),vm[prefixvm( prefix,"bdf.rank-proc-in-files-name" )].template as<bool>() )
     ) )
 {
-    typedef typename meta::remove_all<space_type>::type::value_type _space_type;
+    typedef typename meta::remove_all<space_type>::type::element_type _space_type;
     auto thebdf = boost::shared_ptr<Bdf<_space_type> >( new Bdf<_space_type>( vm,space,name,prefix ) );
     thebdf->setTimeInitial( initial_time );
     thebdf->setTimeFinal( final_time );

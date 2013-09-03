@@ -168,12 +168,12 @@ void PreconditionerPetsc<T>::clear ()
 void
 configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::string prefix = "" )
 {
-    LOG(INFO) << "configuring PC...\n";
+    VLOG(2) << "configuring PC... (sub: " << sub << ")";
     google::FlushLogFiles(google::INFO);
     const char* pctype;
     int ierr = PCGetType ( pc, &pctype );
     CHKERRABORT( worldComm.globalComm(),ierr );
-    LOG(INFO) << "configuring PC (" << prefix << "." << sub << ")" << pctype <<  "\n";
+    VLOG(2) << "configuring PC (" << prefix << "." << sub << ")" << pctype <<  "\n";
     google::FlushLogFiles(google::INFO);
     if ( std::string(pctype) == "gasm" )
     {
@@ -203,7 +203,7 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
     if ( std::string(pctype) == "lu" )
     {
         std::string t = Environment::vm(_name="pc-factor-mat-solver-package-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
-        LOG(INFO) << "mat solver package: " << t << "\n";
+        VLOG(2) << "mat solver package: " << t << "\n";
         google::FlushLogFiles(google::INFO);
         // set factor package
         PCFactorSetMatSolverPackage( pc, t.c_str() );
@@ -280,7 +280,7 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
     if ( Environment::vm(_name="pc-view",_sub=sub,_prefix=prefix).as<bool>() )
         PCView( pc, PETSC_VIEWER_STDOUT_SELF );
 
-    LOG(INFO) << "configuring PC " << pctype << " done\n";
+    VLOG(2) << "configuring PC " << pctype << " done\n";
     google::FlushLogFiles(google::INFO);
 }
 
@@ -502,7 +502,7 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string 
     // This is not used, so we just pass PETSC_NULL instead.
     // int first_local;
     // Fill array of local KSP contexts
-    LOG(INFO) << "[setPetscSubpreconditionerType] preconditioner type: " << thepctype << "\n";
+    VLOG(2) << "[setPetscSubpreconditionerType] set local preconditioner for preconditioner : " << thepctype << "\n";
     google::FlushLogFiles(google::INFO);
     if ( std::string( thepctype ) == "block_jacobi" || std::string( thepctype ) == "bjacobi" )
         ierr = PCBJacobiGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
@@ -512,28 +512,31 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string 
     else if ( std::string( thepctype ) == "gasm" )
         ierr = PCGASMGetSubKSP( pc, &n_local, PETSC_NULL, &subksps );
 #endif
-
     CHKERRABORT( worldComm.globalComm(),ierr );
-    std::string subpctype =  Environment::vm(_name="pc-type",_sub="sub",_prefix=prefix).template as<std::string>();
-    LOG(INFO) << "subpctype: " << subpctype << "\n";
-    google::FlushLogFiles(google::INFO);
-    // Loop over sub-ksp objects, set ILU preconditioner
-    for ( int i=0; i<n_local; ++i )
+
+    VLOG(2) << "number of sub ksp : " << n_local;
+    if ( Environment::numberOfProcessors() > 1 )
     {
-        // Get pointer to sub KSP object's PC
-        PC subpc;
-
-        ierr = KSPGetPC( subksps[i], &subpc );
-        CHKERRABORT( worldComm.globalComm(),ierr );
-
-        // Set requested type on the sub PC
-        ierr = PCSetType( subpc, subpctype.c_str() );
-        CHKERRABORT( worldComm.globalComm(),ierr );
-        LOG(INFO) << "pc " << i << "\n";
+        std::string subpctype =  Environment::vm(_name="pc-type",_sub="sub",_prefix=prefix).template as<std::string>();
+        VLOG(2) << "subpctype: " << subpctype ;
         google::FlushLogFiles(google::INFO);
-        configurePC( subpc, worldComm, "sub", prefix );
-    }
+        // Loop over sub-ksp objects, set ILU preconditioner
+        for ( int i=0; i<n_local; ++i )
+        {
+            // Get pointer to sub KSP object's PC
+            PC subpc;
 
+            ierr = KSPGetPC( subksps[i], &subpc );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+
+            // Set requested type on the sub PC
+            ierr = PCSetType( subpc, subpctype.c_str() );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+            VLOG(2) << "sub pc " << i << "\n";
+            google::FlushLogFiles(google::INFO);
+            configurePC( subpc, worldComm, "sub", prefix );
+        }
+    }
 }
 
 
@@ -603,7 +606,7 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
         CHKERRABORT( worldComm.globalComm(),ierr ); }
 #endif
 
-        LOG(INFO) << "configure split " << i << "\n";
+        VLOG(2) << "configure split " << i << "\n";
         google::FlushLogFiles(google::INFO);
 
         // Get pointer to sub KSP object's PC
