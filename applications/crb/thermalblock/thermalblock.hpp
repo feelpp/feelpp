@@ -106,8 +106,8 @@ using namespace vf;
 class ParameterDefinition
 {
 public :
-    static const uint16_type nx = 3;
-    static const uint16_type ny = 3;
+    static const uint16_type nx = 2;
+    static const uint16_type ny = 2;
     static const uint16_type ParameterSpaceDimension = nx*ny;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
@@ -117,7 +117,7 @@ class FunctionSpaceDefinition
 public :
     typedef double value_type;
 
-    static const uint16_type Order = 3;
+    static const uint16_type Order = 1;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension 2 of Order 1
     typedef Simplex<2> convex_type;
@@ -144,8 +144,8 @@ class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDef
                      public boost::enable_shared_from_this< ThermalBlock >
 {
 
-    static const uint16_type nx = 3;
-    static const uint16_type ny = 3;
+    static const uint16_type nx = 2;
+    static const uint16_type ny = 2;
 
 
 public:
@@ -158,7 +158,7 @@ public:
     static const bool is_time_dependent = false;
 
     //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 3;
+    static const uint16_type Order = 1;
 
     //! numerical type is double
     typedef double value_type;
@@ -492,6 +492,12 @@ public:
      */
     sparse_matrix_ptrtype newMatrix() const;
     vector_ptrtype newVector() const;
+
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
 private:
 
     po::variables_map M_vm;
@@ -773,6 +779,8 @@ ThermalBlock::initModel()
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
     M->close();
+
+
 }//initModel()
 
 

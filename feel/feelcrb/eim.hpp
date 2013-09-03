@@ -1593,7 +1593,9 @@ public:
             //LOG( INFO ) << "[computational] mu = \n"<<mu;
             boost::mpi::timer tcrb;
             auto o = M_crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
-            auto uN = o.template get<4>();
+            auto solutions=o.template get<2>();
+            auto uN = solutions.template get<0>();
+
             auto u_crb = M_crb->expansion( uN , N , WN );
 
             boost::mpi::timer teim;
