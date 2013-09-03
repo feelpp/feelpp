@@ -1286,7 +1286,7 @@ public:
     };
     template<typename TheExpr>
     typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return Cst<double>(M_constant); }
+    operator()( TheExpr const& e  ) { return typename Lambda<TheExpr>::type(M_constant); }
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor

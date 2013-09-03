@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:set syntax=cpp fenc=utf-8 ft=tcl et sw=4 ts=4 sts=4 tw=0
 
   This file is part of the Feel library
 
@@ -35,6 +35,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/range/algorithm/for_each.hpp>
+#include <boost/icl/type_traits/is_map.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
@@ -242,6 +243,23 @@ public:
             return M_desc;
         }
 
+    //! \brief Get the value of a GMSH geometry parameter.
+    //! If the parameter does not match any parameter, the function throws
+    //! an out_of_range exception.
+    //!     \param _name Geo parameter name.
+    //! \return Return the geo parameter value.
+    double geoParameter( std::string const& _name )
+        {
+            return boost::lexical_cast<double>( M_geoParamMap.at( _name ) );
+        }
+
+    //! \brief Get all GMSH geometry parameters.
+    //! \return Return a map containing the geo gmsh geometry parameters as {par,value}.
+    std::map<std::string, std::string> geoParameters()
+        {
+            return M_geoParamMap;
+        }
+
     /**
      * add the mid point of the domain
      */
@@ -348,6 +366,7 @@ public:
     void setOrder( int o )
         {
             M_order = ( GMSH_ORDER ) o;
+            M_geoParamMap["ElementOrder"]=boost::lexical_cast<std::string>(o);
         }
 
     /**
@@ -396,20 +415,30 @@ public:
         {
             FEELPP_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
             M_I[0] = x;
+            M_geoParamMap["xmin"]=boost::lexical_cast<std::string>(x.first);
+            M_geoParamMap["xmax"]=boost::lexical_cast<std::string>(x.second);
         }
     virtual void setY( std::pair<double,double> const& y )
         {
             FEELPP_ASSERT( dimension() >= 2 )( dimension() ).warn( "invalid dimension" );
 
             if ( dimension() >= 2 )
+            {
                 M_I[1] = y;
+                M_geoParamMap["ymin"]=boost::lexical_cast<std::string>(y.first);
+                M_geoParamMap["ymax"]=boost::lexical_cast<std::string>(y.second);
+            }
         }
     virtual void setZ( std::pair<double,double> const& z )
         {
             FEELPP_ASSERT( dimension() >= 3 )( dimension() ).warn( "invalid dimension" );
 
             if ( dimension() >= 3 )
+            {
                 M_I[2] = z;
+                M_geoParamMap["zmin"]=boost::lexical_cast<std::string>(z.first);
+                M_geoParamMap["zmax"]=boost::lexical_cast<std::string>(z.second);
+            }
         }
 
     //! the gmsh generator to generate a reference domain
@@ -437,6 +466,32 @@ public:
     void setAddMidPoint( bool add )
         {
             M_addmidpoint = add;
+        }
+
+    //! \brief Modify an existing geo parameter.
+    //! If the parameter does not match any parameter, the function throws
+    //! an out_of_range exception.
+    //!     \param _name Geo parameter name.
+    //!     \param _value Geo parameter value.
+    //! \return Return the current Gmsh object.
+    void setGeoParameter( std::string const& _name, double _value )
+        {
+            M_geoParamMap.at( _name ) = boost::lexical_cast<std::string>( _value );
+        }
+
+    //! \brief Modify geo gmsh geometry parameters from a map of parameters.
+    //! If the parameter does not match any parameter, the function throws
+    //! an out_of_range exception.
+    //!     \param geomap A map containing the geo parameters (param,value).
+    void setGeoParameters( std::map<std::string, std::string> const& geomap, bool _update=1 )
+        {
+            if( _update )
+            {
+                for( const auto& iter : geomap)
+                    M_geoParamMap.at(iter.first) = iter.second;
+            }
+            else
+                M_geoParamMap = geomap;
         }
 
     /**
@@ -535,6 +590,19 @@ public:
      */
     void rebuildPartitionMsh( std::string const& nameMshInput,std::string const& nameMshOutput ) const;
 
+    //! Extract all parameters from a geo gmsh geometry description and store them into a map.
+    //! \param geo Gmsh geometry description.
+    //! \return Geo parameter map containing each parameter and its value.
+    std::map<std::string, std::string>  retrieveGeoParameters( std::string const& geo ) const;
+
+    //! \brief Create a map from a list of geometry parameters string and separated
+    //! by a character `:`.
+    //!     \param geopars List of parameters as `key=value`. Each new parameter
+    //! is separated by a char `:`.
+    //! \return Return a map of GMSH geometry parameters and their values. If the string
+    //! is empty, it returns an empty map.
+    static std::map<std::string, std::string> gpstr2map( std::string const& geopars );
+
     //@}
 
 protected:
@@ -583,6 +651,9 @@ protected:
 
     // description of the geometry
     mutable std::string M_desc;
+
+    // geometry parameters map
+    std::map< std::string, std::string > M_geoParamMap;
 
     //! bounding box
     std::vector<std::pair<double,double> > M_I;
@@ -998,9 +1069,10 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( format,         *, option(_name="gmsh.format").template as<int>() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), 0.1 )
-      ( parametricnodes,*( boost::is_integral<mpl::_> ), 0 )
-      ( straighten,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
+      ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
+      ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
+      ( straighten,      *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
@@ -1108,27 +1180,31 @@ BOOST_PARAMETER_FUNCTION(
     tag,           // 3. namespace of tag types
     ( required
       ( name,           *( boost::is_convertible<mpl::_,std::string> ) )
-      ( shape,          *( boost::is_convertible<mpl::_,std::string> ) ) )
+      )
     ( optional
-      ( shear,          *( boost::is_arithmetic<mpl::_> )    , 0 )
-      ( recombine,      *( boost::is_integral<mpl::_> )    , 0 )
+      ( shape,          *( boost::is_convertible<mpl::_,std::string> ),  option(_name="gmsh.domain.shape").template as<std::string>() )
+      ( shear,          *( boost::is_arithmetic<mpl::_> )    ,  option(_name="gmsh.domain.shear").template as<double>() )
+      ( recombine,      *( boost::is_integral<mpl::_> )    , option(_name="gmsh.domain.recombine").template as<bool>() )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), double( 0.1 ) )
-      ( convex,         *( boost::is_convertible<mpl::_,std::string> ), "Simplex" )
-      ( addmidpoint,    *( boost::is_integral<mpl::_> ), true )
-      ( usenames,       *( boost::is_integral<mpl::_> ), false )
-      ( xmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( xmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( ymin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( ymax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( zmin,           *( boost::is_arithmetic<mpl::_> ), 0. )
-      ( zmax,           *( boost::is_arithmetic<mpl::_> ), 1 )
-      ( substructuring, *( boost::is_integral<mpl::_> ), 0 ) ) )
+      ( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
+      ( convex,         *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.domain.convex").template as<std::string>() )
+      ( addmidpoint,    *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.addmidpoint").template as<bool>() )
+      ( usenames,       *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.usenames").template as<bool>() )
+      ( xmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.xmin").template as<double>() )
+      ( xmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.xmax").template as<double>())
+      ( ymin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ymin").template as<double>() )
+      ( ymax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ymax").template as<double>() )
+      ( zmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmin").template as<double>() )
+      ( zmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmax").template as<double>() )
+      ( substructuring, *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.substructuring").template as<bool>() ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
 
     gmsh_ptr->setPrefix( name );
+    gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
+    gmsh_ptr->setGeoParameters( geo_parameters );
     gmsh_ptr->setCharacteristicLength( h );
     gmsh_ptr->setAddMidPoint( addmidpoint );
     gmsh_ptr->usePhysicalNames( usenames );
@@ -1157,6 +1233,7 @@ BOOST_PARAMETER_FUNCTION(
       ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
     ( optional
       ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
+      ( geo_parameters,    *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map( option(_name="gmsh.geo-variables-list").template as<std::string>() ) )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
@@ -1183,6 +1260,8 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( filename_with_path ) );
+    gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
+    gmsh_ptr->setGeoParameters( geo_parameters );
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
@@ -1402,12 +1481,13 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.filename").template as<std::string>() )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( straighten,          (bool), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
       ( physical_are_elementary_regions,		   (bool), option(_name="gmsh.physical_are_elementary_regions").template as<bool>() )
       ( worldcomm,       (WorldComm), Environment::worldComm() )
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
+      ( force_rebuild,   *( boost::is_integral<mpl::_> ), option(_name="gmsh.rebuild").template as<bool>() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
       ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
@@ -1433,6 +1513,7 @@ BOOST_PARAMETER_FUNCTION(
         return createGMSHMesh( _mesh=mesh,
                                _desc=geo( _filename=mesh_name.string(),
                                           _depends=depends ),
+                               _h=h,
                                _straighten=straighten,
                                _refine=refine,
                                _update=update,
@@ -1466,7 +1547,19 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
-    return unitHypercube<_mesh_type::nDim, typename _mesh_type::shape_type>();
+    return createGMSHMesh(_mesh=mesh,
+                          _desc=domain( _name=option(_name="gmsh.domain.shape").template as<std::string>(), _h=h ),
+                          _h=h,
+                          _refine=refine,
+                          _update=update,
+                          _physical_are_elementary_regions=physical_are_elementary_regions,
+                          _force_rebuild=force_rebuild,
+                          _worldcomm=worldcomm,
+                          _rebuild_partitions=rebuild_partitions,
+                          _rebuild_partitions_filename=rebuild_partitions_filename,
+                          _partitions=partitions,
+                          _partitioner=partitioner,
+                          _partition_file=partition_file );
 }
 
 } // Feel

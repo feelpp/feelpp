@@ -341,6 +341,12 @@ public:
         return M_model->parameterSpace();
     }
 
+    parameter_type refParameter()
+    {
+        return M_model->refParameter();
+    }
+
+
     //@}
 
     /** @name  Mutators
@@ -365,7 +371,15 @@ public:
     /**
      * \brief compute the betaqm given \p mu
      */
-    betaqm_type computeBetaQm( parameter_type const& mu )
+    betaqm_type computeBetaQm( parameter_type const& mu , double time=0 )
+    {
+        return computeBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time  );
+    }
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    {
+        return M_model->computeBetaQm( mu , time );
+    }
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0)
     {
         beta_vector_type betaAqm;
         beta_vector_type betaMqm;
@@ -493,6 +507,21 @@ public:
         return M_model->scalarProduct( X, Y );
     }
 
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+
 
 
     /**
@@ -545,8 +574,71 @@ public:
         return M_model->output( output_index, mu , u , need_to_solve);
     }
 
+
+
+    double timeStep()
+    {
+        return timeStep( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    double timeStep( mpl::bool_<true> )
+    {
+        double timestep;
+
+        if ( M_model->isSteady() )
+            timestep=1e30;
+        else
+            timestep = M_model->timeStep();
+        return timestep;
+    }
+    double timeStep( mpl::bool_<false> )
+    {
+        return 1e30;
+    }
+
+    double timeInitial()
+    {
+        return timeInitial( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    double timeInitial( mpl::bool_<true> )
+    {
+        return M_model->timeInitial();
+    }
+    double timeInitial( mpl::bool_<false> )
+    {
+        return 0;
+    }
+
+    double timeFinal()
+    {
+        return timeFinal( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    double timeFinal( mpl::bool_<true> )
+    {
+        double timefinal;
+        if ( M_model->isSteady() )
+            timefinal=1e30;
+        else
+            timefinal = M_model->timeFinal();
+        return timefinal;
+    }
+    double timeFinal( mpl::bool_<false> )
+    {
+        return 1e30;
+    }
+
+
     //only to compile
-    element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu ){};
+    element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+    {
+        auto zero=this->functionSpace()->element();
+        return zero;
+    }
+    element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+    {
+        auto zero=this->functionSpace()->element();
+        return zero;
+    }
+
     element_type solveFemUsingOfflineEim( parameter_type const& mu ){};
     offline_merge_type result_offline_merge_type;
     offline_merge_type update( parameter_type const& mu,  double time=0 )  // for scm
@@ -557,9 +649,18 @@ public:
     {
         return sparse_matrix ;
     }
+    sparse_matrix_ptrtype const& innerProductForMassMatrix() const //  for the scm
+    {
+        return sparse_matrix ;
+    }
+
     sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
         return sparse_matrix;
+    }
+    value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
+    {
+        return 0;
     }
     size_type Qm() const
     {
