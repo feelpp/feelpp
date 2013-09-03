@@ -4105,144 +4105,146 @@ CRB<TruthModelType>::delta( size_type N,
                             int k ) const
 {
 
-    std::vector< std::vector<double> > primal_residual_coeffs;
-    std::vector< std::vector<double> > dual_residual_coeffs;
+        std::vector< std::vector<double> > primal_residual_coeffs;
+        std::vector< std::vector<double> > dual_residual_coeffs;
 
-    double delta_pr=0;
-    double delta_du=0;
-    if ( M_error_type == CRB_NO_RESIDUAL )
-        return boost::make_tuple( -1,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
+        double alphaA = 1;
+        double alphaM = 1;
+        double delta_pr=0;
+        double delta_du=0;
+        if ( M_error_type == CRB_NO_RESIDUAL )
+                return boost::make_tuple( -1,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
 
-    else if ( M_error_type == CRB_EMPIRICAL )
-        return boost::make_tuple( empiricalErrorEstimation ( N, mu , k ) , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du);
+        else if ( M_error_type == CRB_EMPIRICAL )
+                return boost::make_tuple( empiricalErrorEstimation ( N, mu , k ) , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du);
 
-    else
-    {
-        //we assume that we want estimate the error committed on the final output
-        double Tf = M_model->timeFinal();
-        //double Ti = M_model->timeInitial();
-        double dt = M_model->timeStep();
-
-        int time_index=0;
-        double primal_sum=0;
-        double dual_sum=0;
-
-        //vectors to store residual coefficients
-        int K = Tf/dt;
-        primal_residual_coeffs.resize( K );
-        dual_residual_coeffs.resize( K );
-        for ( double time=dt; time<=Tf; time+=dt )
-        {
-            auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
-            primal_sum += pr.template get<0>();
-            primal_residual_coeffs[time_index].resize( pr.template get<1>().size() );
-            primal_residual_coeffs[time_index] = pr.template get<1>() ;
-            time_index++;
-        }//end of time loop for primal problem
-
-        time_index--;
-
-        double dual_residual=0;
-
-        if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
-        bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
-
-        if( solve_dual_problem )
-        {
-            for ( double time=Tf; time>=dt; time-=dt )
-            {
-                auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
-                dual_sum += du.template get<0>();
-                dual_residual_coeffs[time_index].resize( du.template get<1>().size() );
-                dual_residual_coeffs[time_index] = du.template get<1>();
-                time_index--;
-            }//end of time loop for dual problem
-        }
-
-
-        bool show_residual = this->vm()["crb.show-residual"].template as<bool>() ;
-        if( ! M_offline_step && show_residual )
-        {
-            double sum=0;
-            bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
-            LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
-            time_index=0;
-            for ( double time=dt; time<=Tf; time+=dt )
-            {
-                auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
-                //LOG(INFO) << "primal residual at time "<<time<<" : "<<pr.template get<0>()<<"\n";
-                sum+=pr.template get<0>();
-                time_index++;
-            }
-            LOG(INFO) << "sum of primal residuals  "<<sum<<std::endl;
-
-            time_index--;
-            sum=0;
-
-            if (solve_dual_problem )
-            {
-                for ( double time=Tf; time>=dt; time-=dt )
-                {
-                    auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
-                    //LOG(INFO) << "dual residual at time "<<time<<" : "<<du.template get<0>()<<"\n";
-                    sum += du.template get<0>();
-                    time_index--;
-                }
-            }
-            LOG(INFO) << "sum of dual residuals  "<<sum<<std::endl;
-            LOG( INFO ) <<" ================================= \n";
-            //std::cout<<"[REAL ] duam_sum : "<<sum<<std::endl;
-        }//if show_residual_convergence
-
-        if ( M_error_type == CRB_RESIDUAL_SCM )
-        {
-            double alphaA_up, lbti;
-            M_scmA->setScmForMassMatrix( false );
-            boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
-            if( option(_name="crb.scm.use-scm").template as<bool>() )
-                boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
-            //LOG( INFO ) << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up ;
-
-            if ( ! M_model->isSteady() )
-            {
-                M_scmM->setScmForMassMatrix( true );
-                double alphaM_up, lbti;
-                boost::tie( alphaM, lbti ) = M_scmM->lb( mu );
-                if( option(_name="crb.scm.use-scm").template as<bool>() )
-                    boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
-                //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
-            }
-        }
-
-        double output_upper_bound;
-        double solution_upper_bound;
-        double solution_dual_upper_bound;
-        //alphaA=1;
-        //dual_residual=0;
-        if ( M_model->isSteady() )
-        {
-            delta_pr = math::sqrt( primal_sum ) / math::sqrt( alphaA );
-            if( solve_dual_problem )
-                delta_du = math::sqrt( dual_sum ) / math::sqrt( alphaA );
-            else
-                delta_du = 1;
-            output_upper_bound = delta_pr * delta_du;
-            //solution_upper_bound =  delta_pr;
-            //solution_dual_upper_bound =  delta_du;
-        }
         else
         {
-            delta_pr = math::sqrt( dt/alphaA * primal_sum );
-            delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
-            output_upper_bound = delta_pr * delta_du;
-            //solution_upper_bound = delta_pr;
-            //solution_dual_upper_bound =  delta_du;
-        }
+                //we assume that we want estimate the error committed on the final output
+                double Tf = M_model->timeFinal();
+                //double Ti = M_model->timeInitial();
+                double dt = M_model->timeStep();
 
-        //return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du , solution_upper_bound, solution_dual_upper_bound);
-        return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du );
+                int time_index=0;
+                double primal_sum=0;
+                double dual_sum=0;
 
-    }//end of else
+                //vectors to store residual coefficients
+                int K = Tf/dt;
+                primal_residual_coeffs.resize( K );
+                dual_residual_coeffs.resize( K );
+                for ( double time=dt; time<=Tf; time+=dt )
+                {
+                        auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
+                        primal_sum += pr.template get<0>();
+                        primal_residual_coeffs[time_index].resize( pr.template get<1>().size() );
+                        primal_residual_coeffs[time_index] = pr.template get<1>() ;
+                        time_index++;
+                }//end of time loop for primal problem
+
+                time_index--;
+
+                double dual_residual=0;
+
+                if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
+                bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+
+                if( solve_dual_problem )
+                {
+                        for ( double time=Tf; time>=dt; time-=dt )
+                        {
+                                auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
+                                dual_sum += du.template get<0>();
+                                dual_residual_coeffs[time_index].resize( du.template get<1>().size() );
+                                dual_residual_coeffs[time_index] = du.template get<1>();
+                                time_index--;
+                        }//end of time loop for dual problem
+                }
+
+
+                bool show_residual = this->vm()["crb.show-residual"].template as<bool>() ;
+                if( ! M_offline_step && show_residual )
+                {
+                        double sum=0;
+                        bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
+                        LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
+                        time_index=0;
+                        for ( double time=dt; time<=Tf; time+=dt )
+                        {
+                                auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
+                                //LOG(INFO) << "primal residual at time "<<time<<" : "<<pr.template get<0>()<<"\n";
+                                sum+=pr.template get<0>();
+                                time_index++;
+                        }
+                        LOG(INFO) << "sum of primal residuals  "<<sum<<std::endl;
+
+                        time_index--;
+                        sum=0;
+
+                        if (solve_dual_problem )
+                        {
+                                for ( double time=Tf; time>=dt; time-=dt )
+                                {
+                                        auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
+                                        //LOG(INFO) << "dual residual at time "<<time<<" : "<<du.template get<0>()<<"\n";
+                                        sum += du.template get<0>();
+                                        time_index--;
+                                }
+                        }
+                        LOG(INFO) << "sum of dual residuals  "<<sum<<std::endl;
+                        LOG( INFO ) <<" ================================= \n";
+                        //std::cout<<"[REAL ] duam_sum : "<<sum<<std::endl;
+                }//if show_residual_convergence
+
+                if ( M_error_type == CRB_RESIDUAL_SCM )
+                {
+                        double alphaA_up, lbti;
+                        M_scmA->setScmForMassMatrix( false );
+                        boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
+                        if( option(_name="crb.scm.use-scm").template as<bool>() )
+                                boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
+                        //LOG( INFO ) << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up ;
+
+                        if ( ! M_model->isSteady() )
+                        {
+                                M_scmM->setScmForMassMatrix( true );
+                                double alphaM_up, lbti;
+                                boost::tie( alphaM, lbti ) = M_scmM->lb( mu );
+                                if( option(_name="crb.scm.use-scm").template as<bool>() )
+                                        boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
+                                //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
+                        }
+                }
+
+                double output_upper_bound;
+                double solution_upper_bound;
+                double solution_dual_upper_bound;
+                //alphaA=1;
+                //dual_residual=0;
+                if ( M_model->isSteady() )
+                {
+                        delta_pr = math::sqrt( primal_sum ) / math::sqrt( alphaA );
+                        if( solve_dual_problem )
+                                delta_du = math::sqrt( dual_sum ) / math::sqrt( alphaA );
+                        else
+                                delta_du = 1;
+                        output_upper_bound = delta_pr * delta_du;
+                        //solution_upper_bound =  delta_pr;
+                        //solution_dual_upper_bound =  delta_du;
+                }
+                else
+                {
+                        delta_pr = math::sqrt( dt/alphaA * primal_sum );
+                        delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
+                        output_upper_bound = delta_pr * delta_du;
+                        //solution_upper_bound = delta_pr;
+                        //solution_dual_upper_bound =  delta_du;
+                }
+
+                //return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du , solution_upper_bound, solution_dual_upper_bound);
+                return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du );
+
+        }//end of else
 }
 
 template<typename TruthModelType>
@@ -6647,4 +6649,3 @@ template<typename T> const unsigned int version<Feel::CRB<T> >::value;
 }
 }
 #endif /* __CRB_H */
-
