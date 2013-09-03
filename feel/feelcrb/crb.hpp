@@ -4194,6 +4194,8 @@ CRB<TruthModelType>::delta( size_type N,
             //std::cout<<"[REAL ] duam_sum : "<<sum<<std::endl;
         }//if show_residual_convergence
 
+        double alphaA=1,alphaM=1;
+
         if ( M_error_type == CRB_RESIDUAL_SCM )
         {
             double alphaA_up, lbti;
