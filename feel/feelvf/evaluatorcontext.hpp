@@ -157,7 +157,7 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     auto it = M_ctx.begin();
     auto en = M_ctx.end();
 
-    typedef typename CTX::mapped_type::value_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
+    typedef typename CTX::mapped_type::element_type::geometric_mapping_context_ptrtype gm_context_ptrtype;
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gm_context_ptrtype> > map_gmc_type;
     typedef expression_type the_expression_type;
     typedef typename boost::remove_reference<typename boost::remove_const<the_expression_type>::type >::type iso_expression_type;
