@@ -4161,6 +4161,16 @@ CRB<TruthModelType>::delta( size_type N,
                         }//end of time loop for dual problem
                 }
 
+        double alphaA=1,alphaM=1;
+
+        if ( M_error_type == CRB_RESIDUAL_SCM )
+        {
+            double alphaA_up, lbti;
+            M_scmA->setScmForMassMatrix( false );
+            boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
+            if( option(_name="crb.scm.use-scm").template as<bool>() )
+                boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
+            //LOG( INFO ) << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up ;
 
                 bool show_residual = this->vm()["crb.show-residual"].template as<bool>() ;
                 if( ! M_offline_step && show_residual )
