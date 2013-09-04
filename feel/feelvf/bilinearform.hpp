@@ -1246,10 +1246,31 @@ public:
                                      ( optional
                                        ( name,           ( std::string ), "" )
                                        ( kind,           ( BackendType ), BACKEND_PETSC )
-                                       ( rebuild,        ( bool ), false )) )
+                                       ( rebuild,        ( bool ), false )
+                                         ) )
         {
             return backend( _name=name, _kind=kind, _rebuild=rebuild )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
                                                                                _solution=solution);
+        }
+
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
+                                     solveb,
+                                     tag,
+                                     ( required
+                                       ( in_out( solution ),* )
+                                       ( rhs, * )
+                                       ( backend, *) )
+                                     ( optional
+                                       ( prec,           ( preconditioner_ptrtype ),
+                                         preconditioner( _prefix=backend->prefix(),
+                                                         _matrix=this->matrixPtr(),
+                                                         _pc=backend->pcEnumType()/*LU_PRECOND*/,
+                                                         _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
+                                                         _backend=backend ) )
+                                         ) )
+        {
+            return backend->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
+                                   _solution=solution, _prec = prec );
         }
 
     //@}
