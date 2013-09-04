@@ -1488,7 +1488,12 @@ private:
         std::vector< Eigen::MatrixXf::Index > index_max_vector_solution_dual;
         std::vector< Eigen::MatrixXf::Index > index_max_vector_output;
         std::vector< Eigen::MatrixXf::Index > index_max_vector;
+        std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_primal;
+        std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_dual;
+        std::vector< Eigen::MatrixXf::Index > index_min_vector_output;
+        std::vector< Eigen::MatrixXf::Index > index_min_vector;
         Eigen::MatrixXf::Index index_max;
+        Eigen::MatrixXf::Index index_min;
 
         BOOST_FOREACH( auto error_name, list_error_type)
         {
@@ -1501,7 +1506,7 @@ private:
                     error_name=="SolutionErrorBoundEfficiency" || error_name=="SolutionDualErrorBoundEfficiency" || error_name=="OutputErrorBoundEfficiency")
                 {
                     conv.open(file_name, std::ios::app);
-                    conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Max2" << "\t"<< "Variance" << "\n";
+                    conv << "NbBasis" << "\t" << "Min2" << "\t" << "Max2" << "\t" << "Min" << "\t" << "Max\t" <<"Mean" << "\t"<< "Variance" << "\n";
                 }
                 else
                 {
@@ -1524,61 +1529,89 @@ private:
                         error_name=="SolutionErrorBoundEfficiency" || error_name=="SolutionDualErrorBoundEfficiency" || error_name=="OutputErrorBoundEfficiency")
                     {
                         double max2=0;
+                        double min2=0;
                         if( error_name=="SolutionErrorEstimated" )
                         {
                             index_max = index_max_vector_solution_primal[j];
+                            index_min = index_min_vector_solution_primal[j];
                             max2 = M_mapConvCRB[error_name][j]( index_max );
+                            min2 = M_mapConvCRB[error_name][j]( index_min );
                         }
                         if( error_name=="SolutionErrorBoundEfficiency" )
                         {
                             index_max = index_max_vector_solution_primal[j];
+                            index_min = index_min_vector_solution_primal[j];
                             double max_estimated = M_mapConvCRB["SolutionErrorEstimated"][j]( index_max );
+                            double min_estimated = M_mapConvCRB["SolutionErrorEstimated"][j]( index_min );
                             double max = M_mapConvCRB["SolutionError"][j]( index_max );
+                            double min = M_mapConvCRB["SolutionError"][j]( index_min );
                             max2 = max_estimated / max;
+                            min2 = min_estimated / min;
                         }
                         if( error_name=="SolutionDualErrorEstimated" )
                         {
                             index_max = index_max_vector_solution_dual[j];
+                            index_min = index_min_vector_solution_dual[j];
                             max2 = M_mapConvCRB[error_name][j]( index_max );
+                            min2 = M_mapConvCRB[error_name][j]( index_min );
                         }
                         if( error_name=="SolutionDualErrorBoundEfficiency" )
                         {
                             index_max = index_max_vector_solution_dual[j];
+                            index_min = index_min_vector_solution_dual[j];
                             double max_estimated = M_mapConvCRB["SolutionDualErrorEstimated"][j]( index_max );
+                            double min_estimated = M_mapConvCRB["SolutionDualErrorEstimated"][j]( index_min );
                             double max = M_mapConvCRB["SolutionDualError"][j]( index_max );
+                            double min = M_mapConvCRB["SolutionDualError"][j]( index_min );
                             max2 = max_estimated / max;
+                            min2 = min_estimated / min;
                         }
 
                         if( error_name=="OutputErrorEstimated" )
                         {
                             index_max = index_max_vector_output[j];
+                            index_min = index_min_vector_output[j];
                             max2 = M_mapConvCRB[error_name][j]( index_max );
+                            min2 = M_mapConvCRB[error_name][j]( index_min );
                         }
                         if( error_name=="OutputErrorBoundEfficiency" )
                         {
                             index_max = index_max_vector_output[j];
+                            index_min = index_min_vector_output[j];
                             double max_estimated = M_mapConvCRB["OutputEstimatedError"][j]( index_max );
+                            double min_estimated = M_mapConvCRB["OutputEstimatedError"][j]( index_min );
                             double max = M_mapConvCRB["OutputError"][j]( index_max );
+                            double min = M_mapConvCRB["OutputError"][j]( index_min );
                             max2 = max_estimated / max;
+                            min2 = min_estimated / min;
                         }
+                        double min = M_mapConvCRB[error_name][j].minCoeff(&index_min) ;
+                        double max = M_mapConvCRB[error_name][j].maxCoeff(&index_max) ;
                         conv << j+1 << "\t"
-                             << M_mapConvCRB[error_name][j].minCoeff() << "\t"
-                             << M_mapConvCRB[error_name][j].maxCoeff(&index_max) << "\t"
-                             << mean << "\t" << max2 << "\t" << variance << "\n";
+                             << min2 << "\t" << max2 << "\t" << min << "\t" << max << "\t" << mean << "\t" << variance << "\n";
 
                     }
                     else
                     {
                         conv << j+1 << "\t"
-                             << M_mapConvCRB[error_name][j].minCoeff() << "\t"
+                             << M_mapConvCRB[error_name][j].minCoeff(&index_min) << "\t"
                              << M_mapConvCRB[error_name][j].maxCoeff(&index_max) << "\t"
                              << mean << "\t" << variance << "\n";
                         if( error_name=="OutputError" )
+                        {
                             index_max_vector_output.push_back( index_max );
+                            index_min_vector_output.push_back( index_min );
+                        }
                         if( error_name=="SolutionError")
+                        {
                             index_max_vector_solution_primal.push_back( index_max );
+                            index_min_vector_solution_primal.push_back( index_min );
+                        }
                         if( error_name=="SolutionDualError")
+                        {
                             index_max_vector_solution_dual.push_back( index_max );
+                            index_min_vector_solution_dual.push_back( index_min );
+                        }
                     }
                 }//master proc
             }//loop over number of RB elements

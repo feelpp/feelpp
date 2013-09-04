@@ -93,6 +93,9 @@ add_subdirectory(cmake/machines)
 # set the Feel++ version
 include(feelpp.version)
 
+# Use of standard headers for GiNaC compiler (for supermuc this option should be OFF)
+option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
+
 # possibly set the Feel++ configuration
 include(feelpp.machines.config)
 
