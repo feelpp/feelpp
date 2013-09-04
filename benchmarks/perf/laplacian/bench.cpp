@@ -105,6 +105,7 @@ namespace Feel
 extern template class Laplacian<2, Lagrange<1, Scalar>, Simplex>;
 extern template class Laplacian<2, Lagrange<2, Scalar>, Simplex>;
 extern template class Laplacian<2, Lagrange<3, Scalar>, Simplex>;
+extern template class Laplacian<2, Lagrange<4, Scalar>, Simplex>;
 
 extern template class Laplacian<2, Lagrange<1, Scalar>, Hypercube>;
 extern template class Laplacian<2, Lagrange<2, Scalar>, Hypercube>;
@@ -155,7 +156,9 @@ int main( int argc, char** argv )
 #if 1
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex") );
     benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Simplex>( "2D-P2-Simplex") );
-    //benchmark.add( new Laplacian<2, Lagrange<3, Scalar>, Simplex>( "2D-P3-Simplex") );
+    benchmark.add( new Laplacian<2, Lagrange<3, Scalar>, Simplex>( "2D-P3-Simplex") );
+    benchmark.add( new Laplacian<2, Lagrange<4, Scalar>, Simplex>( "2D-P4-Simplex") );
+    benchmark.add( new Laplacian<2, Lagrange<5, Scalar>, Simplex>( "2D-P5-Simplex") );
 
 #if 0
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube") );
