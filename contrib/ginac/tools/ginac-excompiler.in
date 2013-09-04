@@ -1,3 +1,3 @@
 #!/bin/sh
-@CMAKE_C_COMPILER@ -O3 -x c -fPIC -shared -o $1.so $1
+@CMAKE_C_COMPILER@ @_USE_STANDARD_C_HEADERS_@ -I@FEELPP_SOURCE_DIR@/contrib/ginac/tools/ -O3 -x c -fPIC -shared -o $1.so $1
 #/usr/bin/g++ -x c -fPIC -shared -o $1.so $1

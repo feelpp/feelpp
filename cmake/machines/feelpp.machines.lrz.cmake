@@ -28,6 +28,9 @@ set(FEELPP_ENABLE_MANUAL OFF)
 #set(FEELPP_ENABLE_BENCHMARKS OFF)
 set(FEELPP_ENABLE_OPENGL OFF)
 
+# Disable use of standard c headers in ginac-excompiler
+set(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER OFF)
+
 set(BLAS_blas_LIBRARY $ENV{packagesBaseDir}/blas/BLAS-gcc$ENV{gccVersion}/blas_LINUX.a)
 
 # find the gfortran library

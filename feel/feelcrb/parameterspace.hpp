@@ -529,6 +529,47 @@ public:
                 return number;
             }
 
+
+        /**
+         * build the closest sampling with parameters given from the file
+         * look in the supersampling closest parameters
+         * \param file_name : give the real parameters we want
+         * return the index vector of parameters in the supersampling
+         */
+        std::vector<int> closestSamplingFromFile( std::string file_name="list_of_parameters_taken")
+        {
+            std::vector<int> index_vector;
+            std::ifstream file( file_name );
+            double mui;
+            std::string str;
+            int number=0;
+            file>>str;
+            while( ! file.eof() )
+            {
+                element_type mu( M_space );
+                file>>str;
+                int i=0;
+                while ( str!="]" )
+                {
+                    file >> mui;
+                    mu[i] = mui;
+                    file >> str;
+                    i++;
+                }
+                //search the closest neighbor of mu in the supersampling
+                std::vector<int> local_index_vector;
+                auto neighbors = M_supersampling->searchNearestNeighbors( mu, 1 , local_index_vector );
+                auto closest_mu = neighbors->at(0);
+                int index = local_index_vector[0];
+                this->push_back( closest_mu , index );
+                number++;
+                file>>str;
+                index_vector.push_back( index );
+            }
+            file.close();
+            return index_vector;
+        }
+
         /**
          * \brief create a sampling with equidistributed elements
          * \param N the number of samples

@@ -255,6 +255,11 @@ public:
         return M_Dmu;
     };
 
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
     affine_decomposition_type computeAffineDecomposition()
     {
         return boost::make_tuple( M_Aqm, M_Fqm );
@@ -410,7 +415,7 @@ private:
     backend_ptrtype M_backend;
 
     space_ptrtype Xh;
-    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::value_type> > P1h;
+    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::element_type> > P1h;
 
     oplin_ptrtype M_oplin;
     funlin_ptrtype M_lf;

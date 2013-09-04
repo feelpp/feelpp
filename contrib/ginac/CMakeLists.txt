@@ -17,6 +17,14 @@ string(REGEX REPLACE "^.*GINAC_LT_REVISION[ \t]+([0-9]+).*" "\\1" ginac_lt_revis
 math(EXPR ginaclib_soversion "${ginac_lt_current} - ${ginac_lt_age}")
 set(ginaclib_version ${ginaclib_soversion}.${ginac_lt_age}.${ginac_lt_revision})
 
+# # for supermuc this option should be OFF
+# option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
+IF(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER)
+  #add -DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER to CFLAGS
+  message( STATUS "[contrib ginac] Enable use of standard headers")
+  set(_USE_STANDARD_C_HEADERS_ "-DUSE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER")
+ENDIF()
+
 # make check
 enable_testing()
 add_custom_target(check-ginac COMMAND ${CMAKE_CTEST_COMMAND})
