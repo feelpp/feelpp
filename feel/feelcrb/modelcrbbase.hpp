@@ -108,6 +108,12 @@ public :
     typedef FsFunctionalLinear< space_type > functional_type;
     typedef boost::shared_ptr<functional_type> functional_ptrtype;
 
+    typedef backend_type::vector_type vector_type;
+    typedef backend_type::vector_ptrtype vector_ptrtype;
+
+    typedef backend_type::sparse_matrix_type sparse_matrix_type;
+    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+
     ModelCrbBase()
         :
         M_is_initialized( false )
@@ -150,6 +156,7 @@ public :
     }
 
 
+
     /**
      * note about the initial guess :
      * by default, if the model doesn't give an initial guess
@@ -175,6 +182,39 @@ public :
         beta[0].resize(1); //m=1
         beta[0][0]=0;
         return beta;
+    }
+
+
+
+     /**
+     * returns the scalar product used fior mass matrix ( to solve eigen values problem )
+     * of the boost::shared_ptr vector x and boost::shared_ptr vector
+     * Transient models need to implement these functions.
+     */
+    virtual double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
+        return 0;
+    }
+    virtual double scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
+        return 0;
+    }
+
+    /**
+     * inner product for mass matrix
+     * Transient models need to implement these functions.
+     */
+    virtual sparse_matrix_ptrtype const& innerProductForMassMatrix () const
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
+        return M;
+    }
+    virtual sparse_matrix_ptrtype innerProductForMassMatrix ()
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
+        return M;
     }
 
     /**
@@ -225,6 +265,8 @@ protected :
     funs_type M_funs;
     funsd_type M_funs_d;
     bool M_is_initialized;
+
+    sparse_matrix_ptrtype M;
 
     operatorcomposite_ptrtype M_compositeA;
     operatorcomposite_ptrtype M_compositeM;

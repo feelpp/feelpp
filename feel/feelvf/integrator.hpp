@@ -2593,9 +2593,8 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
             for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
             {
-                size_type i;
-                boost::tie( i, boost::tuples::ignore, boost::tuples::ignore ) = P0h->dof()->localToGlobal( it->id(), 0, c1 );
-                double v = M_im( expr, c1, 0 );
+                size_type i= P0h->dof()->localToGlobal( it->id(), 0, c1 ).index();
+                 double v = M_im( expr, c1, 0 );
                 p0.set( i, v );
             }
         }
@@ -2766,10 +2765,8 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                 {
-                    size_type i0;
-                    boost::tie( i0, boost::tuples::ignore, boost::tuples::ignore ) = P0h->dof()->localToGlobal( it->element( 0 ), 0, c1 );
-                    size_type i1;
-                    boost::tie( i1, boost::tuples::ignore, boost::tuples::ignore ) = P0h->dof()->localToGlobal( it->element( 1 ), 0, c1 );
+                    size_type i0 = P0h->dof()->localToGlobal( it->element( 0 ), 0, c1 ).index();
+                    size_type i1 =  P0h->dof()->localToGlobal( it->element( 1 ), 0, c1 ).index();
                     double v = __integrators[__face_id_in_elt_0]( *expr2, c1, 0 );
                     p0.add( i0, v );
                     p0.add( i1, v );
@@ -2789,8 +2786,7 @@ Integrator<Elements, Im, Expr, Im2>::broken( boost::shared_ptr<P0hType>& P0h, mp
 
                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
                 {
-                    size_type i0;
-                    boost::tie( i0, boost::tuples::ignore, boost::tuples::ignore ) = P0h->dof()->localToGlobal( it->element( 0 ), 0, c1 );
+                    size_type i0 = P0h->dof()->localToGlobal( it->element( 0 ), 0, c1 ).index();
                     double v = __integrators[__face_id_in_elt_0]( *expr, c1, 0 );
                     p0.add( i0, v );
                 }

@@ -32,7 +32,6 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
-#include <boost/signal.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
 //#include <boost/numeric/bindings/traits/traits.hpp>
