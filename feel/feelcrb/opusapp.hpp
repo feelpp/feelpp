@@ -890,8 +890,8 @@ public:
                                             {
                                                 for(int m=0; m<model->mMaxA(q); m++)
                                                 {
-                                                    solution_error += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) );
-                                                    ref_primal += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem) );
+                                                    solution_error +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) ;
+                                                    ref_primal +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem);
                                                 }
                                             }
 
@@ -901,11 +901,15 @@ public:
                                                 {
                                                     for(int m=0; m<model->mMaxA(q); m++)
                                                     {
-                                                        dual_solution_error += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) );
-                                                        ref_dual += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) );
+                                                        dual_solution_error += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error);
+                                                        ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
                                                     }
                                                 }
+                                                dual_solution_error = math::sqrt( dual_solution_error );
+                                                ref_dual = math::sqrt( ref_dual );
                                             }
+                                            solution_error = math::sqrt( solution_error );
+                                            ref_primal = math::sqrt( ref_primal );
                                             //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
                                         }
                                         else
@@ -1567,7 +1571,7 @@ private:
                             min2 = min_estimated / min;
                         }
 
-                        if( error_name=="OutputErrorEstimated" )
+                        if( error_name=="OutputEstimatedError" )
                         {
                             index_max = index_max_vector_output[j];
                             index_min = index_min_vector_output[j];
