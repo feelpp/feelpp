@@ -209,9 +209,9 @@ testFunctionalLinearComposite()
     double norm_sum_functional = vec->l2Norm();
     double norm_sum_functionalfree = vec_free->l2Norm();
 
-    BOOST_CHECK_SMALL( math::abs(norm_sum_composite - norm_sum_functional), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functionalfree), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functional), 1e-15 );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_composite - norm_sum_functional), 1e-14 );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functionalfree), 1e-14 );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functional), 1e-14 );
 
 }
 /**
