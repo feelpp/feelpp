@@ -575,7 +575,10 @@ public:
         return M_compositeF;
     }
 
-
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
 
 private:
 
