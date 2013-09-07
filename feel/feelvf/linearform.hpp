@@ -344,13 +344,13 @@ public:
 
         void assemble()
         {
-            assemble( _M_gmc_left->id() );
+            assemble( M_gmc_left->id() );
         }
         void assemble( size_type elt_0 );
 
         void assemble( mpl::int_<2> )
         {
-            assemble( _M_gmc_left->id(), _M_gmc_right->id() );
+            assemble( M_gmc_left->id(), M_gmc_right->id() );
         }
         void assemble( size_type elt_0, size_type elt_1 );
 
@@ -361,7 +361,7 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( Pts const& pts )
         {
-            _M_test_pc = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
+            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts ) );
         }
 
         /**
@@ -372,8 +372,8 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( uint16_type __f, permutation_type const& __p, Pts const& pts )
         {
-            _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
-            //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+            M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts ) );
+            //FEELPP_ASSERT( M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
         }
         /**
          * Return the structure that holds the test basis functions
@@ -386,10 +386,10 @@ public:
                                                permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
         {
             if ( __f == invalid_uint16_type_value )
-                return  _M_test_pc;
+                return  M_test_pc;
 
-            //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
-            return _M_test_pc_face.find( __f )->second.find( __p )->second;
+            //FEELPP_ASSERT( M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+            return M_test_pc_face.find( __f )->second.find( __p )->second;
         }
 
         template<typename PtsSet>
@@ -424,7 +424,7 @@ public:
                 for ( permutation_type __p( permutation_type::IDENTITY );
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
                 }
             }
 
@@ -444,31 +444,31 @@ public:
 
     private:
 
-        form_type& _M_form;
-        dof_type* _M_test_dof;
-        const list_block_type& _M_lb;
+        form_type& M_form;
+        dof_type* M_test_dof;
+        const list_block_type& M_lb;
 
-        test_precompute_ptrtype _M_test_pc;
-        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > _M_test_pc_face;
+        test_precompute_ptrtype M_test_pc;
+        std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > M_test_pc_face;
 
-        map_test_geometric_mapping_context_type _M_gmc;
-        left_gmc_ptrtype _M_gmc_left;
-        right_gmc_ptrtype _M_gmc_right;
-        map_left_gmc_type _M_left_map;
-        map_right_gmc_type _M_right_map;
-        map_test_fecontext_type _M_test_fec;
-        map_left_test_fecontext_type _M_test_fec0;
-        map_right_test_fecontext_type _M_test_fec1;
+        map_test_geometric_mapping_context_type M_gmc;
+        left_gmc_ptrtype M_gmc_left;
+        right_gmc_ptrtype M_gmc_right;
+        map_left_gmc_type M_left_map;
+        map_right_gmc_type M_right_map;
+        map_test_fecontext_type M_test_fec;
+        map_left_test_fecontext_type M_test_fec0;
+        map_right_test_fecontext_type M_test_fec1;
 
-        local_vector_type _M_rep;
-        local2_vector_type _M_rep_2;
+        local_vector_type M_rep;
+        local2_vector_type M_rep_2;
         local_row_type M_local_rows;
         local2_row_type M_local_rows_2;
         local_row_type M_local_rowsigns;
         local2_row_type M_local_rowsigns_2;
 
-        eval0_expr_ptrtype _M_eval0_expr;
-        eval1_expr_ptrtype _M_eval1_expr;
+        eval0_expr_ptrtype M_eval0_expr;
+        eval1_expr_ptrtype M_eval1_expr;
 
         IM M_integrator;
 
@@ -545,7 +545,7 @@ public:
         list_block_type __list_block;
         __list_block.push_back( Block( 0, 0,
                                        __u.start(), 0 ) );
-        return vflf_type( __u, _M_F, __list_block, false );
+        return vflf_type( __u, M_F, __list_block, false );
 
     }
 #endif
@@ -555,7 +555,7 @@ public:
      */
     value_type operator()( size_type i ) const
     {
-        return _M_F( i );
+        return M_F( i );
     }
 
     /**
@@ -566,7 +566,7 @@ public:
      */
     value_type operator()( element_type const& __v ) const
     {
-        return _M_F->dot( __v );
+        return M_F->dot( __v );
     }
 
     /**
@@ -577,7 +577,7 @@ public:
      */
     value_type operator()( typename space_type::element_type const& __v ) const
     {
-        return _M_F->dot( __v );
+        return M_F->dot( __v );
     }
 
 
@@ -592,7 +592,7 @@ public:
      */
     space_ptrtype const& functionSpace() const
     {
-        return _M_X;
+        return M_X;
     }
 
     /**
@@ -600,7 +600,7 @@ public:
      */
     space_ptrtype const& testSpace() const
     {
-        return _M_X;
+        return M_X;
     }
 
     /**
@@ -608,7 +608,7 @@ public:
      */
     gm_ptrtype const& gm() const
     {
-        return _M_X->gm();
+        return M_X->gm();
     }
 
     /**
@@ -616,7 +616,7 @@ public:
      */
     gm1_ptrtype const& gm1() const
     {
-        return _M_X->gm1();
+        return M_X->gm1();
     }
 
     /**
@@ -629,32 +629,32 @@ public:
                                            permutation_type __p = permutation_type( permutation_type::NO_PERMUTATION ) ) const
     {
         if ( __f == invalid_uint16_type_value )
-            return  _M_test_pc;
+            return  M_test_pc;
 
-        return _M_test_pc_face.find( __f )->second.find( __p )->second;
+        return M_test_pc_face.find( __f )->second.find( __p )->second;
     }
 
     vector_type& representation() const
     {
-        return *_M_F;
+        return *M_F;
     }
     vector_ptrtype vectorPtr() const
     {
-        return _M_F;
+        return M_F;
     }
     vector_ptrtype vectorPtr()
     {
-        return _M_F;
+        return M_F;
     }
 
     list_block_type const& blockList() const
     {
-        return _M_lb;
+        return M_lb;
     }
 
     size_type rowStartInVector() const
     {
-        return _M_row_startInVector;
+        return M_row_startInVector;
     }
 
 
@@ -663,7 +663,7 @@ public:
      */
     bool doThreshold( value_type const& v ) const
     {
-        return ( math::abs( v ) > _M_threshold );
+        return ( math::abs( v ) > M_threshold );
     }
 
     //@}
@@ -678,7 +678,7 @@ public:
      */
     void setFunctionSpace( space_ptrtype const& __X )
     {
-        _M_X = __X;
+        M_X = __X;
     }
 
     /**
@@ -687,7 +687,7 @@ public:
      */
     void setThreshold( value_type eps )
     {
-        _M_threshold = eps;
+        M_threshold = eps;
     }
 
     /**
@@ -696,7 +696,7 @@ public:
      */
     void setDoThreshold( bool do_threshold )
     {
-        _M_do_threshold = do_threshold;
+        M_do_threshold = do_threshold;
     }
 
     //@}
@@ -712,7 +712,7 @@ public:
     template<typename Pts>
     void precomputeBasisAtPoints( Pts const& pts )
     {
-        _M_test_pc = test_precompute_ptrtype( new test_precompute_type( functionSpace()->fe(), pts ) );
+        M_test_pc = test_precompute_ptrtype( new test_precompute_type( functionSpace()->fe(), pts ) );
     }
 
     /**
@@ -723,7 +723,7 @@ public:
     template<typename Pts>
     void precomputeBasisAtPoints( uint16_type __f, permutation_type __p, Pts const& pts )
     {
-        _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( functionSpace()->fe(), pts ) );
+        M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( functionSpace()->fe(), pts ) );
     }
 
     /**
@@ -732,14 +732,14 @@ public:
      */
     void add( size_type i,  value_type const& v )
     {
-        if ( _M_do_threshold )
+        if ( M_do_threshold )
         {
             if ( doThreshold( v ) )
-                _M_F->add( i+this->rowStartInVector(), v );
+                M_F->add( i+this->rowStartInVector(), v );
         }
 
         else
-            _M_F->add( i+this->rowStartInVector(), v );
+            M_F->add( i+this->rowStartInVector(), v );
     }
 
     /**
@@ -752,7 +752,7 @@ public:
             for ( int k = 0; k< n ; ++k )
                 i[k]+=this->rowStartInVector();
 
-        _M_F->addVector( i, n, v );
+        M_F->addVector( i, n, v );
     }
 
     /**
@@ -761,20 +761,20 @@ public:
      */
     void set( size_type i,  value_type const& v )
     {
-        _M_F->set( i, v );
+        M_F->set( i, v );
     }
 
     /**
      * set linear form to 0
      */
-    void zero() { _M_F->zero(); }
+    void zero() { M_F->zero(); }
 
     LinearForm& operator+=( LinearForm& f )
         {
             if ( this == &f )
                 return *this;
 
-            *_M_F += *f._M_F;
+            *M_F += *f.M_F;
 
             return *this;
         }
@@ -789,39 +789,39 @@ private:
     template <class ExprT> void assign( Expr<ExprT> const& expr, bool init, mpl::bool_<true> );
 private:
 
-    space_ptrtype _M_X;
+    space_ptrtype M_X;
 
-    vector_ptrtype _M_F;
+    vector_ptrtype M_F;
 
-    list_block_type _M_lb;
+    list_block_type M_lb;
 
-    size_type _M_row_startInVector;
+    size_type M_row_startInVector;
 
-    test_precompute_ptrtype _M_test_pc;
+    test_precompute_ptrtype M_test_pc;
 
-    std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > _M_test_pc_face;
+    std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > M_test_pc_face;
 
-    bool _M_do_threshold;
-    value_type _M_threshold;
+    bool M_do_threshold;
+    value_type M_threshold;
 };
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( LinearForm const & __vf )
     :
-    _M_X( __vf._M_X ),
-    _M_F( __vf._M_F ),
-    _M_lb( __vf._M_lb ),
-    _M_row_startInVector( __vf._M_row_startInVector ),
-    _M_test_pc(),
-    _M_test_pc_face(),
-    _M_do_threshold( __vf._M_do_threshold ),
-    _M_threshold( __vf._M_threshold )
+    M_X( __vf.M_X ),
+    M_F( __vf.M_F ),
+    M_lb( __vf.M_lb ),
+    M_row_startInVector( __vf.M_row_startInVector ),
+    M_test_pc(),
+    M_test_pc_face(),
+    M_do_threshold( __vf.M_do_threshold ),
+    M_threshold( __vf.M_threshold )
 
 {
     DVLOG(2) << "LinearForm copy constructor\n";
-    DVLOG(2) << "     n Dof : " << _M_X->nDof() << "\n";
-    DVLOG(2) << "    F size : " << _M_F->size() << "\n";
-    DVLOG(2) << "block size : " << _M_lb.size() << "\n";
+    DVLOG(2) << "     n Dof : " << M_X->nDof() << "\n";
+    DVLOG(2) << "    F size : " << M_F->size() << "\n";
+    DVLOG(2) << "block size : " << M_lb.size() << "\n";
 }
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -832,25 +832,25 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
         bool do_threshold,
         value_type threshold  )
     :
-    _M_X( __X ),
-    _M_F( __F ),
-    _M_lb(),
-    _M_row_startInVector( rowstart ),
-    _M_do_threshold( do_threshold ),
-    _M_threshold( threshold )
+    M_X( __X ),
+    M_F( __F ),
+    M_lb(),
+    M_row_startInVector( rowstart ),
+    M_do_threshold( do_threshold ),
+    M_threshold( threshold )
 {
 
-    for ( uint16_type __i = 0; __i < _M_X->qDim(); ++__i )
+    for ( uint16_type __i = 0; __i < M_X->qDim(); ++__i )
     {
-        _M_lb.push_back( Block( __i, 0,
-                                __i*_M_X->nDofPerComponent(),
+        M_lb.push_back( Block( __i, 0,
+                                __i*M_X->nDofPerComponent(),
                                 0 ) );
         DVLOG(2) << "[linearform::linearform] block: "
-                      << Block( __i, 0, __i*_M_X->nDofPerComponent(), 0 )  << "\n";
+                      << Block( __i, 0, __i*M_X->nDofPerComponent(), 0 )  << "\n";
     }
 
     if (  init )
-        _M_F->zero();
+        M_F->zero();
 }
 
 template<typename SpaceType, typename VectorType,  typename ElemContType>
@@ -862,15 +862,15 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
         bool do_threshold,
         value_type threshold )
     :
-    _M_X( __X ),
-    _M_F( __F ),
-    _M_lb( __lb ),
-    _M_row_startInVector( rowstart ),
-    _M_do_threshold( do_threshold ),
-    _M_threshold( threshold )
+    M_X( __X ),
+    M_F( __F ),
+    M_lb( __lb ),
+    M_row_startInVector( rowstart ),
+    M_do_threshold( do_threshold ),
+    M_threshold( threshold )
 {
     if ( init )
-        _M_F->zero();
+        M_F->zero();
 }
 
 template<typename LFType, typename TheSpaceType, typename ExprType>
@@ -878,24 +878,24 @@ struct LFAssign
 {
     LFAssign( LFAssign const& lfa )
         :
-        _M_lf( lfa._M_lf ),
-        _M_Xh( lfa._M_Xh ),
-        _M_expr( lfa._M_expr ),
-        _M_index( lfa._M_index ),
-        _M_init( lfa._M_init )
+        M_lf( lfa.M_lf ),
+        M_Xh( lfa.M_Xh ),
+        M_expr( lfa.M_expr ),
+        M_index( lfa.M_index ),
+        M_init( lfa.M_init )
     {}
     LFAssign( LFType& lf, TheSpaceType const& Xh, ExprType const& expr, bool init )
         :
-        _M_lf( lf ),
-        _M_Xh( Xh ),
-        _M_expr( expr ),
-        _M_index( 0 ),
-        _M_init( init )
+        M_lf( lf ),
+        M_Xh( Xh ),
+        M_expr( expr ),
+        M_index( 0 ),
+        M_init( init )
     {}
     template<typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& X ) const
     {
-        if ( _M_lf.testSpace()->worldsComm()[_M_index].isActive() )
+        if ( M_lf.testSpace()->worldsComm()[M_index].isActive() )
         {
             DVLOG(2) << "expression has test functions ? :"
                           << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result
@@ -903,62 +903,62 @@ struct LFAssign
 
             if ( !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
             {
-                ++_M_index;
+                ++M_index;
                 return;
             }
 
             list_block_type __list_block;
 
-            if ( _M_lf.testSpace()->worldsComm()[_M_index].globalSize()>1 )
+            if ( M_lf.testSpace()->worldsComm()[M_index].globalSize()>1 )
                 {
-                    if (_M_lf.testSpace()->hasEntriesForAllSpaces())
-                        __list_block.push_back( Block( 0, 0, _M_Xh->nLocalDofStart( _M_index ), 0 ) );
+                    if (M_lf.testSpace()->hasEntriesForAllSpaces())
+                        __list_block.push_back( Block( 0, 0, M_Xh->nLocalDofStart( M_index ), 0 ) );
                     else
                         __list_block.push_back( Block( 0, 0, 0, 0 ) );
                 }
             else
-                __list_block.push_back( Block( 0, 0, _M_Xh->nDofStart( _M_index ), 0 ) );
+                __list_block.push_back( Block( 0, 0, M_Xh->nDofStart( M_index ), 0 ) );
 
             LinearForm<SpaceType,typename LFType::vector_type, typename LFType::element_type> lf( X,
-                    _M_lf.vectorPtr(),
+                    M_lf.vectorPtr(),
                     __list_block,
-                    _M_lf.rowStartInVector(),
+                    M_lf.rowStartInVector(),
                     false );
 
             //
-            // in composite integration, make sure that if _M_init is \p
+            // in composite integration, make sure that if M_init is \p
             // true for the first space, it is set to \p false for the
             // next spaces otherwise it will erase/clear to 0 the previous
             // assemblies
             //
-            if ( _M_init )
+            if ( M_init )
             {
                 // assembly
-                lf = _M_expr;
+                lf = M_expr;
 
                 // make sure we won't erase the assembly we just did
-                _M_init = false;
+                M_init = false;
             }
 
             else
             {
-                lf += _M_expr;
+                lf += M_expr;
             }
         }
 
         else // not active : there is the init case with a close in zero
         {
-            if ( _M_init ) _M_lf.representation().zero();
+            if ( M_init ) M_lf.representation().zero();
         }
 
-        ++_M_index;
+        ++M_index;
     }
 private:
-    LFType& _M_lf;
-    TheSpaceType const& _M_Xh;
-    ExprType const& _M_expr;
-    mutable size_type _M_index;
-    mutable bool _M_init;
+    LFType& M_lf;
+    TheSpaceType const& M_Xh;
+    ExprType const& M_expr;
+    mutable size_type M_index;
+    mutable bool M_init;
 
 };
 
@@ -977,22 +977,22 @@ template<typename ExprT>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<true> )
 {
-    fusion::for_each( _M_X->functionSpaces(), make_lfassign( *this, _M_X, __expr, init ) );
+    fusion::for_each( M_X->functionSpaces(), make_lfassign( *this, M_X, __expr, init ) );
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename ExprT>
 void
 LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __expr, bool init, mpl::bool_<false> )
 {
-    if ( _M_lb.empty() )
+    if ( M_lb.empty() )
     {
-        _M_lb.push_back( Block( 0, 0, 0, 0 ) );
+        M_lb.push_back( Block( 0, 0, 0, 0 ) );
     }
 
     if ( init )
     {
-        typename list_block_type::const_iterator __bit = _M_lb.begin();
-        typename list_block_type::const_iterator __ben = _M_lb.end();
+        typename list_block_type::const_iterator __bit = M_lb.begin();
+        typename list_block_type::const_iterator __ben = M_lb.end();
 
         for ( ; __bit != __ben; ++__bit )
         {
@@ -1000,14 +1000,14 @@ LinearForm<SpaceType, VectorType, ElemContType>::assign( Expr<ExprT> const& __ex
             size_type g_ic_start = __bit->globalRowStart();
             DVLOG(2) << "LinearForm:: g_ic_start: " << g_ic_start << "\n";
 
-            _M_F->zero( g_ic_start,g_ic_start + _M_X->nDof() );
+            M_F->zero( g_ic_start,g_ic_start + M_X->nDof() );
         }
     }
 
-    __expr.assemble( _M_X, *this );
-    //vector_range_type r( _M_F, ublas::range( _M_v.start(),_M_v.start()+ _M_v.size() ) );
+    __expr.assemble( M_X, *this );
+    //vector_range_type r( M_F, ublas::range( M_v.start(),M_v.start()+ M_v.size() ) );
     //std::cout << "r = " << r << "\n";
-    //std::cout << "after F= " << _M_F << "\n";
+    //std::cout << "after F= " << M_F << "\n";
 }
 template<typename SpaceType, typename VectorType,  typename ElemContType>
 template<typename ExprT>
@@ -1036,4 +1036,3 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& 
 
 #include <feel/feelvf/linearformcontext.hpp>
 #endif /* __LinearForm_H */
-

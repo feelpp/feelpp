@@ -146,7 +146,7 @@ public:
      */
     std::string const& elementType() const
     {
-        return _M_element_type;
+        return M_element_type;
     }
 
 
@@ -200,15 +200,15 @@ private:
 
 private:
 
-    mutable std::string _M_filename;
-    std::string _M_element_type;
+    mutable std::string M_filename;
+    std::string M_element_type;
 };
 
 template<typename MeshType, int N>
 ExporterExodus<MeshType,N>::ExporterExodus( WorldComm const& worldComm )
 :
 super( worldComm ),
-_M_element_type()
+M_element_type()
 
 {
     init();
@@ -217,7 +217,7 @@ template<typename MeshType, int N>
 ExporterExodus<MeshType,N>::ExporterExodus( std::string const& __p, int freq, WorldComm const& worldComm )
     :
     super( "exodus", __p, freq, worldComm ),
-    _M_element_type()
+    M_element_type()
 {
     init();
 }
@@ -233,7 +233,7 @@ template<typename MeshType, int N>
 ExporterExodus<MeshType,N>::ExporterExodus( ExporterExodus const & __ex )
     :
     super( __ex ),
-    _M_element_type( __ex._M_element_type )
+    M_element_type( __ex.M_element_type )
 {
 }
 
@@ -247,24 +247,24 @@ ExporterExodus<MeshType,N>::init()
 {
     if ( mesh_type::nDim == 1 )
         if ( mesh_type::Shape == SHAPE_LINE )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
+            M_element_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
 
     if ( mesh_type::nDim == 2 )
     {
         if ( mesh_type::Shape == SHAPE_TRIANGLE )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
+            M_element_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
 
         else if ( mesh_type::Shape == SHAPE_QUAD )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
+            M_element_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
     }
 
     if ( mesh_type::nDim == 3 )
     {
         if ( mesh_type::Shape == SHAPE_TETRA )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"tetra4":"tetra10";
+            M_element_type = ( mesh_type::nOrder == 1 )?"tetra4":"tetra10";
 
         else if ( mesh_type::Shape == SHAPE_HEXA )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"hexa8":"hexa20";
+            M_element_type = ( mesh_type::nOrder == 1 )?"hexa8":"hexa20";
     }
 }
 template<typename MeshType, int N>

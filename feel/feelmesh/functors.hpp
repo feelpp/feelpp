@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-06-01
 
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -246,48 +246,48 @@ struct updateIdInOthersPartitions
 {
     updateIdInOthersPartitions( uint16_type pid, size_type id )
         :
-        _M_pid( pid ),
-        _M_id( id )
+        M_pid( pid ),
+        M_id( id )
     {}
     template<typename ElementType>
     void operator()( ElementType& element )
     {
-        element.setIdInOthersPartitions( _M_pid, _M_id );
+        element.setIdInOthersPartitions( M_pid, M_id );
     }
 private:
-    uint16_type _M_pid;
-    size_type _M_id;
+    uint16_type M_pid;
+    size_type M_id;
 };
 
 struct UpdateProcessId
 {
     UpdateProcessId( int pid )
         :
-        _M_pid( pid )
+        M_pid( pid )
     {}
     template<typename ElementType>
     void operator()( ElementType& element )
     {
-        element.setProcessId( _M_pid );
+        element.setProcessId( M_pid );
     }
 private:
-    int _M_pid;
+    int M_pid;
 };
 
 struct UpdateMarker
 {
     UpdateMarker( flag_type v )
         :
-        _M_v( v )
+        M_v( v )
     {}
 
     template<typename ElementType>
     void operator()( ElementType& element )
     {
-        element.setMarker( _M_v );
+        element.setMarker( M_v );
     }
 private:
-    flag_type _M_v;
+    flag_type M_v;
 };
 
 

@@ -384,13 +384,13 @@
                                                                         \
         VF_OP_NAME( O )( L_type const& left, R_type const& right )      \
             :                                                           \
-            _M_left(left),                                              \
-            _M_right(right)                                             \
+            M_left(left),                                              \
+            M_right(right)                                             \
             {}                                                          \
         VF_OP_NAME( O )( VF_OP_NAME(O) const& __m )                     \
             :                                                           \
-            _M_left( __m._M_left ),                                     \
-            _M_right( __m._M_right )                                    \
+            M_left( __m.M_left ),                                     \
+            M_right( __m.M_right )                                    \
                 {;}                                                     \
         ~VF_OP_NAME( O )()                                              \
         {}                                                              \
@@ -402,10 +402,10 @@
                                                                         \
         template<typename TheExpr>                                      \
             typename Lambda<TheExpr>::type                              \
-            operator()( TheExpr const& e ) { return typename Lambda<TheExpr>::type( _M_left(e), _M_right(e) ); } \
+            operator()( TheExpr const& e ) { return typename Lambda<TheExpr>::type( M_left(e), M_right(e) ); } \
                                                                         \
-        L_type VF_TYPE_CV(L) left() const { return _M_left; }           \
-        R_type VF_TYPE_CV(R) right() const { return _M_right; }         \
+        L_type VF_TYPE_CV(L) left() const { return M_left; }           \
+        R_type VF_TYPE_CV(R) right() const { return M_right; }         \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
@@ -427,8 +427,8 @@
             template<typename ExprT>                                    \
                 tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) \
                 :                                                       \
-                _M_left( expr.left(), geom, fev, feu ),                 \
-                _M_right( expr.right(), geom, fev, feu )                \
+                M_left( expr.left(), geom, fev, feu ),                 \
+                M_right( expr.right(), geom, fev, feu )                \
                     {                                                  \
                         DVLOG(2) << "Operation " BOOST_PP_STRINGIZE( VF_OP_SYMBOL( O ) ) " is_zero " << is_zero::value << " " \
                                       << "update_and_eval_left " << is_zero::update_and_eval_left << " " \
@@ -439,55 +439,55 @@
             template<typename ExprT>                                    \
             tensor( ExprT const& expr,Geo_t const& geom, Basis_i_t const& fev ) \
                 :                                                       \
-                _M_left( expr.left(), geom, fev ),                      \
-                _M_right( expr.right(), geom, fev )                     \
+                M_left( expr.left(), geom, fev ),                      \
+                M_right( expr.right(), geom, fev )                     \
                     {}                                                  \
             template<typename ExprT>                                    \
                 tensor( ExprT const& expr, Geo_t const& geom )          \
                 :                                                       \
-                _M_left( expr.left(), geom ),                           \
-                _M_right( expr.right(), geom )                          \
+                M_left( expr.left(), geom ),                           \
+                M_right( expr.right(), geom )                          \
                     {                                                   \
                     }                                                   \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
             {                                                           \
-                _M_left.init( im );                                     \
-                _M_right.init( im );                                    \
+                M_left.init( im );                                     \
+                M_right.init( im );                                    \
             }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
-                    _M_left.update( geom, fev, feu );                   \
+                    M_left.update( geom, fev, feu );                   \
                 if ( is_zero::update_and_eval_right )                   \
-                    _M_right.update( geom, fev, feu );                  \
+                    M_right.update( geom, fev, feu );                  \
             }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& fev )      \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
-                    _M_left.update( geom, fev );                        \
+                    M_left.update( geom, fev );                        \
                 if ( is_zero::update_and_eval_right )                   \
-                    _M_right.update( geom, fev );                       \
+                    M_right.update( geom, fev );                       \
             }                                                           \
             void update( Geo_t const& geom )                            \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
-                    _M_left.update( geom );                             \
+                    M_left.update( geom );                             \
                 if ( is_zero::update_and_eval_right )                   \
-                    _M_right.update( geom );                            \
+                    M_right.update( geom );                            \
             }                                                           \
             void update( Geo_t const& geom, uint16_type face )          \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
-                    _M_left.update( geom, face );                            \
+                    M_left.update( geom, face );                            \
                 if ( is_zero::update_and_eval_right )                   \
-                    _M_right.update( geom, face );                           \
+                    M_right.update( geom, face );                           \
             }                                                           \
                               \
                 value_type                                              \
                 evalij( uint16_type i, uint16_type j ) const        \
             {                                                           \
-                return _M_left.evalij(i,j) VF_OP_SYMBOL( O ) _M_right.evalij(i,j); \
+                return M_left.evalij(i,j) VF_OP_SYMBOL( O ) M_right.evalij(i,j); \
             }                                                           \
                               \
                 value_type                                              \
@@ -517,19 +517,19 @@
                 value_type                                              \
                 evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false>  ) const \
             {                                                           \
-                return _M_left.evalijq(i, j, c1, c2, q);                \
+                return M_left.evalijq(i, j, c1, c2, q);                \
             }                                                           \
                               \
                 value_type                                              \
                 evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>, mpl::bool_<true>  ) const \
             {                                                           \
-                return _M_right.evalijq(i, j, c1, c2, q);               \
+                return M_right.evalijq(i, j, c1, c2, q);               \
             }                                                           \
                               \
                 value_type                                              \
                 evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<true>  ) const \
             {                                                           \
-                return _M_left.evalijq(i, j, c1, c2, q) VF_OP_SYMBOL( O ) _M_right.evalijq(i,j, c1, c2, q); \
+                return M_left.evalijq(i, j, c1, c2, q) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q); \
             }                                                           \
                               \
                 value_type                                              \
@@ -549,7 +549,7 @@
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
                 for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
-                    res += _M_left.evalijq(i, j, c1, ii, q ) VF_OP_SYMBOL( O ) _M_right.evalijq(i, j, ii, c2, q ); \
+                    res += M_left.evalijq(i, j, c1, ii, q ) VF_OP_SYMBOL( O ) M_right.evalijq(i, j, ii, c2, q ); \
                 return res;                                             \
             }                                                           \
             template<int PatternContext> \
@@ -559,17 +559,17 @@
                 if ( is_zero::value )                                   \
                     return value_type( 0 );                             \
                 else if ( !is_zero::update_and_eval_left && is_zero::update_and_eval_right ) \
-                    return _M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
+                    return M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
                 else if ( is_zero::update_and_eval_left && !is_zero::update_and_eval_right ) \
-                    return _M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()); \
+                    return M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()); \
                 else                                                    \
-                    return _M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()) VF_OP_SYMBOL( O ) _M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
+                    return M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
                 evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<0>  ) const \
             {                                                           \
-                return _M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()) VF_OP_SYMBOL( O ) _M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
+                return M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
@@ -577,7 +577,7 @@
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
                 for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
-                    res += _M_left.evalijq(i, j, c1, ii, q,mpl::int_<PatternContext>() ) VF_OP_SYMBOL( O ) _M_right.evalijq(i, j, ii, c2, q,mpl::int_<PatternContext>() ); \
+                    res += M_left.evalijq(i, j, c1, ii, q,mpl::int_<PatternContext>() ) VF_OP_SYMBOL( O ) M_right.evalijq(i, j, ii, c2, q,mpl::int_<PatternContext>() ); \
                 return res;                                             \
             }                                                           \
                                                \
@@ -593,11 +593,11 @@
                 if ( is_zero::value )                                   \
                     return value_type( 0 );                             \
                 else if ( !is_zero::update_and_eval_left && is_zero::update_and_eval_right ) \
-                    return _M_right.evaliq(i, c1, c2, q);               \
+                    return M_right.evaliq(i, c1, c2, q);               \
                 else if ( is_zero::update_and_eval_left && !is_zero::update_and_eval_right ) \
-                    return _M_left.evaliq(i, c1, c2, q);                \
+                    return M_left.evaliq(i, c1, c2, q);                \
                 else                                                    \
-                    return  _M_left.evaliq(i, c1, c2, q) VF_OP_SYMBOL( O ) _M_right.evaliq(i, c1, c2, q); \
+                    return  M_left.evaliq(i, c1, c2, q) VF_OP_SYMBOL( O ) M_right.evaliq(i, c1, c2, q); \
             }                                                           \
                                                \
                 value_type                                              \
@@ -609,7 +609,7 @@
                     {                                                   \
                         value_type res( value_type( 0 ) );              \
                         for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
-                            res += _M_left.evaliq(i, c1, ii, q ) VF_OP_SYMBOL( O ) _M_right.evaliq(i, ii, c2, q ); \
+                            res += M_left.evaliq(i, c1, ii, q ) VF_OP_SYMBOL( O ) M_right.evaliq(i, ii, c2, q ); \
                         return res;                                     \
                     }                                                   \
             }                                                           \
@@ -622,33 +622,33 @@
             value_type                                                  \
                 evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const \
             {                                                           \
-                return _M_left.evalq( c1, c2, q ) VF_OP_SYMBOL( O ) _M_right.evalq( c1, c2, q ); \
+                return M_left.evalq( c1, c2, q ) VF_OP_SYMBOL( O ) M_right.evalq( c1, c2, q ); \
             }                                                           \
             value_type                                                  \
                 evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const \
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
                 for(uint16_type ii = 0; ii < l_type::shape::N; ++ii )   \
-                    res += _M_left.evalq( c1, ii, q ) VF_OP_SYMBOL( O ) _M_right.evalq( ii, c2, q ); \
+                    res += M_left.evalq( c1, ii, q ) VF_OP_SYMBOL( O ) M_right.evalq( ii, c2, q ); \
                 return res;                                             \
             }                                                           \
-            l_type _M_left;                                             \
-            r_type _M_right;                                            \
+            l_type M_left;                                             \
+            r_type M_right;                                            \
         }; /* tensor */                                                 \
         double                                                          \
             evaluate() const                                            \
         {                                                               \
-            return _M_left.evaluate() VF_OP_SYMBOL( O ) _M_right.evaluate(); \
+            return M_left.evaluate() VF_OP_SYMBOL( O ) M_right.evaluate(); \
         }                                                               \
         double                                                          \
             evaluate(bool p) const                                            \
         {                                                               \
-            return _M_left.evaluate(p) VF_OP_SYMBOL( O ) _M_right.evaluate(p); \
+            return M_left.evaluate(p) VF_OP_SYMBOL( O ) M_right.evaluate(p); \
         }                                                               \
                                                                         \
         std::string expressionStr() const                               \
         {                                                               \
-            return std::string();/*_M_left.expressionStr() + BOOST_PP_STRINGIZE( VF_OP_SYMBOL( O ) ) + _M_right.expressionStr();*/ \
+            return std::string();/*M_left.expressionStr() + BOOST_PP_STRINGIZE( VF_OP_SYMBOL( O ) ) + M_right.expressionStr();*/ \
         }                                                               \
         BOOST_PP_IF(1,                                                  \
                     VF_SYMETRIC,                                        \
@@ -661,8 +661,8 @@
             protected:                                                  \
             VF_OP_NAME( O )() {}                                        \
                                                                         \
-        L_type _M_left;                                                  \
-        R_type _M_right;                                                \
+        L_type M_left;                                                  \
+        R_type M_right;                                                \
     };                                                                  \
     template <BOOST_PP_IF( VF_TYPE_IS_EXPR( L ),                        \
                            BOOST_PP_IDENTITY(class VF_TYPE_NAME(L)),    \
@@ -689,15 +689,15 @@
     template<typename Elem1, typename Elem2, typename FormType>         \
     void assemble( boost::shared_ptr<Elem1> const& __u,  boost::shared_ptr<Elem2> const& __v, FormType& __f ) const \
     {                                                                   \
-        _M_left.assemble( __u, __v, __f );                              \
-        _M_right.assemble( __u, __v, __f );                             \
+        M_left.assemble( __u, __v, __f );                              \
+        M_right.assemble( __u, __v, __f );                             \
     }                                                                   \
                                                                         \
     template<typename Elem1, typename FormType>                         \
     void assemble( boost::shared_ptr<Elem1> const& __v, FormType& __f  ) const \
     {                                                                   \
-        _M_left.assemble( __v, __f );                                   \
-        _M_right.assemble( __v, __f );                                  \
+        M_left.assemble( __v, __f );                                   \
+        M_right.assemble( __v, __f );                                  \
     }                                                                   \
     /**/
 #
