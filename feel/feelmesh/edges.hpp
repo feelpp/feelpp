@@ -113,14 +113,14 @@ public:
 
     Edges( WorldComm const& worldComm = Environment::worldComm() )
         :
-        _M_worldCommEdges( worldComm ),
-        _M_edges()
+        M_worldCommEdges( worldComm ),
+        M_edges()
     {}
 
     Edges( Edges const & f )
         :
-        _M_worldCommEdges( f._M_worldCommEdges ),
-        _M_edges( f._M_edges )
+        M_worldCommEdges( f.M_worldCommEdges ),
+        M_edges( f.M_edges )
     {}
 
     ~Edges()
@@ -144,7 +144,7 @@ public:
      */
     edges_type & edges()
     {
-        return _M_edges;
+        return M_edges;
     }
 
     /**
@@ -152,7 +152,7 @@ public:
      */
     edges_type const& edges() const
     {
-        return _M_edges;
+        return M_edges;
     }
 
     /**
@@ -160,7 +160,7 @@ public:
      */
     WorldComm const& worldCommFaces() const
     {
-        return _M_worldCommEdges;
+        return M_worldCommEdges;
     }
 
     /**
@@ -168,43 +168,43 @@ public:
      */
     bool isEmpty() const
     {
-        return _M_edges.empty();
+        return M_edges.empty();
     }
 
     bool isBoundaryEdge( edge_type const & e ) const
     {
-        return _M_edges.find( e )->isOnBoundary();
+        return M_edges.find( e )->isOnBoundary();
     }
     bool isBoundaryEdge( size_type const & id ) const
     {
-        return _M_edges.find( edge_type( id ) )->isOnBoundary();
+        return M_edges.find( edge_type( id ) )->isOnBoundary();
     }
 
     edge_type const& edge( size_type i ) const
     {
-        return *_M_edges.find( edge_type( i ) );
+        return *M_edges.find( edge_type( i ) );
     }
 
     edge_iterator edgeIterator( size_type i ) const
     {
-        return  _M_edges.find( edge_type( i ) );
+        return  M_edges.find( edge_type( i ) );
     }
 
     edge_iterator beginEdge()
     {
-        return _M_edges.begin();
+        return M_edges.begin();
     }
     edge_const_iterator beginEdge() const
     {
-        return _M_edges.begin();
+        return M_edges.begin();
     }
     edge_iterator endEdge()
     {
-        return _M_edges.end();
+        return M_edges.end();
     }
     edge_const_iterator endEdge() const
     {
-        return _M_edges.end();
+        return M_edges.end();
     }
 
     /**
@@ -214,26 +214,26 @@ public:
     std::pair<marker_edge_iterator, marker_edge_iterator>
     edgesWithMarker( size_type m, size_type p ) const
     {
-        //return _M_edges.template get<detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
-        return _M_edges.template get<detail::by_marker>().equal_range( Marker1( m ) );
+        //return M_edges.template get<detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
+        return M_edges.template get<detail::by_marker>().equal_range( Marker1( m ) );
     }
 
 
     marker_edge_iterator beginEdgeWithMarker( size_type m )
     {
-        return _M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
+        return M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
     }
     marker_edge_const_iterator beginEdgeWithMarker( size_type m ) const
     {
-        return _M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
+        return M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
     }
     marker_edge_iterator endEdgeWithMarker( size_type m )
     {
-        return _M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
+        return M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
     }
     marker_edge_const_iterator endEdgeWithMarker( size_type m ) const
     {
-        return _M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
+        return M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
     }
 
     /**
@@ -245,7 +245,7 @@ public:
     typename edges_type::template nth_index<0>::type &
     edgesById()
     {
-        return _M_edges.template get<0>();
+        return M_edges.template get<0>();
     }
 
     /**
@@ -257,7 +257,7 @@ public:
     typename edges_type::template nth_index<0>::type const&
     edgesById() const
     {
-        return _M_edges.template get<0>();
+        return M_edges.template get<0>();
     }
 
     /**
@@ -269,7 +269,7 @@ public:
     marker_edges &
     edgesByMarker()
     {
-        return _M_edges.template get<detail::by_marker>();
+        return M_edges.template get<detail::by_marker>();
     }
 
     /**
@@ -281,7 +281,7 @@ public:
     marker_edges const&
     edgesByMarker() const
     {
-        return _M_edges.template get<detail::by_marker>();
+        return M_edges.template get<detail::by_marker>();
     }
     /**
      * get the edges container using the location view
@@ -292,7 +292,7 @@ public:
     location_edges &
     edgesByLocation()
     {
-        return _M_edges.template get<detail::by_location>();
+        return M_edges.template get<detail::by_location>();
     }
 
     /**
@@ -304,7 +304,7 @@ public:
     location_edges const&
     edgesByLocation() const
     {
-        return _M_edges.template get<detail::by_location>();
+        return M_edges.template get<detail::by_location>();
     }
 
     /**
@@ -314,7 +314,7 @@ public:
      */
     location_edge_iterator beginInternalEdge()
     {
-        return _M_edges.template get<detail::by_location>().lower_bound( INTERNAL );
+        return M_edges.template get<detail::by_location>().lower_bound( INTERNAL );
     }
     /**
      * get the end() iterator on all the internal edges
@@ -323,7 +323,7 @@ public:
      */
     location_edge_iterator endInternalEdge()
     {
-        return _M_edges.template get<detail::by_location>().upper_bound( INTERNAL );
+        return M_edges.template get<detail::by_location>().upper_bound( INTERNAL );
     }
 
     /**
@@ -333,7 +333,7 @@ public:
      */
     location_edge_const_iterator beginInternalEdge() const
     {
-        return _M_edges.template get<detail::by_location>().lower_bound( INTERNAL );
+        return M_edges.template get<detail::by_location>().lower_bound( INTERNAL );
     }
 
     /**
@@ -343,7 +343,7 @@ public:
      */
     location_edge_const_iterator endInternalEdge() const
     {
-        return _M_edges.template get<detail::by_location>().upper_bound( INTERNAL );
+        return M_edges.template get<detail::by_location>().upper_bound( INTERNAL );
     }
 
     /**
@@ -353,7 +353,7 @@ public:
      */
     location_edge_iterator beginEdgeOnBoundary()
     {
-        return _M_edges.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_edges.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
     }
     /**
      * get the end() iterator on all the boundary edges
@@ -362,7 +362,7 @@ public:
      */
     location_edge_iterator endEdgeOnBoundary()
     {
-        return _M_edges.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_edges.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
     /**
@@ -372,7 +372,7 @@ public:
      */
     location_edge_const_iterator beginEdgeOnBoundary() const
     {
-        return _M_edges.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_edges.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
     }
 
     /**
@@ -382,7 +382,7 @@ public:
      */
     location_edge_const_iterator endEdgeOnBoundary() const
     {
-        return _M_edges.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_edges.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
     /**
@@ -392,7 +392,7 @@ public:
     std::pair<pid_edge_iterator, pid_edge_iterator>
     edgesWithProcessId( size_type p ) const
     {
-        return _M_edges.template get<detail::by_pid>().equal_range( p );
+        return M_edges.template get<detail::by_pid>().equal_range( p );
     }
 
     //@}
@@ -415,13 +415,13 @@ public:
      */
     edge_type const& addEdge( edge_type& f )
     {
-        f.setId( _M_edges.size() );
-        return *_M_edges.insert( f ).first;
+        f.setId( M_edges.size() );
+        return *M_edges.insert( f ).first;
     }
 
     void setWorldCommEdges( WorldComm const& _worldComm )
     {
-        _M_worldCommEdges = _worldComm;
+        M_worldCommEdges = _worldComm;
     }
 
     //@}
@@ -432,12 +432,12 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & _M_edges;
+            ar & M_edges;
         }
 
 private:
-    WorldComm _M_worldCommEdges;
-    edges_type _M_edges;
+    WorldComm M_worldCommEdges;
+    edges_type M_edges;
 };
 /// \endcond
 } // Feel

@@ -350,32 +350,32 @@ public:
     IMSimplex( bool transform = true )
         :
         super( quad_type::nPoints ),
-        _M_quad()
+        M_quad()
     {
         //std::cout << "npoints=" << quad_type::nPoints << "\n";
-        for ( size_type i=0, wi = 0; i< _M_quad.q.size(); i++ )
+        for ( size_type i=0, wi = 0; i< M_quad.q.size(); i++ )
         {
-            permute( _M_quad.m[i], _M_quad.q[i], wi );
+            permute( M_quad.m[i], M_quad.q[i], wi );
 
-            for ( int j=0; j<_M_quad.m[i]; j++, wi++ )
+            for ( int j=0; j<M_quad.m[i]; j++, wi++ )
             {
-                this->_M_w( wi ) = factor()*_M_quad.w[i];
+                this->M_w( wi ) = factor()*M_quad.w[i];
             }
         }
 
 
         if ( transform )
         {
-            //std::cout << "order = " << Order << " | " << this->_M_points << "\n";
+            //std::cout << "order = " << Order << " | " << this->M_points << "\n";
             typedef GeoND<nDim,GeoEntity<Simplex<nDim,1> >, value_type > element_type;
             RealToReference<element_type, Simplex,value_type> real_to_ref( element() );
-            this->setPoints(  real_to_ref( this->_M_points ) );
-            this->_M_w /= real_to_ref.J();
+            this->setPoints(  real_to_ref( this->M_points ) );
+            this->M_w /= real_to_ref.J();
             //std::cout << "jac = " << real_to_ref.J() << "\n";
         }
 
-        //std::cout << "this->_M_points=" << this->_M_points << "\n"
-        //<< "  w=" << this->_M_w << "\n";
+        //std::cout << "this->M_points=" << this->M_points << "\n"
+        //<< "  w=" << this->M_w << "\n";
 
         boost::shared_ptr<GT_Lagrange<Dim,1,Simplex,T> > gm( new GT_Lagrange<Dim, 1, Simplex, T> );
         boost::shared_ptr<face_quad_type> face_qr( new face_quad_type );
@@ -482,24 +482,24 @@ public:
         {
         case 1:
         {
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 1 ];
             wi++;
         }
         break;
 
         case 3:
         {
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 1 ];
             wi++;
 
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 0 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 0 ];
             wi++;
 
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 1 ];
             wi++;
 
         }
@@ -508,33 +508,33 @@ public:
         case 6:
         {
             //qPerm[0] = tuple(q[0], q[1], q[2]);
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 1 ];
             wi++;
 
             //qPerm[1] = tuple(q[0], q[2], q[1]);
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 2 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 2 ];
             wi++;
 
             //qPerm[2] = tuple(q[1], q[0], q[2]);
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 0 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 0 ];
             wi++;
 
             //qPerm[3] = tuple(q[1], q[2], q[0]);
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 2 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 2 ];
             wi++;
 
             //qPerm[4] = tuple(q[2], q[1], q[0]);
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 1 ];
             wi++;
 
             //qPerm[5] = tuple(q[2], q[0], q[1]);
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 0 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 0 ];
             wi++;
         }
         break;
@@ -547,111 +547,111 @@ public:
         if ( m==1 )
         {
             //qPerm[0] = boost::make_tuple(q[0], q[0], q[0], q[0]);
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 0 ];
-            this->_M_points( 2, wi ) = q[ 0 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 0 ];
+            this->M_points( 2, wi ) = q[ 0 ];
         }
 
         else if ( m==4 )
         {
             //qPerm[0] = boost::make_tuple(q[0], q[1], q[1], q[1]);
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
-            this->_M_points( 2, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 2, wi ) = q[ 1 ];
             wi++;
 
             //qPerm[1] = boost::make_tuple(q[1], q[0], q[1], q[1]);
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 0 ];
-            this->_M_points( 2, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 0 ];
+            this->M_points( 2, wi ) = q[ 1 ];
             wi++;
 
             //qPerm[2] = boost::make_tuple(q[1], q[1], q[0], q[1]);
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
-            this->_M_points( 2, wi ) = q[ 0 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 2, wi ) = q[ 0 ];
             wi++;
 
             //qPerm[3] = boost::make_tuple(q[1], q[1], q[1], q[0]);
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
-            this->_M_points( 2, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 2, wi ) = q[ 1 ];
             wi++;
         }
 
         else if ( m==12 )
         {
             //qPerm[0] = boost::make_tuple(q[0], q[1], q[2], q[2]);
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
-            this->_M_points( 2, wi ) = q[ 2 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 2, wi ) = q[ 2 ];
             wi++;
 
             //qPerm[1] = boost::make_tuple(q[0], q[2], q[1], q[2]);
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 2 ];
-            this->_M_points( 2, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 2 ];
+            this->M_points( 2, wi ) = q[ 1 ];
             wi++;
 
             //qPerm[2] = boost::make_tuple(q[0], q[2], q[2], q[1]);
-            this->_M_points( 0, wi ) = q[ 0 ];
-            this->_M_points( 1, wi ) = q[ 2 ];
-            this->_M_points( 2, wi ) = q[ 2 ];
+            this->M_points( 0, wi ) = q[ 0 ];
+            this->M_points( 1, wi ) = q[ 2 ];
+            this->M_points( 2, wi ) = q[ 2 ];
             wi++;
 
 
             //qPerm[3] = boost::make_tuple(q[1], q[0], q[2], q[2]);
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 0 ];
-            this->_M_points( 2, wi ) = q[ 2 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 0 ];
+            this->M_points( 2, wi ) = q[ 2 ];
             wi++;
 
             //qPerm[4] = boost::make_tuple(q[2], q[0], q[1], q[2]);
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 0 ];
-            this->_M_points( 2, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 0 ];
+            this->M_points( 2, wi ) = q[ 1 ];
             wi++;
 
             //qPerm[5] = boost::make_tuple(q[2], q[0], q[2], q[1]);
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 0 ];
-            this->_M_points( 2, wi ) = q[ 2 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 0 ];
+            this->M_points( 2, wi ) = q[ 2 ];
             wi++;
 
             //qPerm[6] = boost::make_tuple(q[1], q[2], q[0], q[2]);
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 2 ];
-            this->_M_points( 2, wi ) = q[ 0 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 2 ];
+            this->M_points( 2, wi ) = q[ 0 ];
             wi++;
 
             //qPerm[7] = boost::make_tuple(q[2], q[1], q[0], q[2]);
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
-            this->_M_points( 2, wi ) = q[ 0 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 2, wi ) = q[ 0 ];
             wi++;
 
             //qPerm[8] = boost::make_tuple(q[2], q[2], q[0], q[1]);
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 2 ];
-            this->_M_points( 2, wi ) = q[ 0 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 2 ];
+            this->M_points( 2, wi ) = q[ 0 ];
             wi++;
 
             //qPerm[9] = boost::make_tuple(q[1], q[2], q[2], q[0]);
-            this->_M_points( 0, wi ) = q[ 1 ];
-            this->_M_points( 1, wi ) = q[ 2 ];
-            this->_M_points( 2, wi ) = q[ 2 ];
+            this->M_points( 0, wi ) = q[ 1 ];
+            this->M_points( 1, wi ) = q[ 2 ];
+            this->M_points( 2, wi ) = q[ 2 ];
             wi++;
 
             //qPerm[10] = boost::make_tuple(q[2], q[1], q[2], q[0]);
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 1 ];
-            this->_M_points( 2, wi ) = q[ 2 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 1 ];
+            this->M_points( 2, wi ) = q[ 2 ];
             wi++;
 
             //qPerm[11] = boost::make_tuple(q[2], q[2], q[1], q[0]);
-            this->_M_points( 0, wi ) = q[ 2 ];
-            this->_M_points( 1, wi ) = q[ 2 ];
-            this->_M_points( 2, wi ) = q[ 1 ];
+            this->M_points( 0, wi ) = q[ 2 ];
+            this->M_points( 1, wi ) = q[ 2 ];
+            this->M_points( 2, wi ) = q[ 1 ];
             wi++;
         }
 
@@ -669,9 +669,9 @@ public:
     bool test( mpl::int_<2> )
     {
         bool pass = true;
-        ublas::vector<value_type> x( ublas::row( this->_M_points, 0 ) );
-        ublas::vector<value_type> y( ublas::row( this->_M_points, 1 ) );
-        ublas::vector<value_type> w( this->_M_w );
+        ublas::vector<value_type> x( ublas::row( this->M_points, 0 ) );
+        ublas::vector<value_type> y( ublas::row( this->M_points, 1 ) );
+        ublas::vector<value_type> w( this->M_w );
 
         for ( int a=0; a<=nOrder; a++ )
         {
@@ -711,10 +711,10 @@ public:
     }
     bool test( mpl::int_<3> )
     {
-        ublas::vector<value_type> x( ublas::row( this->_M_points, 0 ) );
-        ublas::vector<value_type> y( ublas::row( this->_M_points, 1 ) );
-        ublas::vector<value_type> z( ublas::row( this->_M_points, 2 ) );
-        ublas::vector<value_type> w( this->_M_w );
+        ublas::vector<value_type> x( ublas::row( this->M_points, 0 ) );
+        ublas::vector<value_type> y( ublas::row( this->M_points, 1 ) );
+        ublas::vector<value_type> z( ublas::row( this->M_points, 2 ) );
+        ublas::vector<value_type> w( this->M_w );
 
         bool pass = true;
         int p = nOrder;
@@ -782,7 +782,7 @@ public:
 
 
 private:
-    quad_type _M_quad;
+    quad_type M_quad;
 };
 
 #if 0
@@ -813,11 +813,11 @@ public:
 
     weights_type const& weights() const
     {
-        return _M_w;
+        return M_w;
     }
     value_type const& weight( int q ) const
     {
-        return _M_w[q];
+        return M_w[q];
     }
 
     value_type integrate( boost::function<value_type( node_type const& )> const& f ) const
@@ -833,7 +833,7 @@ public:
     }
 
     TriangleQuadRule()
-        : _pts( 2, 7 ), _M_w( 7 )
+        : _pts( 2, 7 ), M_w( 7 )
     {
         value_type t7pt_x[3] = {value_type( 1.0 )/3.0, 0.10128650732345633, 0.47014206410511508};
         value_type t7pt_w[3] = {0.1125, 0.062969590272413576, 0.066197076394253090};
@@ -844,13 +844,13 @@ public:
             t7pt_w[i]= 4.0*t7pt_w[i];
         }
 
-        _M_w( 0 ) = t7pt_w[0];
-        _M_w( 1 ) = t7pt_w[1];
-        _M_w( 2 ) = t7pt_w[1];
-        _M_w( 3 ) = t7pt_w[1];
-        _M_w( 4 ) = t7pt_w[2];
-        _M_w( 5 ) = t7pt_w[2];
-        _M_w( 6 ) = t7pt_w[2];
+        M_w( 0 ) = t7pt_w[0];
+        M_w( 1 ) = t7pt_w[1];
+        M_w( 2 ) = t7pt_w[1];
+        M_w( 3 ) = t7pt_w[1];
+        M_w( 4 ) = t7pt_w[2];
+        M_w( 5 ) = t7pt_w[2];
+        M_w( 6 ) = t7pt_w[2];
 
         _pts( 0, 0 ) = t7pt_x[0];
         _pts( 1, 0 ) = t7pt_x[0];
@@ -878,7 +878,7 @@ public:
 
 protected:
     nodes_type _pts;
-    weights_type _M_w;
+    weights_type M_w;
 };
 
 

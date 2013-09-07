@@ -156,11 +156,11 @@ public:
          */
         Stats( solver_type* __s, bool __c = false )
             :
-            _M_s( __s ),
-            _M_collect( __c ),
-            _M_x ( _E_n ),
-            _M_l ( _E_n ),
-            _M_u ( _E_n )
+            M_s( __s ),
+            M_collect( __c ),
+            M_x ( _E_n ),
+            M_l ( _E_n ),
+            M_u ( _E_n )
         {
             // nothing to do here
         }
@@ -168,7 +168,7 @@ public:
         //! tells if we collect statistics regarding the solver convergence
         bool collectStats() const
         {
-            return _M_collect;
+            return M_collect;
         }
 
         //! reset all statistics
@@ -185,13 +185,13 @@ public:
 
     private:
 
-        solver_type *_M_s;
-        bool _M_collect;
+        solver_type *M_s;
+        bool M_collect;
         mutable int iter;
 
-        vector_type _M_x;
-        vector_type _M_l;
-        vector_type _M_u;
+        vector_type M_x;
+        vector_type M_l;
+        vector_type M_u;
 
         std::vector<value_type> norm_Tgrad_fx_hstr, norm_err;
         std::vector<int> n_CGiter_hstr, n_restarts_hstr, n_indef_hstr,
@@ -218,7 +218,7 @@ public:
     //! redefined the bounds of the control variables
     void redefine_problem( value_type x_definitions[_E_n][3] )
     {
-        _M_prob.define_problem( x_definitions );
+        M_prob.define_problem( x_definitions );
     }
 
     //! optimization algorithm
@@ -226,12 +226,12 @@ public:
 
     statistics_type const& stats() const
     {
-        return _M_solver_stats;
+        return M_solver_stats;
     }
 
     problem_type& problem()
     {
-        return _M_prob;
+        return M_prob;
     }
 
 private:
@@ -299,13 +299,13 @@ private:
 private:
 
     // problem specification and data
-    problem_type _M_prob;
+    problem_type M_prob;
 
-    options_type _M_options;
+    options_type M_options;
 
-    statistics_type _M_solver_stats;
+    statistics_type M_solver_stats;
 
-    dsm_type _M_theta;
+    dsm_type M_theta;
 
 };
 
@@ -317,18 +317,18 @@ private:
 template<typename Data,template<class> class Problem>
 SolverUnconstrained<Data,Problem>::SolverUnconstrained( value_type x_definitions[_E_n][3] )
     :
-    _M_prob( x_definitions ),
-    _M_solver_stats ( this, true ),
-    _M_theta( _E_n )
+    M_prob( x_definitions ),
+    M_solver_stats ( this, true ),
+    M_theta( _E_n )
 {
     read_options();
 }
 template<typename Data,template<class> class Problem>
 SolverUnconstrained<Data,Problem>::SolverUnconstrained( Data const& __data )
     :
-    _M_prob( __data ),
-    _M_solver_stats ( this, true ),
-    _M_theta( _M_prob.lowerBounds(), _M_prob.upperBounds() )
+    M_prob( __data ),
+    M_solver_stats ( this, true ),
+    M_theta( M_prob.lowerBounds(), M_prob.upperBounds() )
 {
     read_options();
 }
@@ -342,25 +342,25 @@ template<typename Data,template<class> class Problem>
 bool
 SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
 {
-    _M_solver_stats.clear();
+    M_solver_stats.clear();
 
     // Controlling parameters
     // trust region radius
-    value_type Delta = _M_options.Delta_init;
+    value_type Delta = M_options.Delta_init;
 
     vector_type x_new ( x.size() );
     vector_type stot ( x.size() );
     value_type norm_Tgrad_fx = this->norm_Theta_x_grad_fx( x, Delta );
     value_type norm_s_til = 0;
 
-    _M_prob.copy_x0_to_x( x );
+    M_prob.copy_x0_to_x( x );
 
 
-    // FIXME: if ( _M_options.verbose() )
-    //_M_prob.print_complete( x );
+    // FIXME: if ( M_options.verbose() )
+    //M_prob.print_complete( x );
 
-    if ( _M_solver_stats.collectStats() )
-        _M_solver_stats.push( norm_Tgrad_fx, 0, 0, 0, 0, 0, 0, 0, Delta, 0, 0, 0 );
+    if ( M_solver_stats.collectStats() )
+        M_solver_stats.push( norm_Tgrad_fx, 0, 0, 0, 0, 0, 0, 0, Delta, 0, 0, 0 );
 
 
     try
@@ -371,7 +371,7 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
         // Apply bound constrained Trust region algorithm
         //
         while ( iter == 0 ||
-                ( iter < _M_options.max_TR_iter && norm_Tgrad_fx > _M_options.TR_tol ) )
+                ( iter < M_options.max_TR_iter && norm_Tgrad_fx > M_options.TR_tol ) )
         {
             iter++;
             int n_CGiter, n_restarts, n_indef,
@@ -399,9 +399,9 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
             x_new = x + stot;
 
             f_type __fx_new;
-            _M_prob.evaluate( x_new, __fx_new, diff_order<0>() );
+            M_prob.evaluate( x_new, __fx_new, diff_order<0>() );
             f_type __fx;
-            _M_prob.evaluate( x, __fx, diff_order<0>() );
+            M_prob.evaluate( x, __fx, diff_order<0>() );
 
             // compute actual merit function reduction
             value_type ared_til = __fx_new.value( 0 ) - __fx.value( 0 ) + 0.5 * _s_til_x_G_til_x_s_til;
@@ -410,20 +410,20 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
 
             /////////////////////////////////////////////////////////////////////////
             // Trust region radius calculation:
-            if ( _M_options.allow_Trust_radius_calculations )
+            if ( M_options.allow_Trust_radius_calculations )
             {
                 if ( rho <= 1e-8 )
-                    Delta = _M_options.rho_decrease * Delta;
+                    Delta = M_options.rho_decrease * Delta;
 
                 else
                 {
                     x = x + stot;
 
-                    if     ( rho > _M_options.rho_big )
-                        Delta = std::max( _M_options.rho_increase_big*norm_s_til, Delta );
+                    if     ( rho > M_options.rho_big )
+                        Delta = std::max( M_options.rho_increase_big*norm_s_til, Delta );
 
-                    else if ( rho > _M_options.rho_small )
-                        Delta = std::max( _M_options.rho_increase_small*norm_s_til, Delta );
+                    else if ( rho > M_options.rho_small )
+                        Delta = std::max( M_options.rho_increase_small*norm_s_til, Delta );
                 }
 
                 norm_Tgrad_fx = this->norm_Theta_x_grad_fx( x, Delta );
@@ -437,9 +437,9 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
 
             /////////////////////////////////////////////////////////////////////////
 
-            if ( _M_solver_stats.collectStats() )
+            if ( M_solver_stats.collectStats() )
             {
-                _M_solver_stats.push( norm_Tgrad_fx,
+                M_solver_stats.push( norm_Tgrad_fx,
                                       n_CGiter, n_restarts, n_indef,
                                       n_crosses_def, n_crosses_indef,
                                       n_truss_exit_def, n_truss_exit_indef,
@@ -447,7 +447,7 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
             }
 
             if (  norm_Tgrad_fx > 1e-5 )
-                _M_prob.setAccuracy( std::min( 1e-1, norm_Tgrad_fx ) );
+                M_prob.setAccuracy( std::min( 1e-1, norm_Tgrad_fx ) );
 
             DVLOG(2) << "norm_Tgrad_fx = " << norm_Tgrad_fx  << "\n";
         }
@@ -456,7 +456,7 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
     catch ( std::exception const& __ex )
     {
         f_type __fx_new;
-        _M_prob.evaluate ( x, __fx_new, diff_order<2>() );
+        M_prob.evaluate ( x, __fx_new, diff_order<2>() );
 
         if ( norm_inf( __fx_new.gradient( 0 ) ) > 1e-10 )
             throw __ex;
@@ -465,8 +465,8 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
     vector_type __l( _E_n ), __u( _E_n );
     lambda_LS( x, __l, __u );
 
-    if ( _M_solver_stats.collectStats() )
-        _M_solver_stats.push( x, __l, __u );
+    if ( M_solver_stats.collectStats() )
+        M_solver_stats.push( x, __l, __u );
 
     return true;
 }
@@ -474,11 +474,11 @@ SolverUnconstrained<Data,Problem>::optimize( vector_type& x )
 template<typename Data,template<class> class Problem>    void
 SolverUnconstrained<Data,Problem>::history()
 {
-    _M_solver_stats.show();
+    M_solver_stats.show();
 
     vector_type lambda_l ( _E_n ), lambda_u ( _E_n );
     this->lambda_LS( x, lambda_l, lambda_u );
-    _M_prob.print_stationary_x( x, lambda_l, lambda_u );
+    M_prob.print_stationary_x( x, lambda_l, lambda_u );
 }
 #endif
 template<typename Data,template<class> class Problem>
@@ -499,29 +499,29 @@ SolverUnconstrained<Data,Problem>::read_options()
     {
         fin >> str >> num;
 
-        if ( !strcmp( str, "Delta_init" ) )                      _M_options.Delta_init = num;
+        if ( !strcmp( str, "Delta_init" ) )                      M_options.Delta_init = num;
 
-        if ( !strcmp( str, "zeta_min" ) )                        _M_options.zeta_min = num;
+        if ( !strcmp( str, "zeta_min" ) )                        M_options.zeta_min = num;
 
-        if ( !strcmp( str, "CGtol" ) )                           _M_options.CGtol = num;
+        if ( !strcmp( str, "CGtol" ) )                           M_options.CGtol = num;
 
-        if ( !strcmp( str, "deps" ) )                            _M_options.deps = num;
+        if ( !strcmp( str, "deps" ) )                            M_options.deps = num;
 
-        if ( !strcmp( str, "max_TR_iter" ) )                     _M_options.max_TR_iter = num;
+        if ( !strcmp( str, "max_TR_iter" ) )                     M_options.max_TR_iter = num;
 
-        if ( !strcmp( str, "TR_tol" ) )                          _M_options.TR_tol = num;
+        if ( !strcmp( str, "TR_tol" ) )                          M_options.TR_tol = num;
 
-        if ( !strcmp( str, "allow_Trust_radius_calculations" ) ) _M_options.allow_Trust_radius_calculations = num;
+        if ( !strcmp( str, "allow_Trust_radius_calculations" ) ) M_options.allow_Trust_radius_calculations = num;
 
-        if ( !strcmp( str, "rho_decrease" ) )                    _M_options.rho_decrease = num;
+        if ( !strcmp( str, "rho_decrease" ) )                    M_options.rho_decrease = num;
 
-        if ( !strcmp( str, "rho_big" ) )                         _M_options.rho_big = num;
+        if ( !strcmp( str, "rho_big" ) )                         M_options.rho_big = num;
 
-        if ( !strcmp( str, "rho_increase_big" ) )                _M_options.rho_increase_big = num;
+        if ( !strcmp( str, "rho_increase_big" ) )                M_options.rho_increase_big = num;
 
-        if ( !strcmp( str, "rho_small" ) )                       _M_options.rho_small = num;
+        if ( !strcmp( str, "rho_small" ) )                       M_options.rho_small = num;
 
-        if ( !strcmp( str, "rho_increase_small" ) )              _M_options.rho_increase_small = num;
+        if ( !strcmp( str, "rho_increase_small" ) )              M_options.rho_increase_small = num;
     }
 
     fin.close();
@@ -538,7 +538,7 @@ SolverUnconstrained<Data,Problem>::makeCauchyStep( vector_type & _x, value_type 
         symmetric_matrix_type & _Thess_fxT, symmetric_matrix_type & _Htil,
         vector_type & _neg_grad_fx )
 {
-    _M_prob.evaluate ( _x, __fx, diff_order<2>() );
+    M_prob.evaluate ( _x, __fx, diff_order<2>() );
 
 
     _neg_grad_fx = -  __fx.gradient( 0 );
@@ -555,9 +555,9 @@ SolverUnconstrained<Data,Problem>::makeStep( vector_type & _x, vector_type & _s,
         banded_matrix_type & _Hg,
         symmetric_matrix_type & _Thess_fxT, symmetric_matrix_type & _Htil )
 {
-    _M_theta.update( _Delta, _x, _s );
+    M_theta.update( _Delta, _x, _s );
 
-    _Tgrad_fx = prod( _M_theta(),  __fx.gradient( 0 ) );
+    _Tgrad_fx = prod( M_theta(),  __fx.gradient( 0 ) );
 
     banded_matrix_type __diag_grad_fx( _E_n, _E_n, 0, 0 );
 
@@ -565,9 +565,9 @@ SolverUnconstrained<Data,Problem>::makeStep( vector_type & _x, vector_type & _s,
                                         scalar_vector<value_type>( _Tgrad_fx.size(), 1 ) ) );
     __diag_grad_fx = banded_adaptor<matrix<value_type> >( __m, 0, 0 );
 
-    _Hg = prod( _M_theta.jacobian(), __diag_grad_fx );
+    _Hg = prod( M_theta.jacobian(), __diag_grad_fx );
 
-    _Thess_fxT = prod( _M_theta(), prod( __fx.hessian( 0 ), _M_theta() ) );
+    _Thess_fxT = prod( M_theta(), prod( __fx.hessian( 0 ), M_theta() ) );
     _Htil = _Thess_fxT + _Hg;
 }
 
@@ -576,15 +576,15 @@ typename SolverUnconstrained<Data,Problem>::value_type
 SolverUnconstrained<Data,Problem>::norm_Theta_x_grad_fx( vector_type & _x, value_type _Delta )
 {
     f_type __fx;
-    _M_prob.evaluate ( _x, __fx, diff_order<1>() );
+    M_prob.evaluate ( _x, __fx, diff_order<1>() );
 
     vector_type __Tgrad_fx( _E_n );
     vector_type __neg_grad_fx( _E_n );
     __neg_grad_fx = - __fx.gradient( 0 );
 
-    _M_theta.update( _Delta, _x, __neg_grad_fx, dsm_type::NO_JACOBIAN );
+    M_theta.update( _Delta, _x, __neg_grad_fx, dsm_type::NO_JACOBIAN );
 
-    __Tgrad_fx = prod ( _M_theta(), __fx.gradient( 0 ) );
+    __Tgrad_fx = prod ( M_theta(), __fx.gradient( 0 ) );
 
     return norm_2( __Tgrad_fx );
 }
@@ -673,7 +673,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
     // INITIALIZE:
     this->makeCauchyStep( _x, _Delta, __fx, _Tgrad_fx, _Hg, _Thess_fxT, _Htil, _neg_grad_fx );
 
-    DVLOG(2) << "Trust region active (C) : " << _M_theta.isTrustRegionActive() << "\n";
+    DVLOG(2) << "Trust region active (C) : " << M_theta.isTrustRegionActive() << "\n";
 
     value_type _norm_gtil = norm_2( _Tgrad_fx );
     _s_til = zero_vector<value_type>( _s_til.size() );
@@ -695,7 +695,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
             // RE-INITIALIZE:
             _inner_iter = 0;
 
-            _s_til_eps = _s_til + _M_options.deps * _dCG;
+            _s_til_eps = _s_til + M_options.deps * _dCG;
 
             this->makeStep( _x, _s_til_eps, _Delta,
                             __fx,
@@ -723,7 +723,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
             _n_indef++;
             _tau = this->tau( _s_til, _dCG, _Delta );
 
-            if ( ( !_M_theta.isTrustRegionActive() ) || ( _CGiter == 1 ) )
+            if ( ( !M_theta.isTrustRegionActive() ) || ( _CGiter == 1 ) )
             {
                 _xi = _tau;
             }
@@ -747,7 +747,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
                 _restart = true;
             }
 
-            else if ( _M_theta.isTrustRegionActive() )
+            else if ( M_theta.isTrustRegionActive() )
             {
                 _sCG = _s_til;
 
@@ -763,7 +763,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
         {
             _alpha = inner_prod( _rCG, _rCG ) / _gamma;
 
-            if ( ( !_M_theta.isTrustRegionActive() ) || ( _CGiter == 1 ) )
+            if ( ( !M_theta.isTrustRegionActive() ) || ( _CGiter == 1 ) )
                 _xi = _alpha;
 
             else if ( _inner_iter == 0 )
@@ -797,14 +797,14 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
                 _rCG -= _alpha * prod( _Htil,  _dCG );
             }
 
-            else if ( _M_theta.isTrustRegionActive() )
+            else if ( M_theta.isTrustRegionActive() )
             {
                 _n_crosses_def++;
                 _restart = true;
             }
         }
 
-        if ( norm_2( _rCG ) / _norm_gtil < _M_options.CGtol )
+        if ( norm_2( _rCG ) / _norm_gtil < M_options.CGtol )
         {
             _sCG = _s_til;
 
@@ -845,7 +845,7 @@ SolverUnconstrained<Data,Problem>::CGstep( vector_type & _x, value_type _Delta, 
     norm_s_til = norm_2( _sCG );
 
     // restoring to original space
-    _sCG = prod( _M_theta(), _sCG );
+    _sCG = prod( M_theta(), _sCG );
 }
 
 
@@ -862,17 +862,17 @@ SolverUnconstrained<Data,Problem>::lambda_LS( vector_type & _x, vector_type & _l
 
     for ( int __i = 0; __i < _E_n; ++__i )
     {
-        __A( __i, __i ) = 1.0 + ( _M_prob.x_l( __i )-_x ( __i ) )*( _M_prob.x_l( __i )-_x ( __i ) );
+        __A( __i, __i ) = 1.0 + ( M_prob.x_l( __i )-_x ( __i ) )*( M_prob.x_l( __i )-_x ( __i ) );
 
         __A( __i, _E_n+__i ) = -1.0;
         __A( _E_n+__i,__i ) = -1.0;
 
-        __A( ( _E_n+__i ),  _E_n+__i ) =  1.0+( _x ( __i )-_M_prob.x_u( __i ) )*( _x ( __i )-_M_prob.x_u( __i ) );
+        __A( ( _E_n+__i ),  _E_n+__i ) =  1.0+( _x ( __i )-M_prob.x_u( __i ) )*( _x ( __i )-M_prob.x_u( __i ) );
     }
 
     // b = [ \nabla f;  0;  0 ]  -->  Atb = [ -\nabla f; \nabla f ]
     f_type __f_x;
-    _M_prob.evaluate( _x, __f_x, diff_order<1>() );
+    M_prob.evaluate( _x, __f_x, diff_order<1>() );
 
     for ( int i = 0; i < _E_n; i++ )
     {
@@ -938,9 +938,9 @@ template<typename Data, template<class> class Problem>
 void
 SolverUnconstrained<Data,Problem>::Stats::push( const vector_type & __x, vector_type const& __l, vector_type const& __u )
 {
-    _M_x = __x;
-    _M_l = __l;
-    _M_u = __u;
+    M_x = __x;
+    M_l = __l;
+    M_u = __u;
 }
 
 template<typename Data, template<class> class Problem>
@@ -973,7 +973,7 @@ template<typename Data, template<class> class Problem>
 void
 SolverUnconstrained<Data,Problem>::Stats::show() const
 {
-    _M_s->problem().print_stationary_x ( _M_x, _M_l, _M_u );
+    M_s->problem().print_stationary_x ( M_x, M_l, M_u );
 
     iter = norm_Tgrad_fx_hstr.size();
     std::cerr << "\n\nScaled Trust-Region Method Statistics:\n";
@@ -1014,9 +1014,8 @@ SolverUnconstrained<Data,Problem>::Stats::show() const
         std::cerr << std::endl;
     }
 
-    //_M_s->lambda_LS(
+    //M_s->lambda_LS(
 }
 
 } // Feel
 #endif
-

@@ -112,7 +112,7 @@ public:
 
     value_type  operator()( size_type i, size_type j ) const
     {
-        return _M_mat( i, j );
+        return M_mat( i, j );
     }
 
     //@}
@@ -127,7 +127,7 @@ public:
      */
     size_type size1 () const
     {
-        return _M_mat.rows();
+        return M_mat.rows();
     }
 
     /**
@@ -136,7 +136,7 @@ public:
      */
     size_type size2 () const
     {
-        return _M_mat.cols();
+        return M_mat.cols();
     }
 
     /**
@@ -144,7 +144,7 @@ public:
      */
     size_type nnz() const
     {
-        return _M_mat.rows()*_M_mat.cols();
+        return M_mat.rows()*M_mat.cols();
     }
 
     /**
@@ -170,7 +170,7 @@ public:
      */
     bool isInitialized() const
     {
-        return _M_is_initialized;
+        return M_is_initialized;
     }
 
     /**
@@ -186,7 +186,7 @@ public:
      */
     bool closed() const
     {
-        return _M_is_closed;
+        return M_is_closed;
     }
 
 
@@ -195,7 +195,7 @@ public:
      */
     matrix_type const& mat () const
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -203,7 +203,7 @@ public:
      */
     matrix_type & mat ()
     {
-        return _M_mat;
+        return M_mat;
     }
 
     //@}
@@ -251,8 +251,8 @@ public:
      */
     void clear ()
     {
-        //eigen::resize( _M_mat, 0, 0 );
-        _M_mat.setZero( _M_mat.rows(), _M_mat.cols() );
+        //eigen::resize( M_mat, 0, 0 );
+        M_mat.setZero( M_mat.rows(), M_mat.cols() );
     }
 
     /**
@@ -261,7 +261,7 @@ public:
      */
     void zero ()
     {
-        _M_mat.setZero( _M_mat.rows(), _M_mat.cols() );
+        M_mat.setZero( M_mat.rows(), M_mat.cols() );
     }
 
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
@@ -280,7 +280,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        _M_mat( i, j ) += value;
+        M_mat( i, j ) += value;
     }
 
     /**
@@ -295,7 +295,7 @@ public:
                const size_type j,
                const value_type& value )
     {
-        _M_mat( i, j ) = value;
+        M_mat( i, j ) = value;
     }
 
 
@@ -418,13 +418,13 @@ protected:
 
 private:
 
-    bool _M_is_initialized;
-    mutable bool _M_is_closed;
+    bool M_is_initialized;
+    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure
      */
-    mutable matrix_type _M_mat;
+    mutable matrix_type M_mat;
 };
 
 
@@ -443,11 +443,11 @@ MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
         value_type value = 1.0;
 
         if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-            value = _M_mat( rows[i], rows[i] );
-        _M_mat.row( rows[i] ).setZero();
-        //_M_mat.col( rows[i] ).setZero();
+            value = M_mat( rows[i], rows[i] );
+        M_mat.row( rows[i] ).setZero();
+        //M_mat.col( rows[i] ).setZero();
         // set diagonal
-        _M_mat( rows[i], rows[i] ) = value;
+        M_mat( rows[i], rows[i] ) = value;
 
         // multiply rhs by value of the diagonal entry value
         rhs.set( rows[i], value * vals(rows[i]) );

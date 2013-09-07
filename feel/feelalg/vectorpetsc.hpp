@@ -93,7 +93,7 @@ public:
     VectorPetsc ()
         :
         super(),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
     }
 
@@ -103,7 +103,7 @@ public:
     VectorPetsc ( const size_type n, WorldComm const& _worldComm = Environment::worldComm() )
         :
         super( n, _worldComm ),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
         this->init( n, n, false );
     }
@@ -117,7 +117,7 @@ public:
                   WorldComm const& _worldComm = Environment::worldComm() )
         :
         super( n, n_local, _worldComm ),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
         this->init( n, n_local, false );
     }
@@ -125,7 +125,7 @@ public:
     VectorPetsc ( datamap_ptrtype const& dm, bool doInit=true )
         :
         super( dm ),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
         if ( doInit )
             this->init( dm->nDof(), dm->nLocalDofWithoutGhost(), false );
@@ -142,18 +142,18 @@ public:
     VectorPetsc( Vec v )
         :
         super(),
-        _M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( false )
     {
-        this->_M_vec = v;
+        this->M_vec = v;
         this->M_is_initialized = true;
     }
 
     VectorPetsc( Vec v, datamap_ptrtype const& dm )
         :
         super( dm ),
-        _M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( false )
     {
-        this->_M_vec = v;
+        this->M_vec = v;
         this->M_is_initialized = true;
     }
 
@@ -164,7 +164,7 @@ public:
     VectorPetsc( VectorPetsc<value_type> &v, IS &is )
         :
         super(),
-        _M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( false )
     {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
         /* map */
@@ -173,7 +173,7 @@ public:
         datamap_ptrtype dm( new datamap_type(n, n, v.comm()) );
         this->setMap(dm);
         /* init */
-        VecGetSubVector(v.vec(), is, &this->_M_vec);
+        VecGetSubVector(v.vec(), is, &this->M_vec);
         this->M_is_initialized = true;
         /* close */
         this->close(); /* no // assembly required */
@@ -184,7 +184,7 @@ public:
         :
         super(),
         //super(v,index),
-        _M_destroy_vec_on_exit( false )
+        M_destroy_vec_on_exit( false )
     {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
 
@@ -202,7 +202,7 @@ public:
         datamap_ptrtype dm( new datamap_type(n, n, V->comm()) );
         this->setMap(dm);
         /* init */
-        ierr = VecGetSubVector(V->vec(), is, &this->_M_vec);
+        ierr = VecGetSubVector(V->vec(), is, &this->M_vec);
         CHKERRABORT( this->comm(),ierr );
         this->M_is_initialized = true;
         /* close */
@@ -294,7 +294,7 @@ public:
 
     bool destroy_vec_on_exit() const
     {
-        return _M_destroy_vec_on_exit;
+        return M_destroy_vec_on_exit;
     }
 
     /**
@@ -313,7 +313,7 @@ public:
             return 0;
 
         int petsc_size=0;
-        int ierr = VecGetSize( _M_vec, &petsc_size );
+        int ierr = VecGetSize( M_vec, &petsc_size );
         CHKERRABORT( this->comm(),ierr );
         return static_cast<size_type>( petsc_size );
     }
@@ -326,7 +326,7 @@ public:
         DCHECK( this->isInitialized() ) << "VectorPetsc not initialized";
 
         int petsc_size=0;
-        int ierr = VecGetLocalSize( _M_vec, &petsc_size );
+        int ierr = VecGetLocalSize( M_vec, &petsc_size );
         CHKERRABORT( this->comm(),ierr );
 
         return static_cast<size_type>( petsc_size );
@@ -339,13 +339,13 @@ public:
      */
     Vec vec () const
     {
-        FEELPP_ASSERT ( _M_vec != 0 ).error( "invalid petsc vector" );
-        return _M_vec;
+        FEELPP_ASSERT ( M_vec != 0 ).error( "invalid petsc vector" );
+        return M_vec;
     }
     Vec& vec ()
     {
-        FEELPP_ASSERT ( _M_vec != 0 ).error( "invalid petsc vector" );
-        return _M_vec;
+        FEELPP_ASSERT ( M_vec != 0 ).error( "invalid petsc vector" );
+        return M_vec;
     }
 
     //@}
@@ -370,9 +370,9 @@ public:
 
         int ierr=0;
 
-        ierr = VecAssemblyBegin( _M_vec );
+        ierr = VecAssemblyBegin( M_vec );
         CHKERRABORT( this->comm(),ierr );
-        ierr = VecAssemblyEnd( _M_vec );
+        ierr = VecAssemblyEnd( M_vec );
         CHKERRABORT( this->comm(),ierr );
 
         this->M_is_closed = true;
@@ -587,7 +587,7 @@ public:
 
         int ierr=0, petsc_first=0, petsc_last=0;
 
-        ierr = VecGetOwnershipRange ( _M_vec, &petsc_first, &petsc_last );
+        ierr = VecGetOwnershipRange ( M_vec, &petsc_first, &petsc_last );
         CHKERRABORT( this->comm(),ierr );
 
         return static_cast<size_type>( petsc_first );
@@ -605,7 +605,7 @@ public:
 
         int ierr=0, petsc_first=0, petsc_last=0;
 
-        ierr = VecGetOwnershipRange ( _M_vec, &petsc_first, &petsc_last );
+        ierr = VecGetOwnershipRange ( M_vec, &petsc_first, &petsc_last );
         CHKERRABORT( this->comm(),ierr );
 
         return static_cast<size_type>( petsc_last );
@@ -651,12 +651,12 @@ public:
     VectorPetsc( VectorPetsc const & v )
         :
         super( v ),
-        _M_destroy_vec_on_exit( true )
+        M_destroy_vec_on_exit( true )
     {
         FEELPP_ASSERT( v.closed() ).error( "copied vector is not closed" );
 
-        VecDuplicate( v._M_vec, &_M_vec );
-        VecCopy( v._M_vec, _M_vec );
+        VecDuplicate( v.M_vec, &M_vec );
+        VecCopy( v.M_vec, M_vec );
         this->M_is_initialized = true;
         this->close();
     }
@@ -667,13 +667,13 @@ protected:
     /**
      * Petsc vector datatype to store values
      */
-    Vec _M_vec;
+    Vec M_vec;
 
     /**
      * This boolean value should only be set to false
      * for the constructor which takes a PETSc Vec object.
      */
-    bool _M_destroy_vec_on_exit;
+    bool M_destroy_vec_on_exit;
 };
 
 
@@ -738,9 +738,9 @@ private :
 
     void duplicateFromOtherPartition_run( Vector<T> const& vecInput );
 
-    Vec _M_vecLocal;
+    Vec M_vecLocal;
 
-    VecScatter _M_vecScatter;
+    VecScatter M_vecScatter;
 
 };
 

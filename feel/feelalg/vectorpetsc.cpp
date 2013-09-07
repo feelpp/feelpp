@@ -74,10 +74,10 @@ VectorPetsc<T>::init ( const size_type n,
     // create a sequential vector if on only 1 processor
     if ( n_local == n )
     {
-        ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n, &_M_vec );
+        ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n, &M_vec );
         CHKERRABORT( PETSC_COMM_SELF,ierr );
 
-        ierr = VecSetFromOptions ( _M_vec );
+        ierr = VecSetFromOptions ( M_vec );
         CHKERRABORT( PETSC_COMM_SELF,ierr );
     }
 
@@ -87,10 +87,10 @@ VectorPetsc<T>::init ( const size_type n,
         DCHECK( n_local < n ) << "invalid local size : " << n_local << " is not less than global size " <<  n;
 
         ierr = VecCreateMPI ( this->comm(), petsc_n_local, petsc_n,
-                              &_M_vec );
+                              &M_vec );
         CHKERRABORT( this->comm(),ierr );
 
-        ierr = VecSetFromOptions ( _M_vec );
+        ierr = VecSetFromOptions ( M_vec );
         CHKERRABORT( this->comm(),ierr );
     }
 
@@ -107,7 +107,7 @@ VectorPetsc<T>::set ( const value_type& value )
     int ierr=0;
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
 
-    ierr = VecSet ( _M_vec, petsc_value );
+    ierr = VecSet ( M_vec, petsc_value );
     CHKERRABORT( this->comm(),ierr );
 }
 template <typename T>
@@ -121,7 +121,7 @@ VectorPetsc<T>::set ( size_type i, const value_type& value )
     int i_val = static_cast<int>( i );
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
 
-    ierr = VecSetValues ( _M_vec, 1, &i_val, &petsc_value, INSERT_VALUES );
+    ierr = VecSetValues ( M_vec, 1, &i_val, &petsc_value, INSERT_VALUES );
     CHKERRABORT( this->comm(),ierr );
 }
 
@@ -135,7 +135,7 @@ VectorPetsc<T>::add ( const size_type i, const value_type& value )
     int i_val = static_cast<int>( i );
     PetscScalar petsc_value = static_cast<PetscScalar>( value );
 
-    ierr = VecSetValues ( _M_vec, 1, &i_val, &petsc_value, ADD_VALUES );
+    ierr = VecSetValues ( M_vec, 1, &i_val, &petsc_value, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
 }
 
@@ -146,7 +146,7 @@ VectorPetsc<T>::addVector ( int* i, int n, value_type* v )
     //FEELPP_ASSERT(n<=size())( n )( size() ).error( "invalid local index array size" );
 
     int ierr=0;
-    ierr = VecSetValues ( _M_vec, n, i, v, ADD_VALUES );
+    ierr = VecSetValues ( M_vec, n, i, v, ADD_VALUES );
     CHKERRABORT( this->comm(),ierr );
 
 }
@@ -164,12 +164,12 @@ VectorPetsc<T>::operator() ( const size_type i ) const
         PetscScalar *values, value=0.;
 
 
-        ierr = VecGetArray( _M_vec, &values );
+        ierr = VecGetArray( M_vec, &values );
         CHKERRABORT( this->comm(),ierr );
 
         value = values[i - this->firstLocalIndex()];
 
-        ierr = VecRestoreArray ( _M_vec, &values );
+        ierr = VecRestoreArray ( M_vec, &values );
         CHKERRABORT( this->comm(),ierr );
 
         return static_cast<value_type>( value );
@@ -204,10 +204,10 @@ VectorPetsc<T>::zero()
     this->close();
     // 2.2.x & earlier style
 #if PETSC_VERSION_LESS_THAN(2,2,0)
-    ierr = VecSet ( &z, _M_vec );
+    ierr = VecSet ( &z, M_vec );
     CHKERRABORT( this->comm(),ierr );
 #else
-    ierr = VecSet ( _M_vec, z );
+    ierr = VecSet ( M_vec, z );
     CHKERRABORT( this->comm(),ierr );
 #endif
 }
@@ -217,11 +217,11 @@ template <typename T>
 void
 VectorPetsc<T>::clear ()
 {
-    if ( ( this->isInitialized() ) && ( this->_M_destroy_vec_on_exit ) )
+    if ( ( this->isInitialized() ) && ( this->M_destroy_vec_on_exit ) )
     {
         int ierr=0;
 
-        ierr = PETSc::VecDestroy( _M_vec );
+        ierr = PETSc::VecDestroy( M_vec );
         CHKERRABORT( this->comm(),ierr );
     }
 
@@ -262,13 +262,13 @@ VectorPetsc<T>::scale ( T factor_in )
     // 2.2.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
-    ierr = VecScale( &factor, _M_vec );
+    ierr = VecScale( &factor, M_vec );
     CHKERRABORT( this->comm(),ierr );
 
     // 2.3.x & later style
 #else
 
-    ierr = VecScale( _M_vec, factor );
+    ierr = VecScale( M_vec, factor );
     CHKERRABORT( this->comm(),ierr );
 
 #endif
@@ -285,17 +285,17 @@ VectorPetsc<T>::add ( const value_type& v_in )
 
     for ( int i=0; i<n; i++ )
     {
-        ierr = VecGetArray ( _M_vec, &values );
+        ierr = VecGetArray ( M_vec, &values );
         CHKERRABORT( this->comm(),ierr );
 
         int ig = fli + i;
 
         PetscScalar value = ( values[ig] + v );
 
-        ierr = VecRestoreArray ( _M_vec, &values );
+        ierr = VecRestoreArray ( M_vec, &values );
         CHKERRABORT( this->comm(),ierr );
 
-        ierr = VecSetValues ( _M_vec, 1, &ig, &value, INSERT_VALUES );
+        ierr = VecSetValues ( M_vec, 1, &ig, &value, INSERT_VALUES );
         CHKERRABORT( this->comm(),ierr );
     }
 }
@@ -329,13 +329,13 @@ VectorPetsc<T>::add ( const value_type& a_in, const Vector<value_type>& v_in )
     // 2.2.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 2)
 
-    ierr = VecAXPY( &a, v->_M_vec, _M_vec );
+    ierr = VecAXPY( &a, v->M_vec, M_vec );
     CHKERRABORT( this->comm(),ierr );
 
     // 2.3.x & later style
 #else
 
-    ierr = VecAXPY( _M_vec, a, v->_M_vec );
+    ierr = VecAXPY( M_vec, a, v->M_vec );
     CHKERRABORT( this->comm(),ierr );
 
 #endif
@@ -351,7 +351,7 @@ VectorPetsc<T>::min () const
     int index=0, ierr=0;
     PetscReal min=0.;
 
-    ierr = VecMin ( _M_vec, &index, &min );
+    ierr = VecMin ( M_vec, &index, &min );
     CHKERRABORT( this->comm(),ierr );
 
     // this return value is correct: VecMin returns a PetscReal
@@ -367,7 +367,7 @@ VectorPetsc<T>::max() const
     int index=0, ierr=0;
     PetscReal max=0.;
 
-    ierr = VecMax ( _M_vec, &index, &max );
+    ierr = VecMax ( M_vec, &index, &max );
     CHKERRABORT( this->comm(),ierr );
 
     // this return value is correct: VecMax returns a PetscReal
@@ -385,7 +385,7 @@ VectorPetsc<T>:: l1Norm () const
     int ierr=0;
     double value=0.;
 
-    ierr = VecNorm ( _M_vec, NORM_1, &value );
+    ierr = VecNorm ( M_vec, NORM_1, &value );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<Real>( value );
@@ -402,7 +402,7 @@ VectorPetsc<T>::l2Norm () const
     int ierr=0;
     double value=0.;
 
-    ierr = VecNorm ( _M_vec, NORM_2, &value );
+    ierr = VecNorm ( M_vec, NORM_2, &value );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<Real>( value );
@@ -419,7 +419,7 @@ VectorPetsc<T>::linftyNorm () const
     int ierr=0;
     double value=0.;
 
-    ierr = VecNorm ( _M_vec, NORM_INFINITY, &value );
+    ierr = VecNorm ( M_vec, NORM_INFINITY, &value );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<Real>( value );
@@ -436,7 +436,7 @@ VectorPetsc<T>:: sum () const
     int ierr=0;
     double value=0.;
 
-    ierr = VecSum ( _M_vec, &value );
+    ierr = VecSum ( M_vec, &value );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<Real>( value );
@@ -455,7 +455,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
     }
 
     const_cast<VectorPetsc<T>*>( this )->close();
-    PetscObjectSetName((PetscObject)_M_vec,fs::path(name).stem().string().c_str());
+    PetscObjectSetName((PetscObject)M_vec,fs::path(name).stem().string().c_str());
     //this->close();
     int ierr=0;
 
@@ -482,7 +482,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
                                       PETSC_VIEWER_ASCII_MATLAB );
         CHKERRABORT( this->comm(),ierr );
 
-        ierr = VecView ( const_cast<Vec>( _M_vec ), petsc_viewer );
+        ierr = VecView ( const_cast<Vec>( M_vec ), petsc_viewer );
         CHKERRABORT( this->comm(),ierr );
     }
 
@@ -495,7 +495,7 @@ void VectorPetsc<T>::printMatlab ( const std::string name, bool renumber ) const
                                       PETSC_VIEWER_ASCII_MATLAB );
         CHKERRABORT( this->comm(),ierr );
 
-        ierr = VecView ( const_cast<Vec>( _M_vec ), PETSC_VIEWER_STDOUT_WORLD );
+        ierr = VecView ( const_cast<Vec>( M_vec ), PETSC_VIEWER_STDOUT_WORLD );
         CHKERRABORT( this->comm(),ierr );
     }
 
@@ -547,13 +547,13 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
         {
             VectorPetsc<T> tmp( V_in.mapPtr(), true );
             dynamic_cast<Vector<T>&>( tmp ) = V_in;
-            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp._M_vec, _M_vec, _M_vec );
+            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
         }
         else
         {
             // The const_cast<> is not elegant, but it is required since PETSc
             // is not const-correct.
-            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), V->_M_vec, _M_vec, _M_vec );
+            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), V->M_vec, M_vec, M_vec );
 
         }
         CHKERRABORT( this->comm(),ierr );
@@ -596,7 +596,7 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm )
     int ierr=0;
     int petsc_n_localWithGhost=static_cast<int>( this->map().nLocalDofWithGhost() );
 
-    ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  _M_vecLocal );
+    ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  M_vecLocal );
     CHKERRABORT( this->comm(),ierr );
 
     IS isGlob;
@@ -622,8 +622,8 @@ VectorPetscMPI<T>::VectorPetscMPI( Vec v, datamap_ptrtype const& dm )
 
     // create vecScatter
     ierr = VecScatterCreate( this->vec(), isGlob,
-                             _M_vecLocal, isLoc,
-                             &_M_vecScatter );
+                             M_vecLocal, isLoc,
+                             &M_vecScatter );
     CHKERRABORT( this->comm(),ierr );
 
     // Clean up
@@ -668,7 +668,7 @@ VectorPetscMPI<T>::init( const size_type n,
     FEELPP_ASSERT( n_localWithoutGhost < n )( n_localWithoutGhost )( n ).warn( "invalid local size" );
 
     ierr = VecCreateMPI ( this->comm(), petsc_n_localWithoutGhost, petsc_n,
-                          &this->_M_vec );
+                          &this->M_vec );
     CHKERRABORT( this->comm(),ierr );
 
     // localToGlobalMapping
@@ -695,7 +695,7 @@ VectorPetscMPI<T>::init( const size_type n,
     CHKERRABORT( this->comm(),ierr );
 
     // create local vector
-    ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  _M_vecLocal );
+    ierr = VecCreateSeq ( PETSC_COMM_SELF, petsc_n_localWithGhost, &  M_vecLocal );
     CHKERRABORT( this->comm(),ierr );
 
     // create vecScatter
@@ -703,8 +703,8 @@ VectorPetscMPI<T>::init( const size_type n,
     ierr = ISCreateStride( PETSC_COMM_SELF,n_idx,0,1,&isLoc );
     CHKERRABORT( this->comm(),ierr );
     ierr = VecScatterCreate( this->vec(), is,
-                             _M_vecLocal, isLoc,
-                             &_M_vecScatter );
+                             M_vecLocal, isLoc,
+                             &M_vecScatter );
     CHKERRABORT( this->comm(),ierr );
 
 
@@ -731,7 +731,7 @@ VectorPetscMPI<T>::init( const size_type n,
     ierr = VecSetFromOptions( this->vec() );
     CHKERRABORT( this->comm(),ierr );
 
-    ierr = VecSetFromOptions( _M_vecLocal );
+    ierr = VecSetFromOptions( M_vecLocal );
     CHKERRABORT( this->comm(),ierr );
 
 
@@ -749,12 +749,12 @@ VectorPetscMPI<T>::operator() ( const size_type i ) const
 {
     int ierr=0;
     PetscScalar *values, value=0.;
-    ierr = VecGetArray( _M_vecLocal, &values );
+    ierr = VecGetArray( M_vecLocal, &values );
     CHKERRABORT( this->comm(),ierr );
     //std::cout << "\n operator MPI ";
     value =  values[i /*- this->firstLocalIndex()*/ ];
 
-    ierr = VecRestoreArray( _M_vecLocal, &values );
+    ierr = VecRestoreArray( M_vecLocal, &values );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<value_type>( value );
@@ -819,14 +819,14 @@ VectorPetscMPI<T>::clear()
 
        int ierr=0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-        ierr = VecDestroy( &_M_vecLocal );
+        ierr = VecDestroy( &M_vecLocal );
         CHKERRABORT( this->comm(),ierr );
-        ierr = VecScatterDestroy( &_M_vecScatter );
+        ierr = VecScatterDestroy( &M_vecScatter );
         CHKERRABORT( this->comm(),ierr );
 #else
-        ierr = VecDestroy( _M_vecLocal );
+        ierr = VecDestroy( M_vecLocal );
         CHKERRABORT( this->comm(),ierr );
-        ierr = VecScatterDestroy( _M_vecScatter );
+        ierr = VecScatterDestroy( M_vecScatter );
         CHKERRABORT( this->comm(),ierr );
 #endif
     }
@@ -840,10 +840,10 @@ void VectorPetscMPI<T>::localize()
     int ierr = 0;
 
     // Perform the scatter
-    ierr = VecScatterBegin( _M_vecScatter, this->vec(), _M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
+    ierr = VecScatterBegin( M_vecScatter, this->vec(), M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
     CHKERRABORT( this->comm(),ierr );
 
-    ierr = VecScatterEnd  ( _M_vecScatter, this->vec(), _M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
+    ierr = VecScatterEnd  ( M_vecScatter, this->vec(), M_vecLocal, INSERT_VALUES, SCATTER_FORWARD );
     CHKERRABORT( this->comm(),ierr );
 }
 
@@ -1149,7 +1149,7 @@ VectorPetscMPI<T>::localSize() const
     FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
 
     int petsc_size=0;
-    int ierr = VecGetLocalSize( _M_vecLocal, &petsc_size );
+    int ierr = VecGetLocalSize( M_vecLocal, &petsc_size );
     CHKERRABORT( this->comm(),ierr );
 
     return static_cast<size_type>( petsc_size );

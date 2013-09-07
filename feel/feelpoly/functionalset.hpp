@@ -80,32 +80,32 @@ public:
 
     FunctionalSet()
         :
-        _M_space(),
-        _M_fset(),
-        _M_mat()
+        M_space(),
+        M_fset(),
+        M_mat()
     {}
 
     FunctionalSet( space_type const& s )
         :
-        _M_space( s ),
-        _M_fset(),
-        _M_mat()
+        M_space( s ),
+        M_fset(),
+        M_mat()
     {
     }
     FunctionalSet( space_type const& s, std::vector<functional_type> const& fset )
         :
-        _M_space( s ),
-        _M_fset( fset ),
-        _M_mat( space_type::nComponents*fset.size(), fset[0].coeff().size2() )
+        M_space( s ),
+        M_fset( fset ),
+        M_mat( space_type::nComponents*fset.size(), fset[0].coeff().size2() )
     {
         //std::cout << "FunctionalSet: " << fset[0].coeff() <<  "\n";
         this->setFunctionalSet( fset );
     }
     FunctionalSet( FunctionalSet const & fset )
         :
-        _M_space( fset._M_space ),
-        _M_fset( fset._M_fset ),
-        _M_mat( fset._M_mat )
+        M_space( fset.M_space ),
+        M_fset( fset.M_fset ),
+        M_mat( fset.M_mat )
     {}
 
     ~FunctionalSet()
@@ -121,9 +121,9 @@ public:
     {
         if ( this != fset )
         {
-            _M_space = fset._M_space;
-            _M_fset = fset._M_fset;
-            _M_mat = fset._M_mat;
+            M_space = fset.M_space;
+            M_fset = fset.M_fset;
+            M_mat = fset.M_mat;
         }
 
         return *this;
@@ -134,7 +134,7 @@ public:
      */
     functional_type const& operator()( uint16_type i ) const
     {
-        return _M_fset[i];
+        return M_fset[i];
     }
 
     /**
@@ -142,9 +142,9 @@ public:
      */
     matrix_type operator()( space_type const& p ) const
     {
-        //FEELPP_ASSERT( _M_mat.size2() == ublas::trans(p.coeff()).size1() )( _M_mat.size1() )( p.coeff().size1() ).error( "incompatible dimension between functional and polynomial.\n Is the space correctly defined?" );
+        //FEELPP_ASSERT( M_mat.size2() == ublas::trans(p.coeff()).size1() )( M_mat.size1() )( p.coeff().size1() ).error( "incompatible dimension between functional and polynomial.\n Is the space correctly defined?" );
 
-        return ublas::prod( space_type::polyset_type::toMatrix( _M_mat ),
+        return ublas::prod( space_type::polyset_type::toMatrix( M_mat ),
                             ublas::trans( space_type::polyset_type::toMatrix( p.coeff() ) ) );
     }
     //@}
@@ -159,7 +159,7 @@ public:
      */
     space_type const& functionSpace() const
     {
-        return _M_space;
+        return M_space;
     }
 
     /**
@@ -170,7 +170,7 @@ public:
      */
     matrix_type const& rep() const
     {
-        return _M_mat;
+        return M_mat;
     }
 
 
@@ -185,7 +185,7 @@ public:
      */
     void setFunctionSpace( space_type const& __space )
     {
-        _M_space = __space;
+        M_space = __space;
     }
 
     /**
@@ -193,23 +193,23 @@ public:
      */
     void setFunctionalSet( std::vector<functional_type> const& fset )
     {
-        _M_fset = fset;
+        M_fset = fset;
 
 
         if ( space_type::is_scalar )
         {
             // update matrix associated with functionals applied to the
             // basis of the function space
-            _M_mat = ublas::zero_matrix<value_type>( fset.size(), fset[0].coeff().size2() );
+            M_mat = ublas::zero_matrix<value_type>( fset.size(), fset[0].coeff().size2() );
 
-            //std::cout << "mat size" << _M_mat << "\n";
+            //std::cout << "mat size" << M_mat << "\n";
             for ( uint16_type i = 0; i < fset.size(); ++i )
             {
                 //std::cout << "Functional " << i << "=" << fset[i].coeff() << "\n";
-                ublas::row( _M_mat, i ) = ublas::row( fset[i].coeff(), 0 );
+                ublas::row( M_mat, i ) = ublas::row( fset[i].coeff(), 0 );
             }
 
-            //std::cout << "mat size" << _M_mat << "\n";
+            //std::cout << "mat size" << M_mat << "\n";
 
         }
 
@@ -217,16 +217,16 @@ public:
         {
             // update matrix associated with functionals applied to the
             // basis of the function space
-            _M_mat = ublas::zero_matrix<value_type>( space_type::nComponents*fset.size(), fset[0].coeff().size2() );
+            M_mat = ublas::zero_matrix<value_type>( space_type::nComponents*fset.size(), fset[0].coeff().size2() );
 
             for ( uint16_type i = 0; i < fset.size(); ++i )
             {
-                ublas::project( _M_mat,
+                ublas::project( M_mat,
                                 ublas::range( i*space_type::nComponents, ( i+1 )*space_type::nComponents ),
-                                ublas::range( 0, _M_mat.size2() ) ) = ublas::scalar_matrix<value_type>( space_type::nComponents, _M_mat.size2(), -1 );
-                ublas::project( _M_mat,
+                                ublas::range( 0, M_mat.size2() ) ) = ublas::scalar_matrix<value_type>( space_type::nComponents, M_mat.size2(), -1 );
+                ublas::project( M_mat,
                                 ublas::range( i*space_type::nComponents, ( i+1 )*space_type::nComponents ),
-                                ublas::range( 0, _M_mat.size2() ) ) = fset[i].coeff();
+                                ublas::range( 0, M_mat.size2() ) ) = fset[i].coeff();
             }
         }
     }
@@ -245,9 +245,9 @@ public:
 protected:
 
 private:
-    space_type _M_space;
-    fset_type _M_fset;
-    matrix_type _M_mat;
+    space_type M_space;
+    fset_type M_fset;
+    matrix_type M_mat;
 };
 } // Feel
 #endif /* __FunctionalSet_H */

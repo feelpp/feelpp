@@ -73,11 +73,11 @@ public:
 
     MatrixValue( value_type acc = value_type( 0 ) )
         :
-        _M_mat( acc )
+        M_mat( acc )
     {}
     MatrixValue( MatrixValue const & m )
         :
-        _M_mat( m._M_mat )
+        M_mat( m.M_mat )
     {}
 
     ~MatrixValue()
@@ -170,7 +170,7 @@ public:
      */
     matrix_type const& mat () const
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -178,7 +178,7 @@ public:
      */
     matrix_type & mat ()
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -186,7 +186,7 @@ public:
      */
     matrix_type const& wmat () const
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -194,7 +194,7 @@ public:
      */
     matrix_type & wmat ()
     {
-        return _M_mat;
+        return M_mat;
     }
 
 
@@ -238,7 +238,7 @@ public:
      */
     void clear ()
     {
-        _M_mat = 0;
+        M_mat = 0;
     }
 
     /**
@@ -247,12 +247,12 @@ public:
      */
     void zero ()
     {
-        _M_mat = 0;
+        M_mat = 0;
     }
 
     void zero ( size_type /*start1*/, size_type /*stop1*/, size_type /*start2*/, size_type /*stop2*/ )
     {
-        _M_mat = 0;
+        M_mat = 0;
     }
 
     /**
@@ -262,7 +262,7 @@ public:
                const unsigned int /*j*/,
                const value_type value )
     {
-        _M_mat += value;
+        M_mat += value;
     }
 
     /**
@@ -272,7 +272,7 @@ public:
                const unsigned int /*j*/,
                const value_type value )
     {
-        _M_mat = value;
+        M_mat = value;
     }
 
 
@@ -303,7 +303,7 @@ public:
     energy( ublas::vector<value_type> const& /*__v*/,
             ublas::vector<value_type> const& /*__u*/ ) const
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -321,7 +321,7 @@ private:
     /**
      * the gmm sparse matrix data structure
      */
-    mutable matrix_type _M_mat;
+    mutable matrix_type M_mat;
 
 };
 

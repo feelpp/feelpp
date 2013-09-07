@@ -188,24 +188,24 @@ class GeoMap
                M_is_cached( false ),
                _elementMap( ),
                _boundaryMap(),
-               _M_g_linear( nNodes, nDim ),
+               M_g_linear( nNodes, nDim ),
                M_refconvex()
 {
     if ( trans == fem::LINEAR )
     {
-        //_M_g_linear.resize( nNodes, nDim );
+        //M_g_linear.resize( nNodes, nDim );
         matrix_node_t_type __dummy_pts( ublas::zero_matrix<value_type>( nDim, 1 ) );
 
         ublas::vector<ublas::matrix<value_type> > m = super::derivate( __dummy_pts );
 
-        FEELPP_ASSERT( _M_g_linear.size2() == m.size() )( _M_g_linear.size2() )(  m.size() ).error( "invalid dimension" );
+        FEELPP_ASSERT( M_g_linear.size2() == m.size() )( M_g_linear.size2() )(  m.size() ).error( "invalid dimension" );
         FEELPP_ASSERT( m( 0 ).size2() == 1 )( m( 0 ).size2() ).error( "Invalid number of points" );
 
-        FEELPP_ASSERT( _M_g_linear.size1() == m( 0 ).size1() )( _M_g_linear.size1() )( m( 0 ).size1() ).error( "invalid number of DOF" );
+        FEELPP_ASSERT( M_g_linear.size1() == m( 0 ).size1() )( M_g_linear.size1() )( m( 0 ).size1() ).error( "invalid number of DOF" );
 
         //std::cout << "nNodes= " << nNodes << "\n"
         //<< "nDim= " << nDim << "\n";
-        //std::cout << "_M_g_linear = " << _M_g_linear << "\n"
+        //std::cout << "M_g_linear = " << M_g_linear << "\n"
         //<< "m(0) = " << m( 0 ) << "\n";
 
         for ( uint16_type i = 0; i < nNodes; ++i )
@@ -213,7 +213,7 @@ class GeoMap
             for ( uint16_type n = 0; n < nDim; ++n )
             {
                 //std::cout << "m(n)= " << m( n ) << "\n";
-                _M_g_linear( i, n ) = m( n )( i, 0 );
+                M_g_linear( i, n ) = m( n )( i, 0 );
             }
         }
 
@@ -223,7 +223,7 @@ class GeoMap
         {
             for ( uint16_type n = 0; n < nDim; ++n )
             {
-                _M_g_linear( i, n ) = this->dPhi( i, n, __dummy_pt );
+                M_g_linear( i, n ) = this->dPhi( i, n, __dummy_pt );
             }
         }
 
@@ -238,12 +238,12 @@ GeoMap( element_gm_ptrtype const& e,  face_gm_ptrtype const& f )
     M_is_cached( false ),
     _elementMap( e ),
     _boundaryMap( f ),
-    _M_g_linear( nNodes, nDim ),
+    M_g_linear( nNodes, nDim ),
     M_refconvex()
 {
     if ( trans == fem::LINEAR )
     {
-        //_M_g_linear.resize( nNodes, nDim );
+        //M_g_linear.resize( nNodes, nDim );
         node_t_type __dummy_pt( nDim );
 
         matrix_node_t_type __dummy_pts( ublas::zero_matrix<value_type>( nDim, 1 ) );
@@ -253,7 +253,7 @@ GeoMap( element_gm_ptrtype const& e,  face_gm_ptrtype const& f )
         ublas::vector<ublas::matrix<value_type> > m = super::derivate( __dummy_pts );
         //std::cout << "nNodes= " << nNodes << "\n"
         //<< "nDim= " << nDim << "\n";
-        //std::cout << "_M_g_linear = " << _M_g_linear << "\n"
+        //std::cout << "M_g_linear = " << M_g_linear << "\n"
         //<< "m(0) = " << m( 0 ) << "\n";
 
         for ( uint16_type i = 0; i < nNodes; ++i )
@@ -261,7 +261,7 @@ GeoMap( element_gm_ptrtype const& e,  face_gm_ptrtype const& f )
             for ( uint16_type n = 0; n < nDim; ++n )
             {
                 //std::cout << "m(n)= " << m( n ) << "\n";
-                _M_g_linear( i, n ) = m( n )( i, 0 );
+                M_g_linear( i, n ) = m( n )( i, 0 );
             }
         }
 
@@ -271,7 +271,7 @@ GeoMap( element_gm_ptrtype const& e,  face_gm_ptrtype const& f )
         {
             for ( uint16_type n = 0; n < nDim; ++n )
             {
-                _M_g_linear( i, n ) = this->dPhi( i, n, __dummy_pt );
+                M_g_linear( i, n ) = this->dPhi( i, n, __dummy_pt );
             }
         }
 
@@ -425,7 +425,7 @@ void gradient( const node_t_type& __pt,
 
     if ( trans == fem::LINEAR )
     {
-        __g = _M_g_linear;
+        __g = M_g_linear;
     }
 
     else
@@ -460,7 +460,7 @@ void gradient( uint16_type __idref,
 
     if ( trans == fem::LINEAR )
     {
-        __g = _M_g_linear;
+        __g = M_g_linear;
     }
 
     else
@@ -662,61 +662,61 @@ class Context
              element_type const& __e,
              precompute_ptrtype const& __pc )
         :
-        _M_gm( __gm ),
-        _M_element( boost::addressof( __e ) ),
-        _M_pc( __pc ),
-        _M_pc_faces(),
-        _M_npoints( _M_pc->nPoints() ),
+        M_gm( __gm ),
+        M_element( boost::addressof( __e ) ),
+        M_pc( __pc ),
+        M_pc_faces(),
+        M_npoints( M_pc->nPoints() ),
 
-        //_M_xref( PDim ),
-        //_M_xreal( NDim ),
-        //_M_x0( NDim ),
-        _M_J( 0 ),
-        _M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
-        _M_n( _M_gm->referenceConvex().normals() ),
-        _M_n_real( NDim ),
-        _M_u_n_real( NDim ),
-        _M_n_norm( 0 ),
-        _M_t_real( NDim ),
-        _M_xrefq( PDim, nPoints() ),
-        _M_xrealq( NDim, nPoints() ),
-        _M_nrealq( NDim, nPoints() ),
-        _M_unrealq( NDim, nPoints() ),
-        _M_nnormq( nPoints() ),
+        //M_xref( PDim ),
+        //M_xreal( NDim ),
+        //M_x0( NDim ),
+        M_J( 0 ),
+        M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
+        M_n( M_gm->referenceConvex().normals() ),
+        M_n_real( NDim ),
+        M_u_n_real( NDim ),
+        M_n_norm( 0 ),
+        M_t_real( NDim ),
+        M_xrefq( PDim, nPoints() ),
+        M_xrealq( NDim, nPoints() ),
+        M_nrealq( NDim, nPoints() ),
+        M_unrealq( NDim, nPoints() ),
+        M_nnormq( nPoints() ),
 
-        _M_g( _M_G.size2(), PDim ),
-        _M_K( NDim, PDim ),
-        _M_CS( PDim, PDim ),
-        _M_CSi( PDim, PDim ),
-        _M_B( NDim, PDim ),
-        _M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
-        _M_id( __e.id() ),
-        _M_e_marker( __e.marker() ),
-        _M_e_marker2( __e.marker2() ),
-        _M_e_marker3( __e.marker3() ),
-        _M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
-        _M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
-        _M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
-        _M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
-        _M_face_id( invalid_uint16_type_value ),
-        _M_h( __e.h() ),
-        _M_h_face( 0 ),
-        _M_meas( __e.measure() ),
-        _M_measface( 0 ),
-        _M_Jt(),
-        _M_Bt(),
-        _M_perm( )
+        M_g( M_G.size2(), PDim ),
+        M_K( NDim, PDim ),
+        M_CS( PDim, PDim ),
+        M_CSi( PDim, PDim ),
+        M_B( NDim, PDim ),
+        M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
+        M_id( __e.id() ),
+        M_e_marker( __e.marker() ),
+        M_e_marker2( __e.marker2() ),
+        M_e_marker3( __e.marker3() ),
+        M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
+        M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
+        M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
+        M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
+        M_face_id( invalid_uint16_type_value ),
+        M_h( __e.h() ),
+        M_h_face( 0 ),
+        M_meas( __e.measure() ),
+        M_measface( 0 ),
+        M_Jt(),
+        M_Bt(),
+        M_perm( )
 {
 
     if ( is_linear )
     {
-        _M_gm->gradient( node_t_type(), _M_g_linear );
+        M_gm->gradient( node_t_type(), M_g_linear );
     }
 
     else
     {
-        _M_Jt.resize( nPoints() );
-        _M_Bt.resize( nPoints() );
+        M_Jt.resize( nPoints() );
+        M_Bt.resize( nPoints() );
     }
 
     update( __e );
@@ -727,122 +727,122 @@ Context( gm_ptrtype __gm,
          std::vector<std::map<permutation_type, precompute_ptrtype> > & __pc,
          uint16_type __f )
     :
-    _M_gm( __gm ),
-    _M_element( boost::addressof( __e ) ),
-    _M_pc(),
-    _M_pc_faces( __pc ),
-    _M_npoints( __pc[__f][__e.permutation( __f )]->nPoints() ),
+    M_gm( __gm ),
+    M_element( boost::addressof( __e ) ),
+    M_pc(),
+    M_pc_faces( __pc ),
+    M_npoints( __pc[__f][__e.permutation( __f )]->nPoints() ),
 
-    //_M_xref( PDim ),
-    //_M_xreal( NDim ),
-    //_M_x0( NDim ),
-    _M_J( 0 ),
-    _M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
-    _M_n( _M_gm->referenceConvex().normals() ),
-    _M_n_real( NDim ),
-    _M_u_n_real( NDim ),
-    _M_n_norm( 0 ),
-    _M_t_real( NDim ),
-    _M_xrefq( PDim, nPoints() ),
-    _M_xrealq( NDim, nPoints() ),
-    _M_nrealq( NDim, nPoints() ),
-    _M_unrealq( NDim, nPoints() ),
-    _M_nnormq( nPoints() ),
+    //M_xref( PDim ),
+    //M_xreal( NDim ),
+    //M_x0( NDim ),
+    M_J( 0 ),
+    M_G( ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G() ),
+    M_n( M_gm->referenceConvex().normals() ),
+    M_n_real( NDim ),
+    M_u_n_real( NDim ),
+    M_n_norm( 0 ),
+    M_t_real( NDim ),
+    M_xrefq( PDim, nPoints() ),
+    M_xrealq( NDim, nPoints() ),
+    M_nrealq( NDim, nPoints() ),
+    M_unrealq( NDim, nPoints() ),
+    M_nnormq( nPoints() ),
 
-    _M_g( _M_G.size2(), PDim ),
-    _M_K( NDim, PDim ),
-    _M_CS( PDim, PDim ),
-    _M_CSi( PDim, PDim ),
-    _M_B( NDim, PDim ),
-    _M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
-    _M_id( __e.id() ),
-    _M_e_marker( __e.marker() ),
-    _M_e_marker2( __e.marker2() ),
-    _M_e_marker3( __e.marker3() ),
-    _M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
-    _M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
-    _M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
-    _M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
-    _M_face_id( __f ),
-    _M_h( __e.h() ),
-    _M_h_face( 0 ),
-    _M_meas( __e.measure() ),
-    _M_measface( __e.faceMeasure( __f ) ),
-    _M_Jt(),
-    _M_Bt(),
-    _M_perm( )
+    M_g( M_G.size2(), PDim ),
+    M_K( NDim, PDim ),
+    M_CS( PDim, PDim ),
+    M_CSi( PDim, PDim ),
+    M_B( NDim, PDim ),
+    M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
+    M_id( __e.id() ),
+    M_e_marker( __e.marker() ),
+    M_e_marker2( __e.marker2() ),
+    M_e_marker3( __e.marker3() ),
+    M_elem_id_1( invalid_size_type_value ),// __e.ad_first() ),
+    M_pos_in_elem_id_1( invalid_uint16_type_value ),  //__e.pos_first() ),
+    M_elem_id_2( invalid_size_type_value ),  //__e.ad_second() ),
+    M_pos_in_elem_id_2( invalid_uint16_type_value ),  //__e.pos_second() ),
+    M_face_id( __f ),
+    M_h( __e.h() ),
+    M_h_face( 0 ),
+    M_meas( __e.measure() ),
+    M_measface( __e.faceMeasure( __f ) ),
+    M_Jt(),
+    M_Bt(),
+    M_perm( )
 {
 
     if ( is_linear )
     {
-        _M_gm->gradient( node_t_type(), _M_g_linear );
+        M_gm->gradient( node_t_type(), M_g_linear );
     }
 
     else
     {
-        _M_Jt.resize( nPoints() );
-        _M_Bt.resize( nPoints() );
+        M_Jt.resize( nPoints() );
+        M_Bt.resize( nPoints() );
     }
 
     update( __e, __f );
 }
 Context( gmc_ptrtype& p )
     :
-    _M_gm( p->_M_gm ),
-    _M_element( p->_M_element ),
-    _M_pc( p->_M_pc ),
-    _M_pc_faces( p->_M_pc_faces ),
-    _M_npoints( _M_pc->nPoints() ),
-    //_M_xref( PDim ),
-    //_M_xreal( NDim ),
-    //_M_x0( NDim ),
-    _M_J( p->_M_J ),
-    _M_G( ( gm_type::nNodes == element_type::numVertices ) ?_M_element->vertices() : _M_element->G() ),
-    _M_n( p->_M_n ),
-    _M_n_real( p->_M_n_real ),
-    _M_u_n_real( p->_M_u_n_real ),
-    _M_n_norm( p->_M_n_norm ),
-    _M_t_real( p->_M_t_real ),
-    _M_xrefq( p->_M_xrefq ),
-    _M_xrealq( p->_M_xrealq ),
-    _M_nrealq( p->_M_nrealq ),
-    _M_unrealq( p->_M_unrealq ),
-    _M_nnormq( p->_M_nnormq ),
-    _M_g( p->_M_g ),
-    _M_K( p->_M_K ),
-    _M_CS( p->_M_CS ),
-    _M_CSi( p->_M_CSi ),
-    _M_B( p->_M_B ),
-    _M_B3( p->_M_B3 ),
-    _M_id( p->_M_id ),
-    _M_e_marker( p->_M_e_marker ),
-    _M_e_marker2( p->_M_e_marker2 ),
-    _M_e_marker3( p->_M_e_marker3 ),
-    _M_elem_id_1( invalid_size_type_value ),// _M_element.ad_first() ),
-    _M_pos_in_elem_id_1( invalid_uint16_type_value ),  //_M_element.pos_first() ),
-    _M_elem_id_2( invalid_size_type_value ),  //_M_element.ad_second() ),
-    _M_pos_in_elem_id_2( invalid_uint16_type_value ),  //_M_element.pos_second() ),
-    _M_face_id( invalid_uint16_type_value ),
-    _M_h( p->_M_h ),
-    _M_h_face( p->_M_h_face ),
-    _M_meas( p->_M_meas ),
-    _M_measface( p->_M_measface ),
-    _M_Jt(),
-    _M_Bt(),
-    _M_perm( p->_M_perm )
+    M_gm( p->M_gm ),
+    M_element( p->M_element ),
+    M_pc( p->M_pc ),
+    M_pc_faces( p->M_pc_faces ),
+    M_npoints( M_pc->nPoints() ),
+    //M_xref( PDim ),
+    //M_xreal( NDim ),
+    //M_x0( NDim ),
+    M_J( p->M_J ),
+    M_G( ( gm_type::nNodes == element_type::numVertices ) ?M_element->vertices() : M_element->G() ),
+    M_n( p->M_n ),
+    M_n_real( p->M_n_real ),
+    M_u_n_real( p->M_u_n_real ),
+    M_n_norm( p->M_n_norm ),
+    M_t_real( p->M_t_real ),
+    M_xrefq( p->M_xrefq ),
+    M_xrealq( p->M_xrealq ),
+    M_nrealq( p->M_nrealq ),
+    M_unrealq( p->M_unrealq ),
+    M_nnormq( p->M_nnormq ),
+    M_g( p->M_g ),
+    M_K( p->M_K ),
+    M_CS( p->M_CS ),
+    M_CSi( p->M_CSi ),
+    M_B( p->M_B ),
+    M_B3( p->M_B3 ),
+    M_id( p->M_id ),
+    M_e_marker( p->M_e_marker ),
+    M_e_marker2( p->M_e_marker2 ),
+    M_e_marker3( p->M_e_marker3 ),
+    M_elem_id_1( invalid_size_type_value ),// M_element.ad_first() ),
+    M_pos_in_elem_id_1( invalid_uint16_type_value ),  //M_element.pos_first() ),
+    M_elem_id_2( invalid_size_type_value ),  //M_element.ad_second() ),
+    M_pos_in_elem_id_2( invalid_uint16_type_value ),  //M_element.pos_second() ),
+    M_face_id( invalid_uint16_type_value ),
+    M_h( p->M_h ),
+    M_h_face( p->M_h_face ),
+    M_meas( p->M_meas ),
+    M_measface( p->M_measface ),
+    M_Jt(),
+    M_Bt(),
+    M_perm( p->M_perm )
 {
     if ( is_linear )
     {
-        _M_gm->gradient( node_t_type(), _M_g_linear );
+        M_gm->gradient( node_t_type(), M_g_linear );
     }
 
     else
     {
-        _M_Jt.resize( nPoints() );
-        _M_Bt.resize( nPoints() );
+        M_Jt.resize( nPoints() );
+        M_Bt.resize( nPoints() );
     }
 
-    update( *_M_element );
+    update( *M_element );
 }
 
 /**
@@ -867,44 +867,44 @@ gmc_ptrtype clone()
  */
 void update( element_type const& __e, uint16_type __f )
 {
-    //_M_element_c = boost::shared_ptr<element_type const>(&__e);
-    _M_element = boost::addressof( __e );
-    _M_face_id = __f;
+    //M_element_c = boost::shared_ptr<element_type const>(&__e);
+    M_element = boost::addressof( __e );
+    M_face_id = __f;
 
-    _M_perm = __e.permutation( _M_face_id );
+    M_perm = __e.permutation( M_face_id );
 
-    _M_h_face = __e.hFace( _M_face_id );
-    //_M_h_edge = __e.hEdge( _M_face_id );
+    M_h_face = __e.hFace( M_face_id );
+    //M_h_edge = __e.hEdge( M_face_id );
 
-    _M_pc = _M_pc_faces[__f][_M_perm];
-    //_M_G = __e.G();
-    _M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
-    _M_id = __e.id();
-    _M_e_marker = __e.marker();
-    _M_e_marker2 = __e.marker2();
-    _M_e_marker3 = __e.marker3();
-    _M_h = __e.h();
-    _M_meas = __e.measure();
-    _M_measface = __e.faceMeasure( __f );
-    _M_xrefq = _M_pc->nodes();
+    M_pc = M_pc_faces[__f][M_perm];
+    //M_G = __e.G();
+    M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
+    M_id = __e.id();
+    M_e_marker = __e.marker();
+    M_e_marker2 = __e.marker2();
+    M_e_marker3 = __e.marker3();
+    M_h = __e.h();
+    M_meas = __e.measure();
+    M_measface = __e.faceMeasure( __f );
+    M_xrefq = M_pc->nodes();
 
-    FEELPP_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
-    FEELPP_ASSERT( _M_pc ).error( "invalid precompute data structure" );
+    FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
+    FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
 
     if ( vm::has_point<context>::value )
     {
 
-        //ublas::axpy_prod( _M_G, pc->phi(), _M_xrealq, true );
-        std::fill( _M_xrealq.data().begin(), _M_xrealq.data().end(), value_type( 0 ) );
-        const uint16_type size1 = _M_G.size1();
-        const uint16_type size3 = _M_G.size2();
-        const uint16_type size2 = _M_pc->nPoints();
+        //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
+        std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
+        const uint16_type size1 = M_G.size1();
+        const uint16_type size3 = M_G.size2();
+        const uint16_type size2 = M_pc->nPoints();
 
         for ( uint16_type i = 0; i < size1; ++i )
             for ( uint16_type j = 0; j < size2; ++j )
             {
                 for ( uint16_type k = 0; k < size3; ++k )
-                    _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][j]( 0,0 );
+                    M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0,0 );
             }
     }
 
@@ -917,28 +917,28 @@ void update( element_type const& __e, uint16_type __f )
 void update( element_type const& __e,
              precompute_ptrtype const& __pc )
 {
-    _M_pc = __pc;
+    M_pc = __pc;
 
 
-    if ( _M_npoints != _M_pc->nPoints() )
+    if ( M_npoints != M_pc->nPoints() )
     {
-        _M_npoints = _M_pc.get()->nPoints();
+        M_npoints = M_pc.get()->nPoints();
 
-        _M_xrefq.resize( PDim, nPoints() );
-        _M_xrealq.resize( NDim, nPoints() );
-        _M_nrealq.resize( NDim, nPoints() );
-        _M_unrealq.resize( NDim, nPoints() );
-        _M_nnormq.resize( nPoints() );
+        M_xrefq.resize( PDim, nPoints() );
+        M_xrealq.resize( NDim, nPoints() );
+        M_nrealq.resize( NDim, nPoints() );
+        M_unrealq.resize( NDim, nPoints() );
+        M_nnormq.resize( nPoints() );
 
         if ( is_linear )
         {
-            _M_gm->gradient( node_t_type(), _M_g_linear );
+            M_gm->gradient( node_t_type(), M_g_linear );
         }
 
         else
         {
-            _M_Jt.resize( nPoints() );
-            _M_Bt.resize( nPoints() );
+            M_Jt.resize( nPoints() );
+            M_Bt.resize( nPoints() );
         }
     }
 
@@ -959,35 +959,35 @@ void update( element_type const& __e,
  */
 void update( element_type const& __e )
 {
-    _M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
-    //_M_G = __e.G();
-    _M_g.resize( _M_G.size2(), PDim );
-    //_M_element_c = boost::shared_ptr<element_type const>(&__e);
-    _M_element = boost::addressof( __e );
-    _M_id = __e.id();
-    _M_e_marker = __e.marker();
-    _M_e_marker2 = __e.marker2();
-    _M_e_marker3 = __e.marker3();
-    _M_face_id = invalid_uint16_type_value;
-    _M_h = __e.h();
-    _M_meas = __e.measure();
-    _M_xrefq = _M_pc->nodes();
+    M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
+    //M_G = __e.G();
+    M_g.resize( M_G.size2(), PDim );
+    //M_element_c = boost::shared_ptr<element_type const>(&__e);
+    M_element = boost::addressof( __e );
+    M_id = __e.id();
+    M_e_marker = __e.marker();
+    M_e_marker2 = __e.marker2();
+    M_e_marker3 = __e.marker3();
+    M_face_id = invalid_uint16_type_value;
+    M_h = __e.h();
+    M_meas = __e.measure();
+    M_xrefq = M_pc->nodes();
 
-    FEELPP_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
-    FEELPP_ASSERT( _M_pc ).error( "invalid precompute data structure" );
+    FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
+    FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
 
     if ( vm::has_point<context>::value )
     {
-        std::fill( _M_xrealq.data().begin(), _M_xrealq.data().end(), value_type( 0 ) );
-        const uint16_type size1 = _M_G.size1();
-        const uint16_type size3 = _M_G.size2();
-        const uint16_type size2 = _M_pc->nPoints();
+        std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
+        const uint16_type size1 = M_G.size1();
+        const uint16_type size3 = M_G.size2();
+        const uint16_type size2 = M_pc->nPoints();
 
         for ( uint16_type i = 0; i < size1; ++i )
             for ( uint16_type j = 0; j < size2; ++j )
             {
                 for ( uint16_type k = 0; k < size3; ++k )
-                    _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][j]( 0,0 );
+                    M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0,0 );
             }
     }
 
@@ -1011,7 +1011,7 @@ void update( element_type const& __e )
 */
 gm_ptrtype const& geometricMapping() const
 {
-    return _M_gm;
+    return M_gm;
 }
 
 /**
@@ -1035,12 +1035,12 @@ uint16_type P() const
  */
 element_type const& element() const
 {
-    return *_M_element;
+    return *M_element;
 }
 
 element_type const& element_c() const
 {
-    return *_M_element;
+    return *M_element;
 }
 
 /**
@@ -1048,7 +1048,7 @@ element_type const& element_c() const
  */
 uint16_type nPoints() const
 {
-    return _M_npoints;
+    return M_npoints;
 }
 
 /**
@@ -1056,7 +1056,7 @@ uint16_type nPoints() const
  */
 matrix_node_t_type const& xRefs() const
 {
-    return _M_xrefq;
+    return M_xrefq;
 }
 
 /**
@@ -1064,7 +1064,7 @@ matrix_node_t_type const& xRefs() const
  */
 ublas::matrix_column<matrix_node_t_type const> xRef( int q ) const
 {
-    return ublas::column( _M_xrefq, q );
+    return ublas::column( M_xrefq, q );
 }
 
 /**
@@ -1074,7 +1074,7 @@ ublas::matrix_column<matrix_node_t_type const> xRef( int q ) const
 matrix_type const& xReal() const
 {
     //BOOST_STATIC_ASSERT( vm::has_point<context>::value );
-    return _M_xrealq;
+    return M_xrealq;
 }
 
 /**
@@ -1083,7 +1083,7 @@ matrix_type const& xReal() const
 ublas::matrix_column<matrix_type const> xReal( int q ) const
 {
     // BOOST_STATIC_ASSERT( vm::has_point<context>::value );
-    return ublas::column( _M_xrealq, q );
+    return ublas::column( M_xrealq, q );
 }
 
 /**
@@ -1098,19 +1098,19 @@ value_type J( int q ) const
     //BOOST_STATIC_ASSERT( vm::has_jacobian<context>::value );
     //return J( q, mpl::bool_<is_linear>() );
     if ( is_linear )
-        return _M_J;
+        return M_J;
 
     else
-        return _M_Jt[q];
+        return M_Jt[q];
 }
 #else
 value_type J( int q ) const
 {
     if ( is_linear )
-        return _M_J;
+        return M_J;
 
     else
-        return _M_Jt[q];
+        return M_Jt[q];
 }
 #endif
 #if 0
@@ -1119,7 +1119,7 @@ value_type J( int q ) const
  */
 value_type J( int /*q*/, mpl::bool_<true> ) const
 {
-    return _M_J;
+    return M_J;
 }
 
 /**
@@ -1127,17 +1127,17 @@ value_type J( int /*q*/, mpl::bool_<true> ) const
  */
 value_type J( int q, mpl::bool_<false> ) const
 {
-    return _M_Jt[q];
+    return M_Jt[q];
 }
 #endif
 
 /**
  * \return the matrix associated with the geometric nodes
  */
-//matrix_node_t_type const& G() const { return _M_G; }
+//matrix_node_t_type const& G() const { return M_G; }
 matrix_type const& G() const
 {
-    return _M_G;
+    return M_G;
 }
 
 /**
@@ -1159,25 +1159,25 @@ value_type B( int c1, int c2, int q ) const
 
 matrix_type const& K( int i ) const
 {
-    return _M_K;
+    return M_K;
 }
 value_type K( int c1, int c2, int q ) const
 {
-    return _M_K( c1, c2 );
+    return M_K( c1, c2 );
 }
 /**
  * \internal
  */
 matrix_type const& B( int /*i*/, mpl::bool_<true> ) const
 {
-    return _M_B;
+    return M_B;
 }
 /**
  * \internal
  */
 matrix_type const& B( int i, mpl::bool_<false> ) const
 {
-    return _M_Bt[i];
+    return M_Bt[i];
 }
 
 /**
@@ -1189,7 +1189,7 @@ matrix_type const& B( int i, mpl::bool_<false> ) const
  */
 boost::multi_array<value_type,4> const& B3() const
 {
-    return _M_B3;
+    return M_B3;
 }
 
 /**
@@ -1197,15 +1197,15 @@ boost::multi_array<value_type,4> const& B3() const
  */
 node_t_type barycenterRef() const
 {
-    node_t_type __barycenter( _M_gm->dim() );
+    node_t_type __barycenter( M_gm->dim() );
     __barycenter.clear();
 
-    for ( uint16_type __c = 0; __c < _M_gm->refNodes().size(); ++__c )
+    for ( uint16_type __c = 0; __c < M_gm->refNodes().size(); ++__c )
     {
-        __barycenter += _M_gm->refNode( __c );
+        __barycenter += M_gm->refNode( __c );
     }
 
-    __barycenter /= _M_gm->refNodes().size();
+    __barycenter /= M_gm->refNodes().size();
     return __barycenter;
 }
 
@@ -1214,16 +1214,16 @@ node_t_type barycenterRef() const
 */
 node_t_type barycenterReal() const
 {
-    node_t_type __barycenter( _M_G.size1() );
+    node_t_type __barycenter( M_G.size1() );
     __barycenter.clear();
 
 
-    for ( uint16_type __c = 0; __c < _M_G.size2(); ++__c )
+    for ( uint16_type __c = 0; __c < M_G.size2(); ++__c )
     {
-        __barycenter += ublas::column( _M_G, __c );
+        __barycenter += ublas::column( M_G, __c );
     }
 
-    __barycenter /= _M_G.size2();
+    __barycenter /= M_G.size2();
     return __barycenter;
 }
 
@@ -1237,8 +1237,8 @@ bool isOnConvexSurface() const
     if ( trans == fem::LINEAR )
     {
         // x -x0 - K(0)\bar{x}
-        return std::abs( ublas::norm_2( xReal()-ublas::column( _M_G, 0 )-
-                                        ublas::prod( _M_K, xRef() ) ) ) < 1e-10;
+        return std::abs( ublas::norm_2( xReal()-ublas::column( M_G, 0 )-
+                                        ublas::prod( M_K, xRef() ) ) ) < 1e-10;
     }
 
     return false;
@@ -1246,7 +1246,7 @@ bool isOnConvexSurface() const
 
 node_t_type const& refNormal( int /*q*/ ) const
 {
-    return _M_gm->referenceConvex().normal( _M_face_id );
+    return M_gm->referenceConvex().normal( M_face_id );
 }
 
 /**
@@ -1257,10 +1257,10 @@ node_t_type const& refNormal( int /*q*/ ) const
 value_type normalNorm( int q ) const
 {
     if ( is_linear )
-        return _M_n_norm;
+        return M_n_norm;
 
     else
-        return _M_nnormq[q];
+        return M_nnormq[q];
 }
 
 /**
@@ -1271,7 +1271,7 @@ value_type normalNorm( int q ) const
 node_t_type const& normal() const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-    return _M_n_real;
+    return M_n_real;
 }
 
 /**
@@ -1283,11 +1283,11 @@ ublas::matrix_column<matrix_node_t_type const> normal( int q ) const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
     if ( is_linear )
-        return _M_n_real;
+        return M_n_real;
 
     else
     {
-        return ublas::column( _M_nrealq, q );
+        return ublas::column( M_nrealq, q );
     }
 }
 
@@ -1299,7 +1299,7 @@ ublas::matrix_column<matrix_node_t_type const> normal( int q ) const
 node_t_type const& unitNormal() const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-    return _M_u_n_real;
+    return M_u_n_real;
 }
 
 //ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
@@ -1308,10 +1308,10 @@ node_t_type unitNormal( int q ) const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
     if ( is_linear )
-        return _M_u_n_real;
+        return M_u_n_real;
 
     else
-        return ublas::column( _M_unrealq, q );
+        return ublas::column( M_unrealq, q );
 }
 
 
@@ -1320,16 +1320,16 @@ value_type const& unitNormal( int n, int q ) const
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
 
     if ( is_linear )
-        return _M_u_n_real( n );
+        return M_u_n_real( n );
 
     else
-        return _M_unrealq( n, q );
+        return M_unrealq( n, q );
 }
 
 node_t_type const& tangent() const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
-    return _M_t_real;
+    return M_t_real;
 }
 //ublas::matrix_column<matrix_node_t_type const> unitNormal( int q ) const
 // node_t_type const& unitNormal( int q ) const
@@ -1337,10 +1337,10 @@ node_t_type tangent( int q ) const
 {
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
     if ( is_linear )
-        return _M_t_real;
+        return M_t_real;
 
     //else
-    //return ublas::column( _M_utrealq, q );
+    //return ublas::column( M_utrealq, q );
 }
 
 
@@ -1349,10 +1349,10 @@ value_type const& unitTangent( int n, int q ) const
     //BOOST_STATIC_ASSERT( vm::has_normal<context>::value );
 #if 0
     if ( is_linear )
-        return _M_t_real( n );
+        return M_t_real( n );
 
     else
-        return _M_utrealq( n, q );
+        return M_utrealq( n, q );
 
 #endif
 }
@@ -1364,7 +1364,7 @@ value_type const& unitTangent( int n, int q ) const
  */
 size_type id() const
 {
-    return _M_id;
+    return M_id;
 }
 
 /*
@@ -1372,7 +1372,7 @@ size_type id() const
  */
 uint16_type faceId() const
 {
-    return _M_face_id;
+    return M_face_id;
 }
 
 /**
@@ -1380,7 +1380,7 @@ uint16_type faceId() const
  */
 bool elementIsAFace() const
 {
-    return _M_face_id != invalid_uint16_type_value;
+    return M_face_id != invalid_uint16_type_value;
 }
 
 /**
@@ -1390,7 +1390,7 @@ bool elementIsAFace() const
  */
 Marker1 marker() const
 {
-    return _M_e_marker;
+    return M_e_marker;
 }
 
 /**
@@ -1400,7 +1400,7 @@ Marker1 marker() const
  */
 Marker2 marker2() const
 {
-    return _M_e_marker2;
+    return M_e_marker2;
 }
 
 /**
@@ -1410,7 +1410,7 @@ Marker2 marker2() const
  */
 Marker2 marker3() const
 {
-    return _M_e_marker3;
+    return M_e_marker3;
 }
 
 /**
@@ -1420,7 +1420,7 @@ Marker2 marker3() const
  */
 size_type id1() const
 {
-    return _M_elem_id_1;
+    return M_elem_id_1;
 }
 
 /**
@@ -1430,7 +1430,7 @@ size_type id1() const
  */
 uint16_type idIn1() const
 {
-    return _M_pos_in_elem_id_1;
+    return M_pos_in_elem_id_1;
 }
 
 /**
@@ -1440,7 +1440,7 @@ uint16_type idIn1() const
  */
 size_type id2() const
 {
-    return _M_elem_id_2;
+    return M_elem_id_2;
 }
 
 /**
@@ -1450,7 +1450,7 @@ size_type id2() const
  */
 uint16_type idIn2() const
 {
-    return _M_pos_in_elem_id_2;
+    return M_pos_in_elem_id_2;
 }
 
 /**
@@ -1460,7 +1460,7 @@ uint16_type idIn2() const
  */
 value_type radiusEstimate() const
 {
-    return _M_gm->radiusEstimate( _M_G );
+    return M_gm->radiusEstimate( M_G );
 }
 
 /**
@@ -1471,7 +1471,7 @@ value_type radiusEstimate() const
  */
 value_type h() const
 {
-    return _M_h;
+    return M_h;
 }
 
 /**
@@ -1481,7 +1481,7 @@ value_type h() const
  */
 value_type hFace() const
 {
-    return _M_h_face;
+    return M_h_face;
 }
 
 /*
@@ -1489,15 +1489,15 @@ value_type hFace() const
  */
 value_type meas() const
 {
-    return _M_meas;
+    return M_meas;
 }
 
 /*
- * @return the measure of the set of elements which share a vertex with \p _M_elements including himself
+ * @return the measure of the set of elements which share a vertex with \p M_elements including himself
  */
 value_type measurePointElementNeighbors() const
 {
-    return _M_element->measurePointElementNeighbors();
+    return M_element->measurePointElementNeighbors();
 }
 
 
@@ -1506,7 +1506,7 @@ value_type measurePointElementNeighbors() const
  */
 value_type measFace() const
 {
-    return _M_measface;
+    return M_measface;
 }
 
 
@@ -1523,7 +1523,7 @@ permutation_type permutation() const
  */
 precompute_ptrtype const& pc() const
 {
-    return _M_pc;
+    return M_pc;
 }
 
 /**
@@ -1531,7 +1531,7 @@ precompute_ptrtype const& pc() const
  */
 std::vector<std::map<permutation_type, precompute_ptrtype> > const & pcFaces() const
 {
-    return _M_pc_faces;
+    return M_pc_faces;
 }
 //@}
 
@@ -1544,7 +1544,7 @@ std::vector<std::map<permutation_type, precompute_ptrtype> > const & pcFaces() c
 */
 void setPc( precompute_ptrtype const& __pc )
 {
-    _M_pc = __pc;
+    M_pc = __pc;
 }
 
 //@}
@@ -1555,7 +1555,7 @@ private:
  */
 permutation_type permutation( mpl::bool_<false> ) const
 {
-    return _M_perm;
+    return M_perm;
 }
 
 /**
@@ -1563,11 +1563,11 @@ permutation_type permutation( mpl::bool_<false> ) const
  */
 permutation_type permutation( mpl::bool_<true> ) const
 {
-    FEELPP_ASSERT( _M_face_id == invalid_uint16_type_value ||
-                   ( _M_face_id != invalid_uint16_type_value &&
-                     _M_perm != permutation_type( permutation_type::NO_PERMUTATION ) ) )
-    ( _M_face_id ).error( "invalid permutation" );
-    return _M_perm;
+    FEELPP_ASSERT( M_face_id == invalid_uint16_type_value ||
+                   ( M_face_id != invalid_uint16_type_value &&
+                     M_perm != permutation_type( permutation_type::NO_PERMUTATION ) ) )
+    ( M_face_id ).error( "invalid permutation" );
+    return M_perm;
 }
 
 /**
@@ -1576,31 +1576,31 @@ permutation_type permutation( mpl::bool_<true> ) const
 void updateJKBN( mpl::bool_<true>  )
 {
 
-    if ( !_M_gm->isCached() ||
-            ( _M_gm->isCached() && _M_gm->cached( _M_id ) == false ) )
+    if ( !M_gm->isCached() ||
+            ( M_gm->isCached() && M_gm->cached( M_id ) == false ) )
     {
 #if 0
 
         if ( boost::is_arithmetic<value_type>::value )
             atlas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                         1.0, _M_G, _M_g_linear,
-                         0.0, _M_K );
+                         1.0, M_G, M_g_linear,
+                         0.0, M_K );
 
         else
 #endif
-            ublas::axpy_prod( _M_G, _M_g_linear, _M_K, true );
+            ublas::axpy_prod( M_G, M_g_linear, M_K, true );
 
         if ( NDim == PDim )
         {
-            _M_J = math::abs( det<NDim>( _M_K ) );
+            M_J = math::abs( det<NDim>( M_K ) );
             //if ( vm::has_kb<context>::value )
             {
 #if 0
-                inverse<NDim>( _M_K, _M_CS, _M_J );
-                ublas::noalias( _M_B ) = ublas::trans( _M_CS );
+                inverse<NDim>( M_K, M_CS, M_J );
+                ublas::noalias( M_B ) = ublas::trans( M_CS );
 #else
-                inverse<NDim>( _M_K, _M_CS );
-                ublas::noalias( _M_B ) = ublas::trans( _M_CS );
+                inverse<NDim>( M_K, M_CS );
+                ublas::noalias( M_B ) = ublas::trans( M_CS );
 #endif
             }
         }
@@ -1611,58 +1611,58 @@ void updateJKBN( mpl::bool_<true>  )
 #if 0
             if ( boost::is_arithmetic<value_type>::value )
                 atlas::gemm( traits::TRANSPOSE, traits::NO_TRANSPOSE,
-                             1.0, _M_K, _M_K,
-                             0.0, _M_CS );
+                             1.0, M_K, M_K,
+                             0.0, M_CS );
 
             else
 #endif
 
-                ublas::noalias( _M_CS ) = ublas::prod( ublas::trans( _M_K ), _M_K );
+                ublas::noalias( M_CS ) = ublas::prod( ublas::trans( M_K ), M_K );
 
-            _M_J = math::sqrt( math::abs( det<PDim>( _M_CS ) ) );
+            M_J = math::sqrt( math::abs( det<PDim>( M_CS ) ) );
             //if ( vm::has_kb<context>::value )
             {
-                inverse<PDim>( _M_CS, _M_CSi );
+                inverse<PDim>( M_CS, M_CSi );
                 // B = K CS
 #if 0
 
                 if ( boost::is_arithmetic<value_type>::value )
                     atlas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                                 1.0, _M_K, _M_CSi,
-                                 0.0, _M_B );
+                                 1.0, M_K, M_CSi,
+                                 0.0, M_B );
 
                 else
 #endif
-                    ublas::axpy_prod( _M_K, _M_CSi, _M_B, true );
+                    ublas::axpy_prod( M_K, M_CSi, M_B, true );
             }
 
         }
 
-        if ( _M_gm->isCached() )
+        if ( M_gm->isCached() )
         {
             // cache J, K and B
-            _M_gm->addJ( _M_id, _M_J );
+            M_gm->addJ( M_id, M_J );
             //if ( vm::has_kb<context>::value )
             {
-                _M_gm->addK( _M_id, _M_K );
-                _M_gm->addB( _M_id, _M_B );
+                M_gm->addK( M_id, M_K );
+                M_gm->addB( M_id, M_B );
             }
-            _M_gm->setCached( _M_id, true );
+            M_gm->setCached( M_id, true );
 
-            //LOG(INFO) << "(add to cache) J[" << _M_id << "]=" <<  _M_J << "\n";
-            //LOG(INFO) << "(add to cache) B[" << _M_id << "]=" <<  _M_B << "\n";
+            //LOG(INFO) << "(add to cache) J[" << M_id << "]=" <<  M_J << "\n";
+            //LOG(INFO) << "(add to cache) B[" << M_id << "]=" <<  M_B << "\n";
         }
     }
 
     else
     {
-        _M_J = _M_gm->J( _M_id );
-        //LOG(INFO) << "(use cache) J[" << _M_id << "]=" <<  _M_J << "\n";
+        M_J = M_gm->J( M_id );
+        //LOG(INFO) << "(use cache) J[" << M_id << "]=" <<  M_J << "\n";
         //if ( vm::has_kb<context>::value )
         {
-            _M_K = _M_gm->K( _M_id );
-            _M_B = _M_gm->B( _M_id );
-            //LOG(INFO) << "(use cache) B[" << _M_id << "]=" <<  _M_B << "\n";
+            M_K = M_gm->K( M_id );
+            M_B = M_gm->B( M_id );
+            //LOG(INFO) << "(use cache) B[" << M_id << "]=" <<  M_B << "\n";
         }
 
 
@@ -1675,7 +1675,7 @@ void updateJKBN( mpl::bool_<true>  )
             for ( uint16_type l = 0; l < NDim; ++l )
                 for ( uint16_type i = 0; i < PDim; ++i )
                     for ( uint16_type j = 0; j < PDim; ++j )
-                        _M_B3[k][l][i][j] = _M_B( k,i )*_M_B( l,j );
+                        M_B3[k][l][i][j] = M_B( k,i )*M_B( l,j );
 
 #if 0
         //B3(k + N_*l, i + P*j) = BB(k, i) * BB(l, j);
@@ -1691,33 +1691,33 @@ void updateJKBN( mpl::bool_<true>  )
 #endif
     }
 
-    if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( _M_face_id != invalid_uint16_type_value ) )
+    if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value ) )
     {
 #if 0
         blas::gemv( traits::NO_TRANSPOSE,
-                    1.0, _M_Bt[ q ], _M_n[_M_face_id],
-                    0.0, _M_n_real );
+                    1.0, M_Bt[ q ], M_n[M_face_id],
+                    0.0, M_n_real );
 #else
-        ublas::axpy_prod( _M_B,
-                          _M_gm->referenceConvex().normal( _M_face_id ),
-                          _M_n_real,
+        ublas::axpy_prod( M_B,
+                          M_gm->referenceConvex().normal( M_face_id ),
+                          M_n_real,
                           true );
 #endif
-        _M_n_norm = ublas::norm_2( _M_n_real );
-        _M_u_n_real = _M_n_real/_M_n_norm;
+        M_n_norm = ublas::norm_2( M_n_real );
+        M_u_n_real = M_n_real/M_n_norm;
 
     }
 
-    if ( vm::has_tangent<context>::value && ( _M_face_id != invalid_uint16_type_value ) )
+    if ( vm::has_tangent<context>::value && ( M_face_id != invalid_uint16_type_value ) )
     {
         // t = |\hat{e}|*o_K*(K*t_ref)/|e| where o_K is the sign(e*x_K(\hat{e}))
-        ublas::axpy_prod( _M_K,
-                          _M_gm->referenceConvex().tangent( _M_face_id ),
-                          _M_t_real,
+        ublas::axpy_prod( M_K,
+                          M_gm->referenceConvex().tangent( M_face_id ),
+                          M_t_real,
                           true );
-        double ratio = _M_gm->referenceConvex().h( _M_face_id )/_M_h_face;
+        double ratio = M_gm->referenceConvex().h( M_face_id )/M_h_face;
 
-        _M_t_real *= ratio;
+        M_t_real *= ratio;
     }
 
 }
@@ -1728,30 +1728,30 @@ void updateJKBN( mpl::bool_<true>  )
 void updateJKBN( mpl::bool_<false>  )
 {
     //std::cout << "nPoints() =" << nPoints() << "\n";
-    //VLOG(1) << "[geomap] G = "<< _M_G << "\n";
+    //VLOG(1) << "[geomap] G = "<< M_G << "\n";
     //double res = 0;
     for ( int q = 0; q < nPoints(); ++q )
     {
         //std::cout << "q =" << q << "\n";
-        _M_gm->gradient( q, _M_g, _M_pc.get() );
-        //VLOG(1) << "[geomap] g[" << q << "] = "<< _M_g << "\n";
+        M_gm->gradient( q, M_g, M_pc.get() );
+        //VLOG(1) << "[geomap] g[" << q << "] = "<< M_g << "\n";
 
 #if 0
-        blas::gemm( _M_G, _M_g, _M_K );
+        blas::gemm( M_G, M_g, M_K );
 #else
-        ublas::axpy_prod( _M_G, _M_g, _M_K, true );
+        ublas::axpy_prod( M_G, M_g, M_K, true );
 #endif
 
         if ( NDim == PDim )
         {
-            _M_J = math::abs( det<NDim>( _M_K ) );
+            M_J = math::abs( det<NDim>( M_K ) );
 
             if ( vm::has_kb<context>::value )
             {
-                inverse<NDim>( _M_K, _M_CS );
-                //ublas::noalias(_M_B) = ublas::trans( _M_CS );
-                _M_B = ublas::trans( _M_CS );
-                //std::cout << "========== B[" << q << "]=" << _M_B << "\n";
+                inverse<NDim>( M_K, M_CS );
+                //ublas::noalias(M_B) = ublas::trans( M_CS );
+                M_B = ublas::trans( M_CS );
+                //std::cout << "========== B[" << q << "]=" << M_B << "\n";
             }
         }
 
@@ -1759,81 +1759,81 @@ void updateJKBN( mpl::bool_<false>  )
         {
             // CS = K^T K
 #if 1
-            ublas::prod( ublas::trans( _M_K ), _M_K, _M_CS );
+            ublas::prod( ublas::trans( M_K ), M_K, M_CS );
 #else
             blas::gemm( traits::TRANSPOSE, traits::NO_TRANSPOSE,
-                        1.0, _M_K, _M_K,
-                        0.0, _M_CS );
+                        1.0, M_K, M_K,
+                        0.0, M_CS );
 #endif
-            _M_J = math::sqrt( math::abs( det<PDim>( _M_CS ) ) );
+            M_J = math::sqrt( math::abs( det<PDim>( M_CS ) ) );
 
             if ( vm::has_kb<context>::value )
             {
-                inverse<PDim>( _M_CS, _M_CSi );
+                inverse<PDim>( M_CS, M_CSi );
                 // B = K CS
 #if 1
-                ublas::axpy_prod( _M_K, _M_CSi, _M_B );
+                ublas::axpy_prod( M_K, M_CSi, M_B );
 #else
                 blas::gemm( traits::NO_TRANSPOSE, traits::NO_TRANSPOSE,
-                            1.0, _M_K, _M_CSi,
-                            0.0, _M_B );
+                            1.0, M_K, M_CSi,
+                            0.0, M_B );
 #endif
             }
 
         }
 
-        //VLOG(1) << "[geomap] J[" << q << "]= "<< _M_J << "\n";
-        //res += _M_J;
+        //VLOG(1) << "[geomap] J[" << q << "]= "<< M_J << "\n";
+        //res += M_J;
         // store q-th jacobian entry
 
-        _M_Jt[q] = _M_J;
+        M_Jt[q] = M_J;
 
         if ( vm::has_kb<context>::value )
         {
-            //VLOG(1) << "[geomap] B[" << q << "]= "<< _M_B << "\n";
-            _M_Bt[q].resize( _M_B.size1(), _M_B.size2() );
-            _M_Bt[q] = _M_B;
+            //VLOG(1) << "[geomap] B[" << q << "]= "<< M_B << "\n";
+            M_Bt[q].resize( M_B.size1(), M_B.size2() );
+            M_Bt[q] = M_B;
         }
 
 
     }
 
     //VLOG(1) << "[geomap] res(sum J) = " << res << "\n";
-    if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( _M_face_id != invalid_uint16_type_value ) )
+    if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value ) )
     {
         //std::cout << "has normal\n";
         for ( int q = 0; q < nPoints(); ++q )
         {
 #if 0
             blas::gemv( traits::NO_TRANSPOSE,
-                        1.0, _M_Bt[ q ], _M_n[_M_face_id],
-                        0.0, _M_n_real );
+                        1.0, M_Bt[ q ], M_n[M_face_id],
+                        0.0, M_n_real );
 #else
 
             if ( 0 ) //trans == fem::LINEAR )
             {
-                ublas::axpy_prod( _M_B,
-                                  _M_gm->referenceConvex().normal( _M_face_id ),
-                                  _M_n_real,
+                ublas::axpy_prod( M_B,
+                                  M_gm->referenceConvex().normal( M_face_id ),
+                                  M_n_real,
                                   true );
             }
 
             else
-                ublas::axpy_prod( _M_Bt[ q ],
-                                  _M_gm->referenceConvex().normal( _M_face_id ),
-                                  _M_n_real,
+                ublas::axpy_prod( M_Bt[ q ],
+                                  M_gm->referenceConvex().normal( M_face_id ),
+                                  M_n_real,
                                   true );
 
 #endif
-            //std::cout << "[geomap] point " << q << " n_real = " << _M_n_real << "\n";
-            _M_n_norm = ublas::norm_2( _M_n_real );
-            _M_u_n_real = _M_n_real/_M_n_norm;
-            ublas::column( _M_nrealq, q ) = _M_n_real;
-            ublas::column( _M_unrealq, q ) = _M_u_n_real;
-            _M_nnormq[q] = _M_n_norm;
+            //std::cout << "[geomap] point " << q << " n_real = " << M_n_real << "\n";
+            M_n_norm = ublas::norm_2( M_n_real );
+            M_u_n_real = M_n_real/M_n_norm;
+            ublas::column( M_nrealq, q ) = M_n_real;
+            ublas::column( M_unrealq, q ) = M_u_n_real;
+            M_nnormq[q] = M_n_norm;
 
             if ( NDim != PDim )
-                _M_Jt[q] *= _M_n_norm;
+                M_Jt[q] *= M_n_norm;
 
             if ( vm::has_tangent<context>::value )
             {
@@ -1842,11 +1842,11 @@ void updateJKBN( mpl::bool_<false>  )
         }
 
 #if 0
-        std::cout << "[geomap] face id = " << _M_face_id << "\n"
-                  << "[geomap] ref normal = " << _M_gm->referenceConvex().normal( _M_face_id ) << "\n"
-                  << "[geomap] _M_n_real = " << _M_nrealq << "\n"
-                  << "[geomap] _M_unrealq = " << _M_unrealq << "\n"
-                  << "[geomap] _M_nnormq = " << _M_nnormq << "\n";
+        std::cout << "[geomap] face id = " << M_face_id << "\n"
+                  << "[geomap] ref normal = " << M_gm->referenceConvex().normal( M_face_id ) << "\n"
+                  << "[geomap] M_n_real = " << M_nrealq << "\n"
+                  << "[geomap] M_unrealq = " << M_unrealq << "\n"
+                  << "[geomap] M_nnormq = " << M_nnormq << "\n";
 #endif
     }
 }
@@ -1855,62 +1855,62 @@ Context();
 
 private:
 
-gm_ptrtype _M_gm;
+gm_ptrtype M_gm;
 
-element_type const* _M_element;
-//boost::shared_ptr<element_type const> _M_element_c;
-//element_type _M_element_c;
+element_type const* M_element;
+//boost::shared_ptr<element_type const> M_element_c;
+//element_type M_element_c;
 
-precompute_ptrtype _M_pc;
-std::vector<std::map<permutation_type, precompute_ptrtype> > _M_pc_faces;
-uint16_type _M_npoints;
+precompute_ptrtype M_pc;
+std::vector<std::map<permutation_type, precompute_ptrtype> > M_pc_faces;
+uint16_type M_npoints;
 
-value_type _M_J;
+value_type M_J;
 
-//matrix_node_t_type  _M_G;
-matrix_type  _M_G;
-ublas::vector<node_t_type> _M_n;
-node_t_type _M_n_real;
-node_t_type _M_u_n_real;
-value_type _M_n_norm;
-node_t_type _M_t_real;
+//matrix_node_t_type  M_G;
+matrix_type  M_G;
+ublas::vector<node_t_type> M_n;
+node_t_type M_n_real;
+node_t_type M_u_n_real;
+value_type M_n_norm;
+node_t_type M_t_real;
 
-//matrix_node_t_type const& _M_xrefq;
-matrix_node_t_type  _M_xrefq;
-//matrix_node_t_type _M_xrealq;
-matrix_type _M_xrealq;
-matrix_node_t_type _M_nrealq;
-matrix_node_t_type _M_unrealq;
-ublas::vector<value_type> _M_nnormq;
+//matrix_node_t_type const& M_xrefq;
+matrix_node_t_type  M_xrefq;
+//matrix_node_t_type M_xrealq;
+matrix_type M_xrealq;
+matrix_node_t_type M_nrealq;
+matrix_node_t_type M_unrealq;
+ublas::vector<value_type> M_nnormq;
 
-matrix_type _M_g_linear;
-matrix_type _M_g;
-matrix_type _M_K;
-matrix_type _M_CS;
-matrix_type _M_CSi;
-matrix_type _M_B;
-boost::multi_array<value_type,4> _M_B3;
+matrix_type M_g_linear;
+matrix_type M_g;
+matrix_type M_K;
+matrix_type M_CS;
+matrix_type M_CSi;
+matrix_type M_B;
+boost::multi_array<value_type,4> M_B3;
 
-size_type _M_id;
-Marker1 _M_e_marker;
-Marker2 _M_e_marker2;
-Marker3 _M_e_marker3;
-size_type _M_elem_id_1;
-uint16_type _M_pos_in_elem_id_1;
-size_type _M_elem_id_2;
-uint16_type _M_pos_in_elem_id_2;
+size_type M_id;
+Marker1 M_e_marker;
+Marker2 M_e_marker2;
+Marker3 M_e_marker3;
+size_type M_elem_id_1;
+uint16_type M_pos_in_elem_id_1;
+size_type M_elem_id_2;
+uint16_type M_pos_in_elem_id_2;
 
-uint16_type _M_face_id;
+uint16_type M_face_id;
 
-value_type _M_h;
-value_type _M_h_face;
-value_type _M_meas;
-value_type _M_measface;
+value_type M_h;
+value_type M_h_face;
+value_type M_meas;
+value_type M_measface;
 
-vector_type _M_Jt;
-std::vector<matrix_type> _M_Bt;
+vector_type M_Jt;
+std::vector<matrix_type> M_Bt;
 
-permutation_type _M_perm;
+permutation_type M_perm;
 }; // Context
 
 
@@ -1982,33 +1982,33 @@ class Inverse
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge,
              WorldComm const& worldComm = Environment::worldComm().subWorldCommSeq() )
         :
-        _M_gm( __gm ),
-        _M_xref( __gm->dim() ),
-        _M_xreal( __ge.G().size1() ),
-        _M_is_in( false ),
-        _M_G( __ge.G() ),
-        _M_K( N(), __gm->dim() ),
-        _M_B( N(), __gm->dim() ),
-        _M_CS( __gm->dim(), __gm->dim() ),
-        _M_g( _M_gm->nbPoints(), __gm->dim() ),
+        M_gm( __gm ),
+        M_xref( __gm->dim() ),
+        M_xreal( __ge.G().size1() ),
+        M_is_in( false ),
+        M_G( __ge.G() ),
+        M_K( N(), __gm->dim() ),
+        M_B( N(), __gm->dim() ),
+        M_CS( __gm->dim(), __gm->dim() ),
+        M_g( M_gm->nbPoints(), __gm->dim() ),
 #if defined( FEELPP_HAS_PETSC )
-        _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, worldComm ) )
 #else
-        _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM, worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM, worldComm ) )
 #endif
 {
-    FEELPP_ASSERT( _M_G.size2() == __gm->nbPoints() )
-    ( _M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
+    FEELPP_ASSERT( M_G.size2() == __gm->nbPoints() )
+    ( M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
 
-    if ( _M_gm->isLinear() )
+    if ( M_gm->isLinear() )
         {
             update();
         }
     else
         {
 #if defined( FEELPP_HAS_PETSC )
-            _M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
-            _M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
+            M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
+            M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
 #else
 
 #endif
@@ -2020,35 +2020,35 @@ class Inverse
     Inverse( geometric_mapping_ptrtype __gm, GeoElem const& __ge, mpl::int_<1>/**/ ,
              WorldComm const& worldComm = Environment::worldComm().subWorldCommSeq())
     :
-        _M_gm( __gm ),
-        _M_xref( __gm->dim() ),
-        _M_xreal( __ge.vertices().size1() ),
-        _M_is_in( false ),
-        _M_G( __ge.vertices() ),
-        _M_K( N(), __gm->dim() ),
-        _M_B( N(), __gm->dim() ),
-        _M_CS( __gm->dim(), __gm->dim() ),
-        _M_g( _M_gm->nbPoints(), __gm->dim() ),
+        M_gm( __gm ),
+        M_xref( __gm->dim() ),
+        M_xreal( __ge.vertices().size1() ),
+        M_is_in( false ),
+        M_G( __ge.vertices() ),
+        M_K( N(), __gm->dim() ),
+        M_B( N(), __gm->dim() ),
+        M_CS( __gm->dim(), __gm->dim() ),
+        M_g( M_gm->nbPoints(), __gm->dim() ),
 #if defined( FEELPP_HAS_PETSC )
-        _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC,worldComm) )
 #else
-        _M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM,worldComm ) )
+        M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM,worldComm ) )
 #endif
 {
-    FEELPP_ASSERT( _M_G.size2() == __gm->nbPoints() )
-    ( _M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
+    FEELPP_ASSERT( M_G.size2() == __gm->nbPoints() )
+    ( M_G.size2() )( __gm->nbPoints() ).error( "invalid dimensions" );
 
-    if ( _M_gm->isLinear() )
+    if ( M_gm->isLinear() )
         {
             update();
         }
     else
         {
 #if defined( FEELPP_HAS_PETSC )
-        _M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
-        _M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
+        M_nlsolver->dense_residual = boost::bind( &Inverse::updateResidual, boost::ref( *this ), _1, _2 );
+        M_nlsolver->dense_jacobian = boost::bind( &Inverse::updateJacobian, boost::ref( *this ), _1, _2 );
 #else
-        //_M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
+        //M_nlsolver( SolverNonLinear<double>::build( SOLVERS_GMM ) )
 #endif
         }
 }
@@ -2065,7 +2065,7 @@ class Inverse
 */
 geometric_mapping_ptrtype const& geometricMapping() const
 {
-    return _M_gm;
+    return M_gm;
 }
 
 /**
@@ -2077,7 +2077,7 @@ uint16_type N() const
 }
 uint16_type P() const
 {
-    return _M_gm->dim();
+    return M_gm->dim();
 }
 
 /**
@@ -2085,7 +2085,7 @@ uint16_type P() const
 */
 node_t_type const& xRef() const
 {
-    return _M_xref;
+    return M_xref;
 }
 
 /**
@@ -2093,7 +2093,7 @@ node_t_type const& xRef() const
 */
 node_t_type const& xReal() const
 {
-    return _M_xreal;
+    return M_xreal;
 }
 
 /**
@@ -2101,7 +2101,7 @@ node_t_type const& xReal() const
 */
 matrix_type const& G() const
 {
-    return _M_G;
+    return M_G;
 }
 
 /**
@@ -2109,12 +2109,12 @@ matrix_type const& G() const
 */
 matrix_type const& K() const
 {
-    return _M_K;
+    return M_K;
 }
 
 value_type J() const
 {
-    return math::abs( det<Dim>( _M_K ) );
+    return math::abs( det<Dim>( M_K ) );
 }
 
 /**
@@ -2123,7 +2123,7 @@ value_type J() const
 */
 matrix_type const& B() const
 {
-    return _M_B;
+    return M_B;
 }
 
 /**
@@ -2131,15 +2131,15 @@ matrix_type const& B() const
 */
 node_type barycenterRef() const
 {
-    node_type __barycenter( _M_gm->dim() );
+    node_type __barycenter( M_gm->dim() );
     __barycenter.clear();
 
-    for ( uint16_type __c = 0; __c < _M_gm->referenceConvex().nPoints(); ++__c )
+    for ( uint16_type __c = 0; __c < M_gm->referenceConvex().nPoints(); ++__c )
     {
-        __barycenter += _M_gm->refNode( __c );
+        __barycenter += M_gm->refNode( __c );
     }
 
-    __barycenter /= _M_gm->referenceConvex().nPoints();
+    __barycenter /= M_gm->referenceConvex().nPoints();
     return __barycenter;
 }
 
@@ -2155,7 +2155,7 @@ node_type barycenterReal() const;
 */
 bool isIn() const
 {
-    return _M_is_in;
+    return M_is_in;
 }
 
 /**
@@ -2164,11 +2164,11 @@ bool isIn() const
  */
 bool isOnConvexSurface() const
 {
-    if ( _M_gm->isLinear() )
+    if ( M_gm->isLinear() )
     {
         // x -x0 - K(0)\bar{x}
-        return std::abs( ublas::norm_2( xReal()-ublas::column( _M_G, 0 )-
-                                        ublas::prod( _M_K, xRef() ) ) ) < 1e-10;
+        return std::abs( ublas::norm_2( xReal()-ublas::column( M_G, 0 )-
+                                        ublas::prod( M_K, xRef() ) ) ) < 1e-10;
     }
 
     return false;
@@ -2185,17 +2185,17 @@ bool isOnConvexSurface() const
 */
 void setXReal( node_type const& __xreal )
 {
-    _M_xreal = __xreal;
+    M_xreal = __xreal;
 
-    if ( _M_gm->isLinear() )
+    if ( M_gm->isLinear() )
     {
         update();
-        _M_is_in = linearInverse();
+        M_is_in = linearInverse();
     }
 
     else
     {
-        _M_is_in = nonLinearInversePetsc();
+        M_is_in = nonLinearInversePetsc();
 
         //bool isin = nonLinearInverse();
     }
@@ -2233,7 +2233,7 @@ scalar_type operator()( const node_t_type& x ) const
 void operator()( const node_t_type& x, node_t_type& gr ) const
 {
     //             gmi.setXreal( xreal );
-    gmi._M_xref.assign( x );
+    gmi.M_xref.assign( x );
     gmi.update();
     node_type r = gmi.geometricMapping()->transform( x, gmi.G() ) - xreal;
     gr.resize( x.size() );
@@ -2250,25 +2250,25 @@ typedef ublas::matrix<double> dense_matrix_type;
 
 void updateResidual( dense_vector_type const& x, dense_vector_type& r )
 {
-    dense_vector_type y = _M_gm->transform( x, _M_G );
+    dense_vector_type y = M_gm->transform( x, M_G );
 
     if ( N() == P() )
-        r = y - _M_xreal ;
+        r = y - M_xreal ;
 
     else
     {
-        _M_gm->gradient( x, _M_g );
-        ublas::axpy_prod( _M_G, _M_g, _M_K );
-        ublas::prod( ublas::trans( _M_K ), y-_M_xreal, r );
+        M_gm->gradient( x, M_g );
+        ublas::axpy_prod( M_G, M_g, M_K );
+        ublas::prod( ublas::trans( M_K ), y-M_xreal, r );
     }
 
 #if 0
     LOG(INFO) << "[geomap::residual] begin ------------------------------\n";
     LOG(INFO) << "[geomap::residual] x =" << x << "\n";
-    LOG(INFO) << "[geomap::residual] _M_G =" << _M_G << "\n";
+    LOG(INFO) << "[geomap::residual] M_G =" << M_G << "\n";
 
     LOG(INFO) << "[geomap::residual] y =" << y << "\n";
-    LOG(INFO) << "[geomap::residual] xreal =" << _M_xreal << "\n";
+    LOG(INFO) << "[geomap::residual] xreal =" << M_xreal << "\n";
     LOG(INFO) << "[geomap::residual] r(xreal-y) =" << r << "\n";
     LOG(INFO) << "[geomap::residual] end   ------------------------------\n";
 #endif // 0
@@ -2277,15 +2277,15 @@ void updateResidual( dense_vector_type const& x, dense_vector_type& r )
 
 void updateJacobian( dense_vector_type const& x, dense_matrix_type& j )
 {
-    _M_gm->gradient( x, _M_g );
+    M_gm->gradient( x, M_g );
 
     if ( N() == P() )
-        ublas::axpy_prod( _M_G, _M_g, j );
+        ublas::axpy_prod( M_G, M_g, j );
 
     else
     {
-        ublas::axpy_prod( _M_G, _M_g, _M_K );
-        ublas::prod( ublas::trans( _M_K ), _M_K, j );
+        ublas::axpy_prod( M_G, M_g, M_K );
+        ublas::prod( ublas::trans( M_K ), M_K, j );
     }
 
 #if 0
@@ -2313,40 +2313,40 @@ void update()
     // xref is not defined at this point: it serves only as a dummy point
     // in the case of linear inversion (__g is a constant matrix in this case)
     // in the non linear case , xRef() is update in the newton iterations
-    _M_gm->gradient( xRef(), _M_g );
-    DVLOG(2) << "[update] g = " << _M_g << "\n";
+    M_gm->gradient( xRef(), M_g );
+    DVLOG(2) << "[update] g = " << M_g << "\n";
 
     checkInvariant();
 
-    ublas::axpy_prod( _M_G, _M_g, _M_K );
-    DVLOG(2) << "[update] K(0) = " << _M_K << "\n";
+    ublas::axpy_prod( M_G, M_g, M_K );
+    DVLOG(2) << "[update] K(0) = " << M_K << "\n";
 
     // compute B
-    if ( _M_gm->dim() != N() )
+    if ( M_gm->dim() != N() )
     {
-        ublas::prod( ublas::trans( _M_K ), _M_K, _M_CS );
-        LU<matrix_type> __lu( _M_CS );
-        __lu.inverse( _M_CS );
-        ublas::axpy_prod( _M_K, _M_CS, _M_B );
+        ublas::prod( ublas::trans( M_K ), M_K, M_CS );
+        LU<matrix_type> __lu( M_CS );
+        __lu.inverse( M_CS );
+        ublas::axpy_prod( M_K, M_CS, M_B );
     }
 
     else
     {
-        LU<matrix_type> __lu( _M_K );
-        __lu.inverse( _M_CS );
-        _M_B = ublas::trans( _M_CS );
+        LU<matrix_type> __lu( M_K );
+        __lu.inverse( M_CS );
+        M_B = ublas::trans( M_CS );
     }
 
-    DVLOG(2) << "[update] B(0) = " << _M_B << "\n";
+    DVLOG(2) << "[update] B(0) = " << M_B << "\n";
 }
 
 void
 checkInvariant() const
 {
-    FEELPP_ASSERT( _M_G.size2() == _M_g.size1() )( _M_G.size2() )( _M_g.size1() ).error( "G,g invalid dimensions" );
-    FEELPP_ASSERT( _M_G.size1() == _M_K.size1() )( _M_G.size1() )( _M_K.size1() ).error( "G,K invalid dimensions" );
-    FEELPP_ASSERT( _M_g.size2() == _M_K.size2() )( _M_g.size2() )( _M_K.size2() ).error( "g,K invalid dimensions" );
-    FEELPP_ASSERT( _M_B.size2() == _M_gm->dim() )( _M_B.size1() )( N() ).error( "B,gm invalid dimensions" );
+    FEELPP_ASSERT( M_G.size2() == M_g.size1() )( M_G.size2() )( M_g.size1() ).error( "G,g invalid dimensions" );
+    FEELPP_ASSERT( M_G.size1() == M_K.size1() )( M_G.size1() )( M_K.size1() ).error( "G,K invalid dimensions" );
+    FEELPP_ASSERT( M_g.size2() == M_K.size2() )( M_g.size2() )( M_K.size2() ).error( "g,K invalid dimensions" );
+    FEELPP_ASSERT( M_B.size2() == M_gm->dim() )( M_B.size1() )( N() ).error( "B,gm invalid dimensions" );
 }
 
 
@@ -2354,27 +2354,27 @@ bool linearInverse()
 {
     checkInvariant();
 
-    size_type N = _M_xreal.size();
-    size_type P = _M_xref.size();
+    size_type N = M_xreal.size();
+    size_type P = M_xref.size();
 
-    node_type y( _M_xreal );
+    node_type y( M_xreal );
 
     DVLOG(2) << "y = xreal = " << y << "\n";
-    //DVLOG(2) << "G(0)  = " << node_type( _M_x0 << "\n";
-    y.minus_assign(  ublas::column( _M_G, 0 ) );
+    //DVLOG(2) << "G(0)  = " << node_type( M_x0 << "\n";
+    y.minus_assign(  ublas::column( M_G, 0 ) );
     DVLOG(2) << "y - G(0) = " << y << "\n";
 
-    DVLOG(2) << "B(0) = " << _M_B << "\n";
-    DVLOG(2) << "xref = " << ublas::prod( ublas::trans( _M_B ), y ) << "\n";
+    DVLOG(2) << "B(0) = " << M_B << "\n";
+    DVLOG(2) << "xref = " << ublas::prod( ublas::trans( M_B ), y ) << "\n";
 
     // xref = B^T * y = B^T * ( x_real - x_0)
-    _M_xref.assign( ublas::prod( ublas::trans( _M_B ), y )-ublas::scalar_vector<value_type>( P, 1.0 ) );
+    M_xref.assign( ublas::prod( ublas::trans( M_B ), y )-ublas::scalar_vector<value_type>( P, 1.0 ) );
 
-    DVLOG(2) << "[GeoMap::Inverse::linearInverse] xref : " << _M_xref << "\n";
+    DVLOG(2) << "[GeoMap::Inverse::linearInverse] xref : " << M_xref << "\n";
 
     bool __isin;
     double vmin;
-    boost::tie( __isin, vmin ) = _M_gm->isIn( _M_xref );
+    boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
     DVLOG(2) << "[GeoMap::Inverse::linearInverse] isIn : " << __isin << "\n";
 
     ///if ( __isin < 1e-10 )
@@ -2386,7 +2386,7 @@ bool linearInverse()
         else
         {
             // y = y - K * x_ref
-            ublas::axpy_prod( _M_K, -_M_xref, y );
+            ublas::axpy_prod( M_K, -M_xref, y );
 
             if ( ublas::norm_2( y ) < 1e-10 )
                 return true;
@@ -2398,10 +2398,10 @@ bool linearInverse()
 
 matrix_node_t_type linearInversePoints( matrix_node_t_type const& real_pts, bool /*allow_extrapolation*/ = false ) const
 {
-    return ublas::prod( ublas::trans( _M_B ),
-                        real_pts-ublas::outer_prod( ublas::column( _M_G, 0 ),
+    return ublas::prod( ublas::trans( M_B ),
+                        real_pts-ublas::outer_prod( ublas::column( M_G, 0 ),
                                 ublas::scalar_vector<value_type>( real_pts.size2(), value_type( 1 ) ) ) ) -
-           ublas::scalar_matrix<value_type>( _M_B.size2(), real_pts.size2(), value_type( 1 ) );
+           ublas::scalar_matrix<value_type>( M_B.size2(), real_pts.size2(), value_type( 1 ) );
 
 }
 
@@ -2414,64 +2414,64 @@ bool nonLinearInversePetsc()
     //LOG(INFO) << "starting new nonlinear inverse\n";
     //const double EPS = 1e-10;
     const double IN_EPS = 1e-10;
-    size_type N = _M_xreal.size();
-    size_type P = _M_xref.size();
+    size_type N = M_xreal.size();
+    size_type P = M_xref.size();
 
 #if 0
     /*
-      find an initial guess: closest geometric node to _M_xreal
+      find an initial guess: closest geometric node to M_xreal
     */
-    node_type x0 = _M_gm->refNode( 0 );
-    node_type y = ublas::column( _M_G, 0 );
-    scalar_type d = ublas::inner_prod( y, _M_xreal );
+    node_type x0 = M_gm->refNode( 0 );
+    node_type y = ublas::column( M_G, 0 );
+    scalar_type d = ublas::inner_prod( y, M_xreal );
 
-    for ( size_type j = 1; j < _M_gm->nbPoints(); ++j )
+    for ( size_type j = 1; j < M_gm->nbPoints(); ++j )
     {
-        scalar_type d2 = ublas::inner_prod( ublas::column( _M_G, j ), _M_xreal );
+        scalar_type d2 = ublas::inner_prod( ublas::column( M_G, j ), M_xreal );
 
         if ( d2 < d )
         {
             d = d2;
-            x0 = _M_gm->refNode( j );
-            y = ublas::column( _M_G, j );
+            x0 = M_gm->refNode( j );
+            y = ublas::column( M_G, j );
         }
     }
 
-    _M_xref = x0;
+    M_xref = x0;
     node_type x0 = barycenterRef();
 
 #else
-    _M_xref = barycenterRef();
+    M_xref = barycenterRef();
 #endif
 
     dense_matrix_type J( P, P );
     dense_vector_type R( P );
 
-    updateResidual( _M_xref, R );
-    updateJacobian( _M_xref, J );
+    updateResidual( M_xref, R );
+    updateJacobian( M_xref, J );
 
     // find xref by solving the non linear equation
-    _M_nlsolver->setType( TRUST_REGION );
-    _M_nlsolver->setRelativeResidualTol( 1e-16 );
-    _M_nlsolver->solve( J, _M_xref, R, 1e-10, 10 );
+    M_nlsolver->setType( TRUST_REGION );
+    M_nlsolver->setRelativeResidualTol( 1e-16 );
+    M_nlsolver->solve( J, M_xref, R, 1e-10, 10 );
 
 
     // compute the location of xref: inside or outside the element
     bool __isin;
     double vmin;
-    this->updateResidual( _M_xref, R );
-    boost::tie( __isin, vmin ) = _M_gm->isIn( _M_xref );
+    this->updateResidual( M_xref, R );
+    boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
 
     if ( __isin  &&
             ( P == N || ublas::norm_2( R ) < IN_EPS ) )
     {
-        //LOG(INFO) << "point " << _M_xref << "in IN (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
+        //LOG(INFO) << "point " << M_xref << "in IN (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
         return true;
     }
 
     else
     {
-        //LOG(INFO) << "point " << _M_xref << "in OUT (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
+        //LOG(INFO) << "point " << M_xref << "in OUT (" << vmin << ") residual = " << ublas::norm_2(R) << "\n";
     }
 
     //LOG(INFO) << "done in new nonlinear inverse\n";
@@ -2486,41 +2486,41 @@ bool nonLinearInverse()
 {
     const double EPS = 1e-10;
     const double IN_EPS = 1e-10;
-    size_type N = _M_xreal.size();
-    size_type P = _M_xref.size();
+    size_type N = M_xreal.size();
+    size_type P = M_xref.size();
 
     /*
-      find an initial guess: closest geometric node to _M_xreal
+      find an initial guess: closest geometric node to M_xreal
     */
-    node_type x0 = _M_gm->refNode( 0 );
-    node_type y = ublas::column( _M_G, 0 );
-    scalar_type d = ublas::inner_prod( y, _M_xreal );
+    node_type x0 = M_gm->refNode( 0 );
+    node_type y = ublas::column( M_G, 0 );
+    scalar_type d = ublas::inner_prod( y, M_xreal );
 
-    for ( size_type j = 1; j < _M_gm->nbPoints(); ++j )
+    for ( size_type j = 1; j < M_gm->nbPoints(); ++j )
     {
-        scalar_type d2 = ublas::inner_prod( ublas::column( _M_G, j ), _M_xreal );
+        scalar_type d2 = ublas::inner_prod( ublas::column( M_G, j ), M_xreal );
 
         if ( d2 < d )
         {
             d = d2;
-            x0 = _M_gm->refNode( j );
-            y = ublas::column( _M_G, j );
+            x0 = M_gm->refNode( j );
+            y = ublas::column( M_G, j );
         }
     }
 
-    _M_xref = x0;
+    M_xref = x0;
 
     node_type vres( N );
-    node_type rn( _M_xreal );
+    node_type rn( M_xreal );
     rn.minus_assign( y );
 
     this->update();
 
     // vres = K^T rn
-    ublas::axpy_prod( rn, _M_K, vres );
+    ublas::axpy_prod( rn, M_K, vres );
     scalar_type res = ublas::norm_2( vres );
 
-    //     std::cerr << "DEBUT: res0=" << res << ", X=" << _M_xreal << "\nB=" << _M_B << ", K=" << _M_K << "\n";
+    //     std::cerr << "DEBUT: res0=" << res << ", X=" << M_xreal << "\nB=" << M_B << ", K=" << M_K << "\n";
     unsigned cnt = 50;
 
     while ( res > EPS/10 && cnt > 0 )
@@ -2528,23 +2528,23 @@ bool nonLinearInverse()
         node_type xn( P );
 
         // xn = B^T rn
-        ublas::axpy_prod( rn, _M_B, xn );
+        ublas::axpy_prod( rn, M_B, xn );
 
         scalar_type newres;
 
         for ( int16_type i=1; i<=256; i*=2 )
         {
-            _M_xref.plus_assign( xn / scalar_type( i ) );
-            y = _M_gm->transform( _M_xref, G() );
+            M_xref.plus_assign( xn / scalar_type( i ) );
+            y = M_gm->transform( M_xref, G() );
 
-            rn = _M_xreal - y;
+            rn = M_xreal - y;
 
             this->update();
 
             if ( P != N )
             {
                 // vres = K^T rn
-                ublas::axpy_prod( rn, _M_K, vres );
+                ublas::axpy_prod( rn, M_K, vres );
                 newres = ublas::norm_2( vres );
             }
 
@@ -2558,19 +2558,19 @@ bool nonLinearInverse()
         }
 
         res = newres;
-        //         std::cout << "cnt=" << cnt << ", x=" << _M_xref << ", res=" << res << "\n";
+        //         std::cout << "cnt=" << cnt << ", x=" << M_xref << ", res=" << res << "\n";
         --cnt;
     }
 
     //     std::cerr << " invert_nonlin done\n";
     //     std::cerr << "cnt=" << cnt << ", P=" << P << ", N=" << N
-    //               << "\nX=" << _M_xreal << " Xref=" << _M_xref << "\nresidu=" << res << "\n";
-    //<< ", G=" << G << "\nX=" << _M_xreal << " Xref=" << x << "\nresidu=" << res << "\nB=" << B << ", K=" << K << "\n"  << "\n-------------------^^^^^^^^\n";
+    //               << "\nX=" << M_xreal << " Xref=" << M_xref << "\nresidu=" << res << "\n";
+    //<< ", G=" << G << "\nX=" << M_xreal << " Xref=" << x << "\nresidu=" << res << "\nB=" << B << ", K=" << K << "\n"  << "\n-------------------^^^^^^^^\n";
     if ( cnt == 0 )
     {
 #if 0
         std::cerr << "BFGS in geotrans_inv_convex!\n";
-        GeomapInverseConvex b( *this, _M_xreal );
+        GeomapInverseConvex b( *this, M_xreal );
 
         iteration_ptrtype iter( Iteration<double>::New() );
         iter->setMaximumNumberOfIterations( 50 );
@@ -2578,9 +2578,9 @@ bool nonLinearInverse()
 
         node_type x( x0 );
         bfgs( b,b,x,10,*iter );
-        rn = _M_gm->transform( x,G() ) - _M_xreal;
+        rn = M_gm->transform( x,G() ) - M_xreal;
 
-        if ( _M_gm->isIn( x ) < IN_EPS &&
+        if ( M_gm->isIn( x ) < IN_EPS &&
                 N==P && ublas::norm_2( rn ) > IN_EPS )
             throw "inversion of non-linear geometric transformation "
             "failed ! (too much iterations)";
@@ -2590,7 +2590,7 @@ bool nonLinearInverse()
 
     bool __isin;
     double vmin;
-    boost::tie( __isin, vmin ) = _M_gm->isIn( _M_xref );
+    boost::tie( __isin, vmin ) = M_gm->isIn( M_xref );
 
     if ( __isin  &&
             ( P == N || ublas::norm_2( rn ) < IN_EPS ) )
@@ -2601,7 +2601,7 @@ bool nonLinearInverse()
 
     else
     {
-        //LOG(INFO) << "point " << _M_xref << "in OUT (" << vmin << ")\n";
+        //LOG(INFO) << "point " << M_xref << "in OUT (" << vmin << ")\n";
     }
 
     return false;
@@ -2611,27 +2611,27 @@ bool nonLinearInverse()
 
 private:
 
-geometric_mapping_ptrtype _M_gm;
-node_type _M_xref;
-node_type _M_xreal;
+geometric_mapping_ptrtype M_gm;
+node_type M_xref;
+node_type M_xreal;
 
-bool _M_is_in;
+bool M_is_in;
 
-//matrix_type const& _M_G;
-matrix_type _M_G;
-matrix_type _M_K;
-matrix_type _M_B;
-matrix_type _M_CS;
-matrix_type _M_g;
+//matrix_type const& M_G;
+matrix_type M_G;
+matrix_type M_K;
+matrix_type M_B;
+matrix_type M_CS;
+matrix_type M_g;
 
-boost::shared_ptr<SolverNonLinear<double> > _M_nlsolver;
+boost::shared_ptr<SolverNonLinear<double> > M_nlsolver;
 }; // Inverse
 
 private:
 
 element_gm_ptrtype _elementMap;
 face_gm_ptrtype _boundaryMap;
-matrix_type _M_g_linear;
+matrix_type M_g_linear;
 
 friend class Inverse;
 
@@ -2800,24 +2800,24 @@ public:
 
     RealToReference( Elem const& elem )
         :
-        _M_gm( new gm_type ),
-        _M_igm( _M_gm, elem )
+        M_gm( new gm_type ),
+        M_igm( M_gm, elem )
     {}
 
     points_type operator()( points_type const& pts ) const
     {
-        return _M_igm( pts );
+        return M_igm( pts );
     }
 
     value_type J() const
     {
-        return _M_igm.J();
+        return M_igm.J();
     }
 
 private:
 
-    gm_ptrtype _M_gm;
-    inverse_gm_type _M_igm;
+    gm_ptrtype M_gm;
+    inverse_gm_type M_igm;
 
 };
 

@@ -66,26 +66,26 @@ public:
 
     operator T()
     {
-        return _M_val;
+        return M_val;
     }
 
     ADType (  T __v = 0 )
         :
-        _M_val (  __v )
+        M_val (  __v )
     {
     }
 
     template<int VarNum>
     ADType( ADType<T,Nvar,0,VarNum> const& sad )
         :
-        _M_val( sad._M_val )
+        M_val( sad.M_val )
     {
     }
 
     template<typename ExprT>
     ADType ( const ADExpr<ExprT>& expr )
         :
-        _M_val( 0 )
+        M_val( 0 )
     {
         *this = expr;
     }
@@ -96,7 +96,7 @@ public:
     //@{
     value_type value() const
     {
-        return _M_val;
+        return M_val;
     }
 
 
@@ -107,7 +107,7 @@ public:
     //@{
     value_type& value()
     {
-        return _M_val;
+        return M_val;
     }
 
     //@}
@@ -137,7 +137,7 @@ public:
 #define AD_UNARY_OP( op )                       \
     This& operator op ( value_type val )        \
     {                                           \
-        _M_val op val;                          \
+        M_val op val;                          \
         return *this;                           \
     }
     AD_UNARY_OP( += );
@@ -149,25 +149,25 @@ public:
 
     This& operator += ( This const& sad )
     {
-        _M_val += sad._M_val;
+        M_val += sad.M_val;
         return *this;
     }
     This& operator -= ( This const& sad )
     {
-        _M_val -= sad._M_val;
+        M_val -= sad.M_val;
         return *this;
     }
 
 
     This& operator *= ( This const& sad )
     {
-        _M_val *= sad._M_val;
+        M_val *= sad.M_val;
         return *this;
     }
 
     This& operator /= ( This const& sad )
     {
-        _M_val /= sad._M_val;
+        M_val /= sad.M_val;
         return *this;
     }
 
@@ -201,14 +201,14 @@ public:
     //@}
 private:
 
-    value_type _M_val;
+    value_type M_val;
 
 };
 template<typename T,int Nvar, int Var>
 ADType<T, Nvar, 0, Var>&
 ADType<T, Nvar, 0, Var>::operator=( value_type const& val )
 {
-    _M_val = val;
+    M_val = val;
     return *this;
 }
 
@@ -216,7 +216,7 @@ template<typename T,int Nvar, int Var>
 ADType<T, Nvar, 0, Var>&
 ADType<T, Nvar, 0, Var>::operator=( This const& sad )
 {
-    _M_val = sad._M_val;
+    M_val = sad.M_val;
     return *this;
 }
 template<typename T,int Nvar, int Var>
@@ -224,7 +224,7 @@ template <class ExprT>
 ADType<T,Nvar, 0, Var> &
 ADType<T,Nvar, 0, Var>::operator=( const ADExpr<ExprT>& expr )
 {
-    _M_val = expr.value();
+    M_val = expr.value();
     return *this;
 }
 
@@ -242,4 +242,3 @@ operator << ( std::ostream& os, const Feel::ADType<T, Nvar, 0, Var>& a )
 }
 
 #endif
-
