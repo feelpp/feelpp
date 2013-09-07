@@ -2692,7 +2692,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id,
     {
         bool isin2=false;
         boost::tie(isin2,x_ref,dmin) = this->isIn(_id,_pt);
-        if (!isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
+        LOG_IF(WARNING, !isin2) << "Mesh::Localization::isIn<Conformal> : check fail -> maybe x_ref is not correct";
     }
 
     return boost::make_tuple(isin,x_ref,dmin);
