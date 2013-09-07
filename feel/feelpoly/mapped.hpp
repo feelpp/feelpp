@@ -101,7 +101,7 @@ public :
 
     PointSetMapped( element_type const& _elt )
         :
-        _M_elt( _elt )
+        M_elt( _elt )
     {
         pointset_type pts;
 
@@ -169,7 +169,7 @@ public :
 
 private:
 
-    element_type _M_elt;
+    element_type M_elt;
 
     std::map<face_permutation_type, permutation_vector_type> vector_permutation;
     std::map<face_permutation_type, permutation_matrix_type> matrix_permutation;
@@ -212,7 +212,7 @@ private:
     points_type permutatePoints ( nodes_type const& theGt, size_type entity_local_id, mpl::int_<1> )
     {
         nodes_type Gt( theGt );
-        edge_permutation_type permutation = _M_elt.edgePermutation( entity_local_id );
+        edge_permutation_type permutation = M_elt.edgePermutation( entity_local_id );
 
         if ( permutation != edge_permutation_type( edge_permutation_type::IDENTITY ) )
         {
@@ -227,7 +227,7 @@ private:
     // real one, match others generated in the same real face
     points_type permutatePoints ( nodes_type const& Gt, size_type entity_local_id, mpl::int_<2> )
     {
-        face_permutation_type permutation = _M_elt.facePermutation( entity_local_id );
+        face_permutation_type permutation = M_elt.facePermutation( entity_local_id );
         nodes_type res( Gt );
 
         if ( permutation != face_permutation_type( face_permutation_type::IDENTITY ) )
@@ -385,7 +385,7 @@ private:
 
         typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( _gm_ptr, Gt ) );
 
-        typename gm_type::template Context<vm::POINT, element_type> gmc( _gm_ptr, _M_elt, __geopc );
+        typename gm_type::template Context<vm::POINT, element_type> gmc( _gm_ptr, M_elt, __geopc );
 
         return gmc.xReal();
     }
