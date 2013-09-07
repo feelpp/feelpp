@@ -246,8 +246,8 @@ public:
 
     ~Mesh()
         {
-            _M_gm.reset();
-            _M_gm1.reset();
+            M_gm.reset();
+            M_gm1.reset();
             M_tool_localization.reset();
         }
     /**
@@ -303,7 +303,7 @@ public:
      */
     gm_ptrtype const& gm() const
     {
-        return _M_gm;
+        return M_gm;
     }
 
     /**
@@ -311,7 +311,7 @@ public:
          */
     gm1_ptrtype const& gm1() const
     {
-        return _M_gm1;
+        return M_gm1;
     }
 
     /**
@@ -319,7 +319,7 @@ public:
      */
     gm_ptrtype& gm()
     {
-        return _M_gm;
+        return M_gm;
     }
 
     /**
@@ -327,7 +327,7 @@ public:
         */
     gm1_ptrtype& gm1()
     {
-        return _M_gm1;
+        return M_gm1;
     }
 
     /**
@@ -345,7 +345,7 @@ public:
     face_processor_type const& localFaceId( element_type const& e,
                                             size_type const n ) const
     {
-        return _M_e2f.find(std::make_pair(e.id(),n))->second;
+        return M_e2f.find(std::make_pair(e.id(),n))->second;
     }
 
     /**
@@ -354,7 +354,7 @@ public:
     face_processor_type const& localFaceId( size_type const e,
                                             size_type const n ) const
     {
-        return _M_e2f.find(std::make_pair(e,n))->second;
+        return M_e2f.find(std::make_pair(e,n))->second;
     }
 #if 0
     /**
@@ -362,17 +362,17 @@ public:
      */
     WorldComm const& worldComm() const
     {
-        return _M_worldComm;
+        return M_worldComm;
     }
 
     void setWorldComm( WorldComm const& _worldComm )
     {
-        _M_worldComm = _worldComm;
+        M_worldComm = _worldComm;
     }
 
     mpi::communicator const& comm() const
     {
-        return _M_worldComm.localComm();
+        return M_worldComm.localComm();
     }
 #endif
     //@}
@@ -395,7 +395,7 @@ public:
     face_processor_type& localFaceId( element_type const& e,
                                       size_type const n )
     {
-        return _M_e2f[std::make_pair(e.id(),n)];
+        return M_e2f[std::make_pair(e.id(),n)];
     }
 
     /**
@@ -404,7 +404,7 @@ public:
     face_processor_type& localFaceId( size_type const e,
                                       size_type const n )
     {
-        return _M_e2f[std::make_pair(e,n)];
+        return M_e2f[std::make_pair(e,n)];
     }
 
     /**
@@ -1307,10 +1307,10 @@ private:
 private:
 
     //! communicator
-    //WorldComm _M_worldComm;
+    //WorldComm M_worldComm;
 
-    gm_ptrtype _M_gm;
-    gm1_ptrtype _M_gm1;
+    gm_ptrtype M_gm;
+    gm1_ptrtype M_gm1;
 
     //! measure of the mesh
     value_type M_meas;
@@ -1322,19 +1322,19 @@ private:
      * The processors who neighbor the current
      * processor
      */
-    std::vector<uint16_type> _M_neighboring_processors;
+    std::vector<uint16_type> M_neighboring_processors;
 
     //partitioner_ptrtype M_part;
 
     /**
      * Arrays containing the global ids of Faces of each element
      */
-    boost::unordered_map<std::pair<int,int>,face_processor_type> _M_e2f;
+    boost::unordered_map<std::pair<int,int>,face_processor_type> M_e2f;
 
     /**
      * Arrays containing the global ids of edges of each element
      */
-    boost::multi_array<element_edge_type,2> _M_e2e;
+    boost::multi_array<element_edge_type,2> M_e2e;
 
     /**
      * marker name disctionnary ( std::string -> <int,int> )
