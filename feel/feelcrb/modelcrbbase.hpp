@@ -165,9 +165,11 @@ public :
     //Elements of function space are members of CRBModel
     //then for composite spaces, we need a view of these elements
     //BUT we can't have a view of an element of a non-composite space
+    //this function returns true if the model provides an operator composite for mass matrix
+    //false by default
     virtual bool constructOperatorCompositeM()
     {
-        return true;
+        return false;
     }
 
 

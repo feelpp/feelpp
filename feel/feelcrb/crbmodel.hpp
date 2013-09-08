@@ -431,10 +431,10 @@ public:
     }
     size_type Qm( mpl::bool_<false> ) const
     {
-        //if( option(_name="crb.stock-matrices").template as<bool>() )
-        //    return 1;
-        //else
+        if( M_model->constructOperatorCompositeM() )
             return functionspace_type::nSpaces;
+        else
+            return 1;
     }
 
     int QInitialGuess() const
@@ -547,13 +547,23 @@ public:
         betaFqm = steady_beta.get<1>();
 
         int nspace = functionspace_type::nSpaces;
-
-        betaMqm.resize( nspace );
-        for(int q=0; q<nspace; q++)
+        //if model provides implementation of operator composite M
+        if ( M_model->constructOperatorCompositeM() )
         {
-            betaMqm[q].resize(1);
-            betaMqm[q][0] = 1 ;
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
         }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
@@ -580,13 +590,22 @@ public:
         betaFqm = steady_beta.get<1>();
 
         int nspace = functionspace_type::nSpaces;
-
-        betaMqm.resize( nspace );
-        for(int q=0; q<nspace; q++)
+        if ( M_model->constructOperatorCompositeM() )
         {
-            betaMqm[q].resize(1);
-            betaMqm[q][0] = 1 ;
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
         }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
 
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
@@ -752,11 +771,11 @@ public:
     }
     operatorcomposite_ptrtype operatorCompositeM( mpl::bool_<false> ) const
     {
-        bool need_to_construct = M_model->constructOperatorCompositeM();
-        if( need_to_construct )
-            return preAssembleMassMatrix();
-        else
+        bool constructed_by_model = M_model->constructOperatorCompositeM();
+        if( constructed_by_model )
             return M_model->operatorCompositeM();
+        else
+            return preAssembleMassMatrix();
     }
 
 
