@@ -264,6 +264,16 @@ public:
     }
 
     /**
+     * number of topological faces on the reference shape
+     *
+     * @return the number of topological faces on the reference shape
+     */
+    constexpr uint16_type nTopologicalFaces() const
+    {
+        return super::numTopologicalFaces;
+    }
+
+    /**
      * number of faces on the reference shape
      *
      * @return the number of edges on the reference shape
