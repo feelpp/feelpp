@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-09-03
  */
-#ifndef __elements_H
-#define __elements_H 1
+#ifndef FEELPP_ELEMENTS_HPP
+#define FEELPP_ELEMENTS_HPP 1
 
 
 #include <boost/multi_index_container.hpp>
@@ -145,14 +145,15 @@ public:
             multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
                                             multi_index::composite_key<element_type,
                                                                        multi_index::const_mem_fun<element_type,
+                                                                                                  uint16_type,
+                                                                                                  &element_type::processId>,
+                                                                       multi_index::const_mem_fun<element_type,
                                                                                                   bool,
                                                                                                   &element_type::isOnBoundary>,
                                                                        multi_index::const_mem_fun<element_type,
                                                                                                   uint16_type,
-                                                                                                  &element_type::boundaryEntityDimension>,
-                                                                       multi_index::const_mem_fun<element_type,
-                                                                                                  uint16_type,
-                                                                                                  &element_type::processId> > >,
+                                                                                                  &element_type::boundaryEntityDimension> > >,
+
 
             // sort by less<int> on processId
             multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
@@ -715,7 +716,22 @@ public:
     std::pair<location_element_const_iterator, location_element_const_iterator>
     boundaryElements( size_type p  ) const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY, this->worldCommElements().localRank() ) );
+        auto lower = boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 0);
+        auto upper = boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 2);
+        return M_elements.template get<detail::by_location>().range( lower, upper );
+    }
+
+    /**
+     * \return the range of iterator \c (begin,end) over the boundary
+     *  element on processor \p p
+     */
+    std::pair<location_element_const_iterator, location_element_const_iterator>
+    boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, size_type p  ) const
+    {
+        auto lower = M_elements.template get<detail::by_location>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, entity_min_dim ) );
+        auto upper = M_elements.template get<detail::by_location>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, entity_max_dim ) );
+        return std::make_pair( lower, upper );
+
     }
 
     /**
@@ -725,7 +741,7 @@ public:
     std::pair<location_element_const_iterator, location_element_const_iterator>
     internalElements( size_type p  ) const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( INTERNAL, this->worldCommElements().localRank() ) );
+        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(),  INTERNAL, invalid_uint16_type_value ) );
     }
 
 
@@ -760,7 +776,7 @@ public:
      */
     location_element_iterator beginInternalElement()
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( INTERNAL,this->worldCommElements().localRank() ) ).first;
+        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(). INTERNAL, invalid_uint16_type_value ) ).first;
     }
     /**
      * get the end() iterator on all the internal elements
@@ -769,7 +785,7 @@ public:
      */
     location_element_iterator endInternalElement()
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( INTERNAL,this->worldCommElements().localRank() ) ).second;
+        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(), INTERNAL, invalid_uint16_type_value ) ).second;
     }
 
     /**
@@ -779,7 +795,7 @@ public:
      */
     location_element_const_iterator beginInternalElement() const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( INTERNAL,this->worldCommElements().localRank() ) ).first;
+        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(), INTERNAL, invalid_uint16_type_value ) ).first;
     }
 
     /**
@@ -789,7 +805,7 @@ public:
      */
     location_element_const_iterator endInternalElement() const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( INTERNAL,this->worldCommElements().localRank() ) ).second;
+        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(), INTERNAL, invalid_uint16_type_value ) ).second;
     }
 
     /**
@@ -799,7 +815,7 @@ public:
      */
     location_element_iterator beginElementOnBoundary()
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY,this->worldCommElements().localRank() ) ).first;
+        return M_elements.template get<detail::by_location>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 0 ) );
     }
     /**
      * get the end() iterator on all the boundary elements
@@ -808,7 +824,7 @@ public:
      */
     location_element_iterator endElementOnBoundary()
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY,this->worldCommElements().localRank() ) ).second;
+        return M_elements.template get<detail::by_location>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 2 ) );
     }
 
     /**
@@ -818,7 +834,7 @@ public:
      */
     location_element_const_iterator beginElementOnBoundary() const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY,this->worldCommElements().localRank() ) ).first;
+        return M_elements.template get<detail::by_location>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 0 ) );
     }
 
     /**
@@ -828,7 +844,7 @@ public:
      */
     location_element_const_iterator endElementOnBoundary() const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( ON_BOUNDARY,this->worldCommElements().localRank() ) ).second;
+        return M_elements.template get<detail::by_location>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 2 ) );
     }
 
     /**
@@ -1023,4 +1039,4 @@ private:
 };
 /// \endcond
 } // Feel
-#endif /* __elements_H */
+#endif /* FEELPP_ELEMENTS_HPP */

@@ -1128,6 +1128,55 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
     ti.restart();
 }
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& it , mpl::bool_<true> )
+{
+    // loop over face edges
+    for ( int f = 0; f < face_type::numEdges; ++f )
+    {
+        if ( it->edge( f ).isOnBoundary() == false )
+        {
+            auto eit = this->edgeIterator( it->edge(f).id() );
+            this->edges().modify( eit,
+                                  []( edge_type& e )
+                                  {e.setOnBoundary(true, 1 );} );
+        }
+
+    }
+    LOG(INFO) << "We have " << nelements(boundaryedges(this)) <<  " boundary edges";
+
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& f, mpl::bool_<false> )
+{
+}
+
+template<typename Shape, typename T, int Tag>
+bool
+Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> )
+{
+    return false;
+}
+template<typename Shape, typename T, int Tag>
+bool
+Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_iterator& iv, mpl::bool_<true> )
+{
+    // in 3D check if the edges of the element touch the boundary
+    bool isOnBoundary = false;
+    for ( size_type j = 0; j < iv->nEdges(); j++ )
+    {
+        isOnBoundary |= iv->edge( j ).isOnBoundary();
+    }
+    if ( isOnBoundary )
+    {
+        // the element touches the boundary with just an edge
+        this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 1 ); } );
+        return isOnBoundary;
+    }
+    return isOnBoundary;
+}
 
 template<typename Shape, typename T, int Tag>
 void
@@ -1140,22 +1189,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
     {
         if ( it->isOnBoundary() == true )
         {
-            if ( nDim >= 3 )
-            {
-                // loop over face edges
-                for ( int f = 0; f < face_type::numEdges; ++f )
-                {
-                    if ( it->edge( f ).isOnBoundary() == false )
-                    {
-                        auto eit = this->edgeIterator( it->edge(f).id() );
-                        this->edges().modify( eit,
-                                              []( edge_type& e )
-                                              {e.setOnBoundary(true, 1 );} );
-                    }
-
-                }
-                LOG(INFO) << "We have " << nelements(boundaryedges(this)) <<  " boundary edges";
-            }
+            modifyEdgesOnBoundary( it, mpl::bool_<(nDim >= 3)>() );
             // loop over face points
             for ( int f = 0; f < face_type::numPoints; ++f )
             {
@@ -1177,34 +1211,27 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
           iv != en; ++iv )
     {
         bool isOnBoundary = false;
+
         // first check if a face is on the boundary
-        for ( size_type j = 0; j < iv->nFaces(); j++ )
+        for ( size_type j = 0; j < iv->nTopologicalFaces(); j++ )
         {
             isOnBoundary |= iv->face( j ).isOnBoundary();
         }
+
         if ( isOnBoundary )
         {
+            LOG(INFO) << "checking " << iv->nTopologicalFaces() << " faces, isOnBoundary: " << isOnBoundary << " face_type::nDim: " << face_type::nDim;
             this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, face_type::nDim ); } );
             // go to the next element, no need to look further
             continue;
         }
-
-        if ( nDim >= 3 )
+        bool e_modified = modifyElementOnBoundaryFromEdge( iv, mpl::bool_<(nDim>=3)>() );
+        // go to next element if element is on boundary
+        if ( e_modified )
         {
-            // in 3D check if the edges of the element touch the boundary
-
-            for ( size_type j = 0; j < iv->nEdges(); j++ )
-            {
-                isOnBoundary |= iv->edge( j ).isOnBoundary();
-            }
-            if ( isOnBoundary )
-            {
-                // the element touches the boundary with just an edge
-                this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 1 ); } );
-                // go to the next element, no need to look further
-                continue;
-            }
+            continue;
         }
+
         // finally check if a point of the element touches the boundary
         for ( size_type j = 0; j < iv->nPoints(); j++ )
         {
@@ -1213,11 +1240,18 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
 
         if ( isOnBoundary )
         {
+            LOG(INFO) << "checking " << iv->nPoints() << " points, isOnBoundary: " << isOnBoundary;
             this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 0 ); } );
         }
     } // loop over the elements
     LOG(INFO) << "[updateOnBoundary] We have " << nelements(boundaryelements(this))
               << " elements sharing a point, a edge or a face with the boundary in the database";
+    BOOST_FOREACH( auto e, this->boundaryElements( 0, 2, 0 ) )
+    {
+        LOG(INFO) << "boundary element : " << e.id()
+                  << " entity on boundary max dim  " << e.boundaryEntityDimension()
+                  << " process id : " << e.processId();
+    }
 
 }
 template<typename Shape, typename T, int Tag>

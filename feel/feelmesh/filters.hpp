@@ -139,19 +139,19 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       typename MeshTraits<MeshType>::location_element_const_iterator,
       typename MeshTraits<MeshType>::location_element_const_iterator>
-      boundaryelements( MeshType const& mesh, size_type pid, mpl::bool_<false> )
+boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, size_type pid, mpl::bool_<false> )
 {
     typedef typename MeshTraits<MeshType>::location_element_const_iterator iterator;
-    std::pair<iterator, iterator> p = mesh.boundaryElements( pid );
+    std::pair<iterator, iterator> p = mesh.boundaryElements( entity_min_dim, entity_max_dim, pid );
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(), p.first, p.second );
 }
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       typename MeshTraits<MeshType>::location_element_const_iterator,
       typename MeshTraits<MeshType>::location_element_const_iterator>
-      boundaryelements( MeshType const& mesh, size_type pid, mpl::bool_<true> )
+boundaryelements( MeshType const& mesh, uint16_type entity_min_dim, uint16_type entity_max_dim, size_type pid, mpl::bool_<true> )
 {
-    return boundaryelements( *mesh, pid, mpl::bool_<false>() );
+    return boundaryelements( *mesh, entity_min_dim, entity_max_dim, pid, mpl::bool_<false>() );
 }
 
 template<typename MeshType>
@@ -527,19 +527,19 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_EDGES>,
       typename MeshTraits<MeshType>::location_edge_const_iterator,
       typename MeshTraits<MeshType>::location_edge_const_iterator>
-      boundaryedges( MeshType const& mesh, mpl::bool_<true> )
-{
-    return boundaryedges( *mesh, mpl::bool_<false>() );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_EDGES>,
-      typename MeshTraits<MeshType>::location_edge_const_iterator,
-      typename MeshTraits<MeshType>::location_edge_const_iterator>
       boundaryedges( MeshType const& mesh, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
                               mesh.beginEdgeOnBoundary(),
                               mesh.endEdgeOnBoundary() );
+}
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_EDGES>,
+      typename MeshTraits<MeshType>::location_edge_const_iterator,
+      typename MeshTraits<MeshType>::location_edge_const_iterator>
+      boundaryedges( MeshType const& mesh, mpl::bool_<true> )
+{
+    return boundaryedges( *mesh, mpl::bool_<false>() );
 }
 
 template<typename MeshType>
@@ -691,10 +691,10 @@ template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       typename MeshTraits<MeshType>::location_element_const_iterator,
       typename MeshTraits<MeshType>::location_element_const_iterator>
-      boundaryelements( MeshType const& mesh )
+boundaryelements( MeshType const& mesh, uint16_type entity_min_dim = 0, uint16_type entity_max_dim = 2 )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::boundaryelements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return detail::boundaryelements( mesh, entity_min_dim, entity_max_dim, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
