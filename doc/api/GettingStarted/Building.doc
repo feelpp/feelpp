@@ -81,7 +81,7 @@ Ubuntu. They should be available. Once you have installed those dependencies, yo
 Debian is the platform of choice for \feel, it was developed mainly on it. The commands to install \feel on Debian are
 \verbatim
   sudo apt-get update
-  sudo apt-get install feel++-apps libfeel-dev feel++-doc
+  sudo apt-get install feel++-apps libfeel++-dev feel++-doc
 \endverbatim
 
 The interested user is encourage to follow the \feel PTS page
