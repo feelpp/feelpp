@@ -442,10 +442,10 @@ public:
     }
     size_type Qm( mpl::bool_<false> ) const
     {
-        if( option(_name="crb.stock-matrices").template as<bool>() )
-            return 1;
-        else
+        if( M_model->constructOperatorCompositeM() )
             return functionspace_type::nSpaces;
+        else
+            return 1;
     }
 
     int QInitialGuess() const
@@ -557,9 +557,23 @@ public:
         betaAqm = steady_beta.get<0>();
         betaFqm = steady_beta.get<1>();
 
-        betaMqm.resize( 1 );
-        betaMqm[0].resize( 1 );
-        betaMqm[0][0] = 1 ;
+        int nspace = functionspace_type::nSpaces;
+        //if model provides implementation of operator composite M
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
 
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
@@ -585,9 +599,24 @@ public:
         steady_beta = M_model->computeBetaQm(T, mu , time );
         betaAqm = steady_beta.get<0>();
         betaFqm = steady_beta.get<1>();
-        betaMqm.resize( 1 );
-        betaMqm[0].resize( 1 );
-        betaMqm[0][0] = 1 ;
+
+        int nspace = functionspace_type::nSpaces;
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
 
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
@@ -620,6 +649,7 @@ public:
             offline_merge = offlineMerge( all_beta , mu );
         else
             offline_merge = offlineMergeOnFly( all_beta, mu );
+
         return offline_merge;
 
     }
@@ -752,7 +782,11 @@ public:
     }
     operatorcomposite_ptrtype operatorCompositeM( mpl::bool_<false> ) const
     {
-        return preAssembleMassMatrix();
+        bool constructed_by_model = M_model->constructOperatorCompositeM();
+        if( constructed_by_model )
+            return M_model->operatorCompositeM();
+        else
+            return preAssembleMassMatrix();
     }
 
 
@@ -772,6 +806,7 @@ public:
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
         boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+
         if( M_Aqm.size() == 0 )
         {
             auto compositeM = operatorCompositeM();
@@ -846,9 +881,26 @@ public:
         }
         else
         {
-            assembleMassMatrix();
+            auto compositeM = operatorCompositeM();
+            int q_max = this->Qm();
+            M_Mqm.resize( q_max);
+            for(int q=0; q<q_max; q++)
+            {
+                int m_max = this->mMaxM(q);
+                M_Mqm[q].resize(m_max);
+                for(int m=0; m<m_max;m++)
+                {
+                    auto operatorfree = compositeM->operatorlinear(q,m);
+                    size_type pattern = operatorfree->pattern();
+                    auto trial = operatorfree->domainSpace();
+                    auto test=operatorfree->dualImageSpace();
+                    M_Mqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Mqm[q][m]);//fill the matrix
+                }//m
+            }//q
+
             auto compositeA = operatorCompositeA();
-            int q_max = this->Qa();
+            q_max = this->Qa();
             M_Aqm.resize( q_max);
             for(int q=0; q<q_max; q++)
             {
