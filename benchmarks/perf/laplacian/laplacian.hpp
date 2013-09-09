@@ -186,16 +186,17 @@ Laplacian<Dim, BasisU, Entity>::run()
                                               _convex=( ( !recombine )&&convex_type::is_hypercube )?"Hypercube":"Simplex",
                                               _recombine=( recombine&&convex_type::is_hypercube ), // generate quads which are not regular
                                               _dim=Dim,
-                                              _h=meshSizeInit(),
+                                              _h=meshSizeInit()/std::pow(2,level()-1),
                                               _shear=shear,
                                               _xmin=xmin,_xmax=xmax,
                                               _zmin=zmin,_zmax=zmax,
                                               _ymin=ymin,_ymax=ymax ),
                                 _force_rebuild=true,
-                                _refine=level()-1,
+                                //_refine=level()-1,
                                 _partitions=nparts );
 #else
-    auto mesh = loadMesh( _mesh=new mesh_type, _h=meshSizeInit(), _refine=level()-1, _partitions=nparts );
+    //auto mesh = loadMesh( _mesh=new mesh_type, _h=meshSizeInit(), _refine=level()-1, _partitions=nparts );
+    auto mesh = loadMesh( _mesh=new mesh_type, _h=meshSizeInit()/std::pow(2,level()-1), _partitions=nparts );
 #endif
 
     M_stats.put( "t.init.mesh",t.elapsed() );
@@ -366,13 +367,18 @@ Laplacian<Dim, BasisU, Entity>::run()
     M_stats.put( "n.matrix.nnz",gnnz );
     M_stats.put( "n.matrix.nlocalnz",nnz );
 
+    v.zero();
+    v = vf::project( Xh, elements(mesh), u_exact );
+    double interp_errorL2 = integrate( _range=elements( mesh ), _expr=trans( idv( v )-u_exact )*( idv( v )-u_exact ), _quad=_Q<8>() ).evaluate()( 0, 0 );
+
     t.restart();
     double u_errorL2 = integrate( _range=elements( mesh ), _expr=trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     double u_exactL2 = integrate( _range=elements( mesh ), _expr=trans( u_exact )*( u_exact ) ).evaluate()( 0, 0 );
     M_stats.put( "t.integrate.l2norm",t.elapsed() );
     t.restart();
-    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
-    LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";;
+    std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";
+    LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";
+    M_stats.put( "e.l2.i",math::sqrt( interp_errorL2 ) );
     M_stats.put( "e.l2.u",math::sqrt( u_errorL2 ) );
     M_stats.put( "e.l2.u.n",math::sqrt( u_errorL2/u_exactL2 ) );
 
@@ -404,12 +410,12 @@ Laplacian<Dim, BasisU, Entity>::run()
     // second using residual from equation without dirichlet conditions
     v.zero();
     v = vf::project( Xh, boundaryfaces(mesh), cst(1.) );
-    double flux2_approx = integrate( _range=boundaryelements(mesh), _expr=f*idv(v)-gradv(u)*trans(gradv(v))).evaluate()(0,0);
+    double flux2_approx = integrate( _range=boundaryelements(mesh), _expr=f*idv(v)-mu*gradv(u)*trans(gradv(v))).evaluate()(0,0);
     double flux2_error = math::abs(flux1_exact-flux2_approx);
     LOG(INFO) << "residual approx : "  << std::scientific << std::setprecision(5) << flux2_approx;
     LOG(INFO) << "relative error flux 2 = " <<   flux2_error;
     M_stats.put( "e.flux.residual", flux2_error );
-    double flux2_exact = integrate( _range=boundaryelements(mesh), _expr=f*idv(v)-grad_exact*trans(gradv(v)),_quad=_Q<10>()).evaluate()(0,0);
+    double flux2_exact = integrate( _range=boundaryelements(mesh), _expr=f*idv(v)-mu*grad_exact*trans(gradv(v)),_quad=_Q<10>()).evaluate()(0,0);
     double flux3_error = math::abs(flux2_exact-flux2_approx);
     LOG(INFO) << "relative error flux 3 = " <<   flux3_error;
     M_stats.put( "e.flux.residual2", flux3_error );
