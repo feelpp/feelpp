@@ -1302,6 +1302,29 @@ private:
      */
     void renumber( mpl::bool_<true> );
 
+    /**
+     * modify edges on boundary in 3D
+     */
+    void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<true> );
+
+    /**
+     * modify edges on boundary in 2D or 1D
+     */
+    void modifyEdgesOnBoundary( face_iterator& face, mpl::bool_<false> );
+
+    /**
+     * modify element that may touch the boundary through one of its edge in 1D or 2D
+     */
+    bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> );
+
+    /**
+     * modify element that may touch the boundary through one of its edge in 3D
+     */
+    bool modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<true> );
+
+    /**
+     * update entities on boundary (point, edge, face and element)
+     */
     void updateOnBoundary();
 
 private:
