@@ -123,7 +123,7 @@ template<typename T>
 void
 MatrixEigenDense<T>::resize( size_type nr, size_type nc, bool /*preserve*/ )
 {
-    _M_mat.resize( nr, nc );
+    _M_mat.conservativeResize( nr, nc );
 }
 
 template<typename T>
@@ -310,6 +310,23 @@ MatrixEigenDense<T>::matInverse ( MatrixSparse<T> &Inv )
 
 }
 
+template <typename T>
+void
+MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<value_type>> &Eingvs )
+{
+    auto eigen_vals = _M_mat.eigenvalues();
+    for (size_type i=0; i < eigen_vals.size(); ++i )
+    {
+        Eingvs.push_back(eigen_vals[i]);
+    }
+}
+
+template <typename T>
+void
+MatrixEigenDense<T>::setConstant ( value_type v )
+{
+    _M_mat.setConstant(v);
+}
 
 template <typename T>
 void

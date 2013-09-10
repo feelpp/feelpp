@@ -732,6 +732,11 @@ public:
 
     virtual void matInverse ( MatrixSparse<value_type> &Inv );
 
+    virtual void setConstant ( value_type v );
+
+
+
+
 protected:
     /**
      * Protected implementation of the create_submatrix and reinit_submatrix
@@ -907,6 +912,14 @@ void MatrixSparse<T>::matMatMult ( MatrixSparse<value_type> const& In, MatrixSpa
 
 template <typename T>
 void MatrixSparse<T>::matInverse ( MatrixSparse<value_type> &Inv )
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+}
+
+template <typename T>
+void MatrixSparse<T>::setConstant ( value_type v )
 {
     std::cerr << "Error! This function is not yet implemented in the base class!"
               << std::endl;
