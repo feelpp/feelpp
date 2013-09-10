@@ -50,6 +50,7 @@
 
 #include <Eigen/Core>
 
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
 #include <feel/feelvf/shape.hpp>
@@ -654,9 +655,9 @@ public:
     //ublas::matrix<typename expression_type::value_type>
 
     typename expression_type::value_type
-    evaluate( bool parallel = true ) const
+    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {
-        return M_expr.evaluate( parallel );
+        return M_expr.evaluate( parallel,worldcomm );
     }
 
     typename expression_type::value_type
