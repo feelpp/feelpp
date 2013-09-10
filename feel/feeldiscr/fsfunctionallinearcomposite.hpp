@@ -141,7 +141,8 @@ public:
         return *this;
     }
 
-    vector_ptrtype sumAllVectors( bool use_scalar_one=false ) const
+
+    void sumAllVectors( vector_ptrtype & vector, bool use_scalar_one=false ) const
     {
         int size1 = M_functionals1.size();
         int size2 = M_functionals2.size();
@@ -154,21 +155,21 @@ public:
         FEELPP_ASSERT( !size_error )( size1 )( size2 ).error( "FsFunctionalLinearComposite has no elements, or both maps have elements" );
 
         if( size1 > 0 )
-            return sumAllVectors1( use_scalar_one );
+            sumAllVectors1( vector, use_scalar_one );
         else
-            return sumAllVectors2( use_scalar_one );
+            sumAllVectors2( vector, use_scalar_one );
     }
 
 
-    vector_ptrtype sumAllVectors1( bool use_scalar_one=false ) const
+    void sumAllVectors1( vector_ptrtype & vector, bool use_scalar_one=false ) const
     {
         int size1 = M_functionals1.size();
         int size2 = M_functionals2.size();
 
         FEELPP_ASSERT( size1 > 0 )( size1 )( size2 ).error( "FsFunctionalLinearComposite has no elements" );
 
-        auto vector = M_backend->newVector(this->space() );
         vector->zero();
+        auto temp_vector = M_backend->newVector( this->space() );
         auto end = M_functionals1.end();
         for(auto it=M_functionals1.begin(); it!=end; ++it)
         {
@@ -176,23 +177,21 @@ public:
             double scalar=1;
             if( ! use_scalar_one )
                 scalar = M_scalars1[position];
-            auto temp_vector = M_backend->newVector( this->space() );
             it->second->containerPtr(temp_vector);
             vector->add( scalar , temp_vector );
         }
-        return vector;
 
     }//sumAllVectors
 
-    vector_ptrtype sumAllVectors2( bool use_scalar_one=false ) const
+    void sumAllVectors2( vector_ptrtype & vector, bool use_scalar_one=false ) const
     {
         int size1 = M_functionals1.size();
         int size2 = M_functionals2.size();
 
         FEELPP_ASSERT( size2 > 0 )( size1 )( size2 ).error( "FsFunctionalLinearComposite has no elements" );
 
-        auto vector = M_backend->newVector(this->space() );
         vector->zero();
+        auto temp_vector = M_backend->newVector( this->space() );
         auto end = M_functionals2.end();
         for(auto it=M_functionals2.begin(); it!=end; ++it)
         {
@@ -202,11 +201,9 @@ public:
             double scalar=1;
             if( ! use_scalar_one )
                 scalar = M_scalars2[q][m];
-            auto temp_vector = M_backend->newVector( this->space() );
             it->second->containerPtr(temp_vector);
             vector->add( scalar , temp_vector );
         }
-        return vector;
 
     }//sumAllVectors
 
@@ -259,7 +256,8 @@ public:
     //return the sum of all vectors
     virtual void containerPtr( vector_ptrtype & vector_to_fill )
     {
-        vector_to_fill = sumAllVectors(true);
+        //vector_to_fill = sumAllVectors(true);
+        sumAllVectors( vector_to_fill , true );
         vector_to_fill->close();
     }
 
@@ -267,7 +265,9 @@ public:
     virtual value_type
     operator()( const element_type& x ) const
     {
-        auto vector = sumAllVectors( true );
+        //auto vector = sumAllVectors( true );
+        auto vector = M_backend->newVector( this->space() );
+        sumAllVectors( vector, true );
         vector->close();
         return M_backend->dot( *vector, x.container() );
     }
