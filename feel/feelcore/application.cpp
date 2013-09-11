@@ -989,15 +989,15 @@ Application::run()
         }
         if ( !prepare && has_stats == true )
         {
-            std::string fname = (boost::format( "%1%-%2%.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fname = (boost::format( "%1%-%2%.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofs( cp / fname );
-            std::string fnameall = (boost::format( "%1%-%2%-all.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fnameall = (boost::format( "%1%-%2%-all.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofsall( cp / fnameall );
-            std::string fnameerrors = (boost::format( "%1%-%2%-errors.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fnameerrors = (boost::format( "%1%-%2%-errors.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofserrors( cp / fnameerrors );
-            std::string fnametime = (boost::format( "%1%-%2%-timings.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fnametime = (boost::format( "%1%-%2%-timings.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofstime( cp / fnametime );
-            std::string fnamedata = (boost::format( "%1%-%2%-data.dat" )% i->name()% Environment::numberOfProcessors() ).str();
+            std::string fnamedata = (boost::format( "%1%-%2%-data.tsv" )% i->name()% Environment::numberOfProcessors() ).str();
             fs::ofstream ofsdata( cp / fnamedata );
 
             this->printStats( ofs, Application::ALL );
