@@ -309,6 +309,9 @@ public:
     FEELPP_DONT_INLINE
     void run()
         {
+
+            bool export_solution = option(_name=_o( this->about().appName(),"export-solution" )).template as<bool>();
+
             int proc_number =  Environment::worldComm().globalRank();
 
             if ( this->vm().count( "help" ) )
@@ -400,7 +403,8 @@ public:
             }
 
             auto exporter = Exporter<typename crbmodel_type::mesh_type>::New( "ensight" );
-            exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
+            if( export_solution )
+                exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
@@ -627,8 +631,8 @@ public:
                                 u_fem.setName( u_fem_str.str()  );
 
                                 LOG(INFO) << "compute output\n";
-
-                                exporter->step(0)->add( u_fem.name(), u_fem );
+                                if( export_solution )
+                                    exporter->step(0)->add( u_fem.name(), u_fem );
                                 //model->solve( mu );
                                 std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem, true) )( ti.elapsed() );
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
@@ -677,7 +681,8 @@ public:
                                 u_crb_str << "u_crb(" << mu_str.str() << ")";
                                 u_crb.setName( u_crb_str.str()  );
                                 LOG(INFO) << "export u_crb \n";
-                                exporter->step(0)->add( u_crb.name(), u_crb );
+                                if( export_solution )
+                                    exporter->step(0)->add( u_crb.name(), u_crb );
 
                                 double relative_error = -1;
                                 double relative_estimated_error = -1;
@@ -716,9 +721,11 @@ public:
                                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                                     u_fem.setName( u_fem_str.str()  );
 
-                                    LOG(INFO) << "export u_fem \n";
-                                    exporter->step(0)->add( u_fem.name(), u_fem );
-
+                                    if( export_solution )
+                                    {
+                                        LOG(INFO) << "export u_fem \n";
+                                        exporter->step(0)->add( u_fem.name(), u_fem );
+                                    }
                                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
 
                                     double ocrb = o.template get<0>();
@@ -733,7 +740,8 @@ public:
                                     u_error = (( u_fem - u_crb ).pow(2)).sqrt()  ;
                                     u_error_str << "u_error(" << mu_str.str() << ")";
                                     u_error.setName( u_error_str.str()  );
-                                    exporter->step(0)->add( u_error.name(), u_error );
+                                    if( export_solution )
+                                        exporter->step(0)->add( u_error.name(), u_error );
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
                                     l2_error = l2Norm( u_error )/l2Norm( u_fem );
@@ -890,8 +898,8 @@ public:
                                             {
                                                 for(int m=0; m<model->mMaxA(q); m++)
                                                 {
-                                                    solution_error += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) );
-                                                    ref_primal += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem) );
+                                                    solution_error +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) ;
+                                                    ref_primal +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem);
                                                 }
                                             }
 
@@ -901,11 +909,15 @@ public:
                                                 {
                                                     for(int m=0; m<model->mMaxA(q); m++)
                                                     {
-                                                        dual_solution_error += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) );
-                                                        ref_dual += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) );
+                                                        dual_solution_error += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error);
+                                                        ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
                                                     }
                                                 }
+                                                dual_solution_error = math::sqrt( dual_solution_error );
+                                                ref_dual = math::sqrt( ref_dual );
                                             }
+                                            solution_error = math::sqrt( solution_error );
+                                            ref_primal = math::sqrt( ref_primal );
                                             //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
                                         }
                                         else
@@ -1110,8 +1122,9 @@ public:
             }
 
             //model->computationalTimeEimStatistics();
+            if( export_solution )
+                exporter->save();
 
-            exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
             if (option(_name="eim.cvg-study").template as<bool>() && M_mode==CRBModelMode::CRB)
@@ -1488,7 +1501,12 @@ private:
         std::vector< Eigen::MatrixXf::Index > index_max_vector_solution_dual;
         std::vector< Eigen::MatrixXf::Index > index_max_vector_output;
         std::vector< Eigen::MatrixXf::Index > index_max_vector;
+        std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_primal;
+        std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_dual;
+        std::vector< Eigen::MatrixXf::Index > index_min_vector_output;
+        std::vector< Eigen::MatrixXf::Index > index_min_vector;
         Eigen::MatrixXf::Index index_max;
+        Eigen::MatrixXf::Index index_min;
 
         BOOST_FOREACH( auto error_name, list_error_type)
         {
@@ -1501,7 +1519,7 @@ private:
                     error_name=="SolutionErrorBoundEfficiency" || error_name=="SolutionDualErrorBoundEfficiency" || error_name=="OutputErrorBoundEfficiency")
                 {
                     conv.open(file_name, std::ios::app);
-                    conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Max2" << "\t"<< "Variance" << "\n";
+                    conv << "NbBasis" << "\t" << "Min2" << "\t" << "Max2" << "\t" << "Min" << "\t" << "Max\t" <<"Mean" << "\t"<< "Variance" << "\n";
                 }
                 else
                 {
@@ -1524,61 +1542,89 @@ private:
                         error_name=="SolutionErrorBoundEfficiency" || error_name=="SolutionDualErrorBoundEfficiency" || error_name=="OutputErrorBoundEfficiency")
                     {
                         double max2=0;
+                        double min2=0;
                         if( error_name=="SolutionErrorEstimated" )
                         {
                             index_max = index_max_vector_solution_primal[j];
+                            index_min = index_min_vector_solution_primal[j];
                             max2 = M_mapConvCRB[error_name][j]( index_max );
+                            min2 = M_mapConvCRB[error_name][j]( index_min );
                         }
                         if( error_name=="SolutionErrorBoundEfficiency" )
                         {
                             index_max = index_max_vector_solution_primal[j];
+                            index_min = index_min_vector_solution_primal[j];
                             double max_estimated = M_mapConvCRB["SolutionErrorEstimated"][j]( index_max );
+                            double min_estimated = M_mapConvCRB["SolutionErrorEstimated"][j]( index_min );
                             double max = M_mapConvCRB["SolutionError"][j]( index_max );
+                            double min = M_mapConvCRB["SolutionError"][j]( index_min );
                             max2 = max_estimated / max;
+                            min2 = min_estimated / min;
                         }
                         if( error_name=="SolutionDualErrorEstimated" )
                         {
                             index_max = index_max_vector_solution_dual[j];
+                            index_min = index_min_vector_solution_dual[j];
                             max2 = M_mapConvCRB[error_name][j]( index_max );
+                            min2 = M_mapConvCRB[error_name][j]( index_min );
                         }
                         if( error_name=="SolutionDualErrorBoundEfficiency" )
                         {
                             index_max = index_max_vector_solution_dual[j];
+                            index_min = index_min_vector_solution_dual[j];
                             double max_estimated = M_mapConvCRB["SolutionDualErrorEstimated"][j]( index_max );
+                            double min_estimated = M_mapConvCRB["SolutionDualErrorEstimated"][j]( index_min );
                             double max = M_mapConvCRB["SolutionDualError"][j]( index_max );
+                            double min = M_mapConvCRB["SolutionDualError"][j]( index_min );
                             max2 = max_estimated / max;
+                            min2 = min_estimated / min;
                         }
 
-                        if( error_name=="OutputErrorEstimated" )
+                        if( error_name=="OutputEstimatedError" )
                         {
                             index_max = index_max_vector_output[j];
+                            index_min = index_min_vector_output[j];
                             max2 = M_mapConvCRB[error_name][j]( index_max );
+                            min2 = M_mapConvCRB[error_name][j]( index_min );
                         }
                         if( error_name=="OutputErrorBoundEfficiency" )
                         {
                             index_max = index_max_vector_output[j];
+                            index_min = index_min_vector_output[j];
                             double max_estimated = M_mapConvCRB["OutputEstimatedError"][j]( index_max );
+                            double min_estimated = M_mapConvCRB["OutputEstimatedError"][j]( index_min );
                             double max = M_mapConvCRB["OutputError"][j]( index_max );
+                            double min = M_mapConvCRB["OutputError"][j]( index_min );
                             max2 = max_estimated / max;
+                            min2 = min_estimated / min;
                         }
+                        double min = M_mapConvCRB[error_name][j].minCoeff(&index_min) ;
+                        double max = M_mapConvCRB[error_name][j].maxCoeff(&index_max) ;
                         conv << j+1 << "\t"
-                             << M_mapConvCRB[error_name][j].minCoeff() << "\t"
-                             << M_mapConvCRB[error_name][j].maxCoeff(&index_max) << "\t"
-                             << mean << "\t" << max2 << "\t" << variance << "\n";
+                             << min2 << "\t" << max2 << "\t" << min << "\t" << max << "\t" << mean << "\t" << variance << "\n";
 
                     }
                     else
                     {
                         conv << j+1 << "\t"
-                             << M_mapConvCRB[error_name][j].minCoeff() << "\t"
+                             << M_mapConvCRB[error_name][j].minCoeff(&index_min) << "\t"
                              << M_mapConvCRB[error_name][j].maxCoeff(&index_max) << "\t"
                              << mean << "\t" << variance << "\n";
                         if( error_name=="OutputError" )
+                        {
                             index_max_vector_output.push_back( index_max );
+                            index_min_vector_output.push_back( index_min );
+                        }
                         if( error_name=="SolutionError")
+                        {
                             index_max_vector_solution_primal.push_back( index_max );
+                            index_min_vector_solution_primal.push_back( index_min );
+                        }
                         if( error_name=="SolutionDualError")
+                        {
                             index_max_vector_solution_dual.push_back( index_max );
+                            index_min_vector_solution_dual.push_back( index_min );
+                        }
                     }
                 }//master proc
             }//loop over number of RB elements

@@ -115,7 +115,8 @@ struct GMSHElement
                  int _parent,
                  int _dom1, int _dom2,
                  int _numVertices,
-                 std::vector<int> const& _indices )
+                 std::vector<int> const& _indices,
+                 int worldcommrank,int worldcommsize)
     :
         num( n ),
         type( t ),
@@ -132,13 +133,12 @@ struct GMSHElement
         numVertices( _numVertices ),
         indices( _indices )
         {
-            int rank = Environment::worldComm().localRank();
-            if ( Environment::worldComm().globalSize() == 1 )
+            if ( worldcommsize == 1 )
             {
                 is_on_processor = true;
                 is_ghost = false;
             }
-            else if ( rank == partition )
+            else if ( worldcommrank == partition )
             {
                 is_on_processor = true;
                 is_ghost = false;
@@ -147,7 +147,7 @@ struct GMSHElement
             {
                 // is the element a ghost cell
                 // look into ghosts if 'partition' is present
-                auto it = std::find( ghosts.begin(), ghosts.end(), rank );
+                auto it = std::find( ghosts.begin(), ghosts.end(), worldcommrank );
                 if ( it != ghosts.end() )
                 {
                     is_on_processor = true;
@@ -740,7 +740,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
           __et.push_back( Feel::detail::GMSHElement( num, type, physical, elementary,
                                                      numPartitions, partition, ghosts,
                                                      parent, dom1, dom2,
-                                                     numVertices, indices ) );
+                                                     numVertices, indices,
+                                                     this->worldComm().localRank(),this->worldComm().localSize() ) );
           if ( __gt.find( type ) != __gt.end() )
               ++__gt[ type ];
           else
@@ -811,7 +812,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 __et.push_back( Feel::detail::GMSHElement( num, type, physical, elementary,
                                                            numPartitions, partition, ghosts,
                                                            parent, dom1, dom2,
-                                                           numVertices, indices ) );
+                                                           numVertices, indices,
+                                                           this->worldComm().localRank(),this->worldComm().localSize() ) );
 
                 if ( __gt.find( type ) != __gt.end() )
                     ++__gt[ type ];
