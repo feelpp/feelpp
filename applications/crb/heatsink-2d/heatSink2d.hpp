@@ -530,6 +530,11 @@ public:
 
     gmsh_ptrtype createGeo( double hsize, double mu2 );
 
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
 private:
 
     po::variables_map M_vm;
