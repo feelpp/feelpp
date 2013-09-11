@@ -309,6 +309,9 @@ public:
     FEELPP_DONT_INLINE
     void run()
         {
+
+            bool export_solution = option(_name=_o( this->about().appName(),"export-solution" )).template as<bool>();
+
             int proc_number =  Environment::worldComm().globalRank();
 
             if ( this->vm().count( "help" ) )
@@ -400,7 +403,8 @@ public:
             }
 
             auto exporter = Exporter<typename crbmodel_type::mesh_type>::New( "ensight" );
-            exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
+            if( export_solution )
+                exporter->step( 0 )->setMesh( model->functionSpace()->mesh() );
 
             printParameterHdr( ostr, model->parameterSpace()->dimension(), hdrs[M_mode] );
 
@@ -627,8 +631,8 @@ public:
                                 u_fem.setName( u_fem_str.str()  );
 
                                 LOG(INFO) << "compute output\n";
-
-                                exporter->step(0)->add( u_fem.name(), u_fem );
+                                if( export_solution )
+                                    exporter->step(0)->add( u_fem.name(), u_fem );
                                 //model->solve( mu );
                                 std::vector<double> o = boost::assign::list_of( model->output( output_index,mu , u_fem, true) )( ti.elapsed() );
                                 if(proc_number == Environment::worldComm().masterRank() ) std::cout << "output=" << o[0] << "\n";
@@ -677,7 +681,8 @@ public:
                                 u_crb_str << "u_crb(" << mu_str.str() << ")";
                                 u_crb.setName( u_crb_str.str()  );
                                 LOG(INFO) << "export u_crb \n";
-                                exporter->step(0)->add( u_crb.name(), u_crb );
+                                if( export_solution )
+                                    exporter->step(0)->add( u_crb.name(), u_crb );
 
                                 double relative_error = -1;
                                 double relative_estimated_error = -1;
@@ -716,9 +721,11 @@ public:
                                     u_fem_str << "u_fem(" << mu_str.str() << ")";
                                     u_fem.setName( u_fem_str.str()  );
 
-                                    LOG(INFO) << "export u_fem \n";
-                                    exporter->step(0)->add( u_fem.name(), u_fem );
-
+                                    if( export_solution )
+                                    {
+                                        LOG(INFO) << "export u_fem \n";
+                                        exporter->step(0)->add( u_fem.name(), u_fem );
+                                    }
                                     std::vector<double> ofem = boost::assign::list_of( model->output( output_index,mu, u_fem ) )( ti.elapsed() );
 
                                     double ocrb = o.template get<0>();
@@ -733,7 +740,8 @@ public:
                                     u_error = (( u_fem - u_crb ).pow(2)).sqrt()  ;
                                     u_error_str << "u_error(" << mu_str.str() << ")";
                                     u_error.setName( u_error_str.str()  );
-                                    exporter->step(0)->add( u_error.name(), u_error );
+                                    if( export_solution )
+                                        exporter->step(0)->add( u_error.name(), u_error );
                                     LOG(INFO) << "L2(fem)=" << l2Norm( u_fem )    << "\n";
                                     LOG(INFO) << "H1(fem)=" << h1Norm( u_fem )    << "\n";
                                     l2_error = l2Norm( u_error )/l2Norm( u_fem );
@@ -890,8 +898,8 @@ public:
                                             {
                                                 for(int m=0; m<model->mMaxA(q); m++)
                                                 {
-                                                    solution_error += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) );
-                                                    ref_primal += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem) );
+                                                    solution_error +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_error,u_error) ;
+                                                    ref_primal +=  ref_betaAqm[0][q][m]*model->Aqm(q,m,u_fem,u_fem);
                                                 }
                                             }
 
@@ -901,11 +909,15 @@ public:
                                                 {
                                                     for(int m=0; m<model->mMaxA(q); m++)
                                                     {
-                                                        dual_solution_error += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error) );
-                                                        ref_dual += math::sqrt( ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem) );
+                                                        dual_solution_error += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_error,u_dual_error);
+                                                        ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
                                                     }
                                                 }
+                                                dual_solution_error = math::sqrt( dual_solution_error );
+                                                ref_dual = math::sqrt( ref_dual );
                                             }
+                                            solution_error = math::sqrt( solution_error );
+                                            ref_primal = math::sqrt( ref_primal );
                                             //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
                                         }
                                         else
@@ -1110,8 +1122,9 @@ public:
             }
 
             //model->computationalTimeEimStatistics();
+            if( export_solution )
+                exporter->save();
 
-            exporter->save();
             if( proc_number == Environment::worldComm().masterRank() ) std::cout << ostr.str() << "\n";
 
             if (option(_name="eim.cvg-study").template as<bool>() && M_mode==CRBModelMode::CRB)
@@ -1567,7 +1580,7 @@ private:
                             min2 = min_estimated / min;
                         }
 
-                        if( error_name=="OutputErrorEstimated" )
+                        if( error_name=="OutputEstimatedError" )
                         {
                             index_max = index_max_vector_output[j];
                             index_min = index_min_vector_output[j];

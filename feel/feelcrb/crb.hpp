@@ -1221,7 +1221,6 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_matrix_ptrtype & A, bool zero_iteration )
 {
-
     auto u = M_model->functionSpace()->element();
 
     sparse_matrix_ptrtype M = M_model->newMatrix();
@@ -1253,9 +1252,11 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
     //initialization of unknown
     auto elementptr = M_model->functionSpace()->elementPtr();
     M_model->initializationField( elementptr, mu );
+
     u = *elementptr;
 
     auto Apr = M_model->newMatrix();
+
 
     int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
     double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
@@ -1324,6 +1325,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
             }
             else
             {
+
                 auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs ,  _prec=M_preconditioner_primal );
                 if ( !ret.template get<0>() )
                     LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
@@ -2011,8 +2013,10 @@ CRB<TruthModelType>::offline()
     if( M_use_newton )
         boost::tie( Mqm , Jqm, Rqm ) = M_model->computeAffineDecomposition();
     else
-        boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
-
+    {
+        if( option("crb.stock-matrices").template as<bool>() )
+            boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    }
 
     element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
@@ -2055,7 +2059,7 @@ CRB<TruthModelType>::offline()
 
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
-    if( proc_number == this->worldComm().masterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<"\n";
+    if( proc_number == this->worldComm().masterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
 
     if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
@@ -2089,7 +2093,7 @@ CRB<TruthModelType>::offline()
                 udu = offlineFixedPointDual( mu , dual_initial_field ,  A , u, zero_iteration );
         }
 
-	if ( M_model->isSteady() && M_use_newton )
+        if ( M_model->isSteady() && M_use_newton )
         {
             mu.check();
             u.zero();
@@ -3442,7 +3446,6 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const
 {
-
     VLOG(2) <<"Compute projection of initial guess\n";
     beta_vector_type betaMqm;
     beta_vector_type beta_initial_guess;
@@ -3480,7 +3483,6 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
     }
 
     initial_guess = Mass.lu().solve( F );
-
 }
 
 template<typename TruthModelType>
