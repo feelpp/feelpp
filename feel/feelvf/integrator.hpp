@@ -455,7 +455,8 @@ public:
     }
 #if 1
     matrix_type
-    evaluate( bool parallel=true ) const
+    evaluate( bool parallel=true,
+              WorldComm const& worldcomm = Environment::worldComm() ) const
 #else
     //typename expression_type::template tensor<Geo_t>::value_type
     BOOST_PARAMETER_MEMBER_FUNCTION( ( matrix_type ),
@@ -475,12 +476,14 @@ public:
         else // parallel
         {
             typename eval::matrix_type glo( loc );
-            //auto const& worldComm = const_cast<MeshBase*>( this->beginElement()->mesh() )->worldComm();
-            auto worldComm = Environment::worldComm();
+            // maybe better to create anoter worldcomm which split the mesh worldcomm
+            // with only partition that contains at least one element (Vincent C.)
+            // and thus argument worldComm can be remove
+            // auto const& worldcomm = const_cast<MeshBase*>( this->beginElement()->mesh() )->worldComm();
 
-            if ( worldComm.localSize() > 1 )
+            if ( worldcomm.localSize() > 1 )
             {
-                mpi::all_reduce( worldComm.localComm(),
+                mpi::all_reduce( worldcomm.localComm(),
                                  loc,
                                  glo,
                                  [] ( matrix_type const& x, matrix_type const& y )
