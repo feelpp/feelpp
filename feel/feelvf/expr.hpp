@@ -50,6 +50,7 @@
 
 #include <Eigen/Core>
 
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
 #include <feel/feelvf/shape.hpp>
@@ -654,9 +655,9 @@ public:
     //ublas::matrix<typename expression_type::value_type>
 
     typename expression_type::value_type
-    evaluate( bool parallel = true ) const
+    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {
-        return M_expr.evaluate( parallel );
+        return M_expr.evaluate( parallel,worldcomm );
     }
 
     typename expression_type::value_type
@@ -1521,7 +1522,7 @@ public:
         FEELPP_STRONG_INLINE value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         template<int PatternContext>
@@ -1529,20 +1530,20 @@ public:
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/,
                  mpl::int_<PatternContext> ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
 
         FEELPP_STRONG_INLINE value_type
         evaliq( uint16_type /*i*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         FEELPP_STRONG_INLINE value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( (uint16_type)CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         vector_type M_one;

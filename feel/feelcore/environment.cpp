@@ -721,6 +721,11 @@ Environment::rootRepository()
     {
         return std::string( senv );
     }
+    senv = ::getenv( "WORK" );
+    if ( senv != NULL && senv[0] != '\0' )
+    {
+        return std::string( senv )+"/feel";
+    }
     senv = ::getenv( "WORKDIR" );
     if ( senv != NULL && senv[0] != '\0' )
     {

@@ -20,7 +20,7 @@ function builddox
   mkdir $doxygen_dir
   cd $doxygen_dir
  #cmake -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.6 -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.6 ../$feel_git
-  cmake $feel_git
+  cmake $feel_git -DFEELPP_ENABLE_DOXYGEN=ON
   make doxygen
 
   # now work in feelpp.docs to push the newly created doxygen files

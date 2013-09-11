@@ -23,3 +23,4 @@
 #
 feelpp_add_test( solve_leak  )
 feelpp_add_test( leak_exporter )
+feelpp_add_test( matrix_destructor )

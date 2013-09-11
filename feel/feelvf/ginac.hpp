@@ -156,8 +156,13 @@ namespace Feel
                 GiNaC::lst exprs(fun);
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
 
+                // If the so file already exists, no need to re-compile but only link it
+                std::string filenameWithSuffix = M_filename + ".so";
+                if( !filename.empty() && fs::exists( filenameWithSuffix ) )
+                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                else
+                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
             }
 
             GinacEx( GinacEx const & fun )

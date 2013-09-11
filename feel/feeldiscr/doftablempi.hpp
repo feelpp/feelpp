@@ -560,28 +560,28 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
                 {
                     auto itdofpt = this->dofPointBegin();
                     auto const endofpt = this->dofPointEnd();
-                    size_type indexpt=0;
-                    for ( ; itdofpt!=endofpt && !find ; ++itdofpt,++indexpt )
+                    for ( ; itdofpt!=endofpt && !find ; ++itdofpt )
                     {
-                        const auto thedofPtInFace = itdofpt->template get<0>();
+                        const auto thedofPt = itdofpt->template get<0>();
+                        if ( itdofpt->template get<2>() != comp ) continue;
+
                         DVLOG(3) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
-                                 << "thedofPtInFace: " << thedofPtInFace << "nodeDofRecv: " << nodeDofRecv << "\n";
+                                 << "thedofPt: " << thedofPt << "nodeDofRecv: " << nodeDofRecv << "\n";
 
                         // test equatlity of dofs point
                         bool find2=true;
                         for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && (std::abs( thedofPtInFace[d]-nodeDofRecv[d] )<1e-9);
+                            find2 = find2 && (std::abs( thedofPt[d]-nodeDofRecv[d] )<1e-9);
                         }
                         // if find else save local dof
-                        if (find2) { locDof = indexpt;find=true; }
+                        if (find2) { locDof = itdofpt->template get<1>();find=true; }
                     }
                     // check
                     CHECK( find ) << "\nPROBLEM with parallel dof table construction : Dof point not find on interprocess face " << nodeDofRecv << "\n";
                     //------------------------------------------------------------------------------//
                     // get global dof
-                    //const auto thedof = localToGlobal( idFaceInMyPartition, locDof, comp );
-                    const auto dofGlobAsked = locDof;//thedof.template get<0>();
+                    const auto dofGlobAsked = locDof;
                     // save response
                     resAskedWithMultiProcess[cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
                 }
