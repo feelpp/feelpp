@@ -45,7 +45,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string.hpp>
 
-
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
 #include <feel/feelmesh/hypercube.hpp>
@@ -53,6 +52,11 @@
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
+
+#if defined(FEELPP_HAS_GPERFTOOLS)
+#include <gperftools/heap-checker.h>
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
 
 #if defined( FEELPP_HAS_GMSH_H )
 #include <GmshConfig.h>
@@ -565,34 +569,40 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         CTX::instance()->mesh.algo3d = ALGO_3D_FRONTAL;
 #endif
     }
-
-    CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
-
-    GModel* newGmshModel = new GModel();
-    GModel::current()->setName( _name );
-#if !defined( __APPLE__ )
-    GModel::current()->setFileName( _name );
-#endif
-    GModel::current()->readGEO( _name+".geo" );
-    GModel::current()->mesh( dim );
-    LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
-    for( int l = 0; l < M_refine_levels; ++l )
+    // disable heap checking if enabled
     {
-        GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+#if defined(FEELPP_HAS_GPERFTOOLS)
+        HeapLeakChecker::Disabler disabler;
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
+
+        CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
+
+        GModel* newGmshModel = new GModel();
+        GModel::current()->setName( _name );
+#if !defined( __APPLE__ )
+        GModel::current()->setFileName( _name );
+#endif
+        GModel::current()->readGEO( _name+".geo" );
+        GModel::current()->mesh( dim );
+        LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
+        for( int l = 0; l < M_refine_levels; ++l )
+        {
+            GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+        }
+        PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
+        LOG(INFO) << "Mesh partitions : " << GModel::current()->getMeshPartitions().size() << "\n";
+
+        // convert mesh to latest binary format
+        CHECK(GModel::current()->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << GModel::current()->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
+
+        CTX::instance()->mesh.binary = M_format;
+        LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
+        GModel::current()->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
+        newGmshModel->deleteMesh();
+        newGmshModel->destroy();
+        delete newGmshModel;
     }
-    PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-    LOG(INFO) << "Mesh partitions : " << GModel::current()->getMeshPartitions().size() << "\n";
-
-    // convert mesh to latest binary format
-    CHECK(GModel::current()->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << GModel::current()->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
-
-    CTX::instance()->mesh.binary = M_format;
-    LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
-    GModel::current()->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
-
-    newGmshModel->destroy();
-    delete newGmshModel;
-
 #endif
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
