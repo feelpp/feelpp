@@ -35,7 +35,9 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>
-
+#if defined(FEELPP_HAS_GPERFTOOLS)
+#include <gperftools/heap-checker.h>
+#endif /* FEELPP_HAS_GPERFTOOLS */
 #include <feel/feelcore/pslogger.hpp>
 
 /** use Feel namespace */
@@ -134,11 +136,42 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( matrix_destructor )
 
-BOOST_AUTO_TEST_CASE( test_1 )
+BOOST_AUTO_TEST_CASE( test_1d_Order9 )
 {
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    HeapLeakChecker checker("checker for petsc matrix leaks ");
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
     testMatrixDestructor<1,9>();
+
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    CHECK(checker.NoLeaks()) << "There are leaks";
+#endif /* FEELPP_HAS_GPERFTOOLS */
+}
+
+BOOST_AUTO_TEST_CASE( test_2d_Order9 )
+{
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    HeapLeakChecker checker("checker for petsc matrix leaks");
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
     testMatrixDestructor<2,9>();
+
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    CHECK(checker.NoLeaks()) << "There are leaks";
+#endif /* FEELPP_HAS_GPERFTOOLS */
+}
+BOOST_AUTO_TEST_CASE( test_3d_Order9 )
+{
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    HeapLeakChecker checker("checker for petsc matrix leaks");
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
     testMatrixDestructor<3,9>();
+
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    CHECK(checker.NoLeaks()) << "There are leaks";
+#endif /* FEELPP_HAS_GPERFTOOLS */
 }
 
 BOOST_AUTO_TEST_SUITE_END()
