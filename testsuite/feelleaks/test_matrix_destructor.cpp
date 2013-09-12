@@ -95,7 +95,11 @@ void testMatrixDestructorWriteInfo(std::string file_name)
     LOG( INFO ) << "memory free : "<<memory_free;
     LOG( INFO ) << "lost memory : "<<lost_memory;
 }
-
+std::string
+format(std::string logm, int Dim, int Order )
+{
+    return (boost::format("%1% (%1%D,Order %2%)") % logm % Dim %Order).str();
+}
 template<int Dim, int Order>
 void
 testMatrixDestructor()
@@ -108,13 +112,13 @@ testMatrixDestructor()
 
     std::string str = ( boost::format("pslog-%1%D-P%2%") %Dim %Order ).str();
     PsLogger ps (str);
-    ps.log("before matrix creation");
+    ps.log(format("before matrix creation", Dim, Order) );
     auto matrix = backend->newMatrix( Xh , Xh);
-    ps.log("matrix created");
+    ps.log(format("matrix created",Dim,Order));
 
     //call destructor
     matrix.reset();
-    ps.log("matrix destroyed");
+    ps.log(format("matrix destroyed",Dim,Order));
 
     testMatrixDestructorWriteInfo(str);
 }
@@ -138,5 +142,3 @@ BOOST_AUTO_TEST_CASE( test_1 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-
