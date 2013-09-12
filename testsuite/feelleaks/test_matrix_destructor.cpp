@@ -98,7 +98,7 @@ void testMatrixDestructorWriteInfo(std::string file_name)
 std::string
 format(std::string logm, int Dim, int Order )
 {
-    return (boost::format("%1% (%2%D,Order %3%)") % logm % Dim %Order).str();
+    return (boost::format("\"%1% (%2%D,Order %3%)\"") % logm % Dim %Order).str();
 }
 template<int Dim, int Order>
 void
