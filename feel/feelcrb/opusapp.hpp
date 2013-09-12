@@ -117,6 +117,9 @@ public:
 
     typedef typename ModelType::parameter_type parameter_type;
     typedef std::vector< parameter_type > vector_parameter_type;
+
+    typedef typename crb_type::sampling_ptrtype sampling_ptrtype;
+
     OpusApp()
         :
         super(),
@@ -495,6 +498,25 @@ public:
 
             bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>();
 
+            if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
+            {
+                int Nmax = crb->dimension();
+                vector_sampling_for_primal_efficiency_under_1.resize(Nmax);
+                for(int N=0; N<Nmax; N++)
+                {
+                    sampling_ptrtype sampling_primal ( new typename crb_type::sampling_type( model->parameterSpace() ) );
+                    vector_sampling_for_primal_efficiency_under_1[N]=sampling_primal;
+                }
+                if( solve_dual_problem )
+                {
+                    vector_sampling_for_dual_efficiency_under_1.resize(Nmax);
+                    for(int N=0; N<Nmax; N++)
+                    {
+                        sampling_ptrtype sampling_dual ( new typename crb_type::sampling_type( model->parameterSpace() ) );
+                        vector_sampling_for_dual_efficiency_under_1[N]=sampling_dual;
+                    }
+                }
+            }
 
             if( M_mode==CRBModelMode::CRB )
             {
@@ -854,7 +876,8 @@ public:
                                     LOG(INFO) << "start convergence study...\n";
                                     std::map<int, boost::tuple<double,double,double,double,double,double,double> > conver;
 
-                                    for( int N = 1; N <= crb->dimension(); N++ )
+                                    int Nmax = crb->dimension();
+                                    for( int N = 1; N <= Nmax ; N++ )
                                     {
                                         auto o= crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         auto ocrb = o.template get<0>();
@@ -994,6 +1017,11 @@ public:
                                         double relative_primal_solution_estimated_error = solution_estimated_error / ref_primal;
                                         double relative_primal_solution_error_bound_efficiency = relative_primal_solution_estimated_error / relative_primal_solution_error;
 
+                                        if( relative_primal_solution_error_bound_efficiency < 1 )
+                                        {
+                                            vector_sampling_for_primal_efficiency_under_1[N-1]->push_back( mu , 1);
+                                        }
+
                                         double relative_dual_solution_error = 1;
                                         double relative_dual_solution_estimated_error = 1;
                                         double relative_dual_solution_error_bound_efficiency = 1;
@@ -1002,6 +1030,12 @@ public:
                                             relative_dual_solution_error = dual_solution_error / ref_dual ;
                                             relative_dual_solution_estimated_error = dual_solution_estimated_error / ref_dual;
                                             relative_dual_solution_error_bound_efficiency = relative_dual_solution_estimated_error / relative_dual_solution_error;
+
+                                            if( relative_dual_solution_error_bound_efficiency < 1 )
+                                            {
+                                                vector_sampling_for_dual_efficiency_under_1[N-1]->push_back( mu , 0);
+                                            }
+
                                         }
                                         conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , relative_primal_solution_error_bound_efficiency );
 
@@ -1500,11 +1534,9 @@ private:
         std::vector< Eigen::MatrixXf::Index > index_max_vector_solution_primal;
         std::vector< Eigen::MatrixXf::Index > index_max_vector_solution_dual;
         std::vector< Eigen::MatrixXf::Index > index_max_vector_output;
-        std::vector< Eigen::MatrixXf::Index > index_max_vector;
         std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_primal;
         std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_dual;
         std::vector< Eigen::MatrixXf::Index > index_min_vector_output;
-        std::vector< Eigen::MatrixXf::Index > index_min_vector;
         Eigen::MatrixXf::Index index_max;
         Eigen::MatrixXf::Index index_min;
 
@@ -1631,6 +1663,23 @@ private:
 
             conv.close();
         }
+
+        int Nmax = vector_sampling_for_primal_efficiency_under_1.size();
+        for(int N=0; N<Nmax; N++)
+        {
+            std::string file_name_primal = (boost::format("Sampling-Primal-Problem-Bad-Efficiency-N=%1%") %(N+1) ).str();
+            if( vector_sampling_for_primal_efficiency_under_1[N]->size() > 1 )
+                vector_sampling_for_primal_efficiency_under_1[N]->writeOnFile(file_name_primal);
+        }
+        Nmax = vector_sampling_for_dual_efficiency_under_1.size();
+        for(int N=0; N<Nmax; N++)
+        {
+            std::string file_name_dual = (boost::format("Sampling-Dual-Problem-Bad-Efficiency-N=%1%") %(N+1) ).str();
+            if( vector_sampling_for_dual_efficiency_under_1[N]->size() > 1 )
+                vector_sampling_for_dual_efficiency_under_1[N]->writeOnFile(file_name_dual);
+        }
+
+
     }
 
     void doTheScmConvergenceStat( int sampling_size )
@@ -1737,6 +1786,10 @@ private:
     std::map<std::string, std::vector<vectorN_type> > M_mapConvCRB;
     // For SCM convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvSCM;
+
+    //vector of sampling to stock parameters for which the efficiency is under 1
+    std::vector< sampling_ptrtype > vector_sampling_for_primal_efficiency_under_1;
+    std::vector< sampling_ptrtype > vector_sampling_for_dual_efficiency_under_1;
 
     fs::path M_current_path;
 }; // OpusApp
