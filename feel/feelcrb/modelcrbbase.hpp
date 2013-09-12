@@ -156,6 +156,23 @@ public :
     }
 
 
+    //for linear steady models, mass matrix does not exist
+    //non-linear steady models need mass matrix for the initial guess
+    //this class can provide the function operatorCompositeM() to ensure compilation
+    //but we need to know if the model can provide an operator composite for mass matrix
+    //because non-linear problems have to do these operators
+    //because CRBModel is not able to construct such operators in the general case.
+    //Elements of function space are members of CRBModel
+    //then for composite spaces, we need a view of these elements
+    //BUT we can't have a view of an element of a non-composite space
+    //this function returns true if the model provides an operator composite for mass matrix
+    //false by default
+    virtual bool constructOperatorCompositeM()
+    {
+        return false;
+    }
+
+
 
     /**
      * note about the initial guess :

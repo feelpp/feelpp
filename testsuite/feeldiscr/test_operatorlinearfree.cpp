@@ -214,8 +214,10 @@ testOperatorLinearComposite()
     //test sum of all matrices
 
     bool scalars_are_one=true;
-    auto mat_sum = composite->sumAllMatrices( scalars_are_one );
-    auto mat_sum_free = compositefree->sumAllMatrices( scalars_are_one );
+    auto mat_sum = backend->newMatrix( _test=Xh , _trial=Xh );
+    composite->sumAllMatrices( mat_sum, scalars_are_one );
+    auto mat_sum_free = backend->newMatrix( _test=Xh , _trial=Xh );
+    compositefree->sumAllMatrices(mat_sum_free, scalars_are_one );
     opfree->matPtr(mat_free1);
     double norm_sum_composite = mat_sum->l1Norm();
     double norm_sum_compositefree = mat_sum_free->l1Norm();
