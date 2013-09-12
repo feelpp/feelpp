@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include <sstream>
 
-#include "pslogger.hpp"
+#include <petscsys.h>
+
+#include <feel/feelcore/pslogger.hpp>
 
 namespace Feel
 {
@@ -38,8 +40,20 @@ void PsLogger::log( std::string logMessage )
         command << "echo " << logMessage << " >> " << this->fileName() << std::ends;
         system( command.str().c_str() );
     }
+    LOG(INFO) << "Memory Log: " << logMessage;
+    PetscLogDouble mem;
+    PetscMemoryGetCurrentUsage( &mem );
+    LOG(INFO) << logMessage << " PETSC get current memory usage (resident memory): " << mem/1e6 << "  MBytes " << mem/1e9 << " GBytes" ;
+    //PetscMemoryGetMaximumUsage( &mem );
+    //LOG(INFO) << logMessage << " PETSC get maximum memory usag (resident memory): " << mem/1e6 << "  MBytes " << mem/1e9 << " GBytes" ;
 
+    PetscMallocGetCurrentUsage( &mem );
+    LOG(INFO) << logMessage << " PETSC get current PETSC Malloc usage: " << mem/1e6 << " MBytes " << mem/1e9 << " GBytes" ;
+    PetscMallocGetMaximumUsage( &mem );
+    LOG(INFO) << logMessage << " PETSC get maximum PETSC Malloc usage: " << mem/1e6 << " MBytes " << mem/1e9 << " GBytes" ;
     system( M_command.c_str() );
+    LOG(INFO) << "Memory Log: " << logMessage << " done";
+
 }
 
 }
