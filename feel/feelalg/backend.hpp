@@ -176,6 +176,7 @@ public:
     Backend( Backend const & );
     virtual ~Backend();
 
+
     /**
      * Builds a \p Backend, if Petsc is available, use Petsc by
      * default, otherwise use GMM which is distributed with feel
@@ -763,7 +764,7 @@ public:
     /**
      * clean up
      */
-    //virtual void clear() = 0;
+    virtual void clear();
 
     /**
      * \return \f$ r = x^T * y \f$
@@ -1167,7 +1168,7 @@ BOOST_PARAMETER_FUNCTION(
     else
     {
         if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
-            git->second->sendDeleteSignal();
+            git->second->clear();
 
         VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
 
