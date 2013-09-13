@@ -1455,9 +1455,9 @@ public:
         typedef typename BasisType::component_basis_type type;
     };
 
-    typedef typename mpl::transform<bases_list,
-            GetComponentBasis<mpl::_1>,
-            mpl::back_inserter<fusion::vector<> > >::type component_basis_vector_type;
+    typedef detail::bases2<typename mpl::transform<bases_list,
+                                                   GetComponentBasis<mpl::_1>,
+                                                   mpl::back_inserter<fusion::vector<> > >::type> component_basis_vector_type;
 
 
 
