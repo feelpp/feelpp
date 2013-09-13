@@ -2047,11 +2047,11 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     typename gm_type::reference_convex_type refelem;
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M_mesh->gm(),
             refelem.points() ) );
-    std::vector<bool> npt( this->nPoints() );
+    boost::unordered_map<size_type,bool> npt;
 
-    M_dist.resize( this->nPoints() );
-    M_ref_coords.resize( this->nPoints() );
-    M_cvx_pts.resize( this->nPoints() );
+    M_dist.clear();
+    M_ref_coords.clear();
+    M_cvx_pts.clear();
     M_pts_cvx.clear();
     M_pts_cvx.resize( M_mesh->numElements() );
 
