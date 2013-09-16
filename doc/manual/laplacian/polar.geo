@@ -14,11 +14,10 @@ Physical Line("Dirichlet") = {1,2,4};
 //Physical Line(9) = {2};
 Physical Line(20) = {3};
 Physical Surface(11) = {6};
-/*
+
 Recombine Surface {6};
 Transfinite Line {4} = 10 Using Progression 1;
 Transfinite Line {1} = 10 Using Progression 1;
 Transfinite Line {2} = 10 Using Progression 1;
 Transfinite Line {3} = 10 Using Progression 1;
 Transfinite Surface {6};
-*/
