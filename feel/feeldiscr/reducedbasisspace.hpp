@@ -133,6 +133,8 @@ public :
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
 
 
+    static const uint16_type nComponents = super::nComponents;
+
 
     template<typename MeshListType,int N>
     struct GetMesh
@@ -379,6 +381,7 @@ public :
         typedef boost::shared_ptr<rbspace_type> rbspace_ptrtype;
 
         typedef rbspace_type::super_ptrtype functionspace_ptrtype;
+        typedef rbspace_type::super functionspace_type;
 
         typedef rbspace_type::eigen_vector_type eigen_vector_type;
 
@@ -387,6 +390,9 @@ public :
 
         typedef Eigen::MatrixXd eigen_matrix_type;
 
+        //static const bool is_function_space_scalar = functionspace_type::is_scalar;
+        //static const bool is_function_space_vectorial = functionspace_type::is_vectorial;
+        static const uint16_type nComponents = functionspace_type::nComponents;
 
         ~ContextRBSet() {}
 
@@ -410,44 +416,83 @@ public :
 
         void update ( )
         {
-            int nb_pts = this->nPoints();
+            int npts = this->nPoints();
             int N = M_rbspace->size();
-            M_phi.resize( N , nb_pts );
+            M_phi.resize(nComponents);
+            for(int c=0; c<nComponents; c++)
+            {
+                M_phi[c].resize( N , npts );
+            }
             for( int i=0; i<N; i++)
             {
                 //evaluation of the i^th basis function
-                //to all nodes in the FEM context ctx
+                //to all nodes in the FEM context ctx ( contains all components )
                 auto evaluation = M_rbspace->evaluateBasis( i , *this );
-                for(int j=0; j<evaluation.size(); j++)
-                    M_phi( i , j ) = evaluation( j );
+                for(int c=0; c<nComponents; c++)
+                {
+                    for(int p=0; p<npts; p++)
+                    {
+                        M_phi[c]( i , p ) = evaluation( p*nComponents+c );
+                    }//points
+                }//components
+            }//rb basis functions
+            for(int c=0; c<nComponents; c++)
+            {
+                DVLOG( 2 ) << "matrix M_phi at component "<<c<<" : \n"<<M_phi[c];
             }
-            DVLOG( 2 ) << "matrix M_phi : \n"<<M_phi;
         }
 
         /*
          * for given element coefficients, evaluate the element at node given in context_fem
+         * in order to use matrix-vector multiplication, for np points, the result is given as follows :
+         * np first elements of the vector : evaluation of the first component of field
+         * np others : evaluation of second component
+         * and in 3D case ( and vector field ) last np elements : evaluation of the third components
+         *[ comp0 , ... , comp0 , comp1 , ... , comp1 , ... , comp2 , ... , comp2 ]
+         * then we reorganize datas to have
+         * [ comp0, comp1, comp2 ,... ,comp0, comp1, comp2 ]
          */
         eigen_vector_type id( eigen_vector_type coeffs , bool need_to_update=true) const
         {
             //if( need_to_update )
             //    this->update();
             int npts = super::nPoints();
-            auto prod = coeffs.transpose()*M_phi;
-            Eigen::Matrix<value_type, Eigen::Dynamic, 1> result( npts );
-            result = prod.transpose();
-            DVLOG( 2 ) << "coeffs : \n"<<coeffs;
-            DVLOG( 2 ) << "prod : \n"<<prod;
-            DVLOG( 2 ) << "result : \n"<<result;
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> result ; //( npts*nComponents );
+            for(int c=0; c<nComponents; c++)
+            {
+                auto prod = coeffs.transpose()*M_phi[c];
+                Eigen::Matrix<value_type, Eigen::Dynamic, 1> result_comp( npts*nComponents );
+                result_comp = prod.transpose();
+                DVLOG( 2 ) << "coeffs : \n"<<coeffs;
+                DVLOG( 2 ) << "prod : \n"<<prod;
+                DVLOG( 2 ) << "result : \n"<<result_comp;
+                //concatenate
+                int new_size = result.size() + result_comp.size();
+                eigen_vector_type tmp( result );
+                result.resize( new_size );
+                result << tmp,result_comp;
+            }
+            //we now reorganize datas
+            eigen_vector_type tmp( result );
+            for(int p=0; p<npts; p++)
+            {
+                for(int c=0; c<nComponents; c++)
+                    result(p*nComponents+c) = tmp(p+npts*c);
+            }
             return result;
         }
 
-        double id( eigen_vector_type coeffs , int node_index, bool need_to_update=true) const
+        //evaluation at only one node
+        eigen_vector_type id( eigen_vector_type coeffs , int node_index , bool need_to_update=true) const
         {
             //if( need_to_update )
             //    this->update();
+            eigen_vector_type result( nComponents );
             int npts = super::nPoints();
             DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
-            return coeffs.transpose()*M_phi.col(node_index);
+            for(int component=0; component<nComponents; component++)
+                result(component) = coeffs.transpose()*M_phi[component].col(node_index);
+            return result;
         }
 
         rbspace_ptrtype rbFunctionSpace() const
@@ -463,7 +508,7 @@ public :
 
     private :
         rbspace_ptrtype M_rbspace;
-        eigen_matrix_type M_phi;
+        std::vector< eigen_matrix_type > M_phi;
     };
 
     /**
@@ -494,7 +539,7 @@ public :
         }
 
         //return the evaluation of an element (of RB space) at the node indexed by node_index
-        double id( eigen_vector_type coeffs, bool need_to_update=true) const
+        eigen_vector_type id( eigen_vector_type coeffs, bool need_to_update=true) const
         {
             return M_rbctx.id( coeffs, M_index, need_to_update);
         }
@@ -554,6 +599,7 @@ public :
         typedef typename gm_type::precompute_type geopc_type;
 
 
+        static const uint16_type nRealDim = mesh_type::nRealDim;
         static const bool is_composite = functionspace_type::is_composite;
 
         typedef typename mpl::if_<mpl::bool_<is_composite>,
@@ -700,7 +746,13 @@ public :
             return M_rbspace.basisValue( N , idx );
         }
 
-        //evaluate the element to nodes in context
+        /*evaluate the element to nodes in context
+         * in order to use matrix-vector multiplication, for np points, the result is given as follows :
+         * np first elements of the vector : evaluation of the first component of field
+         * np others : evaluation of second component
+         * and in 3D case ( and vector field ) last np elements : evaluation of the third components
+         *[ comp0 , ... , comp0 , comp1 , ... , comp1 , ... , comp2 , ... , comp2 ]
+         */
         eigen_vector_type evaluate(  ctxrbset_type & context_rb )
         {
            return context_rb.id( *this );
@@ -900,12 +952,17 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
 {
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     LOG( INFO ) << " id_ with a RB context";
+
+    //vector of all evaluations at all points in the context ( at all components )
+    auto evaluation_at_all_points = rb_context.id( *this );
+
     //loop over points in the context
     for(int t=0; t<rb_context.nPoints(); t++)
     {
-        //auto vector_eigen = rb_context.id( *this ); //contains evaluations of the rb element at nodes given from context
-        v[t]( 0,0 ) = rb_context.id( *this );
-        //v[t]( 0,0 ) = vector_eigen(t);
+        for(int c=0; c<nComponents; c++)
+        {
+            v[t]( c,0 ) = evaluation_at_all_points(t*nComponents + c);
+        }
     }
 }
 
@@ -969,7 +1026,6 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
 }
 
 
-
 template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
@@ -980,10 +1036,18 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate(
 
 template<int Order, typename ModelType , typename MeshType>
 inline
-boost::shared_ptr<ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>>>
+boost::shared_ptr<ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity> >>
 RbSpacePch(  boost::shared_ptr<ModelType> const& model , boost::shared_ptr<MeshType> const& mesh  )
 {
-    return ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>>::New( model , mesh );
+    return ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity> >::New( model , mesh );
+}
+
+template<int Order, typename ModelType , typename MeshType>
+inline
+boost::shared_ptr<ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Vectorial,Continuous>>>>
+RbSpacePchv(  boost::shared_ptr<ModelType> const& model , boost::shared_ptr<MeshType> const& mesh  )
+{
+    return ReducedBasisSpace<ModelType,MeshType,bases<Lagrange<Order,Vectorial,Continuous>>>::New( model , mesh );
 }
 
 

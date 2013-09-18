@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Stephane Veys <stephane.veys@imag.fr>
-       Date: 2013-04-07
+       Date: 2013-09-17
 
   Copyright (C) 2008-2010 Universite Joseph Fourier (Grenoble I)
 
@@ -21,9 +21,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file test_rbspace.cpp
+   \file test_rbspacevector.cpp
    \author Stephane Veys <stephane.veys@imag.fr>
-   \date 2013-04-07
+   \date 2013-09-17
 */
 
 #define BOOST_TEST_MODULE test_rbspace
@@ -46,11 +46,11 @@ inline
 po::options_description
 makeOptions()
 {
-    po::options_description testrbspace( "RBSpace test options" );
-    testrbspace.add_options()
+    po::options_description testrbspacevector( "RBSpace test options" );
+    testrbspacevector.add_options()
         ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
         ;
-    return testrbspace.add( Feel::feel_options() );
+    return testrbspacevector.add( Feel::feel_options() );
 }
 
 
@@ -58,10 +58,10 @@ inline
 AboutData
 makeAbout()
 {
-    AboutData about( "test_rbspace" ,
-                     "test_rbspace" ,
+    AboutData about( "test_rbspacevector" ,
+                     "test_rbspacevector" ,
                      "0.2",
-                     "nD(n=1,2,3) test context of functionspace",
+                     "nD(n=1,2,3) test context of functionspace ( vector field )",
                      Feel::AboutData::License_GPL,
                      "Copyright (c) 2013 Feel++ Consortium" );
 
@@ -82,7 +82,7 @@ public :
 
     typedef Mesh<Simplex<Dim> > mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef FunctionSpace<mesh_type,bases<Lagrange<Order> >, Periodicity <NoPeriodicity> > space_type;
+    typedef FunctionSpace<mesh_type,bases<Lagrange<Order, Vectorial> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
@@ -96,14 +96,14 @@ public :
     void run()
     {
         auto mesh=unitHypercube<Dim>();
-        Xh = Pch<Order>( mesh );
+        Xh = Pchv<Order>( mesh );
 
-        auto RbSpace = RbSpacePch<Order>( this->shared_from_this() , mesh );
-
-        auto basis_x = vf::project( Xh , elements(mesh), Px() );
-        auto basis_y = vf::project( Xh , elements(mesh), Py() );
+        auto RbSpace = RbSpacePchv<Order>( this->shared_from_this() , mesh );
+        auto basis_x = vf::project( Xh , elements(mesh), vec( Px() , Px()*Px() ) );
+        auto basis_y = vf::project( Xh , elements(mesh), vec( Py() , Py()*Px() ) );
         RbSpace->addPrimalBasisElement( basis_x );
         RbSpace->addPrimalBasisElement( basis_y );
+
 
         int rbspace_size = RbSpace->size();
 
@@ -125,14 +125,15 @@ public :
         ctxrb.add( t2 );
         ctxrb.add( t3 );
 
+
         ctxrb.update();
 
         auto u = RbSpace->element();
         auto u_ptr = RbSpace->elementPtr();
 
-
+        int x=0,y=1;
         /*
-         * evaluation at specific points
+         * evaluation at specific points ( vector field )
          */
 
         //test with u = (1 0)
@@ -140,8 +141,10 @@ public :
         auto u_fem = u.expansion();
         auto fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
         auto rb_evaluations = u.evaluate( ctxrb );
-        Eigen::VectorXd true_values( 3 );
-        true_values(0)=t1(0); true_values(1)=t2(0); true_values(2)=t3(0);
+        Eigen::VectorXd true_values( 6 );
+        true_values(0)=t1(x); true_values(1)=t1(x)*t1(x);
+        true_values(2)=t2(x); true_values(3)=t2(x)*t2(x);
+        true_values(4)=t3(x); true_values(5)=t3(x)*t3(x);
         double norm_fem_evaluations = fem_evaluations.norm();
         double norm_rb_evaluations = rb_evaluations.norm();
         double true_norm=true_values.norm();
@@ -169,11 +172,12 @@ public :
         LOG( INFO ) << "call evaluate from context fem idv(ufem)";
         fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
         rb_evaluations = u.evaluate( ctxrb );
-        true_values(0)=t1(1); true_values(1)=t2(1); true_values(2)=t3(1);
+        true_values(0)=t1(y); true_values(1)=t1(y)*t1(x);
+        true_values(2)=t2(y); true_values(3)=t2(y)*t2(x);
+        true_values(4)=t3(y); true_values(5)=t3(y)*t3(x);
         norm_fem_evaluations = fem_evaluations.norm();
         norm_rb_evaluations = rb_evaluations.norm();
         true_norm=true_values.norm();
-
 
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
@@ -186,26 +190,6 @@ public :
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
         LOG( INFO ) << " rb evaluate from contextrb :\n"<<rb_evaluate_from_contextrb;
-
-
-        /*
-         * test with lambda expression
-         * integrate over the domain
-         */
-        auto LambdaIntegrate = integrate( _range=elements(mesh), _expr=_e1 );
-        auto IntegrateFem = integrate( _range=elements(mesh), _expr=idv(u_fem) );
-        auto IntegrateRb = integrate( _range=elements(mesh), _expr=idv(u) );
-        double value_integrate_fem = IntegrateFem.evaluate()(0,0);
-        double value_integrate_rb = IntegrateRb.evaluate()(0,0);
-        double value_lambda_integrate_fem = LambdaIntegrate( idv( u_fem ) ).evaluate()(0,0);
-        double value_lambda_integrate_rb = LambdaIntegrate( idv( u ) ).evaluate()(0,0);
-        double true_integrate = integrate( _range=elements(mesh) , _expr=Py() ).evaluate()(0,0);
-        LOG( INFO ) << "value_lambda_integrate_fem : "<<value_lambda_integrate_fem ;
-        LOG( INFO ) << "value_lambda_integrate_rb : "<<value_lambda_integrate_rb ;
-        LOG( INFO ) << "true value : "<<true_integrate;
-        BOOST_CHECK_SMALL( math::abs(value_lambda_integrate_rb-value_lambda_integrate_fem), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(value_lambda_integrate_rb-true_integrate), 1e-14 );
-
     }
 
     space_ptrtype functionSpace() { return Xh; }
@@ -216,7 +200,6 @@ private :
 
 };
 
-
 /**
  * main code
  */
@@ -226,10 +209,9 @@ BOOST_AUTO_TEST_SUITE( rbspace )
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {
-    boost::shared_ptr<Model<2,1> > model ( new Model<2,1>() );
+    boost::shared_ptr<Model<2,2> > model ( new Model<2,2>() );
     model->run();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
 

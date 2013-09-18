@@ -166,7 +166,8 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     typedef typename t_expr_type::shape shape;
 
 
-    CHECK( shape::M == 1 ) << "Invalid expression shape " << shape::M << " should be 1";
+    //in case of scalar unknown, shape::M should be 1
+    //CHECK( shape::M == 1 ) << "Invalid expression shape " << shape::M << " should be 1";
 
     int npoints = M_ctx.nPoints();
 
@@ -226,15 +227,15 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             //else
             //    LOG( INFO ) << "we have a FEM context";
             int global_p = it->first;
-
             tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
+
             //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
 
 
             for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
             {
                 //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
-                __localv(global_p) = tensor_expr.evalq( c1, 0, 0 );
+                __localv(global_p*shape::M+c1) = tensor_expr.evalq( c1, 0, 0 );
                 //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
             }
 
