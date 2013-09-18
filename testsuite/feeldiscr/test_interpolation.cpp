@@ -70,7 +70,7 @@ template<int Dim, int Order, int RDim>
 createMesh( double hsize )
 {
   return createGMSHMesh( _mesh=new typename imesh<Dim, Order, RDim>::type,
-      _desc=domain( _name=( boost::format( "%1%-%2%" )  % "hypercube" % Dim ).str() ,
+      _desc=domain( _name=( boost::format( "%1%-%2%-%3%" )  % "hypercube" % Dim % Order ).str() ,
         _addmidpoint=false,
         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
         _shape="hypercube",
