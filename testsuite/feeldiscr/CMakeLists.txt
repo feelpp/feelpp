@@ -3,7 +3,7 @@ foreach(TEST element elementminmax project bdf interpolation integration  integr
     auto_order_integrate interp_twomesh submesh disc vect_comp operatorinterpolation normal3d aitken
     form_interpolation integration_opt lift
     wire_basket  stencil
-    evaluator element_serialize lambda trace operatorlinearfree functionallinearfree fspace_context rbspace
+    evaluator element_serialize lambda trace operatorlinearfree functionallinearfree fspace_context rbspace rbspacevector
     lowerdim_entity integration_ginac spaces lm on_inside
     )
 
