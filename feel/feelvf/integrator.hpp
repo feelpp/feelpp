@@ -1940,7 +1940,7 @@ template<typename FormType>
 void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/, bool hasRelation ) const
 {
-    if ( hasRelation )
+    if ( false /*hasRelation*/ )
     {
         assembleWithRelationDifferentMeshType( __form,mpl::int_<MESH_FACES>() );
     }
