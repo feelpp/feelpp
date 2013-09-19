@@ -407,11 +407,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // order, different basis) or if the image of domain mesh are related to
     // each other through an extraction (one of them is the sub mesh of the
     // other)
-#if 1
-    if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) )
-#else
-        if ( ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() ) )
-#endif
+    if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) &&
+         boost::is_same<domain_mesh_type,image_mesh_type>::type::value // warning TODO in this case
+         )
     {
         VLOG(2) << "OperatorInterpolation: use same mesh\n";
         VLOG(2) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
