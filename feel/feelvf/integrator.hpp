@@ -1227,8 +1227,12 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
     //static const bool gmTestIsGmExpr = boost::is_same<gm_expr_type,gm_formTest_type>::type::value;
     //static const bool gmTrialIsGmExpr = boost::is_same<gm_expr_type,gm_formTrial_type>::type::value;
-    static const uint16_type gmTestRangeRelation = std::abs(gm_expr_type::nDim - gm_formTest_type::nDim);
-    static const uint16_type gmTrialRangeRelation = std::abs(gm_expr_type::nDim - gm_formTrial_type::nDim);
+    static const uint16_type nDimTest = gm_formTest_type::nDim;
+    static const uint16_type nDimTrial = gm_formTrial_type::nDim;
+    static const uint16_type nDimRange = gm_expr_type::nDim;
+    static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
+    static const uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
+
 
     typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
                               mpl::identity<typename Im::template apply<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
