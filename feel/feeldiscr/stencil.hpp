@@ -1281,6 +1281,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     element_dof2( _M_X2->dof()->getIndicesSize() ),
                   neighbor_dof;
 
+    static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+    static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+    static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
     for ( ; elem_it != elem_en; ++elem_it )
     {
 #if !defined(NDEBUG)
@@ -1288,7 +1291,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 #endif /* NDEBUG */
         const auto & elem = *elem_it;
 
-        auto const domains_eid_set = trialElementId( elem.id(), mpl::int_< abs(test_space_type::mesh_type::nDim - trial_space_type::mesh_type::nDim)  >() );
+        auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
 
         auto it_trial=domains_eid_set.begin();
         auto const en_trial=domains_eid_set.end();

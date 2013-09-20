@@ -357,6 +357,10 @@ public:
 
         static const uint16_type nDim = test_geometric_mapping_type::nDim;
 
+        static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+        static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+        static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
+
         typedef ExprT expression_type;
 
         typedef typename test_precompute<>::type test_precompute_type;
@@ -516,9 +520,7 @@ public:
 
         size_type trialElementId( size_type trial_eid ) const
             {
-                //static mpl::int_< abs(test_space_type::mesh_type::nDim - trial_space_type::mesh_type::nDim)  >()
-                typedef mpl::int_<std::abs(test_space_type::mesh_type::nDim - trial_space_type::mesh_type::nDim)> diffDimMeshType;
-                return trialElementId( trial_eid,diffDimMeshType() );
+                return trialElementId( trial_eid,mpl::int_<nDimDiffBetweenTestTrial>() );
             }
         size_type trialElementId( size_type trial_eid,mpl::int_<0> ) const
             {
@@ -553,7 +555,7 @@ public:
                 {
                     auto const& eltTest = _M_form.testSpace()->mesh()->element(idElem);
                     std::set<size_type> idsFind;
-                    for (uint16_type f=0;f< _M_form.testSpace()->mesh()->numLocalFaces()/* eltTest.nFaces()*/;++f)
+                    for (uint16_type f=0;f< _M_form.testSpace()->mesh()->numLocalFaces();++f)
                         {
                             const size_type idFind = _M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
                             if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
@@ -565,8 +567,6 @@ public:
                     else
                         domain_eid = invalid_size_type_value;
 
-                    //std::cout << "domain_eid " << domain_eid << std::endl;
-                    //domain_eid = _M_form.trialSpace()->mesh()->meshToSubMesh( idElem );
                     DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
                 }
                 return domain_eid;
