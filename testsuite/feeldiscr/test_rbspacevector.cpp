@@ -131,6 +131,8 @@ public :
         auto u = RbSpace->element();
         auto u_ptr = RbSpace->elementPtr();
 
+
+
         int x=0,y=1;
         /*
          * evaluation at specific points ( vector field )
@@ -139,6 +141,7 @@ public :
         //test with u = (1 0)
         u.setCoefficient( 0 , 1 );
         auto u_fem = u.expansion();
+
         auto fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
         auto rb_evaluations = u.evaluate( ctxrb );
         Eigen::VectorXd true_values( 6 );
@@ -165,6 +168,52 @@ public :
         LOG( INFO ) << " rb evaluate from contextrb :\n"<<rb_evaluate_from_contextrb;
         LOG( INFO ) << " rb evaluate from contextfem :\n"<<rb_evaluate_from_contextfem;
 
+
+
+        //grad
+        auto grad_fem = evaluateFromContext( _context=ctxfem , _expr=gradv(u_fem) );
+        auto grad_rb  = evaluateFromContext( _context=ctxrb , _expr=gradv(u) );
+        Eigen::VectorXd true_values_grad( 12 );
+        /*du/dx*/true_values_grad( 0 ) = 1; /*dv/dx*/true_values_grad( 1 ) = 2*t1(x); /*du/dy*/true_values_grad( 2 ) = 0; /*dv/dy*/true_values_grad( 3 ) = 0;
+        /*du/dx*/true_values_grad( 4 ) = 1; /*dv/dx*/true_values_grad( 5 ) = 2*t2(x); /*du/dy*/true_values_grad( 6 ) = 0; /*dv/dy*/true_values_grad( 7 ) = 0;
+        /*du/dx*/true_values_grad( 8 ) = 1; /*dv/dx*/true_values_grad( 9 ) = 2*t3(x); /*du/dy*/true_values_grad( 10 ) = 0; /*dv/dy*/true_values_grad( 11 ) = 0;
+        double norm_grad_fem = grad_fem.norm();
+        double norm_grad_rb = grad_rb.norm();
+        double norm_true_grad = true_values_grad.norm();
+        BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-14 );
+        LOG( INFO ) << " rb grad from contextrb :\n"<<grad_rb;
+
+
+        //dx
+        Eigen::VectorXd true_values_dx( 6 );
+        /*du/dx*/true_values_dx( 0 ) = 1; /*dv/dx*/true_values_dx( 1 ) = 2*t1(x);
+        /*du/dx*/true_values_dx( 2 ) = 1; /*dv/dx*/true_values_dx( 3 ) = 2*t2(x);
+        /*du/dx*/true_values_dx( 4 ) = 1; /*dv/dx*/true_values_dx( 5 ) = 2*t3(x);
+        auto dx_fem=evaluateFromContext( _context=ctxfem , _expr=dxv(u_fem) );
+        auto dx_rb=evaluateFromContext( _context=ctxrb , _expr=dxv(u) );
+        double norm_dx_fem = dx_fem.norm();
+        double norm_dx_rb = dx_rb.norm();
+        double norm_true_dx = true_values_dx.norm();
+        BOOST_CHECK_SMALL( math::abs(norm_dx_fem-norm_true_dx), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_dx_rb-norm_true_dx), 1e-14 );
+        LOG( INFO ) << " rb dx from contextrb :\n"<<dx_rb;
+
+        //dy
+        Eigen::VectorXd true_values_dy( 6 );
+        /*du/dy*/true_values_dy( 0 ) = 0; /*dv/dy*/true_values_dy( 1 ) = 0;
+        /*du/dy*/true_values_dy( 2 ) = 0; /*dv/dy*/true_values_dy( 3 ) = 0;
+        /*du/dy*/true_values_dy( 4 ) = 0; /*dv/dy*/true_values_dy( 5 ) = 0;
+        auto dy_fem=evaluateFromContext( _context=ctxfem , _expr=dyv(u_fem) );
+        auto dy_rb=evaluateFromContext( _context=ctxrb , _expr=dyv(u) );
+        double norm_dy_fem = dy_fem.norm();
+        double norm_dy_rb = dy_rb.norm();
+        double norm_true_dy = true_values_dy.norm();
+        BOOST_CHECK_SMALL( math::abs(norm_dy_fem-norm_true_dy), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_dy_rb-norm_true_dy), 1e-14 );
+        LOG( INFO ) << " rb dy from contextrb :\n"<<dy_rb;
+
+
         //test with u = ( 0 1 )
         u.setCoefficient( 0 , 0 );
         u.setCoefficient( 1 , 1 );
@@ -190,6 +239,20 @@ public :
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
         LOG( INFO ) << " rb evaluate from contextrb :\n"<<rb_evaluate_from_contextrb;
+
+        //grad
+        grad_fem = evaluateFromContext( _context=ctxfem , _expr=gradv(u_fem) );
+        grad_rb  = evaluateFromContext( _context=ctxrb , _expr=gradv(u) );
+        /*du/dx*/true_values_grad( 0 ) = 0; /*dv/dx*/true_values_grad( 1 ) = t1(y); /*du/dy*/true_values_grad( 2 ) = 1; /*dv/dy*/true_values_grad( 3 ) = t1(x);
+        /*du/dx*/true_values_grad( 4 ) = 0; /*dv/dx*/true_values_grad( 5 ) = t2(y); /*du/dy*/true_values_grad( 6 ) = 1; /*dv/dy*/true_values_grad( 7 ) = t2(x);
+        /*du/dx*/true_values_grad( 8 ) = 0; /*dv/dx*/true_values_grad( 9 ) = t3(y); /*du/dy*/true_values_grad( 10 ) = 1; /*dv/dy*/true_values_grad( 11 ) = t3(x);
+        norm_grad_fem = grad_fem.norm();
+        norm_grad_rb = grad_rb.norm();
+        norm_true_grad = true_values_grad.norm();
+        BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-14 );
+        LOG( INFO ) << " rb grad from contextrb :\n"<<grad_rb;
+
     }
 
     space_ptrtype functionSpace() { return Xh; }

@@ -56,7 +56,8 @@ public:
      */
     //@{
 
-    static const size_type context = ExprT::context|vm::POINT;
+    //we don't use it, we use this delcared in function space Context
+    //static const size_type context = ExprT::context|vm::POINT ;
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
@@ -171,11 +172,11 @@ EvaluatorContext<CTX, ExprT>::operator()() const
 
     int npoints = M_ctx.nPoints();
 
-    element_type __globalv( npoints*shape::M );
+    element_type __globalv( npoints*shape::M*shape::N );
     __globalv.setZero();
 
     //local version of __v on each proc
-    element_type __localv( npoints*shape::M );
+    element_type __localv( npoints*shape::M*shape::N );
     __localv.setZero();
 
     if ( !M_ctx.empty() )
@@ -232,11 +233,14 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
 
 
-            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+            for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
             {
+                for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                {
                 //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
-                __localv(global_p*shape::M+c1) = tensor_expr.evalq( c1, 0, 0 );
+                __localv(global_p*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, 0 );
                 //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
+                }
             }
 
 #endif
