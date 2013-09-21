@@ -217,6 +217,12 @@ public:
             M_l_tensor_expr.update( geom, face );
             M_r_tensor_expr.update( geom, face );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_l_tensor_expr.updateContext( ctx );
+            M_r_tensor_expr.updateContext( ctx );
+        }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
