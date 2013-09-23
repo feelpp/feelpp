@@ -49,9 +49,9 @@ template <typename T>
 MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm )
     :
     super(worldComm),
-    _M_is_initialized( false ),
-    _M_is_closed( false ),
-    _M_mat( r, c )
+    M_is_initialized( false ),
+    M_is_closed( false ),
+    M_mat( r, c )
 {}
 
 template <typename T>
@@ -262,7 +262,7 @@ void
 MatrixEigenDense<T>::sqrt( MatrixSparse<value_type>& _m ) const
 {
     MatrixEigenDense<value_type>* _md = dynamic_cast<MatrixEigenDense<value_type>*>(&_m);
-    _md->mat() = this->_M_mat.sqrt();
+    _md->mat() = this->M_mat.sqrt();
 }
 
 template <typename T>
@@ -278,7 +278,7 @@ MatrixEigenDense<T>::matMatMult ( MatrixSparse<T> const& In, MatrixSparse<T> &Re
 
     FEELPP_ASSERT ( X != 0 ).error( "invalid eigendense matrix" );
 
-    Y->mat() = this->_M_mat*X->mat();
+    Y->mat() = this->M_mat*X->mat();
 
     // int ierr=0;
     // ierr = MatMatMult(this->_M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
@@ -299,12 +299,23 @@ MatrixEigenDense<T>::matInverse ( MatrixSparse<T> &Inv )
 
     FEELPP_ASSERT ( X != 0 ).error( "invalid eigendense matrix" );
 
-    X->mat() = this->_M_mat.inverse();
+    X->mat() = this->M_mat.inverse();
 
     // int ierr=0;
     // ierr = MatMatMult(this->_M_mat, X->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &Y->mat());
     // CHKERRABORT( this->comm(),ierr );
 
+}
+
+template <typename T>
+void
+MatrixEigenDense<T>::eigenValues ( std::vector<std::complex<value_type>> &Eingvs )
+{
+    auto eigen_vals = M_mat.eigenvalues();
+    for (size_type i=0; i < eigen_vals.size(); ++i )
+    {
+        Eingvs.push_back(eigen_vals[i]);
+    }
 }
 
 
@@ -316,7 +327,7 @@ MatrixEigenDense<T>::createSubmatrix( MatrixSparse<T>& submatrix,
 {
     MatrixEigenDense<T>* A = dynamic_cast<MatrixEigenDense<T>*> ( &submatrix );
 
-    A->mat() = this->_M_mat.block(rows[0],cols[0],rows.size(),cols.size());
+    A->mat() = this->M_mat.block(rows[0],cols[0],rows.size(),cols.size());
 }
 
 

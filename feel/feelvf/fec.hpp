@@ -133,8 +133,8 @@ struct FEContextUpdate
     FEContextUpdate( map_geometric_mapping_context_type const& mapgmc,
                      form_type const& form )
         :
-        M_mapgmc( mapgmc ),
-        M_form( form )
+        _M_mapgmc( mapgmc ),
+        _M_form( form )
     {}
 
     template<typename T>

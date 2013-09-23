@@ -1110,7 +1110,7 @@ public:
             //     //ofs << dof.first << " " << dof.second << "\n";
             // }
             std::ofstream ofs( filename.c_str() );
-            BOOST_FOREACH( auto dofleft, _M_dof_marker.left )
+            BOOST_FOREACH( auto dofleft, M_dof_marker.left )
             {
                 ofs << dofleft.first << " " << dofleft.second << "\n";
             }

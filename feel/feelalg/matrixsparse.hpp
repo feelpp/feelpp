@@ -810,7 +810,7 @@ template <typename T>
 inline
 MatrixSparse<T>::MatrixSparse ( WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
-    _M_is_initialized( false ),
+    M_is_initialized( false ),
     M_mprop( NON_HERMITIAN )
 {}
 

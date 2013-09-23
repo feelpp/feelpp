@@ -168,9 +168,9 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_gmc_left = fusion::at_key<gmc<0> >( _gmcTest );
     M_left_map = fusion::make_map<gmc<0> >( M_gmc_left );
     precomputeBasisAtPoints( fusion::at_key<gmc<0> >( _gmcTest )->xRefs() );
-    fusion::for_each( _M_test_fec,vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
-    _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
-    _M_eval0_expr->update( _gmcExpr, _M_test_fec0 );
+    fusion::for_each( M_test_fec,vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
+    M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) );
+    M_eval0_expr->update( _gmcExpr, M_test_fec0 );
 
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmcExpr ),indexLocalToQuad );
 }

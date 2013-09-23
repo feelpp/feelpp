@@ -744,7 +744,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                              this->worldComm().localRank(),this->worldComm().localSize() );
 
           if ( gmshElt.isOnProcessor() == false ||
-               gmshElt.isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
+               gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
               continue;
 
           __et.push_back( gmshElt );
@@ -823,7 +823,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                                                    this->worldComm().localRank(),this->worldComm().localSize() );
 
                 if ( gmshElt.isOnProcessor() == false ||
-                     gmshElt.isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
+                     gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
                     continue;
 
                 __et.push_back( gmshElt );
@@ -934,7 +934,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         // if the element is not associated to the processor (in partition or ghost) or
         // if the physical entity is ignored
         if ( it_gmshElt->isOnProcessor() == false ||
-             it_gmshElt->isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
+             it_gmshElt->isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
             continue;
         // add the points associates to the element on the processor
         for ( uint16_type p = 0; p < it_gmshElt->numVertices; ++p )

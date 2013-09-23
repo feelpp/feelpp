@@ -423,17 +423,17 @@ private:
     std::set<size_type> trialElementId( size_type test_eid, mpl::int_<0> /**/ )
         {
             std::set<size_type> idsFind;
-            const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
-            const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
+            const bool test_related_to_trial = M_X1->mesh()->isSubMeshFrom( M_X2->mesh() );
+            const bool trial_related_to_test = M_X2->mesh()->isSubMeshFrom( M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                const size_type domain_eid = _M_X1->mesh()->subMeshToMesh( test_eid );
+                const size_type domain_eid = M_X1->mesh()->subMeshToMesh( test_eid );
                 DVLOG(2) << "[test_related_to_trial] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                 if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
             else if( trial_related_to_test )
             {
-                const size_type domain_eid = _M_X2->mesh()->meshToSubMesh( test_eid );
+                const size_type domain_eid = M_X2->mesh()->meshToSubMesh( test_eid );
                 DVLOG(2) << "[trial_related_to_test] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                 if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
@@ -447,20 +447,20 @@ private:
     std::set<size_type> trialElementId( size_type test_eid, mpl::int_<1> /**/ )
         {
             std::set<size_type> idsFind;
-            const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
-            const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
+            const bool test_related_to_trial = M_X1->mesh()->isSubMeshFrom( M_X2->mesh() );
+            const bool trial_related_to_test = M_X2->mesh()->isSubMeshFrom( M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                const size_type domain_eid = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid )).element0().id();
+                const size_type domain_eid = M_X2->mesh()->face(M_X1->mesh()->subMeshToMesh( test_eid )).element0().id();
                 DVLOG(2) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                 if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
             else if( trial_related_to_test )
             {
-                auto const& eltTest = _M_X1->mesh()->element(test_eid);
-                for (uint16_type f=0;f< _M_X1->mesh()->numLocalFaces();++f)
+                auto const& eltTest = M_X1->mesh()->element(test_eid);
+                for (uint16_type f=0;f< M_X1->mesh()->numLocalFaces();++f)
                     {
-                        const size_type idFind = _M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                        const size_type idFind = M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
                         if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
                     }
                 DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
@@ -1301,9 +1301,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 
             // Get the global indices of the DOFs with support on this element
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-            _M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
+            M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
 #else // MPI
-            _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
+            M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
 #endif
             // We can be more efficient if we sort the element DOFs
             // into increasing order
@@ -1311,24 +1311,24 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
             std::sort( element_dof2.begin(), element_dof2.end() );
 
             //const uint16_type  n1_dof_on_element = element_dof1.size();
-            const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
+            const uint16_type  n1_dof_on_element = M_X1->dof()->getIndicesSize();
             const uint16_type  n2_dof_on_element = element_dof2.size();
 
             for ( size_type i=0; i<n1_dof_on_element; i++ )
-                //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
+                //BOOST_FOREACH( auto ig1, M_X1->dof()->getIndices( elem.id() ) )
             {
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
+                const size_type ig1 = M_X1->dof()->localToGlobalId( elem.id(), i );
 #else // MPI
-                const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
-                auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
+                const size_type ig1 = M_X1->dof()->mapGlobalProcessToGlobalCluster()[M_X1->dof()->localToGlobalId( elem.id(), i )];
+                auto theproc = M_X1->dof()->procOnGlobalCluster( ig1 );
                 // numLocal without ghosts ! very important for the graph with petsc
-                const size_type il1 = _M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
+                const size_type il1 = M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - M_X1->dof()->firstDofGlobalCluster( theproc );
 #endif
                 //const size_type ig1 = element_dof1[i];
-                const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                const int ndofpercomponent1 = n1_dof_on_element / M_X1->dof()->nComponents;
                 const int ncomp1 = i / ndofpercomponent1;
-                const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+                const int ndofpercomponent2 = n2_dof_on_element / M_X2->dof()->nComponents;
 
                 {
                     // This is what I mean
@@ -1353,7 +1353,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 
                     if ( do_less )
                     {
-                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
+                        if ( ncomp1 == ( M_X2->dof()->nComponents-1 ) )
                             row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
                                                  element_dof2.end() );
 
@@ -1381,17 +1381,17 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                                  && neighbor_process_id == proc_id )
                             {
 
-                                neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
+                                neighbor = boost::addressof( M_X1->mesh()->element( neighbor_id,
                                                                                      neighbor_process_id ) );
 
                                 if ( neighbor_id == neighbor->id()  )
                                 {
-                                    //neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
-                                    neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
+                                    //neighbor_dof = M_X2->dof()->getIndices( neighbor->id() );
+                                    neighbor_dof = M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
 
                                     if ( do_less )
                                     {
-                                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
+                                        if ( ncomp1 == ( M_X2->dof()->nComponents-1 ) )
                                             row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
                                                                  neighbor_dof.end() );
 

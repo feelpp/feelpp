@@ -374,6 +374,14 @@ public:
     void matInverse ( MatrixSparse<value_type> &Inv );
 
     /**
+     * Compute the eigenvalues of the current Sparse matrix,
+     * stores the result in \p Eingvs:
+     * \f$ Engvs = \texttt{this}*In \f$.
+     */
+    void eigenValues ( std::vector<std::complex<value_type>> &Eingvs );
+
+
+    /**
      * This function creates a matrix called "submatrix" which is defined
      * by the row and column indices given in the "rows" and "cols" entries.
      * Currently this operation is only defined for the PetscMatrix type.
@@ -454,7 +462,7 @@ public:
 
     MatrixEigenDense<T> & operator = ( MatrixEigenDense<T> const& M )
     {
-        _M_mat = M.mat();
+        M_mat = M.mat();
         return *this;
     }
 
