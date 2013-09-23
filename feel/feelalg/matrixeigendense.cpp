@@ -41,26 +41,33 @@ template <typename T>
 MatrixEigenDense<T>::MatrixEigenDense()
     :
     super(),
-    _M_is_initialized( false ),
-    _M_is_closed( false ),
-    _M_mat()
+    M_is_initialized( false ),
+    M_is_closed( false ),
+    M_mat()
 {}
 template <typename T>
 MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm )
     :
+<<<<<<< HEAD
     super(worldComm),
     _M_is_initialized( false ),
     _M_is_closed( false ),
     _M_mat( r, c )
+=======
+    super(),
+    M_is_initialized( false ),
+    M_is_closed( false ),
+    M_mat( r, c )
+>>>>>>> feature/boundary
 {}
 
 template <typename T>
 MatrixEigenDense<T>::MatrixEigenDense( MatrixEigenDense const & m )
     :
     super( m ),
-    _M_is_initialized( m._M_is_initialized ),
-    _M_is_closed( m._M_is_closed ),
-    _M_mat( m._M_mat )
+    M_is_initialized( m.M_is_initialized ),
+    M_is_closed( m.M_is_closed ),
+    M_mat( m.M_mat )
 
 {}
 
@@ -80,7 +87,7 @@ MatrixEigenDense<T>::init ( const size_type m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_mat.resize( m,n );
+    M_mat.resize( m,n );
     this->zero ();
 }
 template <typename T>
@@ -100,7 +107,7 @@ MatrixEigenDense<T>::init ( const size_type m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_mat.resize( m,n );
+    M_mat.resize( m,n );
     this->zero ();
 }
 
@@ -114,7 +121,7 @@ MatrixEigenDense<T>::addMatrix ( int* rows, int nrows,
     for( int i=0; i < nrows; ++i )
         for( int j=0; j < ncols; ++j )
         {
-            _M_mat( rows[i], cols[j] ) += data[i*ncols+j];
+            M_mat( rows[i], cols[j] ) += data[i*ncols+j];
         }
 
 }
@@ -122,21 +129,21 @@ template<typename T>
 void
 MatrixEigenDense<T>::scale( const T a )
 {
-    _M_mat *= a;
+    M_mat *= a;
 }
 
 template<typename T>
 void
 MatrixEigenDense<T>::resize( size_type nr, size_type nc, bool /*preserve*/ )
 {
-    _M_mat.resize( nr, nc );
+    M_mat.resize( nr, nc );
 }
 
 template<typename T>
 void
 MatrixEigenDense<T>::close() const
 {
-    _M_is_closed = true;
+    M_is_closed = true;
 }
 
 template<typename T>
@@ -153,7 +160,7 @@ MatrixEigenDense<T>::diagonal ( Vector<T>& dest ) const
 {
 #if 0
     VectorEigen<T>& _dest( dynamic_cast<VectorEigen<T>&>( dest ) );
-    _dest = _M_mat.diagonal();
+    _dest = M_mat.diagonal();
 #endif
 }
 template<typename T>
@@ -171,10 +178,10 @@ MatrixEigenDense<T>::energy( Vector<value_type> const& __v,
     std::copy( u.vec().begin(), u.vec().end(), __u1.begin() );
 
     if ( !tranpose )
-        gmm::mult( _M_mat, __u1, __t );
+        gmm::mult( M_mat, __u1, __t );
 
     else
-        gmm::mult( gmm::transposed( _M_mat ), __u1, __t );
+        gmm::mult( gmm::transposed( M_mat ), __u1, __t );
 
     return gmm::vect_sp( __v1, __t );
 #endif
@@ -194,7 +201,7 @@ MatrixEigenDense<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
 
     if ( !this->closed() )
     {
-        _M_mat += v * m->_M_mat;
+        M_mat += v * m->M_mat;
     }
 }
 
@@ -239,11 +246,11 @@ MatrixEigenDense<T>::printMatlab( const std::string filename ) const
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
-    for ( size_type i = 0; i < _M_mat.rows(); ++i )
+    for ( size_type i = 0; i < M_mat.rows(); ++i )
     {
-        for ( size_type j = 0; j < _M_mat.cols(); ++j )
+        for ( size_type j = 0; j < M_mat.cols(); ++j )
         {
-            value_type v = _M_mat( i,j );
+            value_type v = M_mat( i,j );
 
             file_out << i + 1 << separator
                      << j + 1 << separator

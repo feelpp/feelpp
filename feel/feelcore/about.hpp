@@ -81,10 +81,10 @@ public:
                  std::string _emailAddress,
                  std::string _webAddress )
         :
-        _M_Name( _name ),
-        _M_Task( _task ),
-        _M_EmailAddress( _emailAddress ),
-        _M_WebAddress( _webAddress )
+        M_Name( _name ),
+        M_Task( _task ),
+        M_EmailAddress( _emailAddress ),
+        M_WebAddress( _webAddress )
     {
     }
     /**
@@ -93,10 +93,10 @@ public:
      */
     AboutPerson()
         :
-        _M_Name(),
-        _M_Task(),
-        _M_EmailAddress(),
-        _M_WebAddress()
+        M_Name(),
+        M_Task(),
+        M_EmailAddress(),
+        M_WebAddress()
     {}
 
     /**
@@ -105,20 +105,20 @@ public:
      */
     AboutPerson( AboutPerson const& ap )
         :
-        _M_Name( ap._M_Name ),
-        _M_Task( ap._M_Task ),
-        _M_EmailAddress( ap._M_EmailAddress ),
-        _M_WebAddress( ap._M_WebAddress )
+        M_Name( ap.M_Name ),
+        M_Task( ap.M_Task ),
+        M_EmailAddress( ap.M_EmailAddress ),
+        M_WebAddress( ap.M_WebAddress )
     {}
 
     AboutPerson& operator=( AboutPerson const& __ap )
     {
         if ( this != & __ap )
         {
-            _M_Name = __ap._M_Name;
-            _M_Task = __ap._M_Task;
-            _M_EmailAddress = __ap._M_EmailAddress;
-            _M_WebAddress = __ap._M_WebAddress;
+            M_Name = __ap.M_Name;
+            M_Task = __ap.M_Task;
+            M_EmailAddress = __ap.M_EmailAddress;
+            M_WebAddress = __ap.M_WebAddress;
         }
 
         return *this;
@@ -152,10 +152,10 @@ public:
     std::string webAddress() const;
 
 private:
-    std::string  _M_Name;
-    std::string  _M_Task;
-    std::string  _M_EmailAddress;
-    std::string  _M_WebAddress;
+    std::string  M_Name;
+    std::string  M_Task;
+    std::string  M_EmailAddress;
+    std::string  M_WebAddress;
 
     AboutPersonPrivate *d;
 };
@@ -476,19 +476,19 @@ public:
 
 
 private:
-    std::string _M_AppName;
-    std::string _M_ProgramName;
-    std::string _M_ProductName;
-    std::string _M_Version;
-    std::string _M_ShortDescription;
-    int _M_LicenseKey;
-    std::string _M_CopyrightStatement;
-    std::string _M_OtherText;
-    std::string _M_HomepageAddress;
-    std::string _M_BugEmailAddress;
-    std::vector<AboutPerson> _M_AuthorList;
-    std::vector<AboutPerson> _M_CreditList;
-    std::string _M_LicenseText;
+    std::string M_AppName;
+    std::string M_ProgramName;
+    std::string M_ProductName;
+    std::string M_Version;
+    std::string M_ShortDescription;
+    int M_LicenseKey;
+    std::string M_CopyrightStatement;
+    std::string M_OtherText;
+    std::string M_HomepageAddress;
+    std::string M_BugEmailAddress;
+    std::vector<AboutPerson> M_AuthorList;
+    std::vector<AboutPerson> M_CreditList;
+    std::string M_LicenseText;
 
     AboutDataPrivate *d;
 };

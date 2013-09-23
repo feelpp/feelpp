@@ -279,7 +279,7 @@ public:
     ImporterGmsh( WorldComm const& _worldcomm = Environment::worldComm() )
         :
         super( GMSH, _worldcomm ),
-        _M_version( FEELPP_GMSH_FORMAT_VERSION ),
+        M_version( FEELPP_GMSH_FORMAT_VERSION ),
         M_use_elementary_region_as_physical_region( false )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
@@ -290,7 +290,7 @@ public:
                            WorldComm const& _worldcomm = Environment::worldComm() )
         :
         super( _fname, GMSH, _worldcomm ),
-        _M_version( _version ),
+        M_version( _version ),
         M_use_elementary_region_as_physical_region( false )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
@@ -299,10 +299,10 @@ public:
     ImporterGmsh( ImporterGmsh const & i )
         :
         super( i ),
-        _M_version( i._M_version ),
+        M_version( i.M_version ),
         M_use_elementary_region_as_physical_region( false ),
-        _M_ignorePhysicalGroup( i._M_ignorePhysicalGroup ),
-        _M_ignorePhysicalName( i._M_ignorePhysicalName )
+        M_ignorePhysicalGroup( i.M_ignorePhysicalGroup ),
+        M_ignorePhysicalName( i.M_ignorePhysicalName )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -328,7 +328,7 @@ public:
      */
     std::string version() const
     {
-        return _M_version;
+        return M_version;
     }
 
     /**
@@ -345,16 +345,16 @@ public:
 
     void setVersion( std::string const& version )
     {
-        _M_version = version;
+        M_version = version;
     }
 
     void setIgnorePhysicalGroup( int i )
     {
-        _M_ignorePhysicalGroup.insert( i );
+        M_ignorePhysicalGroup.insert( i );
     }
     void setIgnorePhysicalName( std::string s )
     {
-        _M_ignorePhysicalName.insert( s );
+        M_ignorePhysicalName.insert( s );
     }
 
     //@}
@@ -400,12 +400,12 @@ private:
 
 private:
 
-    std::string _M_version;
-    std::map<int,int> _M_n_vertices;
-    //std::vector<int> _M_n_b_vertices;
+    std::string M_version;
+    std::map<int,int> M_n_vertices;
+    //std::vector<int> M_n_b_vertices;
 
-    std::set<int> _M_ignorePhysicalGroup;
-    std::set<std::string> _M_ignorePhysicalName;
+    std::set<int> M_ignorePhysicalGroup;
+    std::set<std::string> M_ignorePhysicalName;
     bool M_use_elementary_region_as_physical_region;
 
     //std::map<int,int> itoii;
@@ -559,7 +559,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                     std::vector<int> data = {id, topodim};
                     mesh->addMarkerName( name, id, topodim );
                 }
-                if ( _M_ignorePhysicalName.find( name )!=_M_ignorePhysicalName.end() ) this->setIgnorePhysicalGroup( id );
+                if ( M_ignorePhysicalName.find( name )!=M_ignorePhysicalName.end() ) this->setIgnorePhysicalGroup( id );
             }
             if ( meshMarkerNameMap.empty() )
             {
@@ -868,7 +868,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         // if the element is not associated to the processor (in partition or ghost) or
         // if the physical entity is ignored
         if ( __et[__i].isOnProcessor() == false ||
-             __et[__i].isIgnored(_M_ignorePhysicalGroup.begin(), _M_ignorePhysicalGroup.end()) )
+             __et[__i].isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
             continue;
 
         switch ( __et[__i].type )
@@ -1040,7 +1040,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     if ( this->worldComm().localSize()>1 )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
 
-    mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0,
+    mesh->setNumVertices( std::accumulate( M_n_vertices.begin(), M_n_vertices.end(), 0,
                                            []( int lhs, std::pair<int,int> const& rhs )
                                            {
                                                return lhs+rhs.second;
@@ -1054,7 +1054,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         //LOG(INFO) << "[substructuring] n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
     }
     DVLOG(2) << "done with reading and creating mesh from gmsh file\n";
-    _M_n_vertices.clear();
+    M_n_vertices.clear();
 }
 
 template<typename MeshType>
@@ -1082,9 +1082,9 @@ ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement cons
     {
         pf.setOnBoundary( true );
     }
-    _M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
 
-    //_M_n_b_vertices[ __e.indices[0] ] = 1;
+    //M_n_b_vertices[ __e.indices[0] ] = 1;
 
     face_iterator fit;
     bool inserted;
@@ -1173,8 +1173,8 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
     DVLOG(2) << "added edge with id :" << e.id()
                   << " n1: " << mesh->point( __e.indices[0] ).node()
                   << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
@@ -1214,11 +1214,11 @@ ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement cons
 
     }
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
 
-    //_M_n_b_vertices[ __e.indices[0] ] = 1;
-    //_M_n_b_vertices[ __e.indices[1] ] = 1;
+    //M_n_b_vertices[ __e.indices[0] ] = 1;
+    //M_n_b_vertices[ __e.indices[1] ] = 1;
 
     bool inserted;
     face_iterator fit;
@@ -1262,11 +1262,11 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
         }
     }
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
 
-    //_M_n_b_vertices[ __e.indices[0] ] = 1;
-    //_M_n_b_vertices[ __e.indices[1] ] = 1;
+    //M_n_b_vertices[ __e.indices[0] ] = 1;
+    //M_n_b_vertices[ __e.indices[1] ] = 1;
 
     auto eit = mesh->addEdge( e );
     __idGmshToFeel=eit.id();
@@ -1341,13 +1341,13 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
-    _M_n_vertices[ __e.indices[2] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[2] ] = 1;
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 )
-        _M_n_vertices[ __e.indices[3] ] = 1;
+        M_n_vertices[ __e.indices[3] ] = 1;
 }
 template<typename MeshType>
 void
@@ -1392,13 +1392,13 @@ ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement cons
 
     __idGmshToFeel=e.id();
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
-    _M_n_vertices[ __e.indices[2] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[2] ] = 1;
 
     if ( __e.type == GMSH_QUADRANGLE ||
          __e.type == GMSH_QUADRANGLE_2 )
-        _M_n_vertices[ __e.indices[3] ] = 1;
+        M_n_vertices[ __e.indices[3] ] = 1;
 
 }
 
@@ -1470,17 +1470,17 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    _M_n_vertices[ __e.indices[0] ] = 1;
-    _M_n_vertices[ __e.indices[1] ] = 1;
-    _M_n_vertices[ __e.indices[2] ] = 1;
-    _M_n_vertices[ __e.indices[3] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[2] ] = 1;
+    M_n_vertices[ __e.indices[3] ] = 1;
 
     if ( __e.type == GMSH_HEXAHEDRON )
     {
-        _M_n_vertices[ __e.indices[4] ] = 1;
-        _M_n_vertices[ __e.indices[5] ] = 1;
-        _M_n_vertices[ __e.indices[6] ] = 1;
-        _M_n_vertices[ __e.indices[7] ] = 1;
+        M_n_vertices[ __e.indices[4] ] = 1;
+        M_n_vertices[ __e.indices[5] ] = 1;
+        M_n_vertices[ __e.indices[6] ] = 1;
+        M_n_vertices[ __e.indices[7] ] = 1;
     }
 }
 

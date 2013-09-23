@@ -51,7 +51,7 @@ namespace Feel
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * 
+ *
  * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
@@ -114,7 +114,7 @@ public:
 
     value_type  operator()( size_type i, size_type j ) const
     {
-        //return _M_mat.row(i).col(j);
+        //return M_mat.row(i).col(j);
         return 0.;
     }
 
@@ -130,7 +130,7 @@ public:
      */
     size_type size1 () const
     {
-        return _M_mat.rows();
+        return M_mat.rows();
     }
 
     /**
@@ -139,7 +139,7 @@ public:
      */
     size_type size2 () const
     {
-        return _M_mat.cols();
+        return M_mat.cols();
     }
 
     /**
@@ -147,7 +147,7 @@ public:
      */
     size_type nnz() const
     {
-        return _M_mat.rows()*_M_mat.cols();
+        return M_mat.rows()*M_mat.cols();
     }
 
     /**
@@ -173,7 +173,7 @@ public:
      */
     bool isInitialized() const
     {
-        return _M_is_initialized;
+        return M_is_initialized;
     }
 
     /**
@@ -189,7 +189,7 @@ public:
      */
     bool closed() const
     {
-        return _M_is_closed;
+        return M_is_closed;
     }
 
 
@@ -198,7 +198,7 @@ public:
      */
     matrix_type const& mat () const
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -206,7 +206,7 @@ public:
      */
     matrix_type & mat ()
     {
-        return _M_mat;
+        return M_mat;
     }
 
     //@}
@@ -254,8 +254,8 @@ public:
      */
     void clear ()
     {
-        //eigen::resize( _M_mat, 0, 0 );
-        _M_mat.setZero();
+        //eigen::resize( M_mat, 0, 0 );
+        M_mat.setZero();
     }
 
     /**
@@ -264,7 +264,7 @@ public:
      */
     void zero ()
     {
-        _M_mat.setZero();
+        M_mat.setZero();
     }
 
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
@@ -333,7 +333,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
     void init() {}
 
@@ -420,13 +420,13 @@ protected:
 
 private:
 
-    bool _M_is_initialized;
-    mutable bool _M_is_closed;
+    bool M_is_initialized;
+    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure
      */
-    mutable matrix_type _M_mat;
+    mutable matrix_type M_mat;
     mutable std::vector<triplet> M_tripletList;
 };
 

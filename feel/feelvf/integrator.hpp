@@ -725,6 +725,7 @@ private:
 
     typename eval::matrix_type evaluate( mpl::int_<MESH_ELEMENTS> ) const;
     typename eval::matrix_type evaluate( mpl::int_<MESH_FACES> ) const;
+    typename eval::matrix_type evaluate( mpl::int_<MESH_POINTS> ) const;
 
 private:
 
@@ -2768,6 +2769,20 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
     DLOG(INFO) << "integrating over faces done in " << __timer.elapsed() << "s\n";
     return res;
 }
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
+typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
+Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_POINTS> ) const
+{
+    DLOG(INFO)  << "integrating over "
+             << std::distance( this->beginElement(), this->endElement() )  << " points\n";
+
+    // first loop on the points, then retrieve the elements to which they belong
+    // and evaluate the integrand expression and accumulate it
+
+
+}
+
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename P0hType>
 typename P0hType::element_type

@@ -421,13 +421,13 @@ public:
      */
     Mat mat () const
     {
-        FEELPP_ASSERT ( _M_mat != NULL ).error( "null petsc matrix" );
-        return _M_mat;
+        FEELPP_ASSERT ( M_mat != NULL ).error( "null petsc matrix" );
+        return M_mat;
     }
     Mat& mat ()
     {
-        FEELPP_ASSERT ( _M_mat != NULL ).warn( "null petsc matrix" );
-        return _M_mat;
+        FEELPP_ASSERT ( M_mat != NULL ).warn( "null petsc matrix" );
+        return M_mat;
     }
 
     /**
@@ -462,7 +462,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
     /**
      * update a block matrix
@@ -472,11 +472,11 @@ public:
 
     void updatePCFieldSplit( PC & pc );
 
-    std::vector<IS> const& petscSplitIS() const { return _M_petscIS; }
-    std::map<PC*,bool > & mapSplitPC() { return _M_mapPC; }
+    std::vector<IS> const& petscSplitIS() const { return M_petscIS; }
+    std::map<PC*,bool > & mapSplitPC() { return M_mapPC; }
 
-    std::vector<PetscInt> ia() { return _M_ia; }
-    std::vector<PetscInt> ja() { return _M_ja; }
+    std::vector<PetscInt> ia() { return M_ia; }
+    std::vector<PetscInt> ja() { return M_ja; }
 
 
     //@}
@@ -496,21 +496,21 @@ protected:
     /**
      * Petsc matrix datatype to store values
      */
-    Mat _M_mat;
+    Mat M_mat;
 
 private:
 
 
-    std::vector<IS> _M_petscIS;
+    std::vector<IS> M_petscIS;
 
-    std::map<PC*,bool > _M_mapPC;
+    std::map<PC*,bool > M_mapPC;
 
     /**
      * This boolean value should only be set to false
      * for the constructor which takes a PETSc Mat object.
      */
-    const bool _M_destroy_mat_on_exit;
-    std::vector<PetscInt> _M_ia,_M_ja;
+    const bool M_destroy_mat_on_exit;
+    std::vector<PetscInt> M_ia,M_ja;
 };
 
 
@@ -587,7 +587,7 @@ public :
     void zero( size_type start1, size_type stop1, size_type start2, size_type stop2 );
     //void zeroEntriesDiagonal();
     void zeroRows( std::vector<int> const& rows,
-                   std::vector<value_type> const& values,
+                   Vector<value_type> const& values,
                    Vector<value_type>& rhs,
                    Context const& on_context );
 

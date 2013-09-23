@@ -33,7 +33,7 @@
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/simplex.hpp>
 #include <feel/feelmesh/hypercube.hpp>
-
+#include <feel/feelmesh/filters.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelalg/solvernonlinearpetsc.hpp>
@@ -45,8 +45,8 @@ template<typename Shape, typename T, int Tag>
 Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     :
     super(worldComm),
-    _M_gm( new gm_type ),
-    _M_gm1( new gm1_type ),
+    M_gm( new gm_type ),
+    M_gm1( new gm1_type ),
     M_meas( 0 ),
     M_measbdy( 0 ),
     M_substructuring( false ),
@@ -166,7 +166,7 @@ Mesh<Shape, T, Tag>::updateForUse()
 
                     f2e[_faceit->second].template get<0>() = iv->id();
                     f2e[_faceit->second].template get<1>() = j;
-                    _M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, invalid_size_type_value );
+                    M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, invalid_size_type_value );
                 }
 
                 else // already stored
@@ -174,8 +174,8 @@ Mesh<Shape, T, Tag>::updateForUse()
                     DVLOG(2) << "old face " << _faceit->second << " was already in store with elt " << f2e[_faceit->second].template get<0>() << " and local face id " <<  f2e[_faceit->second].template get<1>() << "\n";
 
                     f2e[_faceit->second].template get<2>() = iv->id();
-                    _M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, f2e[_faceit->second].template get<0>() );
-                    _M_e2f[std::make_pair(f2e[_faceit->second].template get<0>(), f2e[_faceit->second].template get<1>())] =
+                    M_e2f[std::make_pair(iv->id(),j)]=boost::make_tuple( _faceit->second, f2e[_faceit->second].template get<0>() );
+                    M_e2f[std::make_pair(f2e[_faceit->second].template get<0>(), f2e[_faceit->second].template get<1>())] =
                         boost::make_tuple( _faceit->second, iv->id() );
                 }
 
@@ -224,7 +224,7 @@ Mesh<Shape, T, Tag>::updateForUse()
              this->components().test( MESH_UPDATE_EDGES )
             )
         {
-            updateOnBoundary( mpl::int_<nDim>() );
+            updateOnBoundary();
         }
         this->setUpdatedForUse( true );
     }
@@ -241,8 +241,8 @@ Mesh<Shape, T, Tag>::updateForUse()
         }
 
         boost::tie( iv, en ) = this->elementsRange();
-        auto pc = _M_gm->preCompute( _M_gm, _M_gm->referenceConvex().vertices() );
-        auto pcf =  _M_gm->preComputeOnFaces( _M_gm, _M_gm->referenceConvex().barycenterFaces() );
+        auto pc = M_gm->preCompute( M_gm, M_gm->referenceConvex().vertices() );
+        auto pcf =  M_gm->preComputeOnFaces( M_gm, M_gm->referenceConvex().barycenterFaces() );
         M_meas = 0;
         M_measbdy = 0;
 
@@ -253,13 +253,13 @@ Mesh<Shape, T, Tag>::updateForUse()
                                      {
                                          for ( int i = 0; i < e.numPoints; ++i )
                                              e.point( i ).addElement( e.id() );
-                                         e.setMeshAndGm( this, _M_gm, _M_gm1 );
+                                         e.setMeshAndGm( this, M_gm, M_gm1 );
                                          e.updateWithPc(pc, boost::ref( pcf) );
                                      } );
 #if 0
                                      lambda::bind( &element_type::setMeshAndGm,
                                                    lambda::_1,
-                                                   this, _M_gm, _M_gm1 ) );
+                                                   this, M_gm, M_gm1 ) );
 
             this->elements().modify( iv,
                                      lambda::bind( &element_type::updateWithPc,
@@ -313,8 +313,8 @@ Mesh<Shape, T, Tag>::updateForUse()
     this->check();
     //std::cout<<"pass hier\n";
 
-    _M_gm->initCache( this );
-    _M_gm1->initCache( this );
+    M_gm->initCache( this );
+    M_gm1->initCache( this );
 
     M_tool_localization->setMesh( this->shared_from_this(),false );
 
@@ -913,7 +913,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
                 // set the connection with the element
                 face.setConnection0( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
-                face.setOnBoundary( true );
+                face.setOnBoundary( true, face_type::nDim );
 
                 // adding the face
                 bool inserted = false;
@@ -1014,7 +1014,7 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
                     face.setConnection0( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) );
                     // set the process id from element
                     face.setProcessId( __element.processId() );
-                    face.setOnBoundary( true );
+                    face.setOnBoundary( true, face_type::nDim );
                     //this->faces().modify( __fit,
                     //detail::UpdateFaceConnection0<typename face_type::element_connectivity_type>( boost::make_tuple( boost::addressof( __element ), __element_id, j, __element.processId() ) ) );
 
@@ -1124,54 +1124,136 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOne( mpl::bool_<true> )
 
     }
 
-
+    LOG(INFO) << "We have now " << nelements(boundaryfaces(this)) << " faces on the boundary in the database";
     VLOG(2) << "element/face connectivity : " << ti.elapsed() << "\n";
     ti.restart();
 }
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<1> )
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& it , mpl::bool_<true> )
 {
-    element_iterator iv,en;
-    boost::tie( iv, en ) = this->elementsRange();
-    for ( ; iv != en; ++iv )
+    // loop over face edges
+    for ( int f = 0; f < face_type::numEdges; ++f )
     {
-        bool isOnBoundary = false;
-
-        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        if ( it->edge( f ).isOnBoundary() == false )
         {
-            isOnBoundary |= iv->face( j ).isOnBoundary();
+            auto eit = this->edgeIterator( it->edge(f).id() );
+            this->edges().modify( eit,
+                                  []( edge_type& e )
+                                  {e.setOnBoundary(true, 1 );} );
         }
 
-        // an element on the boundary means that is shares a face
-        // with the boundary
-        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
     }
+    LOG(INFO) << "We have " << nelements(boundaryedges(this)) <<  " boundary edges";
+
+}
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& f, mpl::bool_<false> )
+{
+}
+
+template<typename Shape, typename T, int Tag>
+bool
+Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_iterator& e, mpl::bool_<false> )
+{
+    return false;
+}
+template<typename Shape, typename T, int Tag>
+bool
+Mesh<Shape, T, Tag>::modifyElementOnBoundaryFromEdge( element_iterator& iv, mpl::bool_<true> )
+{
+    // in 3D check if the edges of the element touch the boundary
+    bool isOnBoundary = false;
+    for ( size_type j = 0; j < iv->nEdges(); j++ )
+    {
+        isOnBoundary |= iv->edge( j ).isOnBoundary();
+    }
+    if ( isOnBoundary )
+    {
+        // the element touches the boundary with just an edge
+        this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 1 ); } );
+        return isOnBoundary;
+    }
+    return isOnBoundary;
 }
 
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<2> )
+Mesh<Shape, T, Tag>::updateOnBoundary()
 {
-    element_iterator iv,en;
-    boost::tie( iv, en ) = this->elementsRange();
-    for ( ; iv != en; ++iv )
+    // first go through all the faces and set the points of the boundary
+    // faces to be on the boundary
+    LOG(INFO) << "update boundary points...";
+    for( auto it = this->beginFace(), en = this->endFace(); it != en; ++ it )
+    {
+        if ( it->isOnBoundary() == true )
+        {
+            modifyEdgesOnBoundary( it, mpl::bool_<(nDim >= 3)>() );
+            // loop over face points
+            for ( int f = 0; f < face_type::numPoints; ++f )
+            {
+                if ( it->point( f ).isOnBoundary() == false )
+                {
+                    auto pit = this->pointIterator( it->point(f).id() );
+                    this->points().modify( pit,
+                                           []( point_type& p )
+                                           {p.setOnBoundary(true, 0 );} );
+                }
+
+            }
+        }
+    }
+    LOG(INFO) << "We have " << nelements(boundarypoints(this)) <<  " boundary points";
+    LOG(INFO) << "update boundary elements...";
+    // loop through faces to set the elements having a face on the boundary
+    for ( auto iv = this->beginElement(), en = this->endElement();
+          iv != en; ++iv )
     {
         bool isOnBoundary = false;
 
-        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+        // first check if a face is on the boundary
+        for ( size_type j = 0; j < iv->nTopologicalFaces(); j++ )
         {
-            //if ( !iv->facePtr( j ) ) { LOG(INFO) << "[Mesh::updateOnBoundary] Warning : a face access is missing in elt;\n"
-            //                                    << "this->numLocalFaces " << this->numLocalFaces() << std::endl; continue; }
-
             isOnBoundary |= iv->face( j ).isOnBoundary();
         }
 
-        // an element on the boundary means that is shares a face
-        // with the boundary
-        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
+        if ( isOnBoundary )
+        {
+            LOG(INFO) << "checking " << iv->nTopologicalFaces() << " faces, isOnBoundary: " << isOnBoundary << " face_type::nDim: " << face_type::nDim;
+            this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, face_type::nDim ); } );
+            // go to the next element, no need to look further
+            continue;
+        }
+        bool e_modified = modifyElementOnBoundaryFromEdge( iv, mpl::bool_<(nDim>=3)>() );
+        // go to next element if element is on boundary
+        if ( e_modified )
+        {
+            continue;
+        }
+
+        // finally check if a point of the element touches the boundary
+        for ( size_type j = 0; j < iv->nPoints(); j++ )
+        {
+            isOnBoundary |= iv->point( j ).isOnBoundary();
+        }
+
+        if ( isOnBoundary )
+        {
+            LOG(INFO) << "checking " << iv->nPoints() << " points, isOnBoundary: " << isOnBoundary;
+            this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 0 ); } );
+        }
+    } // loop over the elements
+    LOG(INFO) << "[updateOnBoundary] We have " << nelements(boundaryelements(this))
+              << " elements sharing a point, a edge or a face with the boundary in the database";
+    BOOST_FOREACH( auto e, this->boundaryElements( 0, 2, 0 ) )
+    {
+        LOG(INFO) << "boundary element : " << e.id()
+                  << " entity on boundary max dim  " << e.boundaryEntityDimension()
+                  << " process id : " << e.processId();
     }
+
 }
 template<typename Shape, typename T, int Tag>
 void
@@ -1203,30 +1285,6 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
                    } );
 }
 
-template<typename Shape, typename T, int Tag>
-void
-Mesh<Shape, T, Tag>::updateOnBoundary( mpl::int_<3> )
-{
-    element_iterator iv,en;
-    boost::tie( iv, en ) = this->elementsRange();
-    for ( ; iv != en; ++iv )
-    {
-        bool isOnBoundary = false;
-
-        for ( size_type j = 0; j < this->numLocalFaces(); j++ )
-        {
-            isOnBoundary |= iv->face( j ).isOnBoundary();
-        }
-        for ( size_type j = 0; j < this->numLocalEdges(); j++ )
-        {
-            isOnBoundary |= iv->edge( j ).isOnBoundary();
-        }
-
-        // an element on the boundary means that is shares a face
-        // with the boundary
-        this->elements().modify( iv, detail::OnBoundary( isOnBoundary ) );
-    }
-}
 #if defined(FEELPP_ENABLE_MPI_MODE)
 template<typename Shape, typename T, int Tag>
 void
@@ -1558,7 +1616,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
 
 #ifdef FEELPP_HAS_MPI
 
-    _M_neighboring_processors.clear();
+    M_neighboring_processors.clear();
 
     // Get the bounding sphere for the local processor
     Sphere bounding_sphere = processorBoundingSphere ( *this, this->worldComm().localRank() );
@@ -1594,14 +1652,14 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
             const Sphere proc_sphere ( center, radius );
 
             if ( bounding_sphere.intersects( proc_sphere ) )
-                _M_neighboring_processors.push_back( proc );
+                M_neighboring_processors.push_back( proc );
         }
 
         // Print out the _neighboring_processors list
         VLOG(2) << "Processor " << this->worldComm().localRank() << " intersects:\n";
 
-        for ( unsigned int p=0; p< _M_neighboring_processors.size(); p++ )
-            VLOG(2) << " - proc " << _M_neighboring_processors[p] << "\n";
+        for ( unsigned int p=0; p< M_neighboring_processors.size(); p++ )
+            VLOG(2) << " - proc " << M_neighboring_processors[p] << "\n";
     }
 
 #endif

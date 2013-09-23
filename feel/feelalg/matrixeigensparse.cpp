@@ -37,9 +37,9 @@ template <typename T>
 MatrixEigenSparse<T>::MatrixEigenSparse()
     :
     super(),
-    _M_is_initialized( false ),
-    _M_is_closed( false ),
-    _M_mat()
+    M_is_initialized( false ),
+    M_is_closed( false ),
+    M_mat()
 {}
 template <typename T>
 MatrixEigenSparse<T>::MatrixEigenSparse( size_type r, size_type c, WorldComm const& worldComm )
@@ -54,9 +54,9 @@ template <typename T>
 MatrixEigenSparse<T>::MatrixEigenSparse( MatrixEigenSparse const & m )
     :
     super( m ),
-    _M_is_initialized( m._M_is_initialized ),
-    _M_is_closed( m._M_is_closed ),
-    _M_mat( m._M_mat )
+    M_is_initialized( m.M_is_initialized ),
+    M_is_closed( m.M_is_closed ),
+    M_mat( m.M_mat )
 
 {}
 
@@ -76,7 +76,7 @@ MatrixEigenSparse<T>::init ( const size_type m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_mat.resize( m,n );
+    M_mat.resize( m,n );
     this->zero ();
 }
 template <typename T>
@@ -96,7 +96,7 @@ MatrixEigenSparse<T>::init ( const size_type m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_mat.resize( m,n );
+    M_mat.resize( m,n );
     M_tripletList.reserve(graph->ja().size());
 
 }
@@ -120,14 +120,14 @@ template<typename T>
 void
 MatrixEigenSparse<T>::scale( const T a )
 {
-    _M_mat *= a;
+    M_mat *= a;
 }
 
 template<typename T>
 void
 MatrixEigenSparse<T>::resize( size_type nr, size_type nc, bool /*preserve*/ )
 {
-    _M_mat.resize( nr, nc );
+    M_mat.resize( nr, nc );
 }
 
 template<typename T>
@@ -135,12 +135,12 @@ void
 MatrixEigenSparse<T>::close() const
 {
 
-    if ( !_M_is_closed )
+    if ( !M_is_closed )
     {
         LOG(INFO) << "Closing matrix";
-        _M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
+        M_mat.setFromTriplets(M_tripletList.begin(), M_tripletList.end());
         M_tripletList.clear();
-        _M_is_closed = true;
+        M_is_closed = true;
     }
 }
 
@@ -158,7 +158,7 @@ MatrixEigenSparse<T>::diagonal ( Vector<T>& dest ) const
 {
 #if 0
     VectorEigen<T>& _dest( dynamic_cast<VectorEigen<T>&>( dest ) );
-    _dest = _M_mat.diagonal();
+    _dest = M_mat.diagonal();
 #endif
 }
 template<typename T>
@@ -176,10 +176,10 @@ MatrixEigenSparse<T>::energy( Vector<value_type> const& __v,
     std::copy( u.vec().begin(), u.vec().end(), __u1.begin() );
 
     if ( !tranpose )
-        gmm::mult( _M_mat, __u1, __t );
+        gmm::mult( M_mat, __u1, __t );
 
     else
-        gmm::mult( gmm::transposed( _M_mat ), __u1, __t );
+        gmm::mult( gmm::transposed( M_mat ), __u1, __t );
 
     return gmm::vect_sp( __v1, __t );
 #endif
@@ -199,7 +199,7 @@ MatrixEigenSparse<T>::addMatrix( value_type v, MatrixSparse<value_type>& _m )
 
     if ( !this->closed() )
     {
-        _M_mat += v * m->_M_mat;
+        M_mat += v * m->M_mat;
     }
 }
 template<typename T>
@@ -214,35 +214,35 @@ MatrixEigenSparse<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type>
 template<typename T>
 void
 MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
-                                std::vector<value_type> const& vals,
+                                Vector<value_type> const& vals,
                                 Vector<value_type>& rhs,
                                 Context const& on_context )
 {
-    LOG(INFO) << "zero out " << rows.size() << " rows except diagonal is row major: " << _M_mat.IsRowMajor;
+    LOG(INFO) << "zero out " << rows.size() << " rows except diagonal is row major: " << M_mat.IsRowMajor;
     Feel::detail::ignore_unused_variable_warning( rhs );
     Feel::detail::ignore_unused_variable_warning( vals );
     boost::unordered_map<int,std::set<int>> m;
     for (int k=0; k<rows.size(); ++k)
     {
-        for (typename matrix_type::InnerIterator it(_M_mat,rows[k]); it; ++it)
+        for (typename matrix_type::InnerIterator it(M_mat,rows[k]); it; ++it)
         {
             m[it.row()].insert(it.col());
             double value = 1.0;
             if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
                 value = it.value();
-            rhs.add( it.row(), -it.value() * vals[k] );
+            rhs.add( it.row(), -it.value() * vals(rows[k]) );
             it.valueRef() = 0;
 
             if ( it.row() == it.col() )
             {
                 it.valueRef() = value;
-                rhs.set( it.row(), value * vals[k] );
+                rhs.set( it.row(), value * vals(rows[k]) );
             }
         }
     }
     for(auto rit = m.begin();rit != m.end();++rit )
     {
-        for (typename matrix_type::InnerIterator it(_M_mat,rit->first); it; ++it)
+        for (typename matrix_type::InnerIterator it(M_mat,rit->first); it; ++it)
         {
             double value = 1.0;
             if( rit->second.find( it.row() ) != rit->second.end() )
@@ -286,9 +286,9 @@ MatrixEigenSparse<T>::printMatlab( const std::string filename ) const
     file_out.precision( 16 );
     file_out.setf( std::ios::scientific );
 
-    for (int k=0; k<_M_mat.outerSize(); ++k)
+    for (int k=0; k<M_mat.outerSize(); ++k)
     {
-        for (typename matrix_type::InnerIterator it(_M_mat,k); it; ++it)
+        for (typename matrix_type::InnerIterator it(M_mat,k); it; ++it)
         {
             value_type v = it.value();
 

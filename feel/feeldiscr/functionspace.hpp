@@ -225,37 +225,37 @@ struct DD
 
     DD()
         :
-        _M_grad()
+        M_grad()
     {}
 
     template<typename Elem, typename ContextType>
     DD( Elem const& elem, ContextType const & context )
         :
-        _M_grad( elem.gradExtents( context ) )
+        M_grad( elem.gradExtents( context ) )
     {
-        elem.grad_( context, _M_grad );
+        elem.grad_( context, M_grad );
     }
 
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
     {
-        return _M_grad[q]( c1,c2 );
+        return M_grad[q]( c1,c2 );
     }
-    array_type _M_grad;
+    array_type M_grad;
 
     template<class Archive>
     void save( Archive & ar, const unsigned int /*version*/ ) const
     {
-        size_type e1 = _M_grad.shape()[0];
+        size_type e1 = M_grad.shape()[0];
         DVLOG(2) << "saving in archive e1= " << e1 << "\n";
         ar  & e1;
-        size_type e2 = _M_grad.shape()[1];
+        size_type e2 = M_grad.shape()[1];
         DVLOG(2) << "saving in archive e2= " << e2 << "\n";
         ar  & e2;
-        size_type e3 = _M_grad.shape()[2];
+        size_type e3 = M_grad.shape()[2];
         DVLOG(2) << "saving in archive e3= " << e3 << "\n";
         ar  & e3;
-        DVLOG(2) << "saving in archive array of size = " << _M_grad.num_elements() << "\n";
-        ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
+        DVLOG(2) << "saving in archive array of size = " << M_grad.num_elements() << "\n";
+        ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
         DVLOG(2) << "saving in archive done\n";
     }
     template<class Archive>
@@ -268,9 +268,9 @@ struct DD
         DVLOG(2) << "loading from archive e2= " << e2 << "\n";
         ar  & e3;
         DVLOG(2) << "loading from archive e3= " << e3 << "\n";
-        _M_grad.resize( boost::extents[e1] );
-        DVLOG(2) << "loading from archive array of size = " << _M_grad.num_elements() << "\n";
-        ar  & boost::serialization::make_array( _M_grad.data(), _M_grad.num_elements() );
+        M_grad.resize( boost::extents[e1] );
+        DVLOG(2) << "loading from archive array of size = " << M_grad.num_elements() << "\n";
+        ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
         DVLOG(2) << "loading from archive done\n";
         DVLOG(2) << "creating view interpolation context done\n";
     }
@@ -293,22 +293,22 @@ struct D
 
     D()
         :
-        _M_grad()
+        M_grad()
     {}
 
     template<typename Elem, typename ContextType>
     D( Elem const& elem, ContextType const & context )
         :
-        _M_grad( elem.dExtents( context ) )
+        M_grad( elem.dExtents( context ) )
     {
-        elem.d_( N, context, _M_grad );
+        elem.d_( N, context, M_grad );
     }
 
     value_type operator()( uint16_type c1, uint16_type /*c2*/, uint16_type q  ) const
     {
-        return _M_grad[q]( c1,0 );
+        return M_grad[q]( c1,0 );
     }
-    array_type _M_grad;
+    array_type M_grad;
 };
 
 template<typename T>
@@ -326,20 +326,20 @@ struct Div
 
     Div()
         :
-        _M_div()
+        M_div()
     {}
 
     template<typename Elem, typename ContextType>
     Div( Elem const& elem, ContextType const & context )
         :
-        _M_div( elem.divExtents( context ) )
+        M_div( elem.divExtents( context ) )
     {
-        elem.div_( context, _M_div );
+        elem.div_( context, M_div );
 #if 0
         uint16_type nComponents1 = elem.nComponents1;
-        std::fill( _M_div.data(), _M_div.data()+_M_div.num_elements(), value_type( 0 ) );
+        std::fill( M_div.data(), M_div.data()+M_div.num_elements(), value_type( 0 ) );
 
-        _M_grad( elem.div_( context, pc, _M_div ) ),
+        M_grad( elem.div_( context, pc, M_div ) ),
 
 
                  const uint16_type nq = context.xRefs().size2();
@@ -347,7 +347,7 @@ struct Div
         for ( int c1 = 0; c1 < nComponents1; ++c1 )
             for ( uint16_type q = 0; q < nq ; ++q )
             {
-                _M_div[q]( 0,0 ) += _M_grad[q]( c1,c1 );
+                M_div[q]( 0,0 ) += M_grad[q]( c1,c1 );
             }
 
 #endif
@@ -355,9 +355,9 @@ struct Div
 
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
     {
-        return _M_div[q]( c1,c2 );
+        return M_div[q]( c1,c2 );
     }
-    array_type _M_div;
+    array_type M_div;
 };
 template<typename T, int N, int D>
 struct Curl
@@ -374,13 +374,13 @@ struct Curl
 
     Curl()
         :
-        _M_curl()
+        M_curl()
     {}
 
     template<typename Elem, typename ContextType>
     Curl( Elem const& elem, ContextType const & context )
         :
-        _M_curl( elem.curlExtents( context ) )
+        M_curl( elem.curlExtents( context ) )
     {
         init( elem, context, boost::is_same<mpl::int_<N>, mpl::int_<-1> >() );
     }
@@ -388,13 +388,13 @@ struct Curl
     void
     init( Elem const& elem, ContextType const& context, mpl::bool_<true> )
     {
-        elem.curl_( context, _M_curl );
+        elem.curl_( context, M_curl );
     }
     template<typename Elem, typename ContextType>
     void
     init( Elem const& elem, ContextType const& context, mpl::bool_<false> )
     {
-        elem.curl_( context, _M_curl, N );
+        elem.curl_( context, M_curl, N );
     }
 
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
@@ -403,21 +403,21 @@ struct Curl
     }
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<-1>  ) const
     {
-        return _M_curl[q]( c1,c2 );
+        return M_curl[q]( c1,c2 );
     }
     value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<0>  ) const
     {
-        return _M_curl[q]( 0,0 );
+        return M_curl[q]( 0,0 );
     }
     value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<1>  ) const
     {
-        return _M_curl[q]( 0,0 );
+        return M_curl[q]( 0,0 );
     }
     value_type operator()( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q, mpl::int_<2>  ) const
     {
-        return _M_curl[q]( 0,0 );
+        return M_curl[q]( 0,0 );
     }
-    array_type _M_curl;
+    array_type M_curl;
 };
 
 template<typename T,int M, int N>
@@ -437,22 +437,22 @@ struct H
 
     H()
         :
-        _M_hess()
+        M_hess()
     {}
 
     template<typename Elem, typename ContextType>
     H( Elem const& elem, ContextType const & context )
         :
-        _M_hess( elem.hessExtents( context ) )
+        M_hess( elem.hessExtents( context ) )
     {
-        elem.hess_( context, _M_hess );
+        elem.hess_( context, M_hess );
     }
 
     value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
     {
-        return _M_hess[q]( c1,c2 );
+        return M_hess[q]( c1,c2 );
     }
-    array_type _M_hess;
+    array_type M_hess;
 };
 
 template<typename MeshPtrType, typename PeriodicityType = Periodicity<NoPeriodicity> >
@@ -463,11 +463,11 @@ struct InitializeSpace
                      std::vector<Dof> const& dofindices,
                      std::vector<WorldComm> const & worldsComm )
         :
-        _M_cursor( 0 ),
-        _M_worldsComm( worldsComm ),
-        _M_mesh( mesh ),
-        _M_dofindices( dofindices ),
-        _M_periodicity( periodicity )
+        M_cursor( 0 ),
+        M_worldsComm( worldsComm ),
+        M_mesh( mesh ),
+        M_dofindices( dofindices ),
+        M_periodicity( periodicity )
 
     {}
     template <typename T>
@@ -478,31 +478,31 @@ struct InitializeSpace
     template <typename T>
     void operator()( boost::shared_ptr<T> & x, mpl::bool_<true> ) const
     {
-        auto p = *fusion::find<typename T::periodicity_0_type>(_M_periodicity);
-        x = boost::shared_ptr<T>( new T( _M_mesh, _M_dofindices, p,
-                                         std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        auto p = *fusion::find<typename T::periodicity_0_type>(M_periodicity);
+        x = boost::shared_ptr<T>( new T( M_mesh, M_dofindices, p,
+                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
-        ++_M_cursor;// warning _M_cursor < nb color
+        ++M_cursor;// warning M_cursor < nb color
     }
     template <typename T>
     void operator()( boost::shared_ptr<T> & x, mpl::bool_<false> ) const
     {
-        auto p = *fusion::find<typename T::periodicity_0_type>(_M_periodicity);
+        auto p = *fusion::find<typename T::periodicity_0_type>(M_periodicity);
 
         // look for T::mesh_ptrtype in MeshPtrType
-        auto m = *fusion::find<typename T::mesh_ptrtype>(_M_mesh);
-        x = boost::shared_ptr<T>( new T( m, _M_dofindices, p,
-                                         std::vector<WorldComm>( 1,_M_worldsComm[_M_cursor] ) ) );
+        auto m = *fusion::find<typename T::mesh_ptrtype>(M_mesh);
+        x = boost::shared_ptr<T>( new T( m, M_dofindices, p,
+                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
-        ++_M_cursor;// warning _M_cursor < nb color
+        ++M_cursor;// warning M_cursor < nb color
     }
-    mutable uint16_type _M_cursor;
-    std::vector<WorldComm> _M_worldsComm;
-    MeshPtrType _M_mesh;
-    std::vector<Dof> const& _M_dofindices;
-    PeriodicityType _M_periodicity;
+    mutable uint16_type M_cursor;
+    std::vector<WorldComm> M_worldsComm;
+    MeshPtrType M_mesh;
+    std::vector<Dof> const& M_dofindices;
+    PeriodicityType M_periodicity;
 };
 template<typename DofType>
 struct updateDataMapProcess
@@ -511,106 +511,106 @@ struct updateDataMapProcess
                           WorldComm const& worldCommFusion,
                           uint16_type lastCursor )
         :
-        _M_cursor( 0 ),
-        _M_start_index( 0 ),
-        _M_lastCursor( lastCursor ),
-        _M_worldsComm( worldsComm ),
-        _M_dm( new DofType( worldCommFusion ) ),
-        _M_dmOnOff( new DofType( worldCommFusion ) )
+        M_cursor( 0 ),
+        M_start_index( 0 ),
+        M_lastCursor( lastCursor ),
+        M_worldsComm( worldsComm ),
+        M_dm( new DofType( worldCommFusion ) ),
+        M_dmOnOff( new DofType( worldCommFusion ) )
     {}
 
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
     {
 
-        if ( _M_worldsComm[_M_cursor].isActive() )
+        if ( M_worldsComm[M_cursor].isActive() )
         {
             size_type nLocWithGhost=x->nLocalDofWithGhost();
             size_type nLocWithoutGhost=x->nLocalDofWithoutGhost();
-            _M_dm->setFirstDof( _M_dm->worldComm().globalRank(), x->dof()->firstDof() );
-            _M_dm->setLastDof( _M_dm->worldComm().globalRank(), x->dof()->lastDof() );
-            _M_dm->setFirstDofGlobalCluster( _M_dm->worldComm().globalRank(), _M_start_index + x->dof()->firstDofGlobalCluster() );
-            _M_dm->setLastDofGlobalCluster( _M_dm->worldComm().globalRank(), _M_start_index + x->dof()->lastDofGlobalCluster() );
-            _M_dm->setNLocalDofWithoutGhost( _M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithoutGhost() );
-            _M_dm->setNLocalDofWithGhost( _M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithGhost() );
+            M_dm->setFirstDof( M_dm->worldComm().globalRank(), x->dof()->firstDof() );
+            M_dm->setLastDof( M_dm->worldComm().globalRank(), x->dof()->lastDof() );
+            M_dm->setFirstDofGlobalCluster( M_dm->worldComm().globalRank(), M_start_index + x->dof()->firstDofGlobalCluster() );
+            M_dm->setLastDofGlobalCluster( M_dm->worldComm().globalRank(), M_start_index + x->dof()->lastDofGlobalCluster() );
+            M_dm->setNLocalDofWithoutGhost( M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithoutGhost() );
+            M_dm->setNLocalDofWithGhost( M_dm->worldComm().globalRank(), x->dof()->nLocalDofWithGhost() );
 
-            _M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost );
-            _M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost );
+            M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost );
+            M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost );
 
             for ( size_type i=0; i<nLocWithGhost; ++i )
-                _M_dm->setMapGlobalProcessToGlobalCluster( i, _M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
+                M_dm->setMapGlobalProcessToGlobalCluster( i, M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
 
             for ( size_type i=0; i<nLocWithoutGhost; ++i )
-                _M_dm->setMapGlobalClusterToGlobalProcess( i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
+                M_dm->setMapGlobalClusterToGlobalProcess( i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
         }
 
 
-        if ( _M_cursor==0 )
+        if ( M_cursor==0 )
         {
-            _M_dmOnOff->setFirstDof( _M_dmOnOff->worldComm().globalRank(), x->dof()->firstDof() );
-            _M_dmOnOff->setFirstDofGlobalCluster( _M_dmOnOff->worldComm().globalRank(),
-                                                  _M_start_index + x->dof()->firstDofGlobalCluster() );
-            _M_dmOnOff->setNLocalDofWithoutGhost( _M_dmOnOff->worldComm().globalRank(),
+            M_dmOnOff->setFirstDof( M_dmOnOff->worldComm().globalRank(), x->dof()->firstDof() );
+            M_dmOnOff->setFirstDofGlobalCluster( M_dmOnOff->worldComm().globalRank(),
+                                                  M_start_index + x->dof()->firstDofGlobalCluster() );
+            M_dmOnOff->setNLocalDofWithoutGhost( M_dmOnOff->worldComm().globalRank(),
                                                   0 );
-            _M_dmOnOff->setNLocalDofWithGhost( _M_dmOnOff->worldComm().globalRank(),
+            M_dmOnOff->setNLocalDofWithGhost( M_dmOnOff->worldComm().globalRank(),
                                                0 );
         }
 
-        if ( _M_cursor==_M_lastCursor )
+        if ( M_cursor==M_lastCursor )
         {
-            _M_dmOnOff->setLastDof( _M_dmOnOff->worldComm().globalRank(),
-                                    _M_start_index + x->dof()->lastDof() );
-            _M_dmOnOff->setLastDofGlobalCluster( _M_dmOnOff->worldComm().globalRank(),
-                                                 _M_start_index + x->dof()->lastDofGlobalCluster() );
+            M_dmOnOff->setLastDof( M_dmOnOff->worldComm().globalRank(),
+                                    M_start_index + x->dof()->lastDof() );
+            M_dmOnOff->setLastDofGlobalCluster( M_dmOnOff->worldComm().globalRank(),
+                                                 M_start_index + x->dof()->lastDofGlobalCluster() );
         }
 
         // update nLoc
-        size_type nLocWithoutGhostOnOff= _M_dmOnOff->nLocalDofWithoutGhost() + x->dof()->nLocalDofWithoutGhost();
-        size_type nLocWithGhostOnOff= _M_dmOnOff->nLocalDofWithGhost() + x->dof()->nLocalDofWithGhost();
+        size_type nLocWithoutGhostOnOff= M_dmOnOff->nLocalDofWithoutGhost() + x->dof()->nLocalDofWithoutGhost();
+        size_type nLocWithGhostOnOff= M_dmOnOff->nLocalDofWithGhost() + x->dof()->nLocalDofWithGhost();
 
-        _M_dmOnOff->setNLocalDofWithoutGhost( _M_dmOnOff->worldComm().globalRank(),
+        M_dmOnOff->setNLocalDofWithoutGhost( M_dmOnOff->worldComm().globalRank(),
                                               nLocWithoutGhostOnOff );
-        _M_dmOnOff->setNLocalDofWithGhost( _M_dmOnOff->worldComm().globalRank(),
+        M_dmOnOff->setNLocalDofWithGhost( M_dmOnOff->worldComm().globalRank(),
                                            nLocWithGhostOnOff );
 
         // update map
-        _M_dmOnOff->resizeMapGlobalProcessToGlobalCluster( nLocWithGhostOnOff );
-        _M_dmOnOff->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhostOnOff );
+        M_dmOnOff->resizeMapGlobalProcessToGlobalCluster( nLocWithGhostOnOff );
+        M_dmOnOff->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhostOnOff );
 
-        size_type startGlobClusterDof = _M_dmOnOff->nLocalDofWithoutGhost() - x->dof()->nLocalDofWithoutGhost();
-        size_type startGlobProcessDof = _M_dmOnOff->nLocalDofWithGhost() - x->dof()->nLocalDofWithGhost();
+        size_type startGlobClusterDof = M_dmOnOff->nLocalDofWithoutGhost() - x->dof()->nLocalDofWithoutGhost();
+        size_type startGlobProcessDof = M_dmOnOff->nLocalDofWithGhost() - x->dof()->nLocalDofWithGhost();
 
         for ( size_type i=0; i<x->dof()->nLocalDofWithGhost(); ++i )
         {
-            _M_dmOnOff->setMapGlobalProcessToGlobalCluster( startGlobProcessDof + i, _M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
+            M_dmOnOff->setMapGlobalProcessToGlobalCluster( startGlobProcessDof + i, M_start_index + x->dof()->mapGlobalProcessToGlobalCluster( i ) );
         }
 
         for ( size_type i=0; i<x->dof()->nLocalDofWithoutGhost(); ++i )
         {
-            _M_dmOnOff->setMapGlobalClusterToGlobalProcess( startGlobClusterDof + i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
+            M_dmOnOff->setMapGlobalClusterToGlobalProcess( startGlobClusterDof + i, x->dof()->mapGlobalClusterToGlobalProcess( i ) );
         }
 
 
-        _M_start_index+=x->nDof();
+        M_start_index+=x->nDof();
 
-        ++_M_cursor;// warning _M_cursor < nb color
+        ++M_cursor;// warning M_cursor < nb color
     }
 
     boost::shared_ptr<DofType> dataMap() const
     {
-        return _M_dm;
+        return M_dm;
     }
     boost::shared_ptr<DofType> dataMapOnOff() const
     {
-        return _M_dmOnOff;
+        return M_dmOnOff;
     }
 
-    mutable uint16_type _M_cursor;
-    mutable size_type _M_start_index;
-    uint16_type _M_lastCursor;
-    std::vector<WorldComm> _M_worldsComm;
-    mutable boost::shared_ptr<DofType> _M_dm;
-    mutable boost::shared_ptr<DofType> _M_dmOnOff;
+    mutable uint16_type M_cursor;
+    mutable size_type M_start_index;
+    uint16_type M_lastCursor;
+    std::vector<WorldComm> M_worldsComm;
+    mutable boost::shared_ptr<DofType> M_dm;
+    mutable boost::shared_ptr<DofType> M_dmOnOff;
 }; // updateDataMapProcess
 
 
@@ -624,103 +624,103 @@ struct updateDataMapProcessStandard
                                   std::vector<size_type> const& startDofGlobalCluster,
                                   std::vector<size_type> nLocWithoutGhost, std::vector<size_type> nLocWithGhost)
         :
-        _M_cursor( 0 ),
-        _M_start_index( worldCommFusion.globalSize(), 0 ),//  _M_startDofGlobalCluster[worldCommFusion.globalRank()] ),
-        _M_startIndexWithGhost( 0 ),
-        _M_lastCursor( lastCursor ),
-        _M_worldsComm( worldsComm ),
-        _M_dm( new DofType( worldCommFusion ) ),
-        _M_startDofGlobalCluster(startDofGlobalCluster),
-        _M_nLocWithoutGhost(nLocWithoutGhost),
-        _M_nLocWithGhost(nLocWithGhost)
+        M_cursor( 0 ),
+        M_start_index( worldCommFusion.globalSize(), 0 ),//  M_startDofGlobalCluster[worldCommFusion.globalRank()] ),
+        M_startIndexWithGhost( 0 ),
+        M_lastCursor( lastCursor ),
+        M_worldsComm( worldsComm ),
+        M_dm( new DofType( worldCommFusion ) ),
+        M_startDofGlobalCluster(startDofGlobalCluster),
+        M_nLocWithoutGhost(nLocWithoutGhost),
+        M_nLocWithGhost(nLocWithGhost)
     {
 
-        const int myrank = _M_dm->worldComm().globalRank();
-        const int worldsize = _M_dm->worldComm().globalSize();
+        const int myrank = M_dm->worldComm().globalRank();
+        const int worldsize = M_dm->worldComm().globalSize();
         for (int proc = 0 ; proc < worldsize ; ++proc)
         {
-            _M_dm->setNLocalDofWithoutGhost( proc, nLocWithoutGhost[proc] );
-            _M_dm->setNLocalDofWithGhost( proc, nLocWithGhost[proc] );
-            _M_start_index[proc] = _M_startDofGlobalCluster[proc];// nLocWithoutGhost;
+            M_dm->setNLocalDofWithoutGhost( proc, nLocWithoutGhost[proc] );
+            M_dm->setNLocalDofWithGhost( proc, nLocWithGhost[proc] );
+            M_start_index[proc] = M_startDofGlobalCluster[proc];// nLocWithoutGhost;
         }
 
-        _M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost[myrank] );
-        _M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost[myrank] );
+        M_dm->resizeMapGlobalProcessToGlobalCluster( nLocWithGhost[myrank] );
+        M_dm->resizeMapGlobalClusterToGlobalProcess( nLocWithoutGhost[myrank] );
     }
 
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
     {
-        const int myrank = _M_dm->worldComm().globalRank();
-        const int worldsize = _M_dm->worldComm().globalSize();
+        const int myrank = M_dm->worldComm().globalRank();
+        const int worldsize = M_dm->worldComm().globalSize();
         const size_type nLocWithGhost=x->dof()->nLocalDofWithGhost(myrank);
         const size_type nLocWithoutGhost=x->dof()->nLocalDofWithoutGhost(myrank);
 
         for (int proc = 0 ; proc < worldsize ; ++proc)
         {
-            if ( _M_cursor==0 )
+            if ( M_cursor==0 )
             {
-                _M_dm->setFirstDof( proc,  x->dof()->firstDof(proc) );
-                _M_dm->setFirstDofGlobalCluster( proc, _M_startDofGlobalCluster[proc] );
-                _M_dm->setLastDof( proc, x->dof()->lastDof(proc) );
+                M_dm->setFirstDof( proc,  x->dof()->firstDof(proc) );
+                M_dm->setFirstDofGlobalCluster( proc, M_startDofGlobalCluster[proc] );
+                M_dm->setLastDof( proc, x->dof()->lastDof(proc) );
                 if (x->dof()->nLocalDofWithoutGhost(proc) == 0)
-                    _M_dm->setLastDofGlobalCluster( proc, _M_startDofGlobalCluster[proc] );
+                    M_dm->setLastDofGlobalCluster( proc, M_startDofGlobalCluster[proc] );
                 else
-                    _M_dm->setLastDofGlobalCluster( proc, _M_startDofGlobalCluster[proc] + x->dof()->nLocalDofWithoutGhost(proc) - 1 );
+                    M_dm->setLastDofGlobalCluster( proc, M_startDofGlobalCluster[proc] + x->dof()->nLocalDofWithoutGhost(proc) - 1 );
             }
             else
             {
-                _M_dm->setLastDof( proc, _M_dm->lastDof(proc) + x->dof()->nLocalDofWithGhost(proc)  );
-                _M_dm->setLastDofGlobalCluster( proc, _M_dm->lastDofGlobalCluster(proc) + x->dof()->nLocalDofWithoutGhost(proc) );
+                M_dm->setLastDof( proc, M_dm->lastDof(proc) + x->dof()->nLocalDofWithGhost(proc)  );
+                M_dm->setLastDofGlobalCluster( proc, M_dm->lastDofGlobalCluster(proc) + x->dof()->nLocalDofWithoutGhost(proc) );
             }
         }
 
-        const size_type firstDofGC = _M_dm->firstDofGlobalCluster();
+        const size_type firstDofGC = M_dm->firstDofGlobalCluster();
         const size_type firstDofGCSubSpace = x->dof()->firstDofGlobalCluster();
 
         for (size_type gdof = x->dof()->firstDof(myrank) ; gdof < x->dof()->nLocalDofWithGhost(myrank) ; ++gdof )
         {
-            const size_type localDof = _M_startIndexWithGhost+gdof;//nLocalDofStart+gdof;
+            const size_type localDof = M_startIndexWithGhost+gdof;//nLocalDofStart+gdof;
             const size_type gdofGC = x->dof()->mapGlobalProcessToGlobalCluster(gdof);
 
             if ( x->dof()->dofGlobalClusterIsOnProc( gdofGC ) )
             {
-                const size_type globalDof = _M_start_index[myrank] + ( gdofGC-firstDofGCSubSpace );
-                _M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
-                _M_dm->setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
+                const size_type globalDof = M_start_index[myrank] + ( gdofGC-firstDofGCSubSpace );
+                M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
+                M_dm->setMapGlobalClusterToGlobalProcess( globalDof-firstDofGC ,localDof );
             }
             else
             {
                 const int realproc = x->dof()->procOnGlobalCluster(gdofGC);
-                const size_type globalDof = _M_start_index[realproc] + (gdofGC- x->dof()->firstDofGlobalCluster(realproc));
-                _M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
+                const size_type globalDof = M_start_index[realproc] + (gdofGC- x->dof()->firstDofGlobalCluster(realproc));
+                M_dm->setMapGlobalProcessToGlobalCluster( localDof, globalDof );
             }
         }
 
         for (int proc = 0 ; proc < worldsize ; ++proc)
-            _M_start_index[proc] += x->dof()->nLocalDofWithoutGhost(proc);
-        _M_startIndexWithGhost+=nLocWithGhost;
+            M_start_index[proc] += x->dof()->nLocalDofWithoutGhost(proc);
+        M_startIndexWithGhost+=nLocWithGhost;
 
-        ++_M_cursor;
+        ++M_cursor;
     }
 
     boost::shared_ptr<DofType> dataMap() const
     {
-        return _M_dm;
+        return M_dm;
     }
     boost::shared_ptr<DofType> dataMapOnOff() const
     {
-        return _M_dm;
+        return M_dm;
     }
 
-    mutable uint16_type _M_cursor;
-    mutable std::vector<size_type> _M_start_index;
-    mutable size_type _M_startIndexWithGhost;
-    uint16_type _M_lastCursor;
-    std::vector<WorldComm> _M_worldsComm;
-    mutable boost::shared_ptr<DofType> _M_dm;
-    std::vector<size_type> _M_startDofGlobalCluster;
-    std::vector<size_type> _M_nLocWithoutGhost, _M_nLocWithGhost;
+    mutable uint16_type M_cursor;
+    mutable std::vector<size_type> M_start_index;
+    mutable size_type M_startIndexWithGhost;
+    uint16_type M_lastCursor;
+    std::vector<WorldComm> M_worldsComm;
+    mutable boost::shared_ptr<DofType> M_dm;
+    std::vector<size_type> M_startDofGlobalCluster;
+    std::vector<size_type> M_nLocWithoutGhost, M_nLocWithGhost;
 }; // updateDataMapProcessStandard
 
 
@@ -732,8 +732,8 @@ struct NbDof
     typedef size_type result_type;
     NbDof( size_type start = 0, size_type size = invalid_size_type_value )
         :
-        _M_cursor( start ),
-        _M_finish( size )
+        M_cursor( start ),
+        M_finish( size )
     {}
     template<typename Sig>
     struct result;
@@ -756,10 +756,10 @@ struct NbDof
         if ( !x )
             return ret;
 
-        if ( _M_cursor < _M_finish )
+        if ( M_cursor < M_finish )
             ret += x->nDof();
 
-        ++_M_cursor;
+        ++M_cursor;
         return ret;
     }
 
@@ -770,8 +770,8 @@ struct NbDof
         return this->operator()( x, s );
     }
 private:
-    mutable size_type _M_cursor;
-    size_type _M_finish;
+    mutable size_type M_cursor;
+    size_type M_finish;
 };
 
 #if 0
@@ -779,8 +779,8 @@ struct NLocalDof
 {
     NLocalDof( size_type start = 0, size_type size = invalid_size_type_value )
         :
-        _M_cursor( start ),
-        _M_finish( size )
+        M_cursor( start ),
+        M_finish( size )
     {}
     template<typename Sig>
     struct result;
@@ -800,10 +800,10 @@ struct NLocalDof
     {
         size_type ret = s;
 
-        if ( _M_cursor < _M_finish )
+        if ( M_cursor < M_finish )
             ret += x->nLocalDof();
 
-        ++_M_cursor;
+        ++M_cursor;
         return ret;
     }
     template <typename T>
@@ -813,8 +813,8 @@ struct NLocalDof
         return this->operator()( x, s );
     }
 private:
-    mutable size_type _M_cursor;
-    size_type _M_finish;
+    mutable size_type M_cursor;
+    size_type M_finish;
 };
 #else // MPI
 template< typename IsWithGhostType>
@@ -825,10 +825,10 @@ struct NLocalDof
                bool useOffSubSpace = false,
                size_type start = 0, size_type size = invalid_size_type_value )
         :
-        _M_cursor( start ),
-        _M_finish( size ),
-        _M_worldsComm( worldsComm ),
-        _M_useOffSubSpace( useOffSubSpace )
+        M_cursor( start ),
+        M_finish( size ),
+        M_worldsComm( worldsComm ),
+        M_useOffSubSpace( useOffSubSpace )
     {}
     template<typename Sig>
     struct result;
@@ -863,21 +863,21 @@ struct NLocalDof
     {
         size_type ret = s;
 
-        if ( _M_cursor < _M_finish )
+        if ( M_cursor < M_finish )
         {
-            if ( _M_useOffSubSpace )
+            if ( M_useOffSubSpace )
             {
                 ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
             }
 
             else
             {
-                if ( _M_worldsComm[_M_cursor].isActive() )
+                if ( M_worldsComm[M_cursor].isActive() )
                     ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
             }
         }
 
-        ++_M_cursor;
+        ++M_cursor;
         return ret;
     }
 
@@ -888,10 +888,10 @@ struct NLocalDof
         return this->operator()( x, s );
     }
 private:
-    mutable size_type _M_cursor;
-    size_type _M_finish;
-    std::vector<WorldComm> const& _M_worldsComm;
-    bool _M_useOffSubSpace;
+    mutable size_type M_cursor;
+    size_type M_finish;
+    std::vector<WorldComm> const& M_worldsComm;
+    bool M_useOffSubSpace;
 };
 #endif // end MPI
 
@@ -905,11 +905,11 @@ struct NLocalDofOnProc
                      bool useOffSubSpace = false,
                      size_type start = 0, size_type size = invalid_size_type_value )
         :
-        _M_proc(proc),
-        _M_cursor( start ),
-        _M_finish( size ),
-        _M_worldsComm( worldsComm ),
-        _M_useOffSubSpace( useOffSubSpace )
+        M_proc(proc),
+        M_cursor( start ),
+        M_finish( size ),
+        M_worldsComm( worldsComm ),
+        M_useOffSubSpace( useOffSubSpace )
     {}
 
     template<typename Sig>
@@ -929,14 +929,14 @@ struct NLocalDofOnProc
     size_type
     nLocalDof( T const& x, mpl::bool_<true> /**/ ) const
     {
-        return x->nLocalDofWithGhostOnProc(_M_proc);
+        return x->nLocalDofWithGhostOnProc(M_proc);
     }
 
     template <typename T>
     size_type
     nLocalDof( T const& x, mpl::bool_<false> /**/ ) const
     {
-        return x->nLocalDofWithoutGhostOnProc(_M_proc);
+        return x->nLocalDofWithoutGhostOnProc(M_proc);
     }
 
     template <typename T>
@@ -945,21 +945,21 @@ struct NLocalDofOnProc
     {
         size_type ret = s;
 
-        if ( _M_cursor < _M_finish )
+        if ( M_cursor < M_finish )
         {
-            if ( _M_useOffSubSpace )
+            if ( M_useOffSubSpace )
             {
                 ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
             }
 
             else
             {
-                if ( _M_worldsComm[_M_cursor].isActive() )
+                if ( M_worldsComm[M_cursor].isActive() )
                     ret += nLocalDof( x, mpl::bool_<IsWithGhostType::value>() );
             }
         }
 
-        ++_M_cursor;
+        ++M_cursor;
         return ret;
     }
 
@@ -970,11 +970,11 @@ struct NLocalDofOnProc
         return this->operator()( x, s );
     }
 private:
-    int _M_proc;
-    mutable size_type _M_cursor;
-    size_type _M_finish;
-    std::vector<WorldComm> const& _M_worldsComm;
-    bool _M_useOffSubSpace;
+    int M_proc;
+    mutable size_type M_cursor;
+    size_type M_finish;
+    std::vector<WorldComm> const& M_worldsComm;
+    bool M_useOffSubSpace;
 }; // NLocalDofOnProc
 
 
@@ -983,19 +983,19 @@ struct InitializeContainersOff
 {
     InitializeContainersOff( boost::shared_ptr<SpaceCompositeType> const& _space )
         :
-        _M_cursor( 0 ),
-        _M_space( _space )
+        M_cursor( 0 ),
+        M_space( _space )
     {}
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
     {
-        if ( _M_cursor==i && !x )
-            x = boost::shared_ptr<T>( new T( _M_space->template functionSpace<i>()->dof() ) );
+        if ( M_cursor==i && !x )
+            x = boost::shared_ptr<T>( new T( M_space->template functionSpace<i>()->dof() ) );
 
-        ++_M_cursor;// warning _M_cursor < nb color
+        ++M_cursor;// warning M_cursor < nb color
     }
-    mutable uint16_type _M_cursor;
-    boost::shared_ptr<SpaceCompositeType> _M_space;
+    mutable uint16_type M_cursor;
+    boost::shared_ptr<SpaceCompositeType> M_space;
 };
 
 
@@ -1005,28 +1005,28 @@ struct SendContainersOn
     SendContainersOn( boost::shared_ptr<SpaceCompositeType> const& _space,
                       std::vector<double> const& _dataToSend )
         :
-        _M_cursor( 0 ),
-        _M_space( _space ),
-        _M_dataToSend( _dataToSend )
+        M_cursor( 0 ),
+        M_space( _space ),
+        M_dataToSend( _dataToSend )
     {}
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
     {
-        if ( _M_cursor!=i )
+        if ( M_cursor!=i )
         {
-            int locRank=_M_space->worldComm().localRank();
-            int globRank=_M_space->worldComm().localColorToGlobalRank( _M_cursor,locRank );
+            int locRank=M_space->worldComm().localRank();
+            int globRank=M_space->worldComm().localColorToGlobalRank( M_cursor,locRank );
             int tag = 0;
-            //std::cout << "\n I am proc " << _M_space->worldComm().globalRank()
+            //std::cout << "\n I am proc " << M_space->worldComm().globalRank()
             //          << " I send to proc " << globRank << std::endl;
-            _M_space->worldComm().globalComm().send( globRank,tag,_M_dataToSend );
+            M_space->worldComm().globalComm().send( globRank,tag,M_dataToSend );
         }
 
-        ++_M_cursor;// warning _M_cursor < nb color
+        ++M_cursor;// warning M_cursor < nb color
     }
-    mutable uint16_type _M_cursor;
-    boost::shared_ptr<SpaceCompositeType> _M_space;
-    std::vector<double> _M_dataToSend;
+    mutable uint16_type M_cursor;
+    boost::shared_ptr<SpaceCompositeType> M_space;
+    std::vector<double> M_dataToSend;
 };
 
 
@@ -1035,28 +1035,28 @@ struct RecvContainersOff
 {
     RecvContainersOff( boost::shared_ptr<SpaceCompositeType> const& _space )
         :
-        _M_cursor( 0 ),
-        _M_space( _space )
+        M_cursor( 0 ),
+        M_space( _space )
     {}
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
     {
-        if ( _M_cursor==i )
+        if ( M_cursor==i )
         {
-            std::vector<double> dataToRecv( _M_space->template functionSpace<i>()->nLocalDof() );
-            int locRank=_M_space->worldComm().localRank();
-            int globRank=_M_space->worldComm().localColorToGlobalRank( i,locRank );
+            std::vector<double> dataToRecv( M_space->template functionSpace<i>()->nLocalDof() );
+            int locRank=M_space->worldComm().localRank();
+            int globRank=M_space->worldComm().localColorToGlobalRank( i,locRank );
             int tag = 0;//locRank;
-            //std::cout << "\n I am proc " << _M_space->worldComm().globalRank()
+            //std::cout << "\n I am proc " << M_space->worldComm().globalRank()
             //          << " I recv to proc " << globRank << std::endl;
-            _M_space->worldComm().globalComm().recv( globRank,tag,dataToRecv );
+            M_space->worldComm().globalComm().recv( globRank,tag,dataToRecv );
             std::copy( dataToRecv.begin(), dataToRecv.end(), x->begin() );
         }
 
-        ++_M_cursor;// warning _M_cursor < nb color
+        ++M_cursor;// warning M_cursor < nb color
     }
-    mutable uint16_type _M_cursor;
-    boost::shared_ptr<SpaceCompositeType> _M_space;
+    mutable uint16_type M_cursor;
+    boost::shared_ptr<SpaceCompositeType> M_space;
 };
 
 
@@ -1852,7 +1852,7 @@ public:
         comp( mpl::bool_<true> )
         {
             BOOST_STATIC_ASSERT( THECOMP >= X && THECOMP < ( ComponentType )N_COMPONENTS );
-            auto s = ublas::slice( THECOMP, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
                                    typename component_type::container_type( this->vec().data().expression(), s ),
@@ -1865,7 +1865,7 @@ public:
         comp( mpl::bool_<false> )
         {
             BOOST_STATIC_ASSERT( THECOMP >= X && THECOMP < ( ComponentType )N_COMPONENTS );
-            auto s = ublas::slice( THECOMP, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( THECOMP, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( THECOMP );
             return component_type( compSpace(),
                                    typename component_type::container_type( ( VectorUblas<value_type>& )*this, s ),
@@ -1891,7 +1891,7 @@ public:
         comp( ComponentType i, mpl::bool_<true> ) const
         {
             FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
-            auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
 
             component_type c( compSpace(),
@@ -1905,7 +1905,7 @@ public:
         comp( ComponentType i, mpl::bool_<false> ) const
         {
             FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
-            auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
             std::string __name = this->name() + "_" + componentToString( i );
 
             component_type c( compSpace(),
@@ -1933,7 +1933,7 @@ public:
         comp( ComponentType i, mpl::bool_<true> )
         {
             FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
-            auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
 
             std::string __name = this->name() + "_" + componentToString( i );
             component_type c( compSpace(),
@@ -1947,7 +1947,7 @@ public:
         comp( ComponentType i, mpl::bool_<false> )
         {
             FEELPP_ASSERT( i >= X && i < N_COMPONENTS );
-            auto s = ublas::slice( i, N_COMPONENTS, _M_functionspace->nDofPerComponent() );
+            auto s = ublas::slice( i, N_COMPONENTS, M_functionspace->nDofPerComponent() );
 
             std::string __name = this->name() + "_" + componentToString( i );
             component_type c( compSpace(),
@@ -1960,13 +1960,13 @@ public:
 
         value_type localToGlobal( size_type e, size_type l, int c ) const
         {
-            size_type index=start()+boost::get<0>( _M_functionspace->dof()->localToGlobal( e, l, c ) );
+            size_type index=start()+boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #if 0
         value_type& localToGlobal( size_type e, size_type l, int c )
         {
-            size_type index=start()+boost::get<0>( _M_functionspace->dof()->localToGlobal( e, l, c ) );
+            size_type index=start()+boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #endif
@@ -2007,12 +2007,12 @@ public:
         }
         void assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index=start()+ _M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            size_type index=start()+ M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             this->operator[]( index ) = __v;
         }
         void plus_assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index=start()+ _M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            size_type index=start()+ M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             this->operator[]( index ) += __v;
         }
 
@@ -2040,7 +2040,7 @@ public:
          */
         DataMap const& map() const
         {
-            return _M_functionspace->map();
+            return M_functionspace->map();
         }
 
         /**
@@ -2048,7 +2048,7 @@ public:
          */
         mesh_ptrtype mesh()
         {
-            return _M_functionspace->mesh();
+            return M_functionspace->mesh();
         }
 
         /**
@@ -2056,7 +2056,7 @@ public:
          */
         mesh_ptrtype mesh() const
         {
-            return _M_functionspace->mesh();
+            return M_functionspace->mesh();
         }
 
         /**
@@ -2064,7 +2064,7 @@ public:
          */
         Element<T,Cont> sqrt() const
         {
-            Element<T,Cont> _e( _M_functionspace );
+            Element<T,Cont> _e( M_functionspace );
 
             for ( int i=0; i < _e.nLocalDof(); ++i ) _e( i )  = math::sqrt( this->operator()( i ) );
 
@@ -2076,7 +2076,7 @@ public:
          */
         Element<T,Cont> pow( int n ) const
         {
-            Element<T,Cont> _e( _M_functionspace );
+            Element<T,Cont> _e( M_functionspace );
 
             for ( int i=0; i < _e.nLocalDof(); ++i ) _e( i )  = math::pow( this->operator()( i ),n );
 
@@ -2642,19 +2642,19 @@ public:
         */
         functionspace_ptrtype const& functionSpace() const
         {
-            return _M_functionspace;
+            return M_functionspace;
         }
 
         /**
          * get the \c FunctionSpace vector
          */
         //functionspace_vector_type const&
-        //functionSpaces() const { return _M_functionspace->functionSpaces(); }
+        //functionSpaces() const { return M_functionspace->functionSpaces(); }
 
         functionspace_vector_type const&
         functionSpaces() const
         {
-            return _M_functionspace->functionSpaces();
+            return M_functionspace->functionSpaces();
         }
 
         /**
@@ -2664,7 +2664,7 @@ public:
         typename mpl::at_c<functionspace_vector_type,i>::type
         functionSpace() const
         {
-            return _M_functionspace->template functionSpace<i>();
+            return M_functionspace->template functionSpace<i>();
         }
 
         template<typename BackendType>
@@ -2709,7 +2709,7 @@ public:
                                      size_type( 0 ),
                                      detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
 
-            typename mpl::at_c<functionspace_vector_type,i>::type space( _M_functionspace->template functionSpace<i>() );
+            typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
             DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
             DVLOG(2) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
             DVLOG(2) << "Element <" << i << ">::local size :  "<<  space->nLocalDof()<< "\n";
@@ -2718,19 +2718,19 @@ public:
             if ( this->functionSpace()->template functionSpace<i>()->worldComm().isActive() )
             {
                 ct_type ct( *this, ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->dof() );
+                            M_functionspace->template functionSpace<i>()->dof() );
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
-                // update _M_containersOffProcess<i> : send
+                // update M_containersOffProcess<i> : send
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
                     std::vector<double> dataToSend( space->nLocalDof() );
                     std::copy( ct.begin(), ct.end(), dataToSend.begin() );
 
-                    if ( !_M_containersOffProcess ) _M_containersOffProcess = boost::in_place();
+                    if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
 
-                    fusion::for_each( *_M_containersOffProcess, detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
+                    fusion::for_each( *M_containersOffProcess, detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
                 }
 
 #endif
@@ -2742,23 +2742,23 @@ public:
             else
             {
                 // initialize if not the case
-                if ( !_M_containersOffProcess ) _M_containersOffProcess = boost::in_place();
+                if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
 
-                fusion::for_each( *_M_containersOffProcess, detail::InitializeContainersOff<i,functionspace_type>( this->functionSpace() ) );
+                fusion::for_each( *M_containersOffProcess, detail::InitializeContainersOff<i,functionspace_type>( this->functionSpace() ) );
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
-                // update _M_containersOffProcess<i> : recv
+                // update M_containersOffProcess<i> : recv
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
-                    fusion::for_each( *_M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
+                    fusion::for_each( *M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
                 }
 
 #endif
                 // build a subrange view identical
-                ct_type ct( *fusion::at_c<i>( *_M_containersOffProcess ),
+                ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
                             ublas::range( 0, space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->dof() );
+                            M_functionspace->template functionSpace<i>()->dof() );
 
                 DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                 DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
@@ -2771,10 +2771,10 @@ public:
         typename mpl::at_c<element_vector_type,i>::type
         element( std::string const& name ="u", bool updateOffViews=true ) const
         {
-            size_type nbdof_start =  fusion::accumulate( _M_functionspace->functionSpaces(),
+            size_type nbdof_start =  fusion::accumulate( M_functionspace->functionSpaces(),
                                      size_type( 0 ),
                                      detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
-            typename mpl::at_c<functionspace_vector_type,i>::type space( _M_functionspace->template functionSpace<i>() );
+            typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
 
             DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
             DVLOG(2) << "Element <" << i << ">::size :  "<<  space->nDof()<< "\n";
@@ -2785,19 +2785,19 @@ public:
             {
                 ct_type ct( const_cast<VectorUblas<value_type>&>( dynamic_cast<VectorUblas<value_type> const&>( *this ) ),
                             ublas::range( nbdof_start, nbdof_start+space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->dof() );
+                            M_functionspace->template functionSpace<i>()->dof() );
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
-                // update _M_containersOffProcess<i> : send
+                // update M_containersOffProcess<i> : send
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
                     std::vector<double> dataToSend( space->nLocalDof() );
                     std::copy( ct.begin(), ct.end(), dataToSend.begin() );
 
-                    if ( !_M_containersOffProcess ) _M_containersOffProcess = boost::in_place();
+                    if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
 
-                    fusion::for_each( *_M_containersOffProcess, detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
+                    fusion::for_each( *M_containersOffProcess, detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
                 }
 
 #endif
@@ -2811,18 +2811,18 @@ public:
             {
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
-                // update _M_containersOffProcess<i> : recv
+                // update M_containersOffProcess<i> : recv
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
-                    fusion::for_each( *_M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
+                    fusion::for_each( *M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
                 }
 
 #endif
 
                 // build a subrange view identical
-                ct_type ct( *fusion::at_c<i>( *_M_containersOffProcess ),
+                ct_type ct( *fusion::at_c<i>( *M_containersOffProcess ),
                             ublas::range( 0, space->nLocalDof() ),
-                            _M_functionspace->template functionSpace<i>()->dof() );
+                            M_functionspace->template functionSpace<i>()->dof() );
 
                 DVLOG(2) << "Element <" << i << ">::range.size :  "<<  ct.size()<< "\n";
                 DVLOG(2) << "Element <" << i << ">::range.start :  "<<  ct.start()<< "\n";
@@ -2836,7 +2836,7 @@ public:
          */
         component_functionspace_ptrtype const& compSpace() const
         {
-            return _M_functionspace->compSpace();
+            return M_functionspace->compSpace();
         }
 
         /**
@@ -2844,7 +2844,7 @@ public:
          */
         std::vector<WorldComm> const& worldsComm() const
         {
-            return _M_functionspace->worldsComm();
+            return M_functionspace->worldsComm();
         }
 
         /**
@@ -2852,7 +2852,7 @@ public:
          */
         WorldComm const& worldComm() const
         {
-            return _M_functionspace->worldComm();
+            return M_functionspace->worldComm();
         }
 
         /**
@@ -2860,7 +2860,7 @@ public:
          */
         size_type nDof() const
         {
-            return _M_functionspace->nDof();
+            return M_functionspace->nDof();
         }
 
         /**
@@ -2868,7 +2868,7 @@ public:
          */
         size_type nLocalDof() const
         {
-            return _M_functionspace->nLocalDof();
+            return M_functionspace->nLocalDof();
         }
 
         /**
@@ -2876,7 +2876,7 @@ public:
         */
         size_type nDofPerComponent() const
         {
-            return _M_functionspace->nDofPerComponent();
+            return M_functionspace->nDofPerComponent();
         }
 
         /**
@@ -2884,29 +2884,29 @@ public:
         */
         std::string const& name() const
         {
-            return _M_name;
+            return M_name;
         }
 
         size_type start() const
         {
-            return _M_start;
+            return M_start;
         }
 
         bool isAComponent() const
         {
-            return _M_ct >= X && _M_ct <= Z;
+            return M_ct >= X && M_ct <= Z;
         }
 
         ComponentType component() const
         {
-            if (  _M_ct < X || _M_ct > Z )
+            if (  M_ct < X || M_ct > Z )
             {
                 std::ostringstream __str;
-                __str << "invalid component extraction (should be 0 or 1 or 2): " << _M_ct;
+                __str << "invalid component extraction (should be 0 or 1 or 2): " << M_ct;
                 throw std::logic_error( __str.str() );
             }
 
-            return _M_ct;
+            return M_ct;
         }
 
         std::string componentToString( ComponentType ct ) const
@@ -2948,14 +2948,14 @@ public:
          */
         void setName( std::string const & __name )
         {
-            _M_name = __name;
+            M_name = __name;
         }
 
         void setFunctionSpace( functionspace_ptrtype space )
         {
-            _M_functionspace = space;
-            super::init( _M_functionspace->dof() );
-            //super::init( _M_functionspace->nDof(),  _M_functionspace->nLocalDof() );
+            M_functionspace = space;
+            super::init( M_functionspace->dof() );
+            //super::init( M_functionspace->nDof(),  M_functionspace->nLocalDof() );
         }
 
         BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
@@ -2977,7 +2977,7 @@ public:
             }
 
             std::ostringstream os1;
-            os1 << _M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            os1 << M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
             LOG(INFO) << "saving "  << p << "\n";
             fs::ofstream ofs( p );
@@ -3015,7 +3015,7 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( args );
             std::ostringstream os1;
-            os1 << _M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+            os1 << M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
             fs::path p = fs::path( path ) / os1.str();
             fs::path partial_path = fs::path(path);
 
@@ -3025,7 +3025,7 @@ public:
             if ( !fs::exists( p ) )
             {
                 std::ostringstream os2;
-                os2 << _M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
+                os2 << M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
                 p = fs::path( path ) / os2.str();
 
                 if ( !fs::exists( p ) )
@@ -3089,8 +3089,8 @@ public:
         void serialize( Archive & ar, const unsigned int version )
         {
             //ar & BOOST_SERIALIZATION_NVP( boost::serialization::base_object<super>(*this) );
-            ar & boost::serialization::make_nvp( "name", _M_name );
-            DVLOG(2) << "got name " << _M_name << "\n";
+            ar & boost::serialization::make_nvp( "name", M_name );
+            DVLOG(2) << "got name " << M_name << "\n";
 
             if ( Archive::is_saving::value )
             {
@@ -3098,9 +3098,9 @@ public:
                 size_type s = this->functionSpace()->nLocalDofWithGhost();
                 ar & boost::serialization::make_nvp( "size", s );
 
-                std::vector<int> no = _M_functionspace->basisOrder();
+                std::vector<int> no = M_functionspace->basisOrder();
                 //for( int i = 0; i < no.size(); ++i ) std::cout << no[i] << std::endl;
-                std::string family = _M_functionspace->basisName();
+                std::string family = M_functionspace->basisName();
                 //std::cout << "family name = " << family << std::endl;
 
                 ar & boost::serialization::make_nvp( "order",  no );
@@ -3145,12 +3145,12 @@ public:
                 ar & boost::serialization::make_nvp( "family", family );
                 //std::cout << "family name = " << family << std::endl;
 #if 0
-                auto orders = _M_functionspace->basisOrder();
+                auto orders = M_functionspace->basisOrder();
 
                 if ( order !=  orders )
                     throw std::logic_error( ( boost::format( "load function: invalid polynomial order, read %1% but has %2%" ) % order % orders ).str() );
 
-                std::string bname = _M_functionspace->basisName();
+                std::string bname = M_functionspace->basisName();
 
                 if ( family !=  bname )
                     throw std::logic_error( ( boost::format( "load function: invalid polynomial family, read %1% but has %2%" ) % family % bname ).str() );
@@ -3177,17 +3177,17 @@ public:
         /**
            Finite Element space
         */
-        functionspace_ptrtype _M_functionspace;
+        functionspace_ptrtype M_functionspace;
 
-        std::string _M_name;
+        std::string M_name;
 
-        size_type _M_start;
+        size_type M_start;
 
         //! type of the component
-        ComponentType _M_ct;
+        ComponentType M_ct;
 
         // only init in // with composite case : ex p = U.element<1>()
-        mutable boost::optional<container_vector_type> _M_containersOffProcess;
+        mutable boost::optional<container_vector_type> M_containersOffProcess;
 
     }; // Element
 
@@ -3217,8 +3217,8 @@ public:
                    periodicity_type  periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
         :
-        _M_worldsComm( _worldsComm ),
-        _M_worldComm( new WorldComm( _worldsComm[0] ) )
+        M_worldsComm( _worldsComm ),
+        M_worldComm( new WorldComm( _worldsComm[0] ) )
     {
         this->init( mesh, mesh_components, periodicity );
     }
@@ -3228,8 +3228,8 @@ public:
                    periodicity_type periodicity = periodicity_type(),
                    std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
         :
-        _M_worldsComm( _worldsComm ),
-        _M_worldComm( new WorldComm( _worldsComm[0] ) )
+        M_worldsComm( _worldsComm ),
+        M_worldComm( new WorldComm( _worldsComm[0] ) )
     {
         this->init( mesh, 0, dofindices, periodicity );
     }
@@ -3333,28 +3333,28 @@ public:
     //! destructor: do nothing thanks to shared_ptr<>
     ~FunctionSpace()
         {
-            _M_dof.reset();
-            _M_dofOnOff.reset();
-            _M_ref_fe.reset();
+            M_dof.reset();
+            M_dofOnOff.reset();
+            M_ref_fe.reset();
         }
 
 
     void setWorldsComm( std::vector<WorldComm> const& _worldsComm )
     {
-        _M_worldsComm=_worldsComm;
+        M_worldsComm=_worldsComm;
     };
     void setWorldComm( WorldComm const& _worldComm )
     {
-        _M_worldComm.reset( new WorldComm( _worldComm ) );
+        M_worldComm.reset( new WorldComm( _worldComm ) );
     };
 
     std::vector<WorldComm> const& worldsComm() const
     {
-        return _M_worldsComm;
+        return M_worldsComm;
     };
     WorldComm const& worldComm() const
     {
-        return *_M_worldComm;
+        return *M_worldComm;
     };
 
     bool hasEntriesForAllSpaces()
@@ -3520,7 +3520,7 @@ public:
     */
     mesh_ptrtype& mesh()
     {
-        return _M_mesh;
+        return M_mesh;
     }
 
     /**
@@ -3528,7 +3528,7 @@ public:
     */
     mesh_ptrtype const& mesh() const
     {
-        return _M_mesh;
+        return M_mesh;
     }
 
     template<int i>
@@ -3541,13 +3541,13 @@ public:
     typename GetMesh<mesh_ptrtype,i>::type
     mesh( mpl::bool_<true> ) const
     {
-        return _M_mesh;
+        return M_mesh;
     }
     template<int i>
     typename GetMesh<mesh_ptrtype,i>::type
     mesh( mpl::bool_<false> ) const
     {
-        return fusion::at_c<i>(_M_mesh);
+        return fusion::at_c<i>(M_mesh);
     }
 
     /**
@@ -3555,7 +3555,7 @@ public:
     */
     basis_ptrtype const& basis() const
     {
-        return _M_ref_fe;
+        return M_ref_fe;
     }
 
     /**
@@ -3603,7 +3603,7 @@ public:
     */
     reference_element_ptrtype const& fe() const
     {
-        return _M_ref_fe;
+        return M_ref_fe;
     }
 
     /**
@@ -3611,7 +3611,7 @@ public:
     */
     gm_ptrtype const& gm() const
     {
-        return _M_mesh->gm();
+        return M_mesh->gm();
     }
 
     /**
@@ -3619,7 +3619,7 @@ public:
     */
     gm1_ptrtype const& gm1() const
     {
-        return _M_mesh->gm1();
+        return M_mesh->gm1();
     }
 
     /**
@@ -3627,7 +3627,7 @@ public:
     */
     DataMap const& map() const
     {
-        return *_M_dof;
+        return *M_dof;
     }
 
     /**
@@ -3635,7 +3635,7 @@ public:
     */
     DataMap const& mapOn() const
     {
-        return *_M_dof;
+        return *M_dof;
     }
 
     /**
@@ -3643,7 +3643,7 @@ public:
     */
     DataMap const& mapOnOff() const
     {
-        return *_M_dofOnOff;
+        return *M_dofOnOff;
     }
 
     /**
@@ -3651,7 +3651,7 @@ public:
     */
     dof_ptrtype dof()
     {
-        return _M_dof;
+        return M_dof;
     }
 
     /**
@@ -3659,7 +3659,7 @@ public:
     */
     dof_ptrtype dofOn()
     {
-        return _M_dof;
+        return M_dof;
     }
 
     /**
@@ -3667,7 +3667,7 @@ public:
     */
     dof_ptrtype dofOnOff()
     {
-        return _M_dofOnOff;
+        return M_dofOnOff;
     }
 
     /**
@@ -3675,7 +3675,7 @@ public:
     */
     dof_ptrtype const& dof() const
     {
-        return _M_dof;
+        return M_dof;
     }
 
     /**
@@ -3683,7 +3683,7 @@ public:
     */
     dof_ptrtype const& dofOn() const
     {
-        return _M_dof;
+        return M_dof;
     }
 
     /**
@@ -3691,19 +3691,19 @@ public:
     */
     dof_ptrtype const& dofOnOff() const
     {
-        return _M_dofOnOff;
+        return M_dofOnOff;
     }
 
     /**
      * get the \c FunctionSpace vector
      */
     //functionspace_vector_type const&
-    //functionSpaces() const { return _M_functionspaces; }
+    //functionSpaces() const { return M_functionspaces; }
 
     functionspace_vector_type const&
     functionSpaces() const
     {
-        return _M_functionspaces;
+        return M_functionspaces;
     }
 
     std::vector<std::vector<size_type> > dofIndexSplit()
@@ -3793,7 +3793,7 @@ public:
     typename mpl::at_c<functionspace_vector_type,i>::type
     functionSpace()
     {
-        return fusion::at_c<i>( _M_functionspaces );
+        return fusion::at_c<i>( M_functionspaces );
     }
 
     /**
@@ -3802,7 +3802,7 @@ public:
      */
     component_functionspace_ptrtype const& compSpace() const
     {
-        return _M_comp_space;
+        return M_comp_space;
     }
 
     /**
@@ -3844,7 +3844,7 @@ public:
     */
     bool hasRegionTree() const
     {
-        return _M_rt;
+        return M_rt;
     }
 
     /**
@@ -3899,14 +3899,14 @@ public:
 
     FunctionSpace( FunctionSpace const& __fe )
         :
-        _M_worldsComm( __fe._M_worldsComm ),
-        _M_worldComm( __fe._M_worldComm ),
-        _M_mesh( __fe._M_mesh ),
-        _M_ref_fe( __fe._M_ref_fe ),
-        _M_comp_space( __fe._M_comp_space ),
-        _M_dof( __fe._M_dof ),
-        _M_dofOnOff( __fe._M_dofOnOff ),
-        _M_rt( __fe._M_rt )
+        M_worldsComm( __fe.M_worldsComm ),
+        M_worldComm( __fe.M_worldComm ),
+        M_mesh( __fe.M_mesh ),
+        M_ref_fe( __fe.M_ref_fe ),
+        M_comp_space( __fe.M_comp_space ),
+        M_dof( __fe.M_dof ),
+        M_dofOnOff( __fe.M_dofOnOff ),
+        M_rt( __fe.M_rt )
     {
         DVLOG(2) << "copying FunctionSpace\n";
     }
@@ -3960,8 +3960,8 @@ private:
         ComponentSpace( FunctionSpace<A0,A1,A2,A3,A4> * __functionspace,
                         mesh_ptrtype __m )
             :
-            _M_functionspace( __functionspace ),
-            _M_mesh( __m )
+            M_functionspace( __functionspace ),
+            M_mesh( __m )
         {}
         component_functionspace_ptrtype operator()()
         {
@@ -3970,18 +3970,18 @@ private:
         component_functionspace_ptrtype operator()( mpl::bool_<true> )
         {
             FEELPP_ASSERT( 0 ).error( "invalid call for component space extraction" );
-            //return _M_functionspace;
+            //return M_functionspace;
             return component_functionspace_ptrtype();
         }
         component_functionspace_ptrtype operator()( mpl::bool_<false> )
         {
-            return component_functionspace_type::New( _M_mesh );
+            return component_functionspace_type::New( M_mesh );
         }
 
     private:
 
-        FunctionSpace<A0,A1,A2,A3,A4> * _M_functionspace;
-        mesh_ptrtype _M_mesh;
+        FunctionSpace<A0,A1,A2,A3,A4> * M_functionspace;
+        mesh_ptrtype M_mesh;
     };
 
 #if 0
@@ -3999,34 +3999,34 @@ protected:
     //friend class FunctionSpace<mesh_type, typename bases_list::component_basis_type, value_type>;
     //friend class FunctionSpace<mesh_type, bases_list, value_type>;
 
-    std::vector<WorldComm> _M_worldsComm;
-    boost::shared_ptr<WorldComm> _M_worldComm;
+    std::vector<WorldComm> M_worldsComm;
+    boost::shared_ptr<WorldComm> M_worldComm;
 
     // finite element mesh
-    mesh_ptrtype _M_mesh;
+    mesh_ptrtype M_mesh;
 
     //! finite element reference type
-    reference_element_ptrtype _M_ref_fe;
+    reference_element_ptrtype M_ref_fe;
 
     //! component fe space
-    component_functionspace_ptrtype _M_comp_space;
+    component_functionspace_ptrtype M_comp_space;
 
     //! Degrees of freedom
-    dof_ptrtype _M_dof;
+    dof_ptrtype M_dof;
 
     //! Degrees of freedom (only init wiht mpi)
-    dof_ptrtype _M_dofOnOff;
+    dof_ptrtype M_dofOnOff;
 
     /** region tree associated with the mesh */
-    mutable boost::optional<region_tree_ptrtype> _M_rt;
+    mutable boost::optional<region_tree_ptrtype> M_rt;
 
-    //mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, real_type, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, real_type> > > _M_prof_find_points;
+    //mutable boost::prof::basic_profiler<boost::prof::basic_profile_manager<std::string, real_type, boost::high_resolution_timer, boost::prof::empty_logging_policy, boost::prof::default_stats_policy<std::string, real_type> > > M_prof_find_points;
 private:
 
     //! disable default constructor
     FunctionSpace();
 
-    functionspace_vector_type _M_functionspaces;
+    functionspace_vector_type M_functionspaces;
 
     proc_dist_map_type procDistMap;
 #if 0
@@ -4060,7 +4060,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 {
     DVLOG(2) << "calling init(<space>) begin\n";
     DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
-    _M_mesh = __m;
+    M_mesh = __m;
 
 
     if ( basis_type::nDofPerEdge || nDim >= 3 )
@@ -4074,33 +4074,33 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     if ( basis_type::nDofPerFace || is_continuous  || nDim >= 3 )
         mesh_components |= MESH_UPDATE_FACES;
 
-    _M_mesh->components().set( mesh_components );
+    M_mesh->components().set( mesh_components );
 
-    _M_mesh->updateForUse();
+    M_mesh->updateForUse();
 
     if ( is_periodic )
     {
-        _M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
+        M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
     }
 
-    _M_ref_fe = basis_ptrtype( new basis_type );
+    M_ref_fe = basis_ptrtype( new basis_type );
 
-    _M_dof = dof_ptrtype( new dof_type( _M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] ) );
+    M_dof = dof_ptrtype( new dof_type( M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] ) );
 
     DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
-    _M_dof->setDofIndices( dofindices );
+    M_dof->setDofIndices( dofindices );
     DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
 
-    _M_dof->build( _M_mesh );
+    M_dof->build( M_mesh );
 
-    _M_dofOnOff = _M_dof;
+    M_dofOnOff = M_dof;
 
     if ( is_vectorial )
     {
         // Warning: this works regarding the communicator . for the component space
         // it will use in mixed spaces only numberofSudomains/numberofspace processors
         //
-        _M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( _M_mesh,
+        M_comp_space = component_functionspace_ptrtype( new component_functionspace_type( M_mesh,
                                                                                            MESH_COMPONENTS_DEFAULTS,
                                                                                            periodicity,
                                                                                            std::vector<WorldComm>( 1,this->worldsComm()[0] ) ) );
@@ -4112,9 +4112,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     if ( is_vectorial )
     {
-        DVLOG(2) << "component space :: nb dim : " << _M_comp_space->qDim() << "\n";
-        DVLOG(2) << "component space :: nb dof : " << _M_comp_space->nDof() << "\n";
-        DVLOG(2) << "component space :: nb dof per component: " << _M_comp_space->nDofPerComponent() << "\n";
+        DVLOG(2) << "component space :: nb dim : " << M_comp_space->qDim() << "\n";
+        DVLOG(2) << "component space :: nb dof : " << M_comp_space->nDof() << "\n";
+        DVLOG(2) << "component space :: nb dof per component: " << M_comp_space->nDofPerComponent() << "\n";
     }
 
     //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
@@ -4132,22 +4132,22 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          mpl::bool_<true> )
 {
     DVLOG(2) << "calling init(<composite>) begin\n";
-    _M_mesh = __m;
+    M_mesh = __m;
 
-    // todo : check worldsComm size and _M_functionspaces are the same!
-    fusion::for_each( _M_functionspaces, detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
+    // todo : check worldsComm size and M_functionspaces are the same!
+    fusion::for_each( M_functionspaces, detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
                                                                                                  dofindices, this->worldsComm() ) );
 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-    _M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
+    M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
     DVLOG(2) << "calling nDof(<composite>)" << this->nDof() << "\n";
     DVLOG(2) << "calling init(<composite>) end\n";
 
     proc_dist_map_type emptyMap;
-    procDistMap = fusion::accumulate( _M_functionspaces,
+    procDistMap = fusion::accumulate( M_functionspaces,
                                       emptyMap,
                                       detail::searchIndicesBySpace<proc_dist_map_type>() );
-    _M_dofOnOff = _M_dof;
+    M_dofOnOff = M_dof;
 #else // new version with MPI
 
     if ( this->worldComm().globalSize()>1 )
@@ -4180,11 +4180,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                                                                  nLocalDofWithoutGhostWorld,
                                                                                  nLocalDofWithGhostWorld
                                                                                  );
-                fusion::for_each( _M_functionspaces, dofInitTool );
+                fusion::for_each( M_functionspaces, dofInitTool );
                 // finish update datamap
-                _M_dof = dofInitTool.dataMap();
-                _M_dof->setNDof( this->nDof() );
-                _M_dofOnOff = _M_dof;
+                M_dof = dofInitTool.dataMap();
+                M_dof->setNDof( this->nDof() );
+                M_dofOnOff = M_dof;
             }
         else
             {
@@ -4206,14 +4206,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
                 // update DofTable for the mixedSpace (we have 2 dofTables : On and OnOff)
                 auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
-                fusion::for_each( _M_functionspaces, dofInitTool );
+                fusion::for_each( M_functionspaces, dofInitTool );
                 // finish update datamap
-                _M_dof = dofInitTool.dataMap();
-                _M_dof->setNDof( this->nDof() );
-                _M_dof->updateDataInWorld();
-                _M_dofOnOff = dofInitTool.dataMapOnOff();
-                _M_dofOnOff->setNDof( this->nDof() );
-                _M_dofOnOff->updateDataInWorld();
+                M_dof = dofInitTool.dataMap();
+                M_dof->setNDof( this->nDof() );
+                M_dof->updateDataInWorld();
+                M_dofOnOff = dofInitTool.dataMapOnOff();
+                M_dofOnOff->setNDof( this->nDof() );
+                M_dofOnOff->updateDataInWorld();
             }
     }
 
@@ -4221,11 +4221,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     {
         // update DofTable for the mixedSpace (here On is not build properly but OnOff yes and On=OnOff, see detail::updateDataMapProcess)
         auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), this->worldComm(), this->nSubFunctionSpace()-1 );
-        fusion::for_each( _M_functionspaces, dofInitTool );
-        _M_dof = dofInitTool.dataMapOnOff();
-        _M_dof->setNDof( this->nDof() );
-        _M_dofOnOff = dofInitTool.dataMapOnOff();
-        _M_dofOnOff->setNDof( this->nDof() );
+        fusion::for_each( M_functionspaces, dofInitTool );
+        M_dof = dofInitTool.dataMapOnOff();
+        M_dof->setNDof( this->nDof() );
+        M_dofOnOff = dofInitTool.dataMapOnOff();
+        M_dofOnOff->setNDof( this->nDof() );
     }
 
 #endif
@@ -4236,7 +4236,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NbDof() );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NbDof() );
     DVLOG(2) << "calling nDof(<composite>) end\n";
     return ndof;
 }
@@ -4245,7 +4245,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<false> ) const
 {
-    return _M_dof->nDof();
+    return M_dof->nDof();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4253,7 +4253,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4262,8 +4262,8 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<false> ) const
 {
-    //return _M_dof->nLocalDof();
-    return _M_dof->nLocalDofWithGhost();
+    //return M_dof->nLocalDof();
+    return M_dof->nLocalDofWithGhost();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4271,7 +4271,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4280,7 +4280,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<false> ) const
 {
-    return _M_dof->nLocalDofWithGhost();
+    return M_dof->nLocalDofWithGhost();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4288,7 +4288,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4297,7 +4297,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const
 {
-    return _M_dof->nLocalDofWithGhost(proc);
+    return M_dof->nLocalDofWithGhost(proc);
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4305,7 +4305,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >( this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >( this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4314,7 +4314,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<false> ) const
 {
-    return _M_dof->nLocalDofWithoutGhost();
+    return M_dof->nLocalDofWithoutGhost();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4322,7 +4322,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( _M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4331,21 +4331,21 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const
 {
-    return _M_dof->nLocalDofWithoutGhost(proc);
+    return M_dof->nLocalDofWithoutGhost(proc);
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<false> )
 {
-    _M_dof->rebuildDofPoints( *_M_mesh );
+    M_dof->rebuildDofPoints( *M_mesh );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<true> )
 {
-    fusion::for_each( _M_functionspaces, detail::rebuildDofPointsTool() );
+    fusion::for_each( M_functionspaces, detail::rebuildDofPointsTool() );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4357,11 +4357,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateRegionTree() const
     region_tree_ptrtype __rt( new region_tree_type );
 
     __rt->clear();
-    BoundingBox<> __bb( _M_mesh->gm()->isLinear() );
+    BoundingBox<> __bb( M_mesh->gm()->isLinear() );
 
     typedef typename mesh_type::element_iterator mesh_element_iterator;
-    mesh_element_iterator it = _M_mesh->beginElementWithProcessId( _M_mesh->comm().rank() );
-    mesh_element_iterator en = _M_mesh->endElementWithProcessId( _M_mesh->comm().rank() );
+    mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
+    mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
 
     for ( size_type __i = 0; it != en; ++__i, ++it )
     {
@@ -4377,25 +4377,25 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateRegionTree() const
     }
 
     //__rt->dump();
-    _M_rt = __rt;
+    M_rt = __rt;
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 region_tree_ptrtype const&
 FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
 {
-    if ( !_M_rt )
+    if ( !M_rt )
     {
         scalar_type EPS=1E-13;
 
         region_tree_ptrtype __rt( new region_tree_type );
 
         __rt->clear();
-        BoundingBox<> __bb( _M_mesh->gm()->isLinear() );
+        BoundingBox<> __bb( M_mesh->gm()->isLinear() );
 
         typedef typename mesh_type::element_iterator mesh_element_iterator;
-        mesh_element_iterator it = _M_mesh->beginElementWithProcessId( _M_mesh->comm().rank() );
-        mesh_element_iterator en = _M_mesh->endElementWithProcessId( _M_mesh->comm().rank() );
+        mesh_element_iterator it = M_mesh->beginElementWithProcessId( M_mesh->comm().rank() );
+        mesh_element_iterator en = M_mesh->endElementWithProcessId( M_mesh->comm().rank() );
 
         for ( size_type __i = 0; it != en; ++__i, ++it )
         {
@@ -4411,10 +4411,10 @@ FunctionSpace<A0, A1, A2, A3, A4>::regionTree() const
         }
 
         //__rt->dump();
-        _M_rt = __rt;
+        M_rt = __rt;
     }
 
-    return _M_rt.get();
+    return M_rt.get();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4424,9 +4424,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
     if ( !hasRegionTree() )
         regionTree();
 
-    //_M_prof_find_points.resume();
+    //M_prof_find_points.resume();
 
-    region_tree_type* __rt = _M_rt.get().get();
+    region_tree_type* __rt = M_rt.get().get();
 
     region_tree_type::pbox_set_type boxlst;
     __rt->findBoxesAtPoint( pt, boxlst );
@@ -4441,7 +4441,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
     for ( ; it != ite; ++it )
     {
-        inv_trans_type __git( _M_mesh->gm(), _M_mesh->element( ( *it )->id ), this->worldComm().subWorldCommSeq() );
+        inv_trans_type __git( M_mesh->gm(), M_mesh->element( ( *it )->id ), this->worldComm().subWorldCommSeq() );
 
         size_type cv_stored = ( *it )->id;
 
@@ -4464,13 +4464,13 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
             DVLOG(2) << "[FunctionSpace::findPoint] id of the convex where " << pt << " belongs : " << cv_stored << "\n";
             DVLOG(2) << "[FunctionSpace::findPoint] ref coordinate: " << ptr << "\n";
             cv = ( *it )->id;
-            //_M_prof_find_points.pause();
+            //M_prof_find_points.pause();
             return true;
         }
     }
 
     cv=closest.first;
-    //_M_prof_find_points.pause();
+    //M_prof_find_points.pause();
     return false;
 }
 
@@ -4482,9 +4482,9 @@ template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element()
     :
     super(),
-    _M_start( 0 ),
-    _M_ct( NO_COMPONENT ),
-    _M_containersOffProcess( boost::none )
+    M_start( 0 ),
+    M_ct( NO_COMPONENT ),
+    M_containersOffProcess( boost::none )
 {}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4492,11 +4492,11 @@ template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( Element const& __e )
     :
     super( __e ),
-    _M_functionspace( __e._M_functionspace ),
-    _M_name( __e._M_name ),
-    _M_start( __e._M_start ),
-    _M_ct( __e._M_ct ),
-    _M_containersOffProcess( __e._M_containersOffProcess )
+    M_functionspace( __e.M_functionspace ),
+    M_name( __e.M_name ),
+    M_start( __e.M_start ),
+    M_ct( __e.M_ct ),
+    M_containersOffProcess( __e.M_containersOffProcess )
 {
     DVLOG(2) << "Element<copy>::range::start = " << this->start() << "\n";
     DVLOG(2) << "Element<copy>::range::size = " << this->size() << "\n";
@@ -4511,11 +4511,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
         ComponentType __ct )
     :
     super( __functionspace->dof() ),
-    _M_functionspace( __functionspace ),
-    _M_name( __name ),
-    _M_start( __start ),
-    _M_ct( __ct ),
-    _M_containersOffProcess( boost::none )
+    M_functionspace( __functionspace ),
+    M_name( __name ),
+    M_start( __start ),
+    M_ct( __ct ),
+    M_containersOffProcess( boost::none )
 {
     DVLOG(2) << "Element::start = " << this->start() << "\n";
     DVLOG(2) << "Element::size = " << this->size() << "\n";
@@ -4532,11 +4532,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
         ComponentType __ct )
     :
     super( __c ),
-    _M_functionspace( __functionspace ),
-    _M_name( __name ),
-    _M_start( __start ),
-    _M_ct( __ct ),
-    _M_containersOffProcess( boost::none )
+    M_functionspace( __functionspace ),
+    M_name( __name ),
+    M_start( __start ),
+    M_ct( __ct ),
+    M_containersOffProcess( boost::none )
 {
     DVLOG(2) << "Element<range>::range::start = " << __c.start() << "\n";
     DVLOG(2) << "Element<range>::range::size = " << __c.size() << "\n";
@@ -4544,7 +4544,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
     DVLOG(2) << "Element<range>::size = " << this->size() << "\n";
     DVLOG(2) << "Element<range>::ndof = " << this->nDof() << "\n";
     DVLOG(2) << "Element<range>::nlocaldof = " << this->nLocalDof() << "\n";
-    _M_start = __c.start();
+    M_start = __c.start();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4558,7 +4558,7 @@ void
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::initFromSpace( functionspace_ptrtype const& __functionspace,
         container_type const& __c )
 {
-    _M_functionspace = __functionspace;
+    M_functionspace = __functionspace;
     ( container_type )*this = __c;
 }
 
@@ -4569,15 +4569,15 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator=( Element<Y,Cont> c
 {
     if (  this != &__e )
     {
-        _M_functionspace = __e._M_functionspace;
+        M_functionspace = __e.M_functionspace;
 
-        if ( __e._M_name != "unknown" )
-            _M_name = __e._M_name;
+        if ( __e.M_name != "unknown" )
+            M_name = __e.M_name;
 
-        _M_start = __e._M_start;
-        _M_ct = __e._M_ct;
-        _M_containersOffProcess = __e._M_containersOffProcess;
-        this->resize( _M_functionspace->nLocalDof() );
+        M_start = __e.M_start;
+        M_ct = __e.M_ct;
+        M_containersOffProcess = __e.M_containersOffProcess;
+        this->resize( M_functionspace->nLocalDof() );
         super::operator=( __e );
         this->outdateGlobalValues();
     }
@@ -4751,7 +4751,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
         for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
         {
             typename array_type::index ldof = basis_type::nDof*c1+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             //std::cout << "ldof = " << ldof << "\n";
             //std::cout << "gdof = " << gdof << "\n";
 
@@ -5010,7 +5010,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5184,7 +5184,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5219,7 +5219,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5350,7 +5350,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5410,7 +5410,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -5829,7 +5829,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -6112,7 +6112,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( _M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )

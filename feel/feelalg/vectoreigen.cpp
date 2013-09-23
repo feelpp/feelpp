@@ -50,7 +50,7 @@ template <typename T>
 VectorEigen<T>::VectorEigen()
     :
     super1(),
-    _M_vec()
+    M_vec()
 {
 }
 
@@ -67,7 +67,7 @@ template <typename T>
 VectorEigen<T>::VectorEigen( datamap_ptrtype const& dm )
     :
     super1( dm ),
-    _M_vec( dm->nDof() )
+    M_vec( dm->nDof() )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
     this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
@@ -86,7 +86,7 @@ template <typename T>
 VectorEigen<T>::VectorEigen( VectorEigen const & m )
     :
     super1( m ),
-    _M_vec( m._M_vec )
+    M_vec( m.M_vec )
 {
     DVLOG(2) << "[VectorEigen] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
     DVLOG(2) << "[VectorEigen] copy constructor with range: size:" << this->vec().size() << "\n";
@@ -109,7 +109,7 @@ template <typename T>
 void
 VectorEigen<T>::resize( size_type s, bool preserve )
 {
-    _M_vec.conservativeResize( s );
+    M_vec.conservativeResize( s );
 }
 
 template <typename T>
@@ -133,8 +133,8 @@ VectorEigen<T>::operator= ( const Vector<value_type> &V )
 
     for ( size_type i = 0; i < this->localSize(); ++i )
     {
-        _M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
-        //_M_vec.operator()( i ) = V(  i );
+        M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
+        //M_vec.operator()( i ) = V(  i );
 
     }
 
@@ -159,7 +159,7 @@ VectorEigen<T>::init ( const size_type n,
     super1::init( n, n_local, fast );
 
     // Initialize data structures
-    _M_vec.resize( this->localSize() );
+    M_vec.resize( this->localSize() );
 
     // Set the initialized flag
     this->M_is_initialized = true;
@@ -199,7 +199,7 @@ template<typename T>
 void
 VectorEigen<T>::clear()
 {
-    _M_vec.resize( 0 );
+    M_vec.resize( 0 );
 }
 
 template<typename T>
@@ -284,7 +284,7 @@ VectorEigen<T>::localize ( Vector<T>& v_local_in ) const
 
     // Call localize on the vector's values.  This will help
     // prevent code duplication
-    localize ( v_local->_M_vec );
+    localize ( v_local->M_vec );
 
 #ifndef FEELPP_HAS_MPI
 
@@ -375,7 +375,7 @@ VectorEigen<T>::localize ( vector_type& v_local ) const
 
         for ( size_type i=0; i< this->localSize(); i++ )
         {
-            v_local_in[i+this->firstLocalIndex()] = _M_vec.operator[]( i );
+            v_local_in[i+this->firstLocalIndex()] = M_vec.operator[]( i );
         }
 
         MPI_Allreduce ( &v_local_in[0], &v_local[0], v_local.size(),
@@ -387,7 +387,7 @@ VectorEigen<T>::localize ( vector_type& v_local ) const
     else
     {
         FEELPP_ASSERT ( this->localSize() == this->size() )( this->localSize() )( this->size() ).error( "invalid size in non MPI mode" );
-        v_local = _M_vec;
+        v_local = M_vec;
     }
 
 #else
@@ -454,8 +454,8 @@ VectorEigen<T>::checkInvariant() const
     FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
     FEELPP_ASSERT ( this->localSize() <= this->size() )
     ( this->size() )( this->localSize() ).error( "vector invalid size" );
-    FEELPP_ASSERT ( _M_vec.size() == this->localSize() )
-    ( _M_vec.size() )( this->localSize() ).error( "vector invalid size" );
+    FEELPP_ASSERT ( M_vec.size() == this->localSize() )
+    ( M_vec.size() )( this->localSize() ).error( "vector invalid size" );
     FEELPP_ASSERT ( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() )
     ( this->size() )
     ( this->lastLocalIndex() )

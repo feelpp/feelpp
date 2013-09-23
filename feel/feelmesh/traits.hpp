@@ -96,10 +96,15 @@ struct MeshTraits
     typedef typename mesh_type::marker_edge_iterator marker_edge_iterator;
     typedef typename mesh_type::marker_edge_const_iterator marker_edge_const_iterator;
 
+    typedef typename mesh_type::location_edge_iterator location_edge_iterator;
+    typedef typename mesh_type::location_edge_const_iterator location_edge_const_iterator;
+
     // point iterators
     typedef typename mesh_type::point_iterator point_iterator;
     typedef typename mesh_type::point_const_iterator point_const_iterator;
 
+    typedef typename mesh_type::location_point_iterator location_point_iterator;
+    typedef typename mesh_type::location_point_const_iterator location_point_const_iterator;
     //@}
 };
 
