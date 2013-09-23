@@ -48,17 +48,10 @@ MatrixEigenDense<T>::MatrixEigenDense()
 template <typename T>
 MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, WorldComm const& worldComm )
     :
-<<<<<<< HEAD
     super(worldComm),
     _M_is_initialized( false ),
     _M_is_closed( false ),
     _M_mat( r, c )
-=======
-    super(),
-    M_is_initialized( false ),
-    M_is_closed( false ),
-    M_mat( r, c )
->>>>>>> feature/boundary
 {}
 
 template <typename T>
