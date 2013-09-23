@@ -70,7 +70,7 @@ template<int Dim, int Order, int RDim>
 createMesh( double hsize )
 {
   return createGMSHMesh( _mesh=new typename imesh<Dim, Order, RDim>::type,
-      _desc=domain( _name=( boost::format( "%1%-%2%" )  % "hypercube" % Dim ).str() ,
+      _desc=domain( _name=( boost::format( "%1%-%2%-%3%" )  % "hypercube" % Dim % Order ).str() ,
         _addmidpoint=false,
         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
         _shape="hypercube",
@@ -100,7 +100,8 @@ struct test_interpolation
     using namespace Feel;
     using namespace Feel::vf;
 
-    const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
+    std::cout << "Ordre géométrique = " << GeoOrder << std::endl;
+    const value_type eps = (GeoOrder == 1 ? 0.25*meshSize*meshSize : 1000*Feel::type_traits<value_type>::epsilon() );
 
     typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
@@ -137,6 +138,8 @@ struct test_interpolation
     double v1 = u( pt )( 0,0,0 );
     double v1_ex = 2-Dim*0.5*0.5;
 #if defined(USE_BOOST_TEST)
+    std::cout <<  "[test_interpolation] v1    = " << v1    << std::endl;
+    std::cout <<  "[test_interpolation] v1_ex = " << v1_ex << std::endl;
     BOOST_CHECK_SMALL( v1-v1_ex, eps );
 #else
     FEELPP_ASSERT( math::abs( v1-v1_ex ) < eps )( v1 )( math::abs( v1-v1_ex ) )( eps ).warn ( "v1 != v0_ex" );
@@ -145,6 +148,11 @@ struct test_interpolation
     double g_v1_x = gradient( 0,0,0 );
     double g_v1_ex_x = -2*0.5;
 #if defined(USE_BOOST_TEST)
+    std::cout << "[test_interpolation] g_v1_x    = " << g_v1_x    << std::endl; 
+    std::cout << "[test_interpolation] g_v1_ex_x = " << g_v1_ex_x << std::endl; 
+    if(GeoOrder == 1)
+    BOOST_CHECK_SMALL( g_v1_x-g_v1_ex_x, meshSize );
+    else
     BOOST_CHECK_SMALL( g_v1_x-g_v1_ex_x, eps );
 #else
     FEELPP_ASSERT( math::abs( g_v1_x-g_v1_ex_x ) < eps )( g_v1_x )( math::abs( g_v1_x-g_v1_ex_x ) )( eps ).warn ( "g_v1 != g_v1_ex" );
@@ -154,7 +162,10 @@ struct test_interpolation
     {
       double g_v1_y = gradient( 0,1,0 );
 #if defined(USE_BOOST_TEST)
-      BOOST_CHECK_SMALL( g_v1_y-g_v1_ex_x, eps );
+    if(GeoOrder == 1)
+    BOOST_CHECK_SMALL( g_v1_y-g_v1_ex_x, meshSize );
+    else
+    BOOST_CHECK_SMALL( g_v1_y-g_v1_ex_x, eps );
 #endif /* USE_BOOST_TEST */
     }
 
@@ -162,6 +173,9 @@ struct test_interpolation
     {
       double g_v1_z = gradient( 0,2,0 );
 #if defined(USE_BOOST_TEST)
+    if(GeoOrder == 1)
+    BOOST_CHECK_SMALL( g_v1_z-g_v1_ex_x, meshSize );
+    else
       BOOST_CHECK_SMALL( g_v1_z-g_v1_ex_x, eps );
 #endif /* USE_BOOST_TEST */
     }

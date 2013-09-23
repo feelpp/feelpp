@@ -33,7 +33,7 @@
 #include <boost/unordered_map.hpp>
 
 #include <boost/foreach.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -952,7 +952,7 @@ public:
                 itab[j++] = boost::make_tuple( it->first, it->second );
         }
 
-        const std::vector<node_type> &referenceCoords( void )
+        const boost::unordered_map<size_type,node_type> &referenceCoords( void )
         {
             return M_ref_coords;
         }
@@ -974,9 +974,9 @@ public:
         std::vector<std::map<size_type,uint16_type > > M_pts_cvx;
         typedef typename std::map<size_type, uint16_type >::const_iterator map_iterator;
         //typedef typename node<value_type>::type node_type;
-        std::vector<node_type> M_ref_coords;
-        std::vector<double> M_dist;
-        std::vector<size_type> M_cvx_pts;
+        boost::unordered_map<size_type,node_type> M_ref_coords;
+        boost::unordered_map<size_type,double> M_dist;
+        boost::unordered_map<size_type,size_type> M_cvx_pts;
 
     }; // Inverse
 
@@ -1270,7 +1270,7 @@ public:
     /**
      * mesh changed its connectivity
      */
-    boost::signal<void ( MESH_CHANGES )> meshChanged;
+    boost::signals2::signal<void ( MESH_CHANGES )> meshChanged;
 
     template<typename Observer>
     void addObserver( Observer& obs )

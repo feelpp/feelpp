@@ -407,11 +407,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // order, different basis) or if the image of domain mesh are related to
     // each other through an extraction (one of them is the sub mesh of the
     // other)
-#if 1
-    if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) )
-#else
-        if ( ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() ) )
-#endif
+    if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) &&
+         boost::is_same<domain_mesh_type,image_mesh_type>::type::value // warning TODO in this case
+         )
     {
         VLOG(2) << "OperatorInterpolation: use same mesh\n";
         VLOG(2) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
@@ -623,6 +621,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     else locTool->updateForUse();
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+    bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     //locTool->kdtree()->nbNearNeighbor(3);
     //locTool->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
@@ -675,6 +675,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
                                     //------------------------
                                     // localisation process
+                                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                                     eltIdLocalised = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::int_<interpolation_type::value>()).template get<1>();
                                     //------------------------
                                     // for each localised points
@@ -1030,7 +1031,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            auto const* imagedof = this->dualImageSpace()->dof().get();
            auto const* domaindof = this->domainSpace()->dof().get();
            auto const* domainbasis = this->domainSpace()->basis().get();
-           matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
+           matrix_node_type ptsRef( domain_mesh_type::nRealDim , 1 );
            matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
 
            // analysis result
@@ -1228,9 +1229,11 @@ OperatorInterpolation<DomainSpaceType,
     auto const* domainbasis = this->domainSpace()->basis().get();
 
     auto locTool = this->domainSpace()->mesh()->tool_localization();
+    bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
-    matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
+    matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
 
@@ -1258,6 +1261,7 @@ OperatorInterpolation<DomainSpaceType,
                         verticesOfEltSearched = eltRandom.vertices();
 
                     // localisation process
+                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,
                                                                  mpl::int_<interpolation_type::value>());
                     if (!resLocalisation.template get<0>()[0]) // not find
@@ -1363,6 +1367,7 @@ OperatorInterpolation<DomainSpaceType,
                         verticesOfEltSearched = eltRandom.vertices();
 
                     // localisation process
+                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                     auto resLocalisation = locTool->run_analysis(ptsReal, eltIdLocalised, verticesOfEltSearched, mpl::int_<interpolation_type::value>());
                     if (!resLocalisation.template get<0>()[0]) // not find
                         {
@@ -1471,8 +1476,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     // localisation tool with matrix node
     auto locTool = this->domainSpace()->mesh()->tool_localization();
+    bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
+
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
-    matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
+    matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
 
@@ -1667,6 +1675,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                             else // random
                                                 verticesOfEltSearched = eltRandom.vertices();
                                             // search process
+                                            if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                                             auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::value>());
                                             if (resLocalisation.template get<0>()[0]) // is find
                                                 {

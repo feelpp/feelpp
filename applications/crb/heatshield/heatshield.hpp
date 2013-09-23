@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-11-13
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -84,7 +84,7 @@ makeHeatShieldAbout( std::string const& str = "heatShield" )
                            "0.1",
                            "heat shield Benchmark",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2010,2011 Université de Grenoble 1 (Joseph Fourier)" );
+                           "Copyright (c) 2010,2011 Universite de Grenoble 1 (Joseph Fourier)" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
@@ -472,14 +472,33 @@ public:
     void exportResults( double time, element_type& T , parameter_type const& mu );
 
     /**
-     * H1 scalar product
+     * inner product
      */
     sparse_matrix_ptrtype innerProduct ( void )
     {
         return M;
     }
 
+    /**
+     * inner product for mass matrix
+     */
+    sparse_matrix_ptrtype innerProductForMassMatrix ( void )
+    {
+        return InnerMassMatrix;
+    }
+
     void solve( sparse_matrix_ptrtype& ,element_type& ,vector_ptrtype&  );
+
+     /**
+     * returns the scalar product used fior mass matrix ( to solve eigen values problem )
+     * of the boost::shared_ptr vector x and boost::shared_ptr vector
+     */
+    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y );
+
+    /**
+     * returns the scalar product for mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_type const& x, vector_type const& y );
 
     /**
      * returns the scalar product of the boost::shared_ptr vector x and
@@ -534,11 +553,17 @@ public:
         return M_compositeF;
     }
 
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
 private:
 
     po::variables_map M_vm;
 
     backend_ptrtype backend;
+    backend_ptrtype backendl2;
     bool M_is_steady ;
 
     /* mesh parameters */
@@ -556,7 +581,7 @@ private:
     mesh_ptrtype mesh;
     space_ptrtype Xh;
 
-    sparse_matrix_ptrtype D,M,Mpod;
+    sparse_matrix_ptrtype D,M,Mpod,InnerMassMatrix;
     vector_ptrtype F;
 
     element_ptrtype pT;
@@ -584,6 +609,7 @@ private:
 HeatShield::HeatShield()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
+    backendl2( backend_type::build( BACKEND_PETSC ) ),
     M_is_steady( false ),
     meshSize( 2e-1 ),
     export_number( 0 ),
@@ -595,6 +621,7 @@ HeatShield::HeatShield( po::variables_map const& vm )
     :
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
+    backendl2( backend_type::build( vm ) ),
     M_is_steady( vm["steady"].as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     export_number( 0 ),
@@ -744,8 +771,12 @@ void HeatShield::initModel()
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
+    PsLogger ps("ps-Model");
+    ps.log("after assemble");
     if (option(_name="crb.stock-matrices"). as<bool>() )
         stockAffineDecomposition();
+    ps.log("after stocking matrices");
+
 } // HeatShield::init
 
 
@@ -789,12 +820,24 @@ void HeatShield::assemble()
     //for scalarProduct
     M = backend->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, M ) =
-        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
+        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
+        integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
+        integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
+        ;
     M->close();
 
+    //scalar product used for mass matrix
+    InnerMassMatrix = backend->newMatrix( _test=Xh, _trial=Xh );
+    form2( Xh, Xh, InnerMassMatrix ) =
+        integrate( _range=elements( mesh ), _expr=idt( u ) * id( v ) ) ;
+
+    //scalar product used for the POD
     Mpod = backend->newMatrix( _test=Xh, _trial=Xh );
     form2( Xh, Xh, Mpod ) =
-        integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( v ) ) );
+        integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) ) +
+        integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
+        integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
+        ;
     Mpod->close();
 
     D = backend->newMatrix( Xh, Xh );
@@ -980,10 +1023,10 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
         F->zero();
 
         M_compositeA->setScalars( M_betaAqm );
-        D = M_compositeA->sumAllMatrices();
+        M_compositeA->sumAllMatrices( D );
 
         M_compositeF[output_index]->setScalars( M_betaFqm[output_index] );
-        F = M_compositeF[output_index]->sumAllVectors();
+        M_compositeF[output_index]->sumAllVectors( F );
 
         auto vec_bdf_poly = backend->newVector( Xh );
 
@@ -1068,7 +1111,7 @@ HeatShield::computeNumberOfSnapshots()
 void HeatShield::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backend->solve( _matrix=M,  _solution=u, _rhs=f );
+    backendl2->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 
@@ -1081,6 +1124,16 @@ double HeatShield::scalarProduct( vector_ptrtype const& x, vector_ptrtype const&
 double HeatShield::scalarProduct( vector_type const& x, vector_type const& y )
 {
     return M->energy( x, y );
+}
+
+double HeatShield::scalarProductForMassMatrix( vector_ptrtype const& x, vector_ptrtype const& y )
+{
+    return InnerMassMatrix->energy( x, y );
+}
+
+double HeatShield::scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
+{
+    return InnerMassMatrix->energy( x, y );
 }
 
 double HeatShield::scalarProductForPod( vector_ptrtype const& x, vector_ptrtype const& y )

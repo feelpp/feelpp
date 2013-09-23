@@ -375,6 +375,25 @@ public:
     }
 
     /**
+     * \brief Returns the matrix associated with the inner product
+     */
+    sparse_matrix_ptrtype const& innerProductForMassMatrix() const
+    {
+        return M_model->innerProductForMassMatrix();
+    }
+
+    /**
+     * \brief Returns the matrix associated with the inner product
+     */
+    sparse_matrix_ptrtype  innerProductForMassMatrix()
+    {
+        return M_model->innerProductForMassMatrix();
+    }
+
+
+
+
+    /**
      * \brief Returns the matrix associated with the \f$H_1\f$ inner product
      */
     sparse_matrix_ptrtype const& h1() const
@@ -412,10 +431,10 @@ public:
     }
     size_type Qm( mpl::bool_<false> ) const
     {
-        if( option(_name="crb.stock-matrices").template as<bool>() )
-            return 1;
-        else
+        if( M_model->constructOperatorCompositeM() )
             return functionspace_type::nSpaces;
+        else
+            return 1;
     }
 
     int QInitialGuess() const
@@ -470,6 +489,11 @@ public:
         return M_model->parameterSpace();
     }
 
+
+    parameter_type refParameter()
+    {
+        return M_model->refParameter();
+    }
     //@}
 
     /** @name  Mutators
@@ -522,9 +546,23 @@ public:
         betaAqm = steady_beta.get<0>();
         betaFqm = steady_beta.get<1>();
 
-        betaMqm.resize( 1 );
-        betaMqm[0].resize( 1 );
-        betaMqm[0][0] = 1 ;
+        int nspace = functionspace_type::nSpaces;
+        //if model provides implementation of operator composite M
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
 
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
@@ -550,9 +588,24 @@ public:
         steady_beta = M_model->computeBetaQm(T, mu , time );
         betaAqm = steady_beta.get<0>();
         betaFqm = steady_beta.get<1>();
-        betaMqm.resize( 1 );
-        betaMqm[0].resize( 1 );
-        betaMqm[0][0] = 1 ;
+
+        int nspace = functionspace_type::nSpaces;
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
 
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
@@ -585,11 +638,13 @@ public:
             offline_merge = offlineMerge( all_beta , mu );
         else
             offline_merge = offlineMergeOnFly( all_beta, mu );
+
         return offline_merge;
 
     }
 
     element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
+    element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
 
@@ -716,7 +771,11 @@ public:
     }
     operatorcomposite_ptrtype operatorCompositeM( mpl::bool_<false> ) const
     {
-        return preAssembleMassMatrix();
+        bool constructed_by_model = M_model->constructOperatorCompositeM();
+        if( constructed_by_model )
+            return M_model->operatorCompositeM();
+        else
+            return preAssembleMassMatrix();
     }
 
 
@@ -736,6 +795,7 @@ public:
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
         boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+
         if( M_Aqm.size() == 0 )
         {
             auto compositeM = operatorCompositeM();
@@ -810,9 +870,26 @@ public:
         }
         else
         {
-            assembleMassMatrix();
+            auto compositeM = operatorCompositeM();
+            int q_max = this->Qm();
+            M_Mqm.resize( q_max);
+            for(int q=0; q<q_max; q++)
+            {
+                int m_max = this->mMaxM(q);
+                M_Mqm[q].resize(m_max);
+                for(int m=0; m<m_max;m++)
+                {
+                    auto operatorfree = compositeM->operatorlinear(q,m);
+                    size_type pattern = operatorfree->pattern();
+                    auto trial = operatorfree->domainSpace();
+                    auto test=operatorfree->dualImageSpace();
+                    M_Mqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Mqm[q][m]);//fill the matrix
+                }//m
+            }//q
+
             auto compositeA = operatorCompositeA();
-            int q_max = this->Qa();
+            q_max = this->Qa();
             M_Aqm.resize( q_max);
             for(int q=0; q<q_max; q++)
             {
@@ -1201,6 +1278,22 @@ public:
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
         return M_model->scalarProduct( X, Y );
+    }
+
+
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
     }
 
 
@@ -1954,15 +2047,13 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
     compositeA->setScalars( beta_A );
     compositeM->setScalars( beta_M );
 
-    PsLogger ps("CRBModel_pslog");
-
-    ps.log("start");
-
     //merge
-    auto A = compositeA->sumAllMatrices();
-    ps.log("after sumAllMatrices de A");
-    auto M = compositeM->sumAllMatrices();
-    ps.log("after sumAllMatrices de M");
+    auto A = M_model->newMatrix();
+    auto M = M_model->newMatrix();
+    compositeA->sumAllMatrices( A );
+    //auto A = compositeA->sumAllMatrices();
+    //auto M = compositeM->sumAllMatrices();
+    compositeM->sumAllMatrices( M );
 
     std::vector<vector_ptrtype> F( Nl() );
 
@@ -1970,10 +2061,9 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
     {
         auto compositeF = vector_compositeF[output];
         compositeF->setScalars( beta_F[output] );
-        F[output] = compositeF->sumAllVectors();
+        F[output] = M_model->newVector();
+        compositeF->sumAllVectors( F[output] );
     }
-
-    ps.log("END");
 
     return boost::make_tuple( M, A, F );
 }
@@ -2144,7 +2234,6 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
     mybdf->setTimeFinal( time_final );
 
     u=*InitialGuess;
-
     double norm=0;
     int iter=0;
 
@@ -2177,6 +2266,104 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
         mybdf->shiftRight(u);
     }
     return u;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+{
+    int output_index = option(_name="crb.output-index").template as<int>();
+
+    auto Xh= this->functionSpace();
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype A,Adu;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    auto udu = Xh->element();
+    auto uold = Xh->element();
+    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
+    auto dual_initial_field = Xh->elementPtr();
+
+    double time_initial;
+    double time_step;
+    double time_final;
+
+    if ( this->isSteady() )
+    {
+        time_initial=0;
+        time_step = 1e30;
+        time_final = 1e30;
+        //InitialGuess = this->assembleInitialGuess( mu ) ;
+    }
+    else
+    {
+        time_initial=this->timeFinal()+this->timeStep();
+        time_step=-this->timeStep();
+        time_final=this->timeInitial()+this->timeStep();
+    }
+
+    mybdf->setTimeInitial( time_initial );
+    mybdf->setTimeStep( time_step );
+    mybdf->setTimeFinal( time_final );
+
+    double norm=0;
+    int iter=0;
+
+    double bdf_coeff ;
+    auto vec_bdf_poly = M_backend->newVector( Xh );
+
+    if ( this->isSteady() )
+        udu.zero() ;
+    else
+    {
+        boost::tie( M, A, F) = this->update( mu , mybdf->timeInitial() );
+        *Rhs=*F[output_index];
+        M_preconditioner->setMatrix( M );
+        M_backend->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner );
+        udu=*dual_initial_field;
+    }
+
+
+    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
+    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
+    {
+        iter=0;
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+        auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
+        do {
+            boost::tie(M, A, F) = this->update( mu , udu , mybdf->time() );
+
+            if( ! isSteady() )
+            {
+                A->addMatrix( bdf_coeff, M );
+                Rhs->zero();
+                *vec_bdf_poly = bdf_poly;
+                Rhs->addVector( *vec_bdf_poly, *M );
+            }
+            else
+            {
+                *Rhs = *F[output_index];
+                Rhs->scale( -1 );
+            }
+
+            if( option("crb.use-symmetric-matrix").template as<bool>() )
+                Adu = A;
+            else
+                A->transpose( Adu );
+
+            uold = udu;
+            M_preconditioner->setMatrix( Adu );
+            M_backend->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner);
+            norm = this->computeNormL2( uold , udu );
+            iter++;
+        } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
+        mybdf->shiftRight(udu);
+    }
+    return udu;
 }
 
 

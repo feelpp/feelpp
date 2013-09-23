@@ -74,6 +74,12 @@ OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
+# enable PCH only for GCC as for now
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	OPTION(FEELPP_ENABLE_PCH_FOR_APPLICATIONS "enable Pre-Compiled Headers (PCH) for Feel++ applications" OFF)
+else()
+	set(FEELPP_ENABLE_PCH_FOR_APPLICATIONS OFF)
+endif()
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
@@ -92,6 +98,9 @@ add_subdirectory(cmake/machines)
 
 # set the Feel++ version
 include(feelpp.version)
+
+# Use of standard headers for GiNaC compiler (for supermuc this option should be OFF)
+option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
 
 # possibly set the Feel++ configuration
 include(feelpp.machines.config)

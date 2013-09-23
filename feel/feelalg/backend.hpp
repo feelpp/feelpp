@@ -93,7 +93,12 @@ boost::shared_ptr<DataMap> datamap( T const& t )
 }
 
 template<typename T>
-typename T::reference ref( T t, mpl::true_ )
+#if BOOST_VERSION >= 105300
+typename boost::detail::sp_dereference< typename T::element_type >::type
+#else
+typename T::reference
+#endif
+ref( T t, mpl::true_ )
 {
     return *t;
 }
@@ -170,6 +175,7 @@ public:
     Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
     Backend( Backend const & );
     virtual ~Backend();
+
 
     /**
      * Builds a \p Backend, if Petsc is available, use Petsc by
@@ -758,7 +764,7 @@ public:
     /**
      * clean up
      */
-    //virtual void clear() = 0;
+    virtual void clear();
 
     /**
      * \return \f$ r = x^T * y \f$
@@ -848,9 +854,9 @@ public:
             rhs->printMatlab( M_export+"_b.m" );
         }
 
-        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
         // initialize
-        *_sol = detail::ref( solution );
+        *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
 
@@ -1162,7 +1168,7 @@ BOOST_PARAMETER_FUNCTION(
     else
     {
         if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
-            git->second->sendDeleteSignal();
+            git->second->clear();
 
         VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
 

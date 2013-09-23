@@ -122,6 +122,53 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     // faces
     _M_eval_expr00->init( im2 );
 }
+    
+template<typename FE1,  typename FE2, typename ElemContType>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template</*typename IM2, */typename IMTest,typename IMTrial>
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::Context( form_type& __form,
+        map_test_geometric_mapping_context_type const& _gmcTest,
+        map_trial_geometric_mapping_context_type const& _gmcTrial,
+        map_geometric_mapping_expr_context_type const & _gmcExpr,
+        ExprT const& expr,
+        IM const& im,
+                                                                                                                       //IM2 const& im2,
+        IMTest const& imTest, IMTrial const& imTrial )
+    :
+    _M_form( __form ),
+    _M_lb( __form.blockList() ),
+    _M_test_dof( __form.testSpace()->dof().get() ),
+    _M_trial_dof( __form.trialSpace()->dof().get() ),
+
+    _M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
+    _M_test_pc_face( precomputeTestBasisAtPoints( imTest ) ),
+    _M_trial_pc( new trial_precompute_type( _M_form.trialSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
+    _M_trial_pc_face( precomputeTrialBasisAtPoints( imTrial ) ),
+
+    /*_M_test_pc( new test_precompute_type( _M_form.testSpace()->fe(), im2.points() ) ),
+    _M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
+    _M_trial_pc( new trial_precompute_type( _M_form.trialSpace()->fe(), im2.points() ) ),
+    _M_trial_pc_face( precomputeTrialBasisAtPoints( im2 ) ),*/
+
+    _M_test_gmc( _gmcTest ),
+    _M_trial_gmc( _gmcTrial ),
+
+    _M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testSpace()->fe(), *this ) ) ),
+    _M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) ) ),
+    _M_trial_fec( getMap( _M_test_fec, fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(), *this ) ) ) ),
+    _M_trial_fec0( getMapL( _M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) ) ) ),
+    _M_rep(),
+    _M_rep_2(),
+    _M_eval_expr00( new eval00_expr_type( expr, _gmcExpr, _M_test_fec0, _M_trial_fec0 ) ),
+    _M_eval_expr01(),
+    _M_eval_expr10(),
+    _M_eval_expr11(),
+    M_integrator( im )
+{
+    // faces
+    _M_eval_expr00->init( im );
+}
+    
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
 template<typename IM2>
@@ -265,9 +312,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprCon
         map_geometric_mapping_expr_context_type const& _gmcExpr,
         mpl::bool_<false> )
 {
-    fusion::for_each( _M_test_fec, vf::detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmcTest, *this ) );
+    fusion::for_each( _M_test_fec, vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) );
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
-    fusion::for_each( _M_trial_fec, vf::detail::FEContextUpdateInCaseOfInterpolate<1,form_context_type>( _gmcTrial, *this ) );
+    fusion::for_each( _M_trial_fec, vf::detail::FEContextUpdate<1,form_context_type>( _gmcTrial, *this ) );
     _M_trial_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_trial_fec ) );
     _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_trial_fec0 );
 }
@@ -279,7 +326,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         map_geometric_mapping_expr_context_type const& _gmcExpr,
         mpl::bool_<true> )
 {
-    fusion::for_each( _M_test_fec, vf::detail::FEContextUpdateInCaseOfInterpolate<0,form_context_type>( _gmcTest, *this ) ); //!!!!!
+    fusion::for_each( _M_test_fec, vf::detail::FEContextUpdate<0,form_context_type>( _gmcTest, *this ) ); //!!!!!
     _M_test_fec0 = fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( _M_test_fec ) );
     _M_eval_expr00->update( _gmcExpr, _M_test_fec0, _M_test_fec0 );
 }

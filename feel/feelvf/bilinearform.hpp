@@ -357,6 +357,10 @@ public:
 
         static const uint16_type nDim = test_geometric_mapping_type::nDim;
 
+        static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+        static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+        static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
+
         typedef ExprT expression_type;
 
         typedef typename test_precompute<>::type test_precompute_type;
@@ -486,6 +490,15 @@ public:
                  ExprT const& expr,
                  IM const& im );
 
+        template<typename IMTest,typename IMTrial>
+        Context( form_type& __form,
+                 map_test_geometric_mapping_context_type const& gmcTest,
+                 map_trial_geometric_mapping_context_type const& _gmcTrial,
+                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 ExprT const& expr,
+                 IM const& im,
+                 IMTest const& imTest, IMTrial const& imTrial );
+
         template<typename IM2>
         Context( form_type& __form,
                  map_test_geometric_mapping_context_type const& gmcTest,
@@ -507,6 +520,10 @@ public:
 
         size_type trialElementId( size_type trial_eid ) const
             {
+                return trialElementId( trial_eid,mpl::int_<nDimDiffBetweenTestTrial>() );
+            }
+        size_type trialElementId( size_type trial_eid,mpl::int_<0> ) const
+            {
                 size_type idElem = trial_eid;
                 size_type domain_eid = idElem;
                 const bool test_related_to_trial = _M_form.testSpace()->mesh()->isSubMeshFrom( _M_form.trialSpace()->mesh() );
@@ -519,6 +536,37 @@ public:
                 if( trial_related_to_test )
                 {
                     domain_eid = _M_form.trialSpace()->mesh()->meshToSubMesh( idElem );
+                    DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                return domain_eid;
+            }
+        size_type trialElementId( size_type trial_eid,mpl::int_<1> ) const
+            {
+                size_type idElem = trial_eid;
+                size_type domain_eid = idElem;
+                const bool test_related_to_trial = _M_form.testSpace()->mesh()->isSubMeshFrom( _M_form.trialSpace()->mesh() );
+                const bool trial_related_to_test = _M_form.trialSpace()->mesh()->isSubMeshFrom( _M_form.testSpace()->mesh() );
+                if ( test_related_to_trial )
+                {
+                    domain_eid = _M_form.trialSpace()->mesh()->face( _M_form.testSpace()->mesh()->subMeshToMesh( idElem )).element0().id();
+                    DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                if( trial_related_to_test )
+                {
+                    auto const& eltTest = _M_form.testSpace()->mesh()->element(idElem);
+                    std::set<size_type> idsFind;
+                    for (uint16_type f=0;f< _M_form.testSpace()->mesh()->numLocalFaces();++f)
+                        {
+                            const size_type idFind = _M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                            if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                        }
+                    if ( idsFind.size()>1 ) std::cout << " TODO trialElementId " << std::endl;
+
+                    if ( idsFind.size()>0 )
+                        domain_eid = *idsFind.begin();
+                    else
+                        domain_eid = invalid_size_type_value;
+
                     DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
                 }
                 return domain_eid;

@@ -250,12 +250,12 @@ public:
     //! \return Return the geo parameter value.
     double geoParameter( std::string const& _name )
         {
-            return M_geoParamMap.at( _name );
+            return boost::lexical_cast<double>( M_geoParamMap.at( _name ) );
         }
 
     //! \brief Get all GMSH geometry parameters.
     //! \return Return a map containing the geo gmsh geometry parameters as {par,value}.
-    std::map<std::string, double> geoParameters()
+    std::map<std::string, std::string> geoParameters()
         {
             return M_geoParamMap;
         }
@@ -366,6 +366,7 @@ public:
     void setOrder( int o )
         {
             M_order = ( GMSH_ORDER ) o;
+            M_geoParamMap["ElementOrder"]=boost::lexical_cast<std::string>(o);
         }
 
     /**
@@ -414,20 +415,30 @@ public:
         {
             FEELPP_ASSERT( dimension() >= 1 )( dimension() ).error( "invalid dimension" );
             M_I[0] = x;
+            M_geoParamMap["xmin"]=boost::lexical_cast<std::string>(x.first);
+            M_geoParamMap["xmax"]=boost::lexical_cast<std::string>(x.second);
         }
     virtual void setY( std::pair<double,double> const& y )
         {
             FEELPP_ASSERT( dimension() >= 2 )( dimension() ).warn( "invalid dimension" );
 
             if ( dimension() >= 2 )
+            {
                 M_I[1] = y;
+                M_geoParamMap["ymin"]=boost::lexical_cast<std::string>(y.first);
+                M_geoParamMap["ymax"]=boost::lexical_cast<std::string>(y.second);
+            }
         }
     virtual void setZ( std::pair<double,double> const& z )
         {
             FEELPP_ASSERT( dimension() >= 3 )( dimension() ).warn( "invalid dimension" );
 
             if ( dimension() >= 3 )
+            {
                 M_I[2] = z;
+                M_geoParamMap["zmin"]=boost::lexical_cast<std::string>(z.first);
+                M_geoParamMap["zmax"]=boost::lexical_cast<std::string>(z.second);
+            }
         }
 
     //! the gmsh generator to generate a reference domain
@@ -465,14 +476,14 @@ public:
     //! \return Return the current Gmsh object.
     void setGeoParameter( std::string const& _name, double _value )
         {
-            M_geoParamMap.at( _name ) = _value;
+            M_geoParamMap.at( _name ) = boost::lexical_cast<std::string>( _value );
         }
 
     //! \brief Modify geo gmsh geometry parameters from a map of parameters.
     //! If the parameter does not match any parameter, the function throws
     //! an out_of_range exception.
     //!     \param geomap A map containing the geo parameters (param,value).
-    void setGeoParameters( std::map<std::string, double> const& geomap, bool _update=1 )
+    void setGeoParameters( std::map<std::string, std::string> const& geomap, bool _update=1 )
         {
             if( _update )
             {
@@ -582,7 +593,7 @@ public:
     //! Extract all parameters from a geo gmsh geometry description and store them into a map.
     //! \param geo Gmsh geometry description.
     //! \return Geo parameter map containing each parameter and its value.
-    std::map<std::string, double>  retrieveGeoParameters( std::string const& geo ) const;
+    std::map<std::string, std::string>  retrieveGeoParameters( std::string const& geo ) const;
 
     //! \brief Create a map from a list of geometry parameters string and separated
     //! by a character `:`.
@@ -590,7 +601,7 @@ public:
     //! is separated by a char `:`.
     //! \return Return a map of GMSH geometry parameters and their values. If the string
     //! is empty, it returns an empty map.
-    static std::map<std::string, double> gpstr2map( std::string const& geopars );
+    static std::map<std::string, std::string> gpstr2map( std::string const& geopars );
 
     //@}
 
@@ -642,7 +653,7 @@ protected:
     mutable std::string M_desc;
 
     // geometry parameters map
-    std::map< std::string, double > M_geoParamMap;
+    std::map< std::string, std::string > M_geoParamMap;
 
     //! bounding box
     std::vector<std::pair<double,double> > M_I;
@@ -835,6 +846,8 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
+    VLOG(1) << "straighten mesh of order " <<  _mesh_type::nOrder << " start";
+
     _mesh_ptrtype _mesh( mesh );
 
     using namespace vf;
@@ -844,6 +857,7 @@ BOOST_PARAMETER_FUNCTION(
 #else
     auto Xh = space_t::New( _mesh=_mesh );
 #endif
+
     auto xHo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
@@ -855,7 +869,7 @@ BOOST_PARAMETER_FUNCTION(
     if (worldcomm.localSize()>1)
         Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
 
-    double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate().norm();
+    double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate(true,worldcomm).norm();
 
     if ( norm_mean_value > 1e-12 )
         std::cout << "the straightening process may have failed\n"
@@ -880,6 +894,8 @@ BOOST_PARAMETER_FUNCTION(
 
     MeshMover<_mesh_type> meshmove;
     meshmove.apply( _mesh, straightener );
+
+    VLOG(1) << "straighten mesh of order " <<  _mesh_type::nOrder << " finish";
 
     return _mesh;
 }
@@ -913,7 +929,7 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm,       *, Environment::worldComm() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename,	*, filename )
-      ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
         )
@@ -1068,10 +1084,10 @@ BOOST_PARAMETER_FUNCTION(
       ( physical_are_elementary_regions,           *,false )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
-      ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( worldcomm,      *, Environment::worldComm() )
+      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-      ( worldcomm,      *, Environment::worldComm() )
         )
     )
 {
@@ -1232,11 +1248,12 @@ BOOST_PARAMETER_FUNCTION(
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() ) )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() )
+      ( worldcomm,       (WorldComm), Environment::worldComm() ) )
     )
 
 {
-    gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
+    gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1, worldcomm ) );
 
     gmsh_ptr->setCharacteristicLength( h );
 #if BOOST_FILESYSTEM_VERSION == 3
@@ -1258,7 +1275,7 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
     gmsh_ptr->setGeoParameters( geo_parameters );
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( worldcomm.globalRank() == worldcomm.masterRank() )
     {
         fs::path cp = fs::current_path();
         std::vector<std::string> depends_on_files;
@@ -1289,7 +1306,7 @@ BOOST_PARAMETER_FUNCTION(
                              }
                          } );
     }
-    Environment::worldComm().barrier();
+    worldcomm.barrier();
 
 
     return gmsh_ptr;
@@ -1485,7 +1502,7 @@ BOOST_PARAMETER_FUNCTION(
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), option(_name="gmsh.rebuild").template as<bool>() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
-      ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() )
@@ -1507,7 +1524,8 @@ BOOST_PARAMETER_FUNCTION(
     {
         return createGMSHMesh( _mesh=mesh,
                                _desc=geo( _filename=mesh_name.string(),
-                                          _depends=depends ),
+                                          _h=h,_depends=depends,
+                                          _worldcomm=worldcomm ),
                                _h=h,
                                _straighten=straighten,
                                _refine=refine,

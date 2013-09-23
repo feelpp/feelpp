@@ -267,5 +267,9 @@ int main( int argc, char* argv[] )
                                 std::cout << substitute(f, sym, f1) << std::endl;
                             }
                     });
+		    
+    exact="sin(x)";
+    auto g = expr(exact, vars);
+    		    
     return 0;
 }

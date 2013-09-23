@@ -126,7 +126,7 @@ public:
     typedef boost::tuple<double, parameter_type, size_type, double, double> relative_error_type;
     typedef relative_error_type max_error_type;
 
-    typedef boost::tuple<double, std::vector< std::vector<double> > , std::vector< std::vector<double> >, double, double, double > error_estimation_type;
+    typedef boost::tuple<double, std::vector< std::vector<double> > , std::vector< std::vector<double> >, double, double > error_estimation_type;
     typedef boost::tuple<double, std::vector<double> > residual_error_type;
 
     typedef boost::bimap< int, boost::tuple<double,double,double> > convergence_type;
@@ -179,7 +179,7 @@ public:
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
 
-
+    typedef boost::tuple< vectorN_type , vectorN_type > solutions_tuple;
 
     typedef std::vector<element_type> mode_set_type;
     typedef boost::shared_ptr<mode_set_type> mode_set_ptrtype;
@@ -939,7 +939,7 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<double,double,double,double, vectorN_type, double , double, double, double, double> run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double, solutions_tuple, double, double, double, boost::tuple<double,double,double> > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -1221,7 +1221,6 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_matrix_ptrtype & A, bool zero_iteration )
 {
-
     auto u = M_model->functionSpace()->element();
 
     sparse_matrix_ptrtype M = M_model->newMatrix();
@@ -1253,9 +1252,11 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
     //initialization of unknown
     auto elementptr = M_model->functionSpace()->elementPtr();
     M_model->initializationField( elementptr, mu );
+
     u = *elementptr;
 
     auto Apr = M_model->newMatrix();
+
 
     int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
     double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
@@ -1324,6 +1325,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
             }
             else
             {
+
                 auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs ,  _prec=M_preconditioner_primal );
                 if ( !ret.template get<0>() )
                     LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
@@ -1486,7 +1488,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
         do
         {
-            boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_primal->time() );
+            boost::tie( M, Apr, F) = M_model->update( mu , udu, M_bdf_dual->time() );
 
             if( ! M_model->isSteady() )
             {
@@ -2011,8 +2013,10 @@ CRB<TruthModelType>::offline()
     if( M_use_newton )
         boost::tie( Mqm , Jqm, Rqm ) = M_model->computeAffineDecomposition();
     else
-        boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
-
+    {
+        if( option("crb.stock-matrices").template as<bool>() )
+            boost::tie( Mqm, Aqm, Fqm ) = M_model->computeAffineDecomposition();
+    }
 
     element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
     element_ptrtype uproj( new element_type( M_model->functionSpace() ) );
@@ -2048,7 +2052,6 @@ CRB<TruthModelType>::offline()
             M_iter_max = sampling_size;
         }
         mu = M_WNmu->at( M_N ); // first element
-        std::cout<<" [use_predefined_WNmu] mu = \n"<<mu<<std::endl;
 
         if( proc_number == this->worldComm().masterRank() )
             std::cout<<"[CRB::offline] read WNmu ( sampling size : "<<M_iter_max<<" )"<<std::endl;
@@ -2056,7 +2059,7 @@ CRB<TruthModelType>::offline()
 
 
     LOG(INFO) << "[CRB::offline] strategy "<< M_error_type <<"\n";
-    if( proc_number == this->worldComm().masterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<"\n";
+    if( proc_number == this->worldComm().masterRank() ) std::cout << "[CRB::offline] strategy "<< M_error_type <<std::endl;
 
     if( M_error_type == CRB_NO_RESIDUAL || use_predefined_WNmu )
     {
@@ -2075,7 +2078,6 @@ CRB<TruthModelType>::offline()
         else
             LOG(INFO) << "N=" << M_N << "/"  << M_iter_max << " maxerror=" << M_maxerror << " / "  << M_tolerance << "( nb proc : "<<worldComm().globalSize()<<")";
 
-
         // for a given parameter \p mu assemble the left and right hand side
         u.setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
         udu.setName( ( boost::format( "fem-dual-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
@@ -2091,9 +2093,7 @@ CRB<TruthModelType>::offline()
                 udu = offlineFixedPointDual( mu , dual_initial_field ,  A , u, zero_iteration );
         }
 
-        std::cout<<std::setprecision(14)<<"offline u : "<<u.l2Norm()<<std::endl;
-
-		if ( M_model->isSteady() && M_use_newton )
+        if ( M_model->isSteady() && M_use_newton )
         {
             mu.check();
             u.zero();
@@ -2622,8 +2622,9 @@ CRB<TruthModelType>::offline()
 
         //save DB after adding an element
         this->saveDB();
-        M_elements_database.setWn( boost::make_tuple( M_WN , M_WNdu ) );
-        M_elements_database.saveDB();
+	M_elements_database.setWn( boost::make_tuple( M_WN , M_WNdu ) );
+	M_elements_database.saveDB();
+
     }
 
     if( proc_number == 0 )
@@ -3445,7 +3446,6 @@ template<typename TruthModelType>
 void
 CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const
 {
-
     VLOG(2) <<"Compute projection of initial guess\n";
     beta_vector_type betaMqm;
     beta_vector_type beta_initial_guess;
@@ -3483,7 +3483,6 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
     }
 
     initial_guess = Mass.lu().solve( F );
-
 }
 
 template<typename TruthModelType>
@@ -4114,10 +4113,10 @@ CRB<TruthModelType>::delta( size_type N,
     double delta_pr=0;
     double delta_du=0;
     if ( M_error_type == CRB_NO_RESIDUAL )
-        return boost::make_tuple( -1,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du , -1);
+        return boost::make_tuple( -1,primal_residual_coeffs,dual_residual_coeffs,delta_pr,delta_du );
 
     else if ( M_error_type == CRB_EMPIRICAL )
-        return boost::make_tuple( empiricalErrorEstimation ( N, mu , k ) , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du, -1);
+        return boost::make_tuple( empiricalErrorEstimation ( N, mu , k ) , primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du);
 
     else
     {
@@ -4204,7 +4203,8 @@ CRB<TruthModelType>::delta( size_type N,
             double alphaA_up, lbti;
             M_scmA->setScmForMassMatrix( false );
             boost::tie( alphaA, lbti ) = M_scmA->lb( mu );
-            boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
+            if( option(_name="crb.scm.use-scm").template as<bool>() )
+                boost::tie( alphaA_up, lbti ) = M_scmA->ub( mu );
             //LOG( INFO ) << "alphaA_lo = " << alphaA << " alphaA_hi = " << alphaA_up ;
 
             if ( ! M_model->isSteady() )
@@ -4212,14 +4212,17 @@ CRB<TruthModelType>::delta( size_type N,
                 M_scmM->setScmForMassMatrix( true );
                 double alphaM_up, lbti;
                 boost::tie( alphaM, lbti ) = M_scmM->lb( mu );
-                boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
+                if( option(_name="crb.scm.use-scm").template as<bool>() )
+                    boost::tie( alphaM_up, lbti ) = M_scmM->ub( mu );
                 //LOG( INFO ) << "alphaM_lo = " << alphaM << " alphaM_hi = " << alphaM_up ;
             }
         }
 
         double output_upper_bound;
         double solution_upper_bound;
-
+        double solution_dual_upper_bound;
+        //alphaA=1;
+        //dual_residual=0;
         if ( M_model->isSteady() )
         {
             delta_pr = math::sqrt( primal_sum ) / math::sqrt( alphaA );
@@ -4228,18 +4231,20 @@ CRB<TruthModelType>::delta( size_type N,
             else
                 delta_du = 1;
             output_upper_bound = delta_pr * delta_du;
-            solution_upper_bound =  math::sqrt( primal_sum ) / alphaA ;
-            solution_upper_bound =  delta_pr;
+            //solution_upper_bound =  delta_pr;
+            //solution_dual_upper_bound =  delta_du;
         }
         else
         {
             delta_pr = math::sqrt( dt/alphaA * primal_sum );
             delta_du = math::sqrt( dt/alphaA * dual_sum + dual_residual/alphaM );
             output_upper_bound = delta_pr * delta_du;
-            solution_upper_bound = delta_pr;
+            //solution_upper_bound = delta_pr;
+            //solution_dual_upper_bound =  delta_du;
         }
 
-        return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du , solution_upper_bound);
+        //return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du , solution_upper_bound, solution_dual_upper_bound);
+        return boost::make_tuple( output_upper_bound, primal_residual_coeffs, dual_residual_coeffs , delta_pr, delta_du );
 
     }//end of else
 }
@@ -5937,7 +5942,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
 
 
 template<typename TruthModelType>
-boost::tuple<double,double,double,double, typename CRB<TruthModelType>::vectorN_type, double, double, double, double, double>
+boost::tuple<double,double, typename CRB<TruthModelType>::solutions_tuple, double, double, double, boost::tuple<double,double,double> >
 CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
@@ -5983,11 +5988,9 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     double output_upper_bound = error_estimation.template get<0>();
-    double solution_upper_bound = error_estimation.template get<5>();
     double condition_number = o.template get<1>();
     auto primal_coeffcients = error_estimation.template get<1>();
     auto dual_coefficients = error_estimation.template get<2>();
-
     if ( this->vm()["crb.check.residual-transient-problems"].template as<bool>() )
     {
         std::vector< std::vector<double> > primal_residual_coefficients = error_estimation.template get<1>();
@@ -6006,7 +6009,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     double primal_residual_norm = 0;
     double dual_residual_norm = 0;
 
-    if ( M_error_type != CRB_NO_RESIDUAL )
+    if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
     {
         int nb_coeff = primal_coeffcients[final_time_index].size();
         for(int i=0 ; i<nb_coeff ; i++)
@@ -6026,7 +6029,10 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     double delta_pr = error_estimation.template get<3>();
     double delta_du = error_estimation.template get<4>();
     int size = uN.size();
-    return boost::make_tuple( output , output_upper_bound, Nwn , condition_number, uN[size-1] , solution_upper_bound , primal_residual_norm , dual_residual_norm , delta_pr , delta_du);
+
+    auto upper_bounds = boost::make_tuple(output_upper_bound , delta_pr, delta_du );
+    auto solutions = boost::make_tuple( uN[size-1] , uNdu[0]);
+    return boost::make_tuple( output , Nwn , solutions, condition_number , primal_residual_norm , dual_residual_norm, upper_bounds );
 }
 
 
@@ -6645,4 +6651,3 @@ template<typename T> const unsigned int version<Feel::CRB<T> >::value;
 }
 }
 #endif /* __CRB_H */
-

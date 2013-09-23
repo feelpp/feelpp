@@ -45,7 +45,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/algorithm/string.hpp>
 
-
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/application.hpp>
 #include <feel/feelmesh/hypercube.hpp>
@@ -53,6 +52,11 @@
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshellipsoiddomain.hpp>
+
+#if defined(FEELPP_HAS_GPERFTOOLS)
+#include <gperftools/heap-checker.h>
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
 
 #if defined( FEELPP_HAS_GMSH_H )
 #include <GmshConfig.h>
@@ -95,6 +99,11 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_substructuring( false )
 {
     this->setReferenceDomain();
+    setX( std::make_pair( 0., 1.) );
+    if ( nDim > 1 )
+        setY( std::make_pair( 0., 1.) );
+    if ( nDim > 2 )
+        setZ( std::make_pair( 0., 1.) );
 }
 Gmsh::Gmsh( Gmsh const & __g )
     :
@@ -199,10 +208,10 @@ Gmsh::getDescriptionFromFile( std::string const& file ) const
 // for each character `=`. We add each key and value to the map.
 // Example : "key1=val1:key2=val2:key3=val3"
 //
-std::map<std::string, double>
+std::map<std::string, std::string>
 Gmsh::gpstr2map( std::string const& _geopars )
 {
-    std::map<std::string, double> geopm;
+    std::map<std::string, std::string> geopm;
     std::string geopars = _geopars;
     if(!geopars.empty())
     {
@@ -217,7 +226,8 @@ Gmsh::gpstr2map( std::string const& _geopars )
             assert( distance( kv.begin(), kv.end() ) == 2 ); //! TODO modify message !
 
             try{
-                geopm[ *(kv.begin()) ] = boost::lexical_cast<double>( *(++(kv.begin())) );
+                //geopm[ *(kv.begin()) ] = boost::lexical_cast<double>( *(++(kv.begin())) );
+                geopm[ *(kv.begin()) ] = *(++(kv.begin()));
             }
             catch( boost::bad_lexical_cast& e )
             {
@@ -228,10 +238,10 @@ Gmsh::gpstr2map( std::string const& _geopars )
     return geopm;
 }
 
-std::map<std::string, double>
+std::map<std::string, std::string>
 Gmsh::retrieveGeoParameters( std::string const& __geo ) const
 {
-    std::map<std::string, double> __geopm;
+    std::map<std::string, std::string> __geopm;
     // (TODO should strip C/CPP comments)
     // Regex for a `keyword=value;` expression. We capture only [keyword]
     // and the [value] (ex : `h_2=-1,3e+4`).
@@ -246,10 +256,12 @@ Gmsh::retrieveGeoParameters( std::string const& __geo ) const
         try
         {
             auto par = std::string( what[1].first, what[1].second );
-            auto val = boost::lexical_cast<double>( std::string( what[2].first, what[2].second ) );
+            //auto val = boost::lexical_cast<double>( std::string( what[2].first, what[2].second ) );
+            std::string val = std::string( what[2].first, what[2].second );
 
-            LOG(INFO) << "[Gmsh::retrieveGeoParameter] New geometry parameter : "<< par << " = " << val << std::endl;
+
             __geopm[ par ] = val;
+            LOG(INFO) << "[Gmsh::retrieveGeoParameter] New geometry parameter : "<< par << " = " << __geopm[par] << std::endl;
         }
         catch( boost::bad_lexical_cast& e )
         {
@@ -275,10 +287,10 @@ Gmsh::generateGeo( std::string const& __name, std::string const& __geo, bool con
             boost::regex regex1( "(?:(" + iGpm.first  + "))[[:blank:]]*=[[:blank:]]*[+-]?(?:(?:(?:[[:digit:]]*\\.)?[[:digit:]]*(?:[eE][+-]?[[:digit:]]+)?));" );
             std::ostringstream _ostr;
             try{
-                _ostr << "(?1$1) = " << boost::lexical_cast<std::string>( iGpm.second ) << ";";
+                _ostr << "(?1$1) = " << iGpm.second << ";";
                 LOG(INFO) << "[Gmsh::generateGeo] Geo geometry parameter "
                           << ( ( regex_search( __geo, regex1, boost::match_default) )?
-                             ( iGpm.first + "=" + boost::lexical_cast<std::string>( iGpm.second ) + " now !" )
+                             ( iGpm.first + "=" + iGpm.second  + " now !" )
                              : iGpm.first + " not found ! " )
                           << std::endl;
             }
@@ -557,34 +569,40 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric  
         CTX::instance()->mesh.algo3d = ALGO_3D_FRONTAL;
 #endif
     }
-
-    CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
-
-    GModel* newGmshModel = new GModel();
-    GModel::current()->setName( _name );
-#if !defined( __APPLE__ )
-    GModel::current()->setFileName( _name );
-#endif
-    GModel::current()->readGEO( _name+".geo" );
-    GModel::current()->mesh( dim );
-    LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
-    for( int l = 0; l < M_refine_levels; ++l )
+    // disable heap checking if enabled
     {
-        GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+#if defined(FEELPP_HAS_GPERFTOOLS)
+        HeapLeakChecker::Disabler disabler;
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
+
+        CTX::instance()->mesh.mshFilePartitioned = M_partition_file;
+
+        GModel* newGmshModel = new GModel();
+        GModel::current()->setName( _name );
+#if !defined( __APPLE__ )
+        GModel::current()->setFileName( _name );
+#endif
+        GModel::current()->readGEO( _name+".geo" );
+        GModel::current()->mesh( dim );
+        LOG(INFO) << "Mesh refinement levels : " << M_refine_levels << "\n";
+        for( int l = 0; l < M_refine_levels; ++l )
+        {
+            GModel::current()->refineMesh( CTX::instance()->mesh.secondOrderLinear );
+        }
+        PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
+        LOG(INFO) << "Mesh partitions : " << GModel::current()->getMeshPartitions().size() << "\n";
+
+        // convert mesh to latest binary format
+        CHECK(GModel::current()->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << GModel::current()->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
+
+        CTX::instance()->mesh.binary = M_format;
+        LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
+        GModel::current()->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
+        newGmshModel->deleteMesh();
+        newGmshModel->destroy();
+        delete newGmshModel;
     }
-    PartitionMesh( GModel::current(), CTX::instance()->partitionOptions );
-    LOG(INFO) << "Mesh partitions : " << GModel::current()->getMeshPartitions().size() << "\n";
-
-    // convert mesh to latest binary format
-    CHECK(GModel::current()->getMeshStatus() > 0)  << "Invalid Gmsh Mesh, Gmsh status : " << GModel::current()->getMeshStatus() << " should be > 0. Gmsh mesh cannot be written to disk\n";
-
-    CTX::instance()->mesh.binary = M_format;
-    LOG(INFO) << "Writing GMSH file " << _name+".msh" << " in " << (M_format?"binary":"ascii") << " format\n";
-    GModel::current()->writeMSH( _name+".msh", 2.2, CTX::instance()->mesh.binary );
-
-    newGmshModel->destroy();
-    delete newGmshModel;
-
 #endif
 #else
     throw std::invalid_argument( "Gmsh is not available on this system" );
@@ -694,14 +712,19 @@ Gmsh::preamble() const
 #endif
     }
 
-    ostr << "//Mesh.OptimizeNetgen=1;\n"
-         << "// partitioning data\n"
+    ostr << "//Mesh.OptimizeNetgen=1;\n";
+
+
+    if ( this->worldComm().globalSize() != 1 )
+        {
+ostr << "// partitioning data\n"
          << "Mesh.Partitioner=" << M_partitioner << ";\n"
          << "Mesh.NbPartitions=" << M_partitions << ";\n"
-         << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n"
-        //<< "Mesh.Optimize=1;\n"
+         << "Mesh.MshFilePartitioned=" << M_partition_file << ";\n";
+        }
+        //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
-         << "h=" << M_h << ";\n";
+    ostr << "h=" << M_h << ";\n";
 
     if ( M_recombine )
     {

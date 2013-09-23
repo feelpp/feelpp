@@ -575,7 +575,10 @@ public:
         return M_compositeF;
     }
 
-
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
 
 private:
 
@@ -930,10 +933,10 @@ UnsteadyHeat1D::update( parameter_type const& mu,double bdf_coeff, element_type 
         F->zero();
 
         M_compositeA->setScalars( M_betaAqm );
-        D = M_compositeA->sumAllMatrices();
+        M_compositeA->sumAllMatrices( D );
 
         M_compositeF[output_index]->setScalars( M_betaFqm[output_index] );
-        F = M_compositeF[output_index]->sumAllVectors();
+        M_compositeF[output_index]->sumAllVectors( F );
 
         auto vec_bdf_poly = backend->newVector( Xh );
 

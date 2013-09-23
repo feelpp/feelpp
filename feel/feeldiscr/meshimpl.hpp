@@ -2049,11 +2049,11 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     typename gm_type::reference_convex_type refelem;
     typename gm_type::precompute_ptrtype __geopc( new typename gm_type::precompute_type( M_mesh->gm(),
             refelem.points() ) );
-    std::vector<bool> npt( this->nPoints() );
+    boost::unordered_map<size_type,bool> npt;
 
-    M_dist.resize( this->nPoints() );
-    M_ref_coords.resize( this->nPoints() );
-    M_cvx_pts.resize( this->nPoints() );
+    M_dist.clear();
+    M_ref_coords.clear();
+    M_cvx_pts.clear();
     M_pts_cvx.clear();
     M_pts_cvx.resize( M_mesh->numElements() );
 
@@ -2648,21 +2648,19 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id,
                                          const matrix_node_type & setPoints,
                                          mpl::int_<1> /**/ ) const
 {
-    bool isin=false,isin2=false;
+    bool isin=true; // warning : start with true
     double dmin=0.;
     node_type x_ref;
 
     //get element with the id
-    auto const elt= M_mesh->element( _id );
-    auto const eltG = elt.G();
+    auto const& elt= M_mesh->element( _id );
+    auto const& eltG = elt.G();
 
-    std::vector<bool> find( setPoints.size2() );
-    std::fill( find.begin(),find.end(),false );
-
-    for ( size_type i=0; i< setPoints.size2(); ++i )
+    // check conformity between setPoints (given) and eltG (localize)
+    std::vector<bool> find( setPoints.size2(),false );
+    for ( size_type i=0; i< setPoints.size2() && isin; ++i )
     {
-        auto thePt = ublas::column( setPoints,i );
-        find[i]=false;
+        auto const& thePt = ublas::column( setPoints,i );
 
         for ( size_type j=0; j<eltG.size2(); ++j )
         {
@@ -2670,35 +2668,33 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id,
 
             if ( ptjeltG.size()==1 )
             {
-                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 )
+                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 )
                     find[i]=true;
             }
             else if ( ptjeltG.size()==2 )
             {
-                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 &&
-                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-5 )
+                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 &&
+                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-8 )
                     find[i]=true;
             }
             else if ( ptjeltG.size()==3 )
             {
-                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 &&
-                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-5 &&
-                     std::abs( thePt( 2 )-ptjeltG( 2 ) )<1e-5 )
+                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-8 &&
+                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-8 &&
+                     std::abs( thePt( 2 )-ptjeltG( 2 ) )<1e-8 )
                     find[i]=true;
             }
         }
+        // up checking
+        isin &= find[i];
     }
-    // check if all points are found or not
-    bool isOK=true;
-    for ( size_type i=0; i< setPoints.size2(); ++i ) { isOK &= find[i]; }
-    if ( !isOK ) isin=false;
-    else isin=true;
 
-    // get ref pt and check
+    // if find -> get ref point and check
     if ( isin )
     {
+        bool isin2=false;
         boost::tie(isin2,x_ref,dmin) = this->isIn(_id,_pt);
-        if ( isin!=isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
+        LOG_IF(WARNING, !isin2) << "Mesh::Localization::isIn<Conformal> : check fail -> maybe x_ref is not correct";
     }
 
     return boost::make_tuple(isin,x_ref,dmin);
@@ -2736,64 +2732,6 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
     //research the element which contains the point p
     while ( itLT != itLT_end && !isin  )
     {
-
-#if 0
-        //get element with the id
-        elt= M_mesh->element( itLT->first );
-
-        auto eltG = elt.G();
-        std::vector<bool> find( setPoints.size2() );
-        std::fill( find.begin(),find.end(),false );
-
-        for ( size_type i=0; i< setPoints.size2(); ++i )
-            {
-                auto thePt = ublas::column( setPoints,i );
-                find[i]=false;
-
-                for ( size_type j=0; j<eltG.size2(); ++j )
-                    {
-                        auto ptjeltG = ublas::column( eltG,j );
-
-                        if ( ptjeltG.size()==1 )
-                            {
-                                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 )
-                                    find[i]=true;
-                            }
-
-                        else if ( ptjeltG.size()==2 )
-                            {
-                                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 &&
-                                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-5 )
-                                    find[i]=true;
-                            }
-
-                        else if ( ptjeltG.size()==3 )
-                            {
-                                if ( std::abs( thePt( 0 )-ptjeltG( 0 ) )<1e-5 &&
-                                     std::abs( thePt( 1 )-ptjeltG( 1 ) )<1e-5 &&
-                                     std::abs( thePt( 2 )-ptjeltG( 2 ) )<1e-5 )
-                                    find[i]=true;
-                            }
-                    }
-            }
-        // check if all points are found or not
-        bool isOK=true;
-
-        for ( size_type i=0; i< setPoints.size2(); ++i )
-            {
-                isOK &= find[i];
-            }
-
-        if ( !isOK ) isin=false;
-        else isin=true;
-
-        if ( isin ) // just a check
-            {
-                boost::tie(isin2,x_ref,dmin) = this->isIn(itLT->first,p);
-                if ( isin!=isin2) std::cout << "Bug Mesh::Localization::searchElement<true>" << std::endl;
-            }
-#endif
-
         boost::tie(isin,x_ref,dmin) = this->isIn(itLT->first,p,setPoints,mpl::int_<1>());
 
         //if not inside, continue the research with an other element

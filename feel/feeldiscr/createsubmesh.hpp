@@ -527,9 +527,6 @@ template <typename MeshType,typename IteratorRange,int TheTag>
 typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_faces_ptrtype
 createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /**/ )
 {
-    // we don't deal with this situation yet
-    M_smd.reset();
-
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
     mesh_faces_ptrtype newMesh( new mesh_faces_type( M_mesh->worldComm()) );
 #warning THIS DIFFERS FROM EXPLICIT AND DEVELOP
@@ -671,6 +668,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         // Add an equivalent element type to the new_mesh
         auto const& e = newMesh->addElement( newElem );
         new_element_id[it->id()]= e.id();
+        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), it->id() ) );
 
 #if 0
         // Maybe add faces for this element
@@ -850,8 +848,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                     // Add an equivalent element type to the new_mesh
                     auto const& e = newMesh->addElement( new_elem );
                     new_element_id[old_elem.id()]= e.id();
-
-                    //M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), old_elem.id() ) );
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), old_elem.id() ) );
 
                     // save idEltAsked;
                     auto elttt = newMesh->elementIterator( e.id(),  proc );

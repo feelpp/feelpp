@@ -1,5 +1,6 @@
 # - Find Feel
 
+INCLUDE(CustomPCH)
 INCLUDE(ParseArguments)
 
 macro(feelpp_add_application)
@@ -27,7 +28,6 @@ macro(feelpp_add_application)
     MESSAGE("include from all: ${FEELPP_APP_INCLUDE_IN_ALL}")
   endif()
 
-
   if ( FEELPP_APP_EXCLUDE_FROM_ALL)
     add_executable(${execname}  EXCLUDE_FROM_ALL  ${FEELPP_APP_SRCS}  )
   elseif( FEELPP_APP_INCLUDE_IN_ALL)
@@ -42,6 +42,12 @@ macro(feelpp_add_application)
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
   target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
+
+	if( FEELPP_ENABLE_PCH_FOR_APPLICATIONS )
+		# add several headers in a list form "one.hpp;two.hpp"
+		add_precompiled_header( ${execname} ${FEELPP_APP_SRCS} "feel/feel.hpp")
+	endif()
+
   #INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
   if ( NOT FEELPP_APP_NO_TEST )
 	IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)

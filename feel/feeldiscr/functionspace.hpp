@@ -1455,9 +1455,9 @@ public:
         typedef typename BasisType::component_basis_type type;
     };
 
-    typedef typename mpl::transform<bases_list,
-            GetComponentBasis<mpl::_1>,
-            mpl::back_inserter<fusion::vector<> > >::type component_basis_vector_type;
+    typedef detail::bases2<typename mpl::transform<bases_list,
+                                                   GetComponentBasis<mpl::_1>,
+                                                   mpl::back_inserter<fusion::vector<> > >::type> component_basis_vector_type;
 
 
 
@@ -2007,12 +2007,12 @@ public:
         }
         void assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index=start()+boost::get<0>( _M_functionspace->dof()->localToGlobal( ie, il, c ) );
+            size_type index=start()+ _M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             this->operator[]( index ) = __v;
         }
         void plus_assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index=start()+boost::get<0>( _M_functionspace->dof()->localToGlobal( ie, il, c ) );
+            size_type index=start()+ _M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             this->operator[]( index ) += __v;
         }
 

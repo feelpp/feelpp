@@ -40,3 +40,5 @@ feelpp_add_application( doc_laplacian_parabolic SRCS laplacian_parabolic.cpp LAB
 
 feelpp_add_application( doc_laplacian_substructured SRCS laplacian_substructured.cpp LABEL doc  )
 feelpp_add_application( doc_laplacian_dirac SRCS laplacian_dirac.cpp LABEL doc CFG laplacian_dirac.cfg )
+
+feelpp_add_application( doc_laplacian_lagrange_multiplier2 SRCS laplacian_lagrange_multiplier2.cpp LABEL doc CFG laplacian_lagrange_multiplier2.cfg)
