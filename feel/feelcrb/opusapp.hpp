@@ -692,10 +692,12 @@ public:
                                 auto uN = solutions.template get<0>();
                                 auto uNdu = solutions.template get<1>();
 
+                                int size = uN.size();
+
                                 //if( model->isSteady()) // Re-use uN given by lb in crb->run
-                                u_crb = crb->expansion( uN , N , WN ); // Re-use uN given by lb in crb->run
+                                u_crb = crb->expansion( uN[size-1] , N , WN ); // Re-use uN given by lb in crb->run
                                 if( solve_dual_problem )
-                                    u_crb_dual = crb->expansion( uNdu , N , WNdu );
+                                    u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
                                 //else
                                 //    u_crb = crb->expansion( mu , N , WN );
 
@@ -884,7 +886,8 @@ public:
                                         auto solutions=o.template get<2>();
                                         auto u_crb = solutions.template get<0>();
                                         auto u_crb_du = solutions.template get<1>();
-                                        auto uN = crb->expansion( u_crb, N, WN );
+                                        int size = u_crb.size();
+                                        auto uN = crb->expansion( u_crb[size-1], N, WN );
 
                                         element_type uNdu;
 
@@ -892,7 +895,7 @@ public:
                                         auto u_dual_error = model->functionSpace()->element();
                                         if( solve_dual_problem )
                                         {
-                                            uNdu = crb->expansion( u_crb_du, N, WNdu );
+                                            uNdu = crb->expansion( u_crb_du[0], N, WNdu );
                                             u_dual_error = u_dual_fem - uNdu;
                                         }
 
@@ -1056,7 +1059,50 @@ public:
                                         M_mapConvCRB["PrimalResidualNorm"][N-1](curpar - 1) =  primal_residual_norm;
                                         M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
                                         LOG(INFO) << "N=" << N << " done.\n";
-                                    }
+
+
+
+                                        if ( option(_name="crb.check.residual").template as<bool>()  && solve_dual_problem  )
+                                        {
+                                            if( relative_primal_solution_error_bound_efficiency < 1 )
+                                                LOG( INFO ) << "efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                            if( relative_dual_solution_error_bound_efficiency < 1 )
+                                                LOG( INFO ) << "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                            if( output_error_bound_efficiency < 1 )
+                                                LOG( INFO ) << "efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
+
+                                            std::vector < std::vector<double> > primal_residual_coefficients = all_upper_bounds.template get<3>();
+                                            std::vector < std::vector<double> > dual_residual_coefficients = all_upper_bounds.template get<4>();
+                                            if( model->isSteady() )
+                                            {
+                                                crb->checkResidual( mu , primal_residual_coefficients, dual_residual_coefficients, uN, uNdu );
+                                            }
+                                            else
+                                            {
+                                                std::vector< element_type > uNelement;
+                                                std::vector< element_type > uNelement_old;
+                                                std::vector< element_type > uNelement_du;
+                                                std::vector< element_type > uNelement_du_old;
+
+                                                auto u_crb_old = solutions.template get<2>();
+                                                auto u_crb_du_old = solutions.template get<3>();
+
+                                                //size is the number of time step
+                                                for(int t=0; t<size; t++)
+                                                {
+                                                    uNelement.push_back( crb->expansion( u_crb[t], N, WN ) );
+                                                    uNelement_old.push_back( crb->expansion( u_crb_old[t], N, WN ) );
+                                                    uNelement_du.push_back( crb->expansion( u_crb_du[t], N, WNdu ) );
+                                                    uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, WNdu ) );
+                                                }//loop over time step
+
+                                                crb->compareResidualsForTransientProblems(N, mu ,
+                                                                                          uNelement, uNelement_old, uNelement_du, uNelement_du_old,
+                                                                                          primal_residual_coefficients, dual_residual_coefficients );
+                                            }//transient case
+                                        }//check residuals computations
+
+                                    }//loop over basis functions ( N )
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         LOG(INFO) << "save in logfile\n";
