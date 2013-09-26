@@ -535,8 +535,8 @@ public:
      */
     LocalDof const& globalToLocal( size_type dof )  const
     {
-        auto it = M_el_l2g.right.find( Dof( dof ) );
-        DCHECK( it != M_el_l2g.right.end() ) << "Invalid global dof entry ( " << dof << ")";
+        auto it = _M_el_l2g.right.find( Dof( dof ) );
+        DCHECK( it != _M_el_l2g.right.end() ) << "Invalid global dof entry ( " << dof << ")";
         return it->second;
     }
 
