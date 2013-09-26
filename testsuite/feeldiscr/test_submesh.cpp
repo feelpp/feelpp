@@ -84,7 +84,7 @@ struct test_submesh: public Application
         location_element_const_iterator it,en;
         boost::tie( it,en ) = mesh->boundaryElements( 0 );
         mesh_ptrtype meshbdy( new mesh_type );
-        mesh->createSubmesh( *meshbdy, it, en );
+        meshbdy = createSubmesh( mesh, boundaryelements( mesh ) );
         BOOST_CHECK_EQUAL( meshbdy->numElements(), std::distance( it, en ) );
         //saveGMSHMesh( _mesh=meshbdy, _filename=shape+"_sub.msh" );
         using namespace Feel::vf;
@@ -105,7 +105,7 @@ struct test_submesh: public Application
 
         mesh_ptrtype meshint( new mesh_type );
         boost::tie( it,en ) = mesh->internalElements( 0 );
-        mesh->createSubmesh( *meshint, it, en );
+        meshint = createSubmesh( mesh, internalelements(mesh) );
         BOOST_CHECK_EQUAL( meshint->numElements(), std::distance( it, en ) );
         //saveGMSHMesh( _mesh=meshbdy, _filename="meshbdy" );
 
