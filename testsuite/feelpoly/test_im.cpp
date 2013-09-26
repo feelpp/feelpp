@@ -251,10 +251,10 @@ public:
               boost::function<value_type( arg_type const& )> const& func,
               value_type tol = Feel::type_traits<T>::epsilon() )
         :
-        _M_res( res ),
-        _M_tol( tol ),
-        _M_face( -2 ),
-        _M_func( func )
+        M_res( res ),
+        M_tol( tol ),
+        M_face( -2 ),
+        M_func( func )
     {
 
     }
@@ -263,10 +263,10 @@ public:
               boost::function<value_type( arg_type const& )> const& func,
               value_type tol = Feel::type_traits<T>::epsilon() )
         :
-        _M_res( res ),
-        _M_tol( tol ),
-        _M_face( __face ),
-        _M_func( func )
+        M_res( res ),
+        M_tol( tol ),
+        M_face( __face ),
+        M_func( func )
     {
 
     }
@@ -278,34 +278,34 @@ public:
         value_type res = 0.0;
         value_type integral = 0.0;
 
-        if ( _M_face == -2 )
+        if ( M_face == -2 )
         {
-            integral = im.integrateAtPoints( _M_func );
+            integral = im.integrateAtPoints( M_func );
         }
 
-        if ( _M_face != -2 )
+        if ( M_face != -2 )
         {
-            integral = im.integrateAtPoints( Feel::IntegrationFaceEnum( _M_face ), _M_func );
+            integral = im.integrateAtPoints( Feel::IntegrationFaceEnum( M_face ), M_func );
         }
 
-        res = math::abs( integral - _M_res );
+        res = math::abs( integral - M_res );
 
-        if ( ! ( res < _M_tol ) )
+        if ( ! ( res < M_tol ) )
         {
             std::cout << "IM: " << im << "\n";
             std::cout << "TestIm<"<<D << "," << typeid( T ).name() << ">::  integral   = " << integral << "\n";
-            std::cout << "TestIm<"<<D << "," << typeid( T ).name()<< ">:: exact value = " << _M_res << "\n";
+            std::cout << "TestIm<"<<D << "," << typeid( T ).name()<< ">:: exact value = " << M_res << "\n";
             std::cout << "TestIm<"<<D << "," << typeid( T ).name()<< ">::     error   = " << res << "\n";
-            std::cout << "TestIm<"<<D << "," << typeid( T ).name()<< ">:: tolerance   = " << _M_tol << "\n";
+            std::cout << "TestIm<"<<D << "," << typeid( T ).name()<< ">:: tolerance   = " << M_tol << "\n";
         }
 
-        BOOST_CHECK( res < _M_tol );
+        BOOST_CHECK( res < M_tol );
         return res;
     }
-    value_type _M_res;
-    value_type _M_tol;
-    int _M_face;
-    boost::function<value_type( arg_type const& )> _M_func;
+    value_type M_res;
+    value_type M_tol;
+    int M_face;
+    boost::function<value_type( arg_type const& )> M_func;
 };
 #define TESTS_XP( T )                                                          \
  test->add( BOOST_TEST_CASE( ( TestImPK<1,1, T>( 0.0         , xp<1,T> ) )  ) ); \
@@ -350,9 +350,9 @@ public:
               boost::function<value_type( node_type const& )> const& func,
               value_type tol = Feel::type_traits<T>::epsilon() )
         :
-        _M_res( res ),
-        _M_tol( tol ),
-        _M_func( func )
+        M_res( res ),
+        M_tol( tol ),
+        M_func( func )
     {}
     value_type operator()() const
     {
@@ -360,22 +360,22 @@ public:
 
         IM<D, N, T, Hypercube> im;
 
-        value_type res = math::abs( im.integrateAtPoints( _M_func ) - _M_res );
+        value_type res = math::abs( im.integrateAtPoints( M_func ) - M_res );
 
-        if ( !( res < _M_tol ) )
+        if ( !( res < M_tol ) )
         {
-            std::cout << "TestImQK:: int   = " << im.integrateAtPoints( _M_func ) << "\n";
-            std::cout << "TestImQK:: exact = " << _M_res << "\n";
+            std::cout << "TestImQK:: int   = " << im.integrateAtPoints( M_func ) << "\n";
+            std::cout << "TestImQK:: exact = " << M_res << "\n";
             std::cout << "TestImQK:: res   = " << res << "\n";
-            std::cout << "TestImQK:: tol   = " << _M_tol << "\n";
+            std::cout << "TestImQK:: tol   = " << M_tol << "\n";
         }
 
-        BOOST_CHECK( res < _M_tol );
+        BOOST_CHECK( res < M_tol );
         return res;
     }
-    value_type _M_res;
-    value_type _M_tol;
-    boost::function<value_type( node_type const& )> _M_func;
+    value_type M_res;
+    value_type M_tol;
+    boost::function<value_type( node_type const& )> M_func;
 };
 #define TESTS_QK_COSCOS( T )                                                    \
  test->add( BOOST_TEST_CASE( ( TestImQK2D<40, T>( 4.0*sin(T(1.0))*sin(T(1.0)) , coscos<T>, 1.0E-14 ) )  ) );\
@@ -961,6 +961,3 @@ int main()
 #endif
 
 #endif // 1
-
-
-

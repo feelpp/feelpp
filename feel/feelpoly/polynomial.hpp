@@ -119,8 +119,8 @@ public:
      */
     Polynomial()
         :
-        _M_basis(),
-        _M_coeff( _M_basis.coeff() )
+        M_basis(),
+        M_coeff( M_basis.coeff() )
     {
     }
 
@@ -131,8 +131,8 @@ public:
      */
     Polynomial( Poly const& __poly )
         :
-        _M_basis( __poly.basis() ),
-        _M_coeff( _M_basis.coeff() )
+        M_basis( __poly.basis() ),
+        M_coeff( M_basis.coeff() )
     {
     }
 
@@ -145,8 +145,8 @@ public:
      */
     Polynomial( Poly const& __poly, container_type const& __coeff, bool __as_is = false )
         :
-        _M_basis( __poly.basis() ),
-        _M_coeff( _M_basis.coeff() )
+        M_basis( __poly.basis() ),
+        M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
     }
@@ -159,8 +159,8 @@ public:
      */
     Polynomial( container_type const& __coeff, bool __as_is = false )
         :
-        _M_basis(),
-        _M_coeff( _M_basis.coeff() )
+        M_basis(),
+        M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
     }
@@ -175,16 +175,16 @@ public:
     template<class AE>
     Polynomial( Poly const& __poly, ublas::matrix_expression<AE> const& __coeff, bool __as_is = false )
         :
-        _M_basis( __poly.basis() ),
-        _M_coeff( _M_basis.coeff() )
+        M_basis( __poly.basis() ),
+        M_coeff( M_basis.coeff() )
     {
         setCoefficient( __coeff, __as_is );
     }
 
     Polynomial( Polynomial const & p )
         :
-        _M_basis( p._M_basis ),
-        _M_coeff( p._M_coeff )
+        M_basis( p.M_basis ),
+        M_coeff( p.M_coeff )
     {}
 
     ~Polynomial()
@@ -200,8 +200,8 @@ public:
     {
         if ( this != &__p )
         {
-            _M_basis = __p._M_basis;
-            _M_coeff = __p._M_coeff;
+            M_basis = __p.M_basis;
+            M_coeff = __p.M_coeff;
         }
 
         return *this;
@@ -209,7 +209,7 @@ public:
 
     self_type const& operator-=( self_type const& __p )
     {
-        _M_coeff -= __p._M_coeff;
+        M_coeff -= __p.M_coeff;
         return *this;
     }
 
@@ -217,8 +217,8 @@ public:
     {
         if ( this != &__p )
         {
-            _M_basis = __p._M_basis;
-            _M_coeff = __p._M_coeff;
+            M_basis = __p.M_basis;
+            M_coeff = __p.M_coeff;
         }
 
         return *this;
@@ -232,8 +232,8 @@ public:
      */
     component_type operator[]( int i ) const
     {
-        const int ncols = _M_coeff.size2();
-        return component_type( Poly(), ublas::project( _M_coeff,
+        const int ncols = M_coeff.size2();
+        return component_type( Poly(), ublas::project( M_coeff,
                                ublas::slice( nComponents*i+i, 1, 1  ),
                                ublas::slice( 0, 1, ncols ) ) );
     }
@@ -247,7 +247,7 @@ public:
     matrix_type
     operator()( node_type const& __x ) const
     {
-        return ublas::prod( _M_coeff, _M_basis( __x ) );
+        return ublas::prod( M_coeff, M_basis( __x ) );
     }
 
     /**
@@ -258,7 +258,7 @@ public:
      */
     matrix_type operator()( points_type const& __pts ) const
     {
-        return ublas::prod( _M_coeff, _M_basis( __pts ) );
+        return ublas::prod( M_coeff, M_basis( __pts ) );
     }
 
     //@}
@@ -273,7 +273,7 @@ public:
      */
     bool isZero() const
     {
-        return ublas::norm_2( _M_coeff ) < Feel::type_traits<value_type>::epsilon();
+        return ublas::norm_2( M_coeff ) < Feel::type_traits<value_type>::epsilon();
 
     }
     /**
@@ -281,7 +281,7 @@ public:
      */
     matrix_type const& coeff() const
     {
-        return _M_coeff;
+        return M_coeff;
     }
 
     /**
@@ -289,7 +289,7 @@ public:
      */
     matrix_type const& coefficients() const
     {
-        return _M_coeff;
+        return M_coeff;
     }
 
     /**
@@ -297,7 +297,7 @@ public:
      */
     basis_type const& basis() const
     {
-        return _M_basis;
+        return M_basis;
     }
 
     //@}
@@ -311,16 +311,16 @@ public:
      */
     void setCoefficient( matrix_type const& __c, bool __as_is = false )
     {
-        //FEELPP_ASSERT( __c.size1() == nComponents*nComponents && __c.size2() == _M_coeff.size2() )
-        //    ( is_scalar )( is_vectorial )( is_tensor2 )( __c )( _M_coeff ).error( "invalid polynomial coefficients" );
+        //FEELPP_ASSERT( __c.size1() == nComponents*nComponents && __c.size2() == M_coeff.size2() )
+        //    ( is_scalar )( is_vectorial )( is_tensor2 )( __c )( M_coeff ).error( "invalid polynomial coefficients" );
         if ( !__as_is )
         {
-            _M_coeff = ublas::prod( polyset_type::toMatrix( __c ), polyset_type::toMatrix( _M_coeff ) );
-            _M_coeff = polyset_type::toType( _M_coeff );
+            M_coeff = ublas::prod( polyset_type::toMatrix( __c ), polyset_type::toMatrix( M_coeff ) );
+            M_coeff = polyset_type::toType( M_coeff );
         }
 
         else
-            _M_coeff = __c;
+            M_coeff = __c;
     }
 
 
@@ -339,7 +339,7 @@ public:
     matrix_type
     evaluate( node_type const& __x ) const
     {
-        return ublas::prod( _M_coeff, _M_basis( __x ) );
+        return ublas::prod( M_coeff, M_basis( __x ) );
     }
 
     /**
@@ -350,27 +350,27 @@ public:
      */
     matrix_type evaluate( points_type const& __pts ) const
     {
-        return ublas::prod( _M_coeff, _M_basis( __pts ) );
+        return ublas::prod( M_coeff, M_basis( __pts ) );
     }
 
     template<typename AE>
     matrix_type derivate( uint16_type i, ublas::matrix_expression<AE> const& pts ) const
     {
-        ublas::vector<matrix_type> der( _M_basis.derivate( pts ) );
-        matrix_type res( _M_coeff.size1(), pts().size2() );
-        ublas::axpy_prod( _M_coeff, der[i], res );
+        ublas::vector<matrix_type> der( M_basis.derivate( pts ) );
+        matrix_type res( M_coeff.size1(), pts().size2() );
+        ublas::axpy_prod( M_coeff, der[i], res );
         return res;
     }
 
     template<typename AE>
     matrix_type derivate( uint16_type i, uint16_type j, ublas::matrix_expression<AE> const& pts ) const
     {
-        //std::cout << "[derivate2] _M_coeff = " << _M_coeff << "\n";
-        matrix_type eval( _M_basis.evaluate( pts ) );
-        //matrix_type res( _M_coeff.size1(), pts().size2() );
-        //ublas::axpy_prod( _M_coeff, der[i], res );
-        matrix_type p1 = ublas::prod( _M_coeff, _M_basis.d( i ) );
-        matrix_type p2 = ublas::prod( p1, _M_basis.d( j ) );
+        //std::cout << "[derivate2] M_coeff = " << M_coeff << "\n";
+        matrix_type eval( M_basis.evaluate( pts ) );
+        //matrix_type res( M_coeff.size1(), pts().size2() );
+        //ublas::axpy_prod( M_coeff, der[i], res );
+        matrix_type p1 = ublas::prod( M_coeff, M_basis.d( i ) );
+        matrix_type p2 = ublas::prod( p1, M_basis.d( j ) );
         return ublas::prod( p2, eval );
     }
 
@@ -383,7 +383,7 @@ public:
      */
     matrix_type const& d( uint16_type i ) const
     {
-        return _M_basis.d( i );
+        return M_basis.d( i );
     }
 
     /**
@@ -394,7 +394,7 @@ public:
      */
     self_type derivative( uint16_type l ) const
     {
-        return self_type( Poly(), ublas::prod( _M_coeff, _M_basis.d( l ) ), true );
+        return self_type( Poly(), ublas::prod( M_coeff, M_basis.d( l ) ), true );
     }
 
     /**
@@ -404,12 +404,12 @@ public:
      */
     PolynomialSet<Poly,PolySetType> toSet( bool asis = false ) const
     {
-        return PolynomialSet<Poly,PolySetType>( Poly(), _M_coeff, asis );
+        return PolynomialSet<Poly,PolySetType>( Poly(), M_coeff, asis );
     }
 #if 0
     Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p ) const
     {
-        matrix_type c = _M_coeff-p._M_coeff;
+        matrix_type c = M_coeff-p.M_coeff;
         std::cout << "c=" << c << "\n";
         return Polynomial<Poly, PolySetType>( Poly(), c );
     }
@@ -421,8 +421,8 @@ protected:
 
 private:
 
-    basis_type _M_basis;
-    container_type _M_coeff;
+    basis_type M_basis;
+    container_type M_coeff;
 };
 template<typename Poly, template<uint16_type> class PolySetType>
 Polynomial<Poly, PolySetType> operator-( Polynomial<Poly, PolySetType> const& p1,Polynomial<Poly, PolySetType> const& p2 )

@@ -52,7 +52,7 @@ namespace Feel
 namespace posix_time = boost::posix_time;
 
 /*!
-  
+
   *\ingroup Core
   *\brief Area debugging tool
 
@@ -96,7 +96,7 @@ struct DebugStream::Private
         __flush_function( 0 )
     {}
     bool debug;
-    std::ostringstream _M_output;
+    std::ostringstream M_output;
 
     stprintf __flush_function;
 
@@ -276,7 +276,7 @@ DebugStream::DebugStream( int area, int level, bool print )
         posix_time::ptime __time( posix_time::second_clock::local_time() );
 
         if ( area )
-            __p->_M_output << "[" << getDescription ( area ) << "] ";
+            __p->M_output << "[" << getDescription ( area ) << "] ";
 
         //<< posix_time::to_simple_string( __time )<< ") : ";
     }
@@ -304,7 +304,7 @@ DebugStream::DebugStream( const char* initialString, int area, int level, bool p
         posix_time::ptime __time( posix_time::second_clock::local_time() );
 
         if ( area )
-            __p->_M_output << "[" << getDescription ( area ) << "] "
+            __p->M_output << "[" << getDescription ( area ) << "] "
                            //<< posix_time::to_simple_string( __time )<< ") : "
                            << initialString;
     }
@@ -332,7 +332,7 @@ DebugStream::operator<<( double s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -343,7 +343,7 @@ DebugStream::operator<<( std::complex<double> s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -355,7 +355,7 @@ DebugStream::operator<<( dd_real s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -366,7 +366,7 @@ DebugStream::operator<<( qd_real s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -378,7 +378,7 @@ DebugStream::operator<<( bool s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -390,7 +390,7 @@ DebugStream::operator<<( uint16_type s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -402,7 +402,7 @@ DebugStream::operator<<( uint32_type s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -414,7 +414,7 @@ DebugStream::operator<<( size_type s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -427,7 +427,7 @@ DebugStream::operator<<( ptrdiff_t s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -439,7 +439,7 @@ DebugStream::operator<<( uint64_type s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -451,7 +451,7 @@ DebugStream::operator<<( int16_type s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -463,7 +463,7 @@ DebugStream::operator<<( int32_type s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -474,7 +474,7 @@ DebugStream::operator<<( int64_type s )
 {
     if ( __p->debug )
     {
-        __p->_M_output  << s;
+        __p->M_output  << s;
         flush();
     }
 
@@ -485,7 +485,7 @@ DebugStream&
 DebugStream::operator<<( const char* s )
 {
     if ( __p->debug )
-        __p->_M_output  << s;
+        __p->M_output  << s;
 
     flush();
     return *this;
@@ -494,7 +494,7 @@ DebugStream&
 DebugStream::operator<<( std::string const& s )
 {
     if ( __p->debug )
-        __p->_M_output  << s;
+        __p->M_output  << s;
 
     size_t found = s.find( '\n' );
 
@@ -524,25 +524,25 @@ DebugStream::setFlush( stprintf func )
 void
 DebugStream::flush(  )
 {
-    if ( !__p->_M_output.str().empty() )
+    if ( !__p->M_output.str().empty() )
     {
         if ( Private::_S_attached )
         {
-            Private::_S_logfile << __p->_M_output.str();
+            Private::_S_logfile << __p->M_output.str();
             Private::_S_logfile.flush();
         }
 
         else if ( __p->__flush_function == 0 )
         {
-            std::cerr << __p->_M_output.str();
+            std::cerr << __p->M_output.str();
         }
 
         else
         {
-            __p->__flush_function( "%s", __p->_M_output.str().c_str() );
+            __p->__flush_function( "%s", __p->M_output.str().c_str() );
         }
 
-        __p->_M_output.str( "" );
+        __p->M_output.str( "" );
     }
 
 }
@@ -758,4 +758,3 @@ flush( Feel::DebugStream& s )
     s.flush();
     return s;
 }
-

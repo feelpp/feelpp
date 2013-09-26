@@ -66,7 +66,7 @@ MatrixEpetra::energy ( vector_type const& v1, vector_type const& v2, bool transp
         epetra_vector_type const& ev2( dynamic_cast<epetra_vector_type const&>( v2 ) );
         epetra_vector_type ev3( this->getRowMap() );
 
-        _M_mat->Multiply( transpose, ev2.vec(), ev3.vec() );
+        M_mat->Multiply( transpose, ev2.vec(), ev3.vec() );
         ev3.vec().Dot( ev1.vec(), &res );
     }
 
@@ -91,7 +91,7 @@ MatrixEpetra::energy ( vector_type const& v1, vector_type const& v2, bool transp
                 v.set( start + i, v2( start + i ) );
         }
         VectorEpetra<value_type> z( bmap1 );
-        _M_mat->Multiply( transpose, v.vec(), z.vec() );
+        M_mat->Multiply( transpose, v.vec(), z.vec() );
         z.vec().Dot( u.vec(), &res );
     }
 
@@ -118,35 +118,35 @@ MatrixEpetra::init ( const size_type m,
             this->clear();
 
         /*
-          _M_emap = Epetra_Map( m, m_l, 0, Epetra_MpiComm(M_comm));
-          _M_col_emap = Epetra_Map( n, n, 0, Epetra_MpiComm(M_comm));
-          _M_dom_map = _M_emap;
-          _M_range_map = _M_emap;
+          M_emap = Epetra_Map( m, m_l, 0, Epetra_MpiComm(M_comm));
+          M_col_emap = Epetra_Map( n, n, 0, Epetra_MpiComm(M_comm));
+          M_dom_map = M_emap;
+          M_range_map = M_emap;
         */
 #endif
-        //_M_emap.Print(std::cout );
-        //_M_col_emap.Print(std::cout );
-        //_M_dom_map.Print(std::cout );
-        //_M_range_map.Print(std::cout );
-        //Epetra_FECrsGraph epetra_graph( Copy, _M_emap, _M_col_emap, (int*)this->graph()->nNz().data() );
-        //std::cout << "_M_row_map " << _M_emap << "\n";
-        //std::cout << "_M_col_map " << _M_col_emap << "\n";
+        //M_emap.Print(std::cout );
+        //M_col_emap.Print(std::cout );
+        //M_dom_map.Print(std::cout );
+        //M_range_map.Print(std::cout );
+        //Epetra_FECrsGraph epetra_graph( Copy, M_emap, M_col_emap, (int*)this->graph()->nNz().data() );
+        //std::cout << "M_row_map " << M_emap << "\n";
+        //std::cout << "M_col_map " << M_col_emap << "\n";
 
-        boost::shared_ptr<Epetra_Map> graph_map ( new Epetra_Map( _M_emap ) );
+        boost::shared_ptr<Epetra_Map> graph_map ( new Epetra_Map( M_emap ) );
 
 
         //find which map (between col and row map has more lines)
-        if ( _M_emap.MaxAllGID() < _M_col_emap.MaxAllGID() )
-            graph_map = boost::shared_ptr<Epetra_Map>( new Epetra_Map( _M_col_emap ) );
+        if ( M_emap.MaxAllGID() < M_col_emap.MaxAllGID() )
+            graph_map = boost::shared_ptr<Epetra_Map>( new Epetra_Map( M_col_emap ) );
 
         std::vector<int> nnz( this->graph()->nNz().size() );
         std::copy( this->graph()->nNz().begin(), this->graph()->nNz().end(), nnz.begin() );
-        //Epetra_FECrsGraph epetra_graph( Copy, _M_emap, _M_col_emap, (int*)this->graph()->nNz().data() );
-        Epetra_FECrsGraph epetra_graph( Copy, _M_emap, _M_col_emap, nnz.data() );
+        //Epetra_FECrsGraph epetra_graph( Copy, M_emap, M_col_emap, (int*)this->graph()->nNz().data() );
+        Epetra_FECrsGraph epetra_graph( Copy, M_emap, M_col_emap, nnz.data() );
 
-        //Epetra_FECrsGraph epetra_graph( Copy, _M_emap, (int*)this->graph()->nNz().data() );
-        //int start = _M_emap.MinMyGID();
-        //int stop = _M_emap.MaxMyGID()+1;
+        //Epetra_FECrsGraph epetra_graph( Copy, M_emap, (int*)this->graph()->nNz().data() );
+        //int start = M_emap.MinMyGID();
+        //int stop = M_emap.MaxMyGID()+1;
 
         // insert global indices, even the non-local ones
         graph_type::const_iterator it = this->graph()->begin();
@@ -186,13 +186,13 @@ MatrixEpetra::init ( const size_type m,
         //std::cout << "Epetra graph: " << epetra_graph << "\n";
         //std::cout << "------------------------------------------------------------\n";
 
-        //int ierr = epetra_graph.GlobalAssemble( _M_dom_map, _M_range_map );
-        //std::cout << "_M_dom_map " << _M_dom_map << "\n";
-        //std::cout << "_M_range_map " << _M_range_map << "\n";
+        //int ierr = epetra_graph.GlobalAssemble( M_dom_map, M_range_map );
+        //std::cout << "M_dom_map " << M_dom_map << "\n";
+        //std::cout << "M_range_map " << M_range_map << "\n";
 
         //std::cout << "Call GlobalAssemble...\n";
-        //int ierr = epetra_graph.GlobalAssemble( _M_dom_map, _M_range_map, true );
-        int ierr = epetra_graph.GlobalAssemble( _M_range_map, _M_dom_map, true );
+        //int ierr = epetra_graph.GlobalAssemble( M_dom_map, M_range_map, true );
+        int ierr = epetra_graph.GlobalAssemble( M_range_map, M_dom_map, true );
         //int ierr = epetra_graph.GlobalAssemble( true );
         //int ierr = epetra_graph.GlobalAssemble();
         //std::cout << "Epetra graph: " << epetra_graph << "\n";
@@ -200,9 +200,9 @@ MatrixEpetra::init ( const size_type m,
         FEELPP_ASSERT( ierr == 0 )( ierr ).warn ( "[MatrixEpetra::init] GlobalAssemble failed" );
         DVLOG(2) << "Global assemble  ierr = " << ierr << "\n";
         //epetra_graph.Print( std::cout );
-        _M_mat = boost::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, epetra_graph ) );
+        M_mat = boost::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, epetra_graph ) );
 
-        //_M_mat->Print( std::cout );
+        //M_mat->Print( std::cout );
         this->setInitialized( true );
     }
 }
@@ -225,11 +225,11 @@ MatrixEpetra::add ( const size_type i,
 
 #if 0
     //works only for values that already exist in the matrix. Can not be used to put new values into.
-    ierr = _M_mat->SumIntoGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
+    ierr = M_mat->SumIntoGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
 
     if ( ierr != 0 )
     {
-        ierr=_M_mat->InsertGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
+        ierr=M_mat->InsertGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
 
         DVLOG(2) << "ERRORCODE SumIntoGlobalValues: " << ierr
                        <<  " in M(" << i_val << "," << j_val << ") for value "
@@ -237,15 +237,15 @@ MatrixEpetra::add ( const size_type i,
     }
 
 #else
-    //ierr=_M_mat->InsertGlobalValues(1, &i_val, 1,  &j_val, &epetra_value);
-    ierr = _M_mat->SumIntoGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
+    //ierr=M_mat->InsertGlobalValues(1, &i_val, 1,  &j_val, &epetra_value);
+    ierr = M_mat->SumIntoGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
 
 #if 0
     DVLOG(2) << "ERRORCODE SumIntoGlobalValues: " << ierr
                    <<  " in M(" << i_val << "," << j_val << ") for value "
                    << epetra_value << ".\n";
 #endif
-    //ierr=_M_mat->InsertMyValues(i_val, 1,  &j_val, &epetra_value);
+    //ierr=M_mat->InsertMyValues(i_val, 1,  &j_val, &epetra_value);
 #endif
 }
 
@@ -268,7 +268,7 @@ MatrixEpetra::transpose( MatrixSparse<value_type>& Mt ) const
 #if 0
     Epetra_FECrsMatrix* Atrans;
 
-    Epetra_RowMatrixTransposer transposer ( &*_M_mat );
+    Epetra_RowMatrixTransposer transposer ( &*M_mat );
     transposer.CreateTranspose( true, Atrans );
 
     Mt =  new MatrixEpetra( *Atrans );
@@ -303,9 +303,9 @@ MatrixEpetra::printMatlab ( const std::string name ) const
 
     //this->printKonsole();
     //std::cout << "[printMatlab] print matrix in matlab file done\n";
-    int ret = EpetraExt::RowMatrixToMatlabFile( name.c_str(), *_M_mat );
+    int ret = EpetraExt::RowMatrixToMatlabFile( name.c_str(), *M_mat );
 
-    //int ret = EpetraExt::RowMatrixToMatrixMarketFile( name.c_str(), *_M_mat, "toto", "tutu" );
+    //int ret = EpetraExt::RowMatrixToMatrixMarketFile( name.c_str(), *M_mat, "toto", "tutu" );
     if ( ret != 0 )
         std::cout << "error in printMatlab\n";
 }
@@ -318,25 +318,25 @@ MatrixEpetra::printKonsole () const
     FEELPP_ASSERT ( this->isInitialized() ).error( "epetra matrix not properly initialized" );
 
     std::cout << "\n+---------------Information about the Matrix---------------+\n" <<  std::endl;
-    cout << *_M_mat;
+    cout << *M_mat;
     std::cout << "+----------------------------------------------------------+\n" <<  std::endl;
     std::cout << "\n+---------------Information about the RowMap------------------+\n" <<  std::endl;
-    cout << _M_mat->RowMap();
+    cout << M_mat->RowMap();
     std::cout << "+----------------------------------------------------------+\n" <<  std::endl;
     std::cout << "\n+---------------Information about the ColMap------------------+\n" <<  std::endl;
-    cout << _M_mat->ColMap();
+    cout << M_mat->ColMap();
     std::cout << "+----------------------------------------------------------+\n" <<  std::endl;
 }
 
 
 
 void
-MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
+MatrixEpetra::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );
 
-    const Epetra_Map& rowMap( _M_mat->RowMatrixRowMap() );
-    const Epetra_Map& colMap( _M_mat->RowMatrixColMap() );
+    const Epetra_Map& rowMap( M_mat->RowMatrixRowMap() );
+    const Epetra_Map& colMap( M_mat->RowMatrixColMap() );
 
 
     std::vector<int>::const_iterator rit = rows.begin();
@@ -351,7 +351,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
     DVLOG(2) << "[MatrixEpetra::zeroRows] on symmetric ? " << on_context.test( ON_ELIMINATION_SYMMETRIC ) << "\n";
 
     Epetra_Vector Diagonal( rowMap );
-    _M_mat->ExtractDiagonalCopy( Diagonal );
+    M_mat->ExtractDiagonalCopy( Diagonal );
 
 
     for ( size_type i = 0; rit != ren; ++rit, ++i )
@@ -366,7 +366,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
 
             DVLOG(2) << "extract row gid: " << *rit << "( " << i << ") lid: " << myRow  << "\n";
             //When doing ExtractMyRowView, Indices contain the local indices
-            int ierr = _M_mat->ExtractMyRowView( myRow, NumEntries, Values, Indices );
+            int ierr = M_mat->ExtractMyRowView( myRow, NumEntries, Values, Indices );
             DVLOG(2) << "ExtractGlobalRowView1  ierr = " << ierr << "\n";
             FEELPP_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ( "error in ExtractGlobalRowView" );
 
@@ -395,7 +395,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                     {
                         int gid = Indices[j];
                         DVLOG(2) << "[zeroRows] local, gid =" << gid << " lid = " << Indices[j] << "\n";
-                        ierr = _M_mat->ExtractMyRowView( Indices[j], NumRowEntries, RowValues, RowIndices );
+                        ierr = M_mat->ExtractMyRowView( Indices[j], NumRowEntries, RowValues, RowIndices );
                         DVLOG(2) << "ExtractMyRowView ierr = " << ierr << "\n";
                         FEELPP_ASSERT( ierr == 0 )( ierr )( Indices[j] )( NumRowEntries ).warn ( "error in ExtractMyRowView/symm" );
                         bool found = false;
@@ -404,7 +404,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
                             if ( RowIndices[k] == myRow )
                             {
                                 found=true;
-                                rhs.add( gid, -values[i]*RowValues[k] );
+                                rhs.add( gid, -values(gid)*RowValues[k] );
                                 RowValues[k] = 0.0;
                                 break;
                             }
@@ -425,7 +425,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
 
             if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
             {
-                ierr = _M_mat->ReplaceMyValues( myRow, NumEntries, &Diagonal[myRow], &myRow  );
+                ierr = M_mat->ReplaceMyValues( myRow, NumEntries, &Diagonal[myRow], &myRow  );
                 FEELPP_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ( "error in ReplaceMyValues()/diag" );
             }
 
@@ -433,7 +433,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
             {
                 /* put diagonal to 1 */
                 Diagonal[myRow] = 1.0;
-                ierr = _M_mat->ReplaceMyValues( myRow, NumEntries, &Diagonal[myRow], &myRow  );
+                ierr = M_mat->ReplaceMyValues( myRow, NumEntries, &Diagonal[myRow], &myRow  );
                 FEELPP_ASSERT( ierr == 0 )( ierr )( myRow )( NumEntries ).warn ( "error in ReplaceMyValues()/1" );
             }
 
@@ -442,7 +442,7 @@ MatrixEpetra::zeroRows( std::vector<int> const& rows, std::vector<value_type> co
             // warning: a row index may belong to another
             // processor, so make sure that we access only the
             // rows that belong to this processor
-            rhs.set( *rit, values[i]*Diagonal[myRow] );
+            rhs.set( *rit, values(*rit)*Diagonal[myRow] );
 
         }
     }
@@ -460,7 +460,7 @@ MatrixEpetra::addMatrix ( int* rows, int nrows,
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );
 
-    _M_mat->SumIntoGlobalValues( nrows, rows, ncols, cols, data, Epetra_FECrsMatrix::ROW_MAJOR );
+    M_mat->SumIntoGlobalValues( nrows, rows, ncols, cols, data, Epetra_FECrsMatrix::ROW_MAJOR );
 }
 
 

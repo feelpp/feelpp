@@ -176,33 +176,33 @@ public:
 
     StructuredGrid( bbox<Dim> const& __bbox,  shape_type const& __shape )
         :
-        _M_shape( __shape ),
-        _M_coord( __shape )
+        M_shape( __shape ),
+        M_coord( __shape )
     {
 #if 0
-        std::for_each( _M_coord.begin(), _M_coord.end(), lambda::bind( &node_type::resize,
+        std::for_each( M_coord.begin(), M_coord.end(), lambda::bind( &node_type::resize,
                        lambda::_1,
                        Dim ) );
 #else
         idx_type __idx;
         node_type __pt( Dim );
 
-        for ( index_type i = 0; i < _M_shape[0]; ++i )
+        for ( index_type i = 0; i < M_shape[0]; ++i )
         {
             __idx[0] = i;
-            __pt[0] = __bbox.min[0]+i*( __bbox.max[0]-__bbox.min[0] )/( _M_shape[0]-1 );
+            __pt[0] = __bbox.min[0]+i*( __bbox.max[0]-__bbox.min[0] )/( M_shape[0]-1 );
 
-            for ( index_type j = 0; j < _M_shape[1]; ++j )
+            for ( index_type j = 0; j < M_shape[1]; ++j )
             {
                 __idx[1] = j;
-                __pt[1] = __bbox.min[1]+j*( __bbox.max[1]-__bbox.min[1] )/( _M_shape[1]-1 );
+                __pt[1] = __bbox.min[1]+j*( __bbox.max[1]-__bbox.min[1] )/( M_shape[1]-1 );
 
-                for ( index_type k = 0; k < _M_shape[2]; ++k )
+                for ( index_type k = 0; k < M_shape[2]; ++k )
                 {
                     __idx[2] = k;
-                    __pt[2] = __bbox.min[2]+k*( __bbox.max[2]-__bbox.min[2] )/( _M_shape[2]-1 );
-                    _M_coord( __idx ).resize( Dim );
-                    _M_coord( __idx ) = __pt;
+                    __pt[2] = __bbox.min[2]+k*( __bbox.max[2]-__bbox.min[2] )/( M_shape[2]-1 );
+                    M_coord( __idx ).resize( Dim );
+                    M_coord( __idx ) = __pt;
                 }
             }
         }
@@ -229,7 +229,7 @@ public:
      */
     size_type numElements() const
     {
-        return _M_coord.num_elements();
+        return M_coord.num_elements();
     }
 
     /**
@@ -240,7 +240,7 @@ public:
      */
     shape_type const& shape() const
     {
-        return _M_shape;
+        return M_shape;
     }
 
     /**
@@ -252,7 +252,7 @@ public:
      */
     uint extent( uint __i ) const
     {
-        return _M_shape[__i];
+        return M_shape[__i];
     }
 
     /**
@@ -263,7 +263,7 @@ public:
      */
     node_type& operator()( idx_type const& __idx )
     {
-        return _M_coord( __idx );
+        return M_coord( __idx );
     }
 
     /**
@@ -274,7 +274,7 @@ public:
      */
     node_type operator()( idx_type const& __idx ) const
     {
-        return _M_coord( __idx );
+        return M_coord( __idx );
     }
 
     //@}
@@ -302,9 +302,9 @@ public:
 
 protected:
 
-    shape_type _M_shape;
+    shape_type M_shape;
 
-    coord_type _M_coord;
+    coord_type M_coord;
 
 private:
 
@@ -330,22 +330,22 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
           "part 1\n"
           "structured block\n"
           "block\n"
-          << std::setw( 8 ) << _M_shape[0]
-          << std::setw( 8 ) << _M_shape[1]
-          << std::setw( 8 ) << _M_shape[2];
+          << std::setw( 8 ) << M_shape[0]
+          << std::setw( 8 ) << M_shape[1]
+          << std::setw( 8 ) << M_shape[2];
 
     idx_type __idx;
     size_t __count = 0;
 
-    for ( index_type i = 0; i < _M_shape[0]; ++i )
+    for ( index_type i = 0; i < M_shape[0]; ++i )
     {
         __idx[0] = i;
 
-        for ( index_type j = 0; j < _M_shape[1]; ++j )
+        for ( index_type j = 0; j < M_shape[1]; ++j )
         {
             __idx[1] = j;
 
-            for ( index_type k = 0; k < _M_shape[2]; ++k )
+            for ( index_type k = 0; k < M_shape[2]; ++k )
             {
                 __idx[2] = k;
 
@@ -354,7 +354,7 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
 
                 __ofs.precision( 5 );
                 __ofs.setf( std::ios::scientific );
-                __ofs << std::setw( 12 ) << _M_coord( __idx )[0];
+                __ofs << std::setw( 12 ) << M_coord( __idx )[0];
             }
         }
     }
@@ -363,15 +363,15 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
     //    __ofs << "\n";
     __count = 0;
 
-    for ( index_type i = 0; i < _M_shape[0]; ++i )
+    for ( index_type i = 0; i < M_shape[0]; ++i )
     {
         __idx[0] = i;
 
-        for ( index_type j = 0; j < _M_shape[1]; ++j )
+        for ( index_type j = 0; j < M_shape[1]; ++j )
         {
             __idx[1] = j;
 
-            for ( index_type k = 0; k < _M_shape[2]; ++k )
+            for ( index_type k = 0; k < M_shape[2]; ++k )
             {
                 __idx[2] = k;
 
@@ -380,7 +380,7 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
 
                 __ofs.precision( 5 );
                 __ofs.setf( std::ios::scientific );
-                __ofs << std::setw( 12 ) << _M_coord( __idx )[1];
+                __ofs << std::setw( 12 ) << M_coord( __idx )[1];
             }
         }
     }
@@ -389,15 +389,15 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
     //    __ofs << "\n";
     __count = 0;
 
-    for ( index_type i = 0; i < _M_shape[0]; ++i )
+    for ( index_type i = 0; i < M_shape[0]; ++i )
     {
         __idx[0] = i;
 
-        for ( index_type j = 0; j < _M_shape[1]; ++j )
+        for ( index_type j = 0; j < M_shape[1]; ++j )
         {
             __idx[1] = j;
 
-            for ( index_type k = 0; k < _M_shape[2]; ++k )
+            for ( index_type k = 0; k < M_shape[2]; ++k )
             {
                 __idx[2] = k;
 
@@ -406,7 +406,7 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
 
                 __ofs.precision( 5 );
                 __ofs.setf( std::ios::scientific );
-                __ofs << std::setw( 12 ) << _M_coord( __idx )[2];
+                __ofs << std::setw( 12 ) << M_coord( __idx )[2];
             }
         }
     }
@@ -442,15 +442,15 @@ StructuredGrid<Dim, Order>::save( std::string const& prefix,
               << "block";
         __count = 0;
 
-        for ( index_type i = 0; i < _M_shape[0]; ++i )
+        for ( index_type i = 0; i < M_shape[0]; ++i )
         {
             __idx[0] = i;
 
-            for ( index_type j = 0; j < _M_shape[1]; ++j )
+            for ( index_type j = 0; j < M_shape[1]; ++j )
             {
                 __idx[1] = j;
 
-                for ( index_type k = 0; k < _M_shape[2]; ++k )
+                for ( index_type k = 0; k < M_shape[2]; ++k )
                 {
                     __idx[2] = k;
 

@@ -105,6 +105,8 @@ namespace Feel
 extern template class Laplacian<2, Lagrange<1, Scalar>, Simplex>;
 extern template class Laplacian<2, Lagrange<2, Scalar>, Simplex>;
 extern template class Laplacian<2, Lagrange<3, Scalar>, Simplex>;
+extern template class Laplacian<2, Lagrange<4, Scalar>, Simplex>;
+extern template class Laplacian<2, Lagrange<5, Scalar>, Simplex>;
 
 extern template class Laplacian<2, Lagrange<1, Scalar>, Hypercube>;
 extern template class Laplacian<2, Lagrange<2, Scalar>, Hypercube>;
@@ -113,9 +115,12 @@ extern template class LaplacianV<2, CrouzeixRaviart<1, Vectorial>, Hypercube>;
 
 extern template class Laplacian<3, Lagrange<1, Scalar>, Hypercube>;
 extern template class Laplacian<3, Lagrange<2, Scalar>, Hypercube>;
+
 extern template class Laplacian<3, Lagrange<1, Scalar>, Simplex>;
 extern template class Laplacian<3, Lagrange<2, Scalar>, Simplex>;
 extern template class Laplacian<3, Lagrange<3, Scalar>, Simplex>;
+extern template class Laplacian<3, Lagrange<4, Scalar>, Simplex>;
+extern template class Laplacian<3, Lagrange<5, Scalar>, Simplex>;
 
 }
 
@@ -126,8 +131,11 @@ int main( int argc, char** argv )
 
     using namespace Feel;
     std::vector<std::string> boptions = boost::assign::list_of( "2D-CR1-Simplex" )( "2D-CR1-Hypercube" )
-        ( "2D-P1-Simplex" )( "2D-P2P1-Hypercube" )
-        ( "3D-P1-Simplex" )( "3D-P1-Hypercube" );
+        ( "2D-P1-Simplex" )( "2D-P2-Simplex" )
+        ( "2D-P3-Simplex" )( "2D-P4-Simplex" )
+        ( "2D-P5-Simplex" )
+        ( "3D-P1-Simplex" )( "3D-P1-Hypercube" )
+        ( "3D-P2-Simplex" )( "3D-P2-Hypercube" );
     auto cmdoptions = makeOptions();
     BOOST_FOREACH( auto o, boptions )
     {
@@ -155,7 +163,18 @@ int main( int argc, char** argv )
 #if 1
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex") );
     benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Simplex>( "2D-P2-Simplex") );
+
     benchmark.add( new Laplacian<2, Lagrange<3, Scalar>, Simplex>( "2D-P3-Simplex") );
+    benchmark.add( new Laplacian<2, Lagrange<4, Scalar>, Simplex>( "2D-P4-Simplex") );
+    benchmark.add( new Laplacian<2, Lagrange<5, Scalar>, Simplex>( "2D-P5-Simplex") );
+
+
+    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex") );
+    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
+
+    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
+    benchmark.add( new Laplacian<3, Lagrange<4, Scalar>, Simplex>( "3D-P4-Simplex") );
+    benchmark.add( new Laplacian<3, Lagrange<5, Scalar>, Simplex>( "3D-P5-Simplex") );
 
 #if 0
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube") );
@@ -173,15 +192,15 @@ int main( int argc, char** argv )
     benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
     benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
 #endif
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex") );
-    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
-    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
+    //benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex") );
+    //benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
+    //benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
 
 #else
     //benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube") );
     benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex" ) );
 #endif
-    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "e.semih1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
+    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "e.semih1" )( "e.flux" )( "e.part" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
     benchmark.run();
     benchmark.printStats( std::cout );
     benchmark.printStats( out );

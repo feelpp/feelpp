@@ -187,22 +187,22 @@ public:
                       expression_type const& __expr,
                       size_type __on )
         :
-        _M_eltbegin( __elts.template get<1>() ),
-        _M_eltend( __elts.template get<2>() ),
-        _M_u( __u ),
-        _M_rhs( __rhs ),
-        _M_expr( __expr ),
-        _M_on_strategy( __on )
+        M_eltbegin( __elts.template get<1>() ),
+        M_eltend( __elts.template get<2>() ),
+        M_u( __u ),
+        M_rhs( __rhs ),
+        M_expr( __expr ),
+        M_on_strategy( __on )
     {
     }
     IntegratorOnExpr( IntegratorOnExpr const& ioe )
         :
-        _M_eltbegin( ioe._M_eltbegin ),
-        _M_eltend( ioe._M_eltend ),
-        _M_u( ioe._M_u ),
-        _M_rhs( ioe._M_rhs ),
-        _M_expr( ioe._M_expr ),
-        _M_on_strategy( ioe._M_on_strategy )
+        M_eltbegin( ioe.M_eltbegin ),
+        M_eltend( ioe.M_eltend ),
+        M_u( ioe.M_u ),
+        M_rhs( ioe.M_rhs ),
+        M_expr( ioe.M_expr ),
+        M_on_strategy( ioe.M_on_strategy )
     {
     }
 
@@ -221,7 +221,7 @@ public:
      */
     element_iterator beginElement() const
     {
-        return _M_eltbegin;
+        return M_eltbegin;
     }
 
     /**
@@ -230,7 +230,7 @@ public:
      */
     element_iterator endElement() const
     {
-        return _M_eltend;
+        return M_eltend;
     }
 
 
@@ -268,13 +268,13 @@ private:
 
 private:
 
-    element_iterator _M_eltbegin;
-    element_iterator _M_eltend;
+    element_iterator M_eltbegin;
+    element_iterator M_eltend;
 
-    element_type const& _M_u;
-    mutable rhs_element_type _M_rhs;
-    expression_type _M_expr;
-    Context _M_on_strategy;
+    element_type const& M_u;
+    mutable rhs_element_type M_rhs;
+    expression_type M_expr;
+    Context M_on_strategy;
 };
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
@@ -326,7 +326,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     // make sure that the form is close, ie the associated matrix is assembled
     __form.matrix().close();
     // make sure that the right hand side is closed, ie the associated vector is assembled
-    _M_rhs->close();
+    M_rhs->close();
 
     //
     // start
@@ -336,7 +336,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     std::vector<int> dofs;
     std::vector<value_type> values;
-
     element_iterator __face_it = this->beginElement();
     element_iterator __face_en = this->endElement();
     if ( __face_it != __face_en )
@@ -347,9 +346,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                 break;
 
 
-        dof_type const* __dof = _M_u.functionSpace()->dof().get();
+        dof_type const* __dof = M_u.functionSpace()->dof().get();
 
-        fe_type const* __fe = _M_u.functionSpace()->fe().get();
+        fe_type const* __fe = M_u.functionSpace()->fe().get();
 
         gm_ptrtype __gm( new gm_type );
 
@@ -379,7 +378,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        //t_expr_type expr( _M_expr, mapgmc );
+        //t_expr_type expr( M_expr, mapgmc );
 
 
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
@@ -409,7 +408,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
                 continue;
             }
-            // do not process the face if it is a ghost face: beloging to two
+            // do not process the face if it is a ghost face: belonging to two
             // processes and being in a process id greater than the one
             // corresponding face
             if ( __face_it->isGhostFace() )
@@ -432,11 +431,11 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
-            t_expr_type expr( _M_expr, mapgmc );
+            t_expr_type expr( M_expr, mapgmc );
             expr.update( mapgmc );
 
-            std::pair<size_type,size_type> range_dof( std::make_pair( _M_u.start(),
-                                                                      _M_u.functionSpace()->nDof() ) );
+            std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
+                                                                      M_u.functionSpace()->nDof() ) );
             DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
             DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
 
@@ -451,7 +450,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                         DVLOG(2) << "[integratoronexpr] value=" << __value << "\n";
 
                         // global Dof
-                        size_type thedof =  _M_u.start() +
+                        size_type thedof =  M_u.start() +
                             boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
 
                         //size_type thedof_nproc = __dof->dofNProc( thedof );
@@ -460,36 +459,29 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                         thedof ) != dofs.end() )
                             continue;
 
-                        if ( _M_on_strategy.test( ON_ELIMINATION ) )
+                        if ( M_on_strategy.test( ON_ELIMINATION ) )
                         {
                             DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
                             // this can be quite expensive depending on the
                             // matrix storage format.
-                            //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-                            dofs.push_back( thedof );
-                            values.push_back( __value );
-#else
+                            //__form.diagonalize( thedof, range_dof, M_rhs, __value, thedof_nproc );
 
                             // only the real dof ( not the ghosts )
                             //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
                             {
                                 dofs.push_back( thedof );
-                                values.push_back( __value );
+                                values.push_back(  __value );
                             }
 
-#endif
-
-
-                            //_M_rhs.set( thedof, __value );
+                            //M_rhs.set( thedof, __value );
                         }
 
-                        else if (  _M_on_strategy.test( ON_PENALISATION ) &&
-                                   !_M_on_strategy.test( ON_ELIMINATION ) )
+                        else if (  M_on_strategy.test( ON_PENALISATION ) &&
+                                   !M_on_strategy.test( ON_ELIMINATION ) )
                         {
                             __form.set( thedof, thedof, 1.0*1e30 );
-                            _M_rhs->set( thedof, __value*1e30 );
+                            M_rhs->set( thedof, __value*1e30 );
                         }
                     } // loop on space components
 
@@ -498,13 +490,20 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
     } // __face_it != __face_en
 
+
     if ( __form.rowStartInMatrix()!=0)
     {
         auto const thedofshift = __form.rowStartInMatrix();
         for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
             *itd+=thedofshift;
     }
-    __form.zeroRows( dofs, values, *_M_rhs, _M_on_strategy );
+    auto x = M_rhs->clone();
+    //x->zero();
+    x->addVector( dofs.data(), dofs.size(), values.data() );
+    //values->zero();
+
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    x.reset();
 }
 
 #if 1

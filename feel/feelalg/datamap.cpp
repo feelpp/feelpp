@@ -34,13 +34,13 @@ namespace Feel
 DataMap::DataMap( WorldComm const& _worldComm )
     :
     M_closed( false ),
-    _M_n_dofs( 0 ),
-    _M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
-    _M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
-    _M_first_df( _worldComm.globalSize(),0 ),
-    _M_last_df( _worldComm.globalSize(),0 ),
-    _M_first_df_globalcluster( _worldComm.globalSize(),0 ),
-    _M_last_df_globalcluster( _worldComm.globalSize(),0 ),
+    M_n_dofs( 0 ),
+    M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
+    M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
+    M_first_df( _worldComm.globalSize(),0 ),
+    M_last_df( _worldComm.globalSize(),0 ),
+    M_first_df_globalcluster( _worldComm.globalSize(),0 ),
+    M_last_df_globalcluster( _worldComm.globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
@@ -50,13 +50,13 @@ DataMap::DataMap( WorldComm const& _worldComm )
 DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     :
     M_closed( false ),
-    _M_n_dofs( n ),
-    _M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
-    _M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
-    _M_first_df( _worldComm.globalSize(),0 ),
-    _M_last_df( _worldComm.globalSize(),0 ),
-    _M_first_df_globalcluster( _worldComm.globalSize(),0 ),
-    _M_last_df_globalcluster( _worldComm.globalSize(),0 ),
+    M_n_dofs( n ),
+    M_n_localWithoutGhost_df( _worldComm.globalSize(),0 ),
+    M_n_localWithGhost_df( _worldComm.globalSize(),0 ),
+    M_first_df( _worldComm.globalSize(),0 ),
+    M_last_df( _worldComm.globalSize(),0 ),
+    M_first_df_globalcluster( _worldComm.globalSize(),0 ),
+    M_last_df_globalcluster( _worldComm.globalSize(),0 ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster(),
     M_mapGlobalClusterToGlobalProcess(),
@@ -103,8 +103,8 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 
             _local_index += local_sizes[p];
 
-            _M_first_df[p] = _local_index;
-            _M_last_df[p] = _local_index+n_local-1;
+            M_first_df[p] = _local_index;
+            M_last_df[p] = _local_index+n_local-1;
         }
 
 #else // defined(FEELPP_ENABLE_MPI_MODE)
@@ -119,20 +119,20 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
     {
         local_sizes[this->worldComm().rank()] = n_local;
 
-        _M_first_df[this->worldComm().rank()] = 0;
-        _M_last_df[this->worldComm().rank()] = n_local-1;
+        M_first_df[this->worldComm().rank()] = 0;
+        M_last_df[this->worldComm().rank()] = n_local-1;
         // mpi
-        _M_n_localWithoutGhost_df[this->worldComm().rank()]=n_local;
-        _M_n_localWithGhost_df[this->worldComm().rank()]=n_local;
-        _M_first_df_globalcluster[this->worldComm().rank()]=0;
-        _M_last_df_globalcluster[this->worldComm().rank()]=n_local-1;
+        M_n_localWithoutGhost_df[this->worldComm().rank()]=n_local;
+        M_n_localWithGhost_df[this->worldComm().rank()]=n_local;
+        M_first_df_globalcluster[this->worldComm().rank()]=0;
+        M_last_df_globalcluster[this->worldComm().rank()]=n_local-1;
         // todo! : les map
         M_mapGlobalProcessToGlobalCluster.resize( n_local );
         M_mapGlobalClusterToGlobalProcess.resize( n_local );
     }
 
     if ( n == invalid_size_type_value )
-        _M_n_dofs = _M_last_df[this->worldComm().rank()]+1;
+        M_n_dofs = M_last_df[this->worldComm().rank()]+1;
 
 #  ifdef DEBUG
     // Make sure all the local sizes sum up to the global
@@ -174,13 +174,13 @@ DataMap::DataMap( size_type n, size_type n_local, WorldComm const& _worldComm )
 DataMap::DataMap( DataMap const & dm )
     :
     M_closed( dm.M_closed ),
-    _M_n_dofs( dm._M_n_dofs ),
-    _M_n_localWithoutGhost_df( dm._M_n_localWithoutGhost_df ),
-    _M_n_localWithGhost_df( dm._M_n_localWithGhost_df ),
-    _M_first_df( dm._M_first_df ),
-    _M_last_df( dm._M_last_df ),
-    _M_first_df_globalcluster( dm._M_first_df_globalcluster ),
-    _M_last_df_globalcluster( dm._M_last_df_globalcluster ),
+    M_n_dofs( dm.M_n_dofs ),
+    M_n_localWithoutGhost_df( dm.M_n_localWithoutGhost_df ),
+    M_n_localWithGhost_df( dm.M_n_localWithGhost_df ),
+    M_first_df( dm.M_first_df ),
+    M_last_df( dm.M_last_df ),
+    M_first_df_globalcluster( dm.M_first_df_globalcluster ),
+    M_last_df_globalcluster( dm.M_last_df_globalcluster ),
     M_myglobalelements(),
     M_mapGlobalProcessToGlobalCluster( dm.M_mapGlobalProcessToGlobalCluster ),
     M_mapGlobalClusterToGlobalProcess( dm.M_mapGlobalClusterToGlobalProcess ),
@@ -196,13 +196,13 @@ DataMap::operator=( DataMap const& dm )
     {
         M_worldComm = dm.M_worldComm;
         M_closed = dm.M_closed;
-        _M_n_dofs = dm._M_n_dofs;
-        _M_n_localWithoutGhost_df = dm._M_n_localWithoutGhost_df;
-        _M_n_localWithGhost_df = dm._M_n_localWithGhost_df;
-        _M_first_df = dm._M_first_df;
-        _M_last_df = dm._M_last_df;
-        _M_first_df_globalcluster = dm._M_first_df_globalcluster;
-        _M_last_df_globalcluster = dm._M_last_df_globalcluster;
+        M_n_dofs = dm.M_n_dofs;
+        M_n_localWithoutGhost_df = dm.M_n_localWithoutGhost_df;
+        M_n_localWithGhost_df = dm.M_n_localWithGhost_df;
+        M_first_df = dm.M_first_df;
+        M_last_df = dm.M_last_df;
+        M_first_df_globalcluster = dm.M_first_df_globalcluster;
+        M_last_df_globalcluster = dm.M_last_df_globalcluster;
         M_myglobalelements = dm.M_myglobalelements;
         M_mapGlobalProcessToGlobalCluster = dm.M_mapGlobalProcessToGlobalCluster;
         M_mapGlobalClusterToGlobalProcess = dm.M_mapGlobalClusterToGlobalProcess;
@@ -236,42 +236,42 @@ DataMap::myGlobalElements() const
 void
 DataMap::setNDof( size_type ndof )
 {
-    _M_n_dofs=ndof;
+    M_n_dofs=ndof;
 }
 
 void
 DataMap::setNLocalDofWithoutGhost( const size_type proc, const size_type n, bool inWorld )
 {
-    _M_n_localWithoutGhost_df[proc]=n;
+    M_n_localWithoutGhost_df[proc]=n;
 }
 void
 DataMap::setNLocalDofWithGhost( const size_type proc, const size_type n, bool inWorld )
 {
-    _M_n_localWithGhost_df[proc]=n;
+    M_n_localWithGhost_df[proc]=n;
 }
 void
 DataMap::setFirstDof( const size_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT( proc < _M_first_df.size() )( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
-    _M_first_df[proc]=df;
+    FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
+    M_first_df[proc]=df;
 }
 void
 DataMap::setLastDof( const size_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT( proc < _M_first_df.size() )( proc )( _M_first_df.size() ).error( "invalid proc id or dof table" );
-    _M_last_df[proc]=df;
+    FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
+    M_last_df[proc]=df;
 }
 void
 DataMap::setFirstDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT( proc < _M_first_df_globalcluster.size() )( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
-    _M_first_df_globalcluster[proc]=df;
+    FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+    M_first_df_globalcluster[proc]=df;
 }
 void
 DataMap::setLastDofGlobalCluster( const size_type proc, const size_type df, bool inWorld )
 {
-    FEELPP_ASSERT( proc < _M_first_df_globalcluster.size() )( proc )( _M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
-    _M_last_df_globalcluster[proc]=df;
+    FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+    M_last_df_globalcluster[proc]=df;
 }
 
 
@@ -310,24 +310,24 @@ void
 DataMap::updateDataInWorld()
 {
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_n_localWithoutGhost_df[this->worldComm().globalRank()],
-                     this->_M_n_localWithoutGhost_df );
+                     this->M_n_localWithoutGhost_df[this->worldComm().globalRank()],
+                     this->M_n_localWithoutGhost_df );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_n_localWithGhost_df[this->worldComm().globalRank()],
-                     this->_M_n_localWithGhost_df );
+                     this->M_n_localWithGhost_df[this->worldComm().globalRank()],
+                     this->M_n_localWithGhost_df );
 
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_first_df[this->worldComm().globalRank()],
-                     this->_M_first_df );
+                     this->M_first_df[this->worldComm().globalRank()],
+                     this->M_first_df );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_last_df[this->worldComm().globalRank()],
-                     this->_M_last_df );
+                     this->M_last_df[this->worldComm().globalRank()],
+                     this->M_last_df );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_first_df_globalcluster[this->worldComm().globalRank()],
-                     this->_M_first_df_globalcluster );
+                     this->M_first_df_globalcluster[this->worldComm().globalRank()],
+                     this->M_first_df_globalcluster );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->_M_last_df_globalcluster[this->worldComm().globalRank()],
-                     this->_M_last_df_globalcluster );
+                     this->M_last_df_globalcluster[this->worldComm().globalRank()],
+                     this->M_last_df_globalcluster );
 
     //_globalcluster
 }
@@ -341,7 +341,7 @@ DataMap::procOnGlobalCluster( size_type globDof ) const
 
     while ( ( !find ) && ( proc<this->nProcessors() ) )
     {
-        if ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= _M_last_df_globalcluster[proc] ) && ( globDof >= _M_first_df_globalcluster[proc] ) )
+        if ( ( this->nLocalDofWithoutGhost(proc) > 0 ) && ( globDof <= M_last_df_globalcluster[proc] ) && ( globDof >= M_first_df_globalcluster[proc] ) )
         {
             res = proc;
             find=true;
@@ -415,51 +415,51 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out2  ) const
             __out << "-----------------------------------------------------------------------\n";
 #endif
 #if 1
-            __out << " _M_first_df : ";
+            __out << " M_first_df : ";
 
             for ( int i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this-> _M_first_df[i] << " ";
+                __out << this-> M_first_df[i] << " ";
             }
 
             __out << "\n";
-            __out << " _M_last_df : ";
+            __out << " M_last_df : ";
 
             for ( int i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this-> _M_last_df[i] << " ";
+                __out << this-> M_last_df[i] << " ";
             }
 
             __out << "\n";
-            __out << " _M_first_df_globalcluster : ";
+            __out << " M_first_df_globalcluster : ";
 
             for ( int i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this-> _M_first_df_globalcluster[i] << " ";
+                __out << this-> M_first_df_globalcluster[i] << " ";
             }
 
             __out << "\n";
-            __out << " _M_last_df_globalcluster : ";
+            __out << " M_last_df_globalcluster : ";
 
             for ( int i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this-> _M_last_df_globalcluster[i] << " ";
+                __out << this-> M_last_df_globalcluster[i] << " ";
             }
 
             __out << "\n";
-            __out << " _M_n_localWithGhost_df : ";
+            __out << " M_n_localWithGhost_df : ";
 
             for ( int i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this->_M_n_localWithGhost_df[i] << " ";
+                __out << this->M_n_localWithGhost_df[i] << " ";
             }
 
             __out << "\n";
-            __out << " _M_n_localWithoutGhost_df : ";
+            __out << " M_n_localWithoutGhost_df : ";
 
             for ( int i=0; i<this->worldComm().globalSize(); ++i )
             {
-                __out << this->_M_n_localWithoutGhost_df[i] << " ";
+                __out << this->M_n_localWithoutGhost_df[i] << " ";
             }
 
             __out << "\n";
@@ -489,4 +489,3 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out2  ) const
 }
 
 } // namespace Feel
-

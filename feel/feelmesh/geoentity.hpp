@@ -114,6 +114,7 @@ public:
         M_entity( MESH_ENTITY_INTERNAL ),
         M_geometry( Geometry ),
         M_shape( Shape ),
+        M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_npids( 1 ),
         M_pid( 0 ),
         M_pidInPartition( 0 ),
@@ -132,6 +133,7 @@ public:
         M_entity( context ),
         M_geometry( geometry ),
         M_shape( shape ),
+        M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_npids( 1 ),
         M_pid( 0 ),
         M_pidInPartition( 0 ),
@@ -147,6 +149,7 @@ public:
         M_entity( __me.M_entity ),
         M_geometry( __me.M_geometry ),
         M_shape( __me.M_shape ),
+        M_boundaryEntityDimension( __me.M_boundaryEntityDimension ),
         M_npids( __me.M_npids ),
         M_pid( __me.M_pid ),
         M_pidInPartition( __me.M_pidInPartition ),
@@ -163,6 +166,7 @@ public:
             M_entity = __me.M_entity;
             M_geometry = __me.M_geometry;
             M_shape = __me.M_shape;
+            M_boundaryEntityDimension = __me.M_boundaryEntityDimension;
             M_npids = __me.M_npids;
             M_pid = __me.M_pid;
             M_pidInPartition = __me.M_pidInPartition;
@@ -257,6 +261,16 @@ public:
     uint16_type nFaces() const
     {
         return super::numFaces;
+    }
+
+    /**
+     * number of topological faces on the reference shape
+     *
+     * @return the number of topological faces on the reference shape
+     */
+    constexpr uint16_type nTopologicalFaces() const
+    {
+        return super::numTopologicalFaces;
     }
 
     /**
@@ -414,6 +428,13 @@ public:
     }
 
     /**
+     * maximum dimension of the entity of the element touching the boundary
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return M_boundaryEntityDimension;
+    }
+    /**
      * \return \c true if ghost cell, \c false otherwise
      */
     bool isGhostCell() const
@@ -568,19 +589,19 @@ public:
      * set the boundary flag
      * @param b true if the item is on the boundary, false otherwise
      */
-    void setOnBoundary( bool b )
+    void setOnBoundary( bool b, uint16_type ent_d = invalid_uint16_type_value )
     {
         if ( b )
         {
             M_entity.set( MESH_ENTITY_BOUNDARY );
             M_entity.clear( MESH_ENTITY_INTERNAL );
         }
-
         else
         {
             M_entity.clear( MESH_ENTITY_BOUNDARY );
             M_entity.set( MESH_ENTITY_INTERNAL );
         }
+        M_boundaryEntityDimension = ent_d;
     }
 
     /**
@@ -742,6 +763,9 @@ private:
     Context M_entity;
     Context M_geometry;
     Context M_shape;
+
+    //! maximum dimension of the entity touching the boundary within the element
+    uint16_type M_boundaryEntityDimension;
 
     uint16_type M_npids;
     uint16_type M_pid;

@@ -235,9 +235,9 @@ public:
     OperatorInterpolation( OperatorInterpolation const & oi )
         :
         super( oi ),
-        _M_listRange( oi._M_listRange ),
-        _M_WorldCommFusion( oi._M_WorldCommFusion ),
-        _M_interptype( oi._M_interptype )
+        M_listRange( oi.M_listRange ),
+        M_WorldCommFusion( oi.M_WorldCommFusion ),
+        M_interptype( oi.M_interptype )
     {}
 
     ~OperatorInterpolation() {}
@@ -255,9 +255,9 @@ public:
      */
     //@{
 
-    WorldComm const& worldCommFusion() const { return _M_WorldCommFusion; }
+    WorldComm const& worldCommFusion() const { return M_WorldCommFusion; }
 
-    InterpType const& interpolationType() const { return _M_interptype; }
+    InterpType const& interpolationType() const { return M_interptype; }
 
     bool isDomainMeshRelatedToImageMesh() const { return this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() ); }
 
@@ -335,9 +335,9 @@ private:
                                              extrapolation_memory_type & dof_extrapolationData);
 #endif // MPI_MODE
 
-    std::list<range_iterator> _M_listRange;
-    WorldComm _M_WorldCommFusion;
-    InterpType _M_interptype;
+    std::list<range_iterator> M_listRange;
+    WorldComm M_WorldCommFusion;
+    InterpType M_interptype;
 };
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
@@ -348,11 +348,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_listRange(),
-    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    _M_interptype(interptype)
+    M_listRange(),
+    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_interptype(interptype)
 {
-    _M_listRange.push_back( elements( imagespace->mesh() ) );
+    M_listRange.push_back( elements( imagespace->mesh() ) );
     update();
 }
 
@@ -366,11 +366,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_listRange(),
-    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    _M_interptype(interptype)
+    M_listRange(),
+    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_interptype(interptype)
 {
-    _M_listRange.push_back( r );
+    M_listRange.push_back( r );
     update();
 }
 
@@ -383,9 +383,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_listRange( r ),
-    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    _M_interptype(interptype)
+    M_listRange( r ),
+    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_interptype(interptype)
 {
     update();
 }
@@ -490,8 +490,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const bool image_related_to_domain = this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() );
     const bool domain_related_to_image = this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() );
 
-    auto itListRange = _M_listRange.begin();
-    auto const enListRange = _M_listRange.end();
+    auto itListRange = M_listRange.begin();
+    auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
     iterator_type it, en;
@@ -643,8 +643,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     size_type eltIdLocalised = 0;
 
     // for each element in range
-    auto itListRange = _M_listRange.begin();
-    auto const enListRange = _M_listRange.end();
+    auto itListRange = M_listRange.begin();
+    auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
     iterator_type it, en;
@@ -1928,8 +1928,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     if ( this->dualImageSpace()->worldComm().isActive() )
         {
 
-            auto itListRange = _M_listRange.begin();
-            auto const enListRange = _M_listRange.end();
+            auto itListRange = M_listRange.begin();
+            auto const enListRange = M_listRange.end();
             for ( ; itListRange!=enListRange ; ++itListRange)
             {
             boost::tie( boost::tuples::ignore, it, en ) = *itListRange;

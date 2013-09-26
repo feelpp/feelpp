@@ -647,38 +647,38 @@ public :
 
     Node()
         :
-        _M_node( new node_type() )
+        M_node( new node_type() )
     {}
 
     Node( double __x ) :
-        _M_node( new node_type( 1 ) )
+        M_node( new node_type( 1 ) )
     {
-        ( *_M_node )( 0 )=__x;
+        ( *M_node )( 0 )=__x;
     }
 
     Node( double __x, double __y ) :
-        _M_node( new node_type( 2 ) )
+        M_node( new node_type( 2 ) )
     {
-        ( *_M_node )( 0 )=__x;
-        ( *_M_node )( 1 )=__y;
+        ( *M_node )( 0 )=__x;
+        ( *M_node )( 1 )=__y;
     }
 
     Node( double __x, double __y, double __z ) :
-        _M_node( new node_type( 3 ) )
+        M_node( new node_type( 3 ) )
     {
-        ( *_M_node )( 0 )=__x;
-        ( *_M_node )( 1 )=__y;
-        ( *_M_node )( 2 )=__z;
+        ( *M_node )( 0 )=__x;
+        ( *M_node )( 1 )=__y;
+        ( *M_node )( 2 )=__z;
     }
 
     Node( Node const & m )
         :
-        _M_node( m._M_node )
+        M_node( m.M_node )
     {}
 
     Node operator=( Node const & m )
     {
-        _M_node.reset( new node_type( *( m._M_node ) ) );
+        M_node.reset( new node_type( *( m.M_node ) ) );
         return *this;
     }
 
@@ -689,22 +689,22 @@ public :
 
     double & operator()( uint16_type n )
     {
-        return ( *_M_node )( n );
+        return ( *M_node )( n );
     }
 
     node_type
     getNode() const
     {
-        return *_M_node;
+        return *M_node;
     }
 
     node_type &
     getNode()
     {
-        return *_M_node;
+        return *M_node;
     }
 
-    boost::shared_ptr<node_type> _M_node;
+    boost::shared_ptr<node_type> M_node;
 };
 
 /*_________________________________________________*/
@@ -713,38 +713,38 @@ class Loop
 {
 public :
 
-    Loop( Loop const & L ) : _M_loop( L._M_loop ) {}
+    Loop( Loop const & L ) : M_loop( L.M_loop ) {}
 
     Loop()
     {
-        _M_loop.clear();
+        M_loop.clear();
     }
 
     void  operator=( Loop m )
     {
-        this->_M_loop=m._M_loop;
+        this->M_loop=m.M_loop;
     }
     Loop  operator>>( int __n )
     {
-        _M_loop.push_back( __n );
+        M_loop.push_back( __n );
         return *this;
     }
 
     uint16_type size()
     {
-        return _M_loop.size();
+        return M_loop.size();
     }
 
     std::list<int>::const_iterator begin() const
     {
-        return _M_loop.begin();
+        return M_loop.begin();
     }
     std::list<int>::const_iterator end() const
     {
-        return _M_loop.end();
+        return M_loop.end();
     }
 
-    std::list<int> _M_loop;
+    std::list<int> M_loop;
 };
 
 
@@ -864,7 +864,7 @@ public:
      */
     void updateOstr( std::string __str )
     {
-        *_M_ostr << __str;
+        *M_ostr << __str;
     }
 
     /*
@@ -877,7 +877,7 @@ public:
      */
     void cleanOstr()
     {
-        _M_ostr.reset( new std::ostringstream() );
+        M_ostr.reset( new std::ostringstream() );
     }
 
 
@@ -931,15 +931,15 @@ public:
 
             std::string geostring;
 
-            if ( _M_geoIsDefineByUser )
+            if ( M_geoIsDefineByUser )
             {
-                geostring= _M_ostrDefineByUser->str();
+                geostring= M_ostrDefineByUser->str();
             }
 
             else
             {
                 this->geoStr();
-                geostring = _M_ostr->str();
+                geostring = M_ostr->str();
             }
 
 
@@ -985,15 +985,15 @@ public:
 
             std::string geostring;
 
-            if ( _M_geoIsDefineByUser )
+            if ( M_geoIsDefineByUser )
             {
-                geostring= _M_ostrDefineByUser->str();
+                geostring= M_ostrDefineByUser->str();
             }
 
             else
             {
                 this->geoStr();
-                geostring = _M_ostr->str();
+                geostring = M_ostr->str();
             }
 
             std::string fname = gmsh.generate( name,
@@ -1019,36 +1019,36 @@ public:
 
     uint16_type dim() const
     {
-        return  _M_dim;
+        return  M_dim;
     }
     uint16_type cptPt() const
     {
 
-        return _M_cptPt;
+        return M_cptPt;
     }
     uint16_type cptLine() const
     {
-        return _M_cptLine;
+        return M_cptLine;
     }
     uint16_type cptLineLoop() const
     {
-        return _M_cptLineLoop;
+        return M_cptLineLoop;
     }
     uint16_type cptSurface() const
     {
-        return _M_cptSurface;
+        return M_cptSurface;
     }
     uint16_type cptTableau() const
     {
-        return _M_cptTableau;   //voir les extrudes par exemple
+        return M_cptTableau;   //voir les extrudes par exemple
     }
     uint16_type cptSurfaceLoop() const
     {
-        return _M_cptSurfaceLoop;
+        return M_cptSurfaceLoop;
     }
     uint16_type cptVolume() const
     {
-        return _M_cptVolume;
+        return M_cptVolume;
     }
 
     /*_________________________________________________*
@@ -1058,30 +1058,30 @@ public:
     parameter_shape_const_iterator_type
     paramShapeBegin() const
     {
-        return _M_paramShape->begin();
+        return M_paramShape->begin();
     }
 
     parameter_shape_const_iterator_type paramShapeEnd() const
     {
-        return _M_paramShape->end();
+        return M_paramShape->end();
     }
 
     parameter_name_const_iterator_type
     paramNameBegin( std::string __shape ) const
     {
-        return _M_paramShape->find( __shape )->second.begin();
+        return M_paramShape->find( __shape )->second.begin();
     }
 
     parameter_name_const_iterator_type
     paramNameEnd( std::string __shape ) const
     {
-        return _M_paramShape->find( __shape )->second.end();
+        return M_paramShape->find( __shape )->second.end();
     }
 
     parameter_rectangle_type
     getParameter( std::string __shape, std::string __name ) const
     {
-        return _M_paramShape->find( __shape )->second.find( __name )->second;
+        return M_paramShape->find( __shape )->second.find( __name )->second;
     }
 
     /*_________________________________________________*
@@ -1091,76 +1091,76 @@ public:
     marker_shape_const_iterator_type
     markShapeBegin() const
     {
-        return _M_markShape->begin();
+        return M_markShape->begin();
     }
 
     marker_shape_const_iterator_type
     markShapeEnd() const
     {
-        return _M_markShape->end();
+        return M_markShape->end();
     }*/
 
 
     marker_type_const_iterator_type
     markerTypeBegin( /*std::string __shape*/ ) const
     {
-        //return _M_markShape->find(__shape)->second.begin();
-        return _M_markShape->begin();
+        //return M_markShape->find(__shape)->second.begin();
+        return M_markShape->begin();
     }
 
     marker_type_const_iterator_type
     markerTypeEnd( /*std::string __shape*/ ) const
     {
-        //return _M_markShape->find(__shape)->second.end();
-        return _M_markShape->end();
+        //return M_markShape->find(__shape)->second.end();
+        return M_markShape->end();
     }
     /*
     marker_type_type
     markerType(std::string __shape) const
     {
-        //return _M_markShape->find(__shape)->second;
+        //return M_markShape->find(__shape)->second;
         }*/
 
     marker_markerName_const_iterator_type
     markerMarkerNameBegin( /*std::string __shape,*/ std::string __type ) const
     {
-        //return _M_markShape->find(__shape)->second.find(__type)->second.begin();
-        return _M_markShape->find( __type )->second.begin();
+        //return M_markShape->find(__shape)->second.find(__type)->second.begin();
+        return M_markShape->find( __type )->second.begin();
     }
 
     marker_markerName_const_iterator_type
     markerMarkerNameEnd( /*std::string __shape,*/ std::string __type ) const
     {
-        //return _M_markShape->find(__shape)->second.find(__type)->second.end();
-        return _M_markShape->find( __type )->second.end();
+        //return M_markShape->find(__shape)->second.find(__type)->second.end();
+        return M_markShape->find( __type )->second.end();
     }
 
     marker_markerName_type
     markerMarkerName( /*std::string __shape,*/ std::string __type ) const
     {
-        //return _M_markShape->find(__shape)->second.find(__type)->second;
-        return _M_markShape->find( __type )->second;
+        //return M_markShape->find(__shape)->second.find(__type)->second;
+        return M_markShape->find( __type )->second;
     }
 
     std::list<marker_base_type>::const_iterator
     markerListIndiceBegin( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
     {
-        return _M_markShape->find( __type )->second.find( __markerName )->second.begin();
+        return M_markShape->find( __type )->second.find( __markerName )->second.begin();
     }
 
     std::list<marker_base_type>::const_iterator
     markerListIndiceEnd( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
     {
-        //return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second.end();
-        return _M_markShape->find( __type )->second.find( __markerName )->second.end();
+        //return M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second.end();
+        return M_markShape->find( __type )->second.find( __markerName )->second.end();
     }
 
 
     std::list<marker_base_type>
     getMarkerName( /*std::string __shape,*/ std::string __type ,std::string __markerName ) const
     {
-        //return _M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second;
-        return _M_markShape->find( __type )->second.find( __markerName )->second;
+        //return M_markShape->find(__shape)->second.find(__type)->second.find(__markerName)->second;
+        return M_markShape->find( __type )->second.find( __markerName )->second;
     }
 
     /*_________________________________________________*
@@ -1169,39 +1169,39 @@ public:
      *_________________________________________________*
      *_________________________________________________*/
 
-    uint16_type _M_dim;
+    uint16_type M_dim;
     // memory
-    uint16_type _M_cptPt;
-    uint16_type _M_cptLine;
-    uint16_type _M_cptLineLoop;
-    uint16_type _M_cptSurface;
-    uint16_type _M_cptTableau;
-    uint16_type _M_cptSurfaceLoop;
-    uint16_type _M_cptVolume;
+    uint16_type M_cptPt;
+    uint16_type M_cptLine;
+    uint16_type M_cptLineLoop;
+    uint16_type M_cptSurface;
+    uint16_type M_cptTableau;
+    uint16_type M_cptSurfaceLoop;
+    uint16_type M_cptVolume;
 
     // gestion des surface : shape,name,value
     // value is the marker associated to the planeSurface (init to 0 and to use when call geoStr())
-    //std::list< std::list< boost::tuple<std::string,std::string, uint16_type > > > _M_surfaceList;
-    boost::shared_ptr<ligne_name_type> _M_ligneList;
-    boost::shared_ptr<surface_name_type> _M_surfaceList;
-    boost::shared_ptr<volume_name_type> _M_volumeList;
-    boost::shared_ptr<surfaceloop_name_type> _M_surfaceLoopList;
+    //std::list< std::list< boost::tuple<std::string,std::string, uint16_type > > > M_surfaceList;
+    boost::shared_ptr<ligne_name_type> M_ligneList;
+    boost::shared_ptr<surface_name_type> M_surfaceList;
+    boost::shared_ptr<volume_name_type> M_volumeList;
+    boost::shared_ptr<surfaceloop_name_type> M_surfaceLoopList;
 
-    boost::shared_ptr<std::ostringstream> _M_ostrExtrude;
-    boost::shared_ptr<std::ostringstream> _M_ostrSurfaceLoop;
+    boost::shared_ptr<std::ostringstream> M_ostrExtrude;
+    boost::shared_ptr<std::ostringstream> M_ostrSurfaceLoop;
 
 
     // data containers
-    //boost::shared_ptr<map_shape_names_type> _M_map_Shape;
-    boost::shared_ptr<parameter_shape_type> _M_paramShape;
-    //boost::shared_ptr<marker_shape_type> _M_markShape;
-    boost::shared_ptr<marker_type_type> _M_markShape;
+    //boost::shared_ptr<map_shape_names_type> M_map_Shape;
+    boost::shared_ptr<parameter_shape_type> M_paramShape;
+    //boost::shared_ptr<marker_shape_type> M_markShape;
+    boost::shared_ptr<marker_type_type> M_markShape;
 
     // output string
-    boost::shared_ptr<std::ostringstream> _M_ostr;
+    boost::shared_ptr<std::ostringstream> M_ostr;
 
-    boost::shared_ptr<std::ostringstream> _M_ostrDefineByUser;
-    bool _M_geoIsDefineByUser;
+    boost::shared_ptr<std::ostringstream> M_ostrDefineByUser;
+    bool M_geoIsDefineByUser;
 };
 
 /*_________________________________________________*
@@ -1538,7 +1538,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
 /*                                                 */
 /**/
 #define GEOTOOL_SHAPE_PARAM(r, state)                                   \
-        _M_param[BOOST_PP_TUPLE_ELEM(2,0,state)] = BOOST_PP_CAT( __param, \
+        M_param[BOOST_PP_TUPLE_ELEM(2,0,state)] = BOOST_PP_CAT( __param, \
                                                                  BOOST_PP_TUPLE_ELEM(2,0,state) ); \
         /**/
 /*_________________________________________________*/
@@ -1574,9 +1574,9 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                                                      uint16_type type = 0 ) /*Ne sert a rien, juste a cause de la virgule au dessus)*/ \
                 :                                                       \
                 GeoGMSHTool( GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)),shape(), __name, __meshSize), \
-                _M_name(__name)                                         \
+                M_name(__name)                                         \
                 {                                                       \
-                    _M_param.resize( GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state))); \
+                    M_param.resize( GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state))); \
                     BOOST_PP_FOR( (0, BOOST_PP_SUB(GEOTOOL_SHAPE_NBPARAM(BOOST_PP_TUPLE_ELEM(2,0,state)),1) ), \
                                   GEOTOOL_FOR_COMP,                     \
                                   GEOTOOL_FOR_INCR,                     \
@@ -1585,7 +1585,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                     initData(shape(),                                   \
                              __name,                                    \
                              __meshSize,                                \
-                             _M_param,                                  \
+                             M_param,                                  \
                              GEOTOOL_SHAPE_DIM(BOOST_PP_TUPLE_ELEM(2,0,state)), \
                              1,                                         \
                              GEOTOOL_SHAPE_NBSURFACE(BOOST_PP_TUPLE_ELEM(2,0,state)), \
@@ -1598,7 +1598,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
             GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state))(const GEOTOOL_SHAPE_NAME_CLASS(BOOST_PP_TUPLE_ELEM(2,0,state)) & m) \
                 :                                                       \
                 GeoGMSHTool(m),                                         \
-                _M_param(m._M_param)                                    \
+                M_param(m.M_param)                                    \
                     {}                                                  \
                                                                         \
             BOOST_PARAMETER_MEMBER_FUNCTION(                            \
@@ -1640,7 +1640,7 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                         marker12=true;                                  \
                     }                                                   \
                                                                         \
-                    std::list<marker_base_type > __listMarker = (*(_M_markShape))[type][name]; \
+                    std::list<marker_base_type > __listMarker = (*(M_markShape))[type][name]; \
                                                                         \
                                                                         \
                     if (type=="point")                                  \
@@ -1684,17 +1684,17 @@ computeBasisOrthogonal( node_type dir,node_type centre );
                                         )                               \
                                 }                                       \
                                                                         \
-                    (*(_M_markShape))[type][name] = __listMarker;       \
+                    (*(M_markShape))[type][name] = __listMarker;       \
                 }                                                       \
                                                                         \
                                                                         \
-            std::string _M_name;                                        \
+            std::string M_name;                                        \
                                                                         \
             static const std::string shape() { return GEOTOOL_SHAPE_NAME_STR(BOOST_PP_TUPLE_ELEM(2,0, state));} \
-            const std::string name() const {return _M_name;}			\
+            const std::string name() const {return M_name;}			\
                                                                         \
                                                                         \
-            std::vector<GeoTool::Node> _M_param;                        \
+            std::vector<GeoTool::Node> M_param;                        \
                                                                         \
         };                                                              \
         /**/

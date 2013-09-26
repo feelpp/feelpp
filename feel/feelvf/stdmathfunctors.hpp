@@ -191,7 +191,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             explicit VF_FUNC_NAME(O)( expression_1_type const& __expr1  ) \
             :                                                           \
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
-            _M_expr_1( __expr1 )                                        \
+            M_expr_1( __expr1 )                                        \
             {                                                           \
                 DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) default constructor\n"; \
             }                                                           \
@@ -199,7 +199,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         VF_FUNC_NAME(O)( VF_FUNC_NAME(O) const& __vfp  )                \
             :                                                           \
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
-            _M_expr_1( __vfp._M_expr_1 )                                \
+            M_expr_1( __vfp.M_expr_1 )                                \
                 {                                                       \
                     DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) copy constructor\n"; \
                 }                                                       \
@@ -222,7 +222,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         operator()( TheExpr const& e ) { return VF_FUNC_NAME(O)<TheExpr>( e ); } \
                                                                         \
                                                                         \
-        expression_1_type const& expression() const { return _M_expr_1; } \
+        expression_1_type const& expression() const { return M_expr_1; } \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
@@ -238,29 +238,29 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
                                                                         \
             tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
                 :                                                       \
-                _M_expr( expr.expression(), geom ),                     \
-                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
+                M_expr( expr.expression(), geom ),                     \
+                M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
             tensor( this_type const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ ) \
                 :                                                       \
-                _M_expr( expr.expression(), geom ),                     \
-                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
+                M_expr( expr.expression(), geom ),                     \
+                M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
             tensor( this_type const& expr, Geo_t const& geom )             \
                 :                                                       \
-                _M_expr( expr.expression(), geom ),                     \
-                _M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
+                M_expr( expr.expression(), geom ),                     \
+                M_gmc(vf::detail::ExtractGm<Geo_t>::get( geom ) )         \
                     {                                                   \
                         update( geom );                                 \
                     }                                                   \
             template<typename IM>                                       \
                 void init( IM const& im )                               \
             {                                                           \
-                _M_expr.init( im );                                     \
+                M_expr.init( im );                                     \
             }                                                           \
             void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) \
             {                                                           \
@@ -272,11 +272,11 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             }                                                           \
             void update( Geo_t const& geom )                            \
             {                                                           \
-                _M_expr.update( geom );                                 \
+                M_expr.update( geom );                                 \
             }                                                           \
             void update( Geo_t const& geom, uint16_type face )          \
             {                                                           \
-                _M_expr.update( geom, face );                           \
+                M_expr.update( geom, face );                           \
             }                                                           \
                               \
                 value_type                                              \
@@ -300,17 +300,17 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             value_type                                                  \
                 evalq( uint16_type c1, uint16_type c2, uint16_type q ) const \
             {                                                           \
-                return VF_FUNC_IMPL(O)( _M_expr.evalq( c1, c2, q ) );   \
+                return VF_FUNC_IMPL(O)( M_expr.evalq( c1, c2, q ) );   \
             }                                                           \
         private:                                                        \
-            tensor2_expr_type _M_expr;                                  \
-            gmc_ptrtype _M_gmc;                                         \
+            tensor2_expr_type M_expr;                                  \
+            gmc_ptrtype M_gmc;                                         \
         };                                                              \
                                                                         \
     protected:                                                          \
         VF_FUNC_NAME(O)() {}                                            \
                                                                         \
-        expression_1_type _M_expr_1;                                    \
+        expression_1_type M_expr_1;                                    \
     };                                                                  \
                                                                         \
     template<typename ExprT1>                                           \
