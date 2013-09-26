@@ -544,20 +544,20 @@ public:
             {
                 size_type idElem = trial_eid;
                 size_type domain_eid = idElem;
-                const bool test_related_to_trial = _M_form.testSpace()->mesh()->isSubMeshFrom( _M_form.trialSpace()->mesh() );
-                const bool trial_related_to_test = _M_form.trialSpace()->mesh()->isSubMeshFrom( _M_form.testSpace()->mesh() );
+                const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
+                const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
                 if ( test_related_to_trial )
                 {
-                    domain_eid = _M_form.trialSpace()->mesh()->face( _M_form.testSpace()->mesh()->subMeshToMesh( idElem )).element0().id();
+                    domain_eid = M_form.trialSpace()->mesh()->face( M_form.testSpace()->mesh()->subMeshToMesh( idElem )).element0().id();
                     DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
                 }
                 if( trial_related_to_test )
                 {
-                    auto const& eltTest = _M_form.testSpace()->mesh()->element(idElem);
+                    auto const& eltTest = M_form.testSpace()->mesh()->element(idElem);
                     std::set<size_type> idsFind;
-                    for (uint16_type f=0;f< _M_form.testSpace()->mesh()->numLocalFaces();++f)
+                    for (uint16_type f=0;f< M_form.testSpace()->mesh()->numLocalFaces();++f)
                         {
-                            const size_type idFind = _M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                            const size_type idFind = M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
                             if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
                         }
                     if ( idsFind.size()>1 ) std::cout << " TODO trialElementId " << std::endl;
