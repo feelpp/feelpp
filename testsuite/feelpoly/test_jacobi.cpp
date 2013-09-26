@@ -64,10 +64,10 @@ class TestJacobi
 {
 public:
     typedef T value_type;
-    value_type _M_factor_eps;
+    value_type M_factor_eps;
     TestJacobi( value_type factor_eps = value_type( 1 ) )
         :
-        _M_factor_eps( factor_eps )
+        M_factor_eps( factor_eps )
     {}
     void operator()() const
     {
@@ -79,7 +79,7 @@ public:
         {
             Jacobi<N, T> p( 0.0, 0.0 );
             value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
             //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
             //( fact( n-0 )/( fact( n )*fact(0 ) ) ) ) < Feel::type_traits<T>::epsilon() );
 
@@ -88,10 +88,10 @@ public:
                 // check derivation with derivation relation in KS book appendix A p 351
                 Jacobi<N-1, T> dp( 1.0, 1.0 );
                 value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
+                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
             }
 
-            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
 
         }
 
@@ -102,7 +102,7 @@ public:
         {
             dyna::Jacobi<T> p( N, 0.0, 0.0 );
             value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
             //BOOST_CHECK( Feel::math::abs( Jacobi<N, T>( 1.0, 0.0, 1.0 ) -
             //( fact( n-0 )/( fact( n )*fact(0 ) ) ) ) < Feel::type_traits<T>::epsilon() );
 
@@ -111,10 +111,10 @@ public:
                 // check derivation with derivation relation in KS book appendix A p 351
                 dyna::Jacobi<T> dp( uint16_type( N-1 ), 1.0, 1.0 );
                 value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
+                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
             }
 
-            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+            BOOST_CHECK( Feel::math::abs( Feel::details::integrate<N,T>( f<T> ) - 0.0 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
         }
 
         std::cout << "dyna::jacobi test done in " << __timer.elapsed()/1000 << "\n";
@@ -128,18 +128,18 @@ public:
             BOOST_CHECK( P.size1() == N+1 );
             BOOST_CHECK( P.size2() == 2 );
             value_type v = value_type( double( fact( N+0 ) )/value_type( double( fact( N )*fact( 0 ) ) ) );
-            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
-            BOOST_CHECK( Feel::math::abs( P( N, 0 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+            BOOST_CHECK( Feel::math::abs( p( 1.0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
+            BOOST_CHECK( Feel::math::abs( P( N, 0 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
 
             if ( pts.size() > 0 )
-                BOOST_CHECK( Feel::math::abs( P( N, 1 ) - v ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+                BOOST_CHECK( Feel::math::abs( P( N, 1 ) - v ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
 
             if ( N > 0 )
             {
                 // check derivation with derivation relation in KS book appendix A p 351
                 Jacobi<N-1, T> dp( 1.0, 1.0 );
                 value_type dp2 = 0.5 * ( 0.0 + 0.0 + value_type( N ) + 1.0 ) * dp( 0.6 );
-                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  _M_factor_eps*Feel::type_traits<T>::epsilon() );
+                BOOST_CHECK( Feel::math::abs( p.derivate( 0.6 ) - dp2 ) <  M_factor_eps*Feel::type_traits<T>::epsilon() );
                 ublas::vector<T> pts( 2 );
                 pts[0] = 0.6;
                 pts[1] = 0.6;
@@ -151,7 +151,7 @@ public:
                               << "dp2 = " << dp2 << "\n";
                 }
 
-                BOOST_CHECK( Feel::math::abs( dP( N, 0 ) - dp2 ) < _M_factor_eps*Feel::type_traits<T>::epsilon() );
+                BOOST_CHECK( Feel::math::abs( dP( N, 0 ) - dp2 ) < M_factor_eps*Feel::type_traits<T>::epsilon() );
             }
         }
     }
@@ -242,4 +242,3 @@ test->add( BOOST_TEST_CASE( ( TestJacobi<10, qd_real>() )  ) );
 //    return test;
 }
 #endif
-

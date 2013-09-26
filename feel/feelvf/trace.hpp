@@ -82,11 +82,11 @@ public:
 
     explicit Trace( expression_type const & __expr )
         :
-        _M_expr( __expr )
+        M_expr( __expr )
     {}
     Trace( Trace const & te )
         :
-        _M_expr( te._M_expr )
+        M_expr( te.M_expr )
     {}
     ~Trace()
     {}
@@ -120,7 +120,7 @@ public:
 
     expression_type const& expression() const
     {
-        return _M_expr;
+        return M_expr;
     }
 
     //@}
@@ -150,49 +150,49 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
-            _M_tensor_expr( expr.expression(), geom, fev, feu )
+            M_tensor_expr( expr.expression(), geom, fev, feu )
         {
         }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
-            _M_tensor_expr( expr.expression(), geom, fev )
+            M_tensor_expr( expr.expression(), geom, fev )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
-            _M_tensor_expr( expr.expression(), geom )
+            M_tensor_expr( expr.expression(), geom )
         {
         }
         template<typename IM>
         void init( IM const& im )
         {
-            _M_tensor_expr.init( im );
+            M_tensor_expr.init( im );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            _M_tensor_expr.update( geom, fev, feu );
+            M_tensor_expr.update( geom, fev, feu );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
-            _M_tensor_expr.update( geom, fev );
+            M_tensor_expr.update( geom, fev );
         }
         void update( Geo_t const& geom )
         {
-            _M_tensor_expr.update( geom );
+            M_tensor_expr.update( geom );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
-            _M_tensor_expr.update( geom, face );
+            M_tensor_expr.update( geom, face );
         }
 
 
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
-            return _M_tensor_expr.evalij( i, j );
+            return M_tensor_expr.evalij( i, j );
         }
 
 
@@ -202,7 +202,7 @@ public:
             value_type res = value_type( 0 );
 
             for ( uint16_type l = 0; l < expr_shape::M; ++l )
-                res += _M_tensor_expr.evalijq( i, j, l, l, q );
+                res += M_tensor_expr.evalijq( i, j, l, l, q );
 
             return res;
         }
@@ -214,7 +214,7 @@ public:
             value_type res = value_type( 0 );
 
             for ( uint16_type l = 0; l < expr_shape::M; ++l )
-                res += _M_tensor_expr.evalijq( i, j, l, l, q, mpl::int_<PatternContext>() );
+                res += M_tensor_expr.evalijq( i, j, l, l, q, mpl::int_<PatternContext>() );
 
             return res;
         }
@@ -225,7 +225,7 @@ public:
             value_type res = value_type( 0 );
 
             for ( uint16_type l = 0; l < expr_shape::M; ++l )
-                res += _M_tensor_expr.evaliq( i, l, l, q );
+                res += M_tensor_expr.evaliq( i, l, l, q );
 
             return res;
         }
@@ -236,16 +236,16 @@ public:
             value_type res = value_type( 0 );
 
             for ( uint16_type l = 0; l < expr_shape::M; ++l )
-                res += _M_tensor_expr.evalq( l, l, q );
+                res += M_tensor_expr.evalq( l, l, q );
 
             return res;
         }
 
-        tensor_expr_type _M_tensor_expr;
+        tensor_expr_type M_tensor_expr;
     };
 
 private:
-    mutable expression_type  _M_expr;
+    mutable expression_type  M_expr;
 };
 /// \endcond
 

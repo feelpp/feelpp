@@ -110,14 +110,14 @@ public:
 
     Points( WorldComm const& worldComm = Environment::worldComm() )
         :
-        _M_worldCommPoints( worldComm ),
-        _M_points()
+        M_worldCommPoints( worldComm ),
+        M_points()
     {}
 
     Points( Points const & f )
         :
-        _M_worldCommPoints( f._M_worldCommPoints ),
-        _M_points( f._M_points )
+        M_worldCommPoints( f.M_worldCommPoints ),
+        M_points( f.M_points )
     {}
 
     virtual ~Points()
@@ -133,8 +133,8 @@ public:
     {
         if ( this != &e )
         {
-            _M_worldCommPoints = e._M_worldCommPoints;
-            _M_points = e._M_points;
+            M_worldCommPoints = e.M_worldCommPoints;
+            M_points = e.M_points;
         }
 
         return *this;
@@ -151,7 +151,7 @@ public:
      */
     points_type & points()
     {
-        return _M_points;
+        return M_points;
     }
 
     /**
@@ -159,72 +159,72 @@ public:
      */
     points_type const& points() const
     {
-        return _M_points;
+        return M_points;
     }
 
 
     virtual bool isEmpty() const
     {
-        return _M_points.empty();
+        return M_points.empty();
     }
     bool isBoundaryPoint( point_type const & e ) const
     {
-        return _M_points.find( e )->isOnBoundary();
+        return M_points.find( e )->isOnBoundary();
     }
     bool isBoundaryPoint( size_type const & id ) const
     {
-        return _M_points.find( point_type( id ) )->isOnBoundary();
+        return M_points.find( point_type( id ) )->isOnBoundary();
     }
 
 
     point_type const& point( size_type i ) const
     {
-        return *_M_points.find( point_type( i ) );
+        return *M_points.find( point_type( i ) );
     };
 
     point_iterator beginPoint()
     {
-        return _M_points.begin();
+        return M_points.begin();
     }
     point_const_iterator beginPoint() const
     {
-        return _M_points.begin();
+        return M_points.begin();
     }
     point_iterator endPoint()
     {
-        return _M_points.end();
+        return M_points.end();
     }
     point_const_iterator endPoint() const
     {
-        return _M_points.end();
+        return M_points.end();
     }
 
 
     marker_point_iterator beginPointWithMarker( size_type m )
     {
-        return _M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
+        return M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
     }
     marker_point_const_iterator beginPointWithMarker( size_type m ) const
     {
-        return _M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
+        return M_points.template get<detail::by_marker>().lower_bound( Marker1(m) );
     }
     marker_point_iterator endPointWithMarker( size_type m )
     {
-        return _M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
+        return M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
     }
     marker_point_const_iterator endPointWithMarker( size_type m ) const
     {
-        return _M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
+        return M_points.template get<detail::by_marker>().upper_bound( Marker1(m) );
     }
 
     point_iterator pointIterator( size_type i ) const
     {
-        return  _M_points.find( point_type( i ) );
+        return  M_points.find( point_type( i ) );
     }
 
     bool hasPoint( size_type i ) const
         {
-            return _M_points.find( point_type( i ) ) != _M_points.end();
+            return M_points.find( point_type( i ) ) != M_points.end();
         }
     /**
      * get the points container by id
@@ -235,7 +235,7 @@ public:
     typename points_type::template nth_index<0>::type &
     pointsById()
     {
-        return _M_points.template get<0>();
+        return M_points.template get<0>();
     }
 
     /**
@@ -247,7 +247,7 @@ public:
     typename points_type::template nth_index<0>::type const&
     pointsById() const
     {
-        return _M_points.template get<0>();
+        return M_points.template get<0>();
     }
 
     /**
@@ -259,7 +259,7 @@ public:
     marker_points &
     pointsByMarker()
     {
-        return _M_points.template get<detail::by_marker>();
+        return M_points.template get<detail::by_marker>();
     }
 
     /**
@@ -271,7 +271,7 @@ public:
     marker_points const&
     pointsByMarker() const
     {
-        return _M_points.template get<detail::by_marker>();
+        return M_points.template get<detail::by_marker>();
     }
     /**
      * get the points container using the location view
@@ -282,7 +282,7 @@ public:
     location_points &
     pointsByLocation()
     {
-        return _M_points.template get<detail::by_location>();
+        return M_points.template get<detail::by_location>();
     }
 
     /**
@@ -294,7 +294,7 @@ public:
     location_points const&
     pointsByLocation() const
     {
-        return _M_points.template get<detail::by_location>();
+        return M_points.template get<detail::by_location>();
     }
 
     /**
@@ -304,7 +304,7 @@ public:
      */
     location_point_iterator beginInternalPoint()
     {
-        return _M_points.template get<detail::by_location>().lower_bound( INTERNAL );
+        return M_points.template get<detail::by_location>().lower_bound( INTERNAL );
     }
     /**
      * get the end() iterator on all the internal points
@@ -313,7 +313,7 @@ public:
      */
     location_point_iterator endInternalPoint()
     {
-        return _M_points.template get<detail::by_location>().upper_bound( INTERNAL );
+        return M_points.template get<detail::by_location>().upper_bound( INTERNAL );
     }
 
     /**
@@ -323,7 +323,7 @@ public:
      */
     location_point_const_iterator beginInternalPoint() const
     {
-        return _M_points.template get<detail::by_location>().lower_bound( INTERNAL );
+        return M_points.template get<detail::by_location>().lower_bound( INTERNAL );
     }
 
     /**
@@ -333,7 +333,7 @@ public:
      */
     location_point_const_iterator endInternalPoint() const
     {
-        return _M_points.template get<detail::by_location>().upper_bound( INTERNAL );
+        return M_points.template get<detail::by_location>().upper_bound( INTERNAL );
     }
 
     /**
@@ -343,7 +343,7 @@ public:
      */
     location_point_iterator beginPointOnBoundary()
     {
-        return _M_points.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_points.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
     }
     /**
      * get the end() iterator on all the boundary points
@@ -352,7 +352,7 @@ public:
      */
     location_point_iterator endPointOnBoundary()
     {
-        return _M_points.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_points.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
     /**
@@ -362,7 +362,7 @@ public:
      */
     location_point_const_iterator beginPointOnBoundary() const
     {
-        return _M_points.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_points.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
     }
 
     /**
@@ -372,14 +372,14 @@ public:
      */
     location_point_const_iterator endPointOnBoundary() const
     {
-        return _M_points.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_points.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
 
     std::pair<pid_point_iterator, pid_point_iterator>
     pointsWithProcessId( size_type p ) const
     {
-        return _M_points.template get<detail::by_pid>().equal_range( p );
+        return M_points.template get<detail::by_pid>().equal_range( p );
     }
 
     //@}
@@ -402,17 +402,17 @@ public:
      */
     point_type const& addPoint( point_type const& f )
     {
-        return *_M_points.insert( f ).first;
+        return *M_points.insert( f ).first;
     }
 
     WorldComm const& worldCommPoints() const
     {
-        return _M_worldCommPoints;
+        return M_worldCommPoints;
     }
 
     void setWorldCommPoints( WorldComm const& _worldComm )
     {
-        _M_worldCommPoints = _worldComm;
+        M_worldCommPoints = _worldComm;
     }
 
     //@}
@@ -423,13 +423,13 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & _M_points;
+            ar & M_points;
         }
 
 private:
-    WorldComm _M_worldCommPoints;
+    WorldComm M_worldCommPoints;
 
-    points_type _M_points;
+    points_type M_points;
 };
 /// \endcond
 } // Feel

@@ -169,7 +169,7 @@ public:
         M_is_written( false ),
         M_name( "default" ),
         M_M( 1 ),
-        M_M_max( 1 ),
+        MM_max( 1 ),
         M_WN(),
         M_offline_done( false ),
         M_tol( 1e-8 ),
@@ -188,7 +188,7 @@ public:
         M_name( model->name() ),
         M_trainset( sampling ),
         M_M( 1 ),
-        M_M_max( 1 ),
+        MM_max( 1 ),
         M_WN( M_vm["eim.dimension-max"].template as<int>() ),
         M_offline_done( false ),
         M_tol( __tol ),
@@ -230,7 +230,7 @@ public:
         M_is_written( __bbf.M_is_written ),
         M_name( __bbf.M_name ),
         M_M( __bbf.M_M ),
-        M_M_max (__bbf.M_M_max ),
+        MM_max (__bbf.MM_max ),
         M_WN(__bbf.M_WN ),
         M_offline_done( __bbf.M_offline_done ),
         M_tol( __bbf.M_tol ),
@@ -277,7 +277,7 @@ public:
             return M_q[ __m ];
         }
 
-    size_type mMax() const { return M_M_max; }
+    size_type mMax() const { return MM_max; }
 
 
     /**
@@ -405,9 +405,9 @@ public:
             __ar & BOOST_SERIALIZATION_NVP( M_offline_done );
             LOG(INFO) << "offline status...\n";
 
-            __ar & BOOST_SERIALIZATION_NVP( M_M_max );
+            __ar & BOOST_SERIALIZATION_NVP( MM_max );
             LOG(INFO) << "M saved/loaded\n";
-            M_M = M_M_max;
+            M_M = MM_max;
 
             // save index
             __ar & BOOST_SERIALIZATION_NVP( M_index_max );
@@ -420,18 +420,18 @@ public:
 
             if ( Archive::is_loading::value )
             {
-                for( int i = 0; i < M_M_max; ++ i )
+                for( int i = 0; i < MM_max; ++ i )
                 {
                     M_q.push_back( M_model->functionSpace()->element() );
                 }
-                for( int i = 0; i < M_M_max; ++ i )
+                for( int i = 0; i < MM_max; ++ i )
                     __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
                 // save q
                 LOG(INFO) << "q saved/loaded\n";
             }
             else
             {
-                for( int i = 0; i < M_M_max; ++ i )
+                for( int i = 0; i < MM_max; ++ i )
                     __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
             }
 
@@ -453,7 +453,7 @@ protected:
     std::string M_name;
     sampling_ptrtype M_trainset;
     size_type M_M;
-    size_type M_M_max;
+    size_type MM_max;
 
     size_type M_WN;
 
@@ -815,7 +815,7 @@ EIM<ModelType>::offline(  )
     }
 
     LOG(INFO) << "[offline] M_max = " << M_M-1 << "...\n";
-    this->M_M_max = this->M_M-1;
+    this->MM_max = this->M_M-1;
 
     this->M_offline_done = true;
     LOG(INFO) << "[offline] saving DB...\n";

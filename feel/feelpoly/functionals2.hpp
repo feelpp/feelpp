@@ -114,21 +114,21 @@ struct prod
     typedef typename P1::value_type value_type;
     prod ( P1 const& p1, P2 const& p2 )
         :
-        _M_p1 ( p1 ),
-        _M_p2 ( p2 )
+        M_p1 ( p1 ),
+        M_p2 ( p2 )
     {}
 #if 0
     value_type operator() ( typename node<value_type>::type const& n )
     {
-        return _M_p1.evaluate( n )( 0,0 ) * _M_p2.evaluate( n )( 0,0 );
+        return M_p1.evaluate( n )( 0,0 ) * M_p2.evaluate( n )( 0,0 );
     }
 #endif
     typename node<value_type>::type operator() ( typename node<value_type>::type const& n )
     {
-        return ublas::column( ublas::element_prod( _M_p1.evaluate( n ), _M_p2.evaluate( n ) ), 0 );
+        return ublas::column( ublas::element_prod( M_p1.evaluate( n ), M_p2.evaluate( n ) ), 0 );
     }
-    P1 _M_p1;
-    P2 _M_p2;
+    P1 M_p1;
+    P2 M_p2;
 };
 } // detail
 /**
@@ -164,8 +164,8 @@ public:
     IntegralMomentOnFace( space_type const& p, uint16_type k, IntegrationFaceEnum face = ALL_FACES )
         :
         super( p ),
-        _M_k ( k ),
-        _M_q()
+        M_k ( k ),
+        M_q()
     {
         ublas::matrix<value_type> __rep( nComponents, p.polynomialDimensionPerComponent() );
         typedef detail::prod<typename space_type::polynomial_type, polynomial_type> prod_fun;
@@ -173,10 +173,10 @@ public:
         for ( uint16_type i = 0; i < p.polynomialDimensionPerComponent(); ++i )
         {
             //if ( p.is_scalar )
-            //__rep( 0, i ) = _M_q.integrate( face, prod_fun( p.polynomial(i), p.polynomial( k ) ) );
+            //__rep( 0, i ) = M_q.integrate( face, prod_fun( p.polynomial(i), p.polynomial( k ) ) );
             //else
             typedef typename node<value_type>::type node_type;
-            ublas::column( __rep, i ) = _M_q.integrate( face, prod_fun( p.polynomial( i ), p.polynomial( k ) ) );
+            ublas::column( __rep, i ) = M_q.integrate( face, prod_fun( p.polynomial( i ), p.polynomial( k ) ) );
         }
 
         this->setCoefficient( __rep );
@@ -193,8 +193,8 @@ public:
     IntegralMomentOnFace( space_type const& p, uint16_type k, uint16_type c, IntegrationFaceEnum face = ALL_FACES )
         :
         super( p ),
-        _M_k ( k ),
-        _M_q()
+        M_k ( k ),
+        M_q()
     {
         ublas::matrix<value_type> __rep( ublas::zero_matrix<value_type>( nComponents, p.polynomialDimensionPerComponent() ) );
         typedef detail::prod<typename space_type::polynomial_type::component_type,
@@ -207,7 +207,7 @@ public:
         {
             int ind_p1 = nc + i;
             typedef typename node<value_type>::type node_type;
-            __rep( c, i ) = _M_q.integrate( face, prod_fun( p.polynomial( ind_p1 )[c],
+            __rep( c, i ) = M_q.integrate( face, prod_fun( p.polynomial( ind_p1 )[c],
                                             p.polynomial( ind_p2 )[c] ) )( 0 );
         }
 
@@ -222,10 +222,10 @@ private:
 private:
 
     // polynomial degree integrate against
-    uint16_type _M_k;
+    uint16_type M_k;
 
     // quadrature rule on the element and faces of the element
-    IM<Space::nDim,2*Space::nOrder+1, value_type> _M_q;
+    IM<Space::nDim,2*Space::nOrder+1, value_type> M_q;
 };
 
 
@@ -412,5 +412,3 @@ public:
 } // Feel
 
 #endif // __FEELPP_FUNCTIONALS2_HPP
-
-
