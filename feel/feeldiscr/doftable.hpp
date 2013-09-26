@@ -526,6 +526,20 @@ public:
         return it->second.index();
     }
 
+    /**
+     * \return the specified entries of the globalToLocal table
+     *
+     * \param DofId the Dof ID
+     *
+     * \return the element id and local dof id
+     */
+    LocalDof const& globalToLocal( size_type dof )  const
+    {
+        auto it = M_el_l2g.right.find( Dof( dof ) );
+        DCHECK( it != M_el_l2g.right.end() ) << "Invalid global dof entry ( " << dof << ")";
+        return it->second;
+    }
+
     uint16_type localDofId( uint16_type const lid, uint16_type const c = 0 ) const
         {
             return fe_type::nLocalDof * c  + lid;

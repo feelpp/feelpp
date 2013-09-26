@@ -581,21 +581,22 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::marked_point_const_iterator,
-      typename MeshTraits<MeshType>::marked_point_const_iterator>
-      markedpoints( MeshType const& mesh, size_type flag, mpl::int_<true> )
-{
-    return markedpoints( *mesh, flag, mpl::int_<false>() );
-}
-template<typename MeshType>
-boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::marked_point_const_iterator,
-      typename MeshTraits<MeshType>::marked_point_const_iterator>
+      typename MeshTraits<MeshType>::marker_point_const_iterator,
+      typename MeshTraits<MeshType>::marker_point_const_iterator>
       markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<false> )
 {
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
                               mesh.beginPointWithMarker( flag ),
                               mesh.endPointWithMarker( flag ) );
+}
+
+template<typename MeshType>
+boost::tuple<mpl::size_t<MESH_POINTS>,
+      typename MeshTraits<MeshType>::marker_point_const_iterator,
+      typename MeshTraits<MeshType>::marker_point_const_iterator>
+      markedpoints( MeshType const& mesh, size_type flag, mpl::bool_<true> )
+{
+    return markedpoints( *mesh, flag, mpl::bool_<false>() );
 }
 
 template<typename MeshType>
@@ -1304,8 +1305,8 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
  */
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-      typename MeshTraits<MeshType>::marked_point_const_iterator,
-      typename MeshTraits<MeshType>::marked_point_const_iterator>
+      typename MeshTraits<MeshType>::marker_point_const_iterator,
+      typename MeshTraits<MeshType>::marker_point_const_iterator>
       markedpoints( MeshType const& mesh, size_type flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
@@ -1314,12 +1315,12 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_POINTS>,
-             typename MeshTraits<MeshType>::marked_point_const_iterator,
-             typename MeshTraits<MeshType>::marked_point_const_iterator>
+             typename MeshTraits<MeshType>::marker_point_const_iterator,
+             typename MeshTraits<MeshType>::marker_point_const_iterator>
 markedpoints( MeshType const& mesh, std::string const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedpoints( mesh, mesh.markerName(flag), is_ptr_or_shared_ptr() );
+    return detail::markedpoints( mesh, mesh->markerName(flag), is_ptr_or_shared_ptr() );
 }
 
 /**

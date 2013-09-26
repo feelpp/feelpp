@@ -153,6 +153,7 @@ private:
 
     element_type operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_FACES> ) const;
+    element_type operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const;
 
 private:
 
@@ -559,7 +560,39 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     return __v;
 }
+
+template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
+Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const
+{
+    boost::timer __timer;
+
+    element_type __v( M_functionspace );
+    __v.setZero();
+
+    iterator_type pt_it, pt_en;
+    boost::tie( boost::tuples::ignore, pt_it, pt_en ) = M_range;
+
+    if ( pt_it == pt_en )
+        return __v;
+#if 0
+    BOOST_FOREACH( auto dof, M_functionspace->dof()->markerToDof( pt_it->marker() ) );
+    {
+
+        // get the first element to which the point/dof belong and then build
+        // the proper geomap context in order to evaluate the expression at the
+        // point
+
+#if 0
+        if ( sum )
+            __v.add( dof.second,  );
+#endif
+    }
+#endif
+    return __v;
 }
+
+} // detail
 /// \endcond
 
 
