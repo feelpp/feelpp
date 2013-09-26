@@ -343,7 +343,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     LOG(INFO) << "w computed\n";     google::FlushLogFiles(google::GLOG_INFO);
     double mass2 = b( v, w );
     LOG(INFO) << "energy computed\n";     google::FlushLogFiles(google::GLOG_INFO);
-    BOOST_CHECK_CLOSE( mass2, .25, 1e-13 );
+    BOOST_CHECK_CLOSE( mass2, .25, 1e-12 );
     BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
     //BOOST_CHECK_CLOSE( mass1, mass2, 1e-14 );
 
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     auto c = form1( _test=Xh );
     c = integrate( _range=elements(mesh), _expr=idv(u)*id(v) );
     double mass3 = c( v );
-    BOOST_CHECK_CLOSE( mass3, .25, 1e-13 );
+    BOOST_CHECK_CLOSE( mass3, .25, 1e-12 );
     BOOST_TEST_MESSAGE( "time linear form (opt) : " << t.elapsed() << "s\n" );
 
     t.restart();
