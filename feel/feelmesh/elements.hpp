@@ -714,11 +714,12 @@ public:
      *  element on processor \p p
      */
     std::pair<location_element_const_iterator, location_element_const_iterator>
-    boundaryElements( size_type p  ) const
+    boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, size_type p  ) const
     {
-        auto lower = boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 0);
-        auto upper = boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 2);
-        return M_elements.template get<detail::by_location>().range( lower, upper );
+        auto lower = M_elements.template get<detail::by_location>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), entity_min_dim ) );
+        auto upper = M_elements.template get<detail::by_location>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), entity_max_dim ) );
+        return std::make_pair( lower, upper );
+
     }
 
     /**
@@ -726,13 +727,15 @@ public:
      *  element on processor \p p
      */
     std::pair<location_element_const_iterator, location_element_const_iterator>
-    boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, size_type p  ) const
+    boundaryElements( size_type p  ) const
     {
-        auto lower = M_elements.template get<detail::by_location>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, entity_min_dim ) );
-        auto upper = M_elements.template get<detail::by_location>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, entity_max_dim ) );
-        return std::make_pair( lower, upper );
+        return boundaryElements( 0, 2, p );
+        //auto lower = boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), 0);
+        //auto upper = boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), 2);
+        //return M_elements.template get<detail::by_location>().range( lower, upper );
 
     }
+
 
     /**
      * \return the range of iterator \c (begin,end) over the internal
@@ -741,7 +744,7 @@ public:
     std::pair<location_element_const_iterator, location_element_const_iterator>
     internalElements( size_type p  ) const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(),  INTERNAL, invalid_uint16_type_value ) );
+        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(),  bool(INTERNAL), invalid_uint16_type_value ) );
     }
 
 
