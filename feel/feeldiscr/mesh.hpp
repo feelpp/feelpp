@@ -1448,6 +1448,9 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                                Iterator const& end_elt,
                                size_type extraction_policies ) const
 {
+#if 0
+    new_mesh = Feel::createSubmesh( this->shared_from_this(), boost::make_tuple(mpl::int_<MESH_ELEMENTS>(),begin_elt, end_elt), extraction_policies );
+#else
     Context policies( extraction_policies );
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] start\n";
@@ -1602,6 +1605,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
     new_mesh.updateForUse();
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] stop\n";
+#endif
 }
 
 
