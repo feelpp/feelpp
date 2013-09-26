@@ -914,6 +914,57 @@ void update( element_type const& __e, uint16_type __f )
     }
 
 }
+
+void update( element_type const& __e, uint16_type __f, permutation_type __perm )
+{
+    //_M_element_c = boost::shared_ptr<element_type const>(&__e);
+    _M_element = boost::addressof( __e );
+    _M_face_id = __f;
+
+    _M_perm = __perm;
+
+    _M_h_face = __e.hFace( _M_face_id );
+    //_M_h_edge = __e.hEdge( _M_face_id );
+
+    _M_pc = _M_pc_faces[__f][_M_perm];
+    //_M_G = __e.G();
+    _M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
+    _M_id = __e.id();
+    _M_e_marker = __e.marker();
+    _M_e_marker2 = __e.marker2();
+    _M_e_marker3 = __e.marker3();
+    _M_h = __e.h();
+    _M_meas = __e.measure();
+    _M_measface = __e.faceMeasure( __f );
+    _M_xrefq = _M_pc->nodes();
+
+    FEELPP_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
+    FEELPP_ASSERT( _M_pc ).error( "invalid precompute data structure" );
+
+    if ( vm::has_point<context>::value )
+    {
+
+        //ublas::axpy_prod( _M_G, pc->phi(), _M_xrealq, true );
+        std::fill( _M_xrealq.data().begin(), _M_xrealq.data().end(), value_type( 0 ) );
+        const uint16_type size1 = _M_G.size1();
+        const uint16_type size3 = _M_G.size2();
+        const uint16_type size2 = _M_pc->nPoints();
+
+        for ( uint16_type i = 0; i < size1; ++i )
+            for ( uint16_type j = 0; j < size2; ++j )
+            {
+                for ( uint16_type k = 0; k < size3; ++k )
+                    _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][j]( 0,0 );
+            }
+    }
+
+    if ( vm::has_jacobian<context>::value )
+    {
+        updateJKBN( mpl::bool_<is_linear>() );
+    }
+
+}
+
 void update( element_type const& __e,
              precompute_ptrtype const& __pc )
 {
@@ -1545,6 +1596,11 @@ std::vector<std::map<permutation_type, precompute_ptrtype> > const & pcFaces() c
 void setPc( precompute_ptrtype const& __pc )
 {
     _M_pc = __pc;
+}
+
+void setPcFaces( std::vector<std::map<permutation_type, precompute_ptrtype> > const& __pcfaces )
+{
+    _M_pc_faces = __pcfaces;
 }
 
 //@}
