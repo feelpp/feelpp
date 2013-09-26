@@ -917,44 +917,44 @@ void update( element_type const& __e, uint16_type __f )
 
 void update( element_type const& __e, uint16_type __f, permutation_type __perm )
 {
-    //_M_element_c = boost::shared_ptr<element_type const>(&__e);
-    _M_element = boost::addressof( __e );
-    _M_face_id = __f;
+    //M_element_c = boost::shared_ptr<element_type const>(&__e);
+    M_element = boost::addressof( __e );
+    M_face_id = __f;
 
-    _M_perm = __perm;
+    M_perm = __perm;
 
-    _M_h_face = __e.hFace( _M_face_id );
-    //_M_h_edge = __e.hEdge( _M_face_id );
+    M_h_face = __e.hFace( M_face_id );
+    //M_h_edge = __e.hEdge( M_face_id );
 
-    _M_pc = _M_pc_faces[__f][_M_perm];
-    //_M_G = __e.G();
-    _M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
-    _M_id = __e.id();
-    _M_e_marker = __e.marker();
-    _M_e_marker2 = __e.marker2();
-    _M_e_marker3 = __e.marker3();
-    _M_h = __e.h();
-    _M_meas = __e.measure();
-    _M_measface = __e.faceMeasure( __f );
-    _M_xrefq = _M_pc->nodes();
+    M_pc = M_pc_faces[__f][M_perm];
+    //M_G = __e.G();
+    M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
+    M_id = __e.id();
+    M_e_marker = __e.marker();
+    M_e_marker2 = __e.marker2();
+    M_e_marker3 = __e.marker3();
+    M_h = __e.h();
+    M_meas = __e.measure();
+    M_measface = __e.faceMeasure( __f );
+    M_xrefq = M_pc->nodes();
 
-    FEELPP_ASSERT( _M_G.size2() == _M_gm->nbPoints() )( _M_G.size2() )( _M_gm->nbPoints() ).error( "invalid dimensions" );
-    FEELPP_ASSERT( _M_pc ).error( "invalid precompute data structure" );
+    FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
+    FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
 
     if ( vm::has_point<context>::value )
     {
 
-        //ublas::axpy_prod( _M_G, pc->phi(), _M_xrealq, true );
-        std::fill( _M_xrealq.data().begin(), _M_xrealq.data().end(), value_type( 0 ) );
-        const uint16_type size1 = _M_G.size1();
-        const uint16_type size3 = _M_G.size2();
-        const uint16_type size2 = _M_pc->nPoints();
+        //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
+        std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
+        const uint16_type size1 = M_G.size1();
+        const uint16_type size3 = M_G.size2();
+        const uint16_type size2 = M_pc->nPoints();
 
         for ( uint16_type i = 0; i < size1; ++i )
             for ( uint16_type j = 0; j < size2; ++j )
             {
                 for ( uint16_type k = 0; k < size3; ++k )
-                    _M_xrealq( i, j ) += _M_G( i, k ) * _M_pc->phi()[k][j]( 0,0 );
+                    M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0,0 );
             }
     }
 
@@ -1600,7 +1600,7 @@ void setPc( precompute_ptrtype const& __pc )
 
 void setPcFaces( std::vector<std::map<permutation_type, precompute_ptrtype> > const& __pcfaces )
 {
-    _M_pc_faces = __pcfaces;
+    M_pc_faces = __pcfaces;
 }
 
 //@}
