@@ -448,6 +448,7 @@ public:
         return M_scmA;
     }
 
+    void loadSCMDB();
 
     //@}
 
@@ -640,8 +641,9 @@ public:
 
     /**
      * orthonormalize the basis
+     * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0
      */
-    void orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
+    double orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
 
     void checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs,
                         std::vector< std::vector<double> > const& dual_residual_coeffs , element_type & u, element_type & udu ) const;
@@ -657,9 +659,9 @@ public:
 
     /*
      * check orthonormality
+     * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0
      */
-    //void checkOrthonormality( int N, const wn_type& wn) const;
-    void checkOrthonormality( int N, const wn_type& wn ) const;
+    double checkOrthonormality( int N, const wn_type& wn ) const;
 
     /**
      * check the reduced basis space invariant properties
@@ -1566,6 +1568,27 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 }//offline fixed point
 
 
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::loadSCMDB()
+{
+    if ( M_error_type == CRB_RESIDUAL_SCM )
+    {
+        M_scmA->setScmForMassMatrix( false );
+        if( ! M_scmA->loadDB() )
+            std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
+
+        if ( ! M_model->isSteady() )
+        {
+            M_scmM->setScmForMassMatrix( true );
+            if( ! M_scmM->loadDB() )
+                std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
+        }
+    }
+}
+
+
 template<typename TruthModelType>
 typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
@@ -1900,19 +1923,7 @@ CRB<TruthModelType>::offline()
         M_N = 0;
 
         // scm offline stage: build C_K
-        if ( M_error_type == CRB_RESIDUAL_SCM )
-        {
-            M_scmA->setScmForMassMatrix( false );
-            if( ! M_scmA->loadDB() )
-                std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
-
-            if ( ! M_model->isSteady() )
-            {
-                M_scmM->setScmForMassMatrix( true );
-                if( ! M_scmM->loadDB() )
-                    std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
-            }
-        }
+        this->loadSCMDB();
 
         M_maxerror = 1e10;
         delta_pr = 0;
@@ -1978,6 +1989,9 @@ CRB<TruthModelType>::offline()
     }//end of if( rebuild_database )
     else
     {
+        // scm offline stage: build C_K
+        this->loadSCMDB();
+
         mu = M_current_mu;
         if( proc_number == 0 )
         {
@@ -2280,18 +2294,37 @@ CRB<TruthModelType>::offline()
 
         M_N+=number_of_added_elements;
 
+        double norm_max = option(_name="crb.orthonormality-tol").template as<double>();
+        int max_iter = option(_name="crb.orthonormality-max-iter").template as<int>();
         if ( orthonormalize_primal )
         {
-            orthonormalize( M_N, M_WN, number_of_added_elements );
-            orthonormalize( M_N, M_WN, number_of_added_elements );
-            orthonormalize( M_N, M_WN, number_of_added_elements );
+            double norm = norm_max+1;
+            int iter=0;
+            double old = 10;
+            while( norm >= norm_max && iter < max_iter)
+            {
+                norm = orthonormalize( M_N, M_WN, number_of_added_elements );
+                iter++;
+                //if the norm doesn't change
+                if( math::abs(old-norm) < norm_max )
+                    norm=0;
+                old=norm;
+            }
         }
 
         if ( orthonormalize_dual )
         {
-            orthonormalize( M_N, M_WNdu, number_of_added_elements );
-            orthonormalize( M_N, M_WNdu, number_of_added_elements );
-            orthonormalize( M_N, M_WNdu, number_of_added_elements );
+            double norm = norm_max+1;
+            int iter=0;
+            double old = 10;
+            while( norm >= norm_max && iter < max_iter )
+            {
+                norm = orthonormalize( M_N, M_WNdu, number_of_added_elements );
+                iter++;
+                if( math::abs(old-norm) < norm_max )
+                    norm=0;
+                old=norm;
+            }
         }
 
         if( ! M_use_newton )
@@ -4383,7 +4416,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
 }
 template<typename TruthModelType>
-void
+double
 CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
@@ -4411,12 +4444,13 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
     DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
-    if ( this->vm()["crb.check.gs"].template as<int>() )
-        checkOrthonormality( N , wn );
+    //if ( this->vm()["crb.check.gs"].template as<int>() )
+    //return the norm of the matrix A(i,j)=M_model->scalarProduct( wn[j], wn[i] )
+    return checkOrthonormality( N , wn );
 }
 
 template <typename TruthModelType>
-void
+double
 CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
 {
 
@@ -4427,9 +4461,9 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
 
     if ( orthonormalize_primal*orthonormalize_dual==0 )
     {
-        std::cout<<"Warning : calling checkOrthonormality is called but ";
-        std::cout<<" orthonormalize_dual = "<<orthonormalize_dual;
-        std::cout<<" and orthonormalize_primal = "<<orthonormalize_primal<<std::endl;
+        LOG(INFO)<<"Warning : calling checkOrthonormality is called but ";
+        LOG(INFO)<<" orthonormalize_dual = "<<orthonormalize_dual;
+        LOG(INFO)<<" and orthonormalize_primal = "<<orthonormalize_primal;
     }
 
     matrixN_type A, I;
@@ -4446,8 +4480,13 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
 
     A -= I;
     DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
-    std::cout << "    o check : " << A.norm() << " (should be 0)\n";
+    if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    {
+        LOG( INFO ) << "    o check : " << A.norm() << " (should be 0)";
+    }
     //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+
+    return A.norm();
 }
 
 

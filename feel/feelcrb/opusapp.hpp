@@ -300,6 +300,11 @@ public:
                 if( current_dimension < dimension_max && !crb_use_predefined )
                     do_offline=true;
 
+                if( ! do_offline )
+                {
+                    crb->loadSCMDB();
+                }
+
                 if( do_offline )
                 {
                     crb->setOfflineStep( true );
@@ -942,9 +947,11 @@ public:
                                                 dual_solution_error = math::sqrt( dual_solution_error );
                                                 ref_dual = math::sqrt( ref_dual );
                                             }
+
                                             solution_error = math::sqrt( solution_error );
                                             ref_primal = math::sqrt( ref_primal );
                                             //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
+
                                         }
                                         else
                                         {
@@ -1060,17 +1067,15 @@ public:
                                         M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
                                         LOG(INFO) << "N=" << N << " done.\n";
 
-
+                                        if( relative_primal_solution_error_bound_efficiency < 1 )
+                                            LOG( INFO ) << "efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                        if( relative_dual_solution_error_bound_efficiency < 1 )
+                                            LOG( INFO ) << "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                        if( output_error_bound_efficiency < 1 )
+                                            LOG( INFO ) << "efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
 
                                         if ( option(_name="crb.check.residual").template as<bool>()  && solve_dual_problem  )
                                         {
-                                            if( relative_primal_solution_error_bound_efficiency < 1 )
-                                                LOG( INFO ) << "efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
-                                            if( relative_dual_solution_error_bound_efficiency < 1 )
-                                                LOG( INFO ) << "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
-                                            if( output_error_bound_efficiency < 1 )
-                                                LOG( INFO ) << "efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
-
                                             std::vector < std::vector<double> > primal_residual_coefficients = all_upper_bounds.template get<3>();
                                             std::vector < std::vector<double> > dual_residual_coefficients = all_upper_bounds.template get<4>();
                                             if( model->isSteady() )
