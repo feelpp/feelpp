@@ -92,14 +92,14 @@ public:
     Sphere()
         :
         super(),
-        _M_radius( -1 )
+        M_radius( -1 )
     {}
 
     Sphere( Sphere const & s )
         :
         super(),
-        _M_center( s._M_center ),
-        _M_radius( s._M_radius )
+        M_center( s.M_center ),
+        M_radius( s.M_radius )
     {
     }
 
@@ -107,8 +107,8 @@ public:
              const double   r )
         :
         super(),
-        _M_center( c ),
-        _M_radius( r )
+        M_center( c ),
+        M_radius( r )
     {
         assert ( r > 0. );
 
@@ -137,7 +137,7 @@ public:
      */
     double radius() const
     {
-        return _M_radius;
+        return M_radius;
     }
 
 
@@ -146,7 +146,7 @@ public:
      */
     const Point& center() const
     {
-        return _M_center;
+        return M_center;
     }
 
 
@@ -163,7 +163,7 @@ public:
      */
     void setCenter( Point const& p )
     {
-        _M_center = p;
+        M_center = p;
     }
 
     /**
@@ -171,7 +171,7 @@ public:
      */
     void setRadius( double r )
     {
-        _M_radius = r ;
+        M_radius = r ;
     }
 
 
@@ -198,7 +198,7 @@ public:
      */
     bool intersects ( const Sphere& other_sphere ) const
     {
-        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
         FEELPP_ASSERT( other_sphere.radius() > 0 )( other_sphere.radius() ).error( "radius negative" );
 
         if ( Feel::distance( this->center(), other_sphere.center() ) < ( this->radius() + other_sphere.radius() ) )
@@ -214,7 +214,7 @@ public:
      */
     bool aboveSurface ( const Point& p ) const
     {
-        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
 
         if ( Feel::distance( p, this->center() ) > this->radius() )
             return true;
@@ -241,7 +241,7 @@ public:
      */
     bool onSurface ( const Point& p ) const
     {
-        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
 
 
         if ( std::abs( Feel::distance( p, this->center() ) - this->radius() ) < 1.e-10 )
@@ -256,7 +256,7 @@ public:
      */
     Point closestPoint ( const Point& p ) const
     {
-        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
 
         // get the normal from the surface in the direction
         // of p
@@ -276,7 +276,7 @@ public:
      */
     Point unitNormal ( const Point& p ) const
     {
-        FEELPP_ASSERT( _M_radius > 0 )( _M_radius ).error( "radius negative" );
+        FEELPP_ASSERT( M_radius > 0 )( M_radius ).error( "radius negative" );
 
         //assert ( !(p == this->center()) );
 
@@ -337,12 +337,12 @@ private:
     /**
      * The center of the sphere.
      */
-    Point _M_center;
+    Point M_center;
 
     /**
      * The radius of the sphere.
      */
-    Real  _M_radius;
+    Real  M_radius;
 };
 } // Feel
 #endif /* __Sphere_H */
