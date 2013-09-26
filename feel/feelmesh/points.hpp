@@ -63,24 +63,24 @@ public:
     point_type,
     multi_index::indexed_by<
     // sort by employee::operator<
-    multi_index::ordered_unique<multi_index::identity<point_type> >,
-    // sort by less<int> on marker
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
-    multi_index::const_mem_fun<point_type,
-    Marker1 const&,
-    &point_type::marker> >,
+        multi_index::ordered_unique<multi_index::identity<point_type> >,
+        // sort by less<int> on marker
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
+                                        multi_index::const_mem_fun<point_type,
+                                                                   Marker1 const&,
+                                                                   &point_type::marker> >,
 
-    // sort by less<int> on processId
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
-    multi_index::const_mem_fun<point_type,
-    uint16_type,
-    &point_type::processId> >,
+        // sort by less<int> on processId
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
+                                        multi_index::const_mem_fun<point_type,
+                                                                   uint16_type,
+                                                                   &point_type::processId> >,
 
-    // sort by less<int> on boundary
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
-    multi_index::const_mem_fun<point_type,
-    bool,
-    &point_type::isOnBoundary> >
+        // sort by less<int> on boundary
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
+                                        multi_index::const_mem_fun<point_type,
+                                                                   bool,
+                                                                   &point_type::isOnBoundary> >
     >
     > points_type;
 

@@ -80,80 +80,80 @@ public:
     multi_index::indexed_by<
     // sort by employee::operator<
 #if 1
-    multi_index::ordered_unique<multi_index::identity<face_type> >,
+        multi_index::ordered_unique<multi_index::identity<face_type> >,
 #else
-    multi_index::ordered_unique<
-    multi_index::composite_key<face_type,
-    multi_index::const_mem_fun<face_type,
-    uint16_type,
-    &face_type::processId>,
-    multi_index::const_mem_fun<face_type,
-    size_type,
-    &face_type::id> > >,
+        multi_index::ordered_unique<
+            multi_index::composite_key<face_type,
+                                       multi_index::const_mem_fun<face_type,
+                                                                  uint16_type,
+                                                                  &face_type::processId>,
+                                       multi_index::const_mem_fun<face_type,
+                                                                  size_type,
+                                                                  &face_type::id> > >,
 #endif
 
-    // sort by less<int> on marker
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
-    multi_index::composite_key<
-    face_type,
-    multi_index::const_mem_fun<face_type,
-    Marker1 const&,
-    &face_type::marker>,
-    multi_index::const_mem_fun<face_type,
-    uint16_type,
-    &face_type::processId>
-    > >,
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_marker2>,
-    multi_index::composite_key<
-    face_type,
-    multi_index::const_mem_fun<face_type,
-    Marker2 const&,
-    &face_type::marker2>,
-    multi_index::const_mem_fun<face_type,
-    uint16_type,
-    &face_type::processId>
-    > >,
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_marker3>,
-    multi_index::composite_key<
-    face_type,
-    multi_index::const_mem_fun<face_type,
-    Marker3 const&,
-    &face_type::marker3>,
-    multi_index::const_mem_fun<face_type,
-    uint16_type,
-    &face_type::processId>
-    > >,
-    // sort by less<int> on processId
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
-    multi_index::const_mem_fun<face_type,
-    uint16_type,
-    &face_type::processId> >,
+        // sort by less<int> on marker
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
+                                        multi_index::composite_key<
+                                            face_type,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       Marker1 const&,
+                                                                       &face_type::marker>,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       uint16_type,
+                                                                       &face_type::processId>
+                                            > >,
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_marker2>,
+                                        multi_index::composite_key<
+                                            face_type,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       Marker2 const&,
+                                                                       &face_type::marker2>,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       uint16_type,
+                                                                       &face_type::processId>
+                                            > >,
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_marker3>,
+                                        multi_index::composite_key<
+                                            face_type,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       Marker3 const&,
+                                                                       &face_type::marker3>,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       uint16_type,
+                                                                       &face_type::processId>
+                                            > >,
+        // sort by less<int> on processId
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
+                                        multi_index::const_mem_fun<face_type,
+                                                                   uint16_type,
+                                                                   &face_type::processId> >,
 
 
-    // sort by less<int> on boundary
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_interprocessdomain>,
-    multi_index::composite_key<
-    face_type,
-    multi_index::const_mem_fun<face_type,
-    bool,
-    &face_type::isInterProcessDomain>,
-    multi_index::const_mem_fun<face_type,
-    uint16_type,
-    &face_type::processId>
-    >
-    >,
-    // sort by less<int> on boundary
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
-    multi_index::composite_key<
-    face_type,
-    multi_index::const_mem_fun<face_type,
-    bool,
-    &face_type::isOnBoundary>,
-    multi_index::const_mem_fun<face_type,
-    uint16_type,
-    &face_type::processId>
-    >
-    > >
+        // sort by less<int> on boundary
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_interprocessdomain>,
+                                        multi_index::composite_key<
+                                            face_type,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       bool,
+                                                                       &face_type::isInterProcessDomain>,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       uint16_type,
+                                                                       &face_type::processId>
+                                            >
+                                        >,
+        // sort by less<int> on boundary
+        multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
+                                        multi_index::composite_key<
+                                            face_type,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       bool,
+                                                                       &face_type::isOnBoundary>,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       uint16_type,
+                                                                       &face_type::processId>
+                                            >
+                                        > >
     > faces_type;
 
 
