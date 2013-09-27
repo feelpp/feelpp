@@ -1503,6 +1503,8 @@ BOOST_PARAMETER_FUNCTION(
         )
     )
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsequenced"
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
@@ -1567,6 +1569,7 @@ BOOST_PARAMETER_FUNCTION(
                           _partitions=partitions,
                           _partitioner=partitioner,
                           _partition_file=partition_file );
+#pragma clang diagnostic pop
 }
 
 } // Feel
