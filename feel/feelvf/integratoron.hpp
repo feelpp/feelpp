@@ -588,15 +588,43 @@ BOOST_PARAMETER_FUNCTION(
       ( element, *  )
       ( rhs, *  )
       ( expr,   * )
-    ) // 4. one required parameter, and
+        ) // 4. one required parameter, and
 
     ( optional
-      ( type,   ( size_type ), ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
-      ( verbose,   ( bool ), false )
+      ( type,   ( int ), option(_name="on.type").template as<int>() )
+      ( verbose,   ( bool ), option(_name="on.verbose").template as<bool>() )
+        )
     )
-)
 {
-    typename vf::detail::integratoron_type<Args>::type ion( range, element, Feel::vf::detail::getRhsVector(rhs), expr, type );
+    typename vf::detail::integratoron_type<Args>::type ion( range,
+                                                            element,
+                                                            Feel::vf::detail::getRhsVector(rhs),
+                                                            expr,
+                                                            on_context_type(type) );
+    if ( verbose )
+    {
+        LOG(INFO) << "Dirichlet condition over : "<< nelements(element) << " faces";
+        switch( type )
+        {
+        case ON_ELIMINATION:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, unsymmetric)";
+            break;
+        case ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, unsymmetric)";
+            break;
+        case ON_ELIMINATION_SYMMETRIC:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, symmetric, more expensive than unsymmetric treatment)";
+            break;
+        case ON_ELIMINATION_SYMMETRIC|ON_ELIMINATION_KEEP_DIAGONAL:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, symmetric, more expensive than unsymmetric treatment)";
+            break;
+        case ON_PENALISATION:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (penalisation, symmetric, very big value on diagonal)";
+            break;
+        default:
+            break;
+        }
+    }
     //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
     return typename vf::detail::integratoron_type<Args>::expr_type( ion );
 }
@@ -667,7 +695,7 @@ Expr<IntegratorOnExpr<ElementRange, Elem,
          OnExpr const& __e,
          size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
 {
-    returnvf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
+    return vf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
 
 }
 
@@ -685,7 +713,7 @@ Expr<IntegratorOnExpr<ElementRange, Elem,
          OnExpr const& __e,
          size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
 {
-    returnvf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
+    return vf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
 
 }
 #endif // 0
