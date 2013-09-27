@@ -603,7 +603,7 @@ BOOST_PARAMETER_FUNCTION(
                                                             on_context_type(type) );
     if ( verbose )
     {
-        LOG(INFO) << "Dirichlet condition over : "<< nelements(element) << " faces";
+        LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
         switch( type )
         {
         case ON_ELIMINATION:
