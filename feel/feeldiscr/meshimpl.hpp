@@ -1144,7 +1144,7 @@ Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& it , mpl::bool_<true>
         }
 
     }
-    VLOG(3) << "We have " << nelements(boundaryedges(this)) <<  " boundary edges";
+    DVLOG(3) << "We have " << nelements(boundaryedges(this)) <<  " boundary edges";
 
 }
 template<typename Shape, typename T, int Tag>
