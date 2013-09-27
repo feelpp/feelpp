@@ -1177,16 +1177,17 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
     MatSetOption( M_mat,MAT_KEEP_ZEROED_ROWS );
 #endif
 
-#if 1
-    //PetscErrorCode  MatZeroRowsColumns(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
-    VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
-    const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
-    MatZeroRowsColumns(M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
-    PetscBool b;
-    MatIsSymmetric( M_mat, 1e-13, &b );
-    LOG(INFO) << "Mat is symmetric : " << b;
-    return;
-#else
+    if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
+    {
+        //PetscErrorCode  MatZeroRowsColumns(Mat mat,PetscInt numRows,const PetscInt rows[],PetscScalar diag,Vec x,Vec b)
+        VectorPetsc<T>* prhs = dynamic_cast<VectorPetsc<T>*> ( &rhs );
+        const VectorPetsc<T>* pvalues = dynamic_cast<const VectorPetsc<T>*> ( &values );
+        MatZeroRowsColumns(M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+        PetscBool b;
+        MatIsSymmetric( M_mat, 1e-13, &b );
+        LOG(INFO) << "Mat is symmetric : " << b;
+        return;
+    }
 
     int start=0, stop=0, ierr=0;
 
@@ -1238,7 +1239,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
             // processor, so make sure that we access only the
             // rows that belong to this processor
             if ( rows[i] >= start && rows[i] < stop )
-                rhs.set( rows[i], values[i] );
+                rhs.set( rows[i], values(i) );
         }
     }
 
@@ -1279,7 +1280,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
                     if ( cols2[k] == myRow )
                     {
                         found=true;
-                        rhs.add( cols[j], -values[i]*vals2[k] );
+                        rhs.add( cols[j], -values(i)*vals2[k] );
                         //int j_val = cols2[k];
                         v[k] = 0;
                         MatSetValuesRow( M_mat, myRow,v );
@@ -1294,7 +1295,6 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
             MatRestoreRow( M_mat, myRow, &ncols, &cols, &vals );
         } // i
     }
-#endif //
 
 }
 template<typename T>
@@ -2357,7 +2357,7 @@ MatrixPetscMPI<T>::zero( size_type /*start1*/, size_type /*stop1*/, size_type /*
 template<typename T>
 void
 MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
-                             std::vector<value_type> const& values,
+                             Vector<value_type> const& values,
                              Vector<value_type>& rhs,
                              Context const& on_context )
 {
@@ -2411,7 +2411,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
             // processor, so make sure that we access only the
             // rows that belong to this processor
             if ( rows[i] >= start && rows[i] < stop )
-                rhs.set( rows[i], values[i]*diag( rows[i] ) );
+                rhs.set( rows[i], values(i)*diag( rows[i] ) );
         }
     }
 
@@ -2448,6 +2448,114 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
 } // zeroRows
 
 #else
+template<typename T>
+void
+MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
+                             Vector<value_type> const& values,
+                             Vector<value_type>& rhs,
+                             Context const& on_context )
+{
+    bool withClose=true;
+    // the matrix doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
+    // this->close();
+    if (!withClose)
+        {
+#if !PETSC_VERSION_LESS_THAN(3,2,0)
+            MatSetOption( this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_TRUE );
+#endif
+        }
+
+#if PETSC_VERSION_LESS_THAN(3,0,0)
+    MatSetOption( this->mat(),MAT_KEEP_ZEROED_ROWS );
+#elif PETSC_VERSION_LESS_THAN(3,1,0)
+    MatSetOption( this->mat(),MAT_KEEP_ZEROED_ROWS,PETSC_TRUE );
+#else
+    MatSetOption( this->mat(),MAT_KEEP_NONZERO_PATTERN,PETSC_TRUE );
+#endif
+
+    int start=0, stop=this->mapRow().nLocalDofWithGhost(), ierr=0;
+    //ierr = MatGetOwnershipRange(_M_mat, &start, &stop);
+
+    VectorPetscMPI<T>* prhs = dynamic_cast<VectorPetscMPI<T>*> ( &rhs );
+    CHECK( prhs != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for rhs";
+    const VectorPetscMPI<T>* pvalues = dynamic_cast<const VectorPetscMPI<T>*> ( &values );
+    CHECK( pvalues != 0 ) << "dynamic cast from Vector to VectorPetscMPI failed for values";
+
+    if ( false ) // on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+        {
+            VectorPetscMPI<value_type> diag( this->mapRowPtr() );
+
+            //VectorPetsc<value_type> diag( this->mapRow().nLocalDofWithoutGhost(),this->mapRow().worldComm() );
+            //diag( this->mapRow().nLocalDofWithGhost(),this->mapRow().worldComm().subWorldComm(this->mapRow().worldComm().mapColorWorld()[this->mapRow().worldComm().globalRank()  ] ));
+            ierr =MatGetDiagonal( this->mat(), diag.vec() );
+            CHKERRABORT( this->comm(),ierr );
+            // in Petsc 3.2, we might want to look at the new interface so that
+            // right hand side is automatically changed wrt to zeroing out the
+            // matrix entries
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,2,0)
+            ierr = MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, PETSC_NULL, PETSC_NULL );
+            //CHKERRABORT(this->comm(),ierr);
+#else
+            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
+#endif
+            // doesn't work with composite space
+            ierr=MatDiagonalSet( this->mat(), diag.vec(), INSERT_VALUES );
+            //CHKERRABORT(this->comm(),ierr);
+
+            // important close
+            diag.close();
+
+            for ( size_type i = 0; i < rows.size(); ++i )
+                {
+                    // eliminate column
+
+                    // warning: a row index may belong to another
+                    // processor, so make sure that we access only the
+                    // rows that belong to this processor
+                    if ( rows[i] >= start && rows[i] < stop )
+                        rhs.set( rows[i], values(i)*diag( rows[i] ) );
+                }
+        }
+
+    else
+        {
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
+            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+            //CHKERRABORT(this->comm(),ierr);
+#else
+            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
+
+            for ( size_type i = 0; i < rows.size(); ++i )
+                {
+                    // eliminate column
+
+                    // warning: a row index may belong to another
+                    // processor, so make sure that we access only the
+                    // rows that belong to this processor
+                    if ( rows[i] >= start && rows[i] < stop )
+                        rhs.set( rows[i], values(i) );
+                }
+#endif
+        }
+
+    // rsh doesn't be closed because not all processors are present here with composite spaces(this call must be done after)
+    if (withClose)
+        {
+            rhs.close();
+        }
+    else
+        {
+            //reset MatOption (assemble with communication)
+#if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR > 1)
+            MatSetOption( this->mat(),MAT_NO_OFF_PROC_ZERO_ROWS,PETSC_FALSE );
+#else
+            // ???
+#endif
+        }
+} // zeroRows
+
+#endif // 0
+#if 0
 template<typename T>
 void
 MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
@@ -2496,7 +2604,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         }
 } // zeroRows
 
-#endif
+#endif // 0
 
 //----------------------------------------------------------------------------------------------------//
 template<typename T>
