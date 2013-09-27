@@ -2520,8 +2520,15 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     else
         {
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
-            MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
-            //CHKERRABORT(this->comm(),ierr);
+            if ( on_context.test( ON_ELIMINATION_SYMMETRIC ) )
+            {
+                MatZeroRowsColumnsLocal(this->M_mat, rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+            }
+            else
+            {
+                MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0, pvalues->vec(), prhs->vec() );
+                //CHKERRABORT(this->comm(),ierr);
+            }
 #else
             MatZeroRowsLocal( this->mat(), rows.size(), rows.data(), 1.0 );
 
