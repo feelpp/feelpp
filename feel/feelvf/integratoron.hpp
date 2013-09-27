@@ -459,7 +459,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                         thedof ) != dofs.end() )
                             continue;
 
-                        if ( M_on_strategy.test( ON_ELIMINATION ) )
+                        if ( M_on_strategy.test( ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC ) )
                         {
                             DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
@@ -478,7 +478,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                         }
 
                         else if (  M_on_strategy.test( ON_PENALISATION ) &&
-                                   !M_on_strategy.test( ON_ELIMINATION ) )
+                                   !M_on_strategy.test( ON_ELIMINATION | ON_ELIMINATION_SYMMETRIC ) )
                         {
                             __form.set( thedof, thedof, 1.0*1e30 );
                             M_rhs->set( thedof, __value*1e30 );
@@ -498,6 +498,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             *itd+=thedofshift;
     }
     auto x = M_rhs->clone();
+    CHECK( dofs.size() > 0 ) << "Invalid number of Dirichlet dof, should be > 0 ";
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     //x->zero();
     x->addVector( dofs.data(), dofs.size(), values.data() );
     //values->zero();
