@@ -1220,7 +1220,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
 
         if ( isOnBoundary )
         {
-            LOG(INFO) << "checking " << iv->nTopologicalFaces() << " faces, isOnBoundary: " << isOnBoundary << " face_type::nDim: " << face_type::nDim;
+            VLOG(3) << "checking " << iv->nTopologicalFaces() << " faces, isOnBoundary: " << isOnBoundary << " face_type::nDim: " << face_type::nDim;
             this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, face_type::nDim ); } );
             // go to the next element, no need to look further
             continue;
@@ -1240,7 +1240,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
 
         if ( isOnBoundary )
         {
-            LOG(INFO) << "checking " << iv->nPoints() << " points, isOnBoundary: " << isOnBoundary;
+            VLOG(3) << "checking " << iv->nPoints() << " points, isOnBoundary: " << isOnBoundary;
             this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 0 ); } );
         }
     } // loop over the elements
@@ -1248,9 +1248,9 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
               << " elements sharing a point, a edge or a face with the boundary in the database";
     BOOST_FOREACH( auto e, this->boundaryElements( 0, 2, 0 ) )
     {
-        LOG(INFO) << "boundary element : " << e.id()
-                  << " entity on boundary max dim  " << e.boundaryEntityDimension()
-                  << " process id : " << e.processId();
+        VLOG(3) << "boundary element : " << e.id()
+                << " entity on boundary max dim  " << e.boundaryEntityDimension()
+                << " process id : " << e.processId();
     }
 
 }
