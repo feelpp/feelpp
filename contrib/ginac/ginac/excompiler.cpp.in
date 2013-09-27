@@ -109,41 +109,47 @@ public:
 	 * empty, a unique random name is produced and used.
 	 */
 	void create_src_file(std::string& filename, std::ofstream& ofs)
-	{
-		if (filename.empty()) {
-			// fill filename with unique random word
-			const char* filename_pattern = "./GiNaCXXXXXX";
-			char* new_filename = new char[strlen(filename_pattern)+1];
-			strcpy(new_filename, filename_pattern);
-			if (!mktemp(new_filename)) {
+		{
+			if (filename.empty()) {
+				// fill filename with unique random word
+				const char* filename_pattern = "./GiNaCXXXXXX";
+				char* new_filename = new char[strlen(filename_pattern)+1];
+				strcpy(new_filename, filename_pattern);
+				if (!mktemp(new_filename)) {
+					delete[] new_filename;
+					throw std::runtime_error("mktemp failed");
+				}
+
+				filename = std::string(new_filename);
+				ofs.open(filename.c_str(), std::ios::out);
 				delete[] new_filename;
-				throw std::runtime_error("mktemp failed");
+			} else {
+				//filename = filename + pid;
+				// use parameter as filename
+				ofs.open(filename.c_str(), std::ios::out);
 			}
 
-            filename = std::string(new_filename);
-			ofs.open(filename.c_str(), std::ios::out);
-			delete[] new_filename;
-		} else {
-            //filename = filename + pid;
-			// use parameter as filename
-			ofs.open(filename.c_str(), std::ios::out);
-		}
+			if (!ofs) {
+				throw std::runtime_error("could not create source code file for compilation");
+			}
 
-		if (!ofs) {
-			throw std::runtime_error("could not create source code file for compilation");
+			/*****
+			      ofs << "#include <stddef.h> " << std::endl;
+			      ofs << "#include <stdlib.h> " << std::endl;
+			      ofs << "#include <math.h> " << std::endl;
+			      ofs << "#define Pi M_PI" << std::endl;
+			      ofs << "#define pi M_PI" << std::endl;
+			*****/
+			ofs << "#include <ginac-extern-math.h> " << std::endl;
+			ofs << "#if !defined( pi )\n"
+			    << "#define pi " << M_PI << std::endl
+			    << "#endif // pi\n";
+			ofs << "#if !defined( Pi )\n"
+			    << "#define Pi " << M_PI << std::endl
+			    << "#endif // Pi\n";
+			//ofs << "#include <ginac/constant.h> " << std::endl;
+			ofs << std::endl;
 		}
-
-		/*****
-        ofs << "#include <stddef.h> " << std::endl;
-		ofs << "#include <stdlib.h> " << std::endl;
-		ofs << "#include <math.h> " << std::endl;
-        ofs << "#define Pi M_PI" << std::endl;
-        ofs << "#define pi M_PI" << std::endl;
-		*****/
-        ofs << "#include <ginac-extern-math.h> " << std::endl;
-        //ofs << "#include <ginac/constant.h> " << std::endl;
-		ofs << std::endl;
-	}
 	/**
 	 * Calls the shell script 'ginac-excompiler' to compile the produced C
 	 * source file into an linkable so-file.  On demand the C source file is

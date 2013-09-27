@@ -147,7 +147,7 @@ endmacro()
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
     "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS"
-    "NO_TEST;EXCLUDE_FROM_ALL"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL"
     ${ARGN}
     )
   CAR(FEELPP_TEST_NAME ${FEELPP_TEST_DEFAULT_ARGS})
@@ -163,12 +163,17 @@ macro(feelpp_add_test)
       add_dependencies(testsuite ${targetname})
     endif()
 
-    add_test(
-      NAME test_${FEELPP_TEST_NAME}
-      COMMAND ${targetname} --log_level=message
-      )
 
-    set_property(TEST ${targetname} PROPERTY LABELS testsuite)
+    if ( NOT FEELPP_TEST_NO_TEST )
+      IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+	add_test(NAME test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME} --log_level=message ${MPIEXEC_POSTFLAGS} )
+	set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS testsuite)
+      ENDIF()
+      add_test(NAME test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME}  --log_level=message ${MPIEXEC_POSTFLAGS})
+      set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS testsuite)
+    endif()
+
+
     set(cfgname test_${FEELPP_TEST_NAME}.cfg)
     if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${cfgname} )
       configure_file(  ${cfgname} ${cfgname} )
