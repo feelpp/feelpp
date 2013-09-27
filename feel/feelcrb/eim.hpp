@@ -1208,9 +1208,10 @@ public:
             boost::mpi::timer tcrb;
             auto o = M_crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
             auto solutions=o.template get<2>();
-            auto uN = solutions.template get<0>();
+            auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
 
-            auto u_crb = M_crb->expansion( uN , N , WN );
+            int size=uN.size();
+            auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
 
             boost::mpi::timer teim;
             this->beta( mu , u_crb );
