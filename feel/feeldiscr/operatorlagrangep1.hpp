@@ -180,11 +180,11 @@ public:
     {
         if ( this != &lp1 )
         {
-            _M_el2el = lp1._M_el2el;
-            _M_el2pt = lp1._M_el2pt;
-            _M_pset = lp1._M_pset;
-            _M_gmpc = lp1._M_gmpc;
-            _M_p2m = lp1._M_p2m;
+            M_el2el = lp1.M_el2el;
+            M_el2pt = lp1.M_el2pt;
+            M_pset = lp1.M_pset;
+            M_gmpc = lp1.M_gmpc;
+            M_p2m = lp1.M_p2m;
         }
 
         return *this;
@@ -222,7 +222,7 @@ public:
     image_mesh_ptrtype
     mesh()
     {
-        return _M_mesh;
+        return M_mesh;
     }
 
     //@}
@@ -251,14 +251,14 @@ private:
     OperatorLagrangeP1( OperatorLagrangeP1 const & );
 
 private:
-    image_mesh_ptrtype _M_mesh;
-    el2el_type _M_el2el;
-    std::vector<std::vector<size_type> > _M_el2pt;
+    image_mesh_ptrtype M_mesh;
+    el2el_type M_el2el;
+    std::vector<std::vector<size_type> > M_el2pt;
 
-    pset_type _M_pset;
-    gmpc_ptrtype _M_gmpc;
+    pset_type M_pset;
+    gmpc_ptrtype M_gmpc;
 
-    mutable p2m_type _M_p2m;
+    mutable p2m_type M_p2m;
 
 };
 
@@ -279,56 +279,56 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
            dual_image_space_ptrtype( new dual_image_space_type( image_mesh_ptrtype( new image_mesh_type ) ) ),
            backend,
            false ),
-    _M_mesh( new image_mesh_type(worldsComm[0]) ),
-    _M_el2el(),
-    _M_el2pt(),
-    _M_pset( 0 ),
-    _M_gmpc( new typename gm_type::precompute_type( this->domainSpace()->mesh()->gm(),
-             _M_pset.points() ) ),
-    _M_p2m()
+    M_mesh( new image_mesh_type(worldsComm[0]) ),
+    M_el2el(),
+    M_el2pt(),
+    M_pset( 0 ),
+    M_gmpc( new typename gm_type::precompute_type( this->domainSpace()->mesh()->gm(),
+             M_pset.points() ) ),
+    M_p2m()
 {
 
     std::string nameMeshLagP1base = "meshLagP1-"+space->basisName()+(boost::format("-order%1%")%domain_space_type::basis_type::nOrder).str();
     std::string nameMeshLagP1 = prefixvm(prefix,nameMeshLagP1base);
     if ( rebuild )
     {
-        if (_M_mesh->worldComm().globalRank() == _M_mesh->worldComm().masterRank() )
+        if (M_mesh->worldComm().globalRank() == M_mesh->worldComm().masterRank() )
         {
             // create a triangulation of the current convex
             // using equispaced points defined on the reference
             // element
-            //_M_p2m.addBoundaryPoints( _M_pset.points() );
-            _M_p2m.visit( &_M_pset );
+            //M_p2m.addBoundaryPoints( M_pset.points() );
+            M_p2m.visit( &M_pset );
 
             // #if !defined( NDEBUG )
             //     ExporterQuick<image_mesh_type> exp( "vtk", "ensight" );
-            //     exp.save( _M_p2m.mesh() );
+            //     exp.save( M_p2m.mesh() );
             // #endif
 
             // do not renumber the mesh entities
-            _M_p2m.mesh()->components().clear ( MESH_RENUMBER );
-            _M_p2m.mesh()->components().clear ( MESH_CHECK );
-            _M_p2m.mesh()->updateForUse();
+            M_p2m.mesh()->components().clear ( MESH_RENUMBER );
+            M_p2m.mesh()->components().clear ( MESH_CHECK );
+            M_p2m.mesh()->updateForUse();
 
-            _M_p2m.mesh()->save( _name=nameMeshLagP1,_path=pathMeshLagP1 );
+            M_p2m.mesh()->save( _name=nameMeshLagP1,_path=pathMeshLagP1 );
         }
 
-        _M_mesh->worldComm().barrier();
+        M_mesh->worldComm().barrier();
 
-        if (_M_mesh->worldComm().globalRank() != _M_mesh->worldComm().masterRank() )
+        if (M_mesh->worldComm().globalRank() != M_mesh->worldComm().masterRank() )
         {
-            _M_p2m.mesh()->load( _name=nameMeshLagP1,_path=pathMeshLagP1,
+            M_p2m.mesh()->load( _name=nameMeshLagP1,_path=pathMeshLagP1,
                                  _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
         }
     }
     else
     {
-        _M_p2m.mesh()->load( _name=nameMeshLagP1,_path=pathMeshLagP1,
+        M_p2m.mesh()->load( _name=nameMeshLagP1,_path=pathMeshLagP1,
                              _update=MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
     }
 
 
-    VLOG(2) << "[P1 Lagrange] Pointset " << _M_pset.points() << "\n";
+    VLOG(2) << "[P1 Lagrange] Pointset " << M_pset.points() << "\n";
 
     typedef typename image_mesh_type::point_type point_type;
     typedef typename image_mesh_type::element_type element_type;
@@ -339,14 +339,14 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     // inherit the table of markersName
     BOOST_FOREACH( auto itMark, this->domainSpace()->mesh()->markerNames() )
     {
-        _M_mesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
+        M_mesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }
 
 
-    bool doParallelBuild = (_M_mesh->worldComm().size()==1)?false:parallelBuild;
+    bool doParallelBuild = (M_mesh->worldComm().size()==1)?false:parallelBuild;
 
     //std::vector<bool> pts_done(  this->domainSpace()->nLocalDof()/domain_space_type::nComponents, false );
-    //size_type ne = this->domainSpace()->mesh()->numElements() * _M_p2m.mesh()->numElements();
+    //size_type ne = this->domainSpace()->mesh()->numElements() * M_p2m.mesh()->numElements();
     //std::vector<boost::tuple<size_type, uint16_type, size_type> > dofindices( image_mesh_type::element_type::numVertices*ne, boost::make_tuple( 0,0,0 ) );
     //std::vector<bool> eltid_done(  this->domainSpace()->nLocalDof(), false );
 
@@ -366,7 +366,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     // use the geometric transformation to transform
     // the local equispace mesh to a submesh of the
     // current element
-    gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, _M_gmpc ) );
+    gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
 
     for ( size_type elid = 0, pt_image_id = 0; it != en; ++it )
     {
@@ -377,8 +377,8 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
         gmc->update( *it );
 
         // accumulate the local mesh in element *it in the new mesh
-        auto itl = _M_p2m.mesh()->beginElement();
-        auto enl = _M_p2m.mesh()->endElement();
+        auto itl = M_p2m.mesh()->beginElement();
+        auto enl = M_p2m.mesh()->endElement();
         if (doParallelBuild && it->numberOfPartitions() >1)
             mapActiveEltWhichAreGhostInOtherPartition[it->id()] = std::vector<size_type>(std::distance(itl,enl),invalid_size_type_value);
 
@@ -450,13 +450,13 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                             << " local pt id : " << localptid
                             << " local pt id dof : " << localptid_dof << "\n";
 
-                        _M_mesh->addPoint( __pt );
+                        M_mesh->addPoint( __pt );
 
                         n_new_nodes++;
                     }
                 //--------------------------------------------------------------------//
 
-                elt.setPoint( p, _M_mesh->point( new_node_numbers[ptid] ) );
+                elt.setPoint( p, M_mesh->point( new_node_numbers[ptid] ) );
 
 #if 1
                 FEELPP_ASSERT( ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )-elt.point( p ).node() ) < 1e-10 )
@@ -504,7 +504,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
             // increment the new element counter
             n_new_elem++;
             // add element in mesh
-            auto const& theNewElt = _M_mesh->addElement ( elt );
+            auto const& theNewElt = M_mesh->addElement ( elt );
             if (doParallelBuild && it->numberOfPartitions() >1)  mapActiveEltWhichAreGhostInOtherPartition[it->id()][cptEltp2m] = theNewElt.id();
 
             // Maybe add faces for this element
@@ -529,10 +529,10 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                         uint16_type localptidFace = theFaceBase.point( p ).id();
                         uint16_type localptidFace_dof = localDof( it, localptidFace );
                         const size_type theglobdof = this->domainSpace()->dof()->localToGlobal( it->id(),localptidFace_dof,0 ).template get<0>();
-                        new_face.setPoint( p, _M_mesh->point( new_node_numbers[theglobdof] ) );
+                        new_face.setPoint( p, M_mesh->point( new_node_numbers[theglobdof] ) );
                     }
                 // add it to the list of faces
-                auto addFaceRes = _M_mesh->addFace( new_face );
+                auto addFaceRes = M_mesh->addFace( new_face );
             }
 
         } //  for ( int cptEltp2m=0 ; itl != enl; ++itl, ++elid,++cptEltp2m )
@@ -545,7 +545,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
     {
         VLOG(2) << "[P1 Lagrange] start parallel build \n";
 
-        auto const theWorldCommSize = _M_mesh->worldComm().size();
+        auto const theWorldCommSize = M_mesh->worldComm().size();
         std::vector<int> nbMsgToSend( theWorldCommSize , 0 );
         std::vector< std::map<int,size_type> > mapMsg( theWorldCommSize );
 
@@ -555,14 +555,14 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
         {
             auto const procGhost = iv->processId();
             auto const idEltOnGhost = iv->idInOthersPartitions(procGhost);
-            _M_mesh->worldComm().localComm().send(procGhost, nbMsgToSend[procGhost], idEltOnGhost);
+            M_mesh->worldComm().localComm().send(procGhost, nbMsgToSend[procGhost], idEltOnGhost);
             mapMsg[procGhost].insert( std::make_pair( nbMsgToSend[procGhost],iv->id() ) );
             ++nbMsgToSend[procGhost];
         }
 
         // counter of msg received for each process
         std::vector<int> nbMsgToRecv;
-        mpi::all_to_all( _M_mesh->worldComm().localComm(),
+        mpi::all_to_all( M_mesh->worldComm().localComm(),
                          nbMsgToSend,
                          nbMsgToRecv );
 
@@ -575,19 +575,19 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
             {
                 //recv
                 size_type idEltRecv;
-                _M_mesh->worldComm().localComm().recv( proc, cpt, idEltRecv );
+                M_mesh->worldComm().localComm().recv( proc, cpt, idEltRecv );
                 auto const& theeltIt = this->domainSpace()->mesh()->elementIterator(idEltRecv);
 
                 //if (mapActiveEltWhichAreGhostInOtherPartition.find(idEltRecv) == mapActiveEltWhichAreGhostInOtherPartition.end() ) std::cout << "BUG" << std::endl;
                 auto const& idOfNewElt = mapActiveEltWhichAreGhostInOtherPartition[idEltRecv];
 
-                std::vector<boost::tuple<size_type,ublas::vector<double> > > resultClusterDofsAndNodesToSend(_M_p2m.mesh()->numPoints());
+                std::vector<boost::tuple<size_type,ublas::vector<double> > > resultClusterDofsAndNodesToSend(M_p2m.mesh()->numPoints());
 
-                auto itp = _M_p2m.mesh()->beginPoint();
-                auto const enp = _M_p2m.mesh()->endPoint();
+                auto itp = M_p2m.mesh()->beginPoint();
+                auto const enp = M_p2m.mesh()->endPoint();
                 for ( ; itp!=enp ; ++itp )
                 {
-                    uint16_type localptid = itp->id();// if (itp->id() >=_M_p2m.mesh()->numElements()) std::cout << "aie " << itp->id() << "\n" << std::endl;
+                    uint16_type localptid = itp->id();// if (itp->id() >=M_p2m.mesh()->numElements()) std::cout << "aie " << itp->id() << "\n" << std::endl;
                     uint16_type localptid_dof = localDof( theeltIt, localptid );
                     size_type ptid = boost::get<0>( this->domainSpace()->dof()->localToGlobal( theeltIt->id(),localptid_dof, 0 ) );
                     size_type idInProcAsked = this->domainSpace()->dof()->mapGlobalProcessToGlobalCluster(ptid);
@@ -595,8 +595,8 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                     resultClusterDofsAndNodesToSend[localptid/*itp->id()*/] = boost::make_tuple( idInProcAsked, thedofnode);
                 }
 
-                auto itl = _M_p2m.mesh()->beginElement();
-                auto const enl = _M_p2m.mesh()->endElement();
+                auto itl = M_p2m.mesh()->beginElement();
+                auto const enl = M_p2m.mesh()->endElement();
                 // localIdNewElt -> ( localIdPt, globalIdNewElt )
                 std::vector< boost::tuple< std::vector<uint16_type>, size_type > > resultToSendBis(std::distance(itl,enl));
                 for ( size_type elidp2m = 0 ; itl != enl; ++itl, ++elidp2m )
@@ -612,7 +612,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                     resultToSendBis[elidp2m] = boost::make_tuple(vecLocalIdPtToSend,idOfNewElt[elidp2m] );
                 }
                 auto resultToSend = boost::make_tuple(resultToSendBis,resultClusterDofsAndNodesToSend);
-                _M_mesh->worldComm().localComm().send( proc, cpt, resultToSend);
+                M_mesh->worldComm().localComm().send( proc, cpt, resultToSend);
             } // for ( int cpt=0; cpt<nbMsgToRecv[proc]; ++cpt )
         } // for ( int proc=0; proc<theWorldCommSize; ++proc )
 
@@ -627,7 +627,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
             {
                 boost::tuple<  std::vector< boost::tuple< std::vector<uint16_type>, size_type > >,
                                std::vector<boost::tuple<size_type,ublas::vector<double> > >  > resultRecvData;
-                _M_mesh->worldComm().localComm().recv( proc, cpt, resultRecvData );
+                M_mesh->worldComm().localComm().recv( proc, cpt, resultRecvData );
 
                 auto const& myGhostEltBase = this->domainSpace()->mesh()->element(mapMsg[proc][cpt],proc);
 
@@ -667,7 +667,7 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                         }
 
                         if ( theptid != invalid_size_type_value )
-                            elt.setPoint( p, _M_mesh->point( new_node_numbers[theptid] ) );
+                            elt.setPoint( p, M_mesh->point( new_node_numbers[theptid] ) );
                         else
                         {
                             if (new_ghost_node_numbers.find(globclusterdofRecv) == new_ghost_node_numbers.end() )
@@ -677,11 +677,11 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                                 point_type __pt( n_new_nodes, mapLocalToGlobalPointId[(int)*itpt].template get<1>()/*itpt->template get<1>()*/ );
                                 __pt.setProcessId( invalid_uint16_type_value );
 
-                                auto const& theNewPt = _M_mesh->addPoint( __pt );
+                                auto const& theNewPt = M_mesh->addPoint( __pt );
                                 n_new_nodes++;
                             }
 
-                            elt.setPoint( p, _M_mesh->point( new_ghost_node_numbers[globclusterdofRecv] ) );
+                            elt.setPoint( p, M_mesh->point( new_ghost_node_numbers[globclusterdofRecv] ) );
                         }
 
                     } // for ( int p = 0 ; itpt!=enpt ; ++itpt,++p )
@@ -694,8 +694,8 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
                     // increment the new element counter
                     n_new_elem++;
 
-                    auto const& theNewElt = _M_mesh->addElement ( elt );
-                    _M_mesh->elements().modify( _M_mesh->elementIterator( theNewElt.id(),  proc ),
+                    auto const& theNewElt = M_mesh->addElement ( elt );
+                    M_mesh->elements().modify( M_mesh->elementIterator( theNewElt.id(),  proc ),
                                                 Feel::detail::updateIdInOthersPartitions( proc, itelt->template get<1>() ) );
 
                 } // for ( ;itelt!=enelt;++itelt )
@@ -704,20 +704,20 @@ OperatorLagrangeP1<space_type>::OperatorLagrangeP1( domain_space_ptrtype const& 
 
     } // if ( parallelBuild )
 
-    DVLOG(2) << "[P1 Lagrange] Number of points in mesh: " << _M_mesh->numPoints() << "\n";
+    DVLOG(2) << "[P1 Lagrange] Number of points in mesh: " << M_mesh->numPoints() << "\n";
 
-    _M_mesh->setNumVertices( _M_mesh->numPoints() );
-    _M_mesh->components().reset();
-    _M_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
-    _M_mesh->updateForUse();
+    M_mesh->setNumVertices( M_mesh->numPoints() );
+    M_mesh->components().reset();
+    M_mesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    M_mesh->updateForUse();
 
     this->check();
 
     // construct the p1 space and set the operator
 #if defined(FEELPP_ENABLE_MPI_MODE)
-    auto Xh_image = dual_image_space_type::New(_mesh=_M_mesh,_worldscomm=worldsComm);
+    auto Xh_image = dual_image_space_type::New(_mesh=M_mesh,_worldscomm=worldsComm);
 #else
-    auto Xh_image = dual_image_space_type::New(_mesh=_M_mesh);
+    auto Xh_image = dual_image_space_type::New(_mesh=M_mesh);
 #endif
     this->init( this->domainSpace(),
                 Xh_image,
@@ -763,10 +763,10 @@ OperatorLagrangeP1<space_type>::check() const
     {
         // this test is not good: need to investigate
 #if 0
-        DLOG_IF( WARNING, (ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) )- _M_mesh->point( i ).node() ) > 1e-10 ) )
+        DLOG_IF( WARNING, (ublas::norm_2( boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) )- M_mesh->point( i ).node() ) > 1e-10 ) )
             << "inconsistent point coordinates at index "   << i
             << "dofpt : " << boost::get<0>( this->domainSpace()->dof()->dofPoint( i ) )
-            << "mesh pt : " << _M_mesh->point( i ).node() << "\n";
+            << "mesh pt : " << M_mesh->point( i ).node() << "\n";
 #endif
     }
 #endif
@@ -779,7 +779,7 @@ typename OperatorLagrangeP1<space_type>::image_space_type::element_type
 OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
 {
     typename image_space_type::element_type res( this->dualImageSpace(), u.name() );
-    //res.resize( _M_mesh->numPoints() );
+    //res.resize( M_mesh->numPoints() );
     res = ublas::scalar_vector<value_type>( res.size(), value_type( 0 ) );
     // construct the mesh
     typename domain_mesh_type::element_const_iterator it = this->domainSpace()->mesh()->beginElement();
@@ -787,21 +787,21 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
 
     for ( ; it != en; ++it )
     {
-        gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, _M_gmpc ) );
+        gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
         typename matrix_node<value_type>::type u_at_pts = u.id( *gmc );
 
-        typename std::list<size_type>::const_iterator ite = _M_el2el[it->id()].begin();
-        typename std::list<size_type>::const_iterator ene = _M_el2el[it->id()].end();
+        typename std::list<size_type>::const_iterator ite = M_el2el[it->id()].begin();
+        typename std::list<size_type>::const_iterator ene = M_el2el[it->id()].end();
 
         for ( ; ite != ene; ++ite )
         {
-            typename domain_mesh_type::element_type const& elt = _M_mesh->element( *ite );
+            typename domain_mesh_type::element_type const& elt = M_mesh->element( *ite );
 
             for ( int c = 0; c < nComponents; ++c )
                 for ( int p = 0; p < domain_mesh_type::element_type::numVertices; ++p )
                 {
                     size_type ptid = boost::get<0>( this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ) );
-                    res( ptid ) = ublas::column( u_at_pts, _M_el2pt[*ite][p] )( nComponents*c+c );
+                    res( ptid ) = ublas::column( u_at_pts, M_el2pt[*ite][p] )( nComponents*c+c );
                 }
         }
     }
@@ -820,11 +820,11 @@ OperatorLagrangeP1<space_type>::localDof( typename domain_mesh_type::element_con
     uint16_type localptid_dof = localptid;
 
     if ( domain_mesh_type::nDim == 2 &&
-            _M_pset.pointToEntity( localptid ).first == 1 &&
-            it->edgePermutation( _M_pset.pointToEntity( localptid ).second ) == edge_permutation_type::REVERSE_PERMUTATION )
+            M_pset.pointToEntity( localptid ).first == 1 &&
+            it->edgePermutation( M_pset.pointToEntity( localptid ).second ) == edge_permutation_type::REVERSE_PERMUTATION )
     {
-        //size_type edge_id = it->edge( _M_pset.pointToEntity( localptid ).second ).id();
-        uint16_type edge_id = _M_pset.pointToEntity( localptid ).second;
+        //size_type edge_id = it->edge( M_pset.pointToEntity( localptid ).second ).id();
+        uint16_type edge_id = M_pset.pointToEntity( localptid ).second;
 
         uint16_type l = localptid - ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
                                       edge_id * domain_fe_type::nDofPerEdge );
@@ -833,7 +833,7 @@ OperatorLagrangeP1<space_type>::localDof( typename domain_mesh_type::element_con
         ( l )
         ( domain_fe_type::nDofPerEdge )
         ( localptid )
-        ( _M_pset.pointToEntity( localptid ).second )
+        ( M_pset.pointToEntity( localptid ).second )
         ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
           edge_id * domain_fe_type::nDofPerEdge ).error( "invalid value" );
 
@@ -847,7 +847,7 @@ OperatorLagrangeP1<space_type>::localDof( typename domain_mesh_type::element_con
         ( localptid )
         ( localptid_dof )
         ( domain_fe_type::nLocalDof )
-        ( _M_pset.pointToEntity( localptid ).second )
+        ( M_pset.pointToEntity( localptid ).second )
         ( domain_mesh_type::element_type::numVertices * domain_fe_type::nDofPerVertex +
           edge_id * domain_fe_type::nDofPerEdge ).error( "invalid value" );
     }

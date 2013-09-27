@@ -49,8 +49,7 @@ po::options_description exporter_options( std::string const& prefix )
         // exporter type
         ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter (ensight or gmsh)" )
 
-        //  single
-        ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
+
 
         //  geometry
         ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<int>()->default_value( (int)EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY ), "type of geometry" )
@@ -69,6 +68,14 @@ po::options_description exporter_options( std::string const& prefix )
 
         // matlab options
         ( prefixvm( prefix,"exporter.matlab" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "export matrices and vectors to matlab files" )
+
+        //
+        // ensightgold
+        //
+        ( prefixvm( prefix,"exporter.ensightgold.use-sos" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use sos  (true) or first case file (false) for multiple case files" )
+        //  single
+        ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
+
         ;
     return _options;
 }

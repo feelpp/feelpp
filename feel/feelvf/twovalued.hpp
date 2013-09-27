@@ -84,7 +84,7 @@ public:
 
     explicit SumvExpr( expression_type const & __expr )
         :
-        _M_expr( __expr )
+        M_expr( __expr )
     {}
     ~SumvExpr()
     {}
@@ -132,83 +132,83 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
-            _M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
-            _M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
-            _M_left_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left ) ),
-            _M_right_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right ) ),
-            _M_tensor_expr_left( expr.expression(), _M_left_map, fev, feu ),
-            _M_tensor_expr_right( expr.expression(), _M_right_map, fev, feu )
+            M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
+            M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
+            M_left_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_left ) ),
+            M_right_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_right ) ),
+            M_tensor_expr_left( expr.expression(), M_left_map, fev, feu ),
+            M_tensor_expr_right( expr.expression(), M_right_map, fev, feu )
         {}
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
-            _M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
-            _M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
-            _M_left_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left ) ),
-            _M_right_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right ) ),
-            _M_tensor_expr_left( expr.expression(), _M_left_map, fev ),
-            _M_tensor_expr_right( expr.expression(), _M_right_map, fev )
+            M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
+            M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
+            M_left_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_left ) ),
+            M_right_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_right ) ),
+            M_tensor_expr_left( expr.expression(), M_left_map, fev ),
+            M_tensor_expr_right( expr.expression(), M_right_map, fev )
         {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
-            _M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
-            _M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
-            _M_left_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left ) ),
-            _M_right_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right ) ),
-            _M_tensor_expr_left( expr.expression(), _M_left_map ),
-            _M_tensor_expr_right( expr.expression(), _M_right_map )
+            M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
+            M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
+            M_left_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_left ) ),
+            M_right_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_right ) ),
+            M_tensor_expr_left( expr.expression(), M_left_map ),
+            M_tensor_expr_right( expr.expression(), M_right_map )
         {
         }
 
         template<typename IM>
         void init( IM const& im )
         {
-            _M_tensor_expr_left.init( im );
-            _M_tensor_expr_right.init( im );
+            M_tensor_expr_left.init( im );
+            M_tensor_expr_right.init( im );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
             FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
 
-            _M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
-            _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
+            M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
+            M_gmc_right =  fusion::at_key<gmc1 >( geom );
+            FEELPP_ASSERT( M_gmc_left != M_gmc_right )( M_gmc_left->id() )( M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
-            _M_left_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left );
-            _M_right_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right );
-            _M_tensor_expr_left.update(  _M_left_map );
-            _M_tensor_expr_right.update( _M_right_map );
+            M_left_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_left );
+            M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
+            M_tensor_expr_left.update(  M_left_map );
+            M_tensor_expr_right.update( M_right_map );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
             FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
 
-            _M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
-            _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
+            M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
+            M_gmc_right =  fusion::at_key<gmc1 >( geom );
+            FEELPP_ASSERT( M_gmc_left != M_gmc_right )( M_gmc_left->id() )( M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
-            _M_left_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left );
-            _M_right_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right );
-            _M_tensor_expr_left.update(  _M_left_map );
-            _M_tensor_expr_right.update( _M_right_map );
+            M_left_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_left );
+            M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
+            M_tensor_expr_left.update(  M_left_map );
+            M_tensor_expr_right.update( M_right_map );
         }
         void update( Geo_t const& geom )
         {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
             FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
 
-            _M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
-            _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
+            M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
+            M_gmc_right =  fusion::at_key<gmc1 >( geom );
+            FEELPP_ASSERT( M_gmc_left != M_gmc_right )( M_gmc_left->id() )( M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
-            _M_left_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left );
-            _M_right_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right );
-            _M_tensor_expr_left.update(  _M_left_map );
-            _M_tensor_expr_right.update( _M_right_map );
+            M_left_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_left );
+            M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
+            M_tensor_expr_left.update(  M_left_map );
+            M_tensor_expr_right.update( M_right_map );
 
 
         }
@@ -217,14 +217,14 @@ public:
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
             FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
 
-            _M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
-            _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
+            M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
+            M_gmc_right =  fusion::at_key<gmc1 >( geom );
+            FEELPP_ASSERT( M_gmc_left != M_gmc_right )( M_gmc_left->id() )( M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
-            _M_left_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left );
-            _M_right_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right );
-            _M_tensor_expr_left.update(  _M_left_map, face );
-            _M_tensor_expr_right.update( _M_right_map, face  );
+            M_left_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_left );
+            M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
+            M_tensor_expr_left.update(  M_left_map, face );
+            M_tensor_expr_right.update( M_right_map, face  );
 
 
         }
@@ -233,33 +233,33 @@ public:
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
-            return _M_tensor_expr_left.evalij( i, j ) + _M_tensor_expr_right.evalij( i, j );
+            return M_tensor_expr_left.evalij( i, j ) + M_tensor_expr_right.evalij( i, j );
         }
 
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return _M_tensor_expr_left.evalq( c1, c2, q ) + _M_tensor_expr_right.evalq( c1, c2, q );
+            return M_tensor_expr_left.evalq( c1, c2, q ) + M_tensor_expr_right.evalq( c1, c2, q );
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            return _M_tensor_expr_left.evalq( c1, c2, q, mpl::int_<PatternContext>() ) +
-                   _M_tensor_expr_right.evalq( c1, c2, q, mpl::int_<PatternContext>() );
+            return M_tensor_expr_left.evalq( c1, c2, q, mpl::int_<PatternContext>() ) +
+                   M_tensor_expr_right.evalq( c1, c2, q, mpl::int_<PatternContext>() );
         }
 
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            //DVLOG(2) << "sumv_left= " << _M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
-            //<< "sumv_right= " << _M_tensor_expr_right.evalq( q, c1, c2 ) << "\n";
+            //DVLOG(2) << "sumv_left= " << M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
+            //<< "sumv_right= " << M_tensor_expr_right.evalq( q, c1, c2 ) << "\n";
             Feel::detail::ignore_unused_variable_warning( i );
-            value_type resl = _M_tensor_expr_left.evalq( c1, c2, q );
-            value_type resr = _M_tensor_expr_right.evalq( c1, c2, q );
+            value_type resl = M_tensor_expr_left.evalq( c1, c2, q );
+            value_type resr = M_tensor_expr_right.evalq( c1, c2, q );
             value_type res = resl + resr;
             //DVLOG(2) << "resl( " << i << "," << c1 << "," << c2 << "," << q << ")=" << resl << "\n";
             //DVLOG(2) << "resr( " << i << "," << c1 << "," << c2 << "," << q << ")=" << resr << "\n";
@@ -270,18 +270,18 @@ public:
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            //DVLOG(2) << "sumv_left= " << _M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
-            //<< "sumv_right= " << _M_tensor_expr_right.evalq( q, c1, c2 ) << "\n";
-            return _M_tensor_expr_left.evalq( c1, c2, q )+_M_tensor_expr_right.evalq( c1, c2, q );
+            //DVLOG(2) << "sumv_left= " << M_tensor_expr_left.evalq( q, c1, c2 ) << "\n"
+            //<< "sumv_right= " << M_tensor_expr_right.evalq( q, c1, c2 ) << "\n";
+            return M_tensor_expr_left.evalq( c1, c2, q )+M_tensor_expr_right.evalq( c1, c2, q );
         }
 
 
-        left_gmc_ptrtype _M_gmc_left;
-        right_gmc_ptrtype _M_gmc_right;
-        map_left_gmc_type _M_left_map;
-        map_right_gmc_type _M_right_map;
-        left_tensor_expr_type _M_tensor_expr_left;
-        right_tensor_expr_type _M_tensor_expr_right;
+        left_gmc_ptrtype M_gmc_left;
+        right_gmc_ptrtype M_gmc_right;
+        map_left_gmc_type M_left_map;
+        map_right_gmc_type M_right_map;
+        left_tensor_expr_type M_tensor_expr_left;
+        right_tensor_expr_type M_tensor_expr_right;
     };
 
     //@}
@@ -292,12 +292,12 @@ public:
 
     bool isSymetric() const
     {
-        return _M_expr.isSymetric();
+        return M_expr.isSymetric();
     }
 
     expression_type const& expression() const
     {
-        return _M_expr;
+        return M_expr;
     }
 
     //@}
@@ -318,7 +318,7 @@ protected:
 
 private:
 
-    expression_type  _M_expr;
+    expression_type  M_expr;
 };
 
 
@@ -370,7 +370,7 @@ public:
 
     explicit SumExpr( expression_type const & __expr )
         :
-        _M_expr( __expr )
+        M_expr( __expr )
     {}
     ~SumExpr()
     {}
@@ -433,9 +433,9 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& /*geom*/, Basis_i_t const& fev, Basis_j_t const& /*feu*/ )
             :
-            _M_gmc( fusion::at_key<key_type >( fev )->gmContext() ),
-            _M_map( fusion::make_map<key_type >( _M_gmc ) ),
-            _M_tensor_expr( expr.expression(), _M_map, fev )
+            M_gmc( fusion::at_key<key_type >( fev )->gmContext() ),
+            M_map( fusion::make_map<key_type >( M_gmc ) ),
+            M_tensor_expr( expr.expression(), M_map, fev )
         {
             DVLOG(2) << "expr SumExpr<" << Side << "> is_zero " << is_zero::value << "\n";
         }
@@ -443,9 +443,9 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& /*geom*/, Basis_i_t const& fev )
             :
-            _M_gmc( fusion::at_key<key_type >( fev )->gmContext() ),
-            _M_map( fusion::make_map<key_type >( _M_gmc ) ),
-            _M_tensor_expr( expr.expression(), _M_map, fev )
+            M_gmc( fusion::at_key<key_type >( fev )->gmContext() ),
+            M_map( fusion::make_map<key_type >( M_gmc ) ),
+            M_tensor_expr( expr.expression(), M_map, fev )
         {
             DVLOG(2) << "expr SumExpr is_zero " << is_zero::value << "\n";
         }
@@ -453,7 +453,7 @@ public:
         template<typename IM>
         void init( IM const& im )
         {
-            _M_tensor_expr.init( im );
+            M_tensor_expr.init( im );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& /*feu*/ )
         {
@@ -465,9 +465,9 @@ public:
         }
         void update( Geo_t const& /*geom*/, Basis_i_t const& fev, mpl::true_ )
         {
-            _M_gmc = fusion::at_key<vf::detail::gmc<Side> >( fev )->gmContext();
-            _M_map = fusion::make_map<vf::detail::gmc<Side> >( _M_gmc );
-            _M_tensor_expr.update(  _M_map, fev );
+            M_gmc = fusion::at_key<vf::detail::gmc<Side> >( fev )->gmContext();
+            M_map = fusion::make_map<vf::detail::gmc<Side> >( M_gmc );
+            M_tensor_expr.update(  M_map, fev );
         }
         void update( Geo_t const& /*geom*/, Basis_i_t const& /*fev*/, mpl::false_ )
         {
@@ -478,7 +478,7 @@ public:
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
-            return _M_tensor_expr.evalij( i, j );
+            return M_tensor_expr.evalij( i, j );
         }
 
 
@@ -507,7 +507,7 @@ public:
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
         {
-            return _M_tensor_expr.evaliq( i, c1, c2, q );
+            return M_tensor_expr.evaliq( i, c1, c2, q );
         }
 
         value_type
@@ -520,9 +520,9 @@ public:
             return value_type( 0 );
         }
 
-        gmc_ptrtype _M_gmc;
-        map_gmc_type _M_map;
-        tensor_expr_type _M_tensor_expr;
+        gmc_ptrtype M_gmc;
+        map_gmc_type M_map;
+        tensor_expr_type M_tensor_expr;
     };
 
     //@}
@@ -533,12 +533,12 @@ public:
 
     bool isSymetric() const
     {
-        return _M_expr.isSymetric();
+        return M_expr.isSymetric();
     }
 
     expression_type const& expression() const
     {
-        return _M_expr;
+        return M_expr;
     }
 
     //@}
@@ -559,7 +559,7 @@ protected:
 
 private:
 
-    expression_type  _M_expr;
+    expression_type  M_expr;
 };
 
 /*!
@@ -608,7 +608,7 @@ public:
 
     explicit SumTExpr( expression_type const & __expr )
         :
-        _M_expr( __expr )
+        M_expr( __expr )
     {}
     ~SumTExpr()
     {}
@@ -671,9 +671,9 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& /*geom*/, Basis_i_t const& fev, Basis_j_t const& feu )
             :
-            _M_gmc( fusion::at_key<key_type>( feu )->gmContext() ),
-            _M_map( fusion::make_map<key_type>( _M_gmc ) ),
-            _M_tensor_expr( expr.expression(), _M_map, fev, feu )
+            M_gmc( fusion::at_key<key_type>( feu )->gmContext() ),
+            M_map( fusion::make_map<key_type>( M_gmc ) ),
+            M_tensor_expr( expr.expression(), M_map, fev, feu )
         {
             DVLOG(2) << "expr SumTExpr<" << Side << "> is_zero " << is_zero::value << "\n";
         }
@@ -681,7 +681,7 @@ public:
         template<typename IM>
         void init( IM const& im )
         {
-            _M_tensor_expr.init( im );
+            M_tensor_expr.init( im );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
@@ -689,9 +689,9 @@ public:
         }
         void update( Geo_t const& /*geom*/, Basis_i_t const& fev, Basis_j_t const& feu, mpl::true_ )
         {
-            _M_gmc = fusion::at_key<key_type>( feu )->gmContext();
-            _M_map = fusion::make_map<key_type>( _M_gmc );
-            _M_tensor_expr.update(  _M_map, fev, feu );
+            M_gmc = fusion::at_key<key_type>( feu )->gmContext();
+            M_map = fusion::make_map<key_type>( M_gmc );
+            M_tensor_expr.update(  M_map, fev, feu );
         }
         void update( Geo_t const& /*geom*/, Basis_i_t const& fev, Basis_j_t const& feu, mpl::false_ )
         {
@@ -703,7 +703,7 @@ public:
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
-            return _M_tensor_expr.evalij( i, j );
+            return M_tensor_expr.evalij( i, j );
         }
 
 
@@ -724,7 +724,7 @@ public:
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
         {
-            return _M_tensor_expr.evalijq( i, j, c1, c2, q );
+            return M_tensor_expr.evalijq( i, j, c1, c2, q );
         }
 
         value_type
@@ -742,7 +742,7 @@ public:
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext>, mpl::true_ ) const
         {
-            return _M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
+            return M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
         }
         template<int PatternContext>
         value_type
@@ -759,9 +759,9 @@ public:
 
     private:
 
-        gmc_ptrtype _M_gmc;
-        map_gmc_type _M_map;
-        tensor_expr_type _M_tensor_expr;
+        gmc_ptrtype M_gmc;
+        map_gmc_type M_map;
+        tensor_expr_type M_tensor_expr;
     };
 
     //@}
@@ -772,7 +772,7 @@ public:
 
     expression_type const& expression() const
     {
-        return _M_expr;
+        return M_expr;
     }
 
     //@}
@@ -793,7 +793,7 @@ protected:
 
 private:
 
-    expression_type  _M_expr;
+    expression_type  M_expr;
 };
 /// \endcond
 
@@ -845,7 +845,7 @@ public:
 
     explicit FaceExprV( expression_type const & __expr )
         :
-        _M_expr( __expr )
+        M_expr( __expr )
     {}
     ~FaceExprV()
     {}
@@ -893,68 +893,68 @@ public:
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
-            _M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
-            _M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
-            _M_left_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left ) ),
-            _M_right_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right ) ),
-            _M_tensor_expr_left( expr.expression(), _M_left_map, fev, feu ),
-            _M_tensor_expr_right( expr.expression(), _M_right_map, fev, feu )
+            M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
+            M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
+            M_left_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_left ) ),
+            M_right_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_right ) ),
+            M_tensor_expr_left( expr.expression(), M_left_map, fev, feu ),
+            M_tensor_expr_right( expr.expression(), M_right_map, fev, feu )
         {}
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
-            _M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
-            _M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
-            _M_left_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left ) ),
-            _M_right_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right ) ),
-            _M_tensor_expr_left( expr.expression(), _M_left_map, fev ),
-            _M_tensor_expr_right( expr.expression(), _M_right_map, fev )
+            M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
+            M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
+            M_left_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_left ) ),
+            M_right_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_right ) ),
+            M_tensor_expr_left( expr.expression(), M_left_map, fev ),
+            M_tensor_expr_right( expr.expression(), M_right_map, fev )
         {}
 
         tensor( this_type const& expr, Geo_t const& geom )
             :
-            _M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
-            _M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
-            _M_left_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left ) ),
-            _M_right_map( fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right ) ),
-            _M_tensor_expr_left( expr.expression(), _M_left_map ),
-            _M_tensor_expr_right( expr.expression(), _M_right_map )
+            M_gmc_left( fusion::at_key<vf::detail::gmc<0> >( geom ) ),
+            M_gmc_right( fusion::at_key<gmc1 >( geom ) ),
+            M_left_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_left ) ),
+            M_right_map( fusion::make_map<vf::detail::gmc<0> >( M_gmc_right ) ),
+            M_tensor_expr_left( expr.expression(), M_left_map ),
+            M_tensor_expr_right( expr.expression(), M_right_map )
         {
         }
         template<typename IM>
         void init( IM const& im )
         {
-            _M_tensor_expr_left.init( im );
-            _M_tensor_expr_right.init( im );
+            M_tensor_expr_left.init( im );
+            M_tensor_expr_right.init( im );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
             FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
 
-            _M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
-            _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
+            M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
+            M_gmc_right =  fusion::at_key<gmc1 >( geom );
+            FEELPP_ASSERT( M_gmc_left != M_gmc_right )( M_gmc_left->id() )( M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
-            _M_left_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left );
-            _M_right_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right );
-            _M_tensor_expr_left.update(  _M_left_map );
-            _M_tensor_expr_right.update( _M_right_map );
+            M_left_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_left );
+            M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
+            M_tensor_expr_left.update(  M_left_map );
+            M_tensor_expr_right.update( M_right_map );
         }
         void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
         {
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
             FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
 
-            _M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
-            _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
+            M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
+            M_gmc_right =  fusion::at_key<gmc1 >( geom );
+            FEELPP_ASSERT( M_gmc_left != M_gmc_right )( M_gmc_left->id() )( M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
-            _M_left_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left );
-            _M_right_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right );
-            _M_tensor_expr_left.update(  _M_left_map );
-            _M_tensor_expr_right.update( _M_right_map );
+            M_left_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_left );
+            M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
+            M_tensor_expr_left.update(  M_left_map );
+            M_tensor_expr_right.update( M_right_map );
         }
         void update( Geo_t const& geom )
         {
@@ -964,14 +964,14 @@ public:
             typedef mpl::int_<fusion::result_of::template size<Geo_t>::type::value> map_size;
             FEELPP_ASSERT( map_size::value == 2 )( map_size::value ).error( "invalid map size (should be 2)" );
 
-            _M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
-            _M_gmc_right =  fusion::at_key<gmc1 >( geom );
-            FEELPP_ASSERT( _M_gmc_left != _M_gmc_right )( _M_gmc_left->id() )( _M_gmc_right->id() ).error( "same geomap, something is wrong" );
+            M_gmc_left = fusion::at_key<vf::detail::gmc<0> >( geom );
+            M_gmc_right =  fusion::at_key<gmc1 >( geom );
+            FEELPP_ASSERT( M_gmc_left != M_gmc_right )( M_gmc_left->id() )( M_gmc_right->id() ).error( "same geomap, something is wrong" );
 
-            _M_left_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_left );
-            _M_right_map = fusion::make_map<vf::detail::gmc<0> >( _M_gmc_right );
-            _M_tensor_expr_left.update(  _M_left_map, face );
-            _M_tensor_expr_right.update( _M_right_map, face );
+            M_left_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_left );
+            M_right_map = fusion::make_map<vf::detail::gmc<0> >( M_gmc_right );
+            M_tensor_expr_left.update(  M_left_map, face );
+            M_tensor_expr_right.update( M_right_map, face );
 
 
         }
@@ -979,47 +979,47 @@ public:
         value_type
         evalij( uint16_type i, uint16_type j ) const
         {
-            return func( _M_tensor_expr_left.evalij( i, j ), _M_tensor_expr_right.evalij( i, j ) );
+            return func( M_tensor_expr_left.evalij( i, j ), M_tensor_expr_right.evalij( i, j ) );
         }
 
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return func( _M_tensor_expr_left.evalijq( i, j, c1, c2, q ),
-                         _M_tensor_expr_right.evalijq( i, j, c1, c2, q ) );
+            return func( M_tensor_expr_left.evalijq( i, j, c1, c2, q ),
+                         M_tensor_expr_right.evalijq( i, j, c1, c2, q ) );
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            return func( _M_tensor_expr_left.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() ),
-                         _M_tensor_expr_right.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() ) );
+            return func( M_tensor_expr_left.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() ),
+                         M_tensor_expr_right.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() ) );
         }
 
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return func( _M_tensor_expr_left.evaliq( i, c1, c2, q ),
-                         _M_tensor_expr_right.evaliq( i, c1, c2, q ) );
+            return func( M_tensor_expr_left.evaliq( i, c1, c2, q ),
+                         M_tensor_expr_right.evaliq( i, c1, c2, q ) );
         }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return func( _M_tensor_expr_left.evalq( c1, c2, q ),
-                         _M_tensor_expr_right.evalq( c1, c2, q ) );
+            return func( M_tensor_expr_left.evalq( c1, c2, q ),
+                         M_tensor_expr_right.evalq( c1, c2, q ) );
         }
 
 
-        left_gmc_ptrtype _M_gmc_left;
-        right_gmc_ptrtype _M_gmc_right;
-        map_left_gmc_type _M_left_map;
-        map_right_gmc_type _M_right_map;
-        left_tensor_expr_type _M_tensor_expr_left;
-        right_tensor_expr_type _M_tensor_expr_right;
+        left_gmc_ptrtype M_gmc_left;
+        right_gmc_ptrtype M_gmc_right;
+        map_left_gmc_type M_left_map;
+        map_right_gmc_type M_right_map;
+        left_tensor_expr_type M_tensor_expr_left;
+        right_tensor_expr_type M_tensor_expr_right;
     };
 
     //@}
@@ -1030,12 +1030,12 @@ public:
 
     bool isSymetric() const
     {
-        return _M_expr.isSymetric();
+        return M_expr.isSymetric();
     }
 
     expression_type const& expression() const
     {
-        return _M_expr;
+        return M_expr;
     }
 
     //@}
@@ -1056,7 +1056,7 @@ protected:
 
 private:
 
-    expression_type  _M_expr;
+    expression_type  M_expr;
 };
 
 namespace detail

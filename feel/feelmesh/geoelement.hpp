@@ -600,6 +600,14 @@ public:
     }
 
     /**
+     * \return maximum \c dimension of the sub-entity touching the boundary of the element
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return 0;
+    }
+
+    /**
      * \return \c true if ghost cell, \c false otherwise
      */
     bool isGhostCell() const
@@ -815,6 +823,14 @@ public:
     bool isOnBoundary() const
     {
         return super::isOnBoundary();
+    }
+
+    /**
+     * \return maximum \c dimension of the sub-entity touching the boundary of the element
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return 0;
     }
 
     /**
@@ -1108,6 +1124,14 @@ public:
     bool isOnBoundary() const
     {
         return super::isOnBoundary();
+    }
+
+    /**
+     * \return maximum \c dimension of the sub-entity touching the boundary of the element
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return super::boundaryEntityDimension();
     }
 
     /**
@@ -1437,6 +1461,14 @@ public:
     bool isOnBoundary() const
     {
         return super::isOnBoundary();
+    }
+
+    /**
+     * \return maximum \c dimension of the sub-entity touching the boundary of the element
+     */
+    uint16_type boundaryEntityDimension() const
+    {
+        return super::boundaryEntityDimension();
     }
 
     /**

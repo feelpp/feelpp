@@ -34,6 +34,10 @@
 
 #include <boost/mpl/list.hpp>
 
+#if defined(FEELPP_HAS_GPERFTOOLS)
+#include <gperftools/heap-checker.h>
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
 #include <feel/feel.hpp>
 
 using namespace Feel;
@@ -47,17 +51,28 @@ typedef boost::mpl::list<boost::mpl::int_<2> > dim_types;
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( leak1, T, dim_types )
 {
-	auto mesh = unitHypercube<T::value>();
-	auto Xh = Pch<2>( mesh );
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    HeapLeakChecker checker("checker for exporter leaks");
+#endif /* FEELPP_HAS_GPERFTOOLS */
 
-	auto ex = exporter( _mesh=mesh, _name="leak1" );
-    for( int i = 0; i < 10; ++i )
     {
-        auto v = project( _space=Xh, _range=elements(mesh),
-                          _expr=sin(pi*Px()/i));
-        ex->step(i)->add( "v", v );
-        ex->save();
+        auto mesh = unitHypercube<T::value>();
+        auto Xh = Pch<2>( mesh );
+
+        auto ex = exporter( _mesh=mesh, _name="leak1" );
+        for( int i = 0; i < 10; ++i )
+        {
+            auto v = project( _space=Xh, _range=elements(mesh),
+                              _expr=sin(pi*Px()/i));
+            ex->step(i)->add( "v", v );
+            ex->save();
+        }
+        Environment::clearSomeMemory();
     }
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    CHECK(checker.NoLeaks()) << "There are leaks";
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

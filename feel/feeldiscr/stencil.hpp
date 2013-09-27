@@ -420,23 +420,56 @@ public:
         return M_graph;
     }
 private:
-    size_type trialElementId( size_type trial_eid )
+    std::set<size_type> trialElementId( size_type test_eid, mpl::int_<0> /**/ )
         {
-            size_type idElem = trial_eid;
-            size_type domain_eid = idElem;
+            std::set<size_type> idsFind;
             const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
             const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                domain_eid = _M_X1->mesh()->subMeshToMesh( idElem );
-                DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                const size_type domain_eid = _M_X1->mesh()->subMeshToMesh( test_eid );
+                DVLOG(2) << "[test_related_to_trial] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
-            if( trial_related_to_test )
+            else if( trial_related_to_test )
             {
-                domain_eid = _M_X2->mesh()->meshToSubMesh( idElem );
-                DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                const size_type domain_eid = _M_X2->mesh()->meshToSubMesh( test_eid );
+                DVLOG(2) << "[trial_related_to_test] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
-            return domain_eid;
+            else // same mesh
+            {
+                idsFind.insert(test_eid);
+            }
+
+            return idsFind;
+        }
+    std::set<size_type> trialElementId( size_type test_eid, mpl::int_<1> /**/ )
+        {
+            std::set<size_type> idsFind;
+            const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
+            const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
+            if ( test_related_to_trial )
+            {
+                const size_type domain_eid = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid )).element0().id();
+                DVLOG(2) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
+            }
+            else if( trial_related_to_test )
+            {
+                auto const& eltTest = _M_X1->mesh()->element(test_eid);
+                for (uint16_type f=0;f< _M_X1->mesh()->numLocalFaces();++f)
+                    {
+                        const size_type idFind = _M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                        if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                    }
+                DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
+            }
+            else
+            {
+                CHECK ( false ) << "[trial_related_to_test<1>] : test and trial mesh can not be the same here\n";
+            }
+            return idsFind;
         }
 
 
@@ -1248,6 +1281,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     element_dof2( _M_X2->dof()->getIndicesSize() ),
                   neighbor_dof;
 
+    static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+    static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+    static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
     for ( ; elem_it != elem_en; ++elem_it )
     {
 #if !defined(NDEBUG)
@@ -1255,126 +1291,128 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 #endif /* NDEBUG */
         const auto & elem = *elem_it;
 
-        size_type domain_eid = trialElementId( elem.id() );
-        if ( domain_eid == invalid_size_type_value )
-            continue;
+        auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
 
-        // Get the global indices of the DOFs with support on this element
-        //element_dof1 = _M_X1->dof()->getIndices( elem.id() );
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-        _M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
-#else // MPI
-        _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
-#endif
-        // We can be more efficient if we sort the element DOFs
-        // into increasing order
-        //std::sort(element_dof1.begin(), element_dof1.end());
-        std::sort( element_dof2.begin(), element_dof2.end() );
-
-        //const uint16_type  n1_dof_on_element = element_dof1.size();
-        const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
-        const uint16_type  n2_dof_on_element = element_dof2.size();
-
-        for ( size_type i=0; i<n1_dof_on_element; i++ )
-            //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
+        auto it_trial=domains_eid_set.begin();
+        auto const en_trial=domains_eid_set.end();
+        for ( ; it_trial!=en_trial ; ++it_trial )
         {
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-            const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
-#else // MPI
-            const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
-            auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
-            // numLocal without ghosts ! very important for the graph with petsc
-            const size_type il1 = _M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
-#endif
-            //const size_type ig1 = element_dof1[i];
-            const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
-            const int ncomp1 = i / ndofpercomponent1;
-            const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+            const size_type domain_eid = *it_trial;
 
+            // Get the global indices of the DOFs with support on this element
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
+            _M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
+#else // MPI
+            _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
+#endif
+            // We can be more efficient if we sort the element DOFs
+            // into increasing order
+            //std::sort(element_dof1.begin(), element_dof1.end());
+            std::sort( element_dof2.begin(), element_dof2.end() );
+
+            //const uint16_type  n1_dof_on_element = element_dof1.size();
+            const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
+            const uint16_type  n2_dof_on_element = element_dof2.size();
+
+            for ( size_type i=0; i<n1_dof_on_element; i++ )
+                //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
             {
-                // This is what I mean
-                // assert ((ig - first_dof_on_proc) >= 0);
-                // but do the test like this because ig and
-                // first_dof_on_proc are size_types
-#if 0
-                FEELPP_ASSERT ( ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ( "invalid dof index" );
-                FEELPP_ASSERT ( ( ig1 - first1_dof_on_proc ) < sparsity_graph->size() )
-                ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
-#endif
-                graph_type::row_type& row = sparsity_graph->row( ig1 );
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
-                row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
 #else // MPI
-                row.get<0>() = theproc ;
-                row.get<1>() = il1;
+                const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
+                auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
+                // numLocal without ghosts ! very important for the graph with petsc
+                const size_type il1 = _M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
 #endif
-                DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                //const size_type ig1 = element_dof1[i];
+                const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                const int ncomp1 = i / ndofpercomponent1;
+                const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 
-                if ( do_less )
                 {
-                    if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
-                        row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
-                                             element_dof2.end() );
+                    // This is what I mean
+                    // assert ((ig - first_dof_on_proc) >= 0);
+                    // but do the test like this because ig and
+                    // first_dof_on_proc are size_types
+#if 0
+                    FEELPP_ASSERT ( ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ( "invalid dof index" );
+                    FEELPP_ASSERT ( ( ig1 - first1_dof_on_proc ) < sparsity_graph->size() )
+                        ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
+#endif
+                    graph_type::row_type& row = sparsity_graph->row( ig1 );
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
+                    bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
+                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+#else // MPI
+                    row.get<0>() = theproc ;
+                    row.get<1>() = il1;
+#endif
+                    DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+
+                    if ( do_less )
+                    {
+                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
+                            row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
+                                                 element_dof2.end() );
+
+                        else
+                            row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
+                                                 element_dof2.begin()+( ncomp1+1 )*ndofpercomponent2 );
+                    }
 
                     else
-                        row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
-                                             element_dof2.begin()+( ncomp1+1 )*ndofpercomponent2 );
-                }
-
-                else
-                {
-                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
-                }
-
-                // Now (possibly) add dof from neighboring elements
-                if ( graph.test( Pattern::EXTENDED ) )
-                {
-                    for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                     {
-                        const auto * neighbor = boost::addressof( elem );
-                        size_type neighbor_id = elem.neighbor( ms ).first;
-                        size_type neighbor_process_id = elem.neighbor( ms ).second;
+                        row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                    }
 
-                        // warning ! the last condition is a temporary solution
-                        if ( neighbor_id != invalid_size_type_value
-                            && neighbor_process_id == proc_id )
+                    // Now (possibly) add dof from neighboring elements
+                    if ( graph.test( Pattern::EXTENDED ) )
+                    {
+                        for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
+                            const auto * neighbor = boost::addressof( elem );
+                            size_type neighbor_id = elem.neighbor( ms ).first;
+                            size_type neighbor_process_id = elem.neighbor( ms ).second;
 
-                            neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
-                                                         neighbor_process_id ) );
-
-                            if ( neighbor_id == neighbor->id()  )
+                            // warning ! the last condition is a temporary solution
+                            if ( neighbor_id != invalid_size_type_value
+                                 && neighbor_process_id == proc_id )
                             {
-                                //neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
-                                neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
 
-                                if ( do_less )
+                                neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
+                                                                                     neighbor_process_id ) );
+
+                                if ( neighbor_id == neighbor->id()  )
                                 {
-                                    if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
-                                        row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
-                                                             neighbor_dof.end() );
+                                    //neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
+                                    neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
+
+                                    if ( do_less )
+                                    {
+                                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
+                                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                                 neighbor_dof.end() );
+
+                                        else
+                                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                                 neighbor_dof.begin()+( ncomp1+1 )*ndofpercomponent2 );
+
+                                    }
 
                                     else
-                                        row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
-                                                             neighbor_dof.begin()+( ncomp1+1 )*ndofpercomponent2 );
+                                    {
+                                        row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
+                                    }
 
-                                }
-
-                                else
-                                {
-                                    row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
-                                }
-
-                            } // neighbor_id
-                        }
-
-                    } // neighbor graph
-                }
-            } // only dof on proc
-
-        }// dof loop
+                                } // neighbor_id
+                            }
+                        } // neighbor graph
+                    } // if ( graph.test( Pattern::EXTENDED ) )
+                } // only dof on proc
+            } // dof loop
+        } // trial id loop
     } // element iterator loop
 
     DVLOG(2)<< "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";

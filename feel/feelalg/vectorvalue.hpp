@@ -69,11 +69,11 @@ public:
 
     VectorValue( value_type acc = value_type( 0 ) )
         :
-        _M_vec( acc )
+        M_vec( acc )
     {}
     VectorValue( VectorValue const & m )
         :
-        _M_vec( m._M_vec )
+        M_vec( m.M_vec )
     {}
 
     ~VectorValue()
@@ -91,7 +91,7 @@ public:
      */
     value_type& operator()( size_type /*i*/ )
     {
-        return _M_vec;
+        return M_vec;
     }
 
     //@}
@@ -157,7 +157,7 @@ public:
      */
     vector_type const& vec () const
     {
-        return _M_vec;
+        return M_vec;
     }
 
     /**
@@ -165,7 +165,7 @@ public:
      */
     vector_type & vec ()
     {
-        return _M_vec;
+        return M_vec;
     }
 
     //@}
@@ -189,7 +189,7 @@ public:
      */
     void clear ()
     {
-        _M_vec = 0;
+        M_vec = 0;
     }
 
     /**
@@ -198,12 +198,12 @@ public:
      */
     void zero ()
     {
-        _M_vec = 0;
+        M_vec = 0;
     }
 
     void zero ( size_type /*start1*/, size_type /*stop1*/ )
     {
-        _M_vec = 0;
+        M_vec = 0;
     }
 
     /**
@@ -212,7 +212,7 @@ public:
     void add ( const unsigned int /*i*/,
                const value_type value )
     {
-        _M_vec += value;
+        M_vec += value;
     }
 
     /**
@@ -221,7 +221,7 @@ public:
     void set ( const unsigned int /*i*/,
                const value_type value )
     {
-        _M_vec = value;
+        M_vec = value;
     }
 
 
@@ -246,7 +246,7 @@ private:
     /**
      * the gmm sparse vector data structure
      */
-    mutable vector_type _M_vec;
+    mutable vector_type M_vec;
 
 };
 

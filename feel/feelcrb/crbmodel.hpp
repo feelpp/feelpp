@@ -2058,15 +2058,13 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
     compositeA->setScalars( beta_A );
     compositeM->setScalars( beta_M );
 
-    PsLogger ps("CRBModel_pslog");
-
-    ps.log("start");
-
     //merge
-    auto A = compositeA->sumAllMatrices();
-    ps.log("after sumAllMatrices de A");
-    auto M = compositeM->sumAllMatrices();
-    ps.log("after sumAllMatrices de M");
+    auto A = M_model->newMatrix();
+    auto M = M_model->newMatrix();
+    compositeA->sumAllMatrices( A );
+    //auto A = compositeA->sumAllMatrices();
+    //auto M = compositeM->sumAllMatrices();
+    compositeM->sumAllMatrices( M );
 
     std::vector<vector_ptrtype> F( Nl() );
 
@@ -2074,10 +2072,9 @@ CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, paramet
     {
         auto compositeF = vector_compositeF[output];
         compositeF->setScalars( beta_F[output] );
-        F[output] = compositeF->sumAllVectors();
+        F[output] = M_model->newVector();
+        compositeF->sumAllVectors( F[output] );
     }
-
-    ps.log("END");
 
     return boost::make_tuple( M, A, F );
 }

@@ -100,14 +100,14 @@ public:
      */
     Jacobi( value_type a = value_type( 0.0 ), value_type b = value_type( 0.0 ) )
         :
-        _M_a( a ),
-        _M_b( b )
+        M_a( a ),
+        M_b( b )
     {}
 
     Jacobi( Jacobi const & p )
         :
-        _M_a( p._M_a ),
-        _M_b( p._M_b )
+        M_a( p.M_a ),
+        M_b( p.M_b )
     {}
 
     ~Jacobi()
@@ -123,8 +123,8 @@ public:
     {
         if ( this != &p )
         {
-            _M_a = p._M_a;
-            _M_b = p._M_b;
+            M_a = p.M_a;
+            M_b = p.M_b;
         }
 
         return *this;
@@ -192,8 +192,8 @@ public:
 protected:
 
 private:
-    value_type _M_a;
-    value_type _M_b;
+    value_type M_a;
+    value_type M_b;
 };
 template<int N, typename T>
 typename Jacobi<N, T>::value_type
@@ -206,24 +206,24 @@ Jacobi<N, T>::operator()( value_type const& x ) const
         return one;
 
     else if ( N == 1 )
-        return 0.5 * ( _M_a - _M_b + ( _M_a + _M_b + two ) * x );
+        return 0.5 * ( M_a - M_b + ( M_a + M_b + two ) * x );
 
     else  // N >= 2
     {
-        value_type apb = _M_a + _M_b;
+        value_type apb = M_a + M_b;
         value_type pn2 = one;
-        value_type pn1 = 0.5 * ( _M_a - _M_b + ( apb + two ) * x );
+        value_type pn1 = 0.5 * ( M_a - M_b + ( apb + two ) * x );
         value_type p = 0.0;
 
         for ( int k = 2; k < N+1; ++k )
         {
             value_type kv = value_type( k );
             value_type a1 = two * kv * ( kv + apb ) * ( two * kv + apb - two );
-            value_type a2 = ( two * kv + apb - one ) * ( _M_a * _M_a - _M_b * _M_b );
+            value_type a2 = ( two * kv + apb - one ) * ( M_a * M_a - M_b * M_b );
             value_type a3 = ( ( two * kv + apb - two )
                               * ( two * kv + apb - one )
                               * ( two * kv + apb ) );
-            value_type a4 = ( two * ( kv + _M_a - one ) * ( kv + _M_b - one )
+            value_type a4 = ( two * ( kv + M_a - one ) * ( kv + M_b - one )
                               * ( two * kv + apb ) );
 
             p = ( ( a2 + a3 * x ) * pn1 - a4 * pn2 )/a1;
@@ -241,9 +241,9 @@ Jacobi<N, T>::derivate( value_type const& x ) const
     if (  N == 0 )
         return 0.0;
 
-    Jacobi<N-1, T> dp( _M_a + 1.0, _M_b + 1.0 );
+    Jacobi<N-1, T> dp( M_a + 1.0, M_b + 1.0 );
     value_type Nv = value_type( N );
-    return 0.5 * ( _M_a  + _M_b + Nv + 1.0 ) * dp( x );
+    return 0.5 * ( M_a  + M_b + Nv + 1.0 ) * dp( x );
 }
 namespace dyna
 {
@@ -297,16 +297,16 @@ public:
      */
     Jacobi( uint16_type N, value_type a = value_type( 0.0 ), value_type b = value_type( 0.0 ) )
         :
-        _M_degree( N ),
-        _M_a( a ),
-        _M_b( b )
+        M_degree( N ),
+        M_a( a ),
+        M_b( b )
     {}
 
     Jacobi( Jacobi const & p )
         :
-        _M_degree( p._M_degree ),
-        _M_a( p._M_a ),
-        _M_b( p._M_b )
+        M_degree( p.M_degree ),
+        M_a( p.M_a ),
+        M_b( p.M_b )
     {}
 
     ~Jacobi()
@@ -322,9 +322,9 @@ public:
     {
         if ( this != &p )
         {
-            _M_degree = p._M_degree;
-            _M_a = p._M_a;
-            _M_b = p._M_b;
+            M_degree = p.M_degree;
+            M_a = p.M_a;
+            M_b = p.M_b;
         }
 
         return *this;
@@ -351,7 +351,7 @@ public:
 
     uint16_type degree() const
     {
-        return _M_degree;
+        return M_degree;
     }
 
     //@}
@@ -362,7 +362,7 @@ public:
 
     void setDegree( uint16_type N )
     {
-        _M_degree = N;
+        M_degree = N;
     }
 
     //@}
@@ -396,15 +396,15 @@ public:
 protected:
 
 private:
-    uint16_type _M_degree;
-    value_type _M_a;
-    value_type _M_b;
+    uint16_type M_degree;
+    value_type M_a;
+    value_type M_b;
 };
 template<typename T>
 typename Jacobi<T>::value_type
 Jacobi<T>::operator()( value_type const& x ) const
 {
-    const uint16_type N = this->_M_degree;
+    const uint16_type N = this->M_degree;
     const value_type one = 1.0;
     const value_type two = 2.0;
 
@@ -412,24 +412,24 @@ Jacobi<T>::operator()( value_type const& x ) const
         return one;
 
     else if ( N == 1 )
-        return 0.5 * ( _M_a - _M_b + ( _M_a + _M_b + two ) * x );
+        return 0.5 * ( M_a - M_b + ( M_a + M_b + two ) * x );
 
     else  // N >= 2
     {
-        value_type apb = _M_a + _M_b;
+        value_type apb = M_a + M_b;
         value_type pn2 = one;
-        value_type pn1 = 0.5 * ( _M_a - _M_b + ( apb + two ) * x );
+        value_type pn1 = 0.5 * ( M_a - M_b + ( apb + two ) * x );
         value_type p = 0.0;
 
         for ( uint16_type k = 2; k < N+1; ++k )
         {
             value_type kv = value_type( k );
             value_type a1 = two * kv * ( kv + apb ) * ( two * kv + apb - two );
-            value_type a2 = ( two * kv + apb - one ) * ( _M_a * _M_a - _M_b * _M_b );
+            value_type a2 = ( two * kv + apb - one ) * ( M_a * M_a - M_b * M_b );
             value_type a3 = ( ( two * kv + apb - two )
                               * ( two * kv + apb - one )
                               * ( two * kv + apb ) );
-            value_type a4 = ( two * ( kv + _M_a - one ) * ( kv + _M_b - one )
+            value_type a4 = ( two * ( kv + M_a - one ) * ( kv + M_b - one )
                               * ( two * kv + apb ) );
 
             p = ( ( a2 + a3 * x ) * pn1 - a4 * pn2 )/a1;
@@ -444,14 +444,14 @@ template<typename T>
 typename Jacobi<T>::value_type
 Jacobi<T>::derivate( value_type const& x ) const
 {
-    const uint16_type N = this->_M_degree;
+    const uint16_type N = this->M_degree;
 
     if (  N == 0 )
         return 0.0;
 
-    Jacobi<T> dp( N-1, _M_a + 1.0, _M_b + 1.0 );
+    Jacobi<T> dp( N-1, M_a + 1.0, M_b + 1.0 );
     value_type Nv = value_type( N );
-    return 0.5 * ( _M_a  + _M_b + Nv + 1.0 ) * dp( x );
+    return 0.5 * ( M_a  + M_b + Nv + 1.0 ) * dp( x );
 }
 }
 
