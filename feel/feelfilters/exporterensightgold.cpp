@@ -439,23 +439,25 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
     }
 
     __out << "\n";
-#if 0
-    if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
+
+    if ( option( _name="exporter.ensightgold.use-sos" ).template as<bool>() == false )
     {
-        __out << "APPENDED_CASEFILES\n"
-              << "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
-            // no need for that
-            // << "cfiles global path: " << fs::current_path().string() << "\n"
-              << "cfiles: ";
-        for(int p = 1; p < Environment::numberOfProcessors(); ++p )
+        if ( ( Environment::numberOfProcessors() > 1 )  && ( this->worldComm().globalRank() == 0 ) )
         {
-            std::ostringstream filestr;
-            filestr << this->prefix() << "-"
-                    << this->worldComm().globalSize() << "_" << p << ".case";
-            __out << filestr.str() << "\n        ";
+            __out << "APPENDED_CASEFILES\n"
+                  << "total number of cfiles: " << Environment::numberOfProcessors()-1 << "\n"
+                // no need for that
+                // << "cfiles global path: " << fs::current_path().string() << "\n"
+                  << "cfiles: ";
+            for(int p = 1; p < Environment::numberOfProcessors(); ++p )
+            {
+                std::ostringstream filestr;
+                filestr << this->prefix() << "-"
+                        << this->worldComm().globalSize() << "_" << p << ".case";
+                __out << filestr.str() << "\n        ";
+            }
         }
-    }
-#endif
+    } // use-sos
     __out.close();
 
 }

@@ -71,32 +71,32 @@ class AssertContext
 {
     typedef std::string string;
 public:
-    AssertContext() : _M_level( lvl_info )
+    AssertContext() : M_level( lvl_info )
     {}
 
     // where the assertion failed: file & line
     void setFileLine( const char * file, int line )
     {
-        _M_file = file;
-        _M_line = line;
+        M_file = file;
+        M_line = line;
     }
     const string & getContextFile() const
     {
-        return _M_file;
+        return M_file;
     }
     int getContextLine() const
     {
-        return _M_line;
+        return M_line;
     }
 
     // get/ set expression
     void setExpression( const string & str )
     {
-        _M_expression = str;
+        M_expression = str;
     }
     const string & expression() const
     {
-        return _M_expression;
+        return M_expression;
     }
 
     typedef std::pair< string, string> val_and_str;
@@ -105,50 +105,50 @@ public:
     // [Value, corresponding string]
     const vals_array & get_vals_array() const
     {
-        return _M_vals;
+        return M_vals;
     }
     // adds one value and its corresponding string
     void add_val( const string & val, const string & str )
     {
-        _M_vals.push_back( val_and_str( val, str ) );
+        M_vals.push_back( val_and_str( val, str ) );
     }
 
     // get/set level of assertion
     void setLevel( int nLevel )
     {
-        _M_level = nLevel;
+        M_level = nLevel;
     }
     int get_level() const
     {
-        return _M_level;
+        return M_level;
     }
 
     // get/set (user-friendly) message
     void setLevelMsg( const char * strMsg )
     {
         if ( strMsg )
-            _M_msg = strMsg;
+            M_msg = strMsg;
 
         else
-            _M_msg.erase();
+            M_msg.erase();
     }
     const string & get_level_msg() const
     {
-        return _M_msg;
+        return M_msg;
     }
 
 private:
     // where the assertion occured
-    string _M_file;
-    int _M_line;
+    string M_file;
+    int M_line;
 
     // expression and values
-    string _M_expression;
-    vals_array _M_vals;
+    string M_expression;
+    vals_array M_vals;
 
     // level and message
-    int _M_level;
-    string _M_msg;
+    int M_level;
+    string M_msg;
 };
 
 
@@ -222,9 +222,9 @@ struct Assert
     Assert( const char * expr )
         : SMART_ASSERT_A( *this ),
           SMART_ASSERT_B( *this ),
-          _M_needs_handling( true )
+          M_needs_handling( true )
     {
-        _M_context.setExpression( expr );
+        M_context.setExpression( expr );
 
         if ( ( logger() == 0 ) || handlers().size() < 4 )
         {
@@ -236,15 +236,15 @@ struct Assert
     Assert( const Assert & other )
         : SMART_ASSERT_A( *this ),
           SMART_ASSERT_B( *this ),
-          _M_context( other._M_context ),
-          _M_needs_handling( true )
+          M_context( other.M_context ),
+          M_needs_handling( true )
     {
-        other._M_needs_handling = false;
+        other.M_needs_handling = false;
     }
 
     ~Assert()
     {
-        if ( _M_needs_handling )
+        if ( M_needs_handling )
             handleAssert();
     }
 
@@ -253,20 +253,20 @@ struct Assert
 
     Assert & printContext( const char * file, int line )
     {
-        _M_context.setFileLine( file, line );
+        M_context.setFileLine( file, line );
         return *this;
     }
 
     Assert & msg( const char * strMsg )
     {
-        _M_context.setLevelMsg( strMsg );
+        M_context.setLevelMsg( strMsg );
         return *this;
     }
 
     Assert & level( int nLevel, const char * strMsg = 0 )
     {
-        _M_context.setLevel( nLevel );
-        _M_context.setLevelMsg( strMsg );
+        M_context.setLevel( nLevel );
+        M_context.setLevelMsg( strMsg );
         return *this;
     }
 
@@ -324,8 +324,8 @@ private:
     // handles the current assertion.
     void handleAssert()
     {
-        logger()( _M_context );
-        get_handler( _M_context.get_level() )( _M_context );
+        logger()( M_context );
+        get_handler( M_context.get_level() )( M_context );
     }
 
     /*
@@ -366,8 +366,8 @@ private:
     }
 
 private:
-    AssertContext _M_context;
-    mutable bool _M_needs_handling;
+    AssertContext M_context;
+    mutable bool M_needs_handling;
 
 };
 
@@ -387,7 +387,7 @@ Assert::printCurrentValue( const type & _val, const char * _msg )
         // null string
         out << "null";
 
-    _M_context.add_val( out.str(), _msg );
+    M_context.add_val( out.str(), _msg );
     return *this;
 }
 

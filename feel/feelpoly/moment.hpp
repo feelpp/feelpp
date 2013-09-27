@@ -133,14 +133,14 @@ public:
 
     Moment()
         :
-        _M_refconvex(),
-        _M_pts( _M_refconvex.points() ),//_M_refconvex.makePoints( nDim, 0 ) ),
-        _M_coord( convex_type::polyDims( nOrder ),nDim )
+        M_refconvex(),
+        M_pts( M_refconvex.points() ),//M_refconvex.makePoints( nDim, 0 ) ),
+        M_coord( convex_type::polyDims( nOrder ),nDim )
     {
         //std::cout << "[polydims: " << convex_type::polyDims( nOrder ) << "\n";
         if ( nDim == 1 )
-            for ( uint32_type i=0; i < _M_coord.size1(); ++i )
-                _M_coord( i,0 ) = i;
+            for ( uint32_type i=0; i < M_coord.size1(); ++i )
+                M_coord( i,0 ) = i;
 
         else if ( nDim == 2 )
         {
@@ -151,8 +151,8 @@ public:
                 for ( int32_type n = 0; n < nOrder+1; ++n )
                     for ( int32_type i = n; i >= 0; --i )
                     {
-                        _M_coord( G_i,0 ) = i;
-                        _M_coord( G_i,1 ) = n-i;
+                        M_coord( G_i,0 ) = i;
+                        M_coord( G_i,1 ) = n-i;
                         ++G_i;
                     }
             }
@@ -162,8 +162,8 @@ public:
                 for ( int32_type n = 0; n < nOrder+1; ++n )
                     for ( int32_type i = 0; i < nOrder+1; ++i )
                     {
-                        _M_coord( G_i,0 ) = i;
-                        _M_coord( G_i,1 ) = n;
+                        M_coord( G_i,0 ) = i;
+                        M_coord( G_i,1 ) = n;
                         ++G_i;
                     }
             }
@@ -179,9 +179,9 @@ public:
                     for ( int32_type i = n; i >= 0; --i )	   // x id
                         for ( int32_type j = n-i; j >= 0 ; --j )
                         {
-                            _M_coord( G_i,0 ) = i;
-                            _M_coord( G_i,1 ) = j;
-                            _M_coord( G_i,2 ) = n-i-j;
+                            M_coord( G_i,0 ) = i;
+                            M_coord( G_i,1 ) = j;
+                            M_coord( G_i,2 ) = n-i-j;
                             ++G_i;
                         }
             }
@@ -192,41 +192,41 @@ public:
                     for ( int32_type i = 0; i < nOrder+1; ++i )
                         for ( int32_type j = 0; j < nOrder+1; ++j )
                         {
-                            _M_coord( G_i,0 ) = j;
-                            _M_coord( G_i,1 ) = i;
-                            _M_coord( G_i,1 ) = n;
+                            M_coord( G_i,0 ) = j;
+                            M_coord( G_i,1 ) = i;
+                            M_coord( G_i,1 ) = n;
                             ++G_i;
                         }
             }
         }
 
         //std::cout << "nDim: " << nDim << "\n";
-        //std::cout << "orders: " << _M_coord << "\n";
-        //std::cout << "pts: " << _M_pts << "\n";
+        //std::cout << "orders: " << M_coord << "\n";
+        //std::cout << "pts: " << M_pts << "\n";
 
 
-        matrix_type A( ublas::trans( evaluate( _M_pts ) ) );
+        matrix_type A( ublas::trans( evaluate( M_pts ) ) );
         //std::cout << "A=" << A << "\n";
         matrix_type D = ublas::identity_matrix<value_type>( A.size1(), A.size2()  );
         //std::cout << "D=" << D << "\n";
         LU<matrix_type> lu( A );
         matrix_type C = lu.solve( D );
         //std::cout << "C=" << C << "\n";
-        vector_matrix_type d ( derivate( _M_pts ) );
-        _M_D.resize( d.size() );
+        vector_matrix_type d ( derivate( M_pts ) );
+        M_D.resize( d.size() );
 
         for ( size_type i = 0; i < d.size(); ++i )
         {
-            _M_D[i] = ublas::prod( C, ublas::trans( d[i] ) );
-            //std::cout << "DM=" << _M_D[i] << "\n";
+            M_D[i] = ublas::prod( C, ublas::trans( d[i] ) );
+            //std::cout << "DM=" << M_D[i] << "\n";
         }
     }
     Moment( Moment const & d )
         :
-        _M_refconvex(),
-        _M_pts( d._M_pts ),
-        _M_coord( d._M_coord ),
-        _M_D( d._M_D )
+        M_refconvex(),
+        M_pts( d.M_pts ),
+        M_coord( d.M_coord ),
+        M_D( d.M_D )
     {}
 
     ~Moment()
@@ -240,7 +240,7 @@ public:
 
     points_type points()
     {
-        return _M_pts;
+        return M_pts;
     }
 
 
@@ -252,8 +252,8 @@ public:
     {
         if ( this != &d )
         {
-            _M_pts = d._M_pts;
-            _M_D = d._M_D;
+            M_pts = d.M_pts;
+            M_D = d.M_D;
         }
 
         return *this;
@@ -280,7 +280,7 @@ public:
 
     ublas::matrix<int16_type> coord()
     {
-        return _M_coord;
+        return M_coord;
     }
 
     /**
@@ -344,10 +344,10 @@ public:
     {
 #if 0
         std::cout << "[Moment::coeff] coeff = "
-                  << ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), _M_pts.size2() )
+                  << ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() )
                   << "\n";
 #endif
-        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), _M_pts.size2() );
+        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
     }
 
 
@@ -376,7 +376,7 @@ public:
      */
     matrix_type const& d( uint16_type i ) const
     {
-        return _M_D[i];
+        return M_D[i];
     }
 
     template<template<uint16_type> class PolySetType = Scalar>
@@ -784,20 +784,20 @@ private:
 
 
 private:
-    reference_convex_type _M_refconvex;
-    points_type _M_pts;
+    reference_convex_type M_refconvex;
+    points_type M_pts;
 
     /**
      * In this matrix I will save the degree \f$ i,j,k \f$ in each direction
      * for the moment basis polynomials of type \f$ x^i y^j z^k \f$.
      */
 
-    ublas::matrix<int16_type> _M_coord;
+    ublas::matrix<int16_type> M_coord;
 
     /**
      * Derivation matrix
      */
-    std::vector<matrix_type> _M_D;
+    std::vector<matrix_type> M_D;
 };
 
 template<uint16_type Dim,
@@ -1111,7 +1111,7 @@ template<uint16_type Dim,
 const uint16_type MomentPolynomialSet<Dim, Order, RealDim, PolySetType,T, Convex>::nLocalDof;
 
 } // detail
-/// \encond 
+/// \encond
 
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar>

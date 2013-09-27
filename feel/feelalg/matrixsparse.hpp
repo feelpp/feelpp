@@ -172,7 +172,7 @@ public:
      */
     virtual bool isInitialized() const
     {
-        return _M_is_initialized;
+        return M_is_initialized;
     }
 
     /**
@@ -253,7 +253,7 @@ public:
      */
     bool hasGraph() const
     {
-        return _M_graph != 0;
+        return M_graph != 0;
     }
 
     /**
@@ -261,7 +261,7 @@ public:
      */
     graph_ptrtype const& graph() const
     {
-        return _M_graph;
+        return M_graph;
     }
 
     /**
@@ -269,7 +269,7 @@ public:
      */
     void setGraph( graph_ptrtype const& graph )
     {
-        _M_graph = graph;
+        M_graph = graph;
     }
 
     /**
@@ -700,7 +700,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    virtual void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context ) = 0;
+    virtual void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context ) = 0;
 
     /**
      * update a block matrix
@@ -713,7 +713,7 @@ public:
      */
     void setInitialized( bool _init )
     {
-        _M_is_initialized = _init;
+        M_is_initialized = _init;
     }
 #if 0
     template<typename DomainSpace, typename ImageSpace>
@@ -762,9 +762,9 @@ protected:
      * Flag indicating whether or not the matrix
      * has been initialized.
      */
-    bool _M_is_initialized;
+    bool M_is_initialized;
 
-    graph_ptrtype _M_graph;
+    graph_ptrtype M_graph;
 
     Context M_mprop;
 
@@ -789,7 +789,7 @@ typedef boost::shared_ptr<d_sparse_matrix_type> sparse_matrix_ptrtype;
 template <typename T>
 inline
 MatrixSparse<T>::MatrixSparse () :
-    _M_is_initialized( false ),
+    M_is_initialized( false ),
     M_mprop( NON_HERMITIAN )
 {}
 
@@ -797,7 +797,7 @@ template <typename T>
 inline
 MatrixSparse<T>::MatrixSparse ( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm ) :
     M_worldComm( worldComm ),
-    _M_is_initialized( false ),
+    M_is_initialized( false ),
     M_mprop( NON_HERMITIAN ),
     M_mapRow( dmRow ),
     M_mapCol( dmCol )
@@ -889,4 +889,3 @@ std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m )
 } // Feel
 
 #endif // #ifndef __sparse_matrix_h__
-

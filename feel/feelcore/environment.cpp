@@ -40,6 +40,10 @@
 #include <boost/assign/std/vector.hpp>
 #include <gflags/gflags.h>
 
+#if defined ( FEELPP_HAS_PETSC_H )
+#include <petscsys.h>
+#endif
+
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
 
@@ -644,14 +648,20 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     freeargv( envargv );
 
 }
+void
+Environment::clearSomeMemory()
+{
+    // send signal to all deleters
+    S_deleteObservers();
+    google::FlushLogFiles(google::GLOG_INFO);
+    VLOG(2) << "clearSomeMemory: delete signal sent" << "\n";
+
+}
 Environment::~Environment()
 {
     VLOG(2) << "[~Environment] sending delete to all deleters" << "\n";
 
-    // send signal to all deleters
-    S_deleteObservers();
-    google::FlushLogFiles(google::GLOG_INFO);
-    VLOG(2) << "[~Environment] delete signal sent" << "\n";
+    Environment::clearSomeMemory();
 
     if ( i_initialized )
     {
@@ -720,6 +730,11 @@ Environment::rootRepository()
     if ( senv != NULL && senv[0] != '\0' )
     {
         return std::string( senv );
+    }
+    senv = ::getenv( "WORK" );
+    if ( senv != NULL && senv[0] != '\0' )
+    {
+        return std::string( senv )+"/feel";
     }
     senv = ::getenv( "WORKDIR" );
     if ( senv != NULL && senv[0] != '\0' )
@@ -948,6 +963,25 @@ WorldComm const&
 Environment::masterWorldComm( int n )
 {
     return S_worldcomm->masterWorld(n);
+}
+
+
+MemoryUsage
+Environment::logMemoryUsage( std::string const& message )
+{
+    MemoryUsage mem;
+#if defined ( FEELPP_HAS_PETSC_H )
+    PetscMemoryGetCurrentUsage( &mem.memory_usage );
+    LOG(INFO) << message << " PETSC get current memory usage (resident memory): "  << mem.memory_usage/1e3 << "  KBytes "  << mem.memory_usage/1e6 << "  MBytes " << mem.memory_usage/1e9 << " GBytes" ;
+    //PetscMemoryGetMaximumUsage( &mem );
+    //LOG(INFO) << logMessage << " PETSC get maximum memory usag (resident memory): " << mem/1e6 << "  MBytes " << mem/1e9 << " GBytes" ;
+
+    PetscMallocGetCurrentUsage( &mem.petsc_malloc_usage );
+    LOG(INFO) << message << " PETSC get current PETSC Malloc usage: "  << mem.petsc_malloc_usage/1e3 << "  KBytes " << mem.petsc_malloc_usage/1e6 << " MBytes " << mem.petsc_malloc_usage/1e9 << " GBytes" ;
+    PetscMallocGetMaximumUsage( &mem.petsc_malloc_maximum_usage );
+    LOG(INFO) << message << " PETSC get maximum PETSC Malloc usage(largest memory ever used so far): "  << mem.petsc_malloc_maximum_usage/1e3 << "  KBytes " << mem.petsc_malloc_maximum_usage/1e6 << " MBytes " << mem.petsc_malloc_maximum_usage/1e9 << " GBytes" ;
+#endif
+    return mem;
 }
 
 AboutData Environment::S_about;

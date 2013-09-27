@@ -6,7 +6,7 @@
        Date: 2005-07-17
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -59,14 +59,14 @@ public:
     UnaryFunctor( std::string const& name,
                   functordomain_ptrtype const& domain = functordomain_ptrtype( new UnboundedDomain<value_type>() ) )
         :
-        _M_name( name ),
-        _M_domain( domain )
+        M_name( name ),
+        M_domain( domain )
     {}
 
     UnaryFunctor( UnaryFunctor const & uf )
         :
-        _M_name( uf._M_name ),
-        _M_domain( uf._M_domain )
+        M_name( uf.M_name ),
+        M_domain( uf.M_domain )
     {}
 
     virtual ~UnaryFunctor()
@@ -83,7 +83,7 @@ public:
      */
     std::string const& name() const
     {
-        return _M_name;
+        return M_name;
     }
 
 
@@ -92,7 +92,7 @@ public:
      */
     functordomain_ptrtype const& domain() const
     {
-        return _M_domain;
+        return M_domain;
     }
 
     //@}
@@ -119,9 +119,9 @@ public:
 protected:
 
 private:
-    std::string _M_name;
+    std::string M_name;
 
-    functordomain_ptrtype _M_domain;
+    functordomain_ptrtype M_domain;
 
 };
 /// \endcond

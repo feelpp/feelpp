@@ -96,6 +96,7 @@ public:
         /* initialisation of the mesh::inverse data structure */
         meshinv.addPoints( M_mesh->points() );
         meshinv.distribute();
+
         std::vector<boost::tuple<size_type, uint16_type > > itab;
 
         boost::tie( boost::tuples::ignore, el_it, el_en ) = elements( *M_mesh );
@@ -110,8 +111,7 @@ public:
 
             for ( int q = 0; q < itab.size(); ++q )
             {
-                std::cout << "xref = " << meshinv.referenceCoords()[boost::get<0>( itab[q] )] << "\n";
-
+                std::cout << "xref = " << meshinv.referenceCoords().find(boost::get<0>( itab[q] ))->second << "\n";
             }
 
             for ( int q = 0; q < refelem.points().size2(); ++q )
@@ -133,6 +133,7 @@ public:
         }
 
         VLOG(1) << "testing Interp with file format version " << version << " done\n";
+
     }
 private:
     mesh_ptr_type M_mesh;

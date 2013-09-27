@@ -42,6 +42,9 @@
 /* Define to 1 if you have the Gmsh library available. */
 #cmakedefine FEELPP_HAS_GMSH_LIBRARY
 
+/* Define to 1 if you have the gperftools library available. */
+#cmakedefine FEELPP_HAS_GPERFTOOLS
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine FEELPP_HAS_INTTYPES_H
 

@@ -788,8 +788,12 @@ void HeatShield::initModel()
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     assemble();
+    PsLogger ps("ps-Model");
+    ps.log("after assemble");
     if (option(_name="crb.stock-matrices"). as<bool>() )
         stockAffineDecomposition();
+    ps.log("after stocking matrices");
+
 } // HeatShield::init
 
 
@@ -1036,10 +1040,10 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
         F->zero();
 
         M_compositeA->setScalars( M_betaAqm );
-        D = M_compositeA->sumAllMatrices();
+        M_compositeA->sumAllMatrices( D );
 
         M_compositeF[output_index]->setScalars( M_betaFqm[output_index] );
-        F = M_compositeF[output_index]->sumAllVectors();
+        M_compositeF[output_index]->sumAllVectors( F );
 
         auto vec_bdf_poly = backend->newVector( Xh );
 

@@ -849,10 +849,10 @@ Heat1D::update( parameter_type const& mu, int output_index )
         F->zero();
 
         M_compositeA->setScalars( M_betaAqm );
-        D = M_compositeA->sumAllMatrices();
+        M_compositeA->sumAllMatrices( D );
 
         M_compositeF[output_index]->setScalars( M_betaFqm[output_index] );
-        F = M_compositeF[output_index]->sumAllVectors();
+        M_compositeF[output_index]->sumAllVectors( F );
 
     }//no stock matrices
 }

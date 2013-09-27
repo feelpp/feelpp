@@ -90,8 +90,8 @@ public:
     /*space*/
     typedef FunctionSpace<mesh_type, basis_composite_type, Periodicity<Periodic<>, NoPeriodicity > > functionspace_composite_type;
     typedef boost::shared_ptr<functionspace_composite_type> functionspace_composite_ptrtype;
-    BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<0>::type::value_type::is_periodic>,mpl::bool_<true> > ) );
-    BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<1>::type::value_type::is_periodic>,mpl::bool_<false> > ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<0>::type::element_type::is_periodic>,mpl::bool_<true> > ) );
+    BOOST_MPL_ASSERT( ( boost::is_same<mpl::bool_<functionspace_composite_type::template sub_functionspace<1>::type::element_type::is_periodic>,mpl::bool_<false> > ) );
 
 
     typedef typename functionspace_composite_type::element_type element_type;

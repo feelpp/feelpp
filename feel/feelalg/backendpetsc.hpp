@@ -108,7 +108,8 @@ public:
         if ( !_prefix.empty() )
             _prefix += "-";
     }
-
+    ~BackendPetsc();
+    void clear();
     // -- FACTORY METHODS --
     template<typename DomainSpace, typename DualImageSpace>
     static sparse_matrix_ptrtype newMatrix( DomainSpace const& Xh,
@@ -351,6 +352,25 @@ private:
 
 }; // class BackendPetsc
 
+
+template<typename T>
+BackendPetsc<T>::~BackendPetsc()
+{
+    this->clear();
+}
+template<typename T>
+void
+BackendPetsc<T>::clear()
+{
+    LOG(INFO) << "Deleting linear solver petsc";
+    M_solver_petsc.clear();
+    LOG(INFO) << "Deleting non linear solver petsc";
+    M_nl_solver_petsc.clear();
+    LOG(INFO) << "Deleting backend petsc";
+
+    super::clear();
+
+}
 
 template<typename T>
 typename BackendPetsc<T>::solve_return_type

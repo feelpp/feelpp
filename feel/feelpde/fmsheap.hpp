@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -47,13 +47,13 @@ public:
 
     void push( heap_entry_type in )
     {
-        _M_heap.push_back( in );
-        push_heap( _M_heap.begin(), _M_heap.end(), farther );
+        M_heap.push_back( in );
+        push_heap( M_heap.begin(), M_heap.end(), farther );
     }
 
     void change( heap_entry_type in )
     {
-        for ( heapvect_iter it=_M_heap.begin(); it != _M_heap.end(); ++it )
+        for ( heapvect_iter it=M_heap.begin(); it != M_heap.end(); ++it )
             {
                 // if the entry at index exists,
                 // this phi_entry take the min value between |phi_entry| and |phi_min|
@@ -62,8 +62,8 @@ public:
                         if ( farther( *it, in ) )
                             {
                                 *it = in;
-                                make_heap( _M_heap.begin(),
-                                           _M_heap.end(),
+                                make_heap( M_heap.begin(),
+                                           M_heap.end(),
                                            farther );
                             }
                         return;
@@ -75,17 +75,17 @@ public:
 
     heap_entry_type pop()
     {
-        // assert _M_heap.size() > 0
-        heap_entry_type out = *(_M_heap.begin());
-        pop_heap( _M_heap.begin(), _M_heap.end(), farther );
-        _M_heap.pop_back();
+        // assert M_heap.size() > 0
+        heap_entry_type out = *(M_heap.begin());
+        pop_heap( M_heap.begin(), M_heap.end(), farther );
+        M_heap.pop_back();
         return out;
     }
 
 
     bool checkExistingEntry(uint16_type index)
     {
-        for (heapvect_iter it = _M_heap.begin(); it != _M_heap.end(); ++it )
+        for (heapvect_iter it = M_heap.begin(); it != M_heap.end(); ++it )
                 if (it->second == index)
                     return true;
         return false;
@@ -95,10 +95,10 @@ public:
     {
         bool removed = false;
 
-        for (heapvect_iter it = _M_heap.begin(); it != _M_heap.end(); ++it )
+        for (heapvect_iter it = M_heap.begin(); it != M_heap.end(); ++it )
                 if (it->second == index)
                     {
-                        _M_heap.erase(it);
+                        M_heap.erase(it);
                         removed = true;
                         break;
                     }
@@ -109,7 +109,7 @@ public:
 
     size_type size() const
     {
-        return _M_heap.size();
+        return M_heap.size();
     }
 
 private:
@@ -128,7 +128,7 @@ private:
         return aa > bb;
     }
 
-    std::vector<heap_entry_type> _M_heap;
+    std::vector<heap_entry_type> M_heap;
 };
 
 } // namespace details
@@ -136,4 +136,3 @@ private:
 } // namespace Feel
 
 #endif /* __FMS_Heap_H */
-

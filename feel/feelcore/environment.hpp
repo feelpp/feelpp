@@ -42,11 +42,21 @@
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/options.hpp>
-
+#if defined ( FEELPP_HAS_PETSC_H )
+#include <petscsys.h>
+#endif
 namespace Feel
 {
 namespace detail
 {
+struct MemoryUsage
+{
+#if defined ( FEELPP_HAS_PETSC_H )
+    PetscLogDouble memory_usage;
+    PetscLogDouble petsc_malloc_usage;
+    PetscLogDouble petsc_malloc_maximum_usage;
+#endif
+};
 inline
 AboutData
 makeAbout( char* name )
@@ -327,6 +337,11 @@ public:
             return it->second;
         }
 
+    /**
+     * print resident memory usage as well as PETSc malloc usage in log file
+     * \param message message to print to identity the associated memory operation
+     */
+    static MemoryUsage logMemoryUsage( std::string const& message );
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
@@ -349,6 +364,8 @@ public:
         {
             S_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
         }
+
+    static void clearSomeMemory();
 
     /**
      * \return the scratch directory

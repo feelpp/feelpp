@@ -169,7 +169,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
 
     boost::mpi::timer t;
-    auto mesh = loadMesh( _mesh=new mesh_type, _refine=level()-1 );
+    auto mesh = loadMesh( _mesh=new mesh_type, _h=meshSizeInit()/std::pow(2,level()-1), _partitions=nparts );
 
     M_stats.put( "t.init.mesh",t.elapsed() );
     t.restart();
@@ -410,8 +410,8 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
     LOG(INFO) << "[stokes] matrix NNZ "<< nnz << "\n";
     M_stats.put( "n.matrix.nnz",nnz );
     double u_errorL2 = normL2( _range=elements( mesh ), _expr=( idv( u )-u_exact ) );
-    //double u_exactL2 = normL2( _range=elements( mesh ), _expr=u_exact );
-    double u_exactL2 = integrate( _range=elements(mesh), _expr=u_exact).evaluate()(0,0);
+    double u_exactL2 = normL2( _range=elements( mesh ), _expr=u_exact );
+    //double u_exactL2 = integrate( _range=elements(mesh), _expr=u_exact).evaluate()(0,0);
     LOG(INFO) << "u_exactL2 = " << u_exactL2;
     LOG(INFO) << "||u_error_rel||_2 = " << math::sqrt( u_errorL2/u_exactL2 ) << "\n";
     LOG(INFO) << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
@@ -449,24 +449,24 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
 
 
-
+#if 0
     //************************** Stress tensor ***********************
     auto Du= gradv(u);//sym
     auto Dv= gradv(v);//sym
     auto SigmaNi =-idv(p)*N()+mu*Du*N();//*2
 
     //auto pI = integrate(markedfaces( mesh,"bottomwall") , -idv(p)*N(), _quad=_Q<30>()).evaluate();
-    auto pI = integrate(markedfaces( mesh,2) , -idv(p)*N(), _quad=_Q<30>()).evaluate();
+    auto pI = integrate(markedfaces( mesh,2) , -idv(p)*N(), _quad=_Q<10>()).evaluate();
     std::cout.precision(17);
     std::cout << "pI1 = "<<pI(0,0) << "\n" ;
     std::cout << "pI2 = "<<pI(1,0) << "\n" ;
     //auto gradient = integrate(markedfaces( mesh,"bottomwall") , mu*Du*N(), _quad=_Q<30>()).evaluate();
-    auto gradient = integrate(markedfaces( mesh,2) , mu*Du*N(), _quad=_Q<30>()).evaluate();
+    auto gradient = integrate(markedfaces( mesh,2) , mu*Du*N(), _quad=_Q<10>()).evaluate();
     std::cout.precision(17);
     std::cout << "mu*Gradu.n1 = "<<gradient(0,0) << "\n" ;
     std::cout << "mu*Gradu.n2 = "<<gradient(1,0) << "\n" ;
 
-    auto SigmaNN = integrate(markedfaces( mesh,2) , SigmaNi, _quad=_Q<30>()).evaluate();
+    auto SigmaNN = integrate(markedfaces( mesh,2) , SigmaNi, _quad=_Q<10>()).evaluate();
     std::cout.precision(17);
     std::cout << " Fapp1 = "<< SigmaNN(0,0) << "\n" ;
     std::cout << " Fapp2 = "<< SigmaNN(1,0) << "\n" ;
@@ -511,7 +511,7 @@ Stokes<Dim, BasisU, BasisP, Entity>::run()
 
     std::cout << "||Fex_h-Fapp||_2 = "<< math::sqrt((SigmaNN(0,0)-SigmaNEx(0,0))*(SigmaNN(0,0)-SigmaNEx(0,0))+(SigmaNN(1,0)-SigmaNEx(1,0))*(SigmaNN(1,0)-SigmaNEx(1,0))) << "\n" ;
     std::cout << "||Fex_h-R||_2 = "<< math::sqrt((sum1(0,0)-SigmaNEx(0,0))*(sum1(0,0)-SigmaNEx(0,0))+(sum2(0,0)-SigmaNEx(1,0))*(sum2(0,0)-SigmaNEx(1,0))) << "\n" ;
-
+#endif
 
     auto u_ex = vf::project( u.functionSpace(), elements( u.mesh() ), u_exact );
     auto p_ex = vf::project( p.functionSpace(), elements( p.mesh() ), p_exact );
