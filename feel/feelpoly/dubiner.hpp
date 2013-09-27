@@ -221,15 +221,15 @@ public:
 
     Dubiner()
         :
-        _M_refconvex(),
-        _M_pts( _M_refconvex.makePoints( nDim, 0 ) )
+        M_refconvex(),
+        M_pts( M_refconvex.makePoints( nDim, 0 ) )
     {
         this->initDerivation();
     }
     Dubiner( Dubiner const & d )
         :
-        _M_refconvex(),
-        _M_pts( d._M_pts )
+        M_refconvex(),
+        M_pts( d.M_pts )
     {
 
     }
@@ -247,7 +247,7 @@ public:
     {
         if ( this != &d )
         {
-            _M_pts = d._M_pts;
+            M_pts = d.M_pts;
             _S_D = d._S_D;
         }
 
@@ -343,10 +343,10 @@ public:
     {
 #if 0
         std::cout << "[Dubiner::coeff] coeff = "
-                  << ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), _M_pts.size2() )
+                  << ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() )
                   << "\n";
 #endif
-        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), _M_pts.size2() );
+        return ublas::identity_matrix<value_type>( reference_convex_type::polyDims( nOrder ), M_pts.size2() );
     }
 
 
@@ -461,8 +461,8 @@ private:
 
     static void initDerivation();
 private:
-    reference_convex_type _M_refconvex;
-    points_type _M_pts;
+    reference_convex_type M_refconvex;
+    points_type M_pts;
 
     /**
      * \c true if differentation matrix initialized, \c false

@@ -67,6 +67,13 @@ struct bases
 {
 };
 
+template <class BasisFusionVectorType>
+struct bases2
+    :
+        public detail::bases_base,
+        public BasisFusionVectorType
+{
+};
 } // namespace detail
 /// @endcond
 #if FEELPP_CLANG_AT_LEAST(3,1) || FEELPP_GNUC_AT_LEAST(4,7)

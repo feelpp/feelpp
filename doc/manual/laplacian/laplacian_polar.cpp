@@ -73,7 +73,7 @@ main(int argc, char**argv )
 
     auto mesh =  loadMesh( _mesh=new mesh_type );
 
-    auto Vh = Pch<10>( mesh );
+    auto Vh = Pch<1>( mesh );
     LOG(INFO) << "dim Vh : " << Vh->nDof();
 
     auto u = Vh->element();

@@ -117,6 +117,9 @@ public:
 
     typedef typename ModelType::parameter_type parameter_type;
     typedef std::vector< parameter_type > vector_parameter_type;
+
+    typedef typename crb_type::sampling_ptrtype sampling_ptrtype;
+
     OpusApp()
         :
         super(),
@@ -296,6 +299,11 @@ public:
 
                 if( current_dimension < dimension_max && !crb_use_predefined )
                     do_offline=true;
+
+                if( ! do_offline )
+                {
+                    crb->loadSCMDB();
+                }
 
                 if( do_offline )
                 {
@@ -495,6 +503,25 @@ public:
 
             bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>();
 
+            if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
+            {
+                int Nmax = crb->dimension();
+                vector_sampling_for_primal_efficiency_under_1.resize(Nmax);
+                for(int N=0; N<Nmax; N++)
+                {
+                    sampling_ptrtype sampling_primal ( new typename crb_type::sampling_type( model->parameterSpace() ) );
+                    vector_sampling_for_primal_efficiency_under_1[N]=sampling_primal;
+                }
+                if( solve_dual_problem )
+                {
+                    vector_sampling_for_dual_efficiency_under_1.resize(Nmax);
+                    for(int N=0; N<Nmax; N++)
+                    {
+                        sampling_ptrtype sampling_dual ( new typename crb_type::sampling_type( model->parameterSpace() ) );
+                        vector_sampling_for_dual_efficiency_under_1[N]=sampling_dual;
+                    }
+                }
+            }
 
             if( M_mode==CRBModelMode::CRB )
             {
@@ -670,10 +697,12 @@ public:
                                 auto uN = solutions.template get<0>();
                                 auto uNdu = solutions.template get<1>();
 
+                                int size = uN.size();
+
                                 //if( model->isSteady()) // Re-use uN given by lb in crb->run
-                                u_crb = crb->expansion( uN , N , WN ); // Re-use uN given by lb in crb->run
+                                u_crb = crb->expansion( uN[size-1] , N , WN ); // Re-use uN given by lb in crb->run
                                 if( solve_dual_problem )
-                                    u_crb_dual = crb->expansion( uNdu , N , WNdu );
+                                    u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
                                 //else
                                 //    u_crb = crb->expansion( mu , N , WN );
 
@@ -854,14 +883,16 @@ public:
                                     LOG(INFO) << "start convergence study...\n";
                                     std::map<int, boost::tuple<double,double,double,double,double,double,double> > conver;
 
-                                    for( int N = 1; N <= crb->dimension(); N++ )
+                                    int Nmax = crb->dimension();
+                                    for( int N = 1; N <= Nmax ; N++ )
                                     {
                                         auto o= crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
                                         auto ocrb = o.template get<0>();
                                         auto solutions=o.template get<2>();
                                         auto u_crb = solutions.template get<0>();
                                         auto u_crb_du = solutions.template get<1>();
-                                        auto uN = crb->expansion( u_crb, N, WN );
+                                        int size = u_crb.size();
+                                        auto uN = crb->expansion( u_crb[size-1], N, WN );
 
                                         element_type uNdu;
 
@@ -869,7 +900,7 @@ public:
                                         auto u_dual_error = model->functionSpace()->element();
                                         if( solve_dual_problem )
                                         {
-                                            uNdu = crb->expansion( u_crb_du, N, WNdu );
+                                            uNdu = crb->expansion( u_crb_du[0], N, WNdu );
                                             u_dual_error = u_dual_fem - uNdu;
                                         }
 
@@ -916,9 +947,11 @@ public:
                                                 dual_solution_error = math::sqrt( dual_solution_error );
                                                 ref_dual = math::sqrt( ref_dual );
                                             }
+
                                             solution_error = math::sqrt( solution_error );
                                             ref_primal = math::sqrt( ref_primal );
                                             //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
+
                                         }
                                         else
                                         {
@@ -994,6 +1027,11 @@ public:
                                         double relative_primal_solution_estimated_error = solution_estimated_error / ref_primal;
                                         double relative_primal_solution_error_bound_efficiency = relative_primal_solution_estimated_error / relative_primal_solution_error;
 
+                                        if( relative_primal_solution_error_bound_efficiency < 1 )
+                                        {
+                                            vector_sampling_for_primal_efficiency_under_1[N-1]->push_back( mu , 1);
+                                        }
+
                                         double relative_dual_solution_error = 1;
                                         double relative_dual_solution_estimated_error = 1;
                                         double relative_dual_solution_error_bound_efficiency = 1;
@@ -1002,6 +1040,12 @@ public:
                                             relative_dual_solution_error = dual_solution_error / ref_dual ;
                                             relative_dual_solution_estimated_error = dual_solution_estimated_error / ref_dual;
                                             relative_dual_solution_error_bound_efficiency = relative_dual_solution_estimated_error / relative_dual_solution_error;
+
+                                            if( relative_dual_solution_error_bound_efficiency < 1 )
+                                            {
+                                                vector_sampling_for_dual_efficiency_under_1[N-1]->push_back( mu , 0);
+                                            }
+
                                         }
                                         conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , relative_primal_solution_error_bound_efficiency );
 
@@ -1022,7 +1066,48 @@ public:
                                         M_mapConvCRB["PrimalResidualNorm"][N-1](curpar - 1) =  primal_residual_norm;
                                         M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
                                         LOG(INFO) << "N=" << N << " done.\n";
-                                    }
+
+                                        if( relative_primal_solution_error_bound_efficiency < 1 )
+                                            LOG( INFO ) << "efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                        if( relative_dual_solution_error_bound_efficiency < 1 )
+                                            LOG( INFO ) << "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                        if( output_error_bound_efficiency < 1 )
+                                            LOG( INFO ) << "efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
+
+                                        if ( option(_name="crb.check.residual").template as<bool>()  && solve_dual_problem  )
+                                        {
+                                            std::vector < std::vector<double> > primal_residual_coefficients = all_upper_bounds.template get<3>();
+                                            std::vector < std::vector<double> > dual_residual_coefficients = all_upper_bounds.template get<4>();
+                                            if( model->isSteady() )
+                                            {
+                                                crb->checkResidual( mu , primal_residual_coefficients, dual_residual_coefficients, uN, uNdu );
+                                            }
+                                            else
+                                            {
+                                                std::vector< element_type > uNelement;
+                                                std::vector< element_type > uNelement_old;
+                                                std::vector< element_type > uNelement_du;
+                                                std::vector< element_type > uNelement_du_old;
+
+                                                auto u_crb_old = solutions.template get<2>();
+                                                auto u_crb_du_old = solutions.template get<3>();
+
+                                                //size is the number of time step
+                                                for(int t=0; t<size; t++)
+                                                {
+                                                    uNelement.push_back( crb->expansion( u_crb[t], N, WN ) );
+                                                    uNelement_old.push_back( crb->expansion( u_crb_old[t], N, WN ) );
+                                                    uNelement_du.push_back( crb->expansion( u_crb_du[t], N, WNdu ) );
+                                                    uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, WNdu ) );
+                                                }//loop over time step
+
+                                                crb->compareResidualsForTransientProblems(N, mu ,
+                                                                                          uNelement, uNelement_old, uNelement_du, uNelement_du_old,
+                                                                                          primal_residual_coefficients, dual_residual_coefficients );
+                                            }//transient case
+                                        }//check residuals computations
+
+                                    }//loop over basis functions ( N )
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         LOG(INFO) << "save in logfile\n";
@@ -1500,11 +1585,9 @@ private:
         std::vector< Eigen::MatrixXf::Index > index_max_vector_solution_primal;
         std::vector< Eigen::MatrixXf::Index > index_max_vector_solution_dual;
         std::vector< Eigen::MatrixXf::Index > index_max_vector_output;
-        std::vector< Eigen::MatrixXf::Index > index_max_vector;
         std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_primal;
         std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_dual;
         std::vector< Eigen::MatrixXf::Index > index_min_vector_output;
-        std::vector< Eigen::MatrixXf::Index > index_min_vector;
         Eigen::MatrixXf::Index index_max;
         Eigen::MatrixXf::Index index_min;
 
@@ -1631,6 +1714,23 @@ private:
 
             conv.close();
         }
+
+        int Nmax = vector_sampling_for_primal_efficiency_under_1.size();
+        for(int N=0; N<Nmax; N++)
+        {
+            std::string file_name_primal = (boost::format("Sampling-Primal-Problem-Bad-Efficiency-N=%1%") %(N+1) ).str();
+            if( vector_sampling_for_primal_efficiency_under_1[N]->size() > 1 )
+                vector_sampling_for_primal_efficiency_under_1[N]->writeOnFile(file_name_primal);
+        }
+        Nmax = vector_sampling_for_dual_efficiency_under_1.size();
+        for(int N=0; N<Nmax; N++)
+        {
+            std::string file_name_dual = (boost::format("Sampling-Dual-Problem-Bad-Efficiency-N=%1%") %(N+1) ).str();
+            if( vector_sampling_for_dual_efficiency_under_1[N]->size() > 1 )
+                vector_sampling_for_dual_efficiency_under_1[N]->writeOnFile(file_name_dual);
+        }
+
+
     }
 
     void doTheScmConvergenceStat( int sampling_size )
@@ -1737,6 +1837,10 @@ private:
     std::map<std::string, std::vector<vectorN_type> > M_mapConvCRB;
     // For SCM convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvSCM;
+
+    //vector of sampling to stock parameters for which the efficiency is under 1
+    std::vector< sampling_ptrtype > vector_sampling_for_primal_efficiency_under_1;
+    std::vector< sampling_ptrtype > vector_sampling_for_dual_efficiency_under_1;
 
     fs::path M_current_path;
 }; // OpusApp

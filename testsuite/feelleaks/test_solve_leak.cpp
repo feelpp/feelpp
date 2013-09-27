@@ -43,6 +43,9 @@
 
 #include <feel/feelvf/vf.hpp>
 
+#if defined(FEELPP_HAS_GPERFTOOLS)
+#include <gperftools/heap-checker.h>
+#endif /* FEELPP_HAS_GPERFTOOLS */
 
 inline
 Feel::po::options_description
@@ -64,7 +67,7 @@ makeOptions()
     ( "export-mesh-only", "export mesh only in ensight format" )
     ( "export-matlab", "export matrix and vectors in matlab" )
     ;
-    return laplacianoptions.add( Feel::feel_options() );
+    return laplacianoptions.add( Feel::feel_options() ).add( Feel::backend_options("toto") );
 }
 inline
 Feel::AboutData
@@ -172,14 +175,14 @@ public:
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
 
-    Laplacian( int argc, char** argv, AboutData const& ad)
+    Laplacian()
         :
-        super( argc, argv, ad),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
-        b( backend_type::build( this->vm() ) ),
-        bc( backend_type::build( this->vm() ) ),
-        exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) ),
+        super(),
+        meshSize( Environment::vm()["hsize"].template as<double>() ),
+        shape( Environment::vm()["shape"].template as<std::string>() ),
+        b( backend_type::build( Environment::vm() ) ),
+        bc( backend_type::build( Environment::vm() ) ),
+        exporter( Exporter<mesh_type>::New( Environment::vm(), Environment::about().appName() ) ),
         timers(),
         stats()
     {
@@ -224,7 +227,7 @@ template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uin
 void
 Laplacian<Dim, Order, Cont, Entity, FType>::run()
 {
-    if ( this->vm().count( "help" ) )
+    if ( Environment::vm().count( "help" ) )
     {
         std::cout << this->optionsDescription() << "\n";
         return;
@@ -234,20 +237,20 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     using namespace Feel::vf;
 
 
-    if ( ! this->vm()["export-directory"].template as<std::string>().empty() )
+    if ( ! Environment::vm()["export-directory"].template as<std::string>().empty() )
     {
         this->changeRepository( boost::format( "%1%/" )
-                                %this->vm()["export-directory"].template as<std::string>() );
+                                %Environment::vm()["export-directory"].template as<std::string>() );
     }
 
     else
     {
         this->changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
-                                % this->about().appName()
+                                % Environment::about().appName()
                                 % entity_type::name()
                                 % Order
-                                % this->vm()["hsize"].template as<double>()
-                              );
+                                % Environment::vm()["hsize"].template as<double>()
+            );
     }
 
     this->setLogs();
@@ -259,326 +262,363 @@ Laplacian<Dim, Order, Cont, Entity, FType>::run()
     //     * First we create the mesh
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                _usenames=true,
-                                                _convex=entity_type::type(),
-                                                _shape=shape,
-                                                _dim=Dim,
-                                                _h=meshSize ) );
+                                                      _usenames=true,
+                                                      _convex=entity_type::type(),
+                                                      _shape=shape,
+                                                      _dim=Dim,
+                                                      _h=meshSize ) );
 
 
     stats["nelt"] = mesh->elements().size();
 
-    /*
-     * The function space and some associate elements are then defined
-     */
-    timers["init"].first.restart();
-    auto Xh = space<Cont>::type::New( mesh );
-    //Xh->dof()->showMe();
-    auto u = Xh->element( "u" );
-    auto v = Xh->element( "v" );
-    timers["init"].second = timers["init"].first.elapsed();
-    stats["ndof"] = Xh->nDof();
-
-    if ( this->vm().count( "export-mesh-only" ) )
-        this->exportResults( 0., u, u, u );
-
-    value_type penalisation = this->vm()["penal"].template as<value_type>();
-    value_type penalisation_bc = this->vm()["penalbc"].template as<value_type>();
-    int bctype = this->vm()["bctype"].template as<int>();
-
-    double t = 0;
-    value_type pi = M_PI;
-    auto g = val( exp( -cst_ref( t ) )*sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ) );
-    auto f = ( -1*( t > 0 )+pi*pi*Dim )*g;
-
-    timers["assembly"].second = timers["assembly"].first.elapsed();
-
-    //
-    // Compute domain and boundary size
-    //
-    double local_domain_size = integrate( elements( mesh ),  constant( 1.0 ) ).evaluate()( 0,0 );
-    double global_domain_size;
-    mpi::all_reduce( Application::comm(), local_domain_size, global_domain_size, std::plus<double>() );
-    LOG(INFO) << "int_Omega = " << global_domain_size << "[ " << local_domain_size << " ]\n";
-    double local_boundary_size = integrate( boundaryfaces( mesh ),  constant( 1.0 ) ).evaluate()( 0,0 );
-    double global_boundary_size;
-    mpi::all_reduce( Application::comm(), local_boundary_size, global_boundary_size, std::plus<double>() );
-    LOG(INFO) << "int_Omega = " << global_boundary_size << "[ " << local_boundary_size << " ]\n";
-
-    /*
-     * Construction of the left hand side
-     */
-    auto D = b->newMatrix( Xh, Xh );
-    auto Mt = b->newMatrix( Xh, Xh );
-
-    value_type diff = this->vm()["diff"].template as<double>();
-    value_type dt = this->vm()["dt"].template as<double>();
-    value_type ft = this->vm()["ft"].template as<double>();
-
-
-
-    timers["assembly"].first.restart();
-
-    size_type pattern = ( Cont::is_continuous?Pattern::COUPLED:Pattern::COUPLED|Pattern::EXTENDED );
-    form2( Xh, Xh, Mt, _init=true, _pattern=pattern ) =
-        integrate( elements( mesh ),
-                   idt( u )*id( v )/dt );
-    Mt->close();
-    form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
-        integrate( elements( mesh ),
-                   diff*gradt( u )*trans( grad( v ) )
-                 );
-    D->close();
-    vector_ptrtype Un( b->newVector( u.functionSpace() ) );
-    vector_ptrtype Vn( b->newVector( u.functionSpace() ) );
-    u = vf::project( Xh, elements( mesh ), g );
-    v = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
-
-    std::cout << "int Px() = "  << integrate( elements( mesh ),  Px() ).evaluate() << "\n";
-    std::cout << "int idv(1) = "  << integrate( elements( mesh ),  idv( v ) ).evaluate() << "\n";
-    v = vf::project( Xh, elements( mesh ), Px() );
-    std::cout << "int idv(x) = "  << integrate( elements( mesh ),  idv( v ) ).evaluate() << "\n";
-    std::cout << "int gradv(x) = "  << integrate( elements( mesh ),  gradv( v ) ).evaluate() << "\n";
-    v = vf::project( Xh, elements( mesh ), Px()*Px() );
-    std::cout << "int Px()*Px() = "  << integrate( elements( mesh ),  Px()*Px() ).evaluate() << "\n";
-    std::cout << "int idv(x) = "  << integrate( elements( mesh ),  idv( v ) ).evaluate() << "\n";
-    std::cout << "int gradv(x) = "  << integrate( elements( mesh ),  gradv( v ) ).evaluate() << "\n";
-
-    for ( size_type i = 0; i < u.size(); ++i )
     {
-        Un->set( i, u( i ) );
-        Vn->set( i, v( i ) );
-    }
+#if defined(FEELPP_HAS_GPERFTOOLS)
+        HeapLeakChecker checker("checker for exporter leaks");
+#endif /* FEELPP_HAS_GPERFTOOLS */
+        {
+            /*
+             * The function space and some associate elements are then defined
+             */
+            timers["init"].first.restart();
+            auto Xh = space<Cont>::type::New( mesh );
+            //Xh->dof()->showMe();
+            auto u = Xh->element( "u" );
+            auto v = Xh->element( "v" );
+            timers["init"].second = timers["init"].first.elapsed();
+            stats["ndof"] = Xh->nDof();
 
-    Un->close();
-    Vn->close();
-    std::cout << "||u||_energy = " << D->energy( Vn, Un ) << "\n"
-              << "||u||_energy_2 = " << integrate( elements( mesh ),  gradv( u )*trans( gradv( v ) ) ).evaluate() << "\n"
-              << "||u||_energy_2' = " << integrate( boundaryfaces( mesh ),  ( gradv( u )*N() )*idv( v ) ).evaluate() << "\n"
-              << "||u||_energy_3 = " << integrate( elements( mesh ),  -trace( hessv( u ) )*idv( v ) ).evaluate() << "\n";
+            if ( Environment::vm().count( "export-mesh-only" ) )
+                this->exportResults( 0., u, u, u );
 
-    form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
-        integrate( elements( mesh ),
-                   diff*gradt( u )*trans( grad( v ) )
-                   //-trace(hesst(u))*id(v)
-                 );
+            value_type penalisation = Environment::vm()["penal"].template as<value_type>();
+            value_type penalisation_bc = Environment::vm()["penalbc"].template as<value_type>();
+            int bctype = Environment::vm()["bctype"].template as<int>();
 
-    if ( !Cont::is_continuous )
-        form2( Xh, Xh, D ) +=integrate( internalfaces( mesh ),
-                                        // - {grad(u)} . [v]
-                                        -averaget( gradt( u ) )*jump( id( v ) )
-                                        // - [u] . {grad(v)}
-                                        -average( grad( v ) )*jumpt( idt( u ) )
-                                        // penal*[u] . [v]/h_face
-                                        + penalisation* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace()
-                                      );
+            double t = 0;
+            value_type pi = M_PI;
+            auto g = val( exp( -cst_ref( t ) )*sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() ) );
+            auto f = ( -1*( t > 0 )+pi*pi*Dim )*g;
 
-    if ( bctype == 1 || !Cont::is_continuous )
-    {
-        form2( Xh, Xh, D ) += integrate( boundaryfaces( mesh ),
-                                         ( - trans( id( v ) )*( gradt( u )*N() )
-                                           - trans( idt( u ) )*( grad( v )*N() )
-                                           + penalisation_bc*trans( idt( u ) )*id( v )/hFace() ) );
-    }
+            timers["assembly"].second = timers["assembly"].first.elapsed();
 
-    D->close();
+            //
+            // Compute domain and boundary size
+            //
+            double local_domain_size = integrate( elements( mesh ),  constant( 1.0 ) ).evaluate()( 0,0 );
+            double global_domain_size;
+            mpi::all_reduce( Application::comm(), local_domain_size, global_domain_size, std::plus<double>() );
+            LOG(INFO) << "int_Omega = " << global_domain_size << "[ " << local_domain_size << " ]\n";
+            double local_boundary_size = integrate( boundaryfaces( mesh ),  constant( 1.0 ) ).evaluate()( 0,0 );
+            double global_boundary_size;
+            mpi::all_reduce( Application::comm(), local_boundary_size, global_boundary_size, std::plus<double>() );
+            LOG(INFO) << "int_Omega = " << global_boundary_size << "[ " << local_boundary_size << " ]\n";
 
-    if ( this->vm().count( "export-matlab" ) )
-        D->printMatlab( "D.m" );
+            /*
+             * Construction of the left hand side
+             */
+            auto D = b->newMatrix( Xh, Xh );
+            auto Mt = b->newMatrix( Xh, Xh );
 
-    //
-    // Construct L2-projection operator
-    //
-    auto Xch = space<Continuous>::type::New( mesh );
-    auto uEx = Xch->element( "uEx" );
-    auto M = bc->newMatrix( Xch, Xch );
-    form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ),  trans( idt( uEx ) )*id( uEx ) );
-    M->close();
-    auto L = bc->newVector( Xch );
-
-    //
-    // initially u = g(0,x,y,z)
-    //
-    u.zero();
-    //
-    //  construct right hand side
-    //
-    vector_ptrtype Ft( b->newVector( Xh ) );
-    timers["assembly"].first.restart();
-    form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements( mesh ),
-            trans( f )*id( v ) );
-
-    if ( bctype == 1 || !Cont::is_continuous )
-        form1( Xh, Ft ) += integrate( boundaryfaces( mesh ),
-                                      trans( g )*( - grad( v )*N() + penalisation_bc*id( v )/hFace() ) );
-
-    Ft->close();
-
-    if ( this->vm().count( "export-matlab" ) )
-        Ft->printMatlab( "F.m" );
-
-    timers["assembly"].second += timers["assembly"].first.elapsed();
-
-    form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( g )*id( uEx ) );
-    L->close();
-
-    if ( this->vm().count( "export-matlab" ) )
-        L->printMatlab( "L.m" );
-
-    // compute PDE solution
-    b->template solve( _matrix=D, _solution=u, _rhs=Ft );
-
-    // compute L2 projection of exact solution
-    bc->template solve( _matrix=M, _solution=uEx, _rhs=L );
+            value_type diff = Environment::vm()["diff"].template as<double>();
+            value_type dt = Environment::vm()["dt"].template as<double>();
+            value_type ft = Environment::vm()["ft"].template as<double>();
 
 
 
-    // compute local error wrt the exact solution
-    double error = integrate( elements( mesh ),  val( trans( idv( u )-g )*( idv( u )-g ) ) ).evaluate()( 0,0 );
-    double errorex = integrate( elements( mesh ),  trans( idv( u )-idv( uEx ) )*( idv( u )-idv( uEx ) ) ).evaluate()( 0,0 );
-    double local_jump = integrate( internalfaces( mesh ),  trans( jumpv( idv( u ) ) )*( jumpv( idv( u ) ) ) ).evaluate()( 0,0 );
+            timers["assembly"].first.restart();
 
-    // compute global error : suming all contributions from
-    // all processors
-    double global_error = 0;
-    mpi::all_reduce( Application::comm(), error, global_error, std::plus<double>() );
-    double global_errorex = 0;
-    mpi::all_reduce( Application::comm(), errorex, global_errorex, std::plus<double>() );
-    double global_jump = 0;
-    mpi::all_reduce( Application::comm(), local_jump, global_jump, std::plus<double>() );
+            size_type pattern = ( Cont::is_continuous?Pattern::COUPLED:Pattern::COUPLED|Pattern::EXTENDED );
+            form2( Xh, Xh, Mt, _init=true, _pattern=pattern ) =
+                integrate( elements( mesh ),
+                           idt( u )*id( v )/dt );
+            Mt->close();
+            form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
+                integrate( elements( mesh ),
+                           diff*gradt( u )*trans( grad( v ) )
+                    );
+            D->close();
+            vector_ptrtype Un( b->newVector( u.functionSpace() ) );
+            vector_ptrtype Vn( b->newVector( u.functionSpace() ) );
+            u = vf::project( Xh, elements( mesh ), g );
+            v = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
 
-    LOG(INFO) << "||[u]||= " << math::sqrt( global_jump )  << "\n";
-    //LOG(INFO) << "local ||error||_0 = " << math::sqrt( error ) << "\n";
-    LOG(INFO) << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
-    //LOG(INFO) << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
-    LOG(INFO) << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
+            std::cout << "int Px() = "  << integrate( elements( mesh ),  Px() ).evaluate() << "\n";
+            std::cout << "int idv(1) = "  << integrate( elements( mesh ),  idv( v ) ).evaluate() << "\n";
+            v = vf::project( Xh, elements( mesh ), Px() );
+            std::cout << "int idv(x) = "  << integrate( elements( mesh ),  idv( v ) ).evaluate() << "\n";
+            std::cout << "int gradv(x) = "  << integrate( elements( mesh ),  gradv( v ) ).evaluate() << "\n";
+            v = vf::project( Xh, elements( mesh ), Px()*Px() );
+            std::cout << "int Px()*Px() = "  << integrate( elements( mesh ),  Px()*Px() ).evaluate() << "\n";
+            std::cout << "int idv(x) = "  << integrate( elements( mesh ),  idv( v ) ).evaluate() << "\n";
+            std::cout << "int gradv(x) = "  << integrate( elements( mesh ),  gradv( v ) ).evaluate() << "\n";
 
-    // exporting the results using the exporter set by the
-    // command line: the default being the 'ensight' exporter
-    if ( Cont::is_continuous )
-        this->exportResults( t, u, u, uEx );
+            for ( size_type i = 0; i < u.size(); ++i )
+            {
+                Un->set( i, u( i ) );
+                Vn->set( i, v( i ) );
+            }
 
-    else
-    {
+            Un->close();
+            Vn->close();
+            std::cout << "||u||_energy = " << D->energy( Vn, Un ) << "\n"
+                      << "||u||_energy_2 = " << integrate( elements( mesh ),  gradv( u )*trans( gradv( v ) ) ).evaluate() << "\n"
+                      << "||u||_energy_2' = " << integrate( boundaryfaces( mesh ),  ( gradv( u )*N() )*idv( v ) ).evaluate() << "\n"
+                      << "||u||_energy_3 = " << integrate( elements( mesh ),  -trace( hessv( u ) )*idv( v ) ).evaluate() << "\n";
 
-        form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( idv( u ) )*id( uEx ) );
-        typename space<Continuous>::element_type uc( Xch, "uc" );
-        bc->template solve( _matrix=M, _solution=uc, _rhs=L );
-        this->exportResults( t, u, uc, uEx );
-    }
+            form2( Xh, Xh, D, _init=true, _pattern=pattern ) =
+                integrate( elements( mesh ),
+                           diff*gradt( u )*trans( grad( v ) )
+                           //-trace(hesst(u))*id(v)
+                    );
 
-    D->addMatrix( 1.0, *Mt );
+            if ( !Cont::is_continuous )
+                form2( Xh, Xh, D ) +=integrate( internalfaces( mesh ),
+                                                // - {grad(u)} . [v]
+                                                -averaget( gradt( u ) )*jump( id( v ) )
+                                                // - [u] . {grad(v)}
+                                                -average( grad( v ) )*jumpt( idt( u ) )
+                                                // penal*[u] . [v]/h_face
+                                                + penalisation* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace()
+                    );
 
-    //
-    // Time loop
-    //
-    for ( t = dt; t < ft; t += dt )
-    {
-        LOG(INFO) << "============================================================\n";
-        LOG(INFO) << "time : " << t << "s dt: " << dt << " ft: "<< ft << "s\n";
+            if ( bctype == 1 || !Cont::is_continuous )
+            {
+                form2( Xh, Xh, D ) += integrate( boundaryfaces( mesh ),
+                                                 ( - trans( id( v ) )*( gradt( u )*N() )
+                                                   - trans( idt( u ) )*( grad( v )*N() )
+                                                   + penalisation_bc*trans( idt( u ) )*id( v )/hFace() ) );
+            }
+
+            D->close();
+
+            if ( Environment::vm().count( "export-matlab" ) )
+                D->printMatlab( "D.m" );
+
+
+            //
+            // Construct L2-projection operator
+            //
+            auto Xch = space<Continuous>::type::New( mesh );
+            auto uEx = Xch->element( "uEx" );
+            auto M = bc->newMatrix( Xch, Xch );
+            form2( Xch, Xch, M, _init=true ) = integrate( elements( mesh ),  trans( idt( uEx ) )*id( uEx ) );
+            M->close();
+            auto L = bc->newVector( Xch );
+
+            //
+            // initially u = g(0,x,y,z)
+            //
+            u.zero();
+            //
+            //  construct right hand side
+            //
+            vector_ptrtype Ft( b->newVector( Xh ) );
+            timers["assembly"].first.restart();
+            form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements( mesh ),
+                                                                    trans( f )*id( v ) );
+
+            if ( bctype == 1 || !Cont::is_continuous )
+                form1( Xh, Ft ) += integrate( boundaryfaces( mesh ),
+                                              trans( g )*( - grad( v )*N() + penalisation_bc*id( v )/hFace() ) );
+
+            Ft->close();
+
+            if ( Environment::vm().count( "export-matlab" ) )
+                Ft->printMatlab( "F.m" );
+
+            timers["assembly"].second += timers["assembly"].first.elapsed();
+
+            form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( g )*id( uEx ) );
+            L->close();
+
+            if ( Environment::vm().count( "export-matlab" ) )
+                L->printMatlab( "L.m" );
+
+            // compute PDE solution
+            b->template solve( _matrix=D, _solution=u, _rhs=Ft );
+
+            // compute L2 projection of exact solution
+            bc->template solve( _matrix=M, _solution=uEx, _rhs=L );
+
+
+
+            // compute local error wrt the exact solution
+            double error = integrate( elements( mesh ),  val( trans( idv( u )-g )*( idv( u )-g ) ) ).evaluate()( 0,0 );
+            double errorex = integrate( elements( mesh ),  trans( idv( u )-idv( uEx ) )*( idv( u )-idv( uEx ) ) ).evaluate()( 0,0 );
+            double local_jump = integrate( internalfaces( mesh ),  trans( jumpv( idv( u ) ) )*( jumpv( idv( u ) ) ) ).evaluate()( 0,0 );
+
+            // compute global error : suming all contributions from
+            // all processors
+            double global_error = 0;
+            mpi::all_reduce( Application::comm(), error, global_error, std::plus<double>() );
+            double global_errorex = 0;
+            mpi::all_reduce( Application::comm(), errorex, global_errorex, std::plus<double>() );
+            double global_jump = 0;
+            mpi::all_reduce( Application::comm(), local_jump, global_jump, std::plus<double>() );
+
+            LOG(INFO) << "||[u]||= " << math::sqrt( global_jump )  << "\n";
+            //LOG(INFO) << "local ||error||_0 = " << math::sqrt( error ) << "\n";
+            LOG(INFO) << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
+            //LOG(INFO) << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
+            LOG(INFO) << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
+
+            // exporting the results using the exporter set by the
+            // command line: the default being the 'ensight' exporter
+            if ( Cont::is_continuous )
+                this->exportResults( t, u, u, uEx );
+
+            else
+            {
+
+                form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( idv( u ) )*id( uEx ) );
+                typename space<Continuous>::element_type uc( Xch, "uc" );
+                bc->template solve( _matrix=M, _solution=uc, _rhs=L );
+                this->exportResults( t, u, uc, uEx );
+            }
+
+            D->addMatrix( 1.0, *Mt );
 #if 1
-        //
-        //  construct right hand side
-        //
-        timers["assembly"].first.restart();
-        form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements( mesh ),
-                trans( f )*id( v ) + idv( u )*id( v )/dt );
+            //
+            // Time loop
+            //
 
-        if ( bctype == 1 || !Cont::is_continuous )
-            form1( Xh, Ft ) += integrate( boundaryfaces( mesh ),
-                                          trans( g )*( - grad( v )*N() + penalisation_bc*id( v )/hFace() ) );
+            for ( t = dt; t < ft; t += dt )
+            {
+                LOG(INFO) << "============================================================\n";
+                LOG(INFO) << "time : " << t << "s dt: " << dt << " ft: "<< ft << "s\n";
+#if 1
+                //
+                //  construct right hand side
+                //
+                timers["assembly"].first.restart();
+                form1( _test=Xh, _vector=Ft, _init=true )  = integrate( elements( mesh ),
+                                                                        trans( f )*id( v ) + idv( u )*id( v )/dt );
 
-        Ft->close();
-        timers["assembly"].second += timers["assembly"].first.elapsed();
+                if ( bctype == 1 || !Cont::is_continuous )
+                    form1( Xh, Ft ) += integrate( boundaryfaces( mesh ),
+                                                  trans( g )*( - grad( v )*N() + penalisation_bc*id( v )/hFace() ) );
 
-        if ( this->vm().count( "export-matlab" ) )
-        {
-            std::ostringstream ostr;
-            ostr.precision( 3 );
-            ostr << "Ft-" << t;
-            Ft->printMatlab( ostr.str() );
-        }
+                Ft->close();
+                timers["assembly"].second += timers["assembly"].first.elapsed();
 
-        b->solve( _matrix=D, _solution=u, _rhs=Ft );
+                if ( Environment::vm().count( "export-matlab" ) )
+                {
+                    std::ostringstream ostr;
+                    ostr.precision( 3 );
+                    ostr << "Ft-" << t;
+                    Ft->printMatlab( ostr.str() );
+                }
 
-        if ( this->vm().count( "export-matlab" ) )
-        {
-            std::ostringstream ostr;
-            ostr.precision( 3 );
-            ostr << "u-" << t;
-            u.printMatlab( ostr.str() );
-        }
+                b->solve( _matrix=D, _solution=u, _rhs=Ft );
 
-        // find the L2-projection (with a continuous expansion) of
-        // the exact solution
-        form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( g )*id( uEx ) );
+                if ( Environment::vm().count( "export-matlab" ) )
+                {
+                    std::ostringstream ostr;
+                    ostr.precision( 3 );
+                    ostr << "u-" << t;
+                    u.printMatlab( ostr.str() );
+                }
+
+                // find the L2-projection (with a continuous expansion) of
+                // the exact solution
+                form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( g )*id( uEx ) );
 #endif
-        std::cout<<"solving with new backend ............"<<std::endl;
-        system( cmd.str().c_str() );
-        auto backend_solve = backend_type::build( this->vm() );
-        backend_solve->template solve( _matrix=M, _solution=uEx, _rhs=L );
-        backend_solve.reset();
-        system( cmd.str().c_str() );
 
+                if ( 1 )
+                {
+#if defined(FEELPP_HAS_GPERFTOOLS)
+                    HeapLeakChecker checkere("checker for new backend");
+#endif /* FEELPP_HAS_GPERFTOOLS */
 
-        std::cout<<"solving with saved backend ............"<<std::endl;
-        system( cmd.str().c_str() );
-        bc->template solve( _matrix=M, _solution=uEx, _rhs=L );
-        system( cmd.str().c_str() );
+                    {
+                        std::cout<<"solving with new backend ............"<<std::endl;
+                        system( cmd.str().c_str() );
+                        {
+                            Environment::logMemoryUsage( "building new backend" );
+                            //auto backend_solve = backend_type::build( Environment::vm() );
+
+                            Environment::logMemoryUsage( "solving with new backend" );
+                            //backend_solve->template solve( _matrix=M, _solution=uEx, _rhs=L );
+                            backend(_rebuild=true,_name="toto")->template solve( _matrix=M, _solution=uEx, _rhs=L );
+                            Environment::logMemoryUsage( "sending signal backend" );
+                            //backend_solve->clear();
+                            Environment::logMemoryUsage( "resetting new backend" );
+                            //backend_solve.reset();
+                        }
+                        system( cmd.str().c_str() );
+                        Environment::logMemoryUsage( "reset new backend" );
+                    }
+#if defined(FEELPP_HAS_GPERFTOOLS)
+                    CHECK(checkere.NoLeaks()) << "There are leaks";
+#endif /* FEELPP_HAS_GPERFTOOLS */
+                }
+
+                std::cout<<"solving with saved backend ............"<<std::endl;
+                system( cmd.str().c_str() );
+                Environment::logMemoryUsage( "before use old backend" );
+                bc->template solve( _matrix=M, _solution=uEx, _rhs=L );
+                system( cmd.str().c_str() );
+                Environment::logMemoryUsage( "after use old backend" );
 
 #if 0
-        // compute local error wrt the exact solution
-        double error = integrate( elements( mesh ),  val( trans( idv( u )-g )*( idv( u )-g ) ) ).evaluate()( 0,0 );
-        double errorex = integrate( elements( mesh ),  trans( idv( u )-idv( uEx ) )*( idv( u )-idv( uEx ) ) ).evaluate()( 0,0 );
+                // compute local error wrt the exact solution
+                double error = integrate( elements( mesh ),  val( trans( idv( u )-g )*( idv( u )-g ) ) ).evaluate()( 0,0 );
+                double errorex = integrate( elements( mesh ),  trans( idv( u )-idv( uEx ) )*( idv( u )-idv( uEx ) ) ).evaluate()( 0,0 );
 
-        // compute global error : suming all contributions from
-        // all processors
-        double global_error = 0;
-        mpi::all_reduce( Application::comm(), error, global_error, std::plus<double>() );
-        double global_errorex = 0;
-        mpi::all_reduce( Application::comm(), errorex, global_errorex, std::plus<double>() );
+                // compute global error : suming all contributions from
+                // all processors
+                double global_error = 0;
+                mpi::all_reduce( Application::comm(), error, global_error, std::plus<double>() );
+                double global_errorex = 0;
+                mpi::all_reduce( Application::comm(), errorex, global_errorex, std::plus<double>() );
 
-        LOG(INFO) << "local ||error||_0 = " << math::sqrt( error ) << "\n";
-        LOG(INFO) << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
-        LOG(INFO) << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
-        LOG(INFO) << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
+                LOG(INFO) << "local ||error||_0 = " << math::sqrt( error ) << "\n";
+                LOG(INFO) << "global ||error||_0 = " << math::sqrt( global_error ) << "\n";
+                LOG(INFO) << "local ||error(l2proj)||_0 = " << math::sqrt( errorex ) << "\n";
+                LOG(INFO) << "global ||errorex(l2proj)||_0 = " << math::sqrt( global_errorex ) << "\n";
 
-        // compute the value of the field u at the middle of the
-        // domain
-        node_type __n( Dim );
+                // compute the value of the field u at the middle of the
+                // domain
+                node_type __n( Dim );
 
-        __n[0]=0.5;
+                __n[0]=0.5;
 
-        if ( Dim >= 2 )
-            __n[1]=0.5;
+                if ( Dim >= 2 )
+                    __n[1]=0.5;
 
-        if ( Dim >= 3 )
-            __n[2]=0.5;
+                if ( Dim >= 3 )
+                    __n[2]=0.5;
 
-        LOG(INFO) << "u value at (0.5,0.5,0.5)= " << u( __n ) << "\n";
-        LOG(INFO) << "e value at (0.5,0.5,0.5)= " << uEx( __n ) << "\n";
+                LOG(INFO) << "u value at (0.5,0.5,0.5)= " << u( __n ) << "\n";
+                LOG(INFO) << "e value at (0.5,0.5,0.5)= " << uEx( __n ) << "\n";
 
 
-        // exporting the results using the exporter set by the
-        // command line: the default being the 'ensight' exporter
-        if ( Cont::is_continuous )
-            this->exportResults( t, u, u, uEx );
+                // exporting the results using the exporter set by the
+                // command line: the default being the 'ensight' exporter
+                if ( Cont::is_continuous )
+                    this->exportResults( t, u, u, uEx );
 
-        else
-        {
+                else
+                {
 
-            form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( idv( u ) )*id( uEx ) );
-            typename space<Continuous>::element_type uc( Xch, "uc" );
-            bc->solve( _matrix=M, _solution=uc, _rhs=L );
-            this->exportResults( t, u, uc, uEx );
+                    form1( Xch, L, _init=true ) = integrate( elements( mesh ),  trans( idv( u ) )*id( uEx ) );
+                    typename space<Continuous>::element_type uc( Xch, "uc" );
+                    bc->solve( _matrix=M, _solution=uc, _rhs=L );
+                    this->exportResults( t, u, uc, uEx );
+                }
+
+                LOG(INFO) << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
+                LOG(INFO) << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
+#endif
+            } // time loop
+#endif // 0
+        }
+#if defined(FEELPP_HAS_GPERFTOOLS)
+        CHECK(checker.NoLeaks()) << "There are leaks";
+#endif /* FEELPP_HAS_GPERFTOOLS */
         }
 
-        LOG(INFO) << "[timer] run(): init (" << mesh->numElements() << " Elems): " << timers["init"].second << "\n";
-        LOG(INFO) << "[timer] run(): assembly (" << Xh->dof()->nDof() << " DOFs): " << timers["assembly"].second << "\n";
-#endif
-    } // time loop
-
-} // Laplacian::run
+    } // Laplacian::run
 
 
 template<int Dim, int Order, typename Cont, template<uint16_type,uint16_type,uint16_type> class Entity, template<uint16_type> class FType>
@@ -589,7 +629,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
         f2_type& V,
         f3_type& E )
 {
-
+#if 0
     if ( exporter->doExport() )
     {
     timers["export"].first.restart();
@@ -600,7 +640,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
     //exporter->step(time)->setMesh( this->createMesh( meshSize/2, 0.5, 1 ) );
     //exporter->step(time)->setMesh( this->createMesh( meshSize/Order, 0, 1 ) );
     //exporter->step(time)->setMesh( this->createMesh( meshSize, 0, 1 ) );
-    if ( !this->vm().count( "export-mesh-only" ) )
+    if ( !Environment::vm().count( "export-mesh-only" ) )
     {
         exporter->step( time )->addRegions();
         exporter->step( time )->add( "u", U );
@@ -692,6 +732,7 @@ Laplacian<Dim, Order, Cont, Entity,FType>::exportResults( double time,
     timers["export"].second = timers["export"].first.elapsed();
     LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
     }
+#endif
 } // Laplacian::export
 } // Feel
 
@@ -704,18 +745,23 @@ main( int argc, char** argv )
     std::cout << "Start with Feel++\n";
     {
         using namespace Feel;
-        Feel::Environment env( argc,argv, makeOptions() );
+        Environment env( _argc=argc, _argv=argv,
+                             _desc=makeOptions(),
+                     _about=about(_name="qs_laplacian",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+
         /* change parameters below */
         const int nDim = 2;
         const int nOrder = 2;
-        //typedef Continuous MyContinuity;
-        typedef Discontinuous MyContinuity;
+        typedef Continuous MyContinuity;
+        //typedef Discontinuous MyContinuity;
         //typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Hypercube, Scalar> laplacian_type;
 
         typedef Feel::Laplacian<nDim, nOrder, MyContinuity, Simplex, Scalar> laplacian_type;
 
         /* define and run application */
-        laplacian_type laplacian( argc, argv, makeAbout() );
+        laplacian_type laplacian;
 
         laplacian.run();
     }

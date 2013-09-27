@@ -179,7 +179,8 @@ public:
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
 
-    typedef boost::tuple< vectorN_type , vectorN_type > solutions_tuple;
+    typedef boost::tuple< std::vector<vectorN_type> , std::vector<vectorN_type> , std::vector<vectorN_type>, std::vector<vectorN_type> > solutions_tuple;
+    typedef boost::tuple< double,double,double , std::vector< std::vector< double > > , std::vector< std::vector< double > > > upper_bounds_tuple;
 
     typedef std::vector<element_type> mode_set_type;
     typedef boost::shared_ptr<mode_set_type> mode_set_ptrtype;
@@ -454,6 +455,7 @@ public:
         return M_scmA;
     }
 
+    void loadSCMDB();
 
     //@}
 
@@ -646,21 +648,27 @@ public:
 
     /**
      * orthonormalize the basis
+     * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0
      */
-    void orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
+    double orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
 
-    void checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs, std::vector< std::vector<double> > const& dual_residual_coeffs ) const;
+    void checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs,
+                        std::vector< std::vector<double> > const& dual_residual_coeffs , element_type & u, element_type & udu ) const;
 
-    void compareResidualsForTransientProblems(int N, parameter_type const& mu, std::vector<element_ptrtype> const & Un, std::vector<element_ptrtype> const & Unold, std::vector<element_ptrtype> const& Undu, std::vector<element_ptrtype> const & Unduold, std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector< std::vector<double> > const& dual_residual_coeffs  ) const ;
+    void compareResidualsForTransientProblems(int N, parameter_type const& mu, std::vector<element_type> const & Un,
+                                              std::vector<element_type> const & Unold, std::vector<element_type> const& Undu,
+                                              std::vector<element_type> const & Unduold,
+                                              std::vector< std::vector<double> > const& primal_residual_coeffs,
+                                              std::vector< std::vector<double> > const& dual_residual_coeffs  ) const ;
 
 
     void buildFunctionFromRbCoefficients(int N, std::vector< vectorN_type > const & RBcoeff, wn_type const & WN, std::vector<element_ptrtype> & FEMsolutions );
 
     /*
      * check orthonormality
+     * return the norm of the matrix A(i,j)=M_model->scalarProduct( WN[j], WN[i] ), should be 0
      */
-    //void checkOrthonormality( int N, const wn_type& wn) const;
-    void checkOrthonormality( int N, const wn_type& wn ) const;
+    double checkOrthonormality( int N, const wn_type& wn ) const;
 
     /**
      * check the reduced basis space invariant properties
@@ -946,7 +954,7 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<double,double, solutions_tuple, double, double, double, boost::tuple<double,double,double> > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double, solutions_tuple, double, double, double, upper_bounds_tuple > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -1569,6 +1577,27 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 }//offline fixed point
 
 
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::loadSCMDB()
+{
+    if ( M_error_type == CRB_RESIDUAL_SCM )
+    {
+        M_scmA->setScmForMassMatrix( false );
+        if( ! M_scmA->loadDB() )
+            std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
+
+        if ( ! M_model->isSteady() )
+        {
+            M_scmM->setScmForMassMatrix( true );
+            if( ! M_scmM->loadDB() )
+                std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
+        }
+    }
+}
+
+
 template<typename TruthModelType>
 typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
@@ -1919,19 +1948,7 @@ CRB<TruthModelType>::offline()
         M_N = 0;
 
         // scm offline stage: build C_K
-        if ( M_error_type == CRB_RESIDUAL_SCM )
-        {
-            M_scmA->setScmForMassMatrix( false );
-            if( ! M_scmA->loadDB() )
-                std::vector<boost::tuple<double,double,double> > M_rbconv2 = M_scmA->offline();
-
-            if ( ! M_model->isSteady() )
-            {
-                M_scmM->setScmForMassMatrix( true );
-                if( ! M_scmM->loadDB() )
-                    std::vector<boost::tuple<double,double,double> > M_rbconv3 = M_scmM->offline();
-            }
-        }
+        this->loadSCMDB();
 
         M_maxerror = 1e10;
         delta_pr = 0;
@@ -1997,6 +2014,9 @@ CRB<TruthModelType>::offline()
     }//end of if( rebuild_database )
     else
     {
+        // scm offline stage: build C_K
+        this->loadSCMDB();
+
         mu = M_current_mu;
         if( proc_number == 0 )
         {
@@ -2316,23 +2336,36 @@ CRB<TruthModelType>::offline()
 
         M_N+=number_of_added_elements;
 
+        double norm_max = option(_name="crb.orthonormality-tol").template as<double>();
+        int max_iter = option(_name="crb.orthonormality-max-iter").template as<int>();
         if ( orthonormalize_primal )
         {
-            //orthonormalize( M_N, M_WN, number_of_added_elements );
-            //orthonormalize( M_N, M_WN, number_of_added_elements );
-            //orthonormalize( M_N, M_WN, number_of_added_elements );
-            orthonormalize( M_N, M_model->rBFunctionSpace()->primalRB(), number_of_added_elements );
-            orthonormalize( M_N, M_model->rBFunctionSpace()->primalRB(), number_of_added_elements );
-            orthonormalize( M_N, M_model->rBFunctionSpace()->primalRB(), number_of_added_elements );
+            double norm = norm_max+1;
+            int iter=0;
+            double old = 10;
+            while( norm >= norm_max && iter < max_iter)
+            {
+                norm = orthonormalize( M_N, M_model->rBFunctionSpace()->primalRB(), number_of_added_elements );
+                iter++;
+                //if the norm doesn't change
+                if( math::abs(old-norm) < norm_max )
+                    norm=0;
+                old=norm;
+            }
         }
         if ( orthonormalize_dual )
         {
-            //orthonormalize( M_N, M_WNdu, number_of_added_elements );
-            //orthonormalize( M_N, M_WNdu, number_of_added_elements );
-            //orthonormalize( M_N, M_WNdu, number_of_added_elements );
-            orthonormalize( M_N, M_model->rBFunctionSpace()->dualRB(), number_of_added_elements );
-            orthonormalize( M_N, M_model->rBFunctionSpace()->dualRB(), number_of_added_elements );
-            orthonormalize( M_N, M_model->rBFunctionSpace()->dualRB(), number_of_added_elements );
+            double norm = norm_max+1;
+            int iter=0;
+            double old = 10;
+            while( norm >= norm_max && iter < max_iter )
+            {
+                norm = orthonormalize( M_N, M_model->rBFunctionSpace()->dualRB() , number_of_added_elements );
+                iter++;
+                if( math::abs(old-norm) < norm_max )
+                    norm=0;
+                old=norm;
+            }
         }
 
         if( ! M_use_newton )
@@ -2919,11 +2952,12 @@ CRB<TruthModelType>::buildFunctionFromRbCoefficients(int N, std::vector< vectorN
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type const& mu, std::vector<element_ptrtype> const & Un, std::vector<element_ptrtype> const & Unold, std::vector<element_ptrtype> const& Undu, std::vector<element_ptrtype> const & Unduold, std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector < std::vector<double> > const& dual_residual_coeffs ) const
+CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type const& mu, std::vector<element_type> const & Un, std::vector<element_type> const & Unold,
+                                                           std::vector<element_type> const& Undu, std::vector<element_type> const & Unduold,
+                                                           std::vector< std::vector<double> > const& primal_residual_coeffs,  std::vector < std::vector<double> > const& dual_residual_coeffs ) const
 {
 
     LOG( INFO ) <<"\n compareResidualsForTransientProblems \n";
-
     backend_ptrtype backend = backend_type::build( BACKEND_PETSC ) ;
 
     if ( M_model->isSteady() )
@@ -2959,16 +2993,18 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
     int time_index=0;
     for ( bdf_primal->start() ; !bdf_primal->isFinished(); bdf_primal->next() )
     {
-        auto bdf_poly = bdf_primal->polyDeriv();
 
+        auto bdf_poly = bdf_primal->polyDeriv();
         boost::tie( M, A, F) = M_model->update( mu , bdf_primal->time() );
 
         A->close();
 
-        *un = *Un[time_index];
-        *unold = *Unold[time_index];
+        *un = Un[time_index];
+        *unold = Unold[time_index];
+
         A->multVector( un, Aun );
         M->multVector( un, Mun );
+
         M->multVector( unold, Munold );
         Aun->scale( -1 );
         Mun->scale( -1 );
@@ -2997,13 +3033,13 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
         double Cma_pr = primal_residual_coeffs[time_index][4];
         double Cmm_pr = primal_residual_coeffs[time_index][5];
 
-        LOG(INFO)<<" --- time : "<<bdf_primal->time()<<std::endl;
-        LOG(INFO)<<"Cff : "<< check_Cff_pr <<"  -  "<<Cff_pr<<"  =>  "<<check_Cff_pr-Cff_pr<<std::endl;
-        LOG(INFO)<<"Caf : "<< check_Caf_pr <<"  -  "<<Caf_pr<<"  =>  "<<check_Caf_pr-Caf_pr<<std::endl;
-        LOG(INFO)<<"Caa : "<< check_Caa_pr <<"  -  "<<Caa_pr<<"  =>  "<<check_Caa_pr-Caa_pr<<std::endl;
-        LOG(INFO)<<"Cmf : "<< check_Cmf_pr <<"  -  "<<Cmf_pr<<"  =>  "<<check_Cmf_pr-Cmf_pr<<std::endl;
-        LOG(INFO)<<"Cma : "<< check_Cma_pr <<"  -  "<<Cma_pr<<"  =>  "<<check_Cma_pr-Cma_pr<<std::endl;
-        LOG(INFO)<<"Cmm : "<< check_Cmm_pr <<"  -  "<<Cmm_pr<<"  =>  "<<check_Cmm_pr-Cmm_pr<<std::endl;
+        LOG(INFO)<<" --- time : "<<bdf_primal->time();
+        LOG(INFO)<<"Cff : "<< check_Cff_pr <<"  -  "<<Cff_pr<<"  =>  "<<check_Cff_pr-Cff_pr;
+        LOG(INFO)<<"Caf : "<< check_Caf_pr <<"  -  "<<Caf_pr<<"  =>  "<<check_Caf_pr-Caf_pr;
+        LOG(INFO)<<"Caa : "<< check_Caa_pr <<"  -  "<<Caa_pr<<"  =>  "<<check_Caa_pr-Caa_pr;
+        LOG(INFO)<<"Cmf : "<< check_Cmf_pr <<"  -  "<<Cmf_pr<<"  =>  "<<check_Cmf_pr-Cmf_pr;
+        LOG(INFO)<<"Cma : "<< check_Cma_pr <<"  -  "<<Cma_pr<<"  =>  "<<check_Cma_pr-Cma_pr;
+        LOG(INFO)<<"Cmm : "<< check_Cmm_pr <<"  -  "<<Cmm_pr<<"  =>  "<<check_Cmm_pr-Cmm_pr;
         time_index++;
     }
 
@@ -3069,8 +3105,8 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
                 Adu = A;
             else
                 A->transpose( Adu );
-            *undu = *Undu[time_index];
-            *unduold = *Unduold[time_index];
+            *undu = Undu[time_index];
+            *unduold = Unduold[time_index];
             Adu->multVector( undu, AduUn );
             M->multVector( undu, Mun );
             M->multVector( unduold, Munold );
@@ -3113,7 +3149,8 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 
 template<typename TruthModelType>
 void
-CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs, std::vector< std::vector<double> > const& dual_residual_coeffs  ) const
+CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs,
+                                    std::vector< std::vector<double> > const& dual_residual_coeffs , element_type & u, element_type & udu ) const
 {
 
 
@@ -3141,21 +3178,21 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
         std::cout<< mu[size-1]<<" ]"<<std::endl;
     }
 
+    LOG( INFO ) <<"[CRB::checkResidual] use mu = \n"<<mu;
     sparse_matrix_ptrtype A,At,M;
-    //vector_ptrtype MF;
     std::vector<vector_ptrtype> F,L;
 
-    backend_ptrtype backendA = backend_type::build( BACKEND_PETSC );
-    backend_ptrtype backendAt = backend_type::build( BACKEND_PETSC );
+    //backend_ptrtype backendA = backend_type::build( BACKEND_PETSC );
+    //backend_ptrtype backendAt = backend_type::build( BACKEND_PETSC );
 
-    element_ptrtype u( new element_type( M_model->functionSpace() ) );
-    element_ptrtype udu( new element_type( M_model->functionSpace() ) );
+    //element_ptrtype u( new element_type( M_model->functionSpace() ) );
+    //element_ptrtype udu( new element_type( M_model->functionSpace() ) );
     vector_ptrtype U( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Rhs( M_backend->newVector( M_model->functionSpace() ) );
 
     boost::timer timer, timer2;
 
-    boost::tie( boost::tuples::ignore, A, F, boost::tuples::ignore ) = M_model->update( mu );
+    boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
 
     LOG(INFO) << "  -- updated model for parameter in " << timer2.elapsed() << "s\n";
     timer2.restart();
@@ -3166,19 +3203,18 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
         At = A;
     else
         A->transpose( At );
-    u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
-    udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
+    //u->setName( ( boost::format( "fem-primal-%1%" ) % ( M_N ) ).str() );
+    //udu->setName( ( boost::format( "fem-dual-%1%" ) % ( M_N ) ).str() );
 
-    LOG(INFO) << "[CRB::checkResidual] solving primal" << "\n";
-    backendA->solve( _matrix=A,  _solution=u, _rhs=F[0] );
-    LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
+    //LOG(INFO) << "[CRB::checkResidual] solving primal" << "\n";
+    //backendA->solve( _matrix=A,  _solution=u, _rhs=F[0] );
+    //LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
     timer2.restart();
     *Rhs = *F[M_output_index];
     Rhs->scale( -1 );
-    backendAt->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
-    LOG(INFO) << "  -- dual problem solved in " << timer2.elapsed() << "s\n";
+    //backendAt->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
+    //LOG(INFO) << "  -- dual problem solved in " << timer2.elapsed() << "s\n";
     timer2.restart();
-
 
     vector_ptrtype Aun( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Atun( M_backend->newVector( M_model->functionSpace() ) );
@@ -3186,8 +3222,8 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     vector_ptrtype Undu( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Frhs( M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype Lrhs( M_backend->newVector( M_model->functionSpace() ) );
-    *Un = *u;
-    *Undu = *udu;
+    *Un = u;
+    *Undu = udu;
     A->multVector( Un, Aun );
     At->multVector( Undu, Atun );
     Aun->scale( -1 );
@@ -3225,8 +3261,8 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     double primal_sum =  check_C0_pr + check_Lambda_pr + check_Gamma_pr ;
     double dual_sum   =  check_C0_du + check_Lambda_du + check_Gamma_du ;
 
-    LOG(INFO)<<"[CRB::checkResidual] primal_sum = "<<check_C0_pr<<" + "<<check_Lambda_pr<<" + "<<check_Gamma_pr<<" = "<<primal_sum<<"\n";
-    LOG(INFO)<<"[CRB::checkResidual] dual_sum = "<<check_C0_du<<" + "<<check_Lambda_du<<" + "<<check_Gamma_du<<" = "<<dual_sum<<"\n";
+    //LOG(INFO)<<"[CRB::checkResidual] primal_sum = "<<check_C0_pr<<" + "<<check_Lambda_pr<<" + "<<check_Gamma_pr<<" = "<<primal_sum<<"\n";
+    //LOG(INFO)<<"[CRB::checkResidual] dual_sum = "<<check_C0_du<<" + "<<check_Lambda_du<<" + "<<check_Gamma_du<<" = "<<dual_sum<<"\n";
 
 
     int time_index=0;
@@ -3247,43 +3283,43 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     double err_Gamma_du = math::abs( Gamma_du - check_Gamma_du ) ;
 
     int start_dual_index = 6;
+#if 1
+    LOG(INFO)<<"[CRB::checkResidual]";
+    LOG(INFO)<<"====primal coefficients==== ";
+    LOG(INFO)<<"              c0_pr \t\t lambda_pr \t\t gamma_pr";
+    LOG(INFO)<<"computed : ";
+    LOG(INFO)<<std::setprecision( 16 )<<primal_residual_coeffs[time_index][0]<<"\t"<<primal_residual_coeffs[time_index][1]<<"\t"<<primal_residual_coeffs[time_index][2];
 
-    std::cout<<"[CRB::checkResidual]"<<std::endl;
-    std::cout<<"====primal coefficients==== "<<std::endl;
-    std::cout<<"              c0_pr \t\t lambda_pr \t\t gamma_pr"<<std::endl;
-    std::cout<<"computed : ";
+    LOG(INFO)<<"\n";
+    LOG(INFO)<<"true     : ";
+    LOG(INFO)<<std::setprecision( 16 )<<check_C0_pr<<"\t"<<check_Lambda_pr<<"\t"<<check_Gamma_pr;
+    LOG(INFO)<<"====dual coefficients==== ";
+    LOG(INFO)<<"              c0_du \t\t lambda_du \t\t gamma_du";
+    LOG(INFO)<<"computed : ";
 
-    for ( int i=0; i<3; i++ ) std::cout<<std::setprecision( 16 )<<primal_residual_coeffs[time_index][i]<<"\t";
+    LOG(INFO)<<std::setprecision( 16 )<<dual_residual_coeffs[time_index][0]<<"\t"<<dual_residual_coeffs[time_index][1]<<"\t"<<dual_residual_coeffs[time_index][2];
 
-    std::cout<<"\n";
-    std::cout<<"true     : ";
-    std::cout<<std::setprecision( 16 )<<check_C0_pr<<"\t"<<check_Lambda_pr<<"\t"<<check_Gamma_pr<<"\n"<<std::endl;
-    std::cout<<"====dual coefficients==== "<<std::endl;
-    std::cout<<"              c0_du \t\t lambda_du \t\t gamma_du"<<std::endl;
-    std::cout<<"computed : ";
+    LOG(INFO)<<"\ntrue     : ";
+    LOG(INFO)<<std::setprecision( 16 )<<check_C0_du<<"\t"<<check_Lambda_du<<"\t"<<check_Gamma_du;
+    LOG(INFO)<<std::setprecision( 16 )<<"primal_true_sum = "<<check_C0_pr+check_Lambda_pr+check_Gamma_pr;
+    LOG(INFO)<<std::setprecision( 16 )<<"dual_true_sum = "<<check_C0_du+check_Lambda_du+check_Gamma_du;
 
-    for ( int i=0; i<3; i++ ) std::cout<<std::setprecision( 16 )<<dual_residual_coeffs[time_index][i]<<"\t";
+    LOG(INFO)<<std::setprecision( 16 )<<"primal_computed_sum = "<<C0_pr+Lambda_pr+Gamma_pr;
+    LOG(INFO)<<std::setprecision( 16 )<<"dual_computed_sum = "<<C0_du+Lambda_du+Gamma_du;
 
-    std::cout<<"\ntrue     : ";
-    std::cout<<std::setprecision( 16 )<<check_C0_du<<"\t"<<check_Lambda_du<<"\t"<<check_Gamma_du<<"\n"<<std::endl;
-    std::cout<<std::setprecision( 16 )<<"primal_true_sum = "<<check_C0_pr+check_Lambda_pr+check_Gamma_pr<<std::endl;
-    std::cout<<std::setprecision( 16 )<<"dual_true_sum = "<<check_C0_du+check_Lambda_du+check_Gamma_du<<"\n"<<std::endl;
-
-    std::cout<<std::setprecision( 16 )<<"primal_computed_sum = "<<C0_pr+Lambda_pr+Gamma_pr<<std::endl;
-    std::cout<<std::setprecision( 16 )<<"dual_computed_sum = "<<C0_du+Lambda_du+Gamma_du<<"\n"<<std::endl;
-
-    std::cout<<"errors committed on coefficients "<<std::endl;
-    std::cout<<std::setprecision( 16 )<<"C0_pr : "<<err_C0_pr<<"\tLambda_pr : "<<err_Lambda_pr<<"\tGamma_pr : "<<err_Gamma_pr<<std::endl;
-    std::cout<<std::setprecision( 16 )<<"C0_du : "<<err_C0_du<<"\tLambda_du : "<<err_Lambda_du<<"\tGamma_du : "<<err_Gamma_du<<std::endl;
-    std::cout<<"and now relative error : "<<std::endl;
+#endif
+    LOG(INFO)<<"errors committed on coefficients ";
+    LOG(INFO)<<std::setprecision( 16 )<<"C0_pr : "<<err_C0_pr<<"\tLambda_pr : "<<err_Lambda_pr<<"\tGamma_pr : "<<err_Gamma_pr;
+    LOG(INFO)<<std::setprecision( 16 )<<"C0_du : "<<err_C0_du<<"\tLambda_du : "<<err_Lambda_du<<"\tGamma_du : "<<err_Gamma_du;
+    LOG(INFO)<<"and now relative error : ";
     double errC0pr = err_C0_pr/check_C0_pr;
     double errLambdapr = err_Lambda_pr/check_Lambda_pr;
     double errGammapr = err_Gamma_pr/check_Gamma_pr;
     double errC0du = err_C0_du/check_C0_du;
     double errLambdadu = err_Lambda_pr/check_Lambda_pr;
     double errGammadu = err_Gamma_pr/check_Gamma_pr;
-    std::cout<<std::setprecision( 16 )<<errC0pr<<"\t"<<errLambdapr<<"\t"<<errGammapr<<std::endl;
-    std::cout<<std::setprecision( 16 )<<errC0du<<"\t"<<errLambdadu<<"\t"<<errGammadu<<std::endl;
+    LOG(INFO)<<std::setprecision( 16 )<<errC0pr<<"\t"<<errLambdapr<<"\t"<<errGammapr;
+    LOG(INFO)<<std::setprecision( 16 )<<errC0du<<"\t"<<errLambdadu<<"\t"<<errGammadu;
 
     //residual r(v)
     Aun->add( *Frhs );
@@ -3293,18 +3329,18 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     vector_ptrtype __e_pr(  M_backend->newVector( M_model->functionSpace() ) );
     M_model->l2solve( __e_pr, Aun );
     double dual_norm_pr = math::sqrt ( M_model->scalarProduct( __e_pr,__e_pr ) );
-    std::cout<<"[CRB::checkResidual] dual norm of primal residual without isolate terms (c0,lambda,gamma) = "<<dual_norm_pr<<"\n";
+    LOG(INFO)<<"[CRB::checkResidual] dual norm of primal residual without isolate terms (c0,lambda,gamma) = "<<dual_norm_pr<<"\n";
     //idem for the dual equation
     vector_ptrtype __e_du(  M_backend->newVector( M_model->functionSpace() ) );
     M_model->l2solve( __e_du, Atun );
     double dual_norm_du = math::sqrt ( M_model->scalarProduct( __e_du,__e_du ) );
-    std::cout <<"[CRB::checkResidual] dual norm of dual residual without isolate terms = "<<dual_norm_du<<"\n";
-
+    LOG(INFO) <<"[CRB::checkResidual] dual norm of dual residual without isolate terms = "<<dual_norm_du<<"\n";
+#if 0
     double err_primal = math::sqrt ( M_model->scalarProduct( Aun, Aun ) );
     double err_dual = math::sqrt ( M_model->scalarProduct( Atun, Atun ) );
     LOG(INFO) << "[CRB::checkResidual] true primal residual for reduced basis function " << M_N-1 << ":=" << err_primal << "\n";
     LOG(INFO) << "[CRB::checkResidual] true dual residual for reduced basis function " << M_N-1 << ":=" << err_dual << "\n";
-
+#endif
 }
 
 
@@ -3313,7 +3349,7 @@ void
 CRB<TruthModelType>::check( size_type N ) const
 {
 
-    if ( this->vm()["crb.check.rb"].template as<int>() == 0 && this->vm()["crb.check.residual"].template as<int>()==0 )
+    if ( this->vm()["crb.check.rb"].template as<int>() == 0)
         return;
 
     std::cout << "  -- check reduced basis\n";
@@ -3359,15 +3395,6 @@ CRB<TruthModelType>::check( size_type N ) const
 
         LOG(INFO) << "[check] s= " << s << " +- " << err  << " | sfem= " << sfem << " | abs(sfem-srb) =" << math::abs( sfem - s ) << "\n";
         std::cout <<"[check] s = " << s << " +- " << err  << " | sfem= " << sfem << " | abs(sfem-srb) =" << math::abs( sfem - s )<< "\n";
-
-        if ( this->vm()["crb.check.residual"].template as<int>() == 1 )
-        {
-	     std::vector < std::vector<double> > primal_residual_coefficients = error_estimation.template get<1>();
-	     std::vector < std::vector<double> > dual_residual_coefficients = error_estimation.template get<2>();
-	     //std::vector<double> coefficients = error_estimation.template get<1>();
-            //checkResidual( mu , coefficients );
-
-        }
 
     }
 
@@ -4461,7 +4488,7 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 
 }
 template<typename TruthModelType>
-void
+double
 CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
 {
     int proc_number = this->worldComm().globalRank();
@@ -4489,12 +4516,13 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
     DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
-    if ( this->vm()["crb.check.gs"].template as<int>() )
-        checkOrthonormality( N , wn );
+    //if ( this->vm()["crb.check.gs"].template as<int>() )
+    //return the norm of the matrix A(i,j)=M_model->scalarProduct( wn[j], wn[i] )
+    return checkOrthonormality( N , wn );
 }
 
 template <typename TruthModelType>
-void
+double
 CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
 {
 
@@ -4505,9 +4533,9 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
 
     if ( orthonormalize_primal*orthonormalize_dual==0 )
     {
-        std::cout<<"Warning : calling checkOrthonormality is called but ";
-        std::cout<<" orthonormalize_dual = "<<orthonormalize_dual;
-        std::cout<<" and orthonormalize_primal = "<<orthonormalize_primal<<std::endl;
+        LOG(INFO)<<"Warning : calling checkOrthonormality is called but ";
+        LOG(INFO)<<" orthonormalize_dual = "<<orthonormalize_dual;
+        LOG(INFO)<<" and orthonormalize_primal = "<<orthonormalize_primal;
     }
 
     matrixN_type A, I;
@@ -4524,8 +4552,13 @@ CRB<TruthModelType>::checkOrthonormality ( int N, const wn_type& wn ) const
 
     A -= I;
     DVLOG(2) << "orthonormalization: " << A.norm() << "\n";
-    std::cout << "    o check : " << A.norm() << " (should be 0)\n";
+    if ( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    {
+        LOG( INFO ) << "    o check : " << A.norm() << " (should be 0)";
+    }
     //FEELPP_ASSERT( A.norm() < 1e-14 )( A.norm() ).error( "orthonormalization failed.");
+
+    return A.norm();
 }
 
 
@@ -6022,7 +6055,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
 
 
 template<typename TruthModelType>
-boost::tuple<double,double, typename CRB<TruthModelType>::solutions_tuple, double, double, double, boost::tuple<double,double,double> >
+boost::tuple<double,double, typename CRB<TruthModelType>::solutions_tuple, double, double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
 CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
 {
 
@@ -6043,6 +6076,18 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
         auto it = M_rbconv.project_left( lo.first );
         Nwn = it->first;
         std::cout << "Nwn = "<< Nwn << " error = "<< it->second.template get<0>() << " eps=" << eps << "\n";
+    }
+
+    if ( this->vm()["crb.check.residual"].template as<bool>() )
+    {
+        std::vector< std::vector<double> > primal_residual_coefficients = error_estimation.template get<1>();
+        std::vector< std::vector<double> > dual_residual_coefficients = error_estimation.template get<2>();
+        std::vector<element_ptrtype> Un,Unold,Undu,Unduold;
+        buildFunctionFromRbCoefficients(Nwn, uN, M_WN, Un );
+        buildFunctionFromRbCoefficients(Nwn, uNold, M_WN, Unold );
+        buildFunctionFromRbCoefficients(Nwn, uNdu, M_WNdu, Undu );
+        buildFunctionFromRbCoefficients(Nwn, uNduold, M_WNdu, Unduold );
+        compareResidualsForTransientProblems(Nwn, mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
     }
 #endif
 
@@ -6069,31 +6114,20 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );
     double output_upper_bound = error_estimation.template get<0>();
     double condition_number = o.template get<1>();
-    auto primal_coeffcients = error_estimation.template get<1>();
+    auto primal_coefficients = error_estimation.template get<1>();
     auto dual_coefficients = error_estimation.template get<2>();
-    if ( this->vm()["crb.check.residual-transient-problems"].template as<bool>() )
-    {
-        std::vector< std::vector<double> > primal_residual_coefficients = error_estimation.template get<1>();
-        std::vector< std::vector<double> > dual_residual_coefficients = error_estimation.template get<2>();
-        std::vector<element_ptrtype> Un,Unold,Undu,Unduold;
-        buildFunctionFromRbCoefficients(Nwn, uN, M_model->rBFunctionSpace()->primalRB(), Un );
-        buildFunctionFromRbCoefficients(Nwn, uNold, M_model->rBFunctionSpace()->primalRB(), Unold );
-        buildFunctionFromRbCoefficients(Nwn, uNdu, M_model->rBFunctionSpace()->dualRB(), Undu );
-        buildFunctionFromRbCoefficients(Nwn, uNduold, M_model->rBFunctionSpace()->dualRB(), Unduold );
-        compareResidualsForTransientProblems(Nwn, mu , Un, Unold, Undu, Unduold, primal_residual_coefficients, dual_residual_coefficients );
-    }
 
     //compute dual norm of primal/dual residual at final time
-    int nb_dt = primal_coeffcients.size();
+    int nb_dt = primal_coefficients.size();
     int final_time_index = nb_dt-1;
     double primal_residual_norm = 0;
     double dual_residual_norm = 0;
 
     if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
     {
-        int nb_coeff = primal_coeffcients[final_time_index].size();
+        int nb_coeff = primal_coefficients[final_time_index].size();
         for(int i=0 ; i<nb_coeff ; i++)
-            primal_residual_norm += primal_coeffcients[final_time_index][i] ;
+            primal_residual_norm += primal_coefficients[final_time_index][i] ;
 
         bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
         if( solve_dual_problem )
@@ -6110,8 +6144,8 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     double delta_du = error_estimation.template get<4>();
     int size = uN.size();
 
-    auto upper_bounds = boost::make_tuple(output_upper_bound , delta_pr, delta_du );
-    auto solutions = boost::make_tuple( uN[size-1] , uNdu[0]);
+    auto upper_bounds = boost::make_tuple(output_upper_bound , delta_pr, delta_du , primal_coefficients , dual_coefficients );
+    auto solutions = boost::make_tuple( uN , uNdu, uNold, uNduold);
     return boost::make_tuple( output , Nwn , solutions, condition_number , primal_residual_norm , dual_residual_norm, upper_bounds );
 }
 
@@ -6731,4 +6765,3 @@ template<typename T> const unsigned int version<Feel::CRB<T> >::value;
 }
 }
 #endif /* __CRB_H */
-

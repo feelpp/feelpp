@@ -846,6 +846,8 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
+    VLOG(1) << "straighten mesh of order " <<  _mesh_type::nOrder << " start";
+
     _mesh_ptrtype _mesh( mesh );
 
     using namespace vf;
@@ -855,6 +857,7 @@ BOOST_PARAMETER_FUNCTION(
 #else
     auto Xh = space_t::New( _mesh=_mesh );
 #endif
+
     auto xHo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
     auto xLo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
     auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
@@ -866,7 +869,7 @@ BOOST_PARAMETER_FUNCTION(
     if (worldcomm.localSize()>1)
         Feel::detail::straightenMeshUpdateEdgesOnBoundaryIsolated( straightener,mpl::int_<_mesh_type::nDim>() );
 
-    double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate().norm();
+    double norm_mean_value = integrate( _range=boundaryfaces( _mesh ), _expr=idv( straightener ) ).evaluate(true,worldcomm).norm();
 
     if ( norm_mean_value > 1e-12 )
         std::cout << "the straightening process may have failed\n"
@@ -891,6 +894,8 @@ BOOST_PARAMETER_FUNCTION(
 
     MeshMover<_mesh_type> meshmove;
     meshmove.apply( _mesh, straightener );
+
+    VLOG(1) << "straighten mesh of order " <<  _mesh_type::nOrder << " finish";
 
     return _mesh;
 }
@@ -924,7 +929,7 @@ BOOST_PARAMETER_FUNCTION(
       ( worldcomm,       *, Environment::worldComm() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename,	*, filename )
-      ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
         )
@@ -1079,10 +1084,10 @@ BOOST_PARAMETER_FUNCTION(
       ( physical_are_elementary_regions,           *,false )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
-      ( partitions,   *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( worldcomm,      *, Environment::worldComm() )
+      ( partitions,   *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( partitioner,   *( boost::is_integral<mpl::_> ), GMSH_PARTITIONER_CHACO )
-      ( worldcomm,      *, Environment::worldComm() )
         )
     )
 {
@@ -1237,11 +1242,12 @@ BOOST_PARAMETER_FUNCTION(
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() ) )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() )
+      ( worldcomm,       (WorldComm), Environment::worldComm() ) )
     )
 
 {
-    gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1 ) );
+    gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1, worldcomm ) );
 
     gmsh_ptr->setCharacteristicLength( h );
 #if BOOST_FILESYSTEM_VERSION == 3
@@ -1263,7 +1269,7 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
     gmsh_ptr->setGeoParameters( geo_parameters );
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    if( worldcomm.globalRank() == worldcomm.masterRank() )
     {
         fs::path cp = fs::current_path();
         std::vector<std::string> depends_on_files;
@@ -1294,7 +1300,7 @@ BOOST_PARAMETER_FUNCTION(
                              }
                          } );
     }
-    Environment::worldComm().barrier();
+    worldcomm.barrier();
 
 
     return gmsh_ptr;
@@ -1490,13 +1496,15 @@ BOOST_PARAMETER_FUNCTION(
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), option(_name="gmsh.rebuild").template as<bool>() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, filename )
-      ( partitions,      *( boost::is_integral<mpl::_> ), Environment::worldComm().size() )
+      ( partitions,      *( boost::is_integral<mpl::_> ), worldcomm.globalSize() )
       ( partitioner,     *( boost::is_integral<mpl::_> ), option(_name="gmsh.partitioner").template as<int>() )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
       ( depends, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.depends").template as<std::string>() )
         )
     )
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsequenced"
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
@@ -1512,7 +1520,8 @@ BOOST_PARAMETER_FUNCTION(
     {
         return createGMSHMesh( _mesh=mesh,
                                _desc=geo( _filename=mesh_name.string(),
-                                          _depends=depends ),
+                                          _h=h,_depends=depends,
+                                          _worldcomm=worldcomm ),
                                _h=h,
                                _straighten=straighten,
                                _refine=refine,
@@ -1560,6 +1569,7 @@ BOOST_PARAMETER_FUNCTION(
                           _partitions=partitions,
                           _partitioner=partitioner,
                           _partition_file=partition_file );
+#pragma clang diagnostic pop
 }
 
 } // Feel

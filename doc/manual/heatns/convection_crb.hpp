@@ -413,7 +413,7 @@ public:
 
     po::options_description const& optionsDescription() const
     {
-        return _M_desc;
+        return M_desc;
     }
 
     /**
@@ -443,7 +443,7 @@ public:
 
 private:
 
-    po::options_description _M_desc;
+    po::options_description M_desc;
 
     po::variables_map M_vm;
     backend_ptrtype M_backend;
