@@ -179,6 +179,19 @@ public:
 			//ofs << "#include <ginac/constant.h> " << std::endl;
 			ofs << std::endl;
 		}
+	void remove_src_file( std::string filename, bool clean_up )
+		{
+			boost::mpi::communicator world;
+			if (clean_up)
+			{
+				if( world.rank() == 0 )
+				{
+					int e = remove(filename.c_str());
+					if ( e == -1 )
+						std::cerr << "Error removing file : " << filename << std::endl;
+				}
+			}
+		}
 	/**
 	 * Calls the shell script 'ginac-excompiler' to compile the produced C
 	 * source file into an linkable so-file.  On demand the C source file is
@@ -186,6 +199,7 @@ public:
 	 */
 	void compile_src_file(const std::string filename, bool clean_up)
 		{
+
 			//std::string strcompile = "ginac-excompiler " + filename + " > /dev/null 2>&1";
 			//int status = system(strcompile.c_str());
 			//if (status )
@@ -204,6 +218,7 @@ public:
 					ostr << "contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
 					throw std::runtime_error(ostr.str());
 				}
+				remove_src_file( filename, clean_up );
 			}
 			else
 			{
@@ -225,16 +240,13 @@ public:
 							ostr << "ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
 							throw std::runtime_error(ostr.str());
 						}
+						remove_src_file( filename, clean_up );
 						return;
 					}
 				}
 			}
 			}
 			//}
-
-			if (clean_up) {
-				remove(filename.c_str());
-			}
 		}
 	/**
 	 * Links a so-file whose filename is given.
