@@ -74,6 +74,7 @@ class excompiler
 		void* module;
 		std::string name; /**< filename with .so suffix */
 		bool clean_up; /**< if true, source and so-file will be deleted */
+		filedesc() : module(0), name(), clean_up(true) {}
 	};
 	std::vector<filedesc> filelist; /**< List of all opened modules */
 public:
@@ -82,9 +83,7 @@ public:
 	 */
 	~excompiler()
 	{
-		for (std::vector<filedesc>::const_iterator it = filelist.begin(); it != filelist.end(); ++it) {
-			clean_up(it);
-		}
+		clean_up();
 	}
 	/**
 	 * Adds a new module to the list.
@@ -97,15 +96,42 @@ public:
 		fd.clean_up = clean_up;
 		filelist.push_back(fd);
 	}
+	void clean_up(bool verbose = false )
+	{
+		for (std::vector<filedesc>::iterator it = filelist.begin(); it != filelist.end(); ++it)
+		{
+			if ( verbose && it->clean_up)
+				std::cout << "removing " << it->name << " module" << it->module << "...\n";
+                     clean_up(it);
+                }
+		filelist.clear();
+
+	}
 	/**
 	 * Closes a module and deletes the so-file if the associated clean-up flag is true.
 	 */
-	void clean_up(const std::vector<filedesc>::const_iterator it)
+	void clean_up(std::vector<filedesc>::iterator it)
 	{
 		dlclose(it->module);
-		if (it->clean_up) {
-			remove(it->name.c_str());
+		char* err = dlerror();
+		if ( err )
+		{
+			std::cerr << "error in dlclosing module : " << it->module << " : " << err << "\n";
 		}
+		if (it->clean_up) {
+			boost::mpi::communicator world;
+			if( world.rank() == 0 )
+			{
+				namespace fs = boost::filesystem;
+				if ( fs::exists( fs::path( it->name ) ) )
+				{
+					int ok = remove(it->name.c_str());
+					if ( ok == -1 )
+						std::cerr << "removing " << it->name << " failed\n";
+				}
+			}
+		}
+
 	}
 	/**
 	 * Creates a new C source file and adds a standard header. If filename is
@@ -167,6 +193,21 @@ public:
 			//std::cout << "ginac::compile_src_file fails (" << WEXITSTATUS(status) << ")\n";
 			// try the compiler in Feel++ source
 			namespace fs = boost::filesystem;
+			if ( fs::exists( fs::path( "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler" ) ) )
+			{
+				std::string strcompile = "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler " + filename;
+
+				int status = system(strcompile.c_str());
+				if (status)
+				{
+					std::ostringstream ostr;
+					ostr << "contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
+					throw std::runtime_error(ostr.str());
+				}
+			}
+			else
+			{
+
 			std::vector<std::string> paths = { "/usr/bin/", "/usr/local/bin", "/opt/local/bin" };
 			std::vector<std::string> names = { "feelpp_excompiler", "ginac-excompiler" };
 			BOOST_FOREACH( std::string p, paths )
@@ -184,24 +225,15 @@ public:
 							ostr << "ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
 							throw std::runtime_error(ostr.str());
 						}
-						std::cout << "used : " << strcompile <<  "\n";
 						return;
 					}
 				}
 			}
-
-			std::string strcompile = "@FEELPP_BUILD_DIR@/contrib/ginac/tools/ginac-excompiler " + filename;
-			int status = system(strcompile.c_str());
-			if (status)
-			{
-				std::ostringstream ostr;
-				ostr << "contrib/ginac::compile_src_file " << filename << " fails (" << WEXITSTATUS(status) << ")\n";
-				throw std::runtime_error(ostr.str());
 			}
 			//}
 
 			if (clean_up) {
-				//remove(filename.c_str());
+				remove(filename.c_str());
 			}
 		}
 	/**
@@ -386,6 +418,11 @@ void unlink_ex(const std::string filename)
 	global_excompiler.unlink(filename);
 }
 
+void cleanup_ex( bool verbose = false )
+{
+	global_excompiler.clean_up(verbose);
+}
+
 #else // def HAVE_LIBDL
 
 /*
@@ -428,6 +465,10 @@ void unlink_ex(const std::string filename)
 	throw std::runtime_error("unlink_ex has been disabled because of missing libdl!");
 }
 
+void cleanup_ex( bool verbose = false )
+{
+	throw std::runtime_error("unlink_ex has been disabled because of missing libdl!");
+}
 #endif // def HAVE_LIBDL
 
 } // namespace GiNaC

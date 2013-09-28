@@ -53,6 +53,9 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/options.hpp>
 
+namespace GiNaC {
+extern void cleanup_ex( bool verbose );
+}
 namespace detail
 {
 class Env{
@@ -667,6 +670,10 @@ Environment::~Environment()
     {
         VLOG(2) << "clearing known paths\n";
         S_paths.clear();
+
+        VLOG(2) << "[~Environment] cleaning up global excompiler\n";
+
+        GiNaC::cleanup_ex( false );
 
         VLOG(2) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
