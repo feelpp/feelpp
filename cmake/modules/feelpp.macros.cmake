@@ -158,19 +158,19 @@ macro(feelpp_add_test)
 
     add_executable(${targetname} ${filename})
     target_link_libraries(${targetname} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
-    set_property(TARGET ${targetname} PROPERTY LABELS testsuite)
+    set_property(TARGET ${targetname} PROPERTY LABELS testsuite ${FEELPP_TEST_LABEL})
     if ( TARGET testsuite )
       add_dependencies(testsuite ${targetname})
     endif()
 
 
     if ( NOT FEELPP_TEST_NO_TEST )
-      IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
-	add_test(NAME test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME} --log_level=message ${MPIEXEC_POSTFLAGS} )
-	set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS testsuite)
+      IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
+	    add_test(NAME test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME} --log_level=message ${MPIEXEC_POSTFLAGS} )
+	    set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS testsuite  ${FEELPP_TEST_LABEL})
       ENDIF()
       add_test(NAME test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME}  --log_level=message ${MPIEXEC_POSTFLAGS})
-      set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS testsuite)
+      set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS testsuite  ${FEELPP_TEST_LABEL})
     endif()
 
 
