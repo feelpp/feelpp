@@ -21,6 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES LABEL testintegration )
 feelpp_add_test( auto_order_integrate )
 feelpp_add_test( integration )
 feelpp_add_test( integration_ginac )
