@@ -23,8 +23,8 @@
 #
 set_directory_properties(PROPERTIES LABEL testinterpolation )
 
-feelpp_add_test( form_interpolation NO_MPI_TEST LABEL testinterpolation )
-feelpp_add_test( interpolation NO_MPI_TEST  LABEL testinterpolation )
-feelpp_add_test( interpolation_op NO_MPI_TEST  LABEL testinterpolation )
-feelpp_add_test( interp_twomesh  LABEL testinterpolation )
-feelpp_add_test( operatorinterpolation  LABEL testinterpolation )
+feelpp_add_test( form_interpolation NO_MPI_TEST )
+feelpp_add_test( interpolation NO_MPI_TEST   )
+feelpp_add_test( interpolation_op NO_MPI_TEST )
+feelpp_add_test( interp_twomesh   )
+feelpp_add_test( operatorinterpolation )
