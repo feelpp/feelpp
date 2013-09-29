@@ -498,7 +498,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             *itd+=thedofshift;
     }
     auto x = M_rhs->clone();
-    CHECK( dofs.size() > 0 ) << "Invalid number of Dirichlet dof, should be > 0 ";
+    //CHECK( dofs.size() > 0 ) << "Invalid number of Dirichlet dof, should be > 0 ";
     CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     //x->zero();
     x->addVector( dofs.data(), dofs.size(), values.data() );
