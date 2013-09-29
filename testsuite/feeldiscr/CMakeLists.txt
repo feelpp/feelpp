@@ -1,3 +1,5 @@
+set_directory_properties(PROPERTIES LABEL testdiscr )
+
 feelpp_add_test( aitken NO_MPI_TEST )
 feelpp_add_test( bdf )
 feelpp_add_test( disc )
