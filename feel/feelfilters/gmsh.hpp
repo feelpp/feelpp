@@ -311,7 +311,7 @@ public:
         {
             return M_recombine;
         }
-    bool structuredMesh() const
+    int structuredMesh() const
         {
             return M_structured;
         }
@@ -526,7 +526,7 @@ public:
             M_partition_file = p;
         }
 
-    void setStructuredMesh( bool s )
+    void setStructuredMesh( int s )
         {
             M_structured = s;
         }
@@ -684,7 +684,7 @@ protected:
     //! recombine simplices into hypercubes
     bool M_recombine;
     // build structured mesh
-    bool M_structured;
+    int M_structured;
     //! number of refinement levels
     int M_refine_levels;
 
@@ -1090,7 +1090,7 @@ BOOST_PARAMETER_FUNCTION(
       ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
       ( straighten,      *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
-      ( structured,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.structured").template as<bool>() )
+      ( structured,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.structured").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
