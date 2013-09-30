@@ -849,7 +849,7 @@ Environment::systemGeoRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -872,7 +872,7 @@ Environment::systemConfigRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/config";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -1000,7 +1000,8 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 
-std::vector<fs::path> Environment::S_paths;
+std::vector<fs::path> Environment::S_paths = { Environment::systemConfigRepository().get<0>(),
+                                               Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
 
 } // detail
