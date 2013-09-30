@@ -203,9 +203,14 @@ GmshHypercubeDomain::getDescription2D() const
 
     if ( this->structuredMesh() || M_use_hypercube )
     {
-        ostr << "nx = 1/h;\n"
-             << "ny = 1/h;\n"
-             << "\n"
+        if ( this->structuredMesh() == 1 || M_use_hypercube )
+            ostr << "nx = (xmax-xmin)/h;\n"
+                 << "ny = (ymax-ymin)/h;\n";
+        else if ( this->structuredMesh() == 2 )
+            ostr << "nx = 1/h;\n"
+                 << "ny = 1/h;\n";
+
+        ostr << "\n"
              << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
              << "Transfinite Line {2,4} = nx + 1 Using Progression 1.0;\n"
              << "\n"
