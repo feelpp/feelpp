@@ -95,6 +95,7 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_recombine( 0 ),
+    M_structured( false ),
     M_refine_levels( 0 ),
     M_substructuring( false )
 {
@@ -122,6 +123,7 @@ Gmsh::Gmsh( Gmsh const & __g )
     M_partition_file( __g.M_partition_file ),
     M_shear( __g.M_shear ),
     M_recombine( __g.M_recombine ),
+    M_structured( __g.M_structured ),
     M_refine_levels( __g.M_refine_levels ),
     M_substructuring( __g.M_substructuring )
 {}
