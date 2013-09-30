@@ -224,6 +224,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( worldscomm )
     BOOST_PARAMETER_NAME( parallel )
     BOOST_PARAMETER_NAME( substructuring )
+    BOOST_PARAMETER_NAME( structured )
 
     BOOST_PARAMETER_NAME( jacobian )
     BOOST_PARAMETER_NAME( residual )
