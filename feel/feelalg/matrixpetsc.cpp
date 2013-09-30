@@ -1239,7 +1239,7 @@ MatrixPetsc<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const
             // processor, so make sure that we access only the
             // rows that belong to this processor
             if ( rows[i] >= start && rows[i] < stop )
-                rhs.set( rows[i], values(i) );
+                rhs.set( rows[i], values(rows[i]) );
         }
     }
 
@@ -2513,7 +2513,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                     // processor, so make sure that we access only the
                     // rows that belong to this processor
                     if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values(i)*diag( rows[i] ) );
+                        rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
                 }
         }
 
@@ -2540,7 +2540,7 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
                     // processor, so make sure that we access only the
                     // rows that belong to this processor
                     if ( rows[i] >= start && rows[i] < stop )
-                        rhs.set( rows[i], values(i) );
+                        rhs.set( rows[i], values(rows[i]) );
                 }
 #endif
         }
