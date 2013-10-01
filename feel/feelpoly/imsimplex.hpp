@@ -8877,6 +8877,7 @@ public:
     /** @name Typedefs
      */
     //@{
+    typedef Simplex<Dim,1> convex_type;
     typedef T value_type;
     typedef ublas::matrix<value_type,ublas::column_major> matrix_type;
     typedef ublas::vector<value_type> vector_type;
