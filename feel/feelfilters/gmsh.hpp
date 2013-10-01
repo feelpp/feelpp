@@ -731,6 +731,8 @@ struct meshFromGeoEntity
                                mpl::identity< Mesh< Simplex< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >,
                                mpl::identity< Mesh< Hypercube< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >
                                >::type::type type;
+
+    typedef PointSet<GeoShape, typename type::value_type> pointset_type;
 };
 
 
@@ -1045,6 +1047,8 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( geoentity, * )
       ( filename, * ) ) // 4. one required parameter, and
+    ( optional
+      ( pointset, *, typename Feel::detail::meshFromGeoEntity<Args>::pointset_type() ) )
     )
 {
     typedef typename Feel::detail::meshFromGeoEntity<Args>::type _mesh_type;
@@ -1054,7 +1058,7 @@ BOOST_PARAMETER_FUNCTION(
 #elif BOOST_FILESYSTEM_VERSION == 2
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
 #endif
-    exporter.gmshSaveOneElementAsMesh( filename, geoentity );
+    exporter.gmshSaveOneElementAsMesh( filename, geoentity, pointset );
 }
 
 
