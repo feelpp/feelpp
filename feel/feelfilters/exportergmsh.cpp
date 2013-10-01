@@ -898,7 +898,7 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
     for ( uint32_type i = 0; i < nPointInPtSet; ++i )
     {
         out << i+1 << " " << GMSH_ENTITY::GMSH_POINT
-            << " 2 " << i << " 0 " // add physical tag as feel id
+            << " 2 0 " << i << " " // add elementary tag as feel id
             << i+1 << "\n";
     }
 
