@@ -52,6 +52,7 @@ public:
     static const uint16_type topological_dimension = super::topological_dimension;
     static const uint16_type real_dimension = super::real_dimension;
 
+    typedef super GeoShape;
     static const size_type Shape = super::Shape;
     static const size_type Geometry = super::Geometry;
 
