@@ -100,7 +100,7 @@ public:
     static const uint16_type nOrder = degree_policy_type::integration_degree;
 
     //typedef typename super::convex_type convex_type;
-    typedef Entity<Dim,nOrder,Dim> convex_type;
+    typedef Entity<Dim,1,Dim> convex_type;
     typedef typename super::value_type value_type;
     typedef typename super::node_type node_type;
     typedef typename super::weights_type weights_type;
