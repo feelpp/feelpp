@@ -1179,7 +1179,7 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
     std::for_each( markers.begin(), markers.end(),
                    [=]( uint16_type marker )
                    {
-                       auto range=markedfaces( this, marker );
+                       auto range=markedfaces( this->shared_from_this(), boost::any(marker) );
                        LOG(INFO) << "removing " << nelements(range) << " faces marked "  << marker << " from boundary faces\n";
 
                        for( auto it = range.template get<1>(), en = range.template get<2>(); it != en; ++it )

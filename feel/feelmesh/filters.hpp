@@ -1009,7 +1009,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
       typename MeshTraits<MeshType>::marker_face_const_iterator,
       typename MeshTraits<MeshType>::marker_face_const_iterator>
       markedfaces( MeshType const& mesh,
-                   boost::any const&__marker )
+                   boost::any __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     flag_type theflag = mesh->markerId( __marker );
