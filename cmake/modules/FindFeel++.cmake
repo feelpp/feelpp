@@ -7,7 +7,7 @@
 #should check the version of gcc for -std=c++0x ou -std=c++11
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++ -ftemplate-depth=1024" )
 ENDIF()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
@@ -153,7 +153,8 @@ if(Boost_FOUND)
   IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     # ensures that boost.signals2 compiles with clang++ >= 3.1
     IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "52")
-      add_definitions(-DBOOST_NO_CXX11_VARIADIC_TEMPLATES)
+#      add_definitions(-DBOOST_NO_CXX11_VARIADIC_TEMPLATES)
+#      add_definitions(-DBOOST_NO_CXX11_RVALUE_REFERENCES)
       message(STATUS "added -DBOOST_NO_CXX11_VARIADIC_TEMPLATES" )
     ELSE()
       add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
