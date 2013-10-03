@@ -471,7 +471,11 @@ private:
             }
             return idsFind;
         }
-
+    std::set<size_type> trialElementId( size_type test_eid, mpl::int_<2> /**/ )
+    {
+        CHECK ( false ) << "[trial_related_to_test<2>] : submesh relation with codim=2 is not implement\n";
+        return std::set<size_type>();
+    }
 
 
 public :
