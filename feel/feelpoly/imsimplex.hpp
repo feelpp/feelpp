@@ -8900,6 +8900,7 @@ public:
     typedef IMSimplex<Dim,Order,T> parent_quadrature_type;
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
+    static const uint16_type nQuadPoints = quad_type::nPoints;
 
     //@}
 
