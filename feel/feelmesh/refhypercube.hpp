@@ -175,7 +175,7 @@ public:
         computeMeasure();
     }
 
-    Reference( element_type const& e, uint16_type __f )
+    Reference( element_type const& e, uint16_type __f, uint16_type __p = permutation_type::IDENTITY )
         :
         super(),
         M_id( __f ),
@@ -416,9 +416,9 @@ public:
         return M_normals.end();
     }
 
-    topological_face_type topologicalFace( uint16_type __f ) const
+    topological_face_type topologicalFace( uint16_type __f, uint16_type __p = permutation_type::IDENTITY ) const
     {
-        topological_face_type ref( *this, __f );
+        topological_face_type ref( *this, __f, __p );
         return ref;
     }
 
