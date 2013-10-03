@@ -198,6 +198,8 @@ public:
             permTriangles[triangular_faces_type::REVERSE_HYPOTENUSE] = permReverseHypothenuse;
             permTriangles[triangular_faces_type::REVERSE_HEIGHT] = permReverseHeight;
 
+            DCHECK( permTriangles.find( __p )!=permTriangles.end() ) << "invalid permutation :" << __p << "\n";
+
             for ( int i = 0; i < numVertices; ++i )
             {
                 const int iperm = permTriangles.find( __p )->second( i );
@@ -213,6 +215,8 @@ public:
             std::map<uint16_type, ublas::vector<uint16_type> > permLines;
             permLines[line_permutations::IDENTITY] = permLineIdentity;
             permLines[line_permutations::REVERSE_PERMUTATION] = permLineReverse;
+
+            DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
 
             for ( int i = 0; i < numVertices; ++i )
             {
