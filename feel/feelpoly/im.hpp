@@ -98,6 +98,7 @@ public:
     static const uint16_type nDim = Dim;
     static const uint16_type nNodes = degree_policy_type::jacobi_degree;
     static const uint16_type nOrder = degree_policy_type::integration_degree;
+    static const uint16_type nQuadPoints = super::Npoints;
 
     //typedef typename super::convex_type convex_type;
     typedef Entity<Dim,1,Dim> convex_type;
@@ -169,6 +170,14 @@ struct _Q
                 mpl::bool_<Entity<DIM,1,DIM>::is_simplex> >,
                 mpl::identity<IMSimplex<DIM, IMORDER, T> >,
                 mpl::identity<IMGeneral<DIM, IMORDER, T, Entity> > >::type::type type;
+    };
+
+    template<int DIM,
+             typename T,
+             template<uint16_type, uint16_type, uint16_type> class Entity>
+    struct applyIMGeneral
+    {
+        typedef IMGeneral<DIM, IMORDER, T, Entity> type;
     };
 
     template<typename ContextType>
