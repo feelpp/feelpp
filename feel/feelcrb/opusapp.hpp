@@ -715,7 +715,8 @@ public:
 
                                 double relative_error = -1;
                                 double relative_estimated_error = -1;
-                                double condition_number = o.template get<3>();
+                                auto matrix_info = o.template get<3>();
+                                double condition_number = matrix_info.template get<0>();
                                 double l2_error = -1;
                                 double h1_error = -1;
                                 double l2_dual_error = -1;
@@ -1020,7 +1021,8 @@ public:
 
                                         double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
-                                        double condition_number = o.template get<3>();
+                                        auto matrix_info = o.template get<3>();
+                                        double condition_number = matrix_info.template get<0>();
                                         double output_error_bound_efficiency = output_relative_estimated_error / rel_err;
 
                                         double relative_primal_solution_error = solution_error / ref_primal ;
@@ -1067,12 +1069,42 @@ public:
                                         M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
                                         LOG(INFO) << "N=" << N << " done.\n";
 
+                                        if( option(_name="crb.compute-matrix-information").template as<bool>() )
+                                        {
+                                            auto matrix_info = o.template get<3>();// conditioning of primal reduced matrix + determinant
+                                            double conditioning = matrix_info.template get<0>();
+                                            double determinant = matrix_info.template get<1>();
+                                            LOG( INFO ) << " primal reduced matrix information ";
+                                            LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
+                                            LOG( INFO ) << std::setprecision(15)<<"conditioning : "<<conditioning;
+                                            LOG( INFO ) << std::setprecision(15)<<"determinant : "<<determinant;
+                                        }
                                         if( relative_primal_solution_error_bound_efficiency < 1 )
-                                            LOG( INFO ) << "efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                        {
+                                            LOG( INFO ) << "N : "<<N;
+                                            LOG( INFO ) << std::setprecision(15)<<"efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                            LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
+                                            LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_estimated_error : "<<relative_primal_solution_estimated_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_error : "<<relative_primal_solution_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
+                                            LOG( INFO ) << std::setprecision(15)<<"primal solution norme  : "<<uN.l2Norm();
+                                        }
                                         if( relative_dual_solution_error_bound_efficiency < 1 )
-                                            LOG( INFO ) << "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                        {
+                                            LOG( INFO ) <<std::setprecision(15)<< "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                            LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
+                                            LOG( INFO ) <<std::setprecision(15)<< "relative_dual_solution_estimated_error : "<<relative_dual_solution_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_error : "<<relative_dual_solution_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
+                                            LOG( INFO ) << std::setprecision(15)<<"dual solution norme  : "<<uNdu.l2Norm();
+                                        }
                                         if( output_error_bound_efficiency < 1 )
-                                            LOG( INFO ) << "efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
+                                        {
+                                            LOG( INFO ) <<std::setprecision(15)<<"efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
+                                            LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
+                                            LOG( INFO ) <<std::setprecision(15)<< "output_relative_estimated_error : "<<output_relative_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<< "output_relative_error : "<<rel_err;
+                                        }
 
                                         if ( option(_name="crb.check.residual").template as<bool>()  && solve_dual_problem  )
                                         {
