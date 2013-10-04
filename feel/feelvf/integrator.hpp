@@ -1841,6 +1841,13 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
                 continue;
             }
+            if ( it->isInterProcessDomain() )
+            {
+                std::cout << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
+                LOG(WARNING) << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
+                continue;
+            }
+
             if ( it->isConnectedTo1() )
             {
                 if ( !isInitConnectionTo1 )
@@ -2749,6 +2756,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
             if ( it->isGhostFace() )
             {
                 LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
+                continue;
+            }
+            if ( it->isInterProcessDomain() )
+            {
+                std::cout << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
+                LOG(WARNING) << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
                 continue;
             }
             if ( it->isConnectedTo1() )
