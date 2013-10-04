@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
-/*! \page Exporter Post-Processing and Visualisation
+/*! \page Exporter Post-Processing and Visualization
 
 
   \tableofcontents
@@ -15,15 +15,15 @@ namespace Feel {
   \section Introduction Introduction
 
   Once we have solved the PDE is solved we usually would like to
-  visualise the solution and possibly other data or fields associated
+  visualize the solution and possibly other data or fields associated
   with the problem. Feel++ provides a very powerful framework for
   post-processing allowing to:
-  - visualize time-based data
-  - visualize high order functions
-  - visualize traces
-  - use standard visualisation tools such as Paraview, Ensight and even Gmsh
+  - visualize time-based data,
+  - visualize high order functions,
+  - visualize traces,
+  - use standard visualization tools such as Paraview, Ensight and even Gmsh.
 
-  To achieve this, Feel++ defines a so-called \c Exporter object
+  To achieve this, Feel++ defines a so-called \c Exporter object.
 
   \section VisPrinciples General principles
 
@@ -105,21 +105,21 @@ namespace Feel {
   <td width="25%">\image html sphere_p4.png</td>
   </tr>
   <tr>
-  <td><center>Low to high order visualisation of \f$u\f$</center></td>
+  <td><center>Low to high order visualization of \f$u\f$</center></td>
   </tr>
   </table>
   </center>
 
-  \section Visualisation Visualisation
+  \section Visualization Visualization
 
-  We would like to visualise the function \f$u=\sin(\pi x)\f$ over
+  We would like to visualize the function \f$u=\sin(\pi x)\f$ over
   \f$\Omega=\{(x,y) \in \mathbb{R}^2 | x^2 + y^2 < 1\}\f$. \f$\Omega\f$
   is approximated by \f$\Omega_h\f$.
 
   To define \f$\Omega\f$ and \f$u\f$, the code reads
   \snippet myexporter.cpp Def_Omega_u
 
-  We start with an \c Exporter object that allows to visualise the \f$P_1\f$ interpolant of \f$u\f$ over
+  We start with an \c Exporter object that allows to visualize the \f$P_1\f$ interpolant of \f$u\f$ over.
 
 
   <a href="#" class="top">top</a>
