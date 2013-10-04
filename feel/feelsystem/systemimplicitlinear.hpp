@@ -150,7 +150,7 @@ public:
      */
     void solve( element_type& u )
     {
-        vector_ptrtype U( this->backend->newVector( this->functionSpace()->map() ) );
+        vector_ptrtype U( this->backend->newVector( _test=this->functionSpace() ) );
         this->backend->solve( M_lhs, M_lhs, U, M_rhs );
         u = *U;
     }

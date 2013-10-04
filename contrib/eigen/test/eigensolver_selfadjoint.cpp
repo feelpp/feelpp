@@ -4,24 +4,9 @@
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2010 Jitse Niesen <jitse@maths.leeds.ac.uk>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 #include <limits>
@@ -38,9 +23,6 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
 
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
-  typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
-  typedef Matrix<RealScalar, MatrixType::RowsAtCompileTime, 1> RealVectorType;
-  typedef typename std::complex<typename NumTraits<typename MatrixType::Scalar>::Real> Complex;
 
   RealScalar largerEps = 10*test_precision<RealScalar>();
 
@@ -128,7 +110,7 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
 
 void test_eigensolver_selfadjoint()
 {
-  int s;
+  int s = 0;
   for(int i = 0; i < g_repeat; i++) {
     // very important to test 3x3 and 2x2 matrices since we provide special paths for them
     CALL_SUBTEST_1( selfadjointeigensolver(Matrix2d()) );
@@ -153,9 +135,9 @@ void test_eigensolver_selfadjoint()
 
   // Test problem size constructors
   s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
-  CALL_SUBTEST_8(SelfAdjointEigenSolver<MatrixXf>(s));
-  CALL_SUBTEST_8(Tridiagonalization<MatrixXf>(s));
+  CALL_SUBTEST_8(SelfAdjointEigenSolver<MatrixXf> tmp1(s));
+  CALL_SUBTEST_8(Tridiagonalization<MatrixXf> tmp2(s));
   
-  EIGEN_UNUSED_VARIABLE(s)
+  TEST_SET_BUT_UNUSED_VARIABLE(s)
 }
 

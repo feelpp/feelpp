@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_SELFADJOINTMATRIX_H
 #define EIGEN_SELFADJOINTMATRIX_H
@@ -147,7 +132,7 @@ template<typename MatrixType, unsigned int UpLo> class SelfAdjointView
       * \sa rankUpdate(const MatrixBase<DerivedU>&, Scalar)
       */
     template<typename DerivedU, typename DerivedV>
-    SelfAdjointView& rankUpdate(const MatrixBase<DerivedU>& u, const MatrixBase<DerivedV>& v, Scalar alpha = Scalar(1));
+    SelfAdjointView& rankUpdate(const MatrixBase<DerivedU>& u, const MatrixBase<DerivedV>& v, const Scalar& alpha = Scalar(1));
 
     /** Perform a symmetric rank K update of the selfadjoint matrix \c *this:
       * \f$ this = this + \alpha ( u u^* ) \f$ where \a u is a vector or matrix.
@@ -160,7 +145,7 @@ template<typename MatrixType, unsigned int UpLo> class SelfAdjointView
       * \sa rankUpdate(const MatrixBase<DerivedU>&, const MatrixBase<DerivedV>&, Scalar)
       */
     template<typename DerivedU>
-    SelfAdjointView& rankUpdate(const MatrixBase<DerivedU>& u, Scalar alpha = Scalar(1));
+    SelfAdjointView& rankUpdate(const MatrixBase<DerivedU>& u, const Scalar& alpha = Scalar(1));
 
 /////////// Cholesky module ///////////
 
@@ -229,9 +214,9 @@ struct triangular_assignment_selector<Derived1, Derived2, (SelfAdjoint|Upper), U
     triangular_assignment_selector<Derived1, Derived2, (SelfAdjoint|Upper), UnrollCount-1, ClearOpposite>::run(dst, src);
 
     if(row == col)
-      dst.coeffRef(row, col) = real(src.coeff(row, col));
+      dst.coeffRef(row, col) = numext::real(src.coeff(row, col));
     else if(row < col)
-      dst.coeffRef(col, row) = conj(dst.coeffRef(row, col) = src.coeff(row, col));
+      dst.coeffRef(col, row) = numext::conj(dst.coeffRef(row, col) = src.coeff(row, col));
   }
 };
 
@@ -254,9 +239,9 @@ struct triangular_assignment_selector<Derived1, Derived2, (SelfAdjoint|Lower), U
     triangular_assignment_selector<Derived1, Derived2, (SelfAdjoint|Lower), UnrollCount-1, ClearOpposite>::run(dst, src);
 
     if(row == col)
-      dst.coeffRef(row, col) = real(src.coeff(row, col));
+      dst.coeffRef(row, col) = numext::real(src.coeff(row, col));
     else if(row > col)
-      dst.coeffRef(col, row) = conj(dst.coeffRef(row, col) = src.coeff(row, col));
+      dst.coeffRef(col, row) = numext::conj(dst.coeffRef(row, col) = src.coeff(row, col));
   }
 };
 
@@ -277,7 +262,7 @@ struct triangular_assignment_selector<Derived1, Derived2, SelfAdjoint|Upper, Dyn
       for(Index i = 0; i < j; ++i)
       {
         dst.copyCoeff(i, j, src);
-        dst.coeffRef(j,i) = conj(dst.coeff(i,j));
+        dst.coeffRef(j,i) = numext::conj(dst.coeff(i,j));
       }
       dst.copyCoeff(j, j, src);
     }
@@ -295,7 +280,7 @@ struct triangular_assignment_selector<Derived1, Derived2, SelfAdjoint|Lower, Dyn
       for(Index j = 0; j < i; ++j)
       {
         dst.copyCoeff(i, j, src);
-        dst.coeffRef(j,i) = conj(dst.coeff(i,j));
+        dst.coeffRef(j,i) = numext::conj(dst.coeff(i,j));
       }
       dst.copyCoeff(i, i, src);
     }

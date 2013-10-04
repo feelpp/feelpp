@@ -64,12 +64,12 @@ struct stream_holder
 {
     stream_holder() : out_( 0 ), owns_( false ) {}
     ~stream_holder()
-    {
-        if ( owns_ )
-            delete out_;
+        {
+            if ( owns_ )
+                delete out_;
 
-        out_ = 0;
-    }
+            out_ = 0;
+        }
     std::ostream * out_;
     bool owns_;
 };
@@ -82,11 +82,11 @@ stream_holder default_logger_info;
 struct assert_initializer
 {
     assert_initializer()
-    {
-        Private::initAssert();
-    }
+        {
+            Private::initAssert();
+        }
 }
-init;
+    init;
 } // anonymous namespace
 
 namespace Private
@@ -127,31 +127,31 @@ std::string getTypeofLevel( int nLevel )
 {
     switch ( nLevel )
     {
-    case lvl_warn:
-            return "Warning";
+    case lvl_info:
+        return "Info";
 
-    case lvl_debug:
-            return "Assertion failed";
+    case lvl_warn:
+        return "Warning";
 
     case lvl_error:
-            return "Assertion failed (Error)";
+        return "Assertion failed (Error)";
 
     case lvl_fatal:
-            return "Assertion failed (FATAL)";
+        return "Assertion failed (FATAL)";
 
     default:
-        {
-            std::ostringstream out;
-            out << "Assertion failed (level=" << nLevel << ")";
-            return out.str();
-        }
-        };
+    {
+        std::ostringstream out;
+        out << "Assertion failed (level=" << nLevel << ")";
+        return out.str();
+    }
+    };
 }
 
 // helpers, for dumping the assertion context
 void dumpContextSummary( const AssertContext & context, std::ostream & out )
 {
-    out << "\n" << getTypeofLevel( context.get_level() )
+    out
         << " in " << context.getContextFile() << ":" << context.getContextLine() << '\n';
 
     if ( !context.get_level_msg().empty() )
@@ -160,17 +160,17 @@ void dumpContextSummary( const AssertContext & context, std::ostream & out )
 
     else
         out << "\nExpression: " << context.expression();
-
     out << std::endl;
 }
 
 void dumpContextDetail( const AssertContext & context, std::ostream & out )
 {
-    out << "\n" << getTypeofLevel( context.get_level() )
+    out
         << " in " << context.getContextFile() << ":" << context.getContextLine() << '\n';
 
     if ( !context.get_level_msg().empty() )
-        out << "User-friendly msg: '" << context.get_level_msg() << "'\n";
+        out
+            << "User-friendly msg: '" << context.get_level_msg() << "'\n";
 
     out << "\nExpression: '" << context.expression() << "'\n";
 
@@ -211,7 +211,15 @@ void defaultLogger( const AssertContext & context )
     if ( default_logger_info.out_ == 0 )
         return;
 
-    dumpContextDetail( context, *( default_logger_info.out_ ) );
+    //dumpContextDetail( context, *( default_logger_info.out_ ) );
+    if ( context.get_level() == google::INFO )
+        dumpContextSummary( context, LOG(INFO) );
+    if ( context.get_level() == google::WARNING )
+        dumpContextSummary( context, LOG(WARNING) );
+    if ( context.get_level() == google::ERROR )
+        dumpContextSummary( context, LOG(ERROR) );
+    if ( context.get_level() == google::FATAL )
+        dumpContextSummary( context, LOG(FATAL) );
 }
 
 ///////////////////////////////////////////////////////
@@ -220,7 +228,15 @@ void defaultLogger( const AssertContext & context )
 // warn : just dump summary to console
 void defaultWarnHandler( const AssertContext & context )
 {
-    dumpContextSummary( context, std::cout );
+    // dumpContextSummary( context, std::cout );
+    if ( context.get_level() == google::INFO )
+        dumpContextSummary( context, LOG(INFO) );
+    if ( context.get_level() == google::WARNING )
+        dumpContextSummary( context, LOG(WARNING) );
+    if ( context.get_level() == google::ERROR )
+        dumpContextSummary( context, LOG(ERROR) );
+    if ( context.get_level() == google::FATAL )
+        dumpContextSummary( context, LOG(FATAL) );
 }
 
 
@@ -254,35 +270,35 @@ void defaultDebugHandler( const AssertContext & context )
         switch ( ch )
         {
         case 'i':
-            case 'I':
-                    // ignore
-                    break;
+        case 'I':
+            // ignore
+            break;
 
         case 'f':
-            case 'F':
-                    // ignore forever
-                    ignorer.insert( file_and_line( context.getContextFile(), context.getContextLine() ) );
+        case 'F':
+            // ignore forever
+            ignorer.insert( file_and_line( context.getContextFile(), context.getContextLine() ) );
             break;
 
         case 'a':
-            case 'A':
-                    // ignore all
-                    ignore_all = true;
+        case 'A':
+            // ignore all
+            ignore_all = true;
             break;
 
         case 'd':
-            case 'D':
-                    // break
-                    breakIntoDebugger();
+        case 'D':
+            // break
+            breakIntoDebugger();
             break;
 
         case 'b':
-            case 'B':
-                    abort();
+        case 'B':
+            abort();
             break;
 
         default:
-                bContinue = true;
+            bContinue = true;
             break;
         }
     }
@@ -292,17 +308,17 @@ void defaultDebugHandler( const AssertContext & context )
 // error : throw a runtime exception
 void defaultErrorHandler( const AssertContext & context )
 {
-    std::ostringstream out;
-    dumpContextSummary( context, out );
-    throw std::runtime_error( out.str() );
+    //std::ostringstream out;
+    dumpContextSummary( context, LOG(ERROR) );
+    //throw std::runtime_error( out.str() );
 }
 
 
 // fatal : dump error and abort
 void defaultFatalHandler( const AssertContext & context )
 {
-    dumpContextDetail( context, std::cerr );
-    abort();
+    dumpContextDetail( context, LOG(FATAL) );
+    //abort();
 }
 
 

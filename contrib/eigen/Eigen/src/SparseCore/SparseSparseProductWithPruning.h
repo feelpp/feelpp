@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008-2011 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_SPARSESPARSEPRODUCTWITHPRUNING_H
 #define EIGEN_SPARSESPARSEPRODUCTWITHPRUNING_H
@@ -32,7 +17,7 @@ namespace internal {
 
 // perform a pseudo in-place sparse * sparse product assuming all matrices are col major
 template<typename Lhs, typename Rhs, typename ResultType>
-static void sparse_sparse_product_with_pruning_impl(const Lhs& lhs, const Rhs& rhs, ResultType& res, typename ResultType::RealScalar tolerance)
+static void sparse_sparse_product_with_pruning_impl(const Lhs& lhs, const Rhs& rhs, ResultType& res, const typename ResultType::RealScalar& tolerance)
 {
   // return sparse_sparse_product_with_pruning_impl2(lhs,rhs,res);
 
@@ -100,7 +85,7 @@ struct sparse_sparse_product_with_pruning_selector<Lhs,Rhs,ResultType,ColMajor,C
   typedef typename traits<typename remove_all<Lhs>::type>::Scalar Scalar;
   typedef typename ResultType::RealScalar RealScalar;
 
-  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, RealScalar tolerance)
+  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance)
   {
     typename remove_all<ResultType>::type _res(res.rows(), res.cols());
     internal::sparse_sparse_product_with_pruning_impl<Lhs,Rhs,ResultType>(lhs, rhs, _res, tolerance);
@@ -112,7 +97,7 @@ template<typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs,Rhs,ResultType,ColMajor,ColMajor,RowMajor>
 {
   typedef typename ResultType::RealScalar RealScalar;
-  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, RealScalar tolerance)
+  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance)
   {
     // we need a col-major matrix to hold the result
     typedef SparseMatrix<typename ResultType::Scalar> SparseTemporaryType;
@@ -126,7 +111,7 @@ template<typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs,Rhs,ResultType,RowMajor,RowMajor,RowMajor>
 {
   typedef typename ResultType::RealScalar RealScalar;
-  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, RealScalar tolerance)
+  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance)
   {
     // let's transpose the product to get a column x column product
     typename remove_all<ResultType>::type _res(res.rows(), res.cols());
@@ -139,7 +124,7 @@ template<typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs,Rhs,ResultType,RowMajor,RowMajor,ColMajor>
 {
   typedef typename ResultType::RealScalar RealScalar;
-  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, RealScalar tolerance)
+  static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance)
   {
     typedef SparseMatrix<typename ResultType::Scalar,ColMajor> ColMajorMatrix;
     ColMajorMatrix colLhs(lhs);

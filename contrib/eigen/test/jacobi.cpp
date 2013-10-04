@@ -4,24 +4,9 @@
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2009 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 #include <Eigen/SVD>
@@ -29,7 +14,6 @@
 template<typename MatrixType, typename JacobiScalar>
 void jacobi(const MatrixType& m = MatrixType())
 {
-  typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
@@ -56,8 +40,8 @@ void jacobi(const MatrixType& m = MatrixType())
 
     MatrixType b = a;
     b.applyOnTheLeft(p, q, rot);
-    VERIFY_IS_APPROX(b.row(p), c * a.row(p) + internal::conj(s) * a.row(q));
-    VERIFY_IS_APPROX(b.row(q), -s * a.row(p) + internal::conj(c) * a.row(q));
+    VERIFY_IS_APPROX(b.row(p), c * a.row(p) + numext::conj(s) * a.row(q));
+    VERIFY_IS_APPROX(b.row(q), -s * a.row(p) + numext::conj(c) * a.row(q));
   }
 
   {
@@ -70,7 +54,7 @@ void jacobi(const MatrixType& m = MatrixType())
     MatrixType b = a;
     b.applyOnTheRight(p, q, rot);
     VERIFY_IS_APPROX(b.col(p), c * a.col(p) - s * a.col(q));
-    VERIFY_IS_APPROX(b.col(q), internal::conj(s) * a.col(p) + internal::conj(c) * a.col(q));
+    VERIFY_IS_APPROX(b.col(q), numext::conj(s) * a.col(p) + numext::conj(c) * a.col(q));
   }
 }
 
@@ -90,7 +74,8 @@ void test_jacobi()
     // complex<float> is really important to test as it is the only way to cover conjugation issues in certain unaligned paths
     CALL_SUBTEST_6(( jacobi<MatrixXcf, float>(MatrixXcf(r,c)) ));
     CALL_SUBTEST_6(( jacobi<MatrixXcf, std::complex<float> >(MatrixXcf(r,c)) ));
-    (void) r;
-    (void) c;
+    
+    TEST_SET_BUT_UNUSED_VARIABLE(r);
+    TEST_SET_BUT_UNUSED_VARIABLE(c);
   }
 }

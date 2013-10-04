@@ -11,6 +11,7 @@
 /.kdev4
 /CMakeCache.txt
 /CMakeFiles
+/CMakeLists.txt.doc
 /CMakeLists.txt~
 /CPackConfig.cmake
 /CPackSourceConfig.cmake
@@ -24,6 +25,7 @@
 /NEWS.pdf
 /NEWS.tex
 /NEWS.txt
+/README.html
 /README.org~
 /SVNREVISION
 /TAGS
@@ -47,3 +49,6 @@
 /subdirs
 /tools
 /usb_modeswitch.conf
+/research/pmp
+/research/rb4areo
+/research/dot

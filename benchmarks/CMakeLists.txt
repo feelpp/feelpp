@@ -1,4 +1,8 @@
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
 project( feel-benchmarks )
+
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 add_custom_target(benchmarks)
 # set(petsc_SOLVER_OPTIONS "-ksp_monitor -pc_type asm -pc_asm_blocks 2" )
@@ -27,6 +31,6 @@ macro(feel_add_bench examplename)
   add_dependencies( benchmarks ${targetname} )
 endmacro(feel_add_bench)
 
-foreach( DIR laplacian  navierstokes perf wrapper/python python )
+foreach( DIR navierstokes perf wrapper/python python )
   add_subdirectory( ${DIR} )
 endforeach()

@@ -38,8 +38,6 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <feel/feelcore/debug.hpp>
-
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/filters.hpp>
 
@@ -149,7 +147,7 @@ public:
      */
     std::string const& elementType() const
     {
-        return _M_element_type;
+        return M_element_type;
     }
 
 
@@ -228,8 +226,8 @@ private:
 
 private:
 
-    mutable std::string _M_filename;
-    std::string _M_element_type;
+    mutable std::string M_filename;
+    std::string M_element_type;
 };
 
 

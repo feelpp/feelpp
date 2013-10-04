@@ -72,35 +72,35 @@ struct BFAssign2
     typedef typename BFType::matrix_type matrix_type;
     BFAssign2( BFAssign2 const& lfa )
         :
-        _M_bf( lfa._M_bf ),
-        _M_expr( lfa._M_expr ),
-        _M_test_index( lfa._M_test_index )
+        M_bf( lfa.M_bf ),
+        M_expr( lfa.M_expr ),
+        M_test_index( lfa.M_test_index )
     {}
     BFAssign2( BFType& lf, ExprType const& expr )
         :
-        _M_bf( lf ),
-        _M_expr( expr ),
-        _M_test_index( 0 )
+        M_bf( lf ),
+        M_expr( expr ),
+        M_test_index( 0 )
     {}
     template<typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& X ) const
     {
-        Debug( 5050 ) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << _M_test_index << "\n";
+        DVLOG(2) << "[BFAssign2::operator()] start loop on trial spaces against test space index: " << M_test_index << "\n";
 
-        if ( _M_bf.testSpace()->worldsComm()[_M_test_index].isActive() )
+        if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
         {
-            fusion::for_each( _M_bf.trialSpace()->functionSpaces(),
-                              make_bfassign1( _M_bf, _M_expr, X, _M_test_index ) );
+            fusion::for_each( M_bf.trialSpace()->functionSpaces(),
+                              make_bfassign1( M_bf, M_expr, X, M_test_index ) );
         }
 
-        Debug( 5050 ) << "[BFAssign2::operator()] stop loop on trial spaces against test space index: " << _M_test_index << "\n";
-        ++_M_test_index;
+        DVLOG(2) << "[BFAssign2::operator()] stop loop on trial spaces against test space index: " << M_test_index << "\n";
+        ++M_test_index;
 
     }
 private:
-    BFType& _M_bf;
-    ExprType const& _M_expr;
-    mutable size_type _M_test_index;
+    BFType& M_bf;
+    ExprType const& M_expr;
+    mutable size_type M_test_index;
 };
 template<typename BFType, typename ExprType>
 BFAssign2<BFType,ExprType>
@@ -115,31 +115,31 @@ struct BFAssign1
     typedef typename BFType::matrix_type matrix_type;
     BFAssign1( BFAssign1 const& lfa )
         :
-        _M_bf( lfa._M_bf ),
-        _M_test( lfa._M_test ),
-        _M_expr( lfa._M_expr ),
-        _M_trial_index( lfa._M_trial_index )
+        M_bf( lfa.M_bf ),
+        M_test( lfa.M_test ),
+        M_expr( lfa.M_expr ),
+        M_trial_index( lfa.M_trial_index )
     {}
     BFAssign1( BFType& lf,
                ExprType const& expr,
                boost::shared_ptr<TestSpaceType> const& Testh,
                size_type test_index )
         :
-        _M_bf( lf ),
-        _M_test( Testh ),
-        _M_expr( expr ),
-        _M_trial_index( 0 ),
-        _M_test_index( test_index )
+        M_bf( lf ),
+        M_test( Testh ),
+        M_expr( expr ),
+        M_trial_index( 0 ),
+        M_test_index( test_index )
     {}
     template<typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& trial ) const;
 
 private:
-    BFType& _M_bf;
-    boost::shared_ptr<TestSpaceType> _M_test;
-    ExprType const& _M_expr;
-    mutable size_type _M_trial_index;
-    size_type _M_test_index;
+    BFType& M_bf;
+    boost::shared_ptr<TestSpaceType> M_test;
+    ExprType const& M_expr;
+    mutable size_type M_trial_index;
+    size_type M_test_index;
 };
 template<typename BFType, typename ExprType, typename TestSpaceType>
 BFAssign1<BFType,ExprType,TestSpaceType>
@@ -158,31 +158,31 @@ struct BFAssign3
     typedef typename BFType::matrix_type matrix_type;
     BFAssign3( BFAssign3 const& lfa )
         :
-        _M_bf( lfa._M_bf ),
-        _M_trial( lfa._M_trial ),
-        _M_expr( lfa._M_expr ),
-        _M_test_index( lfa._M_test_index )
+        M_bf( lfa.M_bf ),
+        M_trial( lfa.M_trial ),
+        M_expr( lfa.M_expr ),
+        M_test_index( lfa.M_test_index )
     {}
     BFAssign3( BFType& lf,
                ExprType const& expr,
                boost::shared_ptr<TrialSpaceType> const& Trialh,
                size_type trial_index )
         :
-        _M_bf( lf ),
-        _M_trial( Trialh ),
-        _M_expr( expr ),
-        _M_trial_index( trial_index ),
-        _M_test_index( 0 )
+        M_bf( lf ),
+        M_trial( Trialh ),
+        M_expr( expr ),
+        M_trial_index( trial_index ),
+        M_test_index( 0 )
     {}
     template<typename SpaceType>
     void operator()( boost::shared_ptr<SpaceType> const& test ) const;
 
 private:
-    BFType& _M_bf;
-    boost::shared_ptr<TrialSpaceType> _M_trial;
-    ExprType const& _M_expr;
-    size_type _M_trial_index;
-    mutable size_type _M_test_index;
+    BFType& M_bf;
+    boost::shared_ptr<TrialSpaceType> M_trial;
+    ExprType const& M_expr;
+    size_type M_trial_index;
+    mutable size_type M_test_index;
 };
 template<typename BFType, typename ExprType, typename TrialSpaceType>
 BFAssign3<BFType,ExprType,TrialSpaceType>
@@ -357,6 +357,10 @@ public:
 
         static const uint16_type nDim = test_geometric_mapping_type::nDim;
 
+        static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+        static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+        static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
+
         typedef ExprT expression_type;
 
         typedef typename test_precompute<>::type test_precompute_type;
@@ -486,6 +490,15 @@ public:
                  ExprT const& expr,
                  IM const& im );
 
+        template<typename IMTest,typename IMTrial>
+        Context( form_type& __form,
+                 map_test_geometric_mapping_context_type const& gmcTest,
+                 map_trial_geometric_mapping_context_type const& _gmcTrial,
+                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 ExprT const& expr,
+                 IM const& im,
+                 IMTest const& imTest, IMTrial const& imTrial );
+
         template<typename IM2>
         Context( form_type& __form,
                  map_test_geometric_mapping_context_type const& gmcTest,
@@ -504,6 +517,83 @@ public:
                  IM const& im,
                  IM2 const& im2,
                  mpl::int_<2> );
+
+        size_type trialElementId( size_type trial_eid ) const
+            {
+                return trialElementId( trial_eid,mpl::int_<nDimDiffBetweenTestTrial>() );
+            }
+        size_type trialElementId( size_type trial_eid,mpl::int_<0> ) const
+            {
+                size_type idElem = trial_eid;
+                size_type domain_eid = idElem;
+                const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
+                const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
+                if ( test_related_to_trial )
+                {
+                    domain_eid = M_form.testSpace()->mesh()->subMeshToMesh( idElem );
+                    DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                if( trial_related_to_test )
+                {
+                    domain_eid = M_form.trialSpace()->mesh()->meshToSubMesh( idElem );
+                    DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                return domain_eid;
+            }
+        size_type trialElementId( size_type trial_eid,mpl::int_<1> ) const
+            {
+                size_type idElem = trial_eid;
+                size_type domain_eid = idElem;
+                const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
+                const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
+                if ( test_related_to_trial )
+                {
+                    domain_eid = M_form.trialSpace()->mesh()->face( M_form.testSpace()->mesh()->subMeshToMesh( idElem )).element0().id();
+                    DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                if( trial_related_to_test )
+                {
+                    auto const& eltTest = M_form.testSpace()->mesh()->element(idElem);
+                    std::set<size_type> idsFind;
+                    for (uint16_type f=0;f< M_form.testSpace()->mesh()->numLocalFaces();++f)
+                        {
+                            const size_type idFind = M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                            if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                        }
+                    if ( idsFind.size()>1 ) std::cout << " TODO trialElementId " << std::endl;
+
+                    if ( idsFind.size()>0 )
+                        domain_eid = *idsFind.begin();
+                    else
+                        domain_eid = invalid_size_type_value;
+
+                    DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                return domain_eid;
+            }
+        size_type trialElementId( typename mesh_1_type::element_iterator it ) const
+            {
+                return trialElementId( it->id() );
+            }
+        size_type trialElementId( typename mesh_1_type::element_type const& e ) const
+            {
+                return trialElementId( e.id() );
+            }
+        bool isZero( size_type i ) const
+            {
+                size_type domain_eid = trialElementId( i );
+                if ( domain_eid == invalid_size_type_value )
+                    return true;
+                return false;
+            }
+        bool isZero( typename mesh_1_type::element_iterator it ) const
+            {
+                return this->isZero( it->id() );
+            }
+        bool isZero( typename mesh_1_type::element_type const& e ) const
+            {
+                return this->isZero( e.id() );
+            }
 
         void update( map_test_geometric_mapping_context_type const& gmcTest,
                      map_trial_geometric_mapping_context_type const& _gmcTrial,
@@ -562,14 +652,14 @@ public:
 
         void assemble()
         {
-            assemble( fusion::at_key<gmc<0> >( _M_test_gmc )->id() );
+            assemble( fusion::at_key<gmc<0> >( M_test_gmc )->id() );
         }
         void assemble( size_type elt_0 );
 
         void assemble( mpl::int_<2> )
         {
-            assemble( fusion::at_key<gmc<0> >( _M_test_gmc )->id(),
-                      fusion::at_key<test_gmc1>( _M_test_gmc )->id() );
+            assemble( fusion::at_key<gmc<0> >( M_test_gmc )->id(),
+                      fusion::at_key<test_gmc1>( M_test_gmc )->id() );
         }
         void assemble( size_type elt_0, size_type elt_1  );
 
@@ -582,15 +672,15 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( Pts const& pts )
         {
-            _M_test_pc = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
-            _M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), pts ) );
+            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts ) );
+            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), pts ) );
         }
 
         template<typename PtsTest,typename PtsTrial>
         void precomputeBasisAtPoints( PtsTest const& pts1,PtsTrial const& pts2  )
         {
-            _M_test_pc = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts1 ) );
-            _M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), pts2 ) );
+            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts1 ) );
+            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), pts2 ) );
         }
 
 
@@ -602,11 +692,11 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( uint16_type __f, permutation_1_type const& __p, Pts const& pts )
         {
-            _M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), pts ) );
-            //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+            M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts ) );
+            //FEELPP_ASSERT( M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
 
-            _M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), pts ) );
-            //FEELPP_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
+            M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), pts ) );
+            //FEELPP_ASSERT( M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
         }
 
         template<typename PtsSet>
@@ -640,7 +730,7 @@ public:
                 for ( permutation_type __p( permutation_type::IDENTITY );
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( _M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
                 }
             }
 
@@ -678,7 +768,7 @@ public:
                 for ( permutation_type __p( permutation_type::IDENTITY );
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( _M_form.trialSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), ppts[__f].find( __p )->second ) );
                 }
             }
 
@@ -696,10 +786,10 @@ public:
                                                permutation_1_type __p = permutation_1_type( permutation_1_type::NO_PERMUTATION ) ) const
         {
             if ( __f == invalid_uint16_type_value )
-                return  _M_test_pc;
+                return  M_test_pc;
 
-            //FEELPP_ASSERT( _M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
-            return _M_test_pc_face.find( __f )->second.find( __p )->second;
+            //FEELPP_ASSERT( M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
+            return M_test_pc_face.find( __f )->second.find( __p )->second;
         }
 
         /**
@@ -712,10 +802,10 @@ public:
                 permutation_2_type __p = permutation_2_type( permutation_2_type::NO_PERMUTATION ) ) const
         {
             if ( __f == invalid_uint16_type_value )
-                return  _M_trial_pc;
+                return  M_trial_pc;
 
-            //FEELPP_ASSERT( _M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
-            return _M_trial_pc_face.find( __f )->second.find( __p )->second;
+            //FEELPP_ASSERT( M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
+            return M_trial_pc_face.find( __f )->second.find( __p )->second;
         }
 
 
@@ -751,30 +841,30 @@ public:
                                            bool isFirstExperience );
     private:
 
-        form_type& _M_form;
-        const list_block_type& _M_lb;
-        dof_1_type* _M_test_dof;
-        dof_2_type* _M_trial_dof;
+        form_type& M_form;
+        const list_block_type& M_lb;
+        dof_1_type* M_test_dof;
+        dof_2_type* M_trial_dof;
 
-        test_precompute_ptrtype _M_test_pc;
-        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> > _M_test_pc_face;
-        trial_precompute_ptrtype _M_trial_pc;
-        std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype> > _M_trial_pc_face;
-
-
-        map_test_geometric_mapping_context_type _M_test_gmc;
-        map_trial_geometric_mapping_context_type _M_trial_gmc;
-
-        map_test_fecontext_type _M_test_fec;
-        map_left_test_fecontext_type _M_test_fec0;
-        map_right_test_fecontext_type _M_test_fec1;
-        map_trial_fecontext_type _M_trial_fec;
-        map_left_trial_fecontext_type _M_trial_fec0;
-        map_right_trial_fecontext_type _M_trial_fec1;
+        test_precompute_ptrtype M_test_pc;
+        std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> > M_test_pc_face;
+        trial_precompute_ptrtype M_trial_pc;
+        std::map<uint16_type, std::map<permutation_2_type, trial_precompute_ptrtype> > M_trial_pc_face;
 
 
-        local_matrix_type _M_rep;
-        local2_matrix_type _M_rep_2;
+        map_test_geometric_mapping_context_type M_test_gmc;
+        map_trial_geometric_mapping_context_type M_trial_gmc;
+
+        map_test_fecontext_type M_test_fec;
+        map_left_test_fecontext_type M_test_fec0;
+        map_right_test_fecontext_type M_test_fec1;
+        map_trial_fecontext_type M_trial_fec;
+        map_left_trial_fecontext_type M_trial_fec0;
+        map_right_trial_fecontext_type M_trial_fec1;
+
+
+        local_matrix_type M_rep;
+        local2_matrix_type M_rep_2;
         local_row_type M_local_rows;
         local2_row_type M_local_rows_2;
         local_col_type M_local_cols;
@@ -795,10 +885,10 @@ public:
         c_local_col_type M_c_local_colsigns;
         c_local2_col_type M_c_local_colsigns_2;
 
-        eval00_expr_ptrtype _M_eval_expr00;
-        eval01_expr_ptrtype _M_eval_expr01;
-        eval10_expr_ptrtype _M_eval_expr10;
-        eval11_expr_ptrtype _M_eval_expr11;
+        eval00_expr_ptrtype M_eval_expr00;
+        eval01_expr_ptrtype M_eval_expr01;
+        eval10_expr_ptrtype M_eval_expr10;
+        eval11_expr_ptrtype M_eval_expr11;
 
         IM M_integrator;
 
@@ -836,14 +926,14 @@ public:
     BilinearForm( BilinearForm const& __vf )
         :
         M_pattern( __vf.M_pattern ),
-        _M_X1( __vf._M_X1 ),
-        _M_X2( __vf._M_X2 ),
-        _M_matrix( __vf._M_matrix ),
-        _M_lb( __vf._M_lb ),
-        _M_row_startInMatrix( __vf._M_row_startInMatrix ),
-        _M_col_startInMatrix( __vf._M_col_startInMatrix ),
-        _M_do_threshold( __vf._M_do_threshold ),
-        _M_threshold( __vf._M_threshold )
+        M_X1( __vf.M_X1 ),
+        M_X2( __vf.M_X2 ),
+        M_matrix( __vf.M_matrix ),
+        M_lb( __vf.M_lb ),
+        M_row_startInMatrix( __vf.M_row_startInMatrix ),
+        M_col_startInMatrix( __vf.M_col_startInMatrix ),
+        M_do_threshold( __vf.M_do_threshold ),
+        M_threshold( __vf.M_threshold )
     {}
 
     ~BilinearForm()
@@ -866,12 +956,12 @@ public:
         if ( this != &form )
         {
             M_pattern = form.M_pattern;
-            _M_X1 = form._M_X1;
-            _M_X2 = form._M_X2;
-            _M_matrix = form._M_matrix;
-            _M_row_startInMatrix = form._M_row_startInMatrix;
-            _M_col_startInMatrix = form._M_col_startInMatrix;
-            _M_lb = form._M_lb;
+            M_X1 = form.M_X1;
+            M_X2 = form.M_X2;
+            M_matrix = form.M_matrix;
+            M_row_startInMatrix = form.M_row_startInMatrix;
+            M_col_startInMatrix = form.M_col_startInMatrix;
+            M_lb = form.M_lb;
         }
 
         return *this;
@@ -889,6 +979,16 @@ public:
     template <class ExprT>
     BilinearForm& operator+=( Expr<ExprT> const& expr );
 
+    BilinearForm& operator+=( BilinearForm& a )
+        {
+            if ( this == &a )
+                return *this;
+
+            M_matrix->addMatrix( 1.0, a.M_matrix );
+
+            return *this;
+        }
+
     /**
      * Computes the energy norm associated with the bilinear form
      *
@@ -898,13 +998,13 @@ public:
      */
     value_type operator()( element_1_type const& __v,  element_2_type const& __u ) const
     {
-        return _M_matrix->energy( __v, __u );
+        return M_matrix->energy( __v, __u );
     }
 
     /**
      * \return the entry \f$M_{i,j}\f$
      */
-    // value_type& operator()( size_type i, size_type j ) { return _M_matrix( i, j ); }
+    // value_type& operator()( size_type i, size_type j ) { return M_matrix( i, j ); }
     //@}
 
     /** @name Accessors
@@ -963,7 +1063,7 @@ public:
      */
     space_2_ptrtype const& trialSpace() const
     {
-        return _M_X2;
+        return M_X2;
     }
 
     /**
@@ -971,7 +1071,7 @@ public:
      */
     space_1_ptrtype const& testSpace() const
     {
-        return _M_X1;
+        return M_X1;
     }
 
     /**
@@ -979,7 +1079,7 @@ public:
      */
     gm_1_ptrtype const& gm() const
     {
-        return _M_X1->gm();
+        return M_X1->gm();
     }
 
     /**
@@ -987,7 +1087,7 @@ public:
      */
     gm1_1_ptrtype const& gm1() const
     {
-        return _M_X1->gm1();
+        return M_X1->gm1();
     }
 
     /**
@@ -995,7 +1095,7 @@ public:
      */
     gm_2_ptrtype const& gmTrial() const
     {
-        return _M_X2->gm();
+        return M_X2->gm();
     }
 
     /**
@@ -1003,7 +1103,7 @@ public:
      */
     gm1_2_ptrtype const& gm1Trial() const
     {
-        return _M_X2->gm1();
+        return M_X2->gm1();
     }
 
 
@@ -1012,37 +1112,37 @@ public:
      */
     matrix_type const& matrix() const
     {
-        return *_M_matrix;
+        return *M_matrix;
     }
 
     matrix_type& matrix()
     {
-        return *_M_matrix;
+        return *M_matrix;
     }
 
     matrix_ptrtype const& matrixPtr() const
     {
-        return _M_matrix;
+        return M_matrix;
     }
 
     matrix_ptrtype& matrixPtr()
     {
-        return _M_matrix;
+        return M_matrix;
     }
 
     list_block_type const& blockList() const
     {
-        return _M_lb;
+        return M_lb;
     }
 
     size_type rowStartInMatrix() const
     {
-        return _M_row_startInMatrix;
+        return M_row_startInMatrix;
     }
 
     size_type colStartInMatrix() const
     {
-        return _M_col_startInMatrix;
+        return M_col_startInMatrix;
     }
 
     /**
@@ -1050,7 +1150,7 @@ public:
      */
     value_type threshold() const
     {
-        return _M_threshold;
+        return M_threshold;
     }
 
     /**
@@ -1058,7 +1158,7 @@ public:
      */
     bool doThreshold( value_type const& v ) const
     {
-        return ( math::abs( v ) > _M_threshold );
+        return ( math::abs( v ) > M_threshold );
     }
 
     /**
@@ -1066,7 +1166,7 @@ public:
      */
     bool doThreshold() const
     {
-        return _M_do_threshold;
+        return M_do_threshold;
     }
 
     //@}
@@ -1081,7 +1181,7 @@ public:
      */
     void setThreshold( value_type eps )
     {
-        _M_threshold = eps;
+        M_threshold = eps;
     }
 
     /**
@@ -1090,7 +1190,7 @@ public:
      */
     void setDoThreshold( bool do_threshold )
     {
-        _M_do_threshold = do_threshold;
+        M_do_threshold = do_threshold;
     }
 
     //@}
@@ -1100,7 +1200,8 @@ public:
     //@{
 
 
-
+    // close matrix
+    void close() { M_matrix->close(); }
 
 
     /**
@@ -1113,7 +1214,7 @@ public:
      * side \p rhs is modified accordingly.
      */
     void zeroRows( std::vector<int> const& __dofs,
-                   std::vector<value_type> const& __values,
+                   Vector<value_type> const& __values,
                    Vector<value_type>& rhs,
                    Feel::Context const& on_context );
 
@@ -1123,16 +1224,16 @@ public:
      */
     void add( size_type i,  size_type j,  value_type const& v )
     {
-        if ( _M_do_threshold )
+        if ( M_do_threshold )
         {
             if ( doThreshold( v ) )
-                _M_matrix->add( i+this->rowStartInMatrix(),
+                M_matrix->add( i+this->rowStartInMatrix(),
                                 j+this->colStartInMatrix(),
                                 v );
         }
 
         else
-            _M_matrix->add( i+this->rowStartInMatrix(),
+            M_matrix->add( i+this->rowStartInMatrix(),
                             j+this->colStartInMatrix(),
                             v );
 
@@ -1153,7 +1254,7 @@ public:
             for ( int i=0; i<ncols; ++i )
                 cols[i]+=this->colStartInMatrix();
 
-        _M_matrix->addMatrix( rows, nrows, cols, ncols, data );
+        M_matrix->addMatrix( rows, nrows, cols, ncols, data );
     }
 
 
@@ -1164,7 +1265,7 @@ public:
      */
     void set( size_type i,  size_type j,  value_type const& v )
     {
-        _M_matrix->set( i, j, v );
+        M_matrix->set( i, j, v );
     }
 
     void addToNOz( size_type i, size_type n )
@@ -1193,10 +1294,31 @@ public:
                                      ( optional
                                        ( name,           ( std::string ), "" )
                                        ( kind,           ( BackendType ), BACKEND_PETSC )
-                                       ( rebuild,        ( bool ), false )) )
+                                       ( rebuild,        ( bool ), false )
+                                         ) )
         {
             return backend( _name=name, _kind=kind, _rebuild=rebuild )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
                                                                                _solution=solution);
+        }
+
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
+                                     solveb,
+                                     tag,
+                                     ( required
+                                       ( in_out( solution ),* )
+                                       ( rhs, * )
+                                       ( backend, *) )
+                                     ( optional
+                                       ( prec,           ( preconditioner_ptrtype ),
+                                         preconditioner( _prefix=backend->prefix(),
+                                                         _matrix=this->matrixPtr(),
+                                                         _pc=backend->pcEnumType()/*LU_PRECOND*/,
+                                                         _pcfactormatsolverpackage=backend->matSolverPackageEnumType(),
+                                                         _backend=backend ) )
+                                         ) )
+        {
+            return backend->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
+                                   _solution=solution, _prec = prec );
         }
 
     //@}
@@ -1219,18 +1341,18 @@ private:
 
     size_type M_pattern;
 
-    space_1_ptrtype _M_X1;
-    space_2_ptrtype _M_X2;
+    space_1_ptrtype M_X1;
+    space_2_ptrtype M_X2;
 
-    matrix_ptrtype _M_matrix;
+    matrix_ptrtype M_matrix;
 
-    bool _M_do_build;
+    bool M_do_build;
 
-    list_block_type _M_lb;
-    size_type _M_row_startInMatrix,_M_col_startInMatrix;
+    list_block_type M_lb;
+    size_type M_row_startInMatrix,M_col_startInMatrix;
 
-    bool _M_do_threshold;
-    value_type _M_threshold;
+    bool M_do_threshold;
+    value_type M_threshold;
 
     std::vector<size_type> M_n_nz;
     std::vector<size_type> M_n_oz;
@@ -1248,23 +1370,24 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
         size_type graph_hints )
     :
     M_pattern( graph_hints ),
-    _M_X1( Xh ),
-    _M_X2( Yh ),
-    _M_matrix( __M ),
-    _M_do_build( build ),
-    _M_lb(),
-    _M_row_startInMatrix( rowstart ),
-    _M_col_startInMatrix( colstart ),
-    _M_do_threshold( do_threshold ),
-    _M_threshold( threshold )
+    M_X1( Xh ),
+    M_X2( Yh ),
+    M_matrix( __M ),
+    M_do_build( build ),
+    M_lb(),
+    M_row_startInMatrix( rowstart ),
+    M_col_startInMatrix( colstart ),
+    M_do_threshold( do_threshold ),
+    M_threshold( threshold )
 {
     boost::timer tim;
-    Debug( 5050 ) << "begin constructor with default listblock\n";
+    DVLOG(2) << "begin constructor with default listblock\n";
 
-    _M_lb.push_back( Block ( 0, 0, 0, 0 ) );
+    if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
+    M_lb.push_back( Block ( 0, 0, 0, 0 ) );
 
-    Debug( 5050 ) << " - form init in " << tim.elapsed() << "\n";
-    Debug( 5050 ) << "begin constructor with default listblock done\n";
+    DVLOG(2) << " - form init in " << tim.elapsed() << "\n";
+    DVLOG(2) << "begin constructor with default listblock done\n";
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
@@ -1279,17 +1402,17 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
         size_type graph_hints )
     :
     M_pattern( graph_hints ),
-    _M_X1( Xh ),
-    _M_X2( Yh ),
-    _M_matrix( __M ),
-    _M_do_build( false ),
-    _M_lb( __lb ),
-    _M_row_startInMatrix( rowstart ),
-    _M_col_startInMatrix( colstart ),
-    _M_do_threshold( do_threshold ),
-    _M_threshold( threshold )
+    M_X1( Xh ),
+    M_X2( Yh ),
+    M_matrix( __M ),
+    M_do_build( false ),
+    M_lb( __lb ),
+    M_row_startInMatrix( rowstart ),
+    M_col_startInMatrix( colstart ),
+    M_do_threshold( do_threshold ),
+    M_threshold( threshold )
 {
-
+    if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
 }
 
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1301,23 +1424,23 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
 {
     if ( init )
     {
-        Debug( 5055 ) << "[BilinearForm::assign<false>] start\n";
+        DVLOG(2) << "[BilinearForm::assign<false>] start\n";
         typedef ublas::matrix_range<matrix_type> matrix_range_type;
-        typename list_block_type::const_iterator __bit = _M_lb.begin();
-        typename list_block_type::const_iterator __ben = _M_lb.end();
+        typename list_block_type::const_iterator __bit = M_lb.begin();
+        typename list_block_type::const_iterator __ben = M_lb.end();
 
         for ( ; __bit != __ben; ++__bit )
         {
-            size_type g_ic_start = _M_row_startInMatrix + __bit->globalRowStart();
-            size_type g_jc_start = _M_col_startInMatrix + __bit->globalColumnStart();
-            _M_matrix->zero( g_ic_start, g_ic_start + _M_X1->nDof(),
-                            g_jc_start, g_jc_start + _M_X2->nDof() );
+            size_type g_ic_start = M_row_startInMatrix + __bit->globalRowStart();
+            size_type g_jc_start = M_col_startInMatrix + __bit->globalColumnStart();
+            M_matrix->zero( g_ic_start, g_ic_start + M_X1->nDof(),
+                            g_jc_start, g_jc_start + M_X2->nDof() );
         }
     }
 
-    __expr.assemble( _M_X1, _M_X2, *this );
+    __expr.assemble( M_X1, M_X2, *this );
 
-    Debug( 5055 ) << "[BilinearForm::assign<false>] stop\n";
+    DVLOG(2) << "[BilinearForm::assign<false>] stop\n";
 
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1327,12 +1450,12 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         bool init,
         mpl::bool_<true> )
 {
-    Debug( 5050 ) << "BilinearForm::assign() start loop on test spaces\n";
+    DVLOG(2) << "BilinearForm::assign() start loop on test spaces\n";
 
-    if ( init ) _M_matrix->zero();
+    if ( init ) M_matrix->zero();
 
     assign( __expr, mpl::bool_<true>(), mpl::bool_<( FE1::nSpaces > 1 && FE2::nSpaces > 1 )>() );
-    Debug( 5050 ) << "BilinearForm::assign() stop loop on test spaces\n";
+    DVLOG(2) << "BilinearForm::assign() stop loop on test spaces\n";
 
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1342,7 +1465,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         mpl::bool_<true>,
         mpl::bool_<true> )
 {
-    fusion::for_each( _M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
+    fusion::for_each( M_X1->functionSpaces(), make_bfassign2( *this, __expr ) );
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
@@ -1362,7 +1485,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         mpl::bool_<false>,
         mpl::bool_<true> )
 {
-    fusion::for_each( _M_X1->functionSpaces(), make_bfassign3( *this, __expr, _M_X2, 0 ) );
+    fusion::for_each( M_X1->functionSpaces(), make_bfassign3( *this, __expr, M_X2, 0 ) );
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
 template<typename ExprT>
@@ -1372,7 +1495,7 @@ BilinearForm<FE1, FE2, ElemContType>::assign( Expr<ExprT> const& __expr,
         mpl::bool_<false>,
         mpl::bool_<false> )
 {
-    fusion::for_each( _M_X2->functionSpaces(), make_bfassign1( *this, __expr, _M_X1, 0 ) );
+    fusion::for_each( M_X2->functionSpaces(), make_bfassign1( *this, __expr, M_X1, 0 ) );
 
 }
 template<typename FE1,  typename FE2,  typename ElemContType>
@@ -1392,10 +1515,10 @@ template<typename ExprT>
 BilinearForm<FE1, FE2, ElemContType>&
 BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 {
-    Debug( 5055 ) << "[BilinearForm::operator+=] start\n";
+    DVLOG(2) << "[BilinearForm::operator+=] start\n";
     this->assign( __expr, false, mpl::bool_<mpl::or_< mpl::bool_< ( FE1::nSpaces > 1 )>,
                   mpl::bool_< ( FE2::nSpaces > 1 )> >::type::value >() );
-    Debug( 5055 ) << "[BilinearForm::operator+=] stop\n";
+    DVLOG(2) << "[BilinearForm::operator+=] stop\n";
     return *this;
 }
 
@@ -1403,11 +1526,11 @@ BilinearForm<FE1, FE2, ElemContType>::operator+=( Expr<ExprT> const& __expr )
 template<typename FE1,  typename FE2, typename ElemContType>
 void
 BilinearForm<FE1,FE2,ElemContType>::zeroRows( std::vector<int> const& __dofs,
-        std::vector<value_type> const&__values,
-        Vector<value_type>& rhs,
-        Feel::Context const& on_context )
+                                              Vector<value_type> const&__values,
+                                              Vector<value_type>& rhs,
+                                              Feel::Context const& on_context )
 {
-    _M_matrix->zeroRows( __dofs, __values, rhs, on_context );
+    M_matrix->zeroRows( __dofs, __values, rhs, on_context );
 }
 
 
@@ -1415,47 +1538,47 @@ template<typename BFType, typename ExprType, typename TestSpaceType>
 template<typename SpaceType>
 void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<SpaceType> const& trial ) const
 {
-    if ( _M_bf.testSpace()->worldsComm()[_M_test_index].isActive() )
+    if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
     {
-        Debug( 5050 ) << "[BFAssign1::operator()] expression has test functions index "
-                      << _M_test_index << " : "
+        DVLOG(2) << "[BFAssign1::operator()] expression has test functions index "
+                      << M_test_index << " : "
                       << ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
-        Debug( 5050 ) << "[BFAssign1::operator()] expression has trial functions index "
-                      << _M_trial_index << " :"
+        DVLOG(2) << "[BFAssign1::operator()] expression has trial functions index "
+                      << M_trial_index << " :"
                       << ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
 
         if ( !ExprType::template HasTestFunction<typename TestSpaceType::reference_element_type>::result ||
                 !ExprType::template HasTrialFunction<typename SpaceType::reference_element_type>::result )
         {
-            ++_M_trial_index;
+            ++M_trial_index;
             return;
         }
 
-        Debug( 5050 ) << "[BFAssign1::operator()] terms found with "
-                      << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
+        DVLOG(2) << "[BFAssign1::operator()] terms found with "
+                      << "testindex: " << M_test_index << " trialindex: " << M_trial_index << "\n";
         typedef SpaceType trial_space_type;
         typedef TestSpaceType test_space_type;
 
         Feel::vf::list_block_type list_block;
 
-        if ( _M_bf.testSpace()->worldsComm()[_M_test_index].globalSize()>1 )
+        if ( M_bf.testSpace()->worldsComm()[M_test_index].globalSize()>1 )
         {
-            //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
-            if (_M_bf.testSpace()->hasEntriesForAllSpaces())
+            //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
+            if (M_bf.testSpace()->hasEntriesForAllSpaces())
                 list_block.push_back( Feel::vf::Block( 0, 0,
-                                                       _M_bf.testSpace()->nLocalDofStart( _M_test_index ),
-                                                       _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+                                                       M_bf.testSpace()->nLocalDofStart( M_test_index ),
+                                                       M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
             else
-                list_block.push_back( Feel::vf::Block( 0, 0, 0, _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+                list_block.push_back( Feel::vf::Block( 0, 0, 0, M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
 
         }
 
         else
         {
-            //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+            //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             list_block.push_back( Feel::vf::Block( 0,0,
-                                                   _M_bf.testSpace()->nDofStart( _M_test_index ),
-                                                   _M_bf.trialSpace()->nDofStart( _M_trial_index ) ) );
+                                                   M_bf.testSpace()->nDofStart( M_test_index ),
+                                                   M_bf.trialSpace()->nDofStart( M_trial_index ) ) );
         }
 
         typedef typename BFType::matrix_type matrix_type;
@@ -1463,64 +1586,64 @@ void BFAssign1<BFType,ExprType,TestSpaceType>::operator()( boost::shared_ptr<Spa
                 trial_space_type,
                 ublas::vector_range<ublas::vector<double> > > bf_type;
 
-        bf_type bf( _M_test,trial, _M_bf.matrixPtr(), list_block,  _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern()  );
+        bf_type bf( M_test,trial, M_bf.matrixPtr(), list_block,  M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern()  );
 
-        bf += _M_expr;
+        bf += M_expr;
     }
 
-    ++_M_trial_index;
+    ++M_trial_index;
 }
 
 template<typename BFType, typename ExprType, typename TrialSpaceType>
 template<typename SpaceType>
 void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<SpaceType> const& test ) const
 {
-    if ( _M_bf.testSpace()->worldsComm()[_M_test_index].isActive() )
+    if ( M_bf.testSpace()->worldsComm()[M_test_index].isActive() )
     {
 
-        Debug( 5050 ) << "[BFAssign3::operator()] expression has trial functions index "
-                      << _M_test_index << " : "
+        DVLOG(2) << "[BFAssign3::operator()] expression has trial functions index "
+                      << M_test_index << " : "
                       << ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
-        Debug( 5050 ) << "[BFAssign3::operator()] expression has test functions index "
-                      << _M_trial_index << " :"
+        DVLOG(2) << "[BFAssign3::operator()] expression has test functions index "
+                      << M_trial_index << " :"
                       << ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result << " (0:no, 1:yes)\n";
 
         if ( !ExprType::template HasTrialFunction<typename TrialSpaceType::reference_element_type>::result ||
                 !ExprType::template HasTestFunction<typename SpaceType::reference_element_type>::result )
         {
-            ++_M_test_index;
+            ++M_test_index;
             return;
         }
 
-        Debug( 5050 ) << "[BFAssign3::operator()] terms found with "
-                      << "testindex: " << _M_test_index << " trialindex: " << _M_trial_index << "\n";
+        DVLOG(2) << "[BFAssign3::operator()] terms found with "
+                      << "testindex: " << M_test_index << " trialindex: " << M_trial_index << "\n";
         typedef SpaceType test_space_type;
         typedef TrialSpaceType trial_space_type;
 
         //Feel::vf::Block block ( 0, 0,
-        //                        _M_bf.testSpace()->nDofStart( _M_test_index ),
-        //                        _M_bf.trialSpace()->nDofStart( _M_trial_index ) );
+        //                        M_bf.testSpace()->nDofStart( M_test_index ),
+        //                        M_bf.trialSpace()->nDofStart( M_trial_index ) );
         Feel::vf::list_block_type list_block;
 
         // with mpi, dof start to 0 (thanks to the LocalToGlobal mapping).
-        if ( _M_bf.testSpace()->worldsComm()[_M_test_index].globalSize()>1 )
+        if ( M_bf.testSpace()->worldsComm()[M_test_index].globalSize()>1 )
         {
-            //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
-            if (_M_bf.testSpace()->hasEntriesForAllSpaces())
+            //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
+            if (M_bf.testSpace()->hasEntriesForAllSpaces())
                 list_block.push_back( Feel::vf::Block( 0, 0,
-                                                       _M_bf.testSpace()->nLocalDofStart( _M_test_index ),
-                                                       _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+                                                       M_bf.testSpace()->nLocalDofStart( M_test_index ),
+                                                       M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
             else
-                list_block.push_back( Feel::vf::Block( 0, 0, 0, _M_bf.trialSpace()->nLocalDofStart( _M_trial_index ) ) );
+                list_block.push_back( Feel::vf::Block( 0, 0, 0, M_bf.trialSpace()->nLocalDofStart( M_trial_index ) ) );
 
         }
 
         else
         {
-            //Debug( 5050 ) << "[BFAssign1::operator()] block: " << block << "\n";
+            //DVLOG(2) << "[BFAssign1::operator()] block: " << block << "\n";
             list_block.push_back( Feel::vf::Block( 0,0,
-                                                   _M_bf.testSpace()->nDofStart( _M_test_index ),
-                                                   _M_bf.trialSpace()->nDofStart( _M_trial_index ) ) );
+                                                   M_bf.testSpace()->nDofStart( M_test_index ),
+                                                   M_bf.trialSpace()->nDofStart( M_trial_index ) ) );
         }
 
         typedef typename BFType::matrix_type matrix_type;
@@ -1528,12 +1651,12 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
                 trial_space_type,
                 ublas::vector_range<ublas::vector<double> > > bf_type;
 
-        bf_type bf( test, _M_trial, _M_bf.matrixPtr(), list_block, _M_bf.rowStartInMatrix(), _M_bf.colStartInMatrix(), _M_bf.doThreshold(), _M_bf.threshold(), _M_bf.pattern() );
+        bf_type bf( test, M_trial, M_bf.matrixPtr(), list_block, M_bf.rowStartInMatrix(), M_bf.colStartInMatrix(), M_bf.doThreshold(), M_bf.threshold(), M_bf.pattern() );
 
-        bf += _M_expr;
+        bf += M_expr;
     }
 
-    ++_M_test_index;
+    ++M_test_index;
 }
 
 
@@ -1545,4 +1668,3 @@ void BFAssign3<BFType,ExprType,TrialSpaceType>::operator()( boost::shared_ptr<Sp
 #include <feel/feelvf/bilinearformcontext.hpp>
 
 #endif /* __BilinearForm_H */
-

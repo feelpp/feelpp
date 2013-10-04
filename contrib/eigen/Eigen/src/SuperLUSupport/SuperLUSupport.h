@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008-2011 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_SUPERLUSUPPORT_H
 #define EIGEN_SUPERLUSUPPORT_H
@@ -175,7 +160,7 @@ struct SluMatrix : SuperMatrix
     res.ncol      = mat.cols();
 
     res.storage.lda       = MatrixType::IsVectorAtCompileTime ? mat.size() : mat.outerStride();
-    res.storage.values    = mat.data();
+    res.storage.values    = (void*)(mat.data());
     return res;
   }
 
@@ -368,14 +353,14 @@ class SuperLUBase : internal::noncopyable
       *
       * \sa compute()
       */
-//     template<typename Rhs>
-//     inline const internal::sparse_solve_retval<SuperLU, Rhs> solve(const SparseMatrixBase<Rhs>& b) const
-//     {
-//       eigen_assert(m_isInitialized && "SuperLU is not initialized.");
-//       eigen_assert(rows()==b.rows()
-//                 && "SuperLU::solve(): invalid number of rows of the right hand side matrix b");
-//       return internal::sparse_solve_retval<SuperLU, Rhs>(*this, b.derived());
-//     }
+    template<typename Rhs>
+    inline const internal::sparse_solve_retval<SuperLUBase, Rhs> solve(const SparseMatrixBase<Rhs>& b) const
+    {
+      eigen_assert(m_isInitialized && "SuperLU is not initialized.");
+      eigen_assert(rows()==b.rows()
+                && "SuperLU::solve(): invalid number of rows of the right hand side matrix b");
+      return internal::sparse_solve_retval<SuperLUBase, Rhs>(*this, b.derived());
+    }
     
     /** Performs a symbolic decomposition on the sparcity of \a matrix.
       *
@@ -392,7 +377,7 @@ class SuperLUBase : internal::noncopyable
     }
     
     template<typename Stream>
-    void dumpMemory(Stream& s)
+    void dumpMemory(Stream& /*s*/)
     {}
     
   protected:
@@ -511,8 +496,8 @@ class SuperLU : public SuperLUBase<_MatrixType,SuperLU<_MatrixType> >
 
     SuperLU(const MatrixType& matrix) : Base()
     {
-      Base::init();
-      compute(matrix);
+      init();
+      Base::compute(matrix);
     }
 
     ~SuperLU()
@@ -627,6 +612,7 @@ void SuperLU<MatrixType>::factorize(const MatrixType& a)
   
   this->initFactorization(a);
   
+  m_sluOptions.ColPerm = COLAMD;
   int info = 0;
   RealScalar recip_pivot_growth, rcond;
   RealScalar ferr, berr;
@@ -848,7 +834,7 @@ class SuperILU : public SuperLUBase<_MatrixType,SuperILU<_MatrixType> >
     SuperILU(const MatrixType& matrix) : Base()
     {
       init();
-      compute(matrix);
+      Base::compute(matrix);
     }
 
     ~SuperILU()
@@ -1029,7 +1015,7 @@ struct sparse_solve_retval<SuperLUBase<_MatrixType,Derived>, Rhs>
 
   template<typename Dest> void evalTo(Dest& dst) const
   {
-    dec().derived()._solve(rhs(),dst);
+    this->defaultEvalTo(dst);
   }
 };
 

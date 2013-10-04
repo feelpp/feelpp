@@ -79,7 +79,7 @@ makeOptions()
 {
     po::options_description laplacianoptions( "Aitken testsuite options" );
     laplacianoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.02 ), "mesh size" )
+    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
     ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
     ( "relaxmethod", po::value<int>()->default_value( 0 ), "use DD (=0) or DN (=1) method" )
     ( "additive", po::value<int>()->default_value( 0 ), "use relax_aik additive method" )

@@ -39,6 +39,21 @@
 
 namespace Feel
 {
+template<typename T>
+struct get_real_type
+{};
+
+template<>
+struct get_real_type<double>
+{
+    typedef double value_type;
+};
+
+template<>
+struct get_real_type<std::complex<double> >
+{
+    typedef double value_type;
+};
 
 /*!
  * \class VectorEigen
@@ -67,10 +82,15 @@ public:
     //@{
 
     typedef T value_type;
-    typedef T real_type;
+    typedef typename get_real_type<T>::value_type real_type;
+
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vector_type;
     typedef VectorEigen<value_type> this_type;
     typedef typename super1::clone_ptrtype clone_ptrtype;
+
+    typedef typename super1::datamap_type datamap_type;
+    typedef typename super1::datamap_ptrtype datamap_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -81,7 +101,7 @@ public:
 
     VectorEigen( size_type __s );
 
-    VectorEigen( DataMap const& dm );
+    VectorEigen( datamap_ptrtype const& dm );
 
     VectorEigen( size_type __s, size_type __n_local );
 
@@ -120,7 +140,7 @@ public:
     /**
      * init from a \p DataMap
      */
-    void init( DataMap const& dm );
+    void init( datamap_ptrtype const& dm );
 
 
     //@}
@@ -145,7 +165,7 @@ public:
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
 
-        return _M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -159,7 +179,7 @@ public:
         ( i )
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
-        return _M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -174,7 +194,7 @@ public:
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
 
-        return _M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -188,7 +208,7 @@ public:
         ( i )
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
-        return _M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -277,7 +297,7 @@ public:
      */
     vector_type const& vec () const
     {
-        return _M_vec;
+        return M_vec;
     }
 
     /**
@@ -285,7 +305,7 @@ public:
      */
     vector_type & vec ()
     {
-        return _M_vec;
+        return M_vec;
     }
 
 
@@ -302,7 +322,7 @@ public:
      */
     void setConstant( value_type v )
         {
-            _M_vec.setConstant( v );
+            M_vec.setConstant( v );
         }
 
     //@}
@@ -330,7 +350,7 @@ public:
      */
     void zero ()
     {
-        _M_vec.setZero( _M_vec.size() );
+        M_vec.setZero( M_vec.size() );
     }
 
     void zero ( size_type /*start1*/, size_type /*stop1*/ )
@@ -344,7 +364,7 @@ public:
     void add ( const size_type i, const value_type& value )
     {
         checkInvariant();
-        _M_vec( i ) += value;
+        M_vec( i ) += value;
     }
 
     /**
@@ -353,7 +373,7 @@ public:
     void addVector ( int* i, int n, value_type* v )
     {
         for ( int j = 0; j < n; ++j )
-            _M_vec( i[j] ) += v[j];
+            M_vec( i[j] ) += v[j];
     }
 
     /**
@@ -362,7 +382,7 @@ public:
     void set ( size_type i, const value_type& value )
     {
         checkInvariant();
-        _M_vec( i ) = value;
+        M_vec( i ) = value;
     }
 
     /**
@@ -471,7 +491,7 @@ public:
      */
     void scale ( const T factor )
     {
-        _M_vec *= factor;
+        M_vec *= factor;
     }
 
     /**
@@ -480,7 +500,7 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
 
     void close() {}
 
@@ -492,7 +512,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_min = _M_vec.minCoeff();
+        real_type local_min = 0;//M_vec.minCoeff();
 
         real_type global_min = local_min;
 
@@ -518,7 +538,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_max = _M_vec.maxCoeff();
+        real_type local_max = 0;//M_vec.maxCoeff();
 
         real_type global_max = local_max;
 
@@ -543,7 +563,7 @@ public:
     real_type l1Norm() const
     {
         checkInvariant();
-        double local_l1 = _M_vec.array().abs().sum();
+        double local_l1 = M_vec.array().abs().sum();
 
         double global_l1 = local_l1;
 
@@ -568,7 +588,7 @@ public:
     real_type l2Norm() const
     {
         checkInvariant();
-        real_type local_norm2 = _M_vec.squaredNorm();
+        real_type local_norm2 = M_vec.squaredNorm();
         real_type global_norm2 = local_norm2;
 
 
@@ -590,7 +610,7 @@ public:
     real_type linftyNorm() const
     {
         checkInvariant();
-        real_type local_norminf = _M_vec.array().abs().maxCoeff();
+        real_type local_norminf = M_vec.array().abs().maxCoeff();
         real_type global_norminf = local_norminf;
 
 
@@ -612,9 +632,9 @@ public:
     value_type sum() const
     {
         checkInvariant();
-        double local_sum = _M_vec.array().sum();
+        value_type local_sum = M_vec.array().sum();
 
-        double global_sum = local_sum;
+        value_type global_sum = local_sum;
 
 
 #ifdef FEELPP_HAS_MPI
@@ -652,7 +672,7 @@ public:
         checkInvariant();
 
         for ( size_type i = 0; i < this->localSize(); ++i )
-            _M_vec.operator[]( i ) += a;
+            M_vec.operator[]( i ) += a;
 
         return;
     }
@@ -678,7 +698,7 @@ public:
         checkInvariant();
 
         for ( size_type i = 0; i < this->localSize(); ++i )
-            _M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
+            M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
 
         return;
     }
@@ -747,7 +767,7 @@ private:
     void checkInvariant() const;
 
 private:
-    vector_type _M_vec;
+    vector_type M_vec;
 };
 
 /**

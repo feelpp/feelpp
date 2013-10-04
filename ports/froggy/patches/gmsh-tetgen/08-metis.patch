@@ -1,0 +1,13 @@
+Index: gmsh-tetgen-2.5.1~beta2~svn12051/contrib/Metis/util.c
+===================================================================
+--- gmsh-tetgen-2.5.1~beta2~svn12051.orig/contrib/Metis/util.c	2012-05-10 21:50:18.000000000 +0200
++++ gmsh-tetgen-2.5.1~beta2~svn12051/contrib/Metis/util.c	2012-05-10 21:53:40.955619426 +0200
+@@ -28,7 +28,7 @@
+ 
+   sprintf(out2, "Error! %s", out1);
+ 
+-  fprintf(stdout, out2);
++  fprintf(stdout, "%s", out2);
+   fflush(stdout);
+ 
+   abort();

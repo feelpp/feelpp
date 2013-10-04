@@ -41,29 +41,42 @@ po::options_description exporter_options( std::string const& prefix )
 {
     po::options_description _options( "Exporter " + prefix + " options" );
     _options.add_options()
-    // do export
-    ( prefixvm( prefix,"export" ).c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise" )
-    // do export
-    ( prefixvm( prefix,"exporter.export" ).c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise" )
+        // do export
+        ( prefixvm( prefix,"export" ).c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise" )
+        // do export
+        ( prefixvm( prefix,"exporter.export" ).c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise" )
 
-    // exporter type
-    ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter (ensight or gmsh)" )
+        // exporter type
+        ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter (ensight or gmsh)" )
 
-    // prefix options
-    ( prefixvm( prefix,"exporter.prefix" ).c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files" )
 
-    // directory options
-    ( prefixvm( prefix,"exporter.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "results" ), "directory for exported files" )
 
-    // frequency options
-    ( prefixvm( prefix,"exporter.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "frequency at which results are exported" )
+        //  geometry
+        ( prefixvm( prefix,"exporter.geometry" ).c_str(), Feel::po::value<int>()->default_value( (int)EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY ), "type of geometry" )
 
-    // file type options
-    ( prefixvm( prefix,"exporter.file-type" ).c_str(), Feel::po::value<int>()->default_value( ASCII ), "file type in which the results are exported ('ascii' = 0 or 'binary' = 1)" )
+        // prefix options
+        ( prefixvm( prefix,"exporter.prefix" ).c_str(), Feel::po::value<std::string>()->default_value( prefix ), "prefix for exported files" )
 
-    // matlab options
-    ( prefixvm( prefix,"exporter.matlab" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "export matrices and vectors to matlab files" )
-    ;
+        // directory options
+        ( prefixvm( prefix,"exporter.directory" ).c_str(), Feel::po::value<std::string>()->default_value( "results" ), "directory for exported files" )
+
+        // frequency options
+        ( prefixvm( prefix,"exporter.freq" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "frequency at which results are exported" )
+
+        // file type options
+        ( prefixvm( prefix,"exporter.file-type" ).c_str(), Feel::po::value<int>()->default_value( ASCII ), "file type in which the results are exported ('ascii' = 0 or 'binary' = 1)" )
+
+        // matlab options
+        ( prefixvm( prefix,"exporter.matlab" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "export matrices and vectors to matlab files" )
+
+        //
+        // ensightgold
+        //
+        ( prefixvm( prefix,"exporter.ensightgold.use-sos" ).c_str(), Feel::po::value<bool>()->default_value( true ), "use sos  (true) or first case file (false) for multiple case files" )
+        //  single
+        ( prefixvm( prefix,"exporter.fileset" ).c_str(), Feel::po::value<bool>()->default_value( false ), "use fileset for transient simulations" )
+
+        ;
     return _options;
 }
 

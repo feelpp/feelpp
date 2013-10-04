@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_SPARSE_DOT_H
 #define EIGEN_SPARSE_DOT_H
@@ -45,7 +30,7 @@ SparseMatrixBase<Derived>::dot(const MatrixBase<OtherDerived>& other) const
   Scalar res(0);
   while (i)
   {
-    res += internal::conj(i.value()) * other.coeff(i.index());
+    res += numext::conj(i.value()) * other.coeff(i.index());
     ++i;
   }
   return res;
@@ -69,8 +54,8 @@ SparseMatrixBase<Derived>::dot(const SparseMatrixBase<OtherDerived>& other) cons
   typedef typename internal::remove_all<Nested>::type  NestedCleaned;
   typedef typename internal::remove_all<OtherNested>::type  OtherNestedCleaned;
 
-  const Nested nthis(derived());
-  const OtherNested nother(other.derived());
+  Nested nthis(derived());
+  OtherNested nother(other.derived());
 
   typename NestedCleaned::InnerIterator i(nthis,0);
   typename OtherNestedCleaned::InnerIterator j(nother,0);
@@ -79,7 +64,7 @@ SparseMatrixBase<Derived>::dot(const SparseMatrixBase<OtherDerived>& other) cons
   {
     if (i.index()==j.index())
     {
-      res += internal::conj(i.value()) * j.value();
+      res += numext::conj(i.value()) * j.value();
       ++i; ++j;
     }
     else if (i.index()<j.index())
@@ -94,16 +79,23 @@ template<typename Derived>
 inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real
 SparseMatrixBase<Derived>::squaredNorm() const
 {
-  return internal::real((*this).cwiseAbs2().sum());
+  return numext::real((*this).cwiseAbs2().sum());
 }
 
 template<typename Derived>
 inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real
 SparseMatrixBase<Derived>::norm() const
 {
-  return internal::sqrt(squaredNorm());
+  using std::sqrt;
+  return sqrt(squaredNorm());
 }
 
+template<typename Derived>
+inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real
+SparseMatrixBase<Derived>::blueNorm() const
+{
+  return internal::blueNorm_impl(*this);
+}
 } // end namespace Eigen
 
 #endif // EIGEN_SPARSE_DOT_H

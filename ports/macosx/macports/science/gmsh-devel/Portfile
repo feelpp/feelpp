@@ -8,15 +8,15 @@ fetch.type          svn
 fetch.user          gmsh
 fetch.password      gmsh
 svn.url             https://geuz.org/svn/gmsh/trunk
-svn.revision        14560
+svn.revision        16477
 svn.method          export
 svn.post_args       --username ${fetch.user} --password ${fetch.password}
 
 name                gmsh-devel
-version             2.6.2-svn-${svn.revision}
+version             2.8.3-svn-${svn.revision}
 categories          science
 platforms           darwin
-maintainers         ujf-grenoble.fr:Christophe.Prudhomme
+maintainers         feelpp.org:christophe.prudhomme
 description         Finite element mesh generator in 1D, 2D and 3D
 long_description    \
         Gmsh is an automatic 3D finite element mesh generator (primarily   \
@@ -31,15 +31,15 @@ conflicts           gmsh
 
 # https://trac.macports.org/ticket/33925
 compiler.blacklist  clang
-configure.compiler macports-gcc-4.6
+configure.compiler macports-gcc-4.8
 
 worksrcdir	build
 configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../trunk" }
 
 #configure.pre_args
 configure.args-append \
-    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.6\
-    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.6\
+    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8\
+    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8\
     -DCMAKE_INSTALL_PREFIX=${prefix}\
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DCMAKE_COLOR_MAKEFILE=ON \
@@ -48,7 +48,6 @@ configure.args-append \
     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
     -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
     -DENABLE_OS_SPECIFIC_INSTALL=OFF\
-    -DENABLE_APP_BUNDLE=OFF \
     -DENABLE_BUILD_LIB=OFF\
     -DENABLE_BUILD_SHARED=ON\
     -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
@@ -73,3 +72,15 @@ depends_lib  \
     port:jpeg \
     port:zlib \
     port:texinfo
+
+variant slepc description {compile with PETSC/SLEPC support} {
+    depends_lib-append      port:slepc
+    configure.args-append \
+        -DENABLE_MPI=ON \
+        -DENABLE_PETSC=ON \
+        -DPETSC_INC=${prefix}/lib/petsc/include \
+        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.a \
+        -DENABLE_SLEPC=ON \
+        -DSLEPC_INC=${prefix}/lib/petsc/include \
+        -DSLEPC_LIB=${prefix}/lib/petsc/lib/libslepc.a
+}

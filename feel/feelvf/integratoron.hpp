@@ -187,22 +187,22 @@ public:
                       expression_type const& __expr,
                       size_type __on )
         :
-        _M_eltbegin( __elts.template get<1>() ),
-        _M_eltend( __elts.template get<2>() ),
-        _M_u( __u ),
-        _M_rhs( __rhs ),
-        _M_expr( __expr ),
-        _M_on_strategy( __on )
+        M_eltbegin( __elts.template get<1>() ),
+        M_eltend( __elts.template get<2>() ),
+        M_u( __u ),
+        M_rhs( __rhs ),
+        M_expr( __expr ),
+        M_on_strategy( __on )
     {
     }
     IntegratorOnExpr( IntegratorOnExpr const& ioe )
         :
-        _M_eltbegin( ioe._M_eltbegin ),
-        _M_eltend( ioe._M_eltend ),
-        _M_u( ioe._M_u ),
-        _M_rhs( ioe._M_rhs ),
-        _M_expr( ioe._M_expr ),
-        _M_on_strategy( ioe._M_on_strategy )
+        M_eltbegin( ioe.M_eltbegin ),
+        M_eltend( ioe.M_eltend ),
+        M_u( ioe.M_u ),
+        M_rhs( ioe.M_rhs ),
+        M_expr( ioe.M_expr ),
+        M_on_strategy( ioe.M_on_strategy )
     {
     }
 
@@ -221,7 +221,7 @@ public:
      */
     element_iterator beginElement() const
     {
-        return _M_eltbegin;
+        return M_eltbegin;
     }
 
     /**
@@ -230,7 +230,7 @@ public:
      */
     element_iterator endElement() const
     {
-        return _M_eltend;
+        return M_eltend;
     }
 
 
@@ -249,7 +249,7 @@ public:
                    FormType& __f ) const
     {
         typedef typename Elem::functionspace_type functionspace_type;
-        Debug( 5066 ) << "[IntegratorOn::assemble()] is_same: "
+        DVLOG(2) << "[IntegratorOn::assemble()] is_same: "
                       << mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>::value << "\n";
         assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>() );
     }
@@ -268,31 +268,31 @@ private:
 
 private:
 
-    element_iterator _M_eltbegin;
-    element_iterator _M_eltend;
+    element_iterator M_eltbegin;
+    element_iterator M_eltend;
 
-    element_type const& _M_u;
-    mutable rhs_element_type _M_rhs;
-    expression_type _M_expr;
-    Context _M_on_strategy;
+    element_type const& M_u;
+    mutable rhs_element_type M_rhs;
+    expression_type M_expr;
+    Context M_on_strategy;
 };
 
 template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
 template<typename Elem1, typename Elem2, typename FormType>
 void
 IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-        boost::shared_ptr<Elem2> const& /*__v*/,
-        FormType& __form,
-        mpl::bool_<true> ) const
+                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
+                                                                  FormType& __form,
+                                                                  mpl::bool_<true> ) const
 {
 #if 0
 
     if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
-            !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
+         !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
         return;
 
 #endif
-    Debug( 5066 ) << "call on::assemble() " << "\n";
+    DVLOG(2) << "call on::assemble() " << "\n";
     //
     // a few typedefs
     //
@@ -326,170 +326,188 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     // make sure that the form is close, ie the associated matrix is assembled
     __form.matrix().close();
     // make sure that the right hand side is closed, ie the associated vector is assembled
-    _M_rhs->close();
+    M_rhs->close();
 
     //
     // start
     //
-    Debug( 5066 )  << "assembling Dirichlet conditions\n";
+    DVLOG(2)  << "assembling Dirichlet conditions\n";
     boost::timer __timer;
 
     std::vector<int> dofs;
     std::vector<value_type> values;
-
     element_iterator __face_it = this->beginElement();
     element_iterator __face_en = this->endElement();
     if ( __face_it != __face_en )
     {
-
-    dof_type const* __dof = _M_u.functionSpace()->dof().get();
-
-    fe_type const* __fe = _M_u.functionSpace()->fe().get();
-
-    gm_ptrtype __gm( new gm_type );
+        // get the first face properly connected
+        for( ; __face_it != __face_en; ++__face_it )
+            if ( __face_it->isConnectedTo0() )
+                break;
 
 
-    //
-    // Precompute some data in the reference element for
-    // geometric mapping and reference finite element
-    //
-    typedef typename geoelement_type::permutation_type permutation_type;
-    typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
-    typedef typename gm_type::precompute_type geopc_type;
-    Debug( 5066 )  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
-    std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
+        dof_type const* __dof = M_u.functionSpace()->dof().get();
 
-    for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
-    {
-        for ( permutation_type __p( permutation_type::IDENTITY );
-                __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+        fe_type const* __fe = M_u.functionSpace()->fe().get();
+
+        gm_ptrtype __gm( new gm_type );
+
+
+        //
+        // Precompute some data in the reference element for
+        // geometric mapping and reference finite element
+        //
+        typedef typename geoelement_type::permutation_type permutation_type;
+        typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
+        typedef typename gm_type::precompute_type geopc_type;
+        DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+        std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
+
+        for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
         {
-            __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
-            //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
-            FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+            for ( permutation_type __p( permutation_type::IDENTITY );
+                  __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
+                //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+                FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points" );
+            }
         }
-    }
-
-    uint16_type __face_id = __face_it->pos_first();
-    gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
-
-    map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-    //t_expr_type expr( _M_expr, mapgmc );
-
-
-    Debug( 5066 )  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
-                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
-                   << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
-
-    size_type nbFaceDof = invalid_size_type_value;
-
-    if ( !fe_type::is_modal )
-        nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
-                      face_type::numEdges * fe_type::nDofPerEdge +
-                      face_type::numFaces * fe_type::nDofPerFace );
-
-    else
-        nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
-
-    Debug( 5066 )  << "nbFaceDof = " << nbFaceDof << "\n";
-    //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
-
-    for ( ;
-            __face_it != this->endElement();
-            ++__face_it )
-    {
-        FEELPP_ASSERT( __face_it->isOnBoundary() && !__face_it->isConnectedTo1() )
-        ( __face_it->marker() )
-        ( __face_it->isOnBoundary() )
-        ( __face_it->ad_first() )
-        ( __face_it->pos_first() )
-        ( __face_it->ad_second() )
-        ( __face_it->pos_second() )
-        ( __face_it->id() ).warn( "inconsistent data face" );
-        Debug( 5066 ) << "FACE_ID = " << __face_it->id()
-                      << " element id= " << __face_it->ad_first()
-                      << " pos in elt= " << __face_it->pos_first()
-                      << " marker: " << __face_it->marker() << "\n";
-        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
 
         uint16_type __face_id = __face_it->pos_first();
-        __c->update( __face_it->element( 0 ), __face_id );
-
-        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-        Debug( 5066 ) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+        gmc_ptrtype __c( new gmc_type( __gm, __face_it->element( 0 ), __geopc, __face_id ) );
 
         map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+        //t_expr_type expr( M_expr, mapgmc );
 
-        t_expr_type expr( _M_expr, mapgmc );
-        expr.update( mapgmc );
 
-        std::pair<size_type,size_type> range_dof( std::make_pair( _M_u.start(),
-                _M_u.functionSpace()->nDof() ) );
-        Debug( 5066 )  << "[integratoron] dof start = " << range_dof.first << "\n";
-        Debug( 5066 )  << "[integratoron] dof range = " << range_dof.second << "\n";
+        DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
+                  << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
+                  << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
 
-        for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-            for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+        size_type nbFaceDof = invalid_size_type_value;
+
+        if ( !fe_type::is_modal )
+            nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
+                          face_type::numEdges * fe_type::nDofPerEdge +
+                          face_type::numFaces * fe_type::nDofPerFace );
+
+        else
+            nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
+
+        DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
+        //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
+
+        for ( ;
+              __face_it != this->endElement();
+              ++__face_it )
+        {
+            if ( !__face_it->isConnectedTo0() )
             {
-                for ( uint16_type l = 0; l < nbFaceDof; ++l )
+                LOG( WARNING ) << "face not connected" << *__face_it;
+
+                continue;
+            }
+            // do not process the face if it is a ghost face: belonging to two
+            // processes and being in a process id greater than the one
+            // corresponding face
+            if ( __face_it->isGhostFace() )
+            {
+                LOG(WARNING) << "face id : " << __face_it->id() << " is a ghost face";
+                continue;
+            }
+
+            DVLOG(2) << "FACE_ID = " << __face_it->id()
+                     << " element id= " << __face_it->ad_first()
+                     << " pos in elt= " << __face_it->pos_first()
+                     << " marker: " << __face_it->marker() << "\n";
+            DVLOG(2) << "FACE_ID = " << __face_it->id() << " face pts=" << __face_it->G() << "\n";
+
+            uint16_type __face_id = __face_it->pos_first();
+            __c->update( __face_it->element( 0 ), __face_id );
+
+            DVLOG(2) << "FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+
+            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+
+            t_expr_type expr( M_expr, mapgmc );
+            expr.update( mapgmc );
+
+            std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
+                                                                      M_u.functionSpace()->nDof() ) );
+            DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
+            DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
+
+            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
-                    Debug( 5066 ) << "[integratoronexpr] local dof=" << l
-                                  << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
-                    typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-                    Debug( 5066 ) << "[integratoronexpr] value=" << __value << "\n";
-
-                    // global Dof
-                    size_type thedof =  _M_u.start() +
-                                        boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
-
-                    //size_type thedof_nproc = __dof->dofNProc( thedof );
-                    if ( std::find( dofs.begin(),
-                                    dofs.end(),
-                                    thedof ) != dofs.end() )
-                        continue;
-
-                    if ( _M_on_strategy.test( ON_ELIMINATION ) )
+                    for ( uint16_type l = 0; l < nbFaceDof; ++l )
                     {
-                        Debug( 5066 ) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+                        DVLOG(2) << "[integratoronexpr] local dof=" << l
+                                 << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
+                        typename expression_type::value_type __value = expr.evalq( c1, c2, l );
+                        DVLOG(2) << "[integratoronexpr] value=" << __value << "\n";
 
-                        // this can be quite expensive depending on the
-                        // matrix storage format.
-                        //__form.diagonalize( thedof, range_dof, _M_rhs, __value, thedof_nproc );
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-                        dofs.push_back( thedof );
-                        values.push_back( __value );
-#else
+                        // global Dof
+                        size_type thedof =  M_u.start() +
+                            boost::get<0>( __dof->faceLocalToGlobal( __face_it->id(), l, c1 ) );
 
-                        // only the real dof ( not the ghosts )
-                        if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                        //size_type thedof_nproc = __dof->dofNProc( thedof );
+                        if ( std::find( dofs.begin(),
+                                        dofs.end(),
+                                        thedof ) != dofs.end() )
+                            continue;
+
+                        if ( M_on_strategy.test( ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC ) )
                         {
-                            dofs.push_back( thedof );
-                            values.push_back( __value );
+                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
+
+                            // this can be quite expensive depending on the
+                            // matrix storage format.
+                            //__form.diagonalize( thedof, range_dof, M_rhs, __value, thedof_nproc );
+
+                            // only the real dof ( not the ghosts )
+                            //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
+                            {
+                                dofs.push_back( thedof );
+                                values.push_back(  __value );
+                            }
+
+                            //M_rhs.set( thedof, __value );
                         }
 
-#endif
+                        else if (  M_on_strategy.test( ON_PENALISATION ) &&
+                                   !M_on_strategy.test( ON_ELIMINATION | ON_ELIMINATION_SYMMETRIC ) )
+                        {
+                            __form.set( thedof, thedof, 1.0*1e30 );
+                            M_rhs->set( thedof, __value*1e30 );
+                        }
+                    } // loop on space components
 
-
-                        //_M_rhs.set( thedof, __value );
-                    }
-
-                    else if (  _M_on_strategy.test( ON_PENALISATION ) &&
-                               !_M_on_strategy.test( ON_ELIMINATION ) )
-                    {
-                        __form.set( thedof, thedof, 1.0*1e30 );
-                        _M_rhs->set( thedof, __value*1e30 );
-                    }
-                } // loop on space components
-
-            } // loop on face dof
-    }
+                } // loop on face dof
+        }
 
     } // __face_it != __face_en
 
-    __form.zeroRows( dofs, values, *_M_rhs, _M_on_strategy );
+
+    if ( __form.rowStartInMatrix()!=0)
+    {
+        auto const thedofshift = __form.rowStartInMatrix();
+        for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
+            *itd+=thedofshift;
+    }
+    auto x = M_rhs->clone();
+    //CHECK( dofs.size() > 0 ) << "Invalid number of Dirichlet dof, should be > 0 ";
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
+    //x->zero();
+    x->addVector( dofs.data(), dofs.size(), values.data() );
+    //values->zero();
+
+    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
+    x.reset();
 }
 
-#if 1
 
 namespace detail
 {
@@ -571,107 +589,48 @@ BOOST_PARAMETER_FUNCTION(
       ( element, *  )
       ( rhs, *  )
       ( expr,   * )
-    ) // 4. one required parameter, and
+        ) // 4. one required parameter, and
 
     ( optional
-      ( type,   ( size_type ), ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
-      ( verbose,   ( bool ), false )
+      ( prefix,   ( std::string ), "" )
+      ( type,   ( int ), option(_prefix=prefix,_name="on.type").template as<int>() )
+      ( verbose,   ( bool ), option(_prefix=prefix,_name="on.verbose").template as<bool>() )
+        )
     )
-)
 {
-    typename vf::detail::integratoron_type<Args>::type ion( range, element, Feel::vf::detail::getRhsVector(rhs), expr, type );
+    typename vf::detail::integratoron_type<Args>::type ion( range,
+                                                            element,
+                                                            Feel::vf::detail::getRhsVector(rhs),
+                                                            expr,
+                                                            on_context_type(type) );
+    if ( verbose )
+    {
+        LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
+        switch( type )
+        {
+        case ON_ELIMINATION:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, unsymmetric)";
+            break;
+        case ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, unsymmetric)";
+            break;
+        case ON_ELIMINATION_SYMMETRIC:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, symmetric, more expensive than unsymmetric treatment)";
+            break;
+        case ON_ELIMINATION_SYMMETRIC|ON_ELIMINATION_KEEP_DIAGONAL:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, symmetric, more expensive than unsymmetric treatment)";
+            break;
+        case ON_PENALISATION:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (penalisation, symmetric, very big value on diagonal)";
+            break;
+        default:
+            break;
+        }
+    }
     //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
     return typename vf::detail::integratoron_type<Args>::expr_type( ion );
 }
 
-#else
-namespace detail
-{
-
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-Expr<IntegratorOnExpr<ElementRange, Elem,RhsElem,
-     typename mpl::if_<boost::is_arithmetic<OnExpr>,
-     mpl::identity<Expr<Cst<OnExpr> > >,
-     mpl::identity<OnExpr> >::type::type> >
-     on( ElementRange const& __r,
-         Elem const& __u,
-         RhsElem&  __rhs,
-         OnExpr const& __e,
-         size_type __on,
-         mpl::bool_<false> )
-{
-    typedef typename mpl::if_<boost::is_arithmetic<OnExpr>,
-            mpl::identity<Expr<Cst<OnExpr> > >,
-            mpl::identity<OnExpr> >::type::type expr_type;
-    expr_type expr( __e );
-    typedef IntegratorOnExpr<ElementRange, Elem,RhsElem, expr_type> expr_t;
-    return Expr<expr_t>( expr_t( __r, __u, __rhs, expr, __on ) );
-    //return on( __r, __u, __rhs, expr, __on, mpl::bool_<boost::is_arithmetic<OnExpr>::value>() );
-}
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-Expr<IntegratorOnExpr<ElementRange, Elem, typename RhsElem::value_type,
-     typename mpl::if_<boost::is_arithmetic<OnExpr>,
-     mpl::identity<Expr<Cst<OnExpr> > >,
-     mpl::identity<OnExpr> >::type::type> >
-     on( ElementRange const& __r,
-         Elem const& __u,
-         RhsElem&  __rhs,
-         OnExpr const& __e,
-         size_type __on,
-         mpl::bool_<true> )
-{
-    return on( __r, __u, __rhs, __e, __on, mpl::bool_<false>() );
-}
-
-} // detail namespace
-/// \endcond
-
-/**
- * Apply Dirichlet boundary condition over of a set of \p Dof.
- *
- * \param __r tuple of iterators over geometric entities (faces)
- * \param __u element of a functional space whose \p Dof will be constrained
- * \param __rhs right hand side of the system which shall be modified
- * \param __e expression which gives the value of the constraint
- * \param  __on type of strategy to impose the constraint
- *
- */
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-Expr<IntegratorOnExpr<ElementRange, Elem,
-     typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
-     mpl::identity<typename RhsElem::value_type>,
-     mpl::identity<RhsElem> >::type::type,
-     typename mpl::if_<boost::is_arithmetic<OnExpr>,
-     mpl::identity<Expr<Cst<OnExpr> > >,
-     mpl::identity<OnExpr> >::type::type> >
-     on( ElementRange const& __r,
-         Elem const& __u,
-         RhsElem&  __rhs,
-         OnExpr const& __e,
-         size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
-{
-    returnvf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
-
-}
-
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-Expr<IntegratorOnExpr<ElementRange, Elem,
-     typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
-     mpl::identity<typename RhsElem::value_type>,
-     mpl::identity<RhsElem> >::type::type,
-     typename mpl::if_<boost::is_arithmetic<OnExpr>,
-     mpl::identity<Expr<Cst<OnExpr> > >,
-     mpl::identity<OnExpr> >::type::type> >
-     on( ElementRange const& __r,
-         boost::shared_ptr<Elem>  __u,
-         boost::shared_ptr<RhsElem>  __rhs,
-         OnExpr const& __e,
-         size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
-{
-    returnvf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
-
-}
-#endif // 0
 
 } // vf
 } // feel

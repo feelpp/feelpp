@@ -141,8 +141,9 @@ public:
                      bool copy_values=true,
                      bool diag_is_nonzero=true );
 
-    void mergeBlockGraph( graph_ptrtype & globGraphb, matrix_ptrtype m,
-                          size_type start_i, size_type start_j );
+    MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & graph,
+                     backend_type &backend,
+                     bool diag_is_nonzero=true );
 
     MatrixBlockBase( MatrixBlockBase const & mb )
         :
@@ -464,9 +465,9 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
     //@}
 

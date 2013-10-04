@@ -41,7 +41,7 @@ typedef Eigen::VectorXd vectorN_type;
 
 typedef std::vector< std::vector< double > > beta_vector_type;
 
-void ConvectionCrb::init()
+void ConvectionCrb::initModel()
 {
     mesh_ptrtype mesh;
 
@@ -49,7 +49,7 @@ void ConvectionCrb::init()
         std::string repository = this->vm()["input_dir"]. as<std::string>() ;
         std::string file_mesh = this->vm()["mesh_name"]. as<std::string>() ;;
         std::string complete_name = repository + file_mesh;
-        std::cout << "Meshes read in file : " << complete_name <<std::endl;
+        LOG(INFO) << "Meshes read in file : " << complete_name <<std::endl;
 
         mesh  =  loadGMSHMesh( _mesh=new mesh_type,
                               _filename=complete_name,
@@ -63,7 +63,6 @@ void ConvectionCrb::init()
 
     Xh = space_type::New( mesh );
     LOG(INFO)<<"number of dofs : "<<Xh->nLocalDof()<<"\n";
-    std::cout<<"proc "<<Environment::worldComm().globalRank()<<" number of dofs : "<<Xh->nLocalDof()<<std::endl;
     pT = element_ptrtype( new element_type( Xh ) );
 
     element_type U( Xh, "u" );
@@ -254,13 +253,6 @@ void ConvectionCrb::init()
 
     M->close();
 
-    auto ini_cond = Xh->elementPtr();
-    ini_cond->setZero();
-    M_InitialGuessQm.resize( 1 );
-    M_InitialGuessQm[0].resize( 1 );
-    M_InitialGuessQm[0][0] = ini_cond;
-
-
     form1( Xh, _vector=M_Fqm[0][0][0] ) =
         integrate ( markedfaces( mesh, "Tflux"),
                     // heat flux on the right side
@@ -332,12 +324,6 @@ int ConvectionCrb::mMaxF( int output_index, int q)
             throw std::logic_error( "[Model] ERROR : try to acces to mMaxF(output_index,q) with a bad value of output_index");
 }
 
-int ConvectionCrb::mMaxInitialGuess( int q )
-{
-    return 1;
-}
-
-
 /**
  * \param l the index of output
  * \return number of terms  in affine decomposition of the \p q th output term
@@ -349,18 +335,11 @@ int ConvectionCrb::Ql( int l ) const
 }
 
 
-int ConvectionCrb::QInitialGuess() const
-{
-    return 1;
-}
-
-
-
 /**
  * \brief compute the beta coefficient for both bilinear and linear form
  * \param mu parameter to evaluate the coefficients
  */
-boost::tuple<beta_vector_type, std::vector<beta_vector_type> , beta_vector_type >
+boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
 ConvectionCrb::computeBetaQm( parameter_type const& mu, double time)
 {
 #if 0
@@ -403,11 +382,7 @@ ConvectionCrb::computeBetaQm( parameter_type const& mu, double time)
         //M_betaFqm[2][0].resize(1);
         //M_betaFqm[2][0][0] = 1;
 
-    M_betaInitialGuessQm.resize( QInitialGuess() );
-    M_betaInitialGuessQm[0].resize( 1 );
-    M_betaInitialGuessQm[0][0] = 0;
-
-    return boost::make_tuple( M_betaAqm, M_betaFqm , M_betaInitialGuessQm );
+    return boost::make_tuple( M_betaAqm, M_betaFqm );
 }
 
 void

@@ -1,3 +1,5 @@
+
+
 add_custom_target( doc )
 
 ADD_SUBDIRECTORY( api )
@@ -5,5 +7,3 @@ ADD_SUBDIRECTORY( manual )
 ADD_SUBDIRECTORY( snippets )
 
 set(FEELPP_INSTALL_APPS ${FEELPP_INSTALL_APPS} PARENT_SCOPE)
-
-

@@ -91,13 +91,13 @@ public:
     explicit Product( left_expression_type const & left_expr,
                       right_expression_type const & right_expr )
         :
-        _M_left_expr( left_expr ),
-        _M_right_expr( right_expr )
+        M_left_expr( left_expr ),
+        M_right_expr( right_expr )
     {}
     Product( Product const & te )
         :
-        _M_left_expr( te._M_left_expr ),
-        _M_right_expr( te._M_right_expr )
+        M_left_expr( te.M_left_expr ),
+        M_right_expr( te.M_right_expr )
     {}
     ~Product()
     {}
@@ -131,11 +131,11 @@ public:
 
     left_expression_type const& left() const
     {
-        return _M_left_expr;
+        return M_left_expr;
     }
     right_expression_type const& right() const
     {
-        return _M_right_expr;
+        return M_right_expr;
     }
 
     //@}
@@ -157,6 +157,11 @@ public:
         {
             typedef value_type type;
         };
+
+        BOOST_MPL_ASSERT_MSG( (left_shape::M == right_shape::M) && (left_shape::N == right_shape::N) ,
+                              INVALID_RANK_LEFT_AND_RIGHT_SHOULD_BE_THE_SAME,
+                              (mpl::int_<left_shape::M>,mpl::int_<right_shape::M>,
+                               mpl::int_<left_shape::N>,mpl::int_<right_shape::N>));
 
         struct is_zero
         {
@@ -282,8 +287,8 @@ public:
     };
 
 private:
-    mutable left_expression_type  _M_left_expr;
-    mutable right_expression_type  _M_right_expr;
+    mutable left_expression_type  M_left_expr;
+    mutable right_expression_type  M_right_expr;
 };
 /// \endcond
 
@@ -354,13 +359,13 @@ public:
     explicit CrossProduct( left_expression_type const & left_expr,
                       right_expression_type const & right_expr )
         :
-        _M_left_expr( left_expr ),
-        _M_right_expr( right_expr )
+        M_left_expr( left_expr ),
+        M_right_expr( right_expr )
     {}
     CrossProduct( CrossProduct const & te )
         :
-        _M_left_expr( te._M_left_expr ),
-        _M_right_expr( te._M_right_expr )
+        M_left_expr( te.M_left_expr ),
+        M_right_expr( te.M_right_expr )
     {}
     ~CrossProduct()
     {}
@@ -394,11 +399,11 @@ public:
 
     left_expression_type const& left() const
     {
-        return _M_left_expr;
+        return M_left_expr;
     }
     right_expression_type const& right() const
     {
-        return _M_right_expr;
+        return M_right_expr;
     }
 
     //@}
@@ -425,6 +430,11 @@ public:
         BOOST_MPL_ASSERT_MSG( left_shape::nDim == right_shape::nDim,
                               INVALID_DIMENSION_LEFT_AND_RIGHT_SHOULD_BE_THE_SAME,
                               (mpl::int_<left_shape::nDim>,mpl::int_<right_shape::nDim>));
+        BOOST_MPL_ASSERT_MSG( (left_shape::M == right_shape::M) && (left_shape::N == right_shape::N) ,
+                              INVALID_RANK_LEFT_AND_RIGHT_SHOULD_BE_THE_SAME,
+                              (mpl::int_<left_shape::M>,mpl::int_<right_shape::M>,
+                               mpl::int_<left_shape::N>,mpl::int_<right_shape::N>));
+
 
         template <class Args> struct sig
         {
@@ -550,8 +560,8 @@ public:
     };
 
 private:
-    mutable left_expression_type  _M_left_expr;
-    mutable right_expression_type  _M_right_expr;
+    mutable left_expression_type  M_left_expr;
+    mutable right_expression_type  M_right_expr;
 };
 /// \endcond
 
@@ -572,4 +582,3 @@ cross( ExprL l, ExprR r )
 
 } // Feel
 #endif /* __Products_H */
-

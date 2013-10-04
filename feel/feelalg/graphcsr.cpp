@@ -42,18 +42,190 @@ GraphCSR::GraphCSR( size_type n,
     :
     M_is_closed( false ),
     M_worldComm( worldcomm ),
-    M_first_row_entry_on_proc( first_row_entry_on_proc ),
-    M_last_row_entry_on_proc( last_row_entry_on_proc ),
-    M_first_col_entry_on_proc( first_col_entry_on_proc ),
-    M_last_col_entry_on_proc( last_col_entry_on_proc ),
+    M_first_row_entry_on_proc( this->worldComm().globalSize(), first_row_entry_on_proc ),
+    M_last_row_entry_on_proc( this->worldComm().globalSize(),last_row_entry_on_proc ),
+    M_first_col_entry_on_proc( this->worldComm().globalSize(),first_col_entry_on_proc ),
+    M_last_col_entry_on_proc( this->worldComm().globalSize(),last_col_entry_on_proc ),
     M_max_nnz( 0 ),
     M_n_total_nz( n, 0 ),
     M_n_nz( n, 0 ),
     M_n_oz( n, 0 ),
-    M_storage()
+    M_storage(),
+    M_mapRow( new DataMap(worldcomm) ),
+    M_mapCol( new DataMap(worldcomm) )
 {
-    //std::cout << "creating graph " << this << "\n";
+    const int myrank = this->worldComm().globalRank();
+    const int worldsize = this->worldComm().globalSize();
+    const size_type _size1 = last_row_entry_on_proc - first_row_entry_on_proc+1;
+    const size_type _size2 = last_col_entry_on_proc - first_col_entry_on_proc+1;
+
+    for (int proc = 0 ; proc < worldsize ; ++proc)
+    {
+        M_mapRow->setFirstDofGlobalCluster( proc,first_row_entry_on_proc );
+        M_mapRow->setLastDofGlobalCluster(proc, last_row_entry_on_proc );
+        M_mapCol->setFirstDofGlobalCluster( proc,first_col_entry_on_proc );
+        M_mapCol->setLastDofGlobalCluster(proc, last_col_entry_on_proc );
+
+
+        M_mapRow->setNLocalDofWithoutGhost( proc, _size1 );
+        M_mapRow->setNLocalDofWithGhost( proc, _size1 );
+        M_mapCol->setNLocalDofWithoutGhost( proc, _size2 );
+        M_mapCol->setNLocalDofWithGhost( proc, _size2 );
+
+        M_mapRow->setFirstDof( proc, 0 );
+        M_mapCol->setFirstDof( proc, 0 );
+        if (_size2==0)
+            M_mapCol->setLastDof( proc, 0 );
+        else
+            M_mapCol->setLastDof( proc, _size2-1 );
+
+        if ( _size1==0 )
+            M_mapRow->setLastDof( proc, 0 );
+        else
+            M_mapRow->setLastDof( proc, _size1-1 );
+
+        if ( proc==myrank )
+        {
+            M_mapRow->setNDof( _size1 );
+            M_mapCol->setNDof( _size2 );
+        }
+
+    }
+    M_mapRow->resizeMapGlobalProcessToGlobalCluster( M_mapRow->nLocalDofWithGhost(myrank ) );
+    M_mapRow->resizeMapGlobalClusterToGlobalProcess( M_mapRow->nLocalDofWithoutGhost(myrank) );
+    M_mapCol->resizeMapGlobalProcessToGlobalCluster( M_mapCol->nLocalDofWithGhost(myrank) );
+    M_mapCol->resizeMapGlobalClusterToGlobalProcess( M_mapCol->nLocalDofWithoutGhost(myrank) );
+
+    for ( size_type i=0;i<_size1;++i )
+    {
+        M_mapRow->setMapGlobalProcessToGlobalCluster( i,first_row_entry_on_proc+i );
+        M_mapRow->setMapGlobalClusterToGlobalProcess( first_row_entry_on_proc+i,i );
+    }
+
+    for( size_type j=0;j<_size2;++j )
+    {
+        M_mapCol->setMapGlobalProcessToGlobalCluster( j,first_col_entry_on_proc+j );
+        M_mapCol->setMapGlobalClusterToGlobalProcess( first_col_entry_on_proc+j,j );
+    }
+
 }
+
+
+GraphCSR::GraphCSR( boost::shared_ptr<DataMap> const& mapRow,
+                    boost::shared_ptr<DataMap> const& mapCol )
+    :
+    M_is_closed( false ),
+    M_worldComm( mapRow->worldComm() ),
+    M_first_row_entry_on_proc( mapRow->firstDofGlobalClusterWorld() ),
+    M_last_row_entry_on_proc( mapRow->lastDofGlobalClusterWorld() ),
+    M_first_col_entry_on_proc( mapCol->firstDofGlobalClusterWorld() ),
+    M_last_col_entry_on_proc( mapCol->lastDofGlobalClusterWorld() ),
+    M_max_nnz( 0 ),
+    M_n_total_nz( 0 ),
+    M_n_nz( 0 ),
+    M_n_oz( 0 ),
+    M_storage(),
+    M_mapRow(mapRow),
+    M_mapCol(mapCol)
+{}
+
+GraphCSR::GraphCSR( DataMap const& mapRow,
+                    DataMap const& mapCol )
+    :
+    M_is_closed( false ),
+    M_worldComm( mapRow.worldComm() ),
+    M_first_row_entry_on_proc( mapRow.firstDofGlobalClusterWorld() ),
+    M_last_row_entry_on_proc( mapRow.lastDofGlobalClusterWorld() ),
+    M_first_col_entry_on_proc( mapCol.firstDofGlobalClusterWorld() ),
+    M_last_col_entry_on_proc( mapCol.lastDofGlobalClusterWorld() ),
+    M_max_nnz( 0 ),
+    M_n_total_nz( 0 ),
+    M_n_nz( 0 ),
+    M_n_oz( 0 ),
+    M_storage(),
+    M_mapRow( new DataMap(mapRow) ),
+    M_mapCol( new DataMap(mapCol) )
+{}
+
+
+
+
+GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
+                    bool diagIsNonZero, bool close )
+    :
+    M_is_closed( false ),
+    M_worldComm( blockSet(0,0)->worldComm()/* Environment::worldComm()*/ ),
+    M_first_row_entry_on_proc( this->worldComm().globalSize(),0 ),
+    M_last_row_entry_on_proc( this->worldComm().globalSize(),0 ),
+    M_first_col_entry_on_proc( this->worldComm().globalSize(),0 ),
+    M_last_col_entry_on_proc( this->worldComm().globalSize(),0 ),
+    M_max_nnz( 0 ),
+    M_n_total_nz( /*n*/0, 0 ),
+    M_n_nz( /*n*/0, 0 ),
+    M_n_oz( /*n*/0, 0 ),
+    M_storage(),
+    M_mapRow( new DataMap(this->worldComm()) ),
+    M_mapCol( new DataMap(this->worldComm()) )
+{
+    DVLOG(2) << " GraphCSR constructor from block graph\n";
+
+    auto const nRow = blockSet.nRow();
+    auto const nCol = blockSet.nCol();
+
+    const int myrank = this->worldComm().globalRank();
+    const int worldsize = this->worldComm().globalSize();
+
+    this->updateDataMap( blockSet );
+
+    DVLOG(2) << "myrank " << myrank
+             << " this->firstRowEntryOnProc() " << this->firstRowEntryOnProc()
+             << " this->firstColEntryOnProc() " << this->firstColEntryOnProc()
+             << " this->lastRowEntryOnProc() " << this->lastRowEntryOnProc()
+             << " this->lastColEntryOnProc() " << this->lastColEntryOnProc() << "\n";
+
+    size_type start_i=this->firstRowEntryOnProc();
+    size_type start_j=this->firstColEntryOnProc();
+    for ( int i=0; i<nRow; ++i )
+    {
+        start_j=this->firstColEntryOnProc();
+
+        for ( int j=0; j<nCol; ++j )
+        {
+            if ( blockSet(i,j)->empty() )
+            {
+                start_j += blockSet(i,j)->mapCol().nLocalDofWithoutGhost( myrank );
+                continue;
+            }
+
+            //blockSet(i,j)->close();
+            if (this->worldComm().globalSize()==1)
+                this->mergeBlockGraph( blockSet(i,j),start_i,start_j );
+            else
+                this->mergeBlockGraphMPI( blockSet(i,j),blockSet,i,j,start_i,start_j );
+
+            start_j += blockSet(i,j)->mapCol().nLocalDofWithoutGhost( myrank );
+        }
+
+        start_i += blockSet(i,0)->mapRow().nLocalDofWithoutGhost( myrank );
+    }
+
+
+    /*this->worldComm().barrier();
+    M_mapRow.showMeMapGlobalProcessToGlobalCluster();
+    M_mapCol.showMeMapGlobalProcessToGlobalCluster();
+    this->worldComm().barrier();*/
+
+
+    //M_mapCol=M_mapRow;
+    //M_mapCol.setMapGlobalClusterToGlobalProcess(M_mapRow.mapGlobalClusterToGlobalProcess());
+    //M_mapCol.setMapGlobalProcessToGlobalCluster(M_mapRow.mapGlobalProcessToGlobalCluster());
+
+    if ( diagIsNonZero ) this->addMissingZeroEntriesDiagonal();
+
+    if ( close ) this->close();
+}
+
+
 
 GraphCSR::GraphCSR( GraphCSR const & g )
     :
@@ -68,7 +240,9 @@ GraphCSR::GraphCSR( GraphCSR const & g )
     M_n_nz( g.M_n_nz ),
     M_n_oz( g.M_n_oz ),
     M_storage( g.M_storage ),
-    M_graphT( g.M_graphT )
+    M_graphT( g.M_graphT ),
+    M_mapRow(g.M_mapRow),
+    M_mapCol(g.M_mapCol)
 {
 }
 
@@ -94,106 +268,417 @@ GraphCSR::operator=( GraphCSR const& g )
         M_graphT = g.M_graphT;
         M_is_closed = g.M_is_closed;
         M_worldComm = g.M_worldComm;
+        M_mapRow = g.M_mapRow;
+        M_mapCol = g.M_mapCol;
     }
 
     return *this;
 }
 
 
+
 void
-GraphCSR::zero()
+GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
 {
-    //auto nbDof = M_last_row_entry_on_proc-M_first_row_entry_on_proc+1;
-    for ( size_type i=M_first_row_entry_on_proc ; i<=M_last_row_entry_on_proc ; ++i )
+    const int myrank = this->worldComm().globalRank();
+    const int worldsize = this->worldComm().globalSize();
+    auto const nRow = blockSet.nRow();
+    auto const nCol = blockSet.nCol();
+
+    for (int proc = 0 ; proc < worldsize ; ++proc)
     {
-        row_type& row = this->row( i );
-        row.get<0>() = this->worldComm().globalRank();//proc
-        row.get<1>() = i-M_first_row_entry_on_proc; //local index
-        row.get<2>().clear(); //all is zero
+        //-------------------------------------------------------------//
+        size_type size1=0, size2=0;
+        for ( int p=0; p<proc; ++p )
+        {
+            for ( uint i=0; i<nCol; ++i )
+                size2 += blockSet(0,i)->mapCol().nLocalDofWithoutGhost( p );
+            for ( uint i=0; i<nRow; ++i )
+                size1 += blockSet(i,0)->mapRow().nLocalDofWithoutGhost( p );
+        }
+        M_first_col_entry_on_proc[proc] = size2;
+        M_first_row_entry_on_proc[proc] = size1;
+        M_mapCol->setFirstDofGlobalCluster( proc, size2 );
+        M_mapRow->setFirstDofGlobalCluster( proc, size1 );
+        //-------------------------------------------------------------//
+        M_mapCol->setFirstDof( proc, 0 );
+        M_mapRow->setFirstDof( proc, 0 );
+        size_type _size2WithoutGhost=0,_size2WithGhost=0,_globalClusterSize2=0;
+        for ( uint i=0; i<nCol; ++i )
+        {
+            _size2WithoutGhost += blockSet(0,i)->mapCol().nLocalDofWithoutGhost( proc );
+            _size2WithGhost += blockSet(0,i)->mapCol().nLocalDofWithGhost( proc );
+            _globalClusterSize2 += blockSet(0,i)->mapCol().nDof();
+        }
+        size_type _size1WithoutGhost=0,_size1WithGhost=0,_globalClusterSize1=0;
+        for ( uint i=0; i<nRow; ++i )
+        {
+            _size1WithoutGhost += blockSet(i,0)->mapRow().nLocalDofWithoutGhost( proc );
+            _size1WithGhost += blockSet(i,0)->mapRow().nLocalDofWithGhost( proc );
+            _globalClusterSize1 += blockSet(i,0)->mapRow().nDof();
+        }
+        //-------------------------------------------------------------//
+        M_mapCol->setNLocalDofWithoutGhost( proc, _size2WithoutGhost );
+        M_mapCol->setNLocalDofWithGhost( proc, _size2WithGhost );
+        if ( _size2WithGhost==0 )
+            M_mapCol->setLastDof( proc, 0 );
+        else
+            M_mapCol->setLastDof( proc, _size2WithGhost-1 );
+        if ( proc==myrank )
+            M_mapCol->setNDof( _globalClusterSize2 );
+        //-------------------------------------------------------------//
+        M_mapRow->setNLocalDofWithoutGhost( proc, _size1WithoutGhost );
+        M_mapRow->setNLocalDofWithGhost( proc, _size1WithGhost );
+        if ( _size1WithGhost==0 )
+            M_mapRow->setLastDof( proc, 0 );
+        else
+            M_mapRow->setLastDof( proc, _size1WithGhost-1 );
+
+        if ( proc==myrank )
+            M_mapRow->setNDof( _globalClusterSize1 );
+        //-------------------------------------------------------------//
+        if ( M_mapRow->nLocalDofWithoutGhost(proc) == 0 )
+            M_mapRow->setLastDofGlobalCluster(proc,  M_mapRow->firstDofGlobalCluster(proc) );
+        else
+            M_mapRow->setLastDofGlobalCluster(proc,  M_mapRow->firstDofGlobalCluster(proc) + M_mapRow->nLocalDofWithoutGhost(proc)-1 );
+
+        if ( M_mapCol->nLocalDofWithoutGhost() == 0 )
+            M_mapCol->setLastDofGlobalCluster(proc,  M_mapCol->firstDofGlobalCluster(proc) );
+        else
+            M_mapCol->setLastDofGlobalCluster(proc,  M_mapCol->firstDofGlobalCluster(proc) + M_mapCol->nLocalDofWithoutGhost(proc)-1 );
+        //-------------------------------------------------------------//
+        M_last_row_entry_on_proc[proc] = M_mapRow->lastDofGlobalCluster(proc);
+        M_last_col_entry_on_proc[proc] = M_mapCol->lastDofGlobalCluster(proc);
     }
+
+    M_mapRow->resizeMapGlobalProcessToGlobalCluster( M_mapRow->nLocalDofWithGhost(myrank) );
+    M_mapRow->resizeMapGlobalClusterToGlobalProcess( M_mapRow->nLocalDofWithoutGhost(myrank) );
+    M_mapCol->resizeMapGlobalProcessToGlobalCluster( M_mapCol->nLocalDofWithGhost(myrank) );
+    M_mapCol->resizeMapGlobalClusterToGlobalProcess( M_mapCol->nLocalDofWithoutGhost(myrank) );
+
+    // update DataMapRow : setMapGlobalProcessToGlobalCluster setMapGlobalClusterToGlobalProcess
+    const size_type firstDofGCRow = M_mapRow->firstDofGlobalCluster(myrank);
+    size_type start_ii = firstDofGCRow;
+    size_type nLocalDofStartRow = M_mapRow->firstDof();
+    for ( uint16_type i=0 ; i<nRow; ++i)
+    {
+        auto const& mapRowOnBlock = blockSet(i,0)->mapRow();
+        const size_type firstBlockDofGC =  mapRowOnBlock.firstDofGlobalCluster(myrank);
+
+        for (size_type gdof = mapRowOnBlock.firstDof(myrank) ; gdof < mapRowOnBlock.nLocalDofWithGhost(myrank) ; ++gdof )
+        {
+            const size_type localDofRow = nLocalDofStartRow+gdof;
+            const size_type gdofGC = mapRowOnBlock.mapGlobalProcessToGlobalCluster(gdof);
+            if ( mapRowOnBlock.dofGlobalClusterIsOnProc( gdofGC ) )
+            {
+                const size_type globalDofRow = start_ii+(gdofGC-firstBlockDofGC);
+                M_mapRow->setMapGlobalProcessToGlobalCluster( localDofRow, globalDofRow );
+                M_mapRow->setMapGlobalClusterToGlobalProcess( globalDofRow-firstDofGCRow,localDofRow );
+            }
+            else
+            {
+                const int realproc = mapRowOnBlock.procOnGlobalCluster(gdofGC);
+                const size_type nDofStartRow = M_mapRow->firstDofGlobalCluster(realproc) + this->nLocalDofWithoutGhostOnProcStartRow( blockSet, realproc, i, 0);
+                const size_type globalDofRow = nDofStartRow+(gdofGC- mapRowOnBlock.firstDofGlobalCluster(realproc));
+                M_mapRow->setMapGlobalProcessToGlobalCluster( localDofRow, globalDofRow );
+            }
+         }
+        nLocalDofStartRow += mapRowOnBlock.nLocalDofWithGhost( myrank );
+        start_ii += mapRowOnBlock.nLocalDofWithoutGhost( myrank );
+    }
+
+    // update DataMapCol : setMapGlobalProcessToGlobalCluster setMapGlobalClusterToGlobalProcess
+    const size_type firstDofGCCol = M_mapCol->firstDofGlobalCluster(myrank);
+    size_type start_jj = firstDofGCCol;
+    size_type nLocalDofStartCol = M_mapCol->firstDof();
+    for ( uint16_type j=0 ; j<nCol; ++j)
+    {
+        auto const& mapColOnBlock = blockSet(0,j)->mapCol();
+        const size_type firstBlockDofGC =  mapColOnBlock.firstDofGlobalCluster( myrank );
+
+        for (size_type gdof = mapColOnBlock.firstDof(myrank) ; gdof < mapColOnBlock.nLocalDofWithGhost(myrank) ; ++gdof )
+        {
+            const size_type localDofCol = nLocalDofStartCol+gdof;
+            const size_type gdofGC = mapColOnBlock.mapGlobalProcessToGlobalCluster(gdof);
+            if ( mapColOnBlock.dofGlobalClusterIsOnProc( gdofGC ) )
+            {
+                const size_type globalDofCol = start_jj+(gdofGC-firstBlockDofGC);
+                M_mapCol->setMapGlobalProcessToGlobalCluster( localDofCol,globalDofCol );
+                M_mapCol->setMapGlobalClusterToGlobalProcess( globalDofCol-firstDofGCCol,localDofCol );
+            }
+            else
+            {
+                const int realproc = mapColOnBlock.procOnGlobalCluster(gdofGC);
+                const size_type nDofStartCol = M_mapCol->firstDofGlobalCluster(realproc) + this->nLocalDofWithoutGhostOnProcStartCol( blockSet, realproc, 0, j);
+                const size_type globalDofCol = nDofStartCol+(gdofGC- mapColOnBlock.firstDofGlobalCluster(realproc));
+                M_mapCol->setMapGlobalProcessToGlobalCluster( localDofCol, globalDofCol );
+            }
+         }
+        nLocalDofStartCol += mapColOnBlock.nLocalDofWithGhost( myrank );
+        start_jj += mapColOnBlock.nLocalDofWithoutGhost( myrank );
+    }
+
 }
 
-GraphCSR::self_ptrtype
-GraphCSR::transpose()
+void
+GraphCSR::mergeBlockGraph( self_ptrtype const& g,
+                           size_type start_i, size_type start_j )
 {
 
-    if ( M_graphT ) return M_graphT;
-
-    this->close();
-    M_graphT = self_ptrtype( new self_type( M_n_total_nz.size(),
-                                            M_first_col_entry_on_proc,
-                                            M_last_col_entry_on_proc,
-                                            M_first_row_entry_on_proc,
-                                            M_last_row_entry_on_proc ) );
-
-    for ( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
+    auto it = g->begin();
+    auto en = g->end();
+    for ( ; it != en; ++it )
     {
-        // Get the row of the sparsity pattern
-        row_type const& irow = it->second;
+        int theglobalrow = start_i + it->first;
+        row_type & row = this->row( theglobalrow );
 
-        if ( ( int )boost::get<0>( irow ) == this->worldComm().globalRank() )
+        row.get<0>() = it->second.get<0>();//rank
+
+        int thelocalrow = start_i + it->second.get<1>();
+        row.get<1>() = thelocalrow;
+
+        auto nbDof = it->second.get<2>().size();
+
+        if ( nbDof>0 )
         {
-            // num line
-            size_type globalindex = it->first;
+            // Get the row of the sparsity pattern
+#if 0
+            std::vector<size_type> ivec(  it->second.template get<2>().begin(),  it->second.template get<2>().end() );
+            std::for_each( ivec.begin(), ivec.end(), boost::phoenix::arg_names::arg1 += start_j );
+#else
+            std::vector<size_type> ivec( nbDof );
+            auto itDof=it->second.get<2>().begin();
 
-            //size_type localindex = boost::get<1>( irow );
-            for ( auto colit = boost::get<2>( irow ).begin(), colen=boost::get<2>( irow ).end() ; colit!=colen ; ++colit )
-            {
-                self_type::row_type& row = M_graphT->row( *colit );
-                row.get<0>()=irow.get<0>();
-                // Warning : wrong in parallele
-                row.get<1>()=*colit;//globalindex;
-                row.get<2>().insert( globalindex );
-            }
+            for ( int i=0; i<( int )nbDof; ++i,++itDof )
+                ivec[i]=*itDof+start_j;
+#endif
+            //std::set<size_type> iout( ivec.size()+ M_graph->row(theglobalrow).template get<2>().size() );
+            //std::set<size_type> iout( ivec.begin(), ivec.end() );
+            //iout.insert( globGraph->row(theglobalrow).template get<2>().begin(),
+            //             globGraph->row(theglobalrow).template get<2>().end() );
+            //globGraph->row(theglobalrow).template get<2>() = iout;
+            //globGraph->row(theglobalrow).template get<2>().insert(ivec.begin(), ivec.end());
+            row.get<2>().insert( ivec.begin(), ivec.end() );
         }
     }
 
-    M_graphT->close();
+}
 
-    return M_graphT;
+
+void
+GraphCSR::mergeBlockGraphMPI( self_ptrtype const& g,vf::BlocksBase<self_ptrtype> const & blockSet, int i, int j,
+                              size_type start_i, size_type start_j )
+{
+    const size_type nLocalDofWithGhostOnProcStartRow = this->nLocalDofWithGhostOnProcStartRow( blockSet,g->worldComm().globalRank(), i,j );
+
+    auto it = g->begin();
+    auto const en = g->end();
+    for ( ; it != en; ++it )
+    {
+        if ( boost::get<2>( it->second ).empty() ) continue;
+
+        const int proc = it->second.get<0>();
+        int theglobalrow = start_i + (it->first - g->firstRowEntryOnProc());
+        const int thelocalrow = nLocalDofWithGhostOnProcStartRow + it->second.get<1>();
+
+        if (it->second.get<0>()!=g->worldComm().globalRank() )
+        {
+            //continue;
+            const size_type realrowStart = this->mapRow().firstDofGlobalCluster( proc )
+                + this->nLocalDofWithoutGhostOnProcStartRow( blockSet, proc, i, j );
+            theglobalrow = realrowStart+(it->first-g->mapRow().firstDofGlobalCluster( proc ));
+
+
+            DCHECK( this->mapRow().searchGlobalProcessDof(theglobalrow).get<0>() )
+                << " my rank " << g->worldComm().globalRank()
+                << " does not contain this ghost dof " << theglobalrow
+                << "in DataMapRow\n";
+#if 0
+            bool find=false;
+            size_type gDofProcess = 0;
+            boost::tie(find,gDofProcess) = this->mapRow().searchGlobalProcessDof(theglobalrow);
+            if (!find) { std::cout << "STRANGE(continue) "<< std::endl; continue; }
+#endif
+            DCHECK(M_mapRow->mapGlobalProcessToGlobalCluster(thelocalrow) == theglobalrow)
+                << " my rank " << g->worldComm().globalRank()
+                << " thelocalrow " << thelocalrow
+                << " M_mapRow. " << M_mapRow->mapGlobalProcessToGlobalCluster(thelocalrow)
+                << " theglobalrow" << theglobalrow << "\n";
+#if 0
+            M_mapRow->setMapGlobalProcessToGlobalCluster(thelocalrow, theglobalrow);
+#endif
+            }
+#if 0
+        else
+            {
+                M_mapRow->setMapGlobalProcessToGlobalCluster(thelocalrow, theglobalrow);
+                M_mapRow->setMapGlobalClusterToGlobalProcess( theglobalrow,thelocalrow );
+            }
+#endif
+
+        DVLOG(2) << "rank " << this->worldComm().rank() << "update from : "
+                  << " it->first " << it->first << " it->second.get<1>() " << it->second.get<1>()
+                  << " into : theglobalrow " << theglobalrow << " thelocalrow " << thelocalrow << "\n";
+
+
+        row_type & row = this->row( theglobalrow );
+        row.get<0>() = proc;
+        row.get<1>() = thelocalrow;
+
+        std::set<size_type>& row1_entries = row.get<2>();
+        std::set<size_type> const& row2_entries = boost::get<2>( it->second );
+        if ( !row2_entries.empty() )
+        {
+            for ( auto itcol = row2_entries.begin(), encol = row2_entries.end() ; itcol!=encol; ++itcol )
+            {
+                if (g->mapCol().dofGlobalClusterIsOnProc(*itcol))
+                {
+                    const size_type dofcol = start_j + ( *itcol - g->firstColEntryOnProc() );
+                    row1_entries.insert( dofcol );
+                }
+                else
+                {
+                    const int realproc = g->mapCol().procOnGlobalCluster(*itcol);
+                    const size_type realcolStart = this->mapCol().firstDofGlobalCluster(realproc)
+                        + this->nLocalDofWithoutGhostOnProcStartCol( blockSet, realproc, i, j );
+                    const size_type dofColGC = realcolStart+ (*itcol-g->mapCol().firstDofGlobalCluster(realproc));
+                    row1_entries.insert( dofColGC );
+                }
+            }
+        }
+
+    } // for ( ; it != en; ++it )
+
+
+}
+
+size_type
+GraphCSR::nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
+{
+    size_type nDofStart=0;
+    for ( int i=0; i<rowIndex; ++i )
+        nDofStart += blockSet(i,colIndex)->mapRow().nLocalDofWithoutGhost( proc );
+
+    return nDofStart;
+}
+
+size_type
+GraphCSR::nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
+{
+    size_type nDofStart=0;
+    for ( int j=0; j<colIndex ; ++j )
+        nDofStart += blockSet(rowIndex,j)->mapCol().nLocalDofWithoutGhost( proc );
+
+    return nDofStart;
+}
+
+size_type
+GraphCSR::nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
+{
+    size_type nDofStart=0;
+    for ( int i=0; i<rowIndex ; ++i )
+        nDofStart += blockSet(i,colIndex)->mapRow().nLocalDofWithGhost( proc );
+
+    return nDofStart;
+}
+
+size_type
+GraphCSR::nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
+{
+    size_type nDofStart=0;
+    for ( int j=0; j<colIndex ; ++j )
+        nDofStart += blockSet(rowIndex,j)->mapCol().nLocalDofWithGhost( proc );
+
+    return nDofStart;
+}
+
+
+
+void
+GraphCSR::zero()
+{
+#if 0
+    const size_type firstRow = this->firstRowEntryOnProc();
+    const size_type rowEnd = firstRow + std::min(this->mapRow().nLocalDofWithoutGhost(),this->mapCol().nLocalDofWithoutGhost());
+    for ( size_type i = firstRow ; i<rowEnd ; ++i )
+    {
+        if ( this->storage().find( i )!=this->end() )
+        {
+            row_type& row = this->row( i );
+            row.get<0>() = this->worldComm().globalRank();//proc
+            row.get<1>() = this->mapRow().mapGlobalClusterToGlobalProcess( i- firstRow );//local index
+            row.get<2>().clear(); //all is zero
+        }
+    }
+#else
+    if ( !this->empty() )
+    {
+        M_storage.clear();
+        M_is_closed = false;
+        this->close();
+    }
+
+#endif
 }
 
 GraphCSR::self_ptrtype
-GraphCSR::transpose(DataMap const& dm)
+GraphCSR::transpose( bool doClose )
 {
+    DVLOG(2) << " GraphCSR compute transpose graph\n";
 
     if ( M_graphT ) return M_graphT;
 
-    this->close();
-    M_graphT = self_ptrtype( new self_type( M_n_total_nz.size(),
-                                            M_first_col_entry_on_proc,
-                                            M_last_col_entry_on_proc,
-                                            M_first_row_entry_on_proc,
-                                            M_last_row_entry_on_proc ) );
+    //this->close();
 
+    M_graphT = self_ptrtype( new self_type( this->mapColPtr(), this->mapRowPtr() ) );
+
+    const int myrank = M_graphT->mapRow().worldComm().globalRank();
+    const size_type myfirstGC = M_graphT->mapRow().firstDofGlobalCluster(myrank);
     for ( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
     {
         // Get the row of the sparsity pattern
         row_type const& irow = it->second;
-
         // num line
         size_type globalindex = it->first;
 
         for ( auto colit = boost::get<2>( irow ).begin(), colen=boost::get<2>( irow ).end() ; colit!=colen ; ++colit )
             {
-                if ( *colit >= M_graphT->firstRowEntryOnProc() && *colit<=M_graphT->lastRowEntryOnProc() )
+                bool hasEntry = M_graphT->storage().find( *colit )!=M_graphT->end();
+
+                if ( M_graphT->mapRow().dofGlobalClusterIsOnProc( *colit ) )
+                {
+                    self_type::row_type& row = M_graphT->row( *colit );
+                    if ( !hasEntry )
                     {
-                        self_type::row_type& row = M_graphT->row( *colit );
-                        row.get<0>()=this->worldComm().globalRank();
-                        row.get<1>()=*colit-dm.firstDofGlobalCluster();
-                        row.get<2>().insert( globalindex );
+                        row.get<0>()=myrank;
+                        row.get<1>()= M_graphT->mapRow().mapGlobalClusterToGlobalProcess( *colit - myfirstGC );
                     }
+                    row.get<2>().insert( globalindex );
+                }
                 else
+                {
+                    const int realproc = M_graphT->mapRow().procOnGlobalCluster(*colit);
+
+                    bool find=false;
+                    size_type gDofProcess = 0;
+                    boost::tie(find,gDofProcess) = M_graphT->mapRow().searchGlobalProcessDof(*colit);
+                    // only if find
+                    if (find)
                     {
-                        const int realproc = dm.procOnGlobalCluster(*colit);
                         self_type::row_type& row = M_graphT->row( *colit );
-                        row.get<0>()=realproc;
-                        row.get<1>()=*colit-dm.firstDofGlobalCluster(realproc);
+                        if ( !hasEntry )
+                        {
+                            row.get<0>()=realproc;
+                            row.get<1>()= gDofProcess;
+                        }
                         row.get<2>().insert( globalindex );
                     }
-            }
+                }
+            } // for ( auto colit ... )
     }
-    M_graphT->close();
+
+
+    if ( doClose ) M_graphT->close();
 
     return M_graphT;
 }
@@ -201,24 +686,25 @@ GraphCSR::transpose(DataMap const& dm)
 void
 GraphCSR::addMissingZeroEntriesDiagonal()
 {
-    size_type m = this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1;
-    size_type n = this->lastColEntryOnProc()-this->firstColEntryOnProc()+1;
+    if ( this->mapRow().worldComm().size() >1 && this->mapRow().nDof()!=this->mapCol().nDof() )
+        return;
 
-    for ( size_type i = this->firstRowEntryOnProc() ; i< this->firstRowEntryOnProc()+std::min( m,n ) ; ++i )
+    DVLOG(2) << " GraphCSR addMissingZeroEntriesDiagonal in graph\n";
+
+    const size_type firstRow = this->firstRowEntryOnProc();
+    size_type firstCol = this->firstColEntryOnProc();
+    const size_type rowEnd = firstRow+std::min(this->mapRow().nLocalDofWithoutGhost(),this->mapCol().nLocalDofWithoutGhost());
+    for ( size_type i = firstRow ; i<rowEnd ; ++i,++firstCol )
     {
-        if ( this->storage().find( i )!=this->end() )
+        if ( this->storage().find( firstRow )!=this->end() )
         {
-            if ( this->row( i ).get<2>().find( i ) == this->row( i ).get<2>().end() )
-            {
-                this->row( i ).get<2>().insert( i );
-            }
+            this->row( i ).get<2>().insert( i/*firstCol*/ ); // insert col on diag
         }
-
-        else
+        else // if (this->mapCol().dofGlobalClusterIsOnProc( i/*firstCol*/ ) ) //&& this->mapCol().dofGlobalClusterIsOnProc( firstCol ))
         {
-            this->row( i ).get<0>() = this->worldComm().globalRank(); //0;//rank
-            this->row( i ).get<1>() = i-this->firstRowEntryOnProc(); //loc
-            this->row( i ).get<2>().insert( i );
+            this->row( i ).get<0>() = this->mapRow().worldComm().globalRank();//proc
+            this->row( i ).get<1>() = this->mapRow().mapGlobalClusterToGlobalProcess( i-firstRow );//local index
+            this->row( i ).get<2>().insert(i/*firstCol*/); // insert col on diag
         }
     }
 }
@@ -227,6 +713,7 @@ GraphCSR::addMissingZeroEntriesDiagonal()
 void
 GraphCSR::close()
 {
+
     if ( M_is_closed )
     {
         //std::cout << "already closed graph " << this << "...\n";
@@ -234,32 +721,29 @@ GraphCSR::close()
     }
 
     M_is_closed = true;
-
+    //return;
     //std::cout << "closing graph " << this << "...\n";
     boost::timer ti;
-    Debug( 5050 ) << "[close] nrows=" << this->size() << "\n";
-    Debug( 5050 ) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
-    Debug( 5050 ) << "[close] lastRowEntryOnProc()=" << this->lastRowEntryOnProc() << "\n";
-    Debug( 5050 ) << "[close] firstColEntryOnProc()=" << this->firstColEntryOnProc() << "\n";
-    Debug( 5050 ) << "[close] lastColEntryOnProc()=" << this->lastColEntryOnProc() << "\n";
-    Debug( 5050 ) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
-    Debug( 5050 ) << "[close] M_storage size=" << M_storage.size() << "\n";
-    Debug( 5050 ) << "[close] nrows=" << this->size() << "\n";
+    DVLOG(2) << "[close] nrows=" << this->size() << "\n";
+    DVLOG(2) << "[close] firstRowEntryOnProc()=" << this->firstRowEntryOnProc() << "\n";
+    DVLOG(2) << "[close] lastRowEntryOnProc()=" << this->lastRowEntryOnProc() << "\n";
+    DVLOG(2) << "[close] firstColEntryOnProc()=" << this->firstColEntryOnProc() << "\n";
+    DVLOG(2) << "[close] lastColEntryOnProc()=" << this->lastColEntryOnProc() << "\n";
+    DVLOG(2) << "[close] M_n_total_nz=" << M_n_total_nz.size() << "\n";
+    DVLOG(2) << "[close] M_storage size=" << M_storage.size() << "\n";
+    DVLOG(2) << "[close] nrows=" << this->size() << "\n";
 #if !defined(FEELPP_ENABLE_MPI_MODE)
     M_n_total_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
     M_n_nz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
     M_n_oz.resize( M_last_row_entry_on_proc+1/*M_storage.size()*/ );
 #else // MPI
-    M_n_total_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
-    M_n_nz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
-    M_n_oz.resize( this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
+    M_n_total_nz.resize( this->mapRow().nLocalDofWithGhost(),0 );//this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
+    M_n_nz.resize( this->mapRow().nLocalDofWithGhost(),0 );//this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
+    M_n_oz.resize( this->mapRow().nLocalDofWithGhost(),0 );//this->lastRowEntryOnProc()-this->firstRowEntryOnProc()+1 );
 
     const int proc_id = this->worldComm().globalRank();
     const int nProc = this->worldComm().globalSize();
 
-    //std::vector<int> nbMsgToSend( this->worldComm().globalSize() );
-    //std::fill( nbMsgToSend.begin(),nbMsgToSend.end(),0 );
-    //std::vector< std::map<int,int> > mapMsg( this->worldComm().globalSize() );
     std::vector<size_type> vecDofCol;//(1,0);
 
     std::vector< std::vector<size_type> > vecToSend( nProc );
@@ -267,7 +751,7 @@ GraphCSR::close()
     std::vector< std::vector<size_type> > vecToSend_nElt( nProc );
     std::vector< std::vector<size_type> > vecToRecv_nElt( nProc );
 
-    std::vector< std::list<boost::tuple<size_type,std::vector<size_type> > > > memory_graphMPI( nProc );
+    std::vector< std::list<std::vector<size_type> > > memory_graphMPI( nProc );
     std::vector<size_type> memory_n_send(this->worldComm().globalSize() );
 
     for ( int proc=0 ; proc<nProc ; ++proc )
@@ -328,10 +812,10 @@ GraphCSR::close()
 
 
 #if !defined( NDEBUG )
-            Debug( 5050 ) << "M_total_nz [  " << localindex << "]=" << M_n_total_nz[localindex] << "\n";
+            DVLOG(2) << "M_total_nz [  " << localindex << "]=" << M_n_total_nz[localindex] << "\n";
 
-            Debug( 5050 ) << "M_nz [  " << localindex << "]=" << M_n_nz[localindex] << "\n";
-            Debug( 5050 ) << "M_oz [  " << localindex << "]=" << M_n_oz[localindex] << "\n";
+            DVLOG(2) << "M_nz [  " << localindex << "]=" << M_n_nz[localindex] << "\n";
+            DVLOG(2) << "M_oz [  " << localindex << "]=" << M_n_oz[localindex] << "\n";
 #endif // NDEBUG
 
             M_max_nnz = std::max( M_n_total_nz[localindex], M_max_nnz );
@@ -367,7 +851,7 @@ GraphCSR::close()
                       << std::endl;
 #endif
 
-            memory_graphMPI[procOnGlobalCluster].push_back(boost::make_tuple( irow.get<1>(),vecDofCol));
+            memory_graphMPI[procOnGlobalCluster].push_back(vecDofCol);//boost::make_tuple( irow.get<1>(),vecDofCol));
             memory_n_send[procOnGlobalCluster]+=vecDofCol.size();
 
 #endif // MPI
@@ -390,14 +874,15 @@ GraphCSR::close()
                     auto en_mem = memory_graphMPI[proc].end();
                     for ( int cpt = 0; it_mem !=en_mem ; ++it_mem)
                         {
-                            vtsit = std::copy( boost::get<1>( *it_mem ).begin(), boost::get<1>( *it_mem ).end(), vtsit );
-                            vecToSend_nElt[proc][cpt] = it_mem->get<1>().size();
+                            //vtsit = std::copy( boost::get<1>( *it_mem ).begin(), boost::get<1>( *it_mem ).end(), vtsit );
+                            vtsit = std::copy( it_mem->begin(), it_mem->end(), vtsit );
+                            vecToSend_nElt[proc][cpt] = it_mem->size();
                             ++cpt;
                         }
                 }
 
             //------------------------------------------------------
-            this->worldComm().globalComm().barrier();
+            //this->worldComm().globalComm().barrier();
             //------------------------------------------------------
 
             std::vector<size_type> nDataSize_vec(nProc);
@@ -427,21 +912,30 @@ GraphCSR::close()
                 }
 
             //------------------------------------------------------
-            this->worldComm().globalComm().barrier();
+            //this->worldComm().globalComm().barrier();
             //------------------------------------------------------
             for ( int proc=0; proc<nProc; ++proc )
                 {
-                    if (vecToRecv[proc].size()>0)
+                    if (vecToRecv[proc].size()>0 )
                         {
                             for (int cpt=0,istart=0;cpt<vecToRecv_nElt[proc].size();++cpt)
                                 {
                                     const auto nRecvElt = vecToRecv_nElt[proc][cpt];
 
                                     size_type globalindex = vecToRecv[proc][istart];
-                                    size_type localindex = vecToRecv[proc][istart+1];
+
+                                    DCHECK( this->mapRow().dofGlobalClusterIsOnProc( globalindex ) ) << " GlobalCluster dofGlobalClusterIsOnProc Is not on proc "
+                                                                                                     << " with globalindex " << globalindex << "\n";
+
+                                    size_type localindex = this->mapRow().mapGlobalClusterToGlobalProcess( globalindex - this->mapRow().firstDofGlobalCluster()  );
+
+                                    bool hasEntry = this->storage().find( globalindex )!=this->end();
                                     row_type& row = this->row( globalindex );
-                                    row.get<0>()=proc_id;//this->worldComm().globalRank();
-                                    row.get<1>()=localindex;
+                                    if ( !hasEntry )
+                                        {
+                                            row.get<0>()=proc_id;
+                                            row.get<1>()=localindex;
+                                        }
 
                                     for ( int k=2;k<nRecvElt;++k)
                                         {
@@ -452,8 +946,7 @@ GraphCSR::close()
                                                     isInserted = true;
                                                 }
 
-                                            if ( ( vecToRecv[proc][istart+k] < firstColEntryOnProc() ) ||
-                                                 ( vecToRecv[proc][istart+k] > lastColEntryOnProc() ) )
+                                            if ( !this->mapCol().dofGlobalClusterIsOnProc(vecToRecv[proc][istart+k]) )
                                                 {
                                                     if ( isInserted )
                                                         {
@@ -533,15 +1026,15 @@ GraphCSR::close()
     if ( nRowLoc>1 || ( sum_nz>0 )/* nRowLoc==1 && this->worldComm().globalRank()==4)*/ )
         {
             M_ia.resize( nRowLoc+1,0 );
-            M_ja.resize( /*sum_n_nz*/sum_nz );
-            M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
+            M_ja.resize( /*sum_n_nz*/sum_nz, 0. );
+            //M_a.resize(  /*sum_n_nz*/sum_nz, 0. );
             size_type col_cursor = 0;
             auto jait = M_ja.begin();
-            for ( int i = 0 ; i< ( int ) nRowLoc; ++i )
+
+            for ( size_type i = 0 ; i< nRowLoc; ++i )
                 {
                     if ( M_storage.find( this->firstRowEntryOnProc()+i )!=M_storage.end() )
                         {
-
                             row_type const& irow = this->row( this->firstRowEntryOnProc()+i );
                             //size_type localindex = boost::get<1>( irow );
                             M_ia[i/*localindex*/] = col_cursor;
@@ -552,7 +1045,6 @@ GraphCSR::close()
 
                     else
                         {
-                            //std::cout << "\n STRANGE " << std::endl;
                             M_ia[i] = col_cursor;
                         }
                 }
@@ -586,10 +1078,10 @@ GraphCSR::showMe( std::ostream& __out ) const
         {
             __out << "--------------------------------------------------------------" << std::endl;
             __out << "-------------Graph (on proc " << proc << ")------------------------------"<< std::endl;
-            __out << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
-            __out << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
-            __out << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
-            __out << "last_col_entry_on_proc " << M_last_col_entry_on_proc << std::endl;
+            __out << "first_row_entry_on_proc " << this->firstRowEntryOnProc() << std::endl;
+            __out << "last_row_entry_on_proc " << this->lastRowEntryOnProc() << std::endl;
+            __out << "first_col_entry_on_proc " << this->firstColEntryOnProc() << std::endl;
+            __out << "last_col_entry_on_proc " << this->lastColEntryOnProc() << std::endl;
             __out << "max_nnz " << M_max_nnz << std::endl;
 
             for ( auto it = M_storage.begin(), en = M_storage.end() ; it != en; ++it )
@@ -600,8 +1092,8 @@ GraphCSR::showMe( std::ostream& __out ) const
                 __out << " proc " << row.get<0>()
                       << " globalindex " << it->first
                       << " localindex " << row.get<1>();
-
-                if ( it->first>=M_first_row_entry_on_proc && it->first<=M_last_row_entry_on_proc )
+#if 1
+                if ( it->first>=this->firstRowEntryOnProc() && it->first<=this->lastRowEntryOnProc() )
                 {
                     __out << "(nz " << M_n_nz[row.get<1>()]
                           << " oz " << M_n_oz[row.get<1>()]
@@ -613,7 +1105,7 @@ GraphCSR::showMe( std::ostream& __out ) const
                     for ( auto it = row.get<2>().begin(), en= row.get<2>().end() ; it!=en ; ++it )
                         __out << *it << " ";
                 }
-
+#endif
                 __out << std::endl;
             }
 
@@ -632,10 +1124,10 @@ GraphCSR::printPython( std::string const& nameFile ) const
 {
 
 #if 0
-    std::cout << "first_row_entry_on_proc " << M_first_row_entry_on_proc << std::endl;
-    std::cout << "last_row_entry_on_proc " << M_last_row_entry_on_proc << std::endl;
-    std::cout << "first_col_entry_on_proc " << M_first_col_entry_on_proc << std::endl;
-    std::cout << "last_col_entry_on_proc " << M_last_col_entry_on_proc << std::endl;
+    std::cout << "first_row_entry_on_proc " << this->firstRowEntryOnProc() << std::endl;
+    std::cout << "last_row_entry_on_proc " << this->lastRowEntryOnProc() << std::endl;
+    std::cout << "first_col_entry_on_proc " << this->firstColEntryOnProc() << std::endl;
+    std::cout << "last_col_entry_on_proc " << this->lastColEntryOnProc() << std::endl;
     std::cout << "max_nnz " << M_max_nnz << std::endl;
 #endif
 
@@ -645,16 +1137,16 @@ GraphCSR::printPython( std::string const& nameFile ) const
     std::vector<size_type> first_col_entry( this->worldComm().globalSize() );
     std::vector<size_type> last_col_entry( this->worldComm().globalSize() );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->firstRowEntryOnProc(),
+                     (this->mapRow().nLocalDofWithoutGhost()>0)? this->firstRowEntryOnProc() : 0,
                      first_row_entry );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->lastRowEntryOnProc(),
+                     (this->mapRow().nLocalDofWithoutGhost()>0)? this->lastRowEntryOnProc() : 0,
                      last_row_entry );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->firstColEntryOnProc(),
+                     (this->mapCol().nLocalDofWithoutGhost()>0)? this->firstColEntryOnProc() : 0,
                      first_col_entry );
     mpi::all_gather( this->worldComm().globalComm(),
-                     this->lastColEntryOnProc(),
+                     (this->mapCol().nLocalDofWithoutGhost()>0)? this->lastColEntryOnProc() : 0,
                      last_col_entry );
     size_type thefirstRow = *std::min_element( first_row_entry.begin(),first_row_entry.end() );
     size_type thelastRow = *std::max_element( last_row_entry.begin(),last_row_entry.end() );

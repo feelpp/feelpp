@@ -30,13 +30,18 @@
 #define _FEELPP_EIM_HPP 1
 
 #include <limits>
+#include <numeric>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 #include <boost/ref.hpp>
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/tuple/tuple.hpp>
-
+#if BOOST_VERSION >= 104700
+#include <boost/math/special_functions/nonfinite_num_facets.hpp>
+#endif
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/export.hpp>
@@ -47,10 +52,15 @@
 
 #include <feel/feelvf/vf.hpp>
 
+#include <feel/feelcrb/crb.hpp>
+#include <feel/feelcrb/crbmodel.hpp>
+
 #include <Eigen/Core>
 
 namespace Feel
 {
+class ModelCrbBaseBase {};
+
 /**
   \class EIM
   \brief Empirical interpolation of a function to obtain an affine decomposition
@@ -159,7 +169,8 @@ public:
         M_is_written( false ),
         M_name( "default" ),
         M_M( 1 ),
-        M_M_max( 1 ),
+        MM_max( 1 ),
+        M_WN(),
         M_offline_done( false ),
         M_tol( 1e-8 ),
         M_q(),
@@ -177,7 +188,8 @@ public:
         M_name( model->name() ),
         M_trainset( sampling ),
         M_M( 1 ),
-        M_M_max( 1 ),
+        MM_max( 1 ),
+        M_WN( M_vm["eim.dimension-max"].template as<int>() ),
         M_offline_done( false ),
         M_tol( __tol ),
         M_q(),
@@ -192,8 +204,23 @@ public:
                 M_offline_done = false;
             }
 
-            if (  !this->isOfflineDone() )
+            if ( !this->isOfflineDone() )
                 offline();
+#if 0
+            //old version of convergence
+            if( M_vm["eim.study-cvg"].template as<bool>() )
+            {
+                M_WN=1;
+                do{
+                    offline();
+                    studyConvergence();
+
+                    M_offline_done = false;
+                    M_WN++;
+                }while( M_WN < M_vm["eim.dimension-max"].template as<int>() );
+            }
+#endif
+
         }
 
     EIM( EIM const & __bbf )
@@ -203,7 +230,8 @@ public:
         M_is_written( __bbf.M_is_written ),
         M_name( __bbf.M_name ),
         M_M( __bbf.M_M ),
-        M_M_max (__bbf.M_M_max ),
+        MM_max (__bbf.MM_max ),
+        M_WN(__bbf.M_WN ),
         M_offline_done( __bbf.M_offline_done ),
         M_tol( __bbf.M_tol ),
         M_q( __bbf.M_q ),
@@ -249,7 +277,7 @@ public:
             return M_q[ __m ];
         }
 
-    size_type mMax() const { return M_M_max; }
+    size_type mMax() const { return MM_max; }
 
 
     /**
@@ -350,12 +378,15 @@ public:
     vector_type beta( parameter_type const& mu, size_type M  ) const;
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const;
 
+    std::vector<double> studyConvergence( parameter_type const & mu, solution_type & solution ) const;
+
+    void computationalTimeStatistics( std::string appname )  { return M_model->computationalTimeStatistics(); }
     element_type residual ( size_type M ) const;
 
     parameter_residual_type computeBestFit( sampling_ptrtype trainset, int __M );
 
-    element_type operator()( parameter_type const& mu ) const { return expansion( M_q, beta( mu ) ); }
-    element_type operator()( parameter_type const& mu, solution_type const& T ) const { return expansion( M_q, beta( mu, T ) ); }
+    element_type operator()( parameter_type const& mu , int N) const { return expansion( M_q, beta( mu ) , N); }
+    element_type operator()( parameter_type const& mu, solution_type const& T , int N ) const { return expansion( M_q, beta( mu, T ) , N ); }
     /**
        orthonormalize
     */
@@ -374,9 +405,9 @@ public:
             __ar & BOOST_SERIALIZATION_NVP( M_offline_done );
             LOG(INFO) << "offline status...\n";
 
-            __ar & BOOST_SERIALIZATION_NVP( M_M_max );
+            __ar & BOOST_SERIALIZATION_NVP( MM_max );
             LOG(INFO) << "M saved/loaded\n";
-            M_M = M_M_max;
+            M_M = MM_max;
 
             // save index
             __ar & BOOST_SERIALIZATION_NVP( M_index_max );
@@ -389,18 +420,18 @@ public:
 
             if ( Archive::is_loading::value )
             {
-                for( int i = 0; i < M_M_max; ++ i )
+                for( int i = 0; i < MM_max; ++ i )
                 {
                     M_q.push_back( M_model->functionSpace()->element() );
                 }
-                for( int i = 0; i < M_M_max; ++ i )
+                for( int i = 0; i < MM_max; ++ i )
                     __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
                 // save q
                 LOG(INFO) << "q saved/loaded\n";
             }
             else
             {
-                for( int i = 0; i < M_M_max; ++ i )
+                for( int i = 0; i < MM_max; ++ i )
                     __ar & BOOST_SERIALIZATION_NVP( M_q[i] );
             }
 
@@ -422,7 +453,9 @@ protected:
     std::string M_name;
     sampling_ptrtype M_trainset;
     size_type M_M;
-    size_type M_M_max;
+    size_type MM_max;
+
+    size_type M_WN;
 
     mutable bool M_offline_done;
 
@@ -496,6 +529,7 @@ EIM<ModelType>::beta( parameter_type const& mu, size_type __M ) const
         __beta[__m] = M_model->operator()( this->M_t[__m], mu );
     }
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
+
     return __beta;
 }
 template<typename ModelType>
@@ -509,6 +543,7 @@ EIM<ModelType>::beta( parameter_type const& mu, solution_type const& T, size_typ
         __beta[__m] = M_model->operator()( T, this->M_t[__m], mu );
     }
     this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(__beta);
+
     return __beta;
 }
 
@@ -570,6 +605,7 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         mu.check();
         LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) compute fit at mu="<< mu <<"\n" ;
         // evaluate model at mu
+
         auto Z = M_model->operator()( mu );
 
         vector_type rhs( __M );
@@ -580,9 +616,33 @@ EIM<ModelType>::computeBestFit( sampling_ptrtype trainset, int __M )
         this->M_B.block(0,0,__M,__M).template triangularView<Eigen::UnitLower>().solveInPlace(rhs);
         auto res = vf::project( _space=M_model->functionSpace(),
                                 _expr=idv(Z)-idv( expansion( M_q, rhs, __M ) ) );
-        auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
-        LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
-        maxerr( index++ ) = resmax.template get<0>();
+
+        std::string norm_used = option(_name="eim.norm-used-for-residual").template as<std::string>();
+        bool check_name_norm = false;
+        LOG( INFO ) << "[computeBestFit] norm used : "<<norm_used;
+        if( norm_used == "Linfty" )
+        {
+            check_name_norm=true;
+            auto resmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(res) );
+            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+            maxerr( index++ ) = resmax.template get<0>();
+        }
+        if( norm_used == "L2" )
+        {
+            check_name_norm=true;
+            double norm = math::sqrt( integrate( _range=elements( M_model->mesh() ) ,_expr=idv(res)*idv(res) ).evaluate()( 0,0 ) );
+            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+            maxerr( index++ ) = norm;
+        }
+        if( norm_used == "LinftyVec" )
+        {
+            check_name_norm=true;
+            double norm = res.linftyNorm();
+            LOG_ASSERT( index < trainset->size() ) << "Invalid index " << index << " should be less than trainset size = " << trainset->size() << "\n";
+            maxerr( index++ ) = norm ;
+        }
+        CHECK( check_name_norm ) <<"[EIM] The name of the norm "<<norm_used<<" is not known\n";
+
         int index2;
         auto err = maxerr.array().abs().maxCoeff( &index2 );
         LOG_EVERY_N(INFO, 1 ) << " (every 10 mu) maxerr=" <<  err << " at index = " << index2 << " at mu = " << trainset->at(index2) << "\n";
@@ -628,6 +688,8 @@ EIM<ModelType>::offline(  )
     // store residual
     auto res = M_model->functionSpace()->element();
 
+    //if( !M_vm["eim.study-cvg"].template as<bool>() || M_WN == 1 )
+    // {
     LOG(INFO) << "compute finite element solution at mu_1...\n";
     M_g.push_back( M_model->operator()( mu ) );
 
@@ -654,14 +716,23 @@ EIM<ModelType>::offline(  )
         << "  t[0] = "<< M_t[0] << "\n";
 
     ++M_M;
+    //}
+    //else
+    //M_M = M_WN - 1;
+
     /**
        \par build \f$W^g_M\f$
     */
     double err = 1;
 
+   //for residual storage
+   //auto res = M_model->functionSpace()->element();
+
     LOG(INFO) << "start greedy algorithm...\n";
+    //for(  ; M_M < M_WN; ++M_M ) //err >= this->M_tol )
     for(  ; M_M < M_vm["eim.dimension-max"].template as<int>(); ++M_M ) //err >= this->M_tol )
     {
+
         LOG(INFO) << "M=" << M_M << "...\n";
 
         LOG(INFO) << "compute best fit error...\n";
@@ -671,10 +742,11 @@ EIM<ModelType>::offline(  )
         auto g_bestfit = M_model->operator()( bestfit.template get<1>() );
         auto gmax = normLinf( _range=elements(M_model->mesh()), _pset=_Q<5>(), _expr=idv(g_bestfit) );
 
-        LOG(INFO) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
-                  << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
+        DVLOG(2) << "best fit max error = " << bestfit.template get<0>() << " relative error = " << bestfit.template get<0>()/gmax.template get<0>() << " at mu = "
+                 << bestfit.template get<1>() << "  tolerance=" << M_vm["eim.error-max"].template as<double>() << "\n";
 
-        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() )
+        //if we want to impose the use of dimension-max functions, we don't want to stop here
+        if ( (bestfit.template get<0>()/gmax.template get<0>()) < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
             break;
 
         /**
@@ -703,7 +775,7 @@ EIM<ModelType>::offline(  )
         LOG(INFO) << "store new basis function..." <<"\n";
         M_q.push_back( res );
 
-        std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { LOG(INFO) << "t=" << t << "\n"; } );
+        std::for_each( M_t.begin(), M_t.end(), []( node_type const& t ) { DVLOG(2) << "t=" << t << "\n"; } );
         // update interpolation matrix
         M_B.conservativeResize( M_M, M_M );
         for( int __i = 0; __i < M_M; ++__i )
@@ -714,7 +786,7 @@ EIM<ModelType>::offline(  )
 
             }
         }
-        LOG(INFO) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
+        DVLOG(2) << "[offline] Interpolation matrix: M_B = " << this->M_B <<"\n";
 #if 0
         for( int __i = 0; __i < M_M; ++__i )
         {
@@ -733,8 +805,9 @@ EIM<ModelType>::offline(  )
 #endif
 
 
-        LOG(INFO) << "================================================================================\n";
-        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() )
+        VLOG(2) << "================================================================================\n";
+        //if we want to impose the use of dimension-max functions, we don't want to stop here
+        if ( resmax.template get<0>() < M_vm["eim.error-max"].template as<double>() &&  ! M_vm["eim.use-dimension-max-functions"].template as<bool>() )
         {
             ++M_M;
             break;
@@ -742,12 +815,90 @@ EIM<ModelType>::offline(  )
     }
 
     LOG(INFO) << "[offline] M_max = " << M_M-1 << "...\n";
-    this->M_M_max = this->M_M-1;
+    this->MM_max = this->M_M-1;
 
     this->M_offline_done = true;
     LOG(INFO) << "[offline] saving DB...\n";
     saveDB();
     LOG(INFO) << "[offline] done with offline stage ...\n";
+}
+
+template<typename ModelType>
+std::vector<double>
+EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & solution) const
+{
+    LOG(INFO) << " Convergence study \n";
+    int proc_number =  Environment::worldComm().globalRank();
+
+    std::vector<double> l2ErrorVec(this->mMax(), 0.0);
+
+    std::string mu_str;
+    for ( int i=0; i<mu.size(); i++ )
+        mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
+
+    std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
+    if( std::ifstream( file_name ) )
+        std::remove( file_name.c_str() );
+
+    std::ofstream conv;
+    if( proc_number == Environment::worldComm().masterRank() )
+        {
+            conv.open(file_name, std::ios::app);
+            conv << "#Nb_basis" << "\t" << "L2_error" << "\n";
+        }
+
+    bool use_expression = option(_name="eim.compute-error-with-truth-expression").template as<bool>();
+    int max = this->mMax();
+    for(int N=1; N<=max; N++)
+    {
+
+        double exprl2norm = 0 , diffl2norm = 0 ;
+
+        if( use_expression )
+        {
+            exprl2norm =M_model->expressionL2Norm( solution , mu );
+            auto eim_approximation = this->operator()(mu , solution, N);
+            diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
+        }
+        else
+        {
+            exprl2norm =M_model->projExpressionL2Norm( solution , mu );
+            auto eim_approximation = this->operator()(mu , solution, N);
+            diffl2norm = M_model->projDiffL2Norm( solution , mu , eim_approximation );
+        }
+
+        double l2_error = diffl2norm / exprl2norm ;
+        //interpolation error : || projection_g - g ||_L2
+        double interpolation_error = M_model->interpolationError( solution , mu );
+#if 0
+        int size = mu.size();
+        LOG(INFO)<<" mu = [ ";
+        for ( int i=0; i<size-1; i++ ) LOG(INFO)<< mu[i] <<" , ";
+        LOG(INFO)<< mu[size-1]<<" ]\n";
+
+        //old version
+        // Compute expression
+        auto expression = M_model->operator()(mu);
+        // Compute eim expansion
+        auto eim_approximation = this->operator()(mu , N);
+        //Compute l2error
+        LOG(INFO) << "EIM name : " << M_model->name() << "\n";
+        double norm_l2_expression = expression.l2Norm();
+        LOG(INFO) << "norm_l2 expression = " << norm_l2_expression << "\n";
+        double norm_l2_approximation = eim_approximation.l2Norm();
+        LOG(INFO) << "norm_l2_approximation = " << norm_l2_approximation << "\n";
+        auto l2_error = math::abs( norm_l2_expression - norm_l2_approximation ) / norm_l2_expression;
+        LOG(INFO) << "norm l2 error = " << l2_error << "\n";
+#endif
+        l2ErrorVec[N-1] = l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
+
+        if( proc_number == Environment::worldComm().masterRank() )
+            conv << N << "\t" << l2_error << "\t" << interpolation_error << "\n";
+
+    }//loop over basis functions
+
+    conv.close();
+    return l2ErrorVec;
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
@@ -813,6 +964,14 @@ public:
     sampling_ptrtype trainSet() const { return M_trainset; }
     virtual void setTrainSet( sampling_ptrtype tset ) { M_trainset = tset; }
 
+    void addOnlineTime( const double time )
+    {
+        int size = M_online_time.size();
+        M_online_time.conservativeResize( size+1 );
+        M_online_time( size ) = time;
+    }
+    Eigen::VectorXd onlineTime() const { return M_online_time; }
+
     mesh_ptrtype mesh() const { return M_fspace->mesh(); }
     mesh_ptrtype mesh()  { return M_fspace->mesh(); }
 
@@ -821,10 +980,10 @@ public:
     virtual element_type interpolant( parameter_type const& ) = 0;
     value_type operator()( node_type const& x, parameter_type const& mu )
         {
-            LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
+            VLOG(2) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
             element_type v = this->operator()( mu );
             value_type res = v(x)(0,0,0);
-            LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
+            VLOG(2) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
 
@@ -833,10 +992,10 @@ public:
 
     value_type operator()( solution_type const& T, node_type const& x, parameter_type const& mu )
         {
-            LOG(INFO) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
+            VLOG(2) << "calling EIMFunctionBase::operator()( x=" << x << ", mu=" << mu << ")\n";
             element_type v = this->operator()( T, mu );
             value_type res = v(x)(0,0,0);
-            LOG(INFO) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
+            VLOG(2) << "EIMFunctionBase::operator() v(x)=" << res << "\n";
             return res;
         }
 
@@ -845,12 +1004,21 @@ public:
     virtual vector_type  beta( parameter_type const& mu, solution_type const& T ) const = 0;
     virtual size_type  mMax() const = 0;
 
+    virtual std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const = 0;
+    virtual void computationalTimeStatistics( std::string appname )  = 0;
+    virtual double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
+    virtual double diffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
+    virtual double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
+    virtual double interpolationError( solution_type const& T , parameter_type const& mu ) const = 0;
+
     po::variables_map M_vm;
     functionspace_ptrtype M_fspace;
     parameterspace_ptrtype M_pspace;
     sampling_ptrtype M_trainset;
     std::string M_modelname;
     std::string M_name;
+    Eigen::VectorXd M_online_time;//contains online computational time
 };
 
 
@@ -862,7 +1030,8 @@ class EIMFunction
     typedef EIMFunctionBase<SpaceType, typename ModelType::functionspace_type, typename ModelType::parameterspace_type> super;
 public:
     typedef ModelType model_type;
-    typedef ModelType* model_ptrtype;
+    //typedef ModelType* model_ptrtype;
+    typedef boost::shared_ptr<model_type> model_ptrtype;
 
     typedef SpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -883,6 +1052,11 @@ public:
 
     typedef typename super::vector_type vector_type;
 
+    typedef CRBModel<ModelType> crbmodel_type;
+    typedef boost::shared_ptr<crbmodel_type> crbmodel_ptrtype;
+    typedef CRB<crbmodel_type> crb_type;
+    typedef boost::shared_ptr<crb_type> crb_ptrtype;
+
     EIMFunction( po::variables_map const& vm,
                  model_ptrtype model,
                  functionspace_ptrtype space,
@@ -893,6 +1067,7 @@ public:
                  std::string const& name )
         :
         super( vm, space, model->parameterSpace(), sampling, model->modelName(), name ),
+        M_vm( vm ),
         M_model( model ),
         M_expr( expr ),
         M_u( u ),
@@ -903,7 +1078,9 @@ public:
     element_type operator()( parameter_type const&  mu )
         {
             M_mu = mu;
+#if !defined(NDEBUG)
             M_mu.check();
+#endif
             M_u = M_model->solve( mu );
             //LOG(INFO) << "operator() mu=" << mu << "\n" << "sol=" << M_u << "\n";
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
@@ -911,29 +1088,163 @@ public:
     element_type operator()( solution_type const& T, parameter_type const&  mu )
         {
             M_mu = mu;
+#if !defined(NDEBUG)
             M_mu.check();
+#endif
             // no need to solve we have already an approximation (typically from
             // an nonlinear iteration procedure)
             M_u = T;
             return vf::project( _space=this->functionSpace(), _expr=M_expr );
         }
 
+    //Let g the expression that we want to have an eim expasion
+    //here is computed its l2 norm : || g ||_L2
+    double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const
+    {
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=M_expr*M_expr ).evaluate()( 0,0 ) );
+    }
+
+    //Let geim the eim expansion of g
+    //here is computed || g - geim ||_L2
+    double diffL2Norm(  solution_type const& T , parameter_type const& mu , element_type const & eim_expansion ) const
+    {
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto difference = M_expr - idv(eim_expansion);
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
+    }
+
+
+    //Let \pi_g the projection of g on the function space
+    //here is computed || \pi_g ||_L2
+    double projExpressionL2Norm( solution_type const& T , parameter_type const& mu ) const
+    {
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(pi_g)*idv(pi_g) ).evaluate()( 0,0 ) );
+    }
+
+    //here is computed || \pi_g - geim ||_L2
+    double projDiffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const
+    {
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto diff = pi_g - eim_expansion;
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=idv(diff)*idv(diff) ).evaluate()( 0,0 ) );
+    }
+
+    double interpolationError( solution_type const& T , parameter_type const& mu ) const
+    {
+        M_mu = mu;
+#if !defined(NDEBUG)
+        M_mu.check();
+#endif
+        M_u = T;
+        auto mesh = this->functionSpace()->mesh();
+        auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
+        auto difference = M_expr - idv(pi_g);
+        return math::sqrt( integrate( _range=elements( mesh ), _expr=difference*difference ).evaluate()( 0,0 ) );
+    }
+
+    void computationalTimeStatistics( std::string appname )
+        {
+            computationalTimeStatistics( appname, typename boost::is_base_of<ModelCrbBaseBase,model_type>::type() );
+        }
+    void computationalTimeStatistics( std::string appname, boost::mpl::bool_<false> )
+        {}
+    void computationalTimeStatistics( std::string appname, boost::mpl::bool_<true> )
+    {
+        //auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_vm , CRBModelMode::CRB ) );
+        auto crbmodel = crbmodel_ptrtype( new crbmodel_type( M_model , CRBModelMode::CRB ) );
+        //make sure that the CRB DB is already build
+        M_crb = crb_ptrtype( new crb_type( appname,
+                                           M_vm ,
+                                           crbmodel ) );
+
+        if ( !M_crb->isDBLoaded() || M_crb->rebuildDB() )
+        {
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                LOG( INFO ) << "No CRB DB available, do crb offline computations...";
+            M_crb->setOfflineStep( true );
+            M_crb->offline();
+        }
+
+        int n_eval = option(_name="eim.computational-time-neval").template as<int>();
+
+        Eigen::Matrix<double, Eigen::Dynamic, 1> time_crb;
+        time_crb.resize( n_eval );
+
+        typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( M_model->parameterSpace() ) );
+        Sampling->logEquidistribute( n_eval  );
+
+        //dimension
+        int N =  option(_name="crb.dimension").template as<int>();
+        //reduced basis approximation space
+        auto WN = M_crb->wn();
+        int mu_number = 0;
+        BOOST_FOREACH( auto mu, *Sampling )
+        {
+            //LOG( INFO ) << "[computational] mu = \n"<<mu;
+            boost::mpi::timer tcrb;
+            auto o = M_crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+            auto solutions=o.template get<2>();
+            auto uN = solutions.template get<0>();//vector of solutions ( one solution at each time step )
+
+            int size=uN.size();
+            auto u_crb = M_crb->expansion( uN[size-1] , N , WN );
+
+            boost::mpi::timer teim;
+            this->beta( mu , u_crb );
+            this->addOnlineTime( teim.elapsed() );
+            time_crb( mu_number ) = tcrb.elapsed() ;
+            mu_number++;
+        }
+
+        M_model->computeStatistics( super::onlineTime() , super::name() );
+        M_model->computeStatistics( time_crb , super::name()+" - global crb timing" );
+
+    }
+
     void setTrainSet( sampling_ptrtype tset ) { M_eim->setTrainSet( tset ); }
-    element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu ); }
+    element_type interpolant( parameter_type const& mu ) { return M_eim->operator()( mu , M_eim->mMax() ); }
 
     element_type const& q( int m ) const { return M_eim->q( m ); }
 
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
+    std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const { return M_eim->studyConvergence( mu , solution ) ; };
+
     size_type mMax() const { return M_eim->mMax(); }
 
 private:
+    po::variables_map M_vm;
     model_ptrtype M_model;
     expr_type M_expr;
     solution_type& M_u;
     parameter_type& M_mu;
     eim_ptrtype M_eim;
+    crb_ptrtype M_crb;
 };
 
 namespace detail
@@ -942,7 +1253,7 @@ namespace detail
 template<typename Args>
 struct compute_eim_return
 {
-    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type model1_type;
+    typedef typename boost::remove_reference<typename boost::remove_pointer<typename parameter::binding<Args, tag::model>::type>::type>::type::element_type model1_type;
     typedef typename boost::remove_const<typename boost::remove_pointer<model1_type>::type>::type model_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::expr>::type>::type expr_type;
     typedef typename boost::remove_reference<typename parameter::binding<Args, tag::space>::type>::type::element_type space_type;
@@ -962,9 +1273,9 @@ BOOST_PARAMETER_FUNCTION(
       ( in_out(expr),          * )
       ( name, * )
       ( space, *)
-      ( options, *)
         ) // required
     ( optional
+      ( options, *, Environment::vm())
       //( space, *( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> > ), model->functionSpace() )
       //( space, *, model->functionSpace() )
       ( sampling, *, model->parameterSpace()->sampling() )
@@ -989,29 +1300,84 @@ struct EimFunctionNoSolve
     typedef typename parameterspace_type::element_type parameter_type;
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename functionspace_type::value_type value_type;
 
-    EimFunctionNoSolve( ModelType* model ): M_model( model ) {}
+    typedef boost::shared_ptr<ModelType> model_ptrtype;
+
+    static const int nb_spaces = functionspace_type::nSpaces;
+    typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
+                       typename mpl::if_ < boost::is_same< mpl::int_<nb_spaces> , mpl::int_<3> > , fusion::vector < mpl::int_<0> , mpl::int_<1> , mpl::int_<2> > ,
+                                  typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<4> >, fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3> >,
+                                                     fusion::vector< mpl::int_<0>, mpl::int_<1>, mpl::int_<2>, mpl::int_<3>, mpl::int_<4> >
+                                                     >::type >::type >::type index_vector_type;
+
+    EimFunctionNoSolve( model_ptrtype model )
+        :
+        M_model( model ),
+        M_elt( M_model->functionSpace()->element() )
+        {}
 
     element_type solve( parameter_type const& mu )
-        {
-            LOG(INFO) << "no solve required\n";
-            return M_model->functionSpace()->element();
-        }
+    {
+        DVLOG(2) << "no solve required\n";
+        static const bool is_composite = functionspace_type::is_composite;
+        return solve( mu , mpl::bool_< is_composite >() );
+    }
+    element_type solve( parameter_type const& mu , mpl::bool_<false> )
+    {
+        value_type x = boost::lexical_cast<value_type>("inf");
+        M_elt = vf::project( _space=M_model->functionSpace(), _expr=cst(x) );
+        return M_elt;
+    }
+    element_type solve( parameter_type const& mu , mpl::bool_<true> )
+    {
+        ProjectInfCompositeCase project_inf_composite_case( M_elt );
+        index_vector_type index_vector;
+        fusion::for_each( index_vector, project_inf_composite_case );
+        return project_inf_composite_case.element();
+    }
+
     std::string modelName() const { return M_model->modelName(); }
     functionspace_ptrtype functionSpace() { return M_model->functionSpace(); }
     parameterspace_ptrtype parameterSpace() { return M_model->parameterSpace(); }
-    ModelType* M_model;
+
+    struct ProjectInfCompositeCase
+    {
+        ProjectInfCompositeCase( element_type & composite_element)
+            :
+            M_element( composite_element )
+        {}
+
+        template< typename T >
+        void
+        operator()( const T& t ) const
+        {
+            auto view = M_element.template element< T::value >();
+            auto space = view.functionSpace();
+            view = vf::project( _space=space, _expr=cst( boost::lexical_cast<value_type>("inf") ) );
+        }
+
+        element_type element()
+        {
+            return M_element;
+        }
+
+        element_type M_element;
+
+    }; //struct ProjectInfOnSubspace
+
+    model_ptrtype M_model;
+    element_type M_elt;
 };
 
 template<typename ModelType>
-EimFunctionNoSolve<ModelType>*
-eim_no_solve( ModelType* model )
+boost::shared_ptr<EimFunctionNoSolve<ModelType>>
+eim_no_solve( boost::shared_ptr<ModelType> model )
 {
-    return new EimFunctionNoSolve<ModelType>( model );
+    return boost::shared_ptr<EimFunctionNoSolve<ModelType>>( new EimFunctionNoSolve<ModelType>( model ) );
 }
 
 
 po::options_description eimOptions( std::string const& prefix ="");
 }
 #endif /* _FEELPP_EIM_HPP */
-

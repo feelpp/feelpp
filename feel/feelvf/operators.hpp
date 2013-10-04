@@ -82,9 +82,9 @@ namespace vf
           ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true,-1,1 ), \
           ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankSame,false,-1,1 ), \
-          ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,0 ), \
-          ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,0 ), \
-          ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,0 ), \
+          ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+          ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+          ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
           ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ) \
       ) \
    ) \
@@ -188,7 +188,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                 BOOST_PP_COMMA,                         \
                                 BOOST_PP_EMPTY )()                      \
                                    BOOST_PP_IF( BOOST_PP_NOT(VF_OP_TYPE_IS_VALUE( T )), \
-                                 BOOST_PP_IDENTITY(key_type>::type::pointer basis_context_ptrtype), \
+                                 BOOST_PP_IDENTITY(key_type>::type::element_type* basis_context_ptrtype), \
                                    BOOST_PP_IDENTITY( typedef boost::none_t basis_context_ptrtype ) )() \
                    /**/
 
@@ -240,12 +240,12 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             {                                                           \
                 if ( VF_OP_TYPE_IS_VALUE( T ) )                         \
                     v.updateGlobalValues();                             \
-                Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
+                DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] default constructor\n"; \
             }                                                           \
             VF_OPERATOR_NAME( O )( VF_OPERATOR_NAME( O ) const& op )    \
                 : M_v ( op.M_v )                                      \
             {                                                           \
-                Debug( 5051 ) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
+                DVLOG(2) << "[" BOOST_PP_STRINGIZE(VF_OPERATOR_NAME( O )) "] copy constructor\n"; \
             }                                                           \
             template<typename TheExpr>                                  \
             struct Lambda                                               \
@@ -281,7 +281,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     mpl::identity<typename fusion::result_of::value_at_key<map_basis_context_type,basis_context_key_type>::type::element_type > >::type::type basis_context_type; \
                 typedef typename mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
                     mpl::identity<mpl::int_<0> >,                       \
-                    mpl::identity<typename fusion::result_of::value_at_key<map_basis_context_type,basis_context_key_type>::type::pointer > >::type::type basis_context_ptrtype; \
+                    mpl::identity<typename fusion::result_of::value_at_key<map_basis_context_type,basis_context_key_type>::type::element_type* > >::type::type basis_context_ptrtype; \
                 typedef typename element_type::value_type value_type;   \
                 typedef typename matrix_node<value_type>::type matrix_node_type; \
                                                                         \
@@ -360,8 +360,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
-                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -383,8 +382,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
-                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -403,8 +401,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( dynamic_cast<void*>(const_cast<MeshBase*>( fusion::at_key<key_type>( geom )->element().mesh())) \
-                                 == dynamic_cast<void*>(expr.e().functionSpace()->mesh().get()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -704,7 +701,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 ret_type M_zero;                                        \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) M_loc;*/ \
                 bool M_did_init;                                        \
-                bool M_same_mesh;                                      \
+                const bool M_same_mesh;                                 \
             };                                                          \
                                                                         \
         protected:                                                      \

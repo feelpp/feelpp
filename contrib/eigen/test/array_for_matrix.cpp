@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -28,7 +13,6 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> ColVectorType;
   typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType; 
 
@@ -41,10 +25,10 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
 
   ColVectorType cv1 = ColVectorType::Random(rows);
   RowVectorType rv1 = RowVectorType::Random(cols);
-
+  
   Scalar  s1 = internal::random<Scalar>(),
           s2 = internal::random<Scalar>();
-
+          
   // scalar addition
   VERIFY_IS_APPROX(m1.array() + s1, s1 + m1.array());
   VERIFY_IS_APPROX((m1.array() + s1).matrix(), MatrixType::Constant(rows,cols,s1) + m1);
@@ -57,10 +41,10 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
   VERIFY_IS_APPROX(m3, (m1.array() - s1).matrix());
 
   // reductions
-  VERIFY_IS_MUCH_SMALLER_THAN(m1.colwise().sum().sum() - m1.sum(), m1.cwiseAbs().maxCoeff());
-  VERIFY_IS_MUCH_SMALLER_THAN(m1.rowwise().sum().sum() - m1.sum(), m1.cwiseAbs().maxCoeff());
-  VERIFY_IS_MUCH_SMALLER_THAN(m1.colwise().sum() + m2.colwise().sum() - (m1+m2).colwise().sum(), (m1+m2).cwiseAbs().maxCoeff());
-  VERIFY_IS_MUCH_SMALLER_THAN(m1.rowwise().sum() - m2.rowwise().sum() - (m1-m2).rowwise().sum(), (m1-m2).cwiseAbs().maxCoeff());
+  VERIFY_IS_MUCH_SMALLER_THAN(m1.colwise().sum().sum() - m1.sum(), m1.squaredNorm());
+  VERIFY_IS_MUCH_SMALLER_THAN(m1.rowwise().sum().sum() - m1.sum(), m1.squaredNorm());
+  VERIFY_IS_MUCH_SMALLER_THAN(m1.colwise().sum() + m2.colwise().sum() - (m1+m2).colwise().sum(), (m1+m2).squaredNorm());
+  VERIFY_IS_MUCH_SMALLER_THAN(m1.rowwise().sum() - m2.rowwise().sum() - (m1-m2).rowwise().sum(), (m1-m2).squaredNorm());
   VERIFY_IS_APPROX(m1.colwise().sum(), m1.colwise().redux(internal::scalar_sum_op<Scalar>()));
 
   // vector-wise ops
@@ -88,10 +72,10 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
 
 template<typename MatrixType> void comparisons(const MatrixType& m)
 {
+  using std::abs;
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
-  typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
 
   Index rows = m.rows();
   Index cols = m.cols();
@@ -125,7 +109,7 @@ template<typename MatrixType> void comparisons(const MatrixType& m)
   Scalar mid = (m1.cwiseAbs().minCoeff() + m1.cwiseAbs().maxCoeff())/Scalar(2);
   for (int j=0; j<cols; ++j)
   for (int i=0; i<rows; ++i)
-    m3(i,j) = internal::abs(m1(i,j))<mid ? 0 : m1(i,j);
+    m3(i,j) = abs(m1(i,j))<mid ? 0 : m1(i,j);
   VERIFY_IS_APPROX( (m1.array().abs()<MatrixType::Constant(rows,cols,mid).array())
                         .select(MatrixType::Zero(rows,cols),m1), m3);
   // shorter versions:
@@ -148,12 +132,13 @@ template<typename MatrixType> void comparisons(const MatrixType& m)
 
 template<typename VectorType> void lpNorm(const VectorType& v)
 {
+  using std::sqrt;
   VectorType u = VectorType::Random(v.size());
 
   VERIFY_IS_APPROX(u.template lpNorm<Infinity>(), u.cwiseAbs().maxCoeff());
   VERIFY_IS_APPROX(u.template lpNorm<1>(), u.cwiseAbs().sum());
-  VERIFY_IS_APPROX(u.template lpNorm<2>(), internal::sqrt(u.array().abs().square().sum()));
-  VERIFY_IS_APPROX(internal::pow(u.template lpNorm<5>(), typename VectorType::RealScalar(5)), u.array().abs().pow(5).sum());
+  VERIFY_IS_APPROX(u.template lpNorm<2>(), sqrt(u.array().abs().square().sum()));
+  VERIFY_IS_APPROX(numext::pow(u.template lpNorm<5>(), typename VectorType::RealScalar(5)), u.array().abs().pow(5).sum());
 }
 
 template<typename MatrixType> void cwise_min_max(const MatrixType& m)
@@ -183,6 +168,38 @@ template<typename MatrixType> void cwise_min_max(const MatrixType& m)
   VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, maxM1), m1.cwiseMax( maxM1));
   VERIFY_IS_APPROX(m1, m1.cwiseMax( minM1));
 
+  VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, minM1).array(), (m1.array().min)( minM1));
+  VERIFY_IS_APPROX(m1.array(), (m1.array().min)( maxM1));
+
+  VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, maxM1).array(), (m1.array().max)( maxM1));
+  VERIFY_IS_APPROX(m1.array(), (m1.array().max)( minM1));
+
+}
+
+template<typename MatrixTraits> void resize(const MatrixTraits& t)
+{
+  typedef typename MatrixTraits::Index Index;
+  typedef typename MatrixTraits::Scalar Scalar;
+  typedef Matrix<Scalar,Dynamic,Dynamic> MatrixType;
+  typedef Array<Scalar,Dynamic,Dynamic> Array2DType;
+  typedef Matrix<Scalar,Dynamic,1> VectorType;
+  typedef Array<Scalar,Dynamic,1> Array1DType;
+
+  Index rows = t.rows(), cols = t.cols();
+
+  MatrixType m(rows,cols);
+  VectorType v(rows);
+  Array2DType a2(rows,cols);
+  Array1DType a1(rows);
+
+  m.array().resize(rows+1,cols+1);
+  VERIFY(m.rows()==rows+1 && m.cols()==cols+1);
+  a2.matrix().resize(rows+1,cols+1);
+  VERIFY(a2.rows()==rows+1 && a2.cols()==cols+1);
+  v.array().resize(cols);
+  VERIFY(v.size()==cols);
+  a1.matrix().resize(cols);
+  VERIFY(a1.size()==cols);
 }
 
 void test_array_for_matrix()
@@ -216,5 +233,10 @@ void test_array_for_matrix()
     CALL_SUBTEST_8( lpNorm(Vector4f()) );
     CALL_SUBTEST_5( lpNorm(VectorXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_4( lpNorm(VectorXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+  }
+  for(int i = 0; i < g_repeat; i++) {
+    CALL_SUBTEST_4( resize(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_5( resize(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+    CALL_SUBTEST_6( resize(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
 }

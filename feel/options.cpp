@@ -27,27 +27,24 @@
    \date 2007-07-21
  */
 #include <feel/options.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelalg/backendpetsc.hpp>
-#include <feel/feelalg/solvereigen.hpp>
-#include <feel/feelalg/backendtrilinos.hpp>
-#include <feel/feelmaterial/materiallib.hpp>
-
-#include <feel/feeldiscr/bdf2.hpp>
-
-
-#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelalg/enums.hpp>
+#include <feel/feelfilters/gmshenums.hpp>
 
 namespace Feel
 {
+
+std::string
+prefixvm( std::string const& prefix,
+          std::string const& opt,
+          std::string const& sep );
+
+
 po::options_description
 file_options( std::string const& appname )
 {
     po::options_description file( "File options" );
     file.add_options()
-        ( "config-file", po::value<std::string>()->default_value(appname), "specify .cfg file" )
+        ( "config-file", po::value<std::string>()->default_value(appname+".cfg"), "specify .cfg file" )
         ( "result-file", po::value<std::string>()->default_value(appname+".res"), "specify .res file" )
         ( "response-file", po::value<std::string>()->default_value(appname), "can be specified with '@name', too" )
         ;
@@ -64,11 +61,125 @@ generic_options()
         ( "help", "prints this help message" )
         ( "license", "prints the license text" )
         ( "version", "prints the version" )
-        ( "v", po::value<int>(), "verbosity level" )
+        ( "v", po::value<int>()->default_value(0), "verbosity level" )
         ( "feelinfo", "prints feel libraries information" )
         ( "nochdir", "Don't change repository directory even though it is called" )
+        ( "directory", po::value<std::string>(), "change directory to specified one" )
         ;
     return generic;
+}
+po::options_description
+functions_options( std::string const& prefix )
+{
+    po::options_description _options( "Functions " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"functions.f" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "f" )
+        ( prefixvm( prefix,"functions.g" ).c_str(), Feel::po::value<std::string>()->default_value( "0" ), "g" )
+        ( prefixvm( prefix,"functions.alpha" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "alpha" )
+        ( prefixvm( prefix,"functions.beta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta" )
+        ( prefixvm( prefix,"functions.beta_x" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta x" )
+        ( prefixvm( prefix,"functions.beta_y" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta y" )
+        ( prefixvm( prefix,"functions.beta_z" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "beta z" )
+        ( prefixvm( prefix,"functions.epsilon" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "epsilon" )
+        ( prefixvm( prefix,"functions.gamma" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "gamma" )
+        ( prefixvm( prefix,"functions.delta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "delta" )
+        ;
+    return _options;
+}
+po::options_description
+gmsh_options( std::string const& prefix )
+{
+    po::options_description _options( "Gmsh " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
+        ( prefixvm( prefix,"gmsh.depends" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "list of files separated by , or ; that are dependencies of a loaded Gmsh geometry" )
+        ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
+        ( prefixvm( prefix,"gmsh.geo-variables-list" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "modify a list of geo variables (ex : alpha=1:beta=2)" )
+        ( prefixvm( prefix,"gmsh.refine" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "refinement by splitting level" )
+        ( prefixvm( prefix,"gmsh.straighten" ).c_str(), Feel::po::value<bool>()->default_value( true ), "straighten high order mesh" )
+        ( prefixvm( prefix,"gmsh.structured" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "generated a structured mesh" )
+        ( prefixvm( prefix,"gmsh.rebuild" ).c_str(), Feel::po::value<bool>()->default_value( true ), "force rebuild msh file from geo file" )
+        ( prefixvm( prefix,"gmsh.physical_are_elementary_regions" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Physical regions are defined by elementary regions, useful for medit format" )
+        ( prefixvm( prefix,"gmsh.partition" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Partition Gmsh mesh once generated or loaded" )
+#if defined(HAVE_METIS)
+        ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO, 2=METIS)" )
+#else
+        ( prefixvm( prefix,"gmsh.partitioner" ).c_str(), Feel::po::value<int>()->default_value( GMSH_PARTITIONER_DEFAULT ), "Gmsh partitioner (1=CHACO)" )
+#endif
+        ( prefixvm( prefix,"gmsh.format" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Gmsh file format (0=ASCII, 1=BINARY)" );
+
+
+    return _options;
+
+}
+po::options_description
+gmsh_domain_options( std::string const& prefix )
+{
+    po::options_description _options( "Gmsh Domain " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"gmsh.domain.shape" ).c_str(), Feel::po::value<std::string>()->default_value( "hypercube" ), "Domain shape" )
+        ( prefixvm( prefix,"gmsh.domain.convex" ).c_str(), Feel::po::value<std::string>()->default_value( "Simplex" ), "Convex type for Domain mesh (Simplex or Hypercube)" )
+        ( prefixvm( prefix,"gmsh.domain.shear" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "shear value for hypercube domain" )
+        ( prefixvm( prefix,"gmsh.domain.recombine" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "recombine elements to generate hypercube" )
+        ( prefixvm( prefix,"gmsh.domain.recombine" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "recombine elements to generate hypercube" )
+
+        ( prefixvm( prefix,"gmsh.domain.substructuring" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "generate substructuring markers for hypercube domain" )
+        ( prefixvm( prefix,"gmsh.domain.usenames" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "mark boundaries with names" )
+        ( prefixvm( prefix,"gmsh.domain.addmidpoint" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "add mid point on geometrical edges" )
+
+
+        ( prefixvm( prefix,"gmsh.domain.xmin" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "minimum value in x-direction" )
+        ( prefixvm( prefix,"gmsh.domain.ymin" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "minimum value in y-direction" )
+        ( prefixvm( prefix,"gmsh.domain.zmin" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "minimum value in z-direction" )
+        ( prefixvm( prefix,"gmsh.domain.xmax" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "maximum value in x-direction" )
+        ( prefixvm( prefix,"gmsh.domain.ymax" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "maximum value in y-direction" )
+        ( prefixvm( prefix,"gmsh.domain.zmax" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "maximum value in z-direction" )
+        ;
+
+
+    return _options;
+
+}
+
+po::options_description
+on_options( std::string const& prefix )
+{
+    po::options_description _options( "Dirichlet treatment options " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<int>()->default_value( ON_ELIMINATION ), "Strong Dirichlet conditions treatment type" )
+        ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
+        ;
+    return _options;
+}
+
+
+po::options_description
+ginac_options( std::string const& prefix )
+{
+    po::options_description _options( "GiNaC " + prefix + " options" );
+    _options.add_options()
+    // solver options
+        ( prefixvm( prefix,"ginac.strict-parser" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable strict parsing of GiNaC expressions, no extra variables/symbols can be defined if set to true" )
+        ;
+    return _options;
+}
+
+po::options_description
+error_options( std::string const& prefix )
+{
+    po::options_description _options( "Error options (" + prefix + ")" );
+    _options.add_options()
+    // error options
+        ( prefixvm( prefix, "error.exact" ).c_str(), Feel::po::value<std::string>()->default_value(""), "exact solution" )
+        ( prefixvm( prefix, "error.params" ).c_str(), Feel::po::value<std::string>()->default_value(""), "exact solution parameters" )
+        ( prefixvm( prefix, "error.rhs" ).c_str(), Feel::po::value<std::string>()->default_value(""), "rhs" )
+        ( prefixvm( prefix, "error.rhs.computed" ).c_str(), Feel::po::value<bool>()->default_value( false ), "rhs computed" )
+        ( prefixvm( prefix, "error.convergence" ).c_str(), Feel::po::value<bool>()->default_value( false ), "convergence" )
+        ( prefixvm( prefix, "error.convergence.steps" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "number of convergence steps" )
+    ;
+    return _options;
 }
 
 po::options_description
@@ -96,8 +207,26 @@ feel_options( std::string const& prefix  )
         /* exporter options */
         .add( exporter_options( prefix ) )
 
+        /* gmsh options */
+        .add( gmsh_options( prefix ) )
+
+        /* gmsh domain options */
+        .add( gmsh_domain_options( prefix ) )
+
+        /* ginac options */
+        .add( ginac_options( prefix ) )
+
         /* material options */
         .add( material_options( prefix ) )
+
+        /* error options */
+        .add( error_options( prefix ) )
+
+        /* functions options */
+        .add( functions_options( prefix ) )
+
+        /* functions options */
+        .add( on_options( prefix ) )
 
         ;
 
@@ -107,4 +236,3 @@ feel_options( std::string const& prefix  )
 
 }
 }
-

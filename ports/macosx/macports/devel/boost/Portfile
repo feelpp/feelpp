@@ -1,15 +1,15 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id$
+# $Id: Portfile 106554 2013-05-30 23:03:55Z cal@macports.org $
 
 PortSystem      1.0
 
 name            boost
-version         1.52.0
-revision        1
+version         1.53.0
+revision        2
 license         Boost-1
 categories      devel
 platforms       darwin
-maintainers     adfernandes
+maintainers     nomaintainer
 description     Collection of portable C++ source libraries
 
 long_description \
@@ -23,9 +23,9 @@ set distver     [join [split ${version} .] _]
 distname        ${name}_${distver}
 use_bzip2       yes
 
-checksums           md5     3a855e0f919107e0ca4de4d84ad3f750 \
-                    sha1    cddd6b4526a09152ddc5db856463eaa1dc29c5d9 \
-                    rmd160  94f72f4553a88495f2052029fb2e90cf8366e75d
+checksums           md5     a00d22605d5dbcfb4c9936a9b35bc4c2 \
+                    sha1    e6dd1b62ceed0a51add3dda6f3fc3ce0f636a7f3 \
+                    rmd160  441435fca62365ddb822ab582594ae92c30cbc92
 
 depends_lib     port:zlib \
                 port:expat \
@@ -35,6 +35,7 @@ depends_lib     port:zlib \
 
 patchfiles      patch-tools_build_v2_engine_src_build.sh.diff \
                 patch-tools_build_v2_engine_src_build.jam.diff \
+                patch-libs-context-130308-0.diff \
                 patch-bootstrap.sh.diff
 
 post-patch {
@@ -46,6 +47,11 @@ post-patch {
     # (http://en.gentoo-wiki.com/wiki/Safe_Cflags/Intel#Intel_Core_Solo.2FDuo.2C_Pentium_Dual-Core_T20xx.2FT21xx)
     # to fix broken 32-bit builds as per (https://trac.macports.org/ticket/35172).
     reinplace "s|-march=i386|-march=prescott|g" ${worksrcpath}/tools/build/v2/tools/gcc.jam
+    # If Apple's clang is used on 32-bit systems, it seems to silently ignore the '-march=i386' flag.
+    # (https://trac.macports.org/ticket/38157)
+    if {[lsearch ${build_arch} i386] != -1} {
+        compiler.blacklist clang
+    }
 }
 
 proc write_jam s {
@@ -72,6 +78,14 @@ configure.args      --without-libraries=python \
                     --without-libraries=mpi \
                     --with-icu=${prefix}
 
+platform powerpc {
+    configure.args-append   --without-libraries=context
+}
+
+if {${os.platform} == "darwin" && ${os.major} <= 10} {
+    configure.args-append   --without-libraries=context
+}
+
 configure.universal_args
 
 post-configure {
@@ -79,7 +93,10 @@ post-configure {
     reinplace -E "s|-install_name \"|&${prefix}/lib/|" \
         ${worksrcpath}/tools/build/v2/tools/darwin.jam
 
-    write_jam "using darwin : : ${configure.cxx} ;"
+    set compileflags ""
+    if {[string length ${configure.sdkroot}] != 0} { set compileflags "<compileflags>\"-isysroot ${configure.sdkroot}\"" }
+
+    write_jam "using darwin : : ${configure.cxx} : <cxxflags>\"${configure.cxxflags}\" ${compileflags} <linkflags>\"${configure.ldflags}\" : ;"
 
 }
 
@@ -154,10 +171,12 @@ foreach s ${pythons_suffixes} {
     set v [string index ${s} 0].[string index ${s} 1]
     set i [lsearch -exact ${pythons_ports} ${p}]
     set c [lreplace ${pythons_ports} ${i} ${i}]
-    # python 3k conflicts with openmpi (https://svn.boost.org/trac/boost/ticket/4657)
-    if { ${s} > 30 } { set o "openmpi" } else { set o "" }
+    # patch for boost.python from
+    # https://raw.github.com/archlinuxarm/PKGBUILDs/master/extra/boost/boost-1.53.0-python3.patch
+    # see also https://svn.boost.org/trac/boost/ticket/4657)
+    if { ${s} > 30 } { set bppatch "patch-boost-python3.diff" } else { set bppatch "" }
     eval [subst {
-        variant ${p} description "Build Boost.Python for Python ${v}" conflicts ${c} ${o} debug {
+        variant ${p} description "Build Boost.Python for Python ${v}" conflicts ${c} debug {
 
             # There is a conflict with python and debug support, so we should really change the 'variant' line above
             # to end with "conflicts ${c} debug" above. However, we leave it enabled for those who want to try it.
@@ -168,7 +187,7 @@ foreach s ${pythons_suffixes} {
             configure.args-delete   --without-libraries=python
             configure.args-append   --with-python=${prefix}/bin/python${v}
 
-            patchfiles-append   patch-tools-build-v2-tools-python.jam.diff \
+            patchfiles-append   ${bppatch} patch-tools-build-v2-tools-python.jam.diff \
                                 patch-tools-build-v2-tools-python-2.jam.diff
 
             post-patch {
@@ -189,7 +208,7 @@ if {![variant_isset debug]} {
     default_variants +${selected_python}
 }
 
-default_variants +no_single +no_static +openmpi +gcc46
+default_variants +no_single +no_static +openmpi +gcc48
 
 variant debug description {Builds debug versions of the libraries as well} {
     build.args-delete   variant=release
@@ -206,31 +225,31 @@ variant no_single description {Disable building single-threaded libraries} {
     build.args-append   threading=multi
 }
 
-variant gcc45 description {Build with gcc45} {
 
-    depends_lib-append      port:gcc45
-    build.args-append   pch=off
-    build.args-delete   architecture=x86
-    configure.cxx /opt/local/bin/g++-mp-4.5
-    post-configure {
-        #write_jam "using darwin : : /opt/local/bin/g++-mp-4.5 ;"
-    }
-}
 variant gcc46 description {Build with gcc46} {
-
     depends_lib-append      port:gcc46
     build.args-append   pch=off
     build.args-delete   architecture=x86
     configure.cxx /opt/local/bin/g++-mp-4.6
-    post-configure {
-        #write_jam "using darwin : : /opt/local/bin/g++-mp-4.6 ;"
-    }
+}
+
+variant gcc47 description {Build with gcc47} {
+    depends_lib-append      port:gcc47
+    build.args-append   pch=off
+    build.args-delete   architecture=x86
+    configure.cxx /opt/local/bin/g++-mp-4.7
+}
+
+variant gcc48 description {Build with gcc48} {
+    depends_lib-append      port:gcc48
+    build.args-append   pch=off
+    build.args-delete   architecture=x86
+    configure.cxx /opt/local/bin/g++-mp-4.8
 }
 
 variant openmpi conflicts debug description {Build Boost.MPI} {
 
-    # There is a conflict with python and debug support, so we should really change the 'variant' line above
-    # to end with "conflicts debug" above. However, we leave it enabled for those who want to try it.
+    # There is a conflict with debug support.
     # The issue has been reported to both the MacPorts team and the boost team, as per:
     # <http://trac.macports.org/ticket/23667> and <https://svn.boost.org/trac/boost/ticket/4461>
 

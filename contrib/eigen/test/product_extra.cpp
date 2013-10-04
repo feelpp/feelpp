@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -28,7 +13,6 @@ template<typename MatrixType> void product_extra(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::NonInteger NonInteger;
   typedef Matrix<Scalar, 1, Dynamic> RowVectorType;
   typedef Matrix<Scalar, Dynamic, 1> ColVectorType;
   typedef Matrix<Scalar, Dynamic, Dynamic,
@@ -58,7 +42,7 @@ template<typename MatrixType> void product_extra(const MatrixType& m)
   VERIFY_IS_APPROX(m3.noalias() = m1.adjoint() * square.adjoint(),   m1.adjoint().eval() * square.adjoint().eval());
   VERIFY_IS_APPROX(m3.noalias() = m1.adjoint() * m2,                 m1.adjoint().eval() * m2);
   VERIFY_IS_APPROX(m3.noalias() = (s1 * m1.adjoint()) * m2,          (s1 * m1.adjoint()).eval() * m2);
-  VERIFY_IS_APPROX(m3.noalias() = ((s1 * m1).adjoint()) * m2,        (internal::conj(s1) * m1.adjoint()).eval() * m2);
+  VERIFY_IS_APPROX(m3.noalias() = ((s1 * m1).adjoint()) * m2,        (numext::conj(s1) * m1.adjoint()).eval() * m2);
   VERIFY_IS_APPROX(m3.noalias() = (- m1.adjoint() * s1) * (s3 * m2), (- m1.adjoint()  * s1).eval() * (s3 * m2).eval());
   VERIFY_IS_APPROX(m3.noalias() = (s2 * m1.adjoint() * s1) * m2,     (s2 * m1.adjoint()  * s1).eval() * m2);
   VERIFY_IS_APPROX(m3.noalias() = (-m1*s2) * s1*m2.adjoint(),        (-m1*s2).eval() * (s1*m2.adjoint()).eval());
@@ -150,6 +134,35 @@ void zero_sized_objects()
   a*b;
 }
 
+void unaligned_objects()
+{
+  // Regression test for the bug reported here:
+  // http://forum.kde.org/viewtopic.php?f=74&t=107541
+  // Recall the matrix*vector kernel avoid unaligned loads by loading two packets and then reassemble then.
+  // There was a mistake in the computation of the valid range for fully unaligned objects: in some rare cases,
+  // memory was read outside the allocated matrix memory. Though the values were not used, this might raise segfault.
+  for(int m=450;m<460;++m)
+  {
+    for(int n=8;n<12;++n)
+    {
+      MatrixXf M(m, n);
+      VectorXf v1(n), r1(500);
+      RowVectorXf v2(m), r2(16);
+
+      M.setRandom();
+      v1.setRandom();
+      v2.setRandom();
+      for(int o=0; o<4; ++o)
+      {
+        r1.segment(o,m).noalias() = M * v1;
+        VERIFY_IS_APPROX(r1.segment(o,m), M * MatrixXf(v1));
+        r2.segment(o,n).noalias() = v2 * M;
+        VERIFY_IS_APPROX(r2.segment(o,n), MatrixXf(v2) * M);
+      }
+    }
+  }
+}
+
 void test_product_extra()
 {
   for(int i = 0; i < g_repeat; i++) {
@@ -158,6 +171,7 @@ void test_product_extra()
     CALL_SUBTEST_2( mat_mat_scalar_scalar_product() );
     CALL_SUBTEST_3( product_extra(MatrixXcf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
     CALL_SUBTEST_4( product_extra(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
-    CALL_SUBTEST_5( zero_sized_objects() );
   }
+  CALL_SUBTEST_5( zero_sized_objects() );
+  CALL_SUBTEST_6( unaligned_objects() );
 }

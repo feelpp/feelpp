@@ -1,26 +1,11 @@
 // This file is part of Eigen, a lightweight C++ template library
-// for linear algebra. Eigen itself is part of the KDE project.
+// for linear algebra.
 //
-// Copyright (C) 2010 Jitse Niesen <jitse@maths.leeds.ac.uk>
+// Copyright (C) 2010,2012 Jitse Niesen <jitse@maths.leeds.ac.uk>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 #include <limits>
@@ -80,6 +65,25 @@ template<typename MatrixType> void schur(int size = MatrixType::ColsAtCompileTim
   VERIFY_IS_EQUAL(rs2.info(), Success);
   VERIFY_IS_EQUAL(rs1.matrixT(), rs2.matrixT());
   VERIFY_IS_EQUAL(rs1.matrixU(), rs2.matrixU());
+
+  // Test maximum number of iterations
+  RealSchur<MatrixType> rs3;
+  rs3.setMaxIterations(RealSchur<MatrixType>::m_maxIterationsPerRow * size).compute(A);
+  VERIFY_IS_EQUAL(rs3.info(), Success);
+  VERIFY_IS_EQUAL(rs3.matrixT(), rs1.matrixT());
+  VERIFY_IS_EQUAL(rs3.matrixU(), rs1.matrixU());
+  if (size > 2) {
+    rs3.setMaxIterations(1).compute(A);
+    VERIFY_IS_EQUAL(rs3.info(), NoConvergence);
+    VERIFY_IS_EQUAL(rs3.getMaxIterations(), 1);
+  }
+
+  MatrixType Atriangular = A;
+  Atriangular.template triangularView<StrictlyLower>().setZero(); 
+  rs3.setMaxIterations(1).compute(Atriangular); // triangular matrices do not need any iterations
+  VERIFY_IS_EQUAL(rs3.info(), Success);
+  VERIFY_IS_EQUAL(rs3.matrixT(), Atriangular);
+  VERIFY_IS_EQUAL(rs3.matrixU(), MatrixType::Identity(size, size));
 
   // Test computation of only T, not U
   RealSchur<MatrixType> rsOnlyT(A, false);

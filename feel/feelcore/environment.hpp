@@ -42,11 +42,21 @@
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/options.hpp>
-
+#if defined ( FEELPP_HAS_PETSC_H )
+#include <petscsys.h>
+#endif
 namespace Feel
 {
 namespace detail
 {
+struct MemoryUsage
+{
+#if defined ( FEELPP_HAS_PETSC_H )
+    PetscLogDouble memory_usage;
+    PetscLogDouble petsc_malloc_usage;
+    PetscLogDouble petsc_malloc_maximum_usage;
+#endif
+};
 inline
 AboutData
 makeAbout( char* name )
@@ -64,7 +74,9 @@ makeAbout( char* name )
     return about;
 }
 
-/** @brief Initialize, finalize, and query the Feel++ environment.
+/**
+ *  @class Environment "Environment"
+ *  @brief Initialize, finalize, and query the Feel++ environment.
  *
  *  The @c Environment class is used to initialize, finalize, and
  *  query the Feel++ environment. It will typically be used in the @c
@@ -131,6 +143,18 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        (void), static changeRepository, tag,
+        (required
+         (directory,(boost::format)))
+        (optional
+         (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
+         (subdir,*( boost::is_convertible<mpl::_,bool> ),true)
+            ))
+        {
+            changeRepositoryImpl( directory, filename, subdir );
+        }
+
     template <class ArgumentPack>
     Environment(ArgumentPack const& args)
         {
@@ -141,6 +165,16 @@ public:
             S_desc->add( file_options( about.appName() ) );
 
             init( argc, argv, *S_desc, about );
+            if ( S_vm.count("nochdir") == 0 )
+            {
+                std::string defaultdir = about.appName();
+                if ( S_vm.count("directory") )
+                    defaultdir = S_vm["directory"].as<std::string>();
+                std::string d = args[_directory|defaultdir];
+                LOG(INFO) << "change directory to " << d << "\n";
+                boost::format f( d );
+                changeRepository( _directory=f );
+            }
         }
 
     void init( int argc, char** argv, po::options_description const& desc, AboutData const& about );
@@ -205,6 +239,11 @@ public:
     static int numberOfProcessors()  { return S_worldcomm->godSize(); }
 
     /**
+     * return the rank in global mpi communicator
+     */
+    static int rank() { return S_worldcomm->globalRank(); }
+
+    /**
      * return variables_map
      */
     static po::variables_map const& vm() { return S_vm; }
@@ -237,6 +276,24 @@ public:
 
     //! \return the root repository (default: \c $HOME/feel)
     static std::string rootRepository();
+
+    /**
+     * Find a file. The lookup is as follows:
+     *  - look into current path
+     *  - look into paths that went through changeRepository(), it means that we look
+     *    for example into the path from which the executable was run
+     * If the file has an extension .geo or .msh, try also to
+     *  - look into \c localGeoRepository() which is usually $HOME/feel/geo
+     *  - look into \c systemGeoRepository() which is usually $FEELPP_DIR/share/feel/geo
+     * If \p filename is not found, then the empty string is returned.
+     * \return the string containing the filename path
+     */
+    static std::string findFile( std::string const& filename );
+
+    /**
+     * \return the list of paths where Feel++ looks into to find a Gmsh Geo file
+     */
+    static std::vector<std::string> geoPathList();
 
     //! \return the local geo files repository (default: \c $HOME/feel/geo)
     static std::string localGeoRepository();
@@ -280,17 +337,11 @@ public:
             return it->second;
         }
 
-    BOOST_PARAMETER_MEMBER_FUNCTION(
-        (void), static changeRepository, tag,
-        (required
-         (directory,(boost::format)))
-        (optional
-         (filename,*( boost::is_convertible<mpl::_,std::string> ),"logfile")
-         (subdir,*( boost::is_convertible<mpl::_,bool> ),true)
-            ))
-        {
-            changeRepositoryImpl( directory, filename, subdir );
-        }
+    /**
+     * print resident memory usage as well as PETSc malloc usage in log file
+     * \param message message to print to identity the associated memory operation
+     */
+    static MemoryUsage logMemoryUsage( std::string const& message );
 
     //! get  \c variables_map from \c options_description \p desc
     //static po::variables_map vm( po::options_description const& desc );
@@ -314,6 +365,8 @@ public:
             S_deleteObservers.connect(boost::bind(&Observer::operator(), obs));
         }
 
+    static void clearSomeMemory();
+
     /**
      * \return the scratch directory
      */
@@ -336,6 +389,8 @@ private:
     /// Whether this environment object called MPI_Init
     bool i_initialized;
     mpi::environment M_env;
+
+    static std::vector<fs::path> S_paths;
 
     static  fs::path S_scratchdir;
 
@@ -362,7 +417,9 @@ public:
          (argv,*))
         (optional
          (desc,*)
-         (about,*) )) // no semicolon
+         (about,*)
+         (directory,( std::string ))
+            )) // no semicolon
 };
 
 
@@ -377,6 +434,45 @@ BOOST_PARAMETER_FUNCTION(
         ))
 {
     return Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix);
+}
+
+namespace detail
+{
+template<typename Args, typename Tag=tag::opt>
+struct option
+{
+    typedef typename boost::remove_pointer<
+        typename boost::remove_const<
+            typename boost::remove_reference<
+                typename parameter::binding<Args, Tag>::type
+                >::type
+            >::type
+        >::type type;
+};
+
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename Feel::detail::option<Args>::type ),
+    optionT, tag,
+    (required
+     (name,(std::string))
+     (in_out(opt),*))
+    (optional
+     (worldcomm, ( WorldComm ), Environment::worldComm() )
+     (sub,( std::string ),"")
+     (prefix,( std::string ),"")
+        ))
+{
+    try
+    {
+        opt = Environment::vm(_name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix).template as<typename Feel::detail::option<Args>::type>();
+    }
+    catch (boost::bad_any_cast bac)
+    {
+        CHECK( false ) <<"problem in conversion type of argument "<< name << " : check the option type"<<std::endl;
+    }
+    return opt;
 }
 
 }

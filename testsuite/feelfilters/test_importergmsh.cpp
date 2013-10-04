@@ -67,13 +67,10 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
                                          _addmidpoint=false,
                                          _shape=shape,
                                          _h=0.5 ) );
-
-    auto neumann = markedfaces( mesh, "Neumann" );
-    BOOST_CHECK_NE( std::distance( neumann.template get<1>(), neumann.template get<2>() ), 0 );
-    auto dirichlet = markedfaces( mesh, "Dirichlet" );
-    BOOST_CHECK_NE( std::distance( dirichlet.template get<1>(), dirichlet.template get<2>() ), 0 );
-    BOOST_CHECK_EQUAL( std::distance( neumann.template get<1>(), neumann.template get<2>() )+
-                       std::distance( dirichlet.template get<1>(), dirichlet.template get<2>() ),
+    BOOST_TEST_MESSAGE("Checking meshes for shape : " << shape << " using convex " << convex << " in " << Dim << "D..." );
+    BOOST_CHECK_NE( nelements(markedfaces(mesh, "Neumann")), 0 );
+    BOOST_CHECK_NE( nelements(markedfaces(mesh, "Dirichlet" )), 0 );
+    BOOST_CHECK_EQUAL( nelements(markedfaces(mesh, "Dirichlet"))+nelements(markedfaces(mesh, "Neumann")) ,
                        std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ) );
 
 }
@@ -114,17 +111,14 @@ BOOST_AUTO_TEST_CASE( gmshgeo )
                                       _dim=2,
                                       _order=1,
                                       _h=0.2 ) );
-    auto letters = markedfaces( mesh, "letters" );
-    BOOST_CHECK_NE( std::distance( letters.get<1>(), letters.get<2>() ), 0 );
-    auto wall = markedfaces( mesh, "wall" );
-    BOOST_CHECK_NE( std::distance( wall.get<1>(), wall.get<2>() ), 0 );
-    auto inlet = markedfaces( mesh, "inlet" );
-    BOOST_CHECK_NE( std::distance( inlet.get<1>(), inlet.get<2>() ), 0 );
-    auto outlet = markedfaces( mesh, "outlet" );
-    BOOST_CHECK_NE( std::distance( outlet.get<1>(), outlet.get<2>() ), 0 );
-    auto markedelts = markedelements( mesh, "feel" );
+
+    BOOST_CHECK_NE(nelements(markedfaces( mesh, "letters" )), 0 );
+    BOOST_CHECK_NE(nelements(markedfaces( mesh, "wall" )), 0 );
+    BOOST_CHECK_NE(nelements(markedfaces( mesh, "inlet" )), 0 );
+    BOOST_CHECK_NE(nelements(markedfaces( mesh, "outlet" )), 0 );
+    BOOST_CHECK_NE(nelements(markedelements( mesh, "feel" )), 0 );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
-                       std::distance( markedelts.get<1>(), markedelts.get<2>() ) );
+                       nelements(markedelements( mesh, "feel" )) );
 }
 
 BOOST_AUTO_TEST_CASE( gmshpartgeo )
@@ -240,19 +234,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( gmshimportexport, T, dim_types )
                             _filename=fstr.str(),
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
-    auto elements1 = elements( mesh );
-    auto elements2 = elements( meshimp );
-    BOOST_CHECK_EQUAL( std::distance( elements1.template get<1>(), elements1.template get<2>() ),
-                       std::distance( elements2.template get<1>(), elements2.template get<2>() ) );
+    BOOST_CHECK_EQUAL( nelements( elements(mesh) ),nelements( elements(meshimp) ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Neumann") ),nelements( markedfaces(meshimp,"Neumann") ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Dirichlet") ),nelements( markedfaces(meshimp,"Dirichlet") ) );
 
-    auto neumann1 = markedfaces( mesh, "Neumann" );
-    auto neumann2 = markedfaces( meshimp, "Neumann" );
-    BOOST_CHECK_EQUAL( std::distance( neumann1.template get<1>(), neumann1.template get<2>() ),
-                       std::distance( neumann2.template get<1>(), neumann2.template get<2>() ) );
-    auto dirichlet1 = markedfaces( mesh, "Dirichlet" );
-    auto dirichlet2 = markedfaces( meshimp, "Dirichlet" );
-    BOOST_CHECK_EQUAL( std::distance( dirichlet1.template get<1>(), dirichlet1.template get<2>() ),
-                       std::distance( dirichlet2.template get<1>(), dirichlet2.template get<2>() ) );
     BOOST_WARN_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
                       std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),
@@ -297,14 +282,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( meditimport, T, dim_types )
                             _physical_are_elementary_regions=true,
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
 
-    auto neumann1 = markedfaces( mesh, "Neumann" );
-    auto neumann2 = markedfaces( meshimp, mesh->markerName( "Neumann" ) );
-    BOOST_CHECK_EQUAL( std::distance( neumann1.template get<1>(), neumann1.template get<2>() ),
-                       std::distance( neumann2.template get<1>(), neumann2.template get<2>() ) );
-    auto dirichlet1 = markedfaces( mesh, "Dirichlet" );
-    auto dirichlet2 = markedfaces( meshimp, mesh->markerName( "Dirichlet" ) );
-    BOOST_CHECK_EQUAL( std::distance( dirichlet1.template get<1>(), dirichlet1.template get<2>() ),
-                       std::distance( dirichlet2.template get<1>(), dirichlet2.template get<2>() ) );
+    BOOST_CHECK_EQUAL( nelements( elements(mesh) ),nelements( elements(meshimp) ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Neumann") ),nelements( markedfaces(meshimp,mesh->markerName("Neumann") ) ) );
+    BOOST_CHECK_EQUAL( nelements( markedfaces(mesh,"Dirichlet") ),nelements( markedfaces(meshimp,mesh->markerName("Dirichlet") ) ) );
+
     BOOST_CHECK_EQUAL( std::distance( mesh->beginFaceOnBoundary(), mesh->endFaceOnBoundary() ),
                        std::distance( meshimp->beginFaceOnBoundary(), meshimp->endFaceOnBoundary() ) );
     BOOST_CHECK_EQUAL( std::distance( mesh->beginElement(), mesh->endElement() ),

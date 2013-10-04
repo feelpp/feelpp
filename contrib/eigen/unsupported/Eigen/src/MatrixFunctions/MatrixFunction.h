@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009-2011 Jitse Niesen <jitse@maths.leeds.ac.uk>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_MATRIX_FUNCTION
 #define EIGEN_MATRIX_FUNCTION
@@ -224,7 +209,7 @@ void MatrixFunction<MatrixType,AtomicType,1>::compute(ResultType& result)
   permuteSchur();
   computeBlockAtomic();
   computeOffDiagonal();
-  result = m_U * m_fT * m_U.adjoint();
+  result = m_U * (m_fT.template triangularView<Upper>() * m_U.adjoint());
 }
 
 /** \brief Store the Schur decomposition of #m_A in #m_T and #m_U */
@@ -250,6 +235,7 @@ void MatrixFunction<MatrixType,AtomicType,1>::computeSchurDecomposition()
 template <typename MatrixType, typename AtomicType>
 void MatrixFunction<MatrixType,AtomicType,1>::partitionEigenvalues()
 {
+  using std::abs;
   const Index rows = m_T.rows();
   VectorType diag = m_T.diagonal(); // contains eigenvalues of A
 
@@ -266,14 +252,14 @@ void MatrixFunction<MatrixType,AtomicType,1>::partitionEigenvalues()
 
     // Look for other element to add to the set
     for (Index j=i+1; j<rows; ++j) {
-      if (internal::abs(diag(j) - diag(i)) <= separation() && std::find(qi->begin(), qi->end(), diag(j)) == qi->end()) {
-	typename ListOfClusters::iterator qj = findCluster(diag(j));
-	if (qj == m_clusters.end()) {
-	  qi->push_back(diag(j));
-	} else {
-	  qi->insert(qi->end(), qj->begin(), qj->end());
-	  m_clusters.erase(qj);
-	}
+      if (abs(diag(j) - diag(i)) <= separation() && std::find(qi->begin(), qi->end(), diag(j)) == qi->end()) {
+        typename ListOfClusters::iterator qj = findCluster(diag(j));
+        if (qj == m_clusters.end()) {
+          qi->push_back(diag(j));
+        } else {
+          qi->insert(qi->end(), qj->begin(), qj->end());
+          m_clusters.erase(qj);
+        }
       }
     }
   }

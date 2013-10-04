@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_PRODUCTBASE_H
 #define EIGEN_PRODUCTBASE_H
@@ -102,10 +87,10 @@ class ProductBase : public MatrixBase<Derived>
 
     typedef typename Base::PlainObject PlainObject;
 
-    ProductBase(const Lhs& lhs, const Rhs& rhs)
-      : m_lhs(lhs), m_rhs(rhs)
+    ProductBase(const Lhs& a_lhs, const Rhs& a_rhs)
+      : m_lhs(a_lhs), m_rhs(a_rhs)
     {
-      eigen_assert(lhs.cols() == rhs.rows()
+      eigen_assert(a_lhs.cols() == a_rhs.rows()
         && "invalid matrix product"
         && "if you wanted a coeff-wise or a dot product use the respective explicit functions");
     }
@@ -123,7 +108,7 @@ class ProductBase : public MatrixBase<Derived>
     inline void subTo(Dest& dst) const { scaleAndAddTo(dst,Scalar(-1)); }
 
     template<typename Dest>
-    inline void scaleAndAddTo(Dest& dst,Scalar alpha) const { derived().scaleAndAddTo(dst,alpha); }
+    inline void scaleAndAddTo(Dest& dst, const Scalar& alpha) const { derived().scaleAndAddTo(dst,alpha); }
 
     const _LhsNested& lhs() const { return m_lhs; }
     const _RhsNested& rhs() const { return m_rhs; }
@@ -210,25 +195,25 @@ class ScaledProduct;
 // Also note that here we accept any compatible scalar types
 template<typename Derived,typename Lhs,typename Rhs>
 const ScaledProduct<Derived>
-operator*(const ProductBase<Derived,Lhs,Rhs>& prod, typename Derived::Scalar x)
+operator*(const ProductBase<Derived,Lhs,Rhs>& prod, const typename Derived::Scalar& x)
 { return ScaledProduct<Derived>(prod.derived(), x); }
 
 template<typename Derived,typename Lhs,typename Rhs>
 typename internal::enable_if<!internal::is_same<typename Derived::Scalar,typename Derived::RealScalar>::value,
                       const ScaledProduct<Derived> >::type
-operator*(const ProductBase<Derived,Lhs,Rhs>& prod, typename Derived::RealScalar x)
+operator*(const ProductBase<Derived,Lhs,Rhs>& prod, const typename Derived::RealScalar& x)
 { return ScaledProduct<Derived>(prod.derived(), x); }
 
 
 template<typename Derived,typename Lhs,typename Rhs>
 const ScaledProduct<Derived>
-operator*(typename Derived::Scalar x,const ProductBase<Derived,Lhs,Rhs>& prod)
+operator*(const typename Derived::Scalar& x,const ProductBase<Derived,Lhs,Rhs>& prod)
 { return ScaledProduct<Derived>(prod.derived(), x); }
 
 template<typename Derived,typename Lhs,typename Rhs>
 typename internal::enable_if<!internal::is_same<typename Derived::Scalar,typename Derived::RealScalar>::value,
                       const ScaledProduct<Derived> >::type
-operator*(typename Derived::RealScalar x,const ProductBase<Derived,Lhs,Rhs>& prod)
+operator*(const typename Derived::RealScalar& x,const ProductBase<Derived,Lhs,Rhs>& prod)
 { return ScaledProduct<Derived>(prod.derived(), x); }
 
 namespace internal {
@@ -256,7 +241,7 @@ class ScaledProduct
     typedef typename Base::PlainObject PlainObject;
 //     EIGEN_PRODUCT_PUBLIC_INTERFACE(ScaledProduct)
 
-    ScaledProduct(const NestedProduct& prod, Scalar x)
+    ScaledProduct(const NestedProduct& prod, const Scalar& x)
     : Base(prod.lhs(),prod.rhs()), m_prod(prod), m_alpha(x) {}
 
     template<typename Dest>
@@ -269,7 +254,7 @@ class ScaledProduct
     inline void subTo(Dest& dst) const { scaleAndAddTo(dst, Scalar(-1)); }
 
     template<typename Dest>
-    inline void scaleAndAddTo(Dest& dst,Scalar alpha) const { m_prod.derived().scaleAndAddTo(dst,alpha * m_alpha); }
+    inline void scaleAndAddTo(Dest& dst, const Scalar& a_alpha) const { m_prod.derived().scaleAndAddTo(dst,a_alpha * m_alpha); }
 
     const Scalar& alpha() const { return m_alpha; }
     

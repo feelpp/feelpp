@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_SPARSEDENSEPRODUCT_H
 #define EIGEN_SPARSEDENSEPRODUCT_H
@@ -54,7 +39,7 @@ struct traits<SparseDenseOuterProduct<Lhs,Rhs,Tr> >
 {
   typedef Sparse StorageKind;
   typedef typename scalar_product_traits<typename traits<Lhs>::Scalar,
-                                            typename traits<Rhs>::Scalar>::ReturnType Scalar;
+                                         typename traits<Rhs>::Scalar>::ReturnType Scalar;
   typedef typename Lhs::Index Index;
   typedef typename Lhs::Nested LhsNested;
   typedef typename Rhs::Nested RhsNested;
@@ -126,6 +111,7 @@ template<typename Lhs, typename Rhs, bool Transpose>
 class SparseDenseOuterProduct<Lhs,Rhs,Transpose>::InnerIterator : public _LhsNested::InnerIterator
 {
     typedef typename _LhsNested::InnerIterator Base;
+    typedef typename SparseDenseOuterProduct::Index Index;
   public:
     EIGEN_STRONG_INLINE InnerIterator(const SparseDenseOuterProduct& prod, Index outer)
       : Base(prod.lhs(), 0), m_outer(outer), m_factor(prod.rhs().coeff(outer))
@@ -165,7 +151,7 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, R
   typedef typename internal::remove_all<DenseResType>::type Res;
   typedef typename Lhs::Index Index;
   typedef typename Lhs::InnerIterator LhsInnerIterator;
-  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, typename Res::Scalar alpha)
+  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
   {
     for(Index c=0; c<rhs.cols(); ++c)
     {
@@ -189,7 +175,7 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, C
   typedef typename internal::remove_all<DenseResType>::type Res;
   typedef typename Lhs::InnerIterator LhsInnerIterator;
   typedef typename Lhs::Index Index;
-  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, typename Res::Scalar alpha)
+  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
   {
     for(Index c=0; c<rhs.cols(); ++c)
     {
@@ -211,7 +197,7 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, R
   typedef typename internal::remove_all<DenseResType>::type Res;
   typedef typename Lhs::InnerIterator LhsInnerIterator;
   typedef typename Lhs::Index Index;
-  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, typename Res::Scalar alpha)
+  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
   {
     for(Index j=0; j<lhs.outerSize(); ++j)
     {
@@ -230,7 +216,7 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, C
   typedef typename internal::remove_all<DenseResType>::type Res;
   typedef typename Lhs::InnerIterator LhsInnerIterator;
   typedef typename Lhs::Index Index;
-  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, typename Res::Scalar alpha)
+  static void run(const SparseLhsType& lhs, const DenseRhsType& rhs, DenseResType& res, const typename Res::Scalar& alpha)
   {
     for(Index j=0; j<lhs.outerSize(); ++j)
     {
@@ -259,7 +245,7 @@ class SparseTimeDenseProduct
     SparseTimeDenseProduct(const Lhs& lhs, const Rhs& rhs) : Base(lhs,rhs)
     {}
 
-    template<typename Dest> void scaleAndAddTo(Dest& dest, Scalar alpha) const
+    template<typename Dest> void scaleAndAddTo(Dest& dest, const Scalar& alpha) const
     {
       internal::sparse_time_dense_product(m_lhs, m_rhs, dest, alpha);
     }
@@ -289,7 +275,7 @@ class DenseTimeSparseProduct
     DenseTimeSparseProduct(const Lhs& lhs, const Rhs& rhs) : Base(lhs,rhs)
     {}
 
-    template<typename Dest> void scaleAndAddTo(Dest& dest, Scalar alpha) const
+    template<typename Dest> void scaleAndAddTo(Dest& dest, const Scalar& alpha) const
     {
       Transpose<const _LhsNested> lhs_t(m_lhs);
       Transpose<const _RhsNested> rhs_t(m_rhs);

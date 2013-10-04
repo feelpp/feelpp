@@ -3,41 +3,18 @@
 //
 // Copyright (C) 2010 Hauke Heibel <hauke.heibel@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
 template <typename MatrixType> void run_nesting_ops(const MatrixType& _m)
 {
   typename MatrixType::Nested m(_m);
-  typedef typename MatrixType::Scalar Scalar;
 
-#ifdef NDEBUG
-  const bool is_debug = false;
-#else
-  const bool is_debug = true;
-#endif
-
-  // Make really sure that we are in debug mode! We don't want any type of
-  // inlining for these tests to pass.
-  VERIFY(is_debug);
+  // Make really sure that we are in debug mode!
+  VERIFY_RAISES_ASSERT(eigen_assert(false));
 
   // The only intention of these tests is to ensure that this code does
   // not trigger any asserts or segmentation faults... more to come.

@@ -54,12 +54,26 @@ makeOptions()
     ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
     ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
     ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
+        ( "testcase", Feel::po::value<std::string>()->default_value( "default" ), "name of the testcase" )
+        ( "1D.exact", Feel::po::value<std::string>()->default_value( "" ), "exact solution in 1D" )
+        ( "2D.exact", Feel::po::value<std::string>()->default_value( "" ), "exact solution in 2D" )
+        ( "3D.exact", Feel::po::value<std::string>()->default_value( "" ), "exact solution in 3D" )
     ( "export-matlab", "export matrix and vectors in matlab" )
     ( "no-solve", "dont solve the system" )
     ( "extra-terms", "dont solve the system" )
     ;
-    return laplacianoptions.add( Feel::feel_options() )
-           .add( Feel::benchmark_options( "2D-CR1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P1-Hypercube" ) ).add( Feel::benchmark_options( "2D-P2-Hypercube" ) );
+    return laplacianoptions.add( Feel::feel_options() );
+}
+inline
+Feel::po::options_description
+makeBenchmarkOptions( std::string const& bench )
+{
+    Feel::po::options_description benchoptions( "Stokes benchmark options" );
+    benchoptions.add_options()
+    ( Feel::prefixvm( bench,"bctype" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+    ( Feel::prefixvm( bench,"bccoeff" ).c_str(), Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions" )
+    ;
+    return benchoptions.add( Feel::benchmark_options( bench ) );
 }
 
 
@@ -79,7 +93,8 @@ makeAbout()
                            "0.1",
                            "Laplacian equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)" );
+                           "Copyright (c) 2009-2011 Universite de Grenoble 1 (Joseph Fourier)\n"
+                           "Copyright (c) 2011-2013 Universite de Strasbourg" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -87,15 +102,25 @@ makeAbout()
 }
 namespace Feel
 {
+extern template class Laplacian<2, Lagrange<1, Scalar>, Simplex>;
+extern template class Laplacian<2, Lagrange<2, Scalar>, Simplex>;
+extern template class Laplacian<2, Lagrange<3, Scalar>, Simplex>;
+extern template class Laplacian<2, Lagrange<4, Scalar>, Simplex>;
+extern template class Laplacian<2, Lagrange<5, Scalar>, Simplex>;
+
 extern template class Laplacian<2, Lagrange<1, Scalar>, Hypercube>;
 extern template class Laplacian<2, Lagrange<2, Scalar>, Hypercube>;
 extern template class Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>;
 extern template class LaplacianV<2, CrouzeixRaviart<1, Vectorial>, Hypercube>;
+
 extern template class Laplacian<3, Lagrange<1, Scalar>, Hypercube>;
 extern template class Laplacian<3, Lagrange<2, Scalar>, Hypercube>;
+
 extern template class Laplacian<3, Lagrange<1, Scalar>, Simplex>;
 extern template class Laplacian<3, Lagrange<2, Scalar>, Simplex>;
 extern template class Laplacian<3, Lagrange<3, Scalar>, Simplex>;
+extern template class Laplacian<3, Lagrange<4, Scalar>, Simplex>;
+extern template class Laplacian<3, Lagrange<5, Scalar>, Simplex>;
 
 }
 
@@ -103,8 +128,28 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-    Environment env(argc,argv);
-    Application benchmark( argc, argv, makeAbout(), makeOptions() );
+
+    using namespace Feel;
+    std::vector<std::string> boptions = boost::assign::list_of( "2D-CR1-Simplex" )( "2D-CR1-Hypercube" )
+        ( "2D-P1-Simplex" )( "2D-P2-Simplex" )
+        ( "2D-P3-Simplex" )( "2D-P4-Simplex" )
+        ( "2D-P5-Simplex" )
+        ( "3D-P1-Simplex" )( "3D-P1-Hypercube" )
+        ( "3D-P2-Simplex" )( "3D-P2-Hypercube" );
+    auto cmdoptions = makeOptions();
+    BOOST_FOREACH( auto o, boptions )
+    {
+        cmdoptions.add( makeBenchmarkOptions( o ) );
+    }
+
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=cmdoptions,
+                     _about=makeAbout() );
+
+    Environment::changeRepository( boost::format( "%1%/%2%" )
+                                   % makeAbout().appName()
+                                   % option(_name="testcase").template as<std::string>() );
+    Application benchmark;
 
     if ( benchmark.vm().count( "help" ) )
     {
@@ -112,27 +157,51 @@ int main( int argc, char** argv )
         return 0;
     }
 
+    std::ofstream out;
+    if ( env.worldComm().rank() == 0 )
+        out.open( (boost::format("res-%1%.dat") % env.numberOfProcessors() ).str().c_str() );
 #if 1
-    benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Hypercube>( "2D-P2-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Simplex>( "2D-CR1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Hypercube>( "3D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Hypercube>( "3D-P2-Hypercube", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new LaplacianV<2, CrouzeixRaviart<1, Vectorial>, Hypercube>( "2D-CR1V-Hypercube", benchmark.vm(), benchmark.about() ) );
-    //benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Hypercube>( "3D-P1-Hypercube", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex") );
+    benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Simplex>( "2D-P2-Simplex") );
 
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
+    benchmark.add( new Laplacian<2, Lagrange<3, Scalar>, Simplex>( "2D-P3-Simplex") );
+    benchmark.add( new Laplacian<2, Lagrange<4, Scalar>, Simplex>( "2D-P4-Simplex") );
+    benchmark.add( new Laplacian<2, Lagrange<5, Scalar>, Simplex>( "2D-P5-Simplex") );
 
-    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex", benchmark.vm(), benchmark.about() ) );
-#else
-    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube", benchmark.vm(), benchmark.about() ) );
+
+    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex") );
+    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
+
+    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
+    benchmark.add( new Laplacian<3, Lagrange<4, Scalar>, Simplex>( "3D-P4-Simplex") );
+    benchmark.add( new Laplacian<3, Lagrange<5, Scalar>, Simplex>( "3D-P5-Simplex") );
+
+#if 0
+    benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Hypercube>( "2D-P1-Hypercube") );
+    benchmark.add( new Laplacian<2, Lagrange<2, Scalar>, Hypercube>( "2D-P2-Hypercube") );
+    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Simplex>( "2D-CR1-Simplex") );
+    benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube") );
+
+
+    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Hypercube>( "3D-P1-Hypercube") );
+    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Hypercube>( "3D-P2-Hypercube") );
+    //benchmark.add( new LaplacianV<2, CrouzeixRaviart<1, Vectorial>, Hypercube>( "2D-CR1V-Hypercube") );
+    //benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Hypercube>( "3D-P1-Hypercube") );
+
+    benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex") );
+    benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
+    benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
 #endif
-    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
+    //benchmark.add( new Laplacian<3, Lagrange<1, Scalar>, Simplex>( "3D-P1-Simplex") );
+    //benchmark.add( new Laplacian<3, Lagrange<2, Scalar>, Simplex>( "3D-P2-Simplex") );
+    //benchmark.add( new Laplacian<3, Lagrange<3, Scalar>, Simplex>( "3D-P3-Simplex") );
+
+#else
+    //benchmark.add( new Laplacian<2, CrouzeixRaviart<1, Scalar>, Hypercube>( "2D-CR1-Hypercube") );
+    benchmark.add( new Laplacian<2, Lagrange<1, Scalar>, Simplex>( "2D-P1-Simplex" ) );
+#endif
+    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "e.semih1" )( "e.flux" )( "e.part" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" )( "t.integrate" )( "t.export" ) );
     benchmark.run();
     benchmark.printStats( std::cout );
+    benchmark.printStats( out );
 }

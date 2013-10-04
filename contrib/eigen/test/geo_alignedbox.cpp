@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 #include <Eigen/Geometry>
@@ -29,6 +14,10 @@
 
 #include<iostream>
 using namespace std;
+
+template<typename T> EIGEN_DONT_INLINE
+void kill_extra_precision(T& x) { eigen_assert(&x != 0); }
+
 
 template<typename BoxType> void alignedbox(const BoxType& _box)
 {
@@ -51,6 +40,10 @@ template<typename BoxType> void alignedbox(const BoxType& _box)
   BoxType b0(dim);
   BoxType b1(VectorType::Random(dim),VectorType::Random(dim));
   BoxType b2;
+  
+  kill_extra_precision(b1);
+  kill_extra_precision(p0);
+  kill_extra_precision(p1);
 
   b0.extend(p0);
   b0.extend(p1);
@@ -86,7 +79,6 @@ void alignedboxCastTests(const BoxType& _box)
   // casting  
   typedef typename BoxType::Index Index;
   typedef typename BoxType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, BoxType::AmbientDimAtCompileTime, 1> VectorType;
 
   const Index dim = _box.dim();
@@ -124,7 +116,7 @@ void specificTest1()
 
     VERIFY_IS_APPROX( 14.0f, box.volume() );
     VERIFY_IS_APPROX( 53.0f, box.diagonal().squaredNorm() );
-    VERIFY_IS_APPROX( internal::sqrt( 53.0f ), box.diagonal().norm() );
+    VERIFY_IS_APPROX( std::sqrt( 53.0f ), box.diagonal().norm() );
 
     VERIFY_IS_APPROX( m, box.corner( BoxType::BottomLeft ) );
     VERIFY_IS_APPROX( M, box.corner( BoxType::TopRight ) );

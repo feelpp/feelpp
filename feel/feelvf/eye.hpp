@@ -36,7 +36,7 @@ namespace Feel
 {
 namespace vf
 {
-/// \cond detail
+/// \cond DETAIL
 namespace detail
 {
 /**
@@ -81,16 +81,16 @@ public:
 
     Eye()
         :
-        _M_eye( M, N )
+        M_eye( M, N )
     {
         blitz::firstIndex i;
         blitz::secondIndex j;
-        _M_eye = !( i-j );
+        M_eye = !( i-j );
     }
 
     Eye( Eye const & eig )
         :
-        _M_eye( eig._M_eye )
+        M_eye( eig.M_eye )
     {
     }
     ~Eye()
@@ -125,7 +125,7 @@ public:
 
     blitz::Array<value_type,2> eye() const
     {
-        return _M_eye;
+        return M_eye;
     }
 
     //@}
@@ -138,7 +138,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         struct INVALID_SHAPE {};
@@ -164,19 +164,19 @@ public:
 
         tensor( this_type const& expr,Geo_t const&, Basis_i_t const&, Basis_j_t const& )
             :
-            _M_expr( expr )
+            M_expr( expr )
         {
         }
 
         tensor( this_type const& expr,Geo_t const&, Basis_i_t const& )
             :
-            _M_expr( expr )
+            M_expr( expr )
         {
         }
 
         tensor( this_type const& expr, Geo_t const&  )
             :
-            _M_expr( expr )
+            M_expr( expr )
         {
         }
 
@@ -230,24 +230,24 @@ public:
         {
             Feel::detail::ignore_unused_variable_warning( c1 );
             Feel::detail::ignore_unused_variable_warning( c2 );
-            return _M_expr.eye()( 0, 0 );
+            return M_expr.eye()( 0, 0 );
         }
         value_type
         eval( int c1, int c2, mpl::bool_<false> ) const
         {
-            return _M_expr.eye()( c1, c2 );
+            return M_expr.eye()( c1, c2 );
         }
-        this_type _M_expr;
+        this_type M_expr;
     };
 private:
-    blitz::Array<value_type,2> _M_eye;
+    blitz::Array<value_type,2> M_eye;
 
 };
 } // detail
 /// \endcond
 
 /**
- * \class Eye
+ *
  * \brief Return an identity matrix
  *
  * @author Christophe

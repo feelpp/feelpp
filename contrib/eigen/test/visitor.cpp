@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -87,8 +72,8 @@ template<typename VectorType> void vectorVisitor(const VectorType& w)
       while(v(i) == v(i2)) // yes, ==
         v(i) = internal::random<Scalar>();
   
-  Scalar minc = Scalar(1000), maxc = Scalar(-1000);
-  Index minidx=0,maxidx=0;
+  Scalar minc = v(0), maxc = v(0);
+  Index minidx=0, maxidx=0;
   for(Index i = 0; i < size; i++)
   {
     if(v(i) < minc)
@@ -112,6 +97,17 @@ template<typename VectorType> void vectorVisitor(const VectorType& w)
   VERIFY_IS_APPROX(maxc, eigen_maxc);
   VERIFY_IS_APPROX(minc, v.minCoeff());
   VERIFY_IS_APPROX(maxc, v.maxCoeff());
+  
+  Index idx0 = internal::random<Index>(0,size-1);
+  Index idx1 = eigen_minidx;
+  Index idx2 = eigen_maxidx;
+  VectorType v1(v), v2(v);
+  v1(idx0) = v1(idx1);
+  v2(idx0) = v2(idx2);
+  v1.minCoeff(&eigen_minidx);
+  v2.maxCoeff(&eigen_maxidx);
+  VERIFY(eigen_minidx == (std::min)(idx0,idx1));
+  VERIFY(eigen_maxidx == (std::min)(idx0,idx2));
 }
 
 void test_visitor()
@@ -126,6 +122,7 @@ void test_visitor()
   }
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_7( vectorVisitor(Vector4f()) );
+    CALL_SUBTEST_7( vectorVisitor(Matrix<int,12,1>()) );
     CALL_SUBTEST_8( vectorVisitor(VectorXd(10)) );
     CALL_SUBTEST_9( vectorVisitor(RowVectorXd(10)) );
     CALL_SUBTEST_10( vectorVisitor(VectorXf(33)) );

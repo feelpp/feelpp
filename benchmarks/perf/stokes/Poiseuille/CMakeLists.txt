@@ -36,6 +36,9 @@ add_custom_target(gen_feel_perf_stokes_Poiseuille ALL )
   feelpp_add_application( perf_stokes_poiseuille_NN_2D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=NN STOKESPRESSMESHTYPE=1 NO_TEST)
   feelpp_add_application( perf_stokes_poiseuille_NN_3D SRCS stokes_poiseuille.cpp LABEL perf DEFS FEELPP_COND=NN STOKESPRESSMESHTYPE=2 NO_TEST)
 
+ #feelpp_add_application( perf_stokes_poiseuille_test_2D SRCS stokes_poiseuille_test.cpp LABEL perf DEFS STOKESPRESSMESHTYPE=1 NO_TEST)
+  feelpp_add_application( perf_stokes_poiseuille_test_3D SRCS stokes_poiseuille_test.cpp LABEL perf DEFS STOKESPRESSMESHTYPE=2 NO_TEST)
+
 
 #  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #  foreach(PORDER 1 2 3)

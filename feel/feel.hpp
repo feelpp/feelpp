@@ -26,35 +26,45 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2012-09-18
  */
+#if !defined(FEELPP_FEEL_HPP)
+#define FEELPP_FEEL_HPP 1
+
 #include <boost/math/constants/constants.hpp>
 
 #include <feel/options.hpp>
-#include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/application.hpp>
-#include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/functionspace.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/exporter.hpp>
+
+#include <feel/feelcore/environment.hpp>
+
+#include <feel/feelcore/application.hpp>
+
+#include <feel/feelalg/backend.hpp>
+
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
 
+#include <feel/feelvf/vf.hpp>
+
 #include <feel/feeldiscr/operatorlinear.hpp>
+
 #include <feel/feeldiscr/bdf2.hpp>
+
 #include <feel/feeldiscr/projector.hpp>
+
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
-
-#include <feel/feelfilters/geotool.hpp>
-
-#include <feel/feelvf/vf.hpp>
 
 #include <ginac/ginac.h>
 namespace Feel
 {
 using GiNaC::symbol;
 using GiNaC::ex;
-
-
 }
 
+#include <feel/feelfilters/gmsh.hpp>
+
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/geotool.hpp>
+
+#endif /* FEELPP_FEEL_HPP */

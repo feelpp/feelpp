@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_REPLICATE_H
 #define EIGEN_REPLICATE_H
@@ -85,8 +70,8 @@ template<typename MatrixType,int RowFactor,int ColFactor> class Replicate
     EIGEN_DENSE_PUBLIC_INTERFACE(Replicate)
 
     template<typename OriginalMatrixType>
-    inline explicit Replicate(const OriginalMatrixType& matrix)
-      : m_matrix(matrix), m_rowFactor(RowFactor), m_colFactor(ColFactor)
+    inline explicit Replicate(const OriginalMatrixType& a_matrix)
+      : m_matrix(a_matrix), m_rowFactor(RowFactor), m_colFactor(ColFactor)
     {
       EIGEN_STATIC_ASSERT((internal::is_same<typename internal::remove_const<MatrixType>::type,OriginalMatrixType>::value),
                           THE_MATRIX_OR_EXPRESSION_THAT_YOU_PASSED_DOES_NOT_HAVE_THE_EXPECTED_TYPE)
@@ -94,8 +79,8 @@ template<typename MatrixType,int RowFactor,int ColFactor> class Replicate
     }
 
     template<typename OriginalMatrixType>
-    inline Replicate(const OriginalMatrixType& matrix, Index rowFactor, Index colFactor)
-      : m_matrix(matrix), m_rowFactor(rowFactor), m_colFactor(colFactor)
+    inline Replicate(const OriginalMatrixType& a_matrix, Index rowFactor, Index colFactor)
+      : m_matrix(a_matrix), m_rowFactor(rowFactor), m_colFactor(colFactor)
     {
       EIGEN_STATIC_ASSERT((internal::is_same<typename internal::remove_const<MatrixType>::type,OriginalMatrixType>::value),
                           THE_MATRIX_OR_EXPRESSION_THAT_YOU_PASSED_DOES_NOT_HAVE_THE_EXPECTED_TYPE)
@@ -104,27 +89,27 @@ template<typename MatrixType,int RowFactor,int ColFactor> class Replicate
     inline Index rows() const { return m_matrix.rows() * m_rowFactor.value(); }
     inline Index cols() const { return m_matrix.cols() * m_colFactor.value(); }
 
-    inline Scalar coeff(Index row, Index col) const
+    inline Scalar coeff(Index rowId, Index colId) const
     {
       // try to avoid using modulo; this is a pure optimization strategy
       const Index actual_row  = internal::traits<MatrixType>::RowsAtCompileTime==1 ? 0
-                            : RowFactor==1 ? row
-                            : row%m_matrix.rows();
+                            : RowFactor==1 ? rowId
+                            : rowId%m_matrix.rows();
       const Index actual_col  = internal::traits<MatrixType>::ColsAtCompileTime==1 ? 0
-                            : ColFactor==1 ? col
-                            : col%m_matrix.cols();
+                            : ColFactor==1 ? colId
+                            : colId%m_matrix.cols();
 
       return m_matrix.coeff(actual_row, actual_col);
     }
     template<int LoadMode>
-    inline PacketScalar packet(Index row, Index col) const
+    inline PacketScalar packet(Index rowId, Index colId) const
     {
       const Index actual_row  = internal::traits<MatrixType>::RowsAtCompileTime==1 ? 0
-                            : RowFactor==1 ? row
-                            : row%m_matrix.rows();
+                            : RowFactor==1 ? rowId
+                            : rowId%m_matrix.rows();
       const Index actual_col  = internal::traits<MatrixType>::ColsAtCompileTime==1 ? 0
-                            : ColFactor==1 ? col
-                            : col%m_matrix.cols();
+                            : ColFactor==1 ? colId
+                            : colId%m_matrix.cols();
 
       return m_matrix.template packet<LoadMode>(actual_row, actual_col);
     }

@@ -4,24 +4,9 @@
 // Copyright (C) 2010 Benoit Jacob <jacob.benoit.1@gmail.com>
 // Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_HOUSEHOLDER_H
 #define EIGEN_HOUSEHOLDER_H
@@ -82,25 +67,28 @@ void MatrixBase<Derived>::makeHouseholder(
   Scalar& tau,
   RealScalar& beta) const
 {
+  using std::sqrt;
+  using numext::conj;
+  
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(EssentialPart)
   VectorBlock<const Derived, EssentialPart::SizeAtCompileTime> tail(derived(), 1, size()-1);
   
   RealScalar tailSqNorm = size()==1 ? RealScalar(0) : tail.squaredNorm();
   Scalar c0 = coeff(0);
 
-  if(tailSqNorm == RealScalar(0) && internal::imag(c0)==RealScalar(0))
+  if(tailSqNorm == RealScalar(0) && numext::imag(c0)==RealScalar(0))
   {
     tau = RealScalar(0);
-    beta = internal::real(c0);
+    beta = numext::real(c0);
     essential.setZero();
   }
   else
   {
-    beta = internal::sqrt(internal::abs2(c0) + tailSqNorm);
-    if (internal::real(c0)>=RealScalar(0))
+    beta = sqrt(numext::abs2(c0) + tailSqNorm);
+    if (numext::real(c0)>=RealScalar(0))
       beta = -beta;
     essential = tail / (c0 - beta);
-    tau = internal::conj((beta - c0) / beta);
+    tau = conj((beta - c0) / beta);
   }
 }
 

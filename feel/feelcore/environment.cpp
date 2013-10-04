@@ -37,8 +37,12 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
-
+#include <boost/assign/std/vector.hpp>
 #include <gflags/gflags.h>
+
+#if defined ( FEELPP_HAS_PETSC_H )
+#include <petscsys.h>
+#endif
 
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
@@ -49,14 +53,17 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/options.hpp>
 
+namespace GiNaC {
+extern void cleanup_ex( bool verbose );
+}
 namespace detail
 {
 class Env{
 public:
     static std::string getUserName()
         {
-            register struct passwd *pw;
-            register uid_t uid;
+            struct passwd *pw;
+            uid_t uid;
             int c;
 
             uid = geteuid ();
@@ -287,9 +294,6 @@ Environment::processGenericOptions()
               << "string = " << S_vm["debug"].as<std::string>() << "\n";
 #endif
 
-    if ( S_vm.count( "debug" ) && !S_vm["debug"].as<std::string>().empty() )
-        DebugStream::showDebugAreas( S_vm["debug"].as<std::string>() );
-
     VLOG(2) << "[processGenericOptions] done\n";
 }
 
@@ -349,58 +353,64 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
         parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
         processGenericOptions();
 
+        VLOG(2) << "options parsed and stored in database";
         /**
          * parse config file if given to command line
          */
         if ( S_vm.count( "config-file" ) )
         {
-            VLOG(2)<< " parsing " << S_vm["config-file"].as<std::string>() << "\n";
 
             if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
+                VLOG(2) << " parsing " << S_vm["config-file"].as<std::string>() << "...";
 
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
                 po::store( parse_config_file( ifs, desc, true ), S_vm );
                 po::notify( S_vm );
             }
         }
-
-        std::vector<fs::path> prefixes = boost::assign::list_of( fs::current_path() )
+        using namespace boost::assign;
+        std::vector<fs::path> prefixes = S_paths;
+#if 0
+        prefixes += boost::assign::list_of( fs::current_path() )
             ( fs::path ( Environment::localConfigRepository() ) )
             ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
             ( fs::path ( "/usr/share/feel/config" ) )
             ( fs::path ( "/usr/local/share/feel/config" ) )
             ( fs::path ( "/opt/local/share/feel/config" ) );
+#endif
+        char* env;
+        env = getenv("FEELPP_DIR");
+        if (env != NULL && env[0] != '\0')
+        {
+            prefixes.push_back( fs::path( env ) );
+        }
 
+        VLOG(2) << "try processing cfg files...\n";
+        std::string config_name;
         BOOST_FOREACH( auto prefix, prefixes )
         {
-            std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-            VLOG(2)<< " Looking for " << config_name << "\n";
-            VLOG(2)<< " Looking for " << config_name << "\n";
+            config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
+            VLOG(2) << " Looking for " << config_name << "\n";
 
             if ( fs::exists( config_name ) )
-            {
-                VLOG(2)<< " parsing " << config_name << "\n";
-                std::ifstream ifs( config_name.c_str() );
-                store( parse_config_file( ifs, desc, true ), S_vm );
                 break;
-            }
-
             else
             {
                 // try with a prefix feel_
-                std::string config_name = ( boost::format( "%1%/feel_%2%.cfg" ) % prefix.string() % appName ).str();
-                VLOG(2)<< " Looking for " << config_name << "\n";
-
+                config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                VLOG(2) << " Looking for " << config_name << "\n";
                 if ( fs::exists( config_name ) )
                 {
-                    VLOG(2)<< " loading configuration file " << config_name << "...\n";
-                    std::ifstream ifs( config_name.c_str() );
-                    store( parse_config_file( ifs, desc, true ), S_vm );
                     break;
                 }
             }
         }
+        LOG(INFO) << "Reading  " << config_name << "...\n";
+        std::ifstream ifs( config_name.c_str() );
+        store( parse_config_file( ifs, desc, true ), S_vm );
+        LOG(INFO) << "Reading  " << config_name << " done.\n";
+
         //po::store(po::parse_command_line(argc, argv, desc), S_vm);
         po::notify( S_vm );
 
@@ -449,7 +459,7 @@ Environment::Environment()
     google::InstallFailureSignalHandler();
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
-    LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
 #else
     int n = 1 ;
 #endif
@@ -476,7 +486,7 @@ Environment::Environment()
 #endif // FEELPP_HAS_PETSC_H
 
     S_worldcomm = worldcomm_type::New( world );
-    FEELPP_ASSERT( S_worldcomm ).error( "creating worldcomm failed" );
+    CHECK( S_worldcomm ) << "Environment : creating worldcomm failed\n";
 }
 
 fs::path scratchdir()
@@ -484,13 +494,12 @@ fs::path scratchdir()
     const char* env;
     // if scratsch dir not defined, define it
     env = getenv("FEELPP_SCRATCHDIR");
-    if (env != NULL && env[0] != '\0')
+    if (env == NULL || env[0] == '\0')
     {
         env = getenv("SCRATCHDIR");
         if (env != NULL && env[0] != '\0')
         {
             std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
-            std::cerr << "value=" << value << "\n";
             setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
         }
         else
@@ -502,7 +511,6 @@ fs::path scratchdir()
     env = getenv("FEELPP_SCRATCHDIR");
     if (env != NULL && env[0] != '\0')
     {
-        std::cerr << "env=" << env << "\n";
         return fs::path( env );
     }
     std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
@@ -534,7 +542,7 @@ Environment::Environment( int& argc, char**& argv )
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
-    //LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
 
@@ -560,14 +568,6 @@ Environment::Environment( int& argc, char**& argv )
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-
-    if ( argc >= 1 )
-    {
-        std::ostringstream ostr;
-        ostr << argv[0] << ".assertions";
-        Assert::setLog( ostr.str().c_str() );
-    }
-
     S_worldcomm = worldcomm_type::New( world );
     CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
 }
@@ -575,7 +575,9 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
-    S_scratchdir = scratchdir()/fs::path(argv[0]).filename();
+    S_scratchdir = scratchdir();
+    fs::path a0 = std::string(argv[0]);
+    S_scratchdir/= a0.filename();
     if ( !fs::exists( S_scratchdir ) )
         fs::create_directories( S_scratchdir );
     FLAGS_log_dir=S_scratchdir.string();
@@ -603,11 +605,10 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
             google::InitGoogleLogging("feel++");
     }
     google::InstallFailureSignalHandler();
-
 #if defined( FEELPP_HAS_TBB )
     int n = tbb::task_scheduler_init::default_num_threads();
     //int n = 2;
-    //LOG(INFO) << "[Feel++] TBB running with " << n << " threads\n";
+    //VLOG(2) << "[Feel++] TBB running with " << n << " threads\n";
     //tbb::task_scheduler_init init(2);
 #endif
 
@@ -633,35 +634,44 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-
-    if ( argc >= 1 )
-    {
-        std::ostringstream ostr;
-        ostr << argv[0] << ".assertions";
-        Assert::setLog( ostr.str().c_str() );
-    }
-
     S_worldcomm = worldcomm_type::New( world );
     CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
 
     S_about = about;
     doOptions( argc, envargv, *S_desc, about.appName() );
 
+    // make sure that we pass the proper verbosity level to glog
+    if ( S_vm.count("v") )
+        FLAGS_v = S_vm["v"].as<int>();
+
     freeargv( envargv );
+
+}
+void
+Environment::clearSomeMemory()
+{
+    // send signal to all deleters
+    S_deleteObservers();
+    google::FlushLogFiles(google::GLOG_INFO);
+    VLOG(2) << "clearSomeMemory: delete signal sent" << "\n";
 
 }
 Environment::~Environment()
 {
-    LOG(INFO) << "[~Environment] sending delete to all deleters" << "\n";
+    VLOG(2) << "[~Environment] sending delete to all deleters" << "\n";
 
-    // send signal to all deleters
-    S_deleteObservers();
-    google::FlushLogFiles(google::GLOG_INFO);
-    LOG(INFO) << "[~Environment] delete signal sent" << "\n";
+    Environment::clearSomeMemory();
 
     if ( i_initialized )
     {
-        LOG(INFO) << "[~Environment] finalizing slepc,petsc and mpi\n";
+        VLOG(2) << "clearing known paths\n";
+        S_paths.clear();
+
+        VLOG(2) << "[~Environment] cleaning up global excompiler\n";
+
+        GiNaC::cleanup_ex( false );
+
+        VLOG(2) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
         PetscInitialized( &is_petsc_initialized );
@@ -724,6 +734,11 @@ Environment::rootRepository()
     {
         return std::string( senv );
     }
+    senv = ::getenv( "WORK" );
+    if ( senv != NULL && senv[0] != '\0' )
+    {
+        return std::string( senv )+"/feel";
+    }
     senv = ::getenv( "WORKDIR" );
     if ( senv != NULL && senv[0] != '\0' )
     {
@@ -735,6 +750,82 @@ Environment::rootRepository()
         return std::string( senv ) + "/feel";
     }
     return std::string();
+}
+std::string
+Environment::findFile( std::string const& filename )
+{
+    fs::path cp = fs::current_path();
+
+    fs::path p( filename );
+    if ( p.is_absolute() && fs::exists( p ) )
+    {
+        LOG(INFO) << "File " << filename << " found";
+        return filename;
+    }
+
+#if 0
+    // first try in the current path
+    if ( fs::exists( cp / filename ) )
+    {
+        LOG(INFO) << "File " << (cp/filename) << " found";
+        return ( cp/filename ).string();
+    }
+#endif
+
+    // look in to paths list from end-1 to begin
+    auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
+                            [&filename] ( fs::path const& p ) -> bool
+                            {
+                                if ( fs::exists( p/filename) )
+                                    return true;
+                                return false;
+                            } );
+    if ( it != S_paths.rend() )
+    {
+        LOG(INFO) << "File " << (*it/filename) << " found";
+        return ( *it / filename ).string();
+    }
+
+    if ( fs::exists( cp / filename ) )
+    {
+        LOG(INFO) << "File " << (cp/filename) << " found";
+        return ( cp/filename ).string();
+    }
+
+    if ( fs::path( filename ).extension() == ".geo" || fs::path( filename ).extension() == ".msh" )
+    {
+        if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
+        {
+            LOG(INFO) << "File " << (fs::path( Environment::localGeoRepository() ) / filename ) << " found";
+            return ( fs::path( Environment::localGeoRepository() ) / filename ).string();
+        }
+
+        if ( Environment::systemGeoRepository().get<1>()  &&
+             fs::exists( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) )
+        {
+            LOG(INFO) << "File" << ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ) << " found";
+            return ( fs::path( Environment::systemGeoRepository().get<0>() ) / filename ).string();
+        }
+    }
+    LOG(INFO) << "File " << filename << " not found";
+    return std::string();
+}
+std::vector<std::string>
+Environment::geoPathList()
+{
+    std::vector<std::string> plist;
+    plist.push_back( fs::current_path().string() );
+    std::for_each( S_paths.rbegin(), S_paths.rend(),
+                   [&plist] ( fs::path const& p )
+                   {
+                       plist.push_back( p.string() );
+                   } );
+    if ( fs::exists( Environment::localGeoRepository() ) )
+        plist.push_back( Environment::localGeoRepository() );
+    if ( Environment::systemGeoRepository().get<1>()  &&
+         fs::exists( Environment::systemGeoRepository().get<0>() ) )
+        plist.push_back( Environment::systemGeoRepository().get<0>() );
+    return plist;
 }
 std::string
 Environment::localGeoRepository()
@@ -754,7 +845,7 @@ Environment::systemGeoRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -777,7 +868,7 @@ Environment::systemConfigRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/config";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -789,17 +880,21 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         return;
 
     fs::path rep_path;
-
-    rep_path = Environment::rootRepository();
-
-    if ( !fs::exists( rep_path ) )
-        fs::create_directory( rep_path );
+    S_paths.push_back( fs::current_path() );
 
     typedef std::vector< std::string > split_vector_type;
 
     split_vector_type dirs; // #2: Search for tokens
     std::string fmtstr = fmt.str();
     boost::split( dirs, fmtstr, boost::is_any_of( "/" ) );
+
+    fs::path p = dirs.front();
+    if ( p.relative_path() != ".")
+        rep_path = Environment::rootRepository();
+
+    if ( !fs::exists( rep_path ) )
+        fs::create_directory( rep_path );
+
 
     BOOST_FOREACH( std::string const& dir, dirs )
     {
@@ -814,7 +909,7 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         rep_path = rep_path / (boost::format( "np_%1%" ) % Environment::numberOfProcessors() ).str();
         if ( !fs::exists( rep_path ) )
             fs::create_directory( rep_path );
-        LOG(INFO) << "rep_path=" << rep_path << "\n";
+        LOG(INFO) << "changing directory to " << rep_path << "\n";
     }
     ::chdir( rep_path.string().c_str() );
 
@@ -837,17 +932,6 @@ void
 Environment::setLogs( std::string const& prefix )
 {
 
-    mpi::communicator world;
-#if 0
-    LOG(INFO).detachAll();
-    std::ostringstream ostr;
-    ostr << prefix << "-" << world.size()  << "." << world.rank();
-    LOG(INFO).attach( ostr.str() );
-#endif
-
-    std::ostringstream ostr_assert;
-    ostr_assert << prefix  << "-" << world.size()  << "." << world.rank() << ".assertions";
-    Assert::setLog( ostr_assert.str().c_str() );
 
 }
 
@@ -858,7 +942,7 @@ Environment::worldsComm( int n )
     {
         mpi::communicator world;
         S_worldcomm = worldcomm_type::New( world );
-        FEELPP_ASSERT( S_worldcomm ).error( "worldcomm not allocated" );
+        CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
     }
 
     return S_worldcomm->subWorlds(n);
@@ -884,6 +968,25 @@ Environment::masterWorldComm( int n )
     return S_worldcomm->masterWorld(n);
 }
 
+
+MemoryUsage
+Environment::logMemoryUsage( std::string const& message )
+{
+    MemoryUsage mem;
+#if defined ( FEELPP_HAS_PETSC_H )
+    PetscMemoryGetCurrentUsage( &mem.memory_usage );
+    LOG(INFO) << message << " PETSC get current memory usage (resident memory): "  << mem.memory_usage/1e3 << "  KBytes "  << mem.memory_usage/1e6 << "  MBytes " << mem.memory_usage/1e9 << " GBytes" ;
+    //PetscMemoryGetMaximumUsage( &mem );
+    //LOG(INFO) << logMessage << " PETSC get maximum memory usag (resident memory): " << mem/1e6 << "  MBytes " << mem/1e9 << " GBytes" ;
+
+    PetscMallocGetCurrentUsage( &mem.petsc_malloc_usage );
+    LOG(INFO) << message << " PETSC get current PETSC Malloc usage: "  << mem.petsc_malloc_usage/1e3 << "  KBytes " << mem.petsc_malloc_usage/1e6 << " MBytes " << mem.petsc_malloc_usage/1e9 << " GBytes" ;
+    PetscMallocGetMaximumUsage( &mem.petsc_malloc_maximum_usage );
+    LOG(INFO) << message << " PETSC get maximum PETSC Malloc usage(largest memory ever used so far): "  << mem.petsc_malloc_maximum_usage/1e3 << "  KBytes " << mem.petsc_malloc_maximum_usage/1e6 << " MBytes " << mem.petsc_malloc_maximum_usage/1e9 << " GBytes" ;
+#endif
+    return mem;
+}
+
 AboutData Environment::S_about;
 po::variables_map Environment::S_vm;
 boost::shared_ptr<po::options_description> Environment::S_desc;
@@ -893,6 +996,9 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 
+std::vector<fs::path> Environment::S_paths = { fs::current_path(),
+                                               Environment::systemConfigRepository().get<0>(),
+                                               Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
 
 } // detail

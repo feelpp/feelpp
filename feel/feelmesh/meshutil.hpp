@@ -66,20 +66,20 @@ struct MakeBareEntity<Ele, 3>
 
     MakeBareEntity( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
     entity_type
     operator()() const
     {
         entity_type bface;
 
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        size_type i2 = ( _M_element.point( 1 ) ).id();
-        size_type i3 = ( _M_element.point( 2 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        size_type i2 = ( M_element.point( 1 ) ).id();
+        size_type i3 = ( M_element.point( 2 ) ).id();
 
         if ( Ele::face_type::numVertices == 4 )
         {
-            size_type i4 = ( _M_element.point( 3 ) ).id();
+            size_type i4 = ( M_element.point( 3 ) ).id();
             bface = makeBareFace( i1, i2, i3, i4 ).first;
         }
 
@@ -94,18 +94,18 @@ struct MakeBareEntity<Ele, 3>
     operator()( uint16_type j ) const
     {
         entity_type bface;
-        size_type i1 = _M_element.fToP( j, 0 );
-        size_type i2 = _M_element.fToP( j, 1 );
-        size_type i3 = _M_element.fToP( j, 2 );
+        size_type i1 = M_element.fToP( j, 0 );
+        size_type i2 = M_element.fToP( j, 1 );
+        size_type i3 = M_element.fToP( j, 2 );
         // go to global
-        i1 = ( _M_element.point( i1 ) ).id();
-        i2 = ( _M_element.point( i2 ) ).id();
-        i3 = ( _M_element.point( i3 ) ).id();
+        i1 = ( M_element.point( i1 ) ).id();
+        i2 = ( M_element.point( i2 ) ).id();
+        i3 = ( M_element.point( i3 ) ).id();
 
         if ( numVertices == 4 )
         {
-            size_type i4 = _M_element.fToP( j, 3 );
-            i4 = ( _M_element.point( i4 ) ).id();
+            size_type i4 = M_element.fToP( j, 3 );
+            i4 = ( M_element.point( i4 ) ).id();
             bface = ( makeBareItem( i1, i2, i3, i4 ) ).first;
         }
 
@@ -116,7 +116,7 @@ struct MakeBareEntity<Ele, 3>
 
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 template<typename Ele>
@@ -126,14 +126,14 @@ struct MakeBareEntity<Ele, 2>
 
     MakeBareEntity( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
 
     entity_type
     operator()() const
     {
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        size_type i2 = ( _M_element.point( 1 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        size_type i2 = ( M_element.point( 1 ) ).id();
         entity_type bface;
         bface = makeBareEdge( i1, i2 ).first;
         return bface;
@@ -143,15 +143,15 @@ struct MakeBareEntity<Ele, 2>
     operator()( uint16_type j ) const
     {
         entity_type bface;
-        size_type i1 = _M_element.fToP( j, 0 );
-        size_type i2 = _M_element.fToP( j, 1 );
+        size_type i1 = M_element.fToP( j, 0 );
+        size_type i2 = M_element.fToP( j, 1 );
         // go to global
-        i1 = ( _M_element.point( i1 ) ).id();
-        i2 = ( _M_element.point( i2 ) ).id();
+        i1 = ( M_element.point( i1 ) ).id();
+        i2 = ( M_element.point( i2 ) ).id();
         bface = ( makeBareItem( i1, i2 ) ).first;
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 template<typename Ele>
@@ -161,14 +161,14 @@ struct MakeBareEntity<Ele, 1>
 
     MakeBareEntity( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
 
     entity_type
     operator()() const
     {
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        Debug( 4015 )  << "[mesh1d::updateFaces] point index in face " << i1 << "\n";
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        DVLOG(2)  << "[mesh1d::updateFaces] point index in face " << i1 << "\n";
         entity_type bface;
         bface = makeBarePoint( i1 ).first;
         return bface;
@@ -177,11 +177,11 @@ struct MakeBareEntity<Ele, 1>
     operator()( uint16_type j ) const
     {
         entity_type bface;
-        size_type i1 = _M_element.point( j ).id();
+        size_type i1 = M_element.point( j ).id();
         bface = makeBarePoint( i1 ).first;
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 
@@ -197,7 +197,7 @@ struct MakeBareEntityFromFace<Ele, 3>
 
     MakeBareEntityFromFace( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
 
     entity_type
@@ -205,13 +205,13 @@ struct MakeBareEntityFromFace<Ele, 3>
     {
         entity_type bface;
         // go to global
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        size_type i2 = ( _M_element.point( 1 ) ).id();
-        size_type i3 = ( _M_element.point( 2 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        size_type i2 = ( M_element.point( 1 ) ).id();
+        size_type i3 = ( M_element.point( 2 ) ).id();
 
         if ( numVertices == 4 )
         {
-            size_type i4 = ( _M_element.point( 3 ) ).id();
+            size_type i4 = ( M_element.point( 3 ) ).id();
             bface = ( makeBareItem( i1, i2, i3, i4 ) ).first;
         }
 
@@ -222,7 +222,7 @@ struct MakeBareEntityFromFace<Ele, 3>
 
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 template<typename Ele>
@@ -233,7 +233,7 @@ struct MakeBareEntityFromFace<Ele, 2>
 
     MakeBareEntityFromFace( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
 
     entity_type
@@ -241,12 +241,12 @@ struct MakeBareEntityFromFace<Ele, 2>
     {
         entity_type bface;
         // go to global
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        size_type i2 = ( _M_element.point( 1 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        size_type i2 = ( M_element.point( 1 ) ).id();
         bface = ( makeBareItem( i1, i2 ) ).first;
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 } // Feel
@@ -314,7 +314,7 @@ processorBoundingBox ( const MeshType& mesh,
     // the bounding box for the whole domain.
     if ( pid == invalid_size_type_value )
     {
-        Debug( 4100 ) << "[processorBoundingBox] np pid given\n";
+        DVLOG(2) << "[processorBoundingBox] np pid given\n";
 
         for ( unsigned int n=0; n<mesh.numPoints(); n++ )
             for ( unsigned int i=0; i<mesh.dimension(); i++ )
@@ -328,7 +328,7 @@ processorBoundingBox ( const MeshType& mesh,
     // to only consider those elements living on that processor
     else
     {
-        Debug( 4100 ) << "[processorBoundingBox] process bounding box on pid " << pid << "\n";
+        DVLOG(2) << "[processorBoundingBox] process bounding box on pid " << pid << "\n";
         typename MeshType::element_iterator it = mesh.beginElementWithProcessId( pid );
         typename MeshType::element_iterator en = mesh.endElementWithProcessId( pid );
 
@@ -347,8 +347,8 @@ processorBoundingBox ( const MeshType& mesh,
         max( i ) = 0;
     }
 
-    Debug( 4100 ) << "[processorBoundingBox] min= " << min << "\n";
-    Debug( 4100 ) << "[processorBoundingBox] max= " << max << "\n";
+    DVLOG(2) << "[processorBoundingBox] min= " << min << "\n";
+    DVLOG(2) << "[processorBoundingBox] max= " << max << "\n";
     const MeshBoundingBox ret_val( min, max );
 
     return ret_val;
@@ -368,9 +368,9 @@ processorBoundingSphere ( const MeshType& mesh,
     const Real  diag = Feel::distance( bbox.second, bbox.first );
     const Point cent = Feel::middle( bbox.second, bbox.first );
 
-    Debug( 4100 ) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
-    Debug( 4100 ) << "[processorBoundingSphere] center " << cent << "\n";
-    Debug( 4100 ) << "[processorBoundingSphere] radius " << 0.5*diag << "\n";
+    DVLOG(2) << "[processorBoundingSphere] processor " << mesh.comm().rank() << "\n";
+    DVLOG(2) << "[processorBoundingSphere] center " << cent << "\n";
+    DVLOG(2) << "[processorBoundingSphere] radius " << 0.5*diag << "\n";
     return Sphere ( cent, .5*diag );
 }
 

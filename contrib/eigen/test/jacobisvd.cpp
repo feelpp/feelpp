@@ -4,24 +4,9 @@
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2009 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 // discard stack allocation as that too bypasses malloc
 #define EIGEN_STACK_ALLOCATION_LIMIT 0
@@ -42,11 +27,8 @@ void jacobisvd_check_full(const MatrixType& m, const JacobiSVD<MatrixType, QRPre
   };
 
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, RowsAtCompileTime, RowsAtCompileTime> MatrixUType;
   typedef Matrix<Scalar, ColsAtCompileTime, ColsAtCompileTime> MatrixVType;
-  typedef Matrix<Scalar, RowsAtCompileTime, 1> ColVectorType;
-  typedef Matrix<Scalar, ColsAtCompileTime, 1> InputVectorType;
 
   MatrixType sigma = MatrixType::Zero(rows,cols);
   sigma.diagonal() = svd.singularValues().template cast<Scalar>();
@@ -114,6 +96,10 @@ void jacobisvd_test_all_computation_options(const MatrixType& m)
   jacobisvd_check_full(m, fullSvd);
   jacobisvd_solve<MatrixType, QRPreconditioner>(m, ComputeFullU | ComputeFullV);
 
+  #if defined __INTEL_COMPILER
+  // remark #111: statement is unreachable
+  #pragma warning disable 111
+  #endif
   if(QRPreconditioner == FullPivHouseholderQRPreconditioner)
     return;
 
@@ -275,7 +261,7 @@ void jacobisvd_preallocate()
   MatrixXf m = v.asDiagonal();
 
   internal::set_is_malloc_allowed(false);
-  VERIFY_RAISES_ASSERT(VectorXf v(10);)
+  VERIFY_RAISES_ASSERT(VectorXf tmp(10);)
   JacobiSVD<MatrixXf> svd;
   internal::set_is_malloc_allowed(true);
   svd.compute(m);
@@ -338,6 +324,10 @@ void test_jacobisvd()
 
     int r = internal::random<int>(1, 30),
         c = internal::random<int>(1, 30);
+    
+    TEST_SET_BUT_UNUSED_VARIABLE(r)
+    TEST_SET_BUT_UNUSED_VARIABLE(c)
+    
     CALL_SUBTEST_7(( jacobisvd<MatrixXf>(MatrixXf(r,c)) ));
     CALL_SUBTEST_8(( jacobisvd<MatrixXcd>(MatrixXcd(r,c)) ));
     (void) r;

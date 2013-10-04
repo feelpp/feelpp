@@ -46,6 +46,7 @@
 #include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/fe.hpp>
+#include <feel/feelpoly/mortar.hpp>
 
 
 
@@ -130,75 +131,108 @@ public:
     LagrangeDual( primal_space_type const& primal )
         :
         super( primal ),
-        _M_convex_ref(),
-        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
-        _M_pts( nDim, numPoints ),
-        _M_points_face( nFacesInConvex ),
-        _M_fset( primal )
+        M_convex_ref(),
+        M_eid( M_convex_ref.topologicalDimension()+1 ),
+        M_pts( nDim, numPoints ),
+        M_points_face( nFacesInConvex ),
+        M_fset( primal )
     {
-        Debug( 5045 ) << "Lagrange finite element: \n";
-        Debug( 5045 ) << " o- dim   = " << nDim << "\n";
-        Debug( 5045 ) << " o- order = " << nOrder << "\n";
-        Debug( 5045 ) << " o- numPoints      = " << numPoints << "\n";
-        Debug( 5045 ) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
-        Debug( 5045 ) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
-        Debug( 5045 ) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
-        Debug( 5045 ) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
+        DVLOG(2) << "Lagrange finite element: \n";
+        DVLOG(2) << " o- dim   = " << nDim << "\n";
+        DVLOG(2) << " o- order = " << nOrder << "\n";
+        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
+        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
+        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
+        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
+        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
 
         pointset_type pts;
 
-        _M_pts = pts.points();
+        M_pts = pts.points();
 
         if ( nOrder > 0 )
         {
-            for ( uint16_type e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < _M_convex_ref.entityRange( nDim-1 ).end();
+            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
+                    e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
-                _M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
-                Debug( 5045 ) << "face " << e << " pts " <<  _M_points_face[e] << "\n";
+                M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+                DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
             }
         }
 
-        setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+        setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
     }
+
+    LagrangeDual( primal_space_type const& primal, pointset_type const& pts )
+        :
+        super( primal ),
+        M_convex_ref(),
+        M_eid( M_convex_ref.topologicalDimension()+1 ),
+        M_pts( pts.points() ),
+        M_points_face( nFacesInConvex ),
+        M_fset( primal )
+    {
+        DVLOG(2) << "Lagrange finite element: \n";
+        DVLOG(2) << " o- dim   = " << nDim << "\n";
+        DVLOG(2) << " o- order = " << nOrder << "\n";
+        DVLOG(2) << " o- numPoints      = " << numPoints << "\n";
+        DVLOG(2) << " o- nbPtsPerVertex = " << nbPtsPerVertex << "\n";
+        DVLOG(2) << " o- nbPtsPerEdge   = " << nbPtsPerEdge << "\n";
+        DVLOG(2) << " o- nbPtsPerFace   = " << nbPtsPerFace << "\n";
+        DVLOG(2) << " o- nbPtsPerVolume = " << nbPtsPerVolume << "\n";
+
+        if ( nOrder > 0 )
+        {
+            for ( uint16_type e = M_convex_ref.entityRange( nDim-1 ).begin();
+                    e < M_convex_ref.entityRange( nDim-1 ).end();
+                    ++e )
+            {
+                M_points_face[e] = pts.pointsBySubEntity( nDim-1, e, 1 );
+                DVLOG(2) << "face " << e << " pts " <<  M_points_face[e] << "\n";
+            }
+        }
+
+        setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+    }
+
     ~LagrangeDual()
     {
 
     }
     points_type const& points() const
     {
-        return _M_pts;
+        return M_pts;
     }
 
     points_type const& points( uint16_type f ) const
     {
-        return _M_points_face[f];
+        return M_points_face[f];
     }
     ublas::matrix_column<points_type const> point( uint16_type f, uint32_type __i ) const
     {
-        return ublas::column( _M_points_face[f], __i );
+        return ublas::column( M_points_face[f], __i );
     }
     ublas::matrix_column<points_type> point( uint16_type f, uint32_type __i )
     {
-        return ublas::column( _M_points_face[f], __i );
+        return ublas::column( M_points_face[f], __i );
     }
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        return _M_fset( pset );
+        return M_fset( pset );
     }
 private:
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
     {
-        _M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
+        M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
                                   __pts ) );
     }
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
     {
-        _M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
+        M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
                                   __pts ) );
     }
 
@@ -207,16 +241,16 @@ private:
      */
     void setPoints( uint16_type f, points_type const& n )
     {
-        _M_points_face[f].resize( n.size1(), n.size2(), false );
-        _M_points_face[f] = n;
+        M_points_face[f].resize( n.size1(), n.size2(), false );
+        M_points_face[f] = n;
     }
 
 private:
-    reference_convex_type _M_convex_ref;
-    std::vector<std::vector<uint16_type> > _M_eid;
-    points_type _M_pts;
-    std::vector<points_type> _M_points_face;
-    FunctionalSet<primal_space_type> _M_fset;
+    reference_convex_type M_convex_ref;
+    std::vector<std::vector<uint16_type> > M_eid;
+    points_type M_pts;
+    std::vector<points_type> M_points_face;
+    FunctionalSet<primal_space_type> M_fset;
 
 
 };
@@ -249,9 +283,9 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Lagrange
     :
-public FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, Convex>, details::LagrangeDual, Pts >
+    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts >
 {
-    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, Convex>, details::LagrangeDual, Pts > super;
+    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts > super;
 public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
@@ -303,6 +337,11 @@ public:
     static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
     static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
 
+    template<int subN>
+    struct SubSpace
+    {
+        typedef Lagrange<N-1, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
+    };
 
     //@}
 
@@ -313,13 +352,13 @@ public:
     Lagrange()
         :
         super( dual_space_type( primal_space_type() ) ),
-        _M_refconvex()
-        // _M_bdylag( new face_basis_type )
+        M_refconvex()
+        // M_bdylag( new face_basis_type )
     {
 
 
 
-        // std::cout << "[LagrangeDual] points= " << _M_pts << "\n";
+        // std::cout << "[LagrangeDual] points= " << M_pts << "\n";
     }
 
     virtual ~Lagrange() {}
@@ -342,7 +381,7 @@ public:
      */
     reference_convex_type const& referenceConvex() const
     {
-        return _M_refconvex;
+        return M_refconvex;
     }
 
     /**
@@ -377,8 +416,8 @@ public:
 
 private:
 
-    reference_convex_type _M_refconvex;
-    face_basis_ptrtype _M_bdylag;
+    reference_convex_type M_refconvex;
+    face_basis_ptrtype M_bdylag;
 };
 template<uint16_type N,
          uint16_type RealDim,
