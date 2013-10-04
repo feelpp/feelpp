@@ -16,7 +16,7 @@ Environment class is necessary to initialize your application, as seen in \ref F
 \co
 Environment env( _argc, _argv, _desc, _about );
 \eco
-No one of those parameters are required but it is highly recomanded to use the minimal declaration :
+None of those parameters are required but it is highly recommended to use the minimal declaration :
 \co
   Environment env( _argc=argc, _argv=argv,
                    _desc=feel_option(),
@@ -33,7 +33,7 @@ No one of those parameters are required but it is highly recomanded to use the m
 \subsection Options_Custom Add Options
 \c feel_option() returns a list of default options used in \feel.<br>
 
-You can creat a personal list of options as seen in \ref FirstAPP.
+You can create a personal list of options as seen in \ref FirstAPP.
 
 You can also add a list of options, using a routine as follows :
 \co
@@ -150,7 +150,7 @@ Optional Parameters :
 \li <tt>_subdir</tt> : Default = <tt>true</tt>
 \li <tt>_filename</tt> : Default = <tt>"logfile"</tt>
 
-You can use \c boost::format to custom the path. <br>
+You can use \c boost::format to customize the path. <br>
 <b>Example :</b><br>
 From \c "doc/manual/laplacian/laplacian.cpp" :
 \co
