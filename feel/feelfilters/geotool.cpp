@@ -2231,7 +2231,7 @@ runPeanut( data_geo_ptrtype dg )
 }
 
 void
-runHexaedre( data_geo_ptrtype dg )
+runHexahedron( data_geo_ptrtype dg )
 {
 
     node_type Pt1 = param<0>( dg );
@@ -2282,6 +2282,42 @@ runHexaedre( data_geo_ptrtype dg )
 
     writeVolume( 1, dg, 1 );
 }
+
+void
+runTetrahedron( data_geo_ptrtype dg )
+{
+    node_type Pt1 = param<0>( dg );
+    node_type Pt2 = param<1>( dg );
+    node_type Pt3 = param<2>( dg );
+    node_type Pt4 = param<3>( dg );
+
+    writePoint( 1, dg , Pt1( 0 ), Pt1( 1 ), Pt1( 2 ) );
+    writePoint( 2, dg , Pt2( 0 ), Pt2( 1 ), Pt2( 2 ) );
+    writePoint( 3, dg , Pt3( 0 ), Pt3( 1 ), Pt3( 2 ) );
+    writePoint( 4, dg , Pt4( 0 ), Pt4( 1 ), Pt4( 2 ) );
+
+    writeLine( 1, dg , 1 , 2 );
+    writeLine( 2, dg , 2 , 3 );
+    writeLine( 3, dg , 3 , 1 );
+    writeLine( 4, dg , 1 , 4 );
+    writeLine( 5, dg , 2 , 4 );
+    writeLine( 6, dg , 3 , 4 );
+
+    writeLineLoop( 1, dg, Loop()>>1>>2>>3 );
+    writePlaneSurface( 1, dg, 1 );
+
+    writeLineLoop( 2, dg, Loop()>>5>>-4>>1 );
+    writePlaneSurface( 2, dg, 2 );
+    writeLineLoop( 3, dg, Loop()>>2>>6>>-5 );
+    writePlaneSurface( 3, dg, 3 );
+    writeLineLoop( 4, dg, Loop()>>3>>4>>-6 );
+    writePlaneSurface( 4, dg, 4 );
+
+    writeSurfaceLoop( 1, dg, Loop()>>1>>2>>3>>4 );
+
+    writeVolume( 1, dg, 1 );
+}
+
 
 void
 runCube( data_geo_ptrtype dg )

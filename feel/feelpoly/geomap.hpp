@@ -915,7 +915,7 @@ void update( element_type const& __e, uint16_type __f )
 
 }
 
-void update( element_type const& __e, uint16_type __f, permutation_type __perm )
+void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx=true )
 {
     //M_element_c = boost::shared_ptr<element_type const>(&__e);
     M_element = boost::addressof( __e );
@@ -958,7 +958,7 @@ void update( element_type const& __e, uint16_type __f, permutation_type __perm )
             }
     }
 
-    if ( vm::has_jacobian<context>::value )
+    if ( vm::has_jacobian<context>::value && __updateJacobianCtx )
     {
         updateJKBN( mpl::bool_<is_linear>() );
     }

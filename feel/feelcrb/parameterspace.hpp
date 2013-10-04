@@ -484,7 +484,7 @@ public:
                     int number = 0;
                     BOOST_FOREACH( mu, *this )
                     {
-                        file<<" mu_"<<number<<"= [ ";
+                        file<<std::setprecision(15)<<" mu_"<<number<<"= [ ";
                         for(int i=0; i<size-1; i++)
                             file << mu[i]<<" , ";
                         file<< mu[size-1] << " ] \n" ;
