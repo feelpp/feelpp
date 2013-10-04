@@ -201,17 +201,25 @@ GmshHypercubeDomain::getDescription2D() const
              << "Physical Surface(\"Mat1\") = {6};\n";
     }
 
-    if ( M_use_hypercube )
+    if ( this->structuredMesh() || M_use_hypercube )
     {
+        if ( this->structuredMesh() == 1 || M_use_hypercube )
+            ostr << "nx = (xmax-xmin)/h;\n"
+                 << "ny = (ymax-ymin)/h;\n";
+        else if ( this->structuredMesh() == 2 )
+            ostr << "nx = 1/h;\n"
+                 << "ny = 1/h;\n";
 
-        ostr << "nx = 1/h;\n"
-             << "ny = 1/h;\n"
-             << "\n"
+        ostr << "\n"
              << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
              << "Transfinite Line {2,4} = nx + 1 Using Progression 1.0;\n"
              << "\n"
-             << "Transfinite Surface {6} = {1,2,3,4};\n"
-             << "Recombine Surface {6};\n";
+             << "Transfinite Surface {6} = {1,2,3,4};\n";
+
+    }
+    if ( M_use_hypercube )
+    {
+        ostr << "Recombine Surface {6};\n";
     }
 
     return ostr.str();

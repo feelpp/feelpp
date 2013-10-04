@@ -387,34 +387,30 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
         }
 
         VLOG(2) << "try processing cfg files...\n";
+        std::string config_name;
         BOOST_FOREACH( auto prefix, prefixes )
         {
-            std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
+            config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
             VLOG(2) << " Looking for " << config_name << "\n";
 
             if ( fs::exists( config_name ) )
-            {
-                VLOG(2)<< " parsing " << config_name << "\n";
-                std::ifstream ifs( config_name.c_str() );
-                store( parse_config_file( ifs, desc, true ), S_vm );
                 break;
-            }
-
             else
             {
                 // try with a prefix feel_
-                std::string config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
                 VLOG(2) << " Looking for " << config_name << "\n";
-
                 if ( fs::exists( config_name ) )
                 {
-                    VLOG(2)<< " loading configuration file " << config_name << "...\n";
-                    std::ifstream ifs( config_name.c_str() );
-                    store( parse_config_file( ifs, desc, true ), S_vm );
                     break;
                 }
             }
         }
+        LOG(INFO) << "Reading  " << config_name << "...\n";
+        std::ifstream ifs( config_name.c_str() );
+        store( parse_config_file( ifs, desc, true ), S_vm );
+        LOG(INFO) << "Reading  " << config_name << " done.\n";
+
         //po::store(po::parse_command_line(argc, argv, desc), S_vm);
         po::notify( S_vm );
 
@@ -849,7 +845,7 @@ Environment::systemGeoRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -872,7 +868,7 @@ Environment::systemConfigRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/config";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -1000,7 +996,9 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 
-std::vector<fs::path> Environment::S_paths;
+std::vector<fs::path> Environment::S_paths = { fs::current_path(),
+                                               Environment::systemConfigRepository().get<0>(),
+                                               Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
 
 } // detail
