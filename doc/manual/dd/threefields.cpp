@@ -86,15 +86,15 @@ makeAbout()
 }
 
 /**
- * \class ThreeFields
+ * \class ThreeFieldsLaplacian
  *
- * ThreeFields Solver using continuous approximation spaces
+ * ThreeFieldsLaplacian Solver using continuous approximation spaces
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=2 or 3)
  */
 template<int Dim, int Order1, int Order2, int Order3>
-class ThreeFields
+class ThreeFieldsLaplacian
     :
 public Simget
 {
@@ -102,47 +102,26 @@ public Simget
 public:
 
     typedef double value_type;
-
     typedef Backend<value_type> backend_type;
-
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
     typedef Simplex<Dim,1,Dim> convex_type;
-
     typedef Mesh<convex_type> mesh_type;
-
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
-
     typedef typename mesh_type::trace_mesh_ptrtype trace_mesh_ptrtype;
-
     typedef bases<Lagrange<Order1,Scalar> > basis1_type;
-
     typedef bases<Lagrange<Order2,Scalar> > basis2_type;
-
     typedef FunctionSpace<mesh_type, basis1_type> space1_type;
-
     typedef FunctionSpace<mesh_type, basis2_type> space2_type;
-
     typedef typename space1_type::trace_functionspace_type trace1_space_type;
-
     typedef typename space2_type::trace_functionspace_type trace2_space_type;
-
     typedef typename space1_type::element_type element1_type;
-
     typedef typename space2_type::element_type element2_type;
-
     typedef typename trace1_space_type::element_type trace1_element_type;
-
     typedef typename trace2_space_type::element_type trace2_element_type;
-
     typedef Exporter<mesh_type> export_type;
-
     typedef boost::shared_ptr<export_type> export_ptrtype;
-
     typedef Exporter<trace_mesh_type> trace_export_type;
-
     typedef boost::shared_ptr<trace_export_type> trace_export_ptrtype;
 
     // @name typedef for interfaces
@@ -154,7 +133,7 @@ public:
     /**
      * Constructor
      */
-    ThreeFields()
+    ThreeFieldsLaplacian()
         :
         super(),
         M_backend( backend_type::build( this->vm() ) ),
@@ -194,8 +173,6 @@ public:
 
     void run();
 
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
-
 private:
 
     backend_ptrtype M_backend;
@@ -212,34 +189,36 @@ private:
     std::vector<int> outside2;
     int gamma1;
     int gamma2;
-}; // ThreeFields
+
+}; // ThreeFieldsLaplacian
 
 template<int Dim, int Order1, int Order2, int Order3>
-typename ThreeFields<Dim, Order1, Order2, Order3>::mesh_ptrtype
-ThreeFields<Dim, Order1, Order2, Order3>::createMesh(  double xmin, double xmax, double meshsize, int id )
+typename ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::mesh_ptrtype
+ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::createMesh(  double xmin, double xmax, double meshsize, int id )
 {
 
     mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%" ) % shape % Dim % id ).str() ,
-                                                _addmidpoint=false,
-                                                _usenames=false,
-                                                _shape=this->shape,
-                                                _dim=Dim,
-                                                _h=meshsize,
-                                                _xmin=xmin,
-                                                _xmax=xmax,
-                                                _ymin=0.,
-                                                _ymax=1.,
-                                                _zmin=0.,
-                                                _zmax=1. ) );
+                                                      _addmidpoint=false,
+                                                      _usenames=false,
+                                                      _shape=this->shape,
+                                                      _dim=Dim,
+                                                      _h=meshsize,
+                                                      _xmin=xmin,
+                                                      _xmax=xmax,
+                                                      _ymin=0.,
+                                                      _ymax=1.,
+                                                      _zmin=0.,
+                                                      _zmax=1. ) );
 
     return mesh;
-} // ThreeFields::createMesh
+
+} // ThreeFieldsLaplacian::createMesh
 
 template<int Dim, int Order1, int Order2, int Order3>
-typename ThreeFields<Dim, Order1, Order2, Order3>::trace_mesh_ptrtype
-ThreeFields<Dim, Order1, Order2, Order3>::createMesh( double meshSize, double interface )
+typename ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::trace_mesh_ptrtype
+ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::createMesh( double meshSize, double interface )
 {
     trace_mesh_ptrtype mesh( new trace_mesh_type );
 
@@ -286,18 +265,19 @@ ThreeFields<Dim, Order1, Order2, Order3>::createMesh( double meshSize, double in
         throw std::logic_error( os.str() );
     }
 
-    std::string fname = __gmsh.generate( nameStr.str(), ostr.str() );
+    std::string fname = __gmsh.generate( nameStr.str(), ostr.str() ).template get<0>();
     ImporterGmsh<trace_mesh_type> import( fname );
     mesh->accept( import );
 
     mesh->components().set( MESH_RENUMBER | MESH_UPDATE_FACES | MESH_UPDATE_EDGES );
     mesh->updateForUse();
     return mesh;
-} // ThreeFields::createMesh
+
+} // ThreeFieldsLaplacian::createMesh
 
 template<int Dim, int Order1, int Order2, int Order3>
 void
-ThreeFields<Dim, Order1, Order2, Order3>::exportResults( element1_type& u, element2_type& v, trace1_element_type& t1, trace2_element_type& t2 )
+ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::exportResults( element1_type& u, element2_type& v, trace1_element_type& t1, trace2_element_type& t2 )
 {
     auto Xh1=u.functionSpace();
     auto mesh1=Xh1->mesh();
@@ -358,36 +338,16 @@ ThreeFields<Dim, Order1, Order2, Order3>::exportResults( element1_type& u, eleme
 
     LOG(INFO) << "exportResults done\n";
     timers["export"].second = timers["export"].first.elapsed();
-    std::cout << "[timer] exportResults(): " << timers["export"].second << "\n";
-} // ThreeFields::export
+    LOG(INFO) << "[timer] exportResults(): " << timers["export"].second << "\n";
+
+} // ThreeFieldsLaplacian::export
+
 
 template<int Dim, int Order1, int Order2, int Order3>
 void
-ThreeFields<Dim, Order1, Order2, Order3>::run()
+ThreeFieldsLaplacian<Dim, Order1, Order2, Order3>::run()
 {
-    std::cout << "-------------------------------------\n";
-    std::cout << "Execute ThreeFields<" << Dim << "," << Order1 << "," << Order2 << "," << Order3 << ">\n";
-    std::vector<double> X( 3 );
-    X[0] = mesh1Size;
-    X[1] = mesh2Size;
-
-    if ( shape == "hypercube" )
-        X[2] = 1;
-
-    else // default is simplex
-        X[2] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-
-template<int Dim, int Order1, int Order2, int Order3>
-void
-ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[2] == 0 ) shape = "simplex";
-
-    if ( X[2] == 1 ) shape = "hypercube";
+    LOG(INFO) << "Execute ThreeFieldsLaplacian<" << Dim << "," << Order1 << "," << Order2 << "," << Order3 << ">\n";
 
     if ( !this->vm().count( "nochdir" ) )
         Environment::changeRepository( boost::format( "doc/manual/%1%/%2%-%3%/P%4%-P%5%-P%6%/h_%7%-%8%-%9%/" )
@@ -401,7 +361,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
                                        % mesh2Size
                                        % mesh3Size );
 
-    std::cout << "create meshes starts\n";
+    LOG(INFO) << "create meshes starts\n";
     mesh_ptrtype mesh1 = createMesh( 0.,split,mesh1Size,1 );
     mesh_ptrtype mesh2 = createMesh( split,1.,mesh2Size,2 );
 
@@ -410,7 +370,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
 
     trace_mesh_ptrtype interface_mesh = createMesh( mesh3Size,split );
 
-    std::cout << "create meshes done\n";
+    LOG(INFO) << "create meshes done\n";
 
     if ( Dim == 2 )
     {
@@ -470,7 +430,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type coeff = this->vm()["coeff"].template as<double>();
 
-    std::cout << "assembly_F1 starts\n";
+    LOG(INFO) << "assembly_F1 starts\n";
     timers["assemby_F1"].first.restart();
 
     auto F1 = M_backend->newVector( Xh1 );
@@ -485,11 +445,11 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     }
 
     timers["assemby_F1"].second = timers["assemby_F1"].first.elapsed();
-    std::cout << "assemby_F1 done in " << timers["assemby_F1"].second << "s\n";
+    LOG(INFO) << "assemby_F1 done in " << timers["assemby_F1"].second << "s\n";
 
     F1->close();
 
-    std::cout << "assembly_D1 starts\n";
+    LOG(INFO) << "assembly_D1 starts\n";
     timers["assemby_D1"].first.restart();
 
     auto D1 = M_backend->newMatrix( Xh1, Xh1 );
@@ -507,14 +467,14 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     }
 
     timers["assemby_D1"].second = timers["assemby_D1"].first.elapsed();
-    std::cout << "assemby_D1 done in " << timers["assemby_D1"].second << "s\n";
+    LOG(INFO) << "assemby_D1 done in " << timers["assemby_D1"].second << "s\n";
 
     D1->close();
 
     if ( this->vm().count( "export-matlab" ) )
         D1->printMatlab( "D1.m" );
 
-    std::cout << "assembly_B1 starts\n";
+    LOG(INFO) << "assembly_B1 starts\n";
     timers["assemby_B1"].first.restart();
 
     auto B1 = M_backend->newMatrix( Xh1, Lh1 );
@@ -522,14 +482,14 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         integrate( elements( Lh->mesh() ), -idt( u1 )*id( nu1 ) );
 
     timers["assemby_B1"].second = timers["assemby_B1"].first.elapsed();
-    std::cout << "assemby_B1 done in " << timers["assemby_B1"].second << "s\n";
+    LOG(INFO) << "assemby_B1 done in " << timers["assemby_B1"].second << "s\n";
 
     B1->close();
 
     if ( this->vm().count( "export-matlab" ) )
         B1->printMatlab( "B1.m" );
 
-    std::cout << "assembly_C1 starts\n";
+    LOG(INFO) << "assembly_C1 starts\n";
     timers["assemby_C1"].first.restart();
 
     auto C1 = M_backend->newMatrix( Lh, Lh1, _buildGraphWithTranspose=!buildGraphWithTrans1 );
@@ -537,14 +497,14 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         integrate( elements( Lh->mesh() ), idt( mu )*id( nu1 ) );
 
     timers["assemby_C1"].second = timers["assemby_C1"].first.elapsed();
-    std::cout << "assemby_C1 done in " << timers["assemby_C1"].second << "s\n";
+    LOG(INFO) << "assemby_C1 done in " << timers["assemby_C1"].second << "s\n";
 
     C1->close();
 
     if ( this->vm().count( "export-matlab" ) )
         C1->printMatlab( "C1.m" );
 
-    std::cout << "assembly_F2 starts\n";
+    LOG(INFO) << "assembly_F2 starts\n";
     timers["assemby_F2"].first.restart();
 
     auto F2 = M_backend->newVector( Xh2 );
@@ -559,11 +519,11 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     }
 
     timers["assemby_F2"].second = timers["assemby_F2"].first.elapsed();
-    std::cout << "assemby_F2 done in " << timers["assemby_F2"].second << "s\n";
+    LOG(INFO) << "assemby_F2 done in " << timers["assemby_F2"].second << "s\n";
 
     F2->close();
 
-    std::cout << "assembly_D2 starts\n";
+    LOG(INFO) << "assembly_D2 starts\n";
     timers["assemby_D2"].first.restart();
 
     auto D2 = M_backend->newMatrix( Xh2, Xh2 );
@@ -581,15 +541,15 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     }
 
     timers["assemby_D2"].second = timers["assemby_D2"].first.elapsed();
-    std::cout << "assemby_D2 done in " << timers["assemby_D2"].second << "s\n";
+    LOG(INFO) << "assemby_D2 done in " << timers["assemby_D2"].second << "s\n";
 
     D2->close();
-    std::cout << "matrix D2 assembly done\n";
+    LOG(INFO) << "matrix D2 assembly done\n";
 
     if ( this->vm().count( "export-matlab" ) )
         D2->printMatlab( "D2.m" );
 
-    std::cout << "assembly_B2 starts\n";
+    LOG(INFO) << "assembly_B2 starts\n";
     timers["assemby_B2"].first.restart();
 
     auto B2 = M_backend->newMatrix( Xh2, Lh2 );
@@ -597,7 +557,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         integrate( elements( Lh->mesh() ), -idt( u2 )*id( nu2 ) );
 
     timers["assemby_B2"].second = timers["assemby_B2"].first.elapsed();
-    std::cout << "assemby_B2 done in " << timers["assemby_B2"].second << "s\n";
+    LOG(INFO) << "assemby_B2 done in " << timers["assemby_B2"].second << "s\n";
 
     B2->close();
 
@@ -605,7 +565,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     if ( this->vm().count( "export-matlab" ) )
         B2->printMatlab( "B2.m" );
 
-    std::cout << "assembly_C2 starts\n";
+    LOG(INFO) << "assembly_C2 starts\n";
     timers["assemby_C2"].first.restart();
 
     auto C2 = M_backend->newMatrix( Lh, Lh2,_buildGraphWithTranspose=!buildGraphWithTrans2 );
@@ -613,7 +573,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         integrate( elements( Lh->mesh() ), idt( mu )*id( nu2 ) );
 
     timers["assemby_C2"].second = timers["assemby_C2"].first.elapsed();
-    std::cout << "assemby_C2 done in " << timers["assemby_C2"].second << "s\n";
+    LOG(INFO) << "assemby_C2 done in " << timers["assemby_C2"].second << "s\n";
 
     C2->close();
 
@@ -621,7 +581,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         C2->printMatlab( "C2.m" );
 
     // transposes
-    std::cout << "assembly_B1t starts\n";
+    LOG(INFO) << "assembly_B1t starts\n";
     timers["assemby_B1t"].first.restart();
 
     auto B1t = M_backend->newMatrix( Lh1, Xh1, _buildGraphWithTranspose=true );
@@ -629,12 +589,12 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     B1->transpose( B1t );
 
     timers["assemby_B1t"].second = timers["assemby_B1t"].first.elapsed();
-    std::cout << "assemby_B1t done in " << timers["assemby_B1t"].second << "s\n";
+    LOG(INFO) << "assemby_B1t done in " << timers["assemby_B1t"].second << "s\n";
 
     if ( this->vm().count( "export-matlab" ) )
         B1t->printMatlab( "B1t.m" );
 
-    std::cout << "assembly_B2t starts\n";
+    LOG(INFO) << "assembly_B2t starts\n";
     timers["assemby_B2t"].first.restart();
 
     auto B2t = M_backend->newMatrix( Lh2, Xh2, _buildGraphWithTranspose=true );
@@ -642,14 +602,14 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     B2->transpose( B2t );
 
     timers["assemby_B2t"].second = timers["assemby_B2t"].first.elapsed();
-    std::cout << "assemby_B2t done in " << timers["assemby_B2t"].second << "s\n";
+    LOG(INFO) << "assemby_B2t done in " << timers["assemby_B2t"].second << "s\n";
 
     if ( this->vm().count( "export-matlab" ) )
         B2t->printMatlab( "B2t.m" );
 
-    std::cout << "matrix C1t assembly starts\n";
+    LOG(INFO) << "matrix C1t assembly starts\n";
 
-    std::cout << "assemply_C1t starts\n";
+    LOG(INFO) << "assemply_C1t starts\n";
     timers["assemply_C1t"].first.restart();
 
     auto C1t = M_backend->newMatrix( Lh1, Lh, _buildGraphWithTranspose=buildGraphWithTrans1 );
@@ -657,12 +617,12 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     C1->transpose( C1t );
 
     timers["assemply_C1t"].second = timers["assemply_C1t"].first.elapsed();
-    std::cout << "[timer] assemply_C1t: " << timers["assemply_C1t"].second << "\n";
+    LOG(INFO) << "[timer] assemply_C1t: " << timers["assemply_C1t"].second << "\n";
 
     if ( this->vm().count( "export-matlab" ) )
         C1t->printMatlab( "C1t.m" );
 
-    std::cout << "assemply_C2t starts\n";
+    LOG(INFO) << "assemply_C2t starts\n";
     timers["assemply_C2t"].first.restart();
 
     auto C2t = M_backend->newMatrix( Lh2, Lh, _buildGraphWithTranspose=buildGraphWithTrans2 );
@@ -670,7 +630,7 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     C2->transpose( C2t );
 
     timers["assemply_C2t"].second = timers["assemply_C2t"].first.elapsed();
-    std::cout << "[timer] assemply_C2t: " << timers["assemply_C2t"].second << "\n";
+    LOG(INFO) << "[timer] assemply_C2t: " << timers["assemply_C2t"].second << "\n";
 
     if ( this->vm().count( "export-matlab" ) )
         C2t->printMatlab( "C2t.m" );
@@ -693,26 +653,26 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     auto zero25 = M_backend->newZeroMatrix( _trial=Lh1, _test=Xh2 );
     auto zero35 = M_backend->newZeroMatrix( _trial=Lh, _test=Xh2 );
 
-    std::cout << "assemply_Block starts\n";
+    LOG(INFO) << "assemply_Block starts\n";
     timers["assemply_Block"].first.restart();
 
-    auto myb = Blocks<5,5>()<< D1 << B1t << zero31 << zero41 << zero51
-               << B1 << zero22 << C1 << zero42 << zero52
-               << zero13 << C1t << zero33 << C2t << zero53
-               << zero14 << zero24 << C2 << zero44 << B2
-               << zero15 << zero25 << zero35 << B2t << D2 ;
+    auto myb = BlocksSparseMatrix<5,5>()<< D1 << B1t << zero31 << zero41 << zero51
+                                        << B1 << zero22 << C1 << zero42 << zero52
+                                        << zero13 << C1t << zero33 << C2t << zero53
+                                        << zero14 << zero24 << C2 << zero44 << B2
+                                        << zero15 << zero25 << zero35 << B2t << D2 ;
 
-    auto AbB = M_backend->newBlockMatrix( myb );
+    auto AbB = M_backend->newBlockMatrix( _block=myb );
 
     timers["assemply_Block"].second = timers["assemply_Block"].first.elapsed();
-    std::cout << "[timer] assemply_Block: " << timers["assemply_Block"].second << "\n";
+    LOG(INFO) << "[timer] assemply_Block: " << timers["assemply_Block"].second << "\n";
 
     AbB->close();
 
-    std::cout <<"***********************************************\n";
-    std::cout << "full matrix size1= " << AbB->size1() <<"\n";
-    std::cout << "full matrix size2= " << AbB->size2() <<"\n";
-    std::cout <<"***********************************************\n";
+    LOG(INFO) <<"***********************************************\n";
+    LOG(INFO) << "full matrix size1= " << AbB->size1() <<"\n";
+    LOG(INFO) << "full matrix size2= " << AbB->size2() <<"\n";
+    LOG(INFO) <<"***********************************************\n";
 
     auto FbB = M_backend->newVector( u1.size()+u2.size()+mu.size()+mu1.size()+mu2.size(),
                                      u1.size()+u2.size()+mu.size()+mu1.size()+mu2.size() );
@@ -728,10 +688,10 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         FbB->set( u1.size()+mu1.size()+mu.size()+mu2.size()+i, ( *F2 )( i ) );
 
 
-    std::cout <<"***********************************************\n";
-    std::cout << "rhs size=      " << FbB->size() <<"\n";
-    std::cout << "solution size= " << UbB->size() <<"\n";
-    std::cout <<"***********************************************\n";
+    LOG(INFO) <<"***********************************************\n";
+    LOG(INFO) << "rhs size=      " << FbB->size() <<"\n";
+    LOG(INFO) << "solution size= " << UbB->size() <<"\n";
+    LOG(INFO) <<"***********************************************\n";
 
     if ( this->vm().count( "export-matlab" ) )
     {
@@ -741,13 +701,16 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
         F2->printMatlab( "F2.m" );
     }
 
-    std::cout << "solve starts\n";
+    LOG(INFO) << "solve starts\n";
     timers["solve"].first.restart();
 
-    M_backend->solve( _matrix=AbB,_solution=UbB, _rhs=FbB );
+    M_backend->solve( _matrix=AbB,
+                      _solution=UbB,
+                      _rhs=FbB,
+                      _pcfactormatsolverpackage="umfpack" );
 
     timers["solve"].second = timers["solve"].first.elapsed();
-    std::cout << "[timer] solve: " << timers["solve"].second << "\n";
+    LOG(INFO) << "[timer] solve: " << timers["solve"].second << "\n";
 
 
     for ( size_type i = 0 ; i < u1.size(); ++ i )
@@ -803,15 +766,15 @@ ThreeFields<Dim, Order1, Order2, Order3>::run( const double* X, unsigned long P,
     this->exportResults( u1,u2,mu1,mu2 );
 
     auto interface_exporter = trace_export_type::New( this->vm(),
-                              ( boost::format( "interface_%1%-%2%" )
-                                % this->about().appName()
-                                % Dim ).str() ) ;
+                                                      ( boost::format( "interface_%1%-%2%" )
+                                                        % this->about().appName()
+                                                        % Dim ).str() ) ;
 
     interface_exporter->step( 0 )->setMesh( interface_mesh );
     interface_exporter->step( 0 )->add( "mu", mu );
     interface_exporter->save();
 
-} // ThreeFields::run
+} // ThreeFieldsLaplacian::run
 
 int
 main( int argc, char** argv )
@@ -821,13 +784,7 @@ main( int argc, char** argv )
                      _desc=makeOptions(),
                      _about=makeAbout() );
     Application app;
-    app.add( new ThreeFields<2,2,2,3>() );
+    app.add( new ThreeFieldsLaplacian<2,2,2,3>() );
 
     app.run();
 }
-
-
-
-
-
-

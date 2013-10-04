@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2006-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #define EIGEN_NO_STATIC_ASSERT // otherwise we fail at compile time on unused paths
 #include "main.h"
@@ -92,6 +77,12 @@ template<typename MatrixType> void block(const MatrixType& m)
     // check that fixed block() and block() agree
     Matrix<Scalar,Dynamic,Dynamic> b = m1.template block<BlockRows,BlockCols>(3,3);
     VERIFY_IS_EQUAL(b, m1.block(3,3,BlockRows,BlockCols));
+
+    // same tests with mixed fixed/dynamic size
+    m1.template block<BlockRows,Dynamic>(1,1,BlockRows,BlockCols) *= s1;
+    m1.template block<BlockRows,Dynamic>(1,1,BlockRows,BlockCols)(0,3) = m1.template block<2,5>(1,1)(1,2);
+    Matrix<Scalar,Dynamic,Dynamic> b2 = m1.template block<Dynamic,BlockCols>(3,3,2,5);
+    VERIFY_IS_EQUAL(b2, m1.block(3,3,BlockRows,BlockCols));
   }
 
   if (rows>2)
@@ -111,11 +102,11 @@ template<typename MatrixType> void block(const MatrixType& m)
   }
 
   // stress some basic stuffs with block matrices
-  VERIFY(internal::real(ones.col(c1).sum()) == RealScalar(rows));
-  VERIFY(internal::real(ones.row(r1).sum()) == RealScalar(cols));
+  VERIFY(numext::real(ones.col(c1).sum()) == RealScalar(rows));
+  VERIFY(numext::real(ones.row(r1).sum()) == RealScalar(cols));
 
-  VERIFY(internal::real(ones.col(c1).dot(ones.col(c2))) == RealScalar(rows));
-  VERIFY(internal::real(ones.row(r1).dot(ones.row(r2))) == RealScalar(cols));
+  VERIFY(numext::real(ones.col(c1).dot(ones.col(c2))) == RealScalar(rows));
+  VERIFY(numext::real(ones.row(r1).dot(ones.row(r2))) == RealScalar(cols));
 
   // now test some block-inside-of-block.
   

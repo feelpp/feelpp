@@ -94,6 +94,10 @@ public:
         typedef VectorUblas<value_type,subtype> type;
     };
 
+
+    typedef typename super1::datamap_type datamap_type;
+    typedef typename super1::datamap_ptrtype datamap_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -104,13 +108,13 @@ public:
 
     VectorUblas( size_type __s );
 
-    VectorUblas( DataMap const& dm );
+    VectorUblas( datamap_ptrtype const& dm );
 
     VectorUblas( size_type __s, size_type __n_local );
 
     VectorUblas( VectorUblas const & m );
 
-    VectorUblas( VectorUblas<value_type>& m, range_type const& range, DataMap const& dm );
+    VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm );
 
     VectorUblas( ublas::vector<value_type>& m, range_type const& range );
 
@@ -146,7 +150,7 @@ public:
     /**
      * init from a \p DataMap
      */
-    void init( DataMap const& dm );
+    void init( datamap_ptrtype const& dm );
 
 
     /**
@@ -173,7 +177,7 @@ public:
     VectorUblas<value_type, Storage>& operator=( ublas::vector_expression<AE> const& e )
     {
         this->outdateGlobalValues();
-        _M_vec.operator=( e );
+        M_vec.operator=( e );
         return *this;
     }
 
@@ -189,7 +193,7 @@ public:
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
 
-        return _M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -204,7 +208,7 @@ public:
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
         this->outdateGlobalValues();
-        return _M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -219,7 +223,7 @@ public:
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
 
-        return _M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -234,7 +238,7 @@ public:
         ( this->firstLocalIndex() )
         ( this->lastLocalIndex() ).error( "vector invalid index" );
         this->outdateGlobalValues();
-        return _M_vec.operator()( i-this->firstLocalIndex() );
+        return M_vec.operator()( i-this->firstLocalIndex() );
     }
 
     /**
@@ -281,20 +285,20 @@ public:
 
     iterator begin()
     {
-        return _M_vec.begin();
+        return M_vec.begin();
     }
     const_iterator begin() const
     {
-        return _M_vec.begin();
+        return M_vec.begin();
     }
 
     iterator end()
     {
-        return _M_vec.end();
+        return M_vec.end();
     }
     const_iterator end() const
     {
-        return _M_vec.end();
+        return M_vec.end();
     }
 
     /**
@@ -353,7 +357,7 @@ public:
      */
     vector_type const& vec () const
     {
-        return _M_vec;
+        return M_vec;
     }
 
     /**
@@ -361,7 +365,7 @@ public:
      */
     vector_type & vec ()
     {
-        return _M_vec;
+        return M_vec;
     }
 
     /**
@@ -410,7 +414,7 @@ public:
      */
     void setGlobalValue( size_type i, value_type v ) const
     {
-        M_global_values( i ) = v;
+        //M_global_values( i ) = v;
     }
 
     /**
@@ -418,7 +422,7 @@ public:
      */
     void setConstant( value_type v )
     {
-        _M_vec = ublas::scalar_vector<double>( _M_vec.size(), v );
+        M_vec = ublas::scalar_vector<double>( M_vec.size(), v );
     }
 
     //@}
@@ -446,7 +450,7 @@ public:
      */
     void zero ()
     {
-        //_M_vec.clear();
+        //M_vec.clear();
         this->outdateGlobalValues();
         std::fill( this->begin(), this->end(), value_type( 0 ) );
     }
@@ -585,7 +589,7 @@ public:
     void scale ( const T factor )
     {
         this->outdateGlobalValues();
-        _M_vec.operator *=( factor );
+        M_vec.operator *=( factor );
     }
 
     /**
@@ -594,7 +598,7 @@ public:
      * vector to the file named \p name.  If \p name
      * is not specified it is dumped to the screen.
      */
-    void printMatlab( const std::string name="NULL" ) const;
+    void printMatlab( const std::string name="NULL", bool renumber = false ) const;
 
     void close() {}
 
@@ -606,7 +610,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_min = *std::min_element( _M_vec.begin(), _M_vec.end() );
+        real_type local_min = *std::min_element( M_vec.begin(), M_vec.end() );
 
         real_type global_min = local_min;
 
@@ -632,7 +636,7 @@ public:
     {
         checkInvariant();
 
-        real_type local_max = *std::max_element( _M_vec.begin(), _M_vec.end() );
+        real_type local_max = *std::max_element( M_vec.begin(), M_vec.end() );
 
         real_type global_max = local_max;
 
@@ -657,7 +661,7 @@ public:
     real_type l1Norm() const
     {
         checkInvariant();
-        double local_l1 = ublas::norm_1( _M_vec );
+        double local_l1 = ublas::norm_1( M_vec );
 
         double global_l1 = local_l1;
 
@@ -686,7 +690,7 @@ public:
 
         if ( this->comm().size() == 1 )
             {
-                local_norm2 = ublas::inner_prod( _M_vec, _M_vec );
+                local_norm2 = ublas::inner_prod( M_vec, M_vec );
                 global_norm2 = local_norm2;
             }
         else
@@ -696,7 +700,7 @@ public:
                 for ( size_type i = 0; i < s; ++i )
                     {
                         if ( !this->localIndexIsGhost( start + i ) )
-                            local_norm2 += std::pow(_M_vec.operator()( start + i ),2);
+                            local_norm2 += std::pow(M_vec.operator()( start + i ),2);
                     }
 #ifdef FEELPP_HAS_MPI
                 mpi::all_reduce( this->comm(), local_norm2, global_norm2, std::plus<real_type>() );
@@ -713,7 +717,7 @@ public:
     real_type linftyNorm() const
     {
         checkInvariant();
-        real_type local_norminf = ublas::norm_inf( _M_vec );
+        real_type local_norminf = ublas::norm_inf( M_vec );
         real_type global_norminf = local_norminf;
 
 
@@ -735,7 +739,7 @@ public:
     value_type sum() const
     {
         checkInvariant();
-        double local_sum = ublas::sum( _M_vec );
+        double local_sum = ublas::sum( M_vec );
 
         double global_sum = local_sum;
 
@@ -776,7 +780,7 @@ public:
         this->outdateGlobalValues();
 
         for ( size_type i = 0; i < this->localSize(); ++i )
-            _M_vec.operator[]( i ) += a;
+            M_vec.operator[]( i ) += a;
 
         return;
     }
@@ -804,7 +808,7 @@ public:
         this->outdateGlobalValues();
 
         for ( size_type i = 0; i < this->localSize(); ++i )
-            _M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
+            M_vec.operator()( i ) += a*v( v.firstLocalIndex() + i );
 
         return;
     }
@@ -892,9 +896,9 @@ private:
     void checkInvariant() const;
 
 private:
-    vector_type _M_vec;
+    vector_type M_vec;
     mutable bool M_global_values_updated;
-    mutable ublas::vector<value_type> M_global_values;
+    //mutable ublas::vector<value_type> M_global_values;
 };
 
 /**
@@ -915,7 +919,7 @@ element_product( VectorUblas<T> const& v1, VectorUblas<T> const& v2 )
 
     typedef typename type_traits<T>::real_type real_type;
 
-    VectorUblas<real_type> _t( v1.map() );
+    VectorUblas<real_type> _t( v1.mapPtr() );
     size_type s = v1.localSize();
     size_type start = v1.firstLocalIndex();
 

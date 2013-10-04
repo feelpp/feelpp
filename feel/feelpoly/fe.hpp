@@ -42,6 +42,7 @@ template<uint16_type Dim,
          uint16_type RealDim,
          template<uint16_type> class PolySetType,
          typename T,
+         uint16_type TheTAG,
          template<uint16_type,uint16_type,uint16_type> class Convex>
 class OrthonormalPolynomialSet;
 }
@@ -120,12 +121,12 @@ public:
     FiniteElement( dual_space_type const& pdual )
         :
         super( pdual.primalSpace() ),
-        _M_dual( pdual ),
-        _M_primal( _M_dual.primalSpace() )
+        M_dual( pdual ),
+        M_primal( M_dual.primalSpace() )
     {
-        Debug( 5030 ) << "============================================================\n";
-        Debug( 5030 ) << "New FE \n";
-        ublas::matrix<value_type> A( _M_dual( _M_primal ) );
+        DVLOG(2) << "============================================================\n";
+        DVLOG(2) << "New FE \n";
+        ublas::matrix<value_type> A( M_dual( M_primal ) );
         //std::cout << "[FiniteElement] A = " << A << "\n";
 
         ublas::matrix<value_type> D = ublas::identity_matrix<value_type>( A.size1(), A.size2() );
@@ -133,7 +134,7 @@ public:
         ublas::matrix<value_type> C = lu.solve( D );
         //std::cout << "[FiniteElement] D = " << D << "\n";
         //std::cout << "[FiniteElement] C = " << C << "\n";
-        Debug( 5030 ) << "is singular : " << lu.isNonsingular() << "\n"
+        DVLOG(2) << "is singular : " << lu.isNonsingular() << "\n"
                       << "det(A) =  " << lu.det() << "\n";
 #if 0
 
@@ -149,19 +150,19 @@ public:
 
         this->setCoefficient( ublas::trans( C ) );
 
-        //_M_pset = polynomialset_type( _M_primal, C );
+        //M_pset = polynomialset_type( M_primal, C );
 
-        //std::cout << "coeff = " << _M_pset.coeff() << "\n";
-        //std::cout << "d_x = " << _M_pset.derivate(0).coeff() << "\n";
-        //std::cout << "d_x = " << _M_pset.derivate(0).coeff() << "\n";
-        //std::cout << "d_x = " << _M_pset.derivate(0).coeff() << "\n";
-        Debug( 5030 ) << "============================================================\n";
+        //std::cout << "coeff = " << M_pset.coeff() << "\n";
+        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
+        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
+        //std::cout << "d_x = " << M_pset.derivate(0).coeff() << "\n";
+        DVLOG(2) << "============================================================\n";
     }
     FiniteElement( FiniteElement const & fe )
         :
         super( fe ),
-        _M_dual( fe._M_dual ),
-        _M_primal( fe._M_primal )
+        M_dual( fe.M_dual ),
+        M_primal( fe.M_primal )
     {}
 
     ~FiniteElement()
@@ -178,8 +179,8 @@ public:
         if ( this != &fe )
         {
             super::operator=( fe );
-            _M_primal = fe._M_primal;
-            _M_dual = fe._M_dual;
+            M_primal = fe.M_primal;
+            M_dual = fe.M_dual;
         }
 
         return *this;
@@ -230,14 +231,14 @@ public:
      * \return the polynomial set defining the finite element
      */
     // Que devient cette fonction ??
-    // polynomialset_type const& functionShape() const { return _M_pset; }
+    // polynomialset_type const& functionShape() const { return M_pset; }
 
     /**
      * \return the dual basis of the finite element
      */
     primal_space_type const& primal() const
     {
-        return _M_primal;
+        return M_primal;
     }
 
     /**
@@ -245,7 +246,7 @@ public:
      */
     dual_space_type const& dual() const
     {
-        return _M_dual;
+        return M_dual;
     }
 
     /**
@@ -253,7 +254,7 @@ public:
      */
     points_type const& points() const
     {
-        return _M_dual.points();
+        return M_dual.points();
     }
 
     /**
@@ -267,7 +268,7 @@ public:
      */
     points_type const& points( uint16_type f ) const
     {
-        return _M_dual.points( f );
+        return M_dual.points( f );
     }
 
     /**
@@ -280,8 +281,8 @@ public:
 
 private:
 
-    dual_space_type _M_dual;
-    primal_space_type const& _M_primal;
+    dual_space_type M_dual;
+    primal_space_type const& M_primal;
 
 };
 

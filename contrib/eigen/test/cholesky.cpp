@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_NO_ASSERTION_CHECKING
 #define EIGEN_NO_ASSERTION_CHECKING
@@ -83,7 +68,6 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
   Index cols = m.cols();
 
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> SquareMatrixType;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
 
@@ -98,14 +82,14 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     symm += a1 * a1.adjoint();
   }
 
-  SquareMatrixType symmUp = symm.template triangularView<Upper>();
-  SquareMatrixType symmLo = symm.template triangularView<Lower>();
-
   // to test if really Cholesky only uses the upper triangular part, uncomment the following
   // FIXME: currently that fails !!
   //symm.template part<StrictlyLower>().setZero();
 
   {
+    SquareMatrixType symmUp = symm.template triangularView<Upper>();
+    SquareMatrixType symmLo = symm.template triangularView<Lower>();
+    
     LLT<SquareMatrixType,Lower> chollo(symmLo);
     VERIFY_IS_APPROX(symm, chollo.reconstructedMatrix());
     vecX = chollo.solve(vecB);
@@ -129,6 +113,21 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     VERIFY_IS_APPROX(MatrixType(chollo.matrixU().transpose().conjugate()), MatrixType(chollo.matrixL()));
     VERIFY_IS_APPROX(MatrixType(cholup.matrixL().transpose().conjugate()), MatrixType(cholup.matrixU()));
     VERIFY_IS_APPROX(MatrixType(cholup.matrixU().transpose().conjugate()), MatrixType(cholup.matrixL()));
+    
+    // test some special use cases of SelfCwiseBinaryOp:
+    MatrixType m1 = MatrixType::Random(rows,cols), m2(rows,cols);
+    m2 = m1;
+    m2 += symmLo.template selfadjointView<Lower>().llt().solve(matB);
+    VERIFY_IS_APPROX(m2, m1 + symmLo.template selfadjointView<Lower>().llt().solve(matB));
+    m2 = m1;
+    m2 -= symmLo.template selfadjointView<Lower>().llt().solve(matB);
+    VERIFY_IS_APPROX(m2, m1 - symmLo.template selfadjointView<Lower>().llt().solve(matB));
+    m2 = m1;
+    m2.noalias() += symmLo.template selfadjointView<Lower>().llt().solve(matB);
+    VERIFY_IS_APPROX(m2, m1 + symmLo.template selfadjointView<Lower>().llt().solve(matB));
+    m2 = m1;
+    m2.noalias() -= symmLo.template selfadjointView<Lower>().llt().solve(matB);
+    VERIFY_IS_APPROX(m2, m1 - symmLo.template selfadjointView<Lower>().llt().solve(matB));
   }
 
   // LDLT
@@ -181,21 +180,6 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     if(sign == -1)
       symm = -symm;
   }
-
-  // test some special use cases of SelfCwiseBinaryOp:
-  MatrixType m1 = MatrixType::Random(rows,cols), m2(rows,cols);
-  m2 = m1;
-  m2 += symmLo.template selfadjointView<Lower>().llt().solve(matB);
-  VERIFY_IS_APPROX(m2, m1 + symmLo.template selfadjointView<Lower>().llt().solve(matB));
-  m2 = m1;
-  m2 -= symmLo.template selfadjointView<Lower>().llt().solve(matB);
-  VERIFY_IS_APPROX(m2, m1 - symmLo.template selfadjointView<Lower>().llt().solve(matB));
-  m2 = m1;
-  m2.noalias() += symmLo.template selfadjointView<Lower>().llt().solve(matB);
-  VERIFY_IS_APPROX(m2, m1 + symmLo.template selfadjointView<Lower>().llt().solve(matB));
-  m2 = m1;
-  m2.noalias() -= symmLo.template selfadjointView<Lower>().llt().solve(matB);
-  VERIFY_IS_APPROX(m2, m1 - symmLo.template selfadjointView<Lower>().llt().solve(matB));
 
   // update/downdate
   CALL_SUBTEST(( test_chol_update<SquareMatrixType,LLT>(symm)  ));
@@ -277,6 +261,27 @@ template<typename MatrixType> void cholesky_bug241(const MatrixType& m)
   VERIFY_IS_APPROX(matA * vecX, vecB);
 }
 
+// LDLT is not guaranteed to work for indefinite matrices, but happens to work fine if matrix is diagonal.
+// This test checks that LDLT reports correctly that matrix is indefinite. 
+// See http://forum.kde.org/viewtopic.php?f=74&t=106942
+template<typename MatrixType> void cholesky_indefinite(const MatrixType& m)
+{
+  eigen_assert(m.rows() == 2 && m.cols() == 2);
+  MatrixType mat;
+  {
+    mat << 1, 0, 0, -1;
+    LDLT<MatrixType> ldlt(mat);
+    VERIFY(!ldlt.isNegative());
+    VERIFY(!ldlt.isPositive());
+  }
+  {
+    mat << 1, 2, 2, 1;
+    LDLT<MatrixType> ldlt(mat);
+    VERIFY(!ldlt.isNegative());
+    VERIFY(!ldlt.isPositive());
+  }
+}
+
 template<typename MatrixType> void cholesky_verify_assert()
 {
   MatrixType tmp;
@@ -299,11 +304,12 @@ template<typename MatrixType> void cholesky_verify_assert()
 
 void test_cholesky()
 {
-  int s;
+  int s = 0;
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( cholesky(Matrix<double,1,1>()) );
     CALL_SUBTEST_3( cholesky(Matrix2d()) );
     CALL_SUBTEST_3( cholesky_bug241(Matrix2d()) );
+    CALL_SUBTEST_3( cholesky_indefinite(Matrix2d()) );
     CALL_SUBTEST_4( cholesky(Matrix3f()) );
     CALL_SUBTEST_5( cholesky(Matrix4d()) );
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
@@ -321,5 +327,6 @@ void test_cholesky()
   CALL_SUBTEST_9( LLT<MatrixXf>(10) );
   CALL_SUBTEST_9( LDLT<MatrixXf>(10) );
   
-  EIGEN_UNUSED_VARIABLE(s)
+  TEST_SET_BUT_UNUSED_VARIABLE(s)
+  TEST_SET_BUT_UNUSED_VARIABLE(nb_temporaries)
 }

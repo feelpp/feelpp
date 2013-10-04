@@ -4,24 +4,9 @@
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2007-2011 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_CORE_H
 #define EIGEN_CORE_H
@@ -33,6 +18,12 @@
 // it's where we do all the alignment settings (platform detection and honoring the user's will if he
 // defined e.g. EIGEN_DONT_ALIGN) so it needs to be done before we do anything with vectorization.
 #include "src/Core/util/Macros.h"
+
+// Disable the ipa-cp-clone optimization flag with MinGW 6.x or newer (enabled by default with -O3)
+// See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=556 for details.
+#if defined(__MINGW32__) && EIGEN_GNUC_AT_LEAST(4,6)
+  #pragma GCC optimize ("-fno-ipa-cp-clone")
+#endif
 
 #include <complex>
 
@@ -59,7 +50,7 @@
   #endif
 #else
   // Remember that usage of defined() in a #define is undefined by the standard
-  #if (defined __SSE2__) && ( (!defined __GNUC__) || EIGEN_GNUC_AT_LEAST(4,2) )
+  #if (defined __SSE2__) && ( (!defined __GNUC__) || (defined __INTEL_COMPILER) || EIGEN_GNUC_AT_LEAST(4,2) )
     #define EIGEN_SSE2_ON_NON_MSVC_BUT_NOT_OLD_GCC
   #endif
 #endif
@@ -102,19 +93,25 @@
     // so, to avoid compile errors when windows.h is included after Eigen/Core, ensure intrinsics are extern "C" here too.
     // notice that since these are C headers, the extern "C" is theoretically needed anyways.
     extern "C" {
-      #include <emmintrin.h>
-      #include <xmmintrin.h>
-      #ifdef  EIGEN_VECTORIZE_SSE3
-      #include <pmmintrin.h>
-      #endif
-      #ifdef EIGEN_VECTORIZE_SSSE3
-      #include <tmmintrin.h>
-      #endif
-      #ifdef EIGEN_VECTORIZE_SSE4_1
-      #include <smmintrin.h>
-      #endif
-      #ifdef EIGEN_VECTORIZE_SSE4_2
-      #include <nmmintrin.h>
+      // In theory we should only include immintrin.h and not the other *mmintrin.h header files directly.
+      // Doing so triggers some issues with ICC. However old gcc versions seems to not have this file, thus:
+      #ifdef __INTEL_COMPILER
+        #include <immintrin.h>
+      #else
+        #include <emmintrin.h>
+        #include <xmmintrin.h>
+        #ifdef  EIGEN_VECTORIZE_SSE3
+        #include <pmmintrin.h>
+        #endif
+        #ifdef EIGEN_VECTORIZE_SSSE3
+        #include <tmmintrin.h>
+        #endif
+        #ifdef EIGEN_VECTORIZE_SSE4_1
+        #include <smmintrin.h>
+        #endif
+        #ifdef EIGEN_VECTORIZE_SSE4_2
+        #include <nmmintrin.h>
+        #endif
       #endif
     } // end extern "C"
   #elif defined __ALTIVEC__
@@ -251,15 +248,11 @@ using std::ptrdiff_t;
   * \endcode
   */
 
-/** \defgroup Support_modules Support modules [category]
-  * Category of modules which add support for external libraries.
-  */
-
 #include "src/Core/util/Constants.h"
 #include "src/Core/util/ForwardDeclarations.h"
 #include "src/Core/util/Meta.h"
-#include "src/Core/util/XprHelper.h"
 #include "src/Core/util/StaticAssert.h"
+#include "src/Core/util/XprHelper.h"
 #include "src/Core/util/Memory.h"
 
 #include "src/Core/NumTraits.h"
@@ -312,6 +305,7 @@ using std::ptrdiff_t;
 #include "src/Core/Map.h"
 #include "src/Core/Block.h"
 #include "src/Core/VectorBlock.h"
+#include "src/Core/Ref.h"
 #include "src/Core/Transpose.h"
 #include "src/Core/DiagonalMatrix.h"
 #include "src/Core/Diagonal.h"
@@ -345,6 +339,7 @@ using std::ptrdiff_t;
 #include "src/Core/products/TriangularSolverMatrix.h"
 #include "src/Core/products/TriangularSolverVector.h"
 #include "src/Core/BandMatrix.h"
+#include "src/Core/CoreIterators.h"
 
 #include "src/Core/BooleanRedux.h"
 #include "src/Core/Select.h"

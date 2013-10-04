@@ -21,9 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 feelpp_add_application(beam SRCS beam.cpp LABEL doc)
 feelpp_add_application(stvenant_kirchhoff SRCS stvenant_kirchhoff.cpp LABEL doc)
 feelpp_add_application(axi_1D SRCS axi_1D.cpp LABEL doc)
 feelpp_add_application(linelaxi SRCS linelaxi.cpp LABEL doc)
-

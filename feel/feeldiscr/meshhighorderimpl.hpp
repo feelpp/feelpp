@@ -174,7 +174,7 @@ MeshHighOrder<Convex>::addVertices( element_type const& elt, new_element_type& n
             new_mesh->addPoint( new_point );
 
 #if !defined ( NDEBUG )
-            Debug( 1000 ) << "[AddPointToMesh] Vertex of id: " << new_point.id() << " has coordinates "
+            DVLOG(2) << "[AddPointToMesh] Vertex of id: " << new_point.id() << " has coordinates "
                           << new_point.node();
 #endif
 
@@ -185,7 +185,7 @@ MeshHighOrder<Convex>::addVertices( element_type const& elt, new_element_type& n
         new_element.setPoint( i, new_mesh->point( new_point.id() ) );
 
 #if !defined ( NDEBUG )
-        Debug( 1002 ) << "[AddVertexElement] Add point: localId=" << i
+        DVLOG(2) << "[AddVertexElement] Add point: localId=" << i
                       << " globalToMeshId=" << new_mesh->point( new_point.id() ).id()
                       << " to element " << new_element.id() << "\n";
 #endif

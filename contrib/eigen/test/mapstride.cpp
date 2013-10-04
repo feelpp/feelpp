@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2010 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -131,7 +116,7 @@ template<int Alignment,typename MatrixType> void map_class_matrix(const MatrixTy
 void test_mapstride()
 {
   for(int i = 0; i < g_repeat; i++) {
-    EIGEN_UNUSED int maxn = 30;
+    int maxn = 30;
     CALL_SUBTEST_1( map_class_vector<Aligned>(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_1( map_class_vector<Unaligned>(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( map_class_vector<Aligned>(Vector4d()) );
@@ -157,5 +142,7 @@ void test_mapstride()
     CALL_SUBTEST_5( map_class_matrix<Unaligned>(MatrixXi(internal::random<int>(1,maxn),internal::random<int>(1,maxn))) );
     CALL_SUBTEST_6( map_class_matrix<Aligned>(MatrixXcd(internal::random<int>(1,maxn),internal::random<int>(1,maxn))) );
     CALL_SUBTEST_6( map_class_matrix<Unaligned>(MatrixXcd(internal::random<int>(1,maxn),internal::random<int>(1,maxn))) );
+    
+    TEST_SET_BUT_UNUSED_VARIABLE(maxn);
   }
 }

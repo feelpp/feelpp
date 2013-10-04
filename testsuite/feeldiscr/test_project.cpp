@@ -71,15 +71,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
     typedef boost::shared_ptr<space_type> space_ptrtype;
+
     space_ptrtype P1h = space_type::New( mesh );
     auto p1meas = vf::sum( P1h, elements( mesh ),  vf::meas() );
 
+    double measure = 0.;
     for ( int i = 0; i < P1h->nLocalDof(); ++i )
     {
         BOOST_CHECK_CLOSE( p1meas( i ), mesh->beginElement()->measure(), 1e-13 );
+        measure += mesh->beginElement()->measure();
     }
 
-    BOOST_CHECK_CLOSE( p1meas.sum(), mesh->numPoints()*mesh->beginElement()->measure(), 1e-13 );
+    BOOST_CHECK_CLOSE( p1meas.sum(), measure, 1e-13 );
     BOOST_CHECK_EQUAL( mesh->beginElement()->numberOfPointElementNeighbors(), 1 );
     BOOST_CHECK_CLOSE( mesh->beginElement()->measurePointElementNeighbors(), mesh->beginElement()->measure(), 1e-13 );
 }

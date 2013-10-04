@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_SELFADJOINT_PRODUCT_H
 #define EIGEN_SELFADJOINT_PRODUCT_H
@@ -33,21 +18,19 @@
 
 namespace Eigen { 
 
-template<typename Scalar, typename Index, int StorageOrder, int UpLo, bool ConjLhs, bool ConjRhs>
-struct selfadjoint_rank1_update;
 
 template<typename Scalar, typename Index, int UpLo, bool ConjLhs, bool ConjRhs>
 struct selfadjoint_rank1_update<Scalar,Index,ColMajor,UpLo,ConjLhs,ConjRhs>
 {
-  static void run(Index size, Scalar* mat, Index stride, const Scalar* vec, Scalar alpha)
+  static void run(Index size, Scalar* mat, Index stride, const Scalar* vecX, const Scalar* vecY, const Scalar& alpha)
   {
     internal::conj_if<ConjRhs> cj;
     typedef Map<const Matrix<Scalar,Dynamic,1> > OtherMap;
-    typedef typename internal::conditional<ConjLhs,typename OtherMap::ConjugateReturnType,const OtherMap&>::type ConjRhsType;
+    typedef typename internal::conditional<ConjLhs,typename OtherMap::ConjugateReturnType,const OtherMap&>::type ConjLhsType;
     for (Index i=0; i<size; ++i)
     {
       Map<Matrix<Scalar,Dynamic,1> >(mat+stride*i+(UpLo==Lower ? i : 0), (UpLo==Lower ? size-i : (i+1)))
-          += (alpha * cj(vec[i])) * ConjRhsType(OtherMap(vec+(UpLo==Lower ? i : 0),UpLo==Lower ? size-i : (i+1)));
+          += (alpha * cj(vecY[i])) * ConjLhsType(OtherMap(vecX+(UpLo==Lower ? i : 0),UpLo==Lower ? size-i : (i+1)));
     }
   }
 };
@@ -55,9 +38,9 @@ struct selfadjoint_rank1_update<Scalar,Index,ColMajor,UpLo,ConjLhs,ConjRhs>
 template<typename Scalar, typename Index, int UpLo, bool ConjLhs, bool ConjRhs>
 struct selfadjoint_rank1_update<Scalar,Index,RowMajor,UpLo,ConjLhs,ConjRhs>
 {
-  static void run(Index size, Scalar* mat, Index stride, const Scalar* vec, Scalar alpha)
+  static void run(Index size, Scalar* mat, Index stride, const Scalar* vecX, const Scalar* vecY, const Scalar& alpha)
   {
-    selfadjoint_rank1_update<Scalar,Index,ColMajor,UpLo==Lower?Upper:Lower,ConjRhs,ConjLhs>::run(size,mat,stride,vec,alpha);
+    selfadjoint_rank1_update<Scalar,Index,ColMajor,UpLo==Lower?Upper:Lower,ConjRhs,ConjLhs>::run(size,mat,stride,vecY,vecX,alpha);
   }
 };
 
@@ -67,7 +50,7 @@ struct selfadjoint_product_selector;
 template<typename MatrixType, typename OtherType, int UpLo>
 struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,true>
 {
-  static void run(MatrixType& mat, const OtherType& other, typename MatrixType::Scalar alpha)
+  static void run(MatrixType& mat, const OtherType& other, const typename MatrixType::Scalar& alpha)
   {
     typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::Index Index;
@@ -93,14 +76,14 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,true>
     selfadjoint_rank1_update<Scalar,Index,StorageOrder,UpLo,
                               OtherBlasTraits::NeedToConjugate  && NumTraits<Scalar>::IsComplex,
                             (!OtherBlasTraits::NeedToConjugate) && NumTraits<Scalar>::IsComplex>
-          ::run(other.size(), mat.data(), mat.outerStride(), actualOtherPtr, actualAlpha);
+          ::run(other.size(), mat.data(), mat.outerStride(), actualOtherPtr, actualOtherPtr, actualAlpha);
   }
 };
 
 template<typename MatrixType, typename OtherType, int UpLo>
 struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,false>
 {
-  static void run(MatrixType& mat, const OtherType& other, typename MatrixType::Scalar alpha)
+  static void run(MatrixType& mat, const OtherType& other, const typename MatrixType::Scalar& alpha)
   {
     typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::Index Index;
@@ -128,7 +111,7 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,false>
 template<typename MatrixType, unsigned int UpLo>
 template<typename DerivedU>
 SelfAdjointView<MatrixType,UpLo>& SelfAdjointView<MatrixType,UpLo>
-::rankUpdate(const MatrixBase<DerivedU>& u, Scalar alpha)
+::rankUpdate(const MatrixBase<DerivedU>& u, const Scalar& alpha)
 {
   selfadjoint_product_selector<MatrixType,DerivedU,UpLo>::run(_expression().const_cast_derived(), u.derived(), alpha);
 

@@ -15,10 +15,21 @@ set(CTEST_DROP_SITE_CDASH TRUE)
 set(CTEST_UPDATE_TYPE "git")
 
 set(CTEST_PROJECT_SUBPROJECTS
-  feel++
-  doc
-  testsuite
-  benchmarks
-  crb
-  research/apee
-  )
+feelpp
+testcore
+testfilters
+testmaterial
+testleaks
+testcrb
+testdiscr
+testmesh
+testalg
+testpoly
+testinterpolation
+testintegration
+testvf
+testsuite
+benchmarks
+doc
+crb
+)

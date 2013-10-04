@@ -21,9 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 feelpp_add_application( thermalfin SRCS thermalfin.cpp fin.cpp LABEL doc)
 feelpp_add_application( resistance SRCS resistance.cpp LABEL doc)
 feelpp_add_application( heatsink SRCS heatsink.cpp fin_sink.cpp LABEL doc CFG heatsink.cfg)
 feelpp_add_application( ground SRCS ground.cpp  LABEL doc CFG ground.cfg ground-realistic.cfg GEO ground.geo  ) #ground1.cfg ground2.cfg ground3.cfg )
-
-

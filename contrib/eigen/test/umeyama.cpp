@@ -1,26 +1,11 @@
 // This file is part of Eigen, a lightweight C++ template library
-// for linear algebra. Eigen itself is part of the KDE project.
+// for linear algebra.
 //
 // Copyright (C) 2009 Hauke Heibel <hauke.heibel@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or1 FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -37,8 +22,6 @@ template <typename T>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> randMatrixUnitary(int size)
 {
   typedef T Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
-
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> MatrixType;
 
   MatrixType Q;
@@ -92,7 +75,6 @@ template <typename T>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> randMatrixSpecialUnitary(int size)
 {
   typedef T Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
 
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> MatrixType;
 
@@ -100,7 +82,7 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> randMatrixSpecialUnitary(int si
   MatrixType Q = randMatrixUnitary<Scalar>(size);
 
   // tweak the first column to make the determinant be 1
-  Q.col(0) *= internal::conj(Q.determinant());
+  Q.col(0) *= numext::conj(Q.determinant());
 
   return Q;
 }
@@ -108,13 +90,14 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> randMatrixSpecialUnitary(int si
 template <typename MatrixType>
 void run_test(int dim, int num_elements)
 {
+  using std::abs;
   typedef typename internal::traits<MatrixType>::Scalar Scalar;
   typedef Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
   typedef Matrix<Scalar, Eigen::Dynamic, 1> VectorX;
 
   // MUST be positive because in any other case det(cR_t) may become negative for
   // odd dimensions!
-  const Scalar c = internal::abs(internal::random<Scalar>());
+  const Scalar c = abs(internal::random<Scalar>());
 
   MatrixX R = randMatrixSpecialUnitary<Scalar>(dim);
   VectorX t = Scalar(50)*VectorX::Random(dim,1);
@@ -137,6 +120,7 @@ void run_test(int dim, int num_elements)
 template<typename Scalar, int Dimension>
 void run_fixed_size_test(int num_elements)
 {
+  using std::abs;
   typedef Matrix<Scalar, Dimension+1, Dynamic> MatrixX;
   typedef Matrix<Scalar, Dimension+1, Dimension+1> HomMatrix;
   typedef Matrix<Scalar, Dimension, Dimension> FixedMatrix;
@@ -146,7 +130,7 @@ void run_fixed_size_test(int num_elements)
 
   // MUST be positive because in any other case det(cR_t) may become negative for
   // odd dimensions!
-  const Scalar c = internal::abs(internal::random<Scalar>());
+  const Scalar c = abs(internal::random<Scalar>());
 
   FixedMatrix R = randMatrixSpecialUnitary<Scalar>(dim);
   FixedVector t = Scalar(50)*FixedVector::Random(dim,1);

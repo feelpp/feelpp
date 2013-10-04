@@ -1,12 +1,13 @@
 # - Find Feel
 
+INCLUDE(CustomPCH)
 INCLUDE(ParseArguments)
 
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
     "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;SCRIPTS;TEST"
-    "NO_TEST;EXCLUDE_FROM_ALL;ADD_OT"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT"
     ${ARGN}
     )
   CAR(FEELPP_APP_NAME ${FEELPP_APP_DEFAULT_ARGS})
@@ -24,11 +25,13 @@ macro(feelpp_add_application)
     MESSAGE("       Mesh file: ${FEELPP_APP_MESH}")
     MESSAGE("       Exec file: ${execname}")
     MESSAGE("exclude from all: ${FEELPP_APP_EXCLUDE_FROM_ALL}")
+    MESSAGE("include from all: ${FEELPP_APP_INCLUDE_IN_ALL}")
   endif()
-
 
   if ( FEELPP_APP_EXCLUDE_FROM_ALL)
     add_executable(${execname}  EXCLUDE_FROM_ALL  ${FEELPP_APP_SRCS}  )
+  elseif( FEELPP_APP_INCLUDE_IN_ALL)
+    add_executable(${execname}  ${FEELPP_APP_SRCS}  )
   else()
     add_executable(${execname}  ${FEELPP_APP_SRCS}  )
   endif()
@@ -39,20 +42,26 @@ macro(feelpp_add_application)
     set_property(TARGET ${execname} PROPERTY COMPILE_DEFINITIONS ${FEELPP_APP_DEFS})
   endif()
   target_link_libraries( ${execname} ${FEELPP_APP_LINK_LIBRARIES} ${FEELPP_LIBRARIES})
-  INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
+
+	if( FEELPP_ENABLE_PCH_FOR_APPLICATIONS )
+		# add several headers in a list form "one.hpp;two.hpp"
+		add_precompiled_header( ${execname} ${FEELPP_APP_SRCS} "feel/feel.hpp")
+	endif()
+
+  #INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
   if ( NOT FEELPP_APP_NO_TEST )
-	IF(NProcs2 GREATER 1)
-    		add_test(NAME ${execname}-np-${NProcs2} COMMAND mpirun -np ${NProcs2} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST})
+	IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+    	  add_test(NAME ${execname}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS} )
 	ENDIF()
-    add_test(NAME ${execname}-np-1 COMMAND mpirun -np 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST})
+	add_test(NAME ${execname}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${execname} ${FEELPP_APP_TEST} ${MPIEXEC_POSTFLAGS})
   endif()
   #add_dependencies(crb ${execname})
   # Add label if provided
   if ( FEELPP_APP_LABEL )
     set_property(TARGET ${execname} PROPERTY LABELS ${FEELPP_APP_LABEL})
     if ( NOT FEELPP_APP_NO_TEST )
-	IF(NProcs2 GREATER 1)
-      		set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABEL})
+	IF(NOT FEELPP_APP_NO_MPI_TEST AND NProcs2 GREATER 1)
+      	  set_property(TEST ${execname}-np-${NProcs2} PROPERTY LABELS ${FEELPP_APP_LABEL})
 	ENDIF()
       set_property(TEST ${execname}-np-1 PROPERTY LABELS ${FEELPP_APP_LABEL})
     endif()
@@ -61,6 +70,8 @@ macro(feelpp_add_application)
     endif()
   endif()
 
+  # include schedulers
+  include( feelpp.schedulers )
 
 
   if ( FEELPP_APP_CFG )
@@ -136,28 +147,40 @@ endmacro()
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
     "SRCS;LINK_LIBRARIES;CFG;GEO;LABEL;DEFS;DEPS"
-    "NO_TEST;EXCLUDE_FROM_ALL"
+    "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL"
     ${ARGN}
     )
   CAR(FEELPP_TEST_NAME ${FEELPP_TEST_DEFAULT_ARGS})
-
+  get_directory_property( FEELPP_TEST_LABEL_DIRECTORY LABEL )
   if ( NOT FEELPP_TEST_SRCS )
     set(targetname test_${FEELPP_TEST_NAME})
     set(filename test_${FEELPP_TEST_NAME}.cpp)
+
     add_executable(${targetname} ${filename})
     target_link_libraries(${targetname} ${FEELPP_LIBRARIES} ${FEELPP_TEST_LINK_LIBRARIES} ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
-    set_property(TARGET ${targetname} PROPERTY LABELS testsuite)
-    if ( TARGET testsuite )
+    set_property(TARGET ${targetname} PROPERTY LABELS testsuite ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
+    if ( TARGET  ${FEELPP_TEST_LABEL_DIRECTORY})
+      add_dependencies(  ${FEELPP_TEST_LABEL_DIRECTORY} ${targetname} )
+      add_dependencies( testsuite  ${FEELPP_TEST_LABEL_DIRECTORY} )
+    elseif( TARGET testsuite )
       add_dependencies(testsuite ${targetname})
     endif()
 
-    add_test(
-      NAME test_${FEELPP_TEST_NAME}
-      COMMAND ${targetname} --log_level=message
-      )
 
-    set_property(TEST ${targetname} PROPERTY LABELS testsuite)
+    if ( NOT FEELPP_TEST_NO_TEST )
+      IF(NOT FEELPP_TEST_NO_MPI_TEST AND NProcs2 GREATER 1)
+	    add_test(NAME test_${FEELPP_TEST_NAME}-np-${NProcs2} COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NProcs2} ${MPIEXEC_PREFLAGS} ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME} --log_level=message ${MPIEXEC_POSTFLAGS} )
+	    set_property(TEST test_${FEELPP_TEST_NAME}-np-${NProcs2}  PROPERTY LABELS testsuite  ${FEELPP_TEST_LABEL}  ${FEELPP_TEST_LABEL_DIRECTORY})
+      ENDIF()
+      add_test(NAME test_${FEELPP_TEST_NAME}-np-1 COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1 ${CMAKE_CURRENT_BINARY_DIR}/${targetname} ${FEELPP_TEST_NAME}  --log_level=message ${MPIEXEC_POSTFLAGS})
+      set_property(TEST test_${FEELPP_TEST_NAME}-np-1  PROPERTY LABELS testsuite  ${FEELPP_TEST_LABEL} ${FEELPP_TEST_LABEL_DIRECTORY})
+    endif()
 
+
+    set(cfgname test_${FEELPP_TEST_NAME}.cfg)
+    if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${cfgname} )
+      configure_file(  ${cfgname} ${cfgname} )
+    endif()
     if ( FEELPP_TEST_GEO )
       foreach(  geo ${FEELPP_TEST_GEO} )
         # extract geo filename  to be copied in binary dir
@@ -213,3 +236,32 @@ if ( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
   endif()
 endif( FEELPP_ENABLE_OPENTURNS AND OPENTURNS_FOUND )
 endmacro(feelpp_ot_add_python_module)
+
+MACRO(find_directories_containing result_list)
+  PARSE_ARGUMENTS(FILE
+    "FILTER"
+    ${ARGN}
+    )
+  CAR(FILE_NAME ${FILE_DEFAULT_ARGS})
+
+  if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+    MESSAGE("*** Arguments for find_directories_containing " ${FILE_DEFAULT_ARGS})
+    MESSAGE("  Filters: ${FILE_FILTER}")
+  endif()
+
+    FILE(GLOB_RECURSE new_list ${FILE_NAME})
+    SET(dir_list "")
+    FOREACH(file_path ${new_list})
+        GET_FILENAME_COMPONENT(dir_path ${file_path} PATH)
+        #MESSAGE("    dir_path: ${dir_path}")
+        if ( FILE_FILTER )
+           if ( "${dir_path}" MATCHES "(.*)${FILE_FILTER}/(.*)" )
+              #MESSAGE(STATUS "${dir_path}")
+              LIST(APPEND dir_list ${dir_path})
+           endif()
+        endif()
+    ENDFOREACH()
+    LIST(REMOVE_DUPLICATES dir_list)
+    #MESSAGE("    LIST: ${dir_list}")
+    SET(${result_list} ${dir_list})
+ENDMACRO(find_directories_containing)

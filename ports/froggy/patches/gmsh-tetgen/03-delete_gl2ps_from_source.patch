@@ -1,0 +1,29 @@
+Description: delete gl2ps and use packaged version.
+Author: Anton Gladky <gladky.anton@gmail.com>, Julian Taylor <jtaylor.debian@googlemail.com>
+Last-Update: 2011-12-09
+
+Index: gmsh-tetgen-2.6.2~svn13116/Graphics/CMakeLists.txt
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13116.orig/Graphics/CMakeLists.txt	2012-09-05 11:08:46.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13116/Graphics/CMakeLists.txt	2012-09-05 11:18:48.000000000 +0200
+@@ -15,7 +15,6 @@
+   drawScales.cpp 
+   drawGraph2d.cpp 
+   drawGlyph.cpp 
+-  gl2ps.cpp
+   gl2gif.cpp
+   gl2jpeg.cpp
+   gl2png.cpp
+Index: gmsh-tetgen-2.6.2~svn13116/CMakeLists.txt
+===================================================================
+--- gmsh-tetgen-2.6.2~svn13116.orig/CMakeLists.txt	2012-09-05 11:18:36.000000000 +0200
++++ gmsh-tetgen-2.6.2~svn13116/CMakeLists.txt	2012-09-05 11:18:48.000000000 +0200
+@@ -1071,7 +1071,7 @@
+   add_executable(gmsh_dynamic EXCLUDE_FROM_ALL Common/Main.cpp)
+   target_link_libraries(gmsh_dynamic shared)
+ endif(HAVE_FLTK)
+-target_link_libraries(gmsh ${LINK_LIBRARIES})
++target_link_libraries(gmsh ${LINK_LIBRARIES} -lgl2ps -lGL -lglut)
+ 
+ # increase stack to 16Mb on Windows to avoid overflows in recursive
+ # tet classification for large 3D Delaunay grids + force static

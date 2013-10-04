@@ -32,11 +32,14 @@
 #  STACKTRACE_LIBRARIES, where to find the stacktrace library.
 #  PROFILER_LIBRARIES, where to find the profiler library.
 
-FIND_PATH(GOOGLE_PERFTOOLS_INCLUDE_DIR google/heap-profiler.h
-/opt/local/include
-/usr/local/include
-/usr/include
-)
+FIND_PATH(GOOGLE_PERFTOOLS_INCLUDE_DIR
+  gperftools/heap-profiler.h
+  PATHS
+  /opt/local/include
+  /usr/local/include
+  /usr/include
+  PATH_SUFFIXES gperftools google
+  )
 
 SET(TCMALLOC_NAMES ${TCMALLOC_NAMES} tcmalloc)
 FIND_LIBRARY(TCMALLOC_LIBRARY

@@ -23,31 +23,42 @@
 #
 include (FindPackageHandleStandardArgs)
 
-find_program( GMSH_EXECUTABLE gmsh DOC "GMSH mesh generator" )
+# some of the find_* commands are duplicated with the first instance having NO_DEFAULT_PATH
+# this is to ensure that if GMSH_DIR is defined then cmake will pick the Gmsh version in GMSH_DIR
+# otherwise in the second instance it will pich the standard version installed on the system if
+# it is available
 
+find_program( GMSH_EXECUTABLE gmsh
+  PATH
+  $ENV{GMSH_DIR}/bin
+  PATH_SUFFIXES bin
+  DOC "GMSH mesh generator" )
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
+
   FIND_PATH(GMSH_INCLUDE_DIR
     Gmsh.h Context.h GModel.h
-    PATHS ${CMAKE_SYSTEM_PREFIX_PATH} $ENV{GMSH_DIR}/include/gmsh
+    PATHS
+    $ENV{GMSH_DIR}
     PATH_SUFFIXES include include/gmsh
     DOC "Directory where GMSH header files are stored" )
+
   include_directories(${GMSH_INCLUDE_DIR})
   if ( GMSH_INCLUDE_DIR )
-	set( FEELPP_HAS_GMSH_H 1 )
+    set( FEELPP_HAS_GMSH_H 1 )
     FIND_PATH(GMSH_ADAPTMESH_INCLUDE_DIR
       Openfile.h Field.h
       PATHS ${GMSH_INCLUDE_DIR}
       DOC "Directory where GMSH header files are stored" )
-      if ( GMSH_ADAPTMESH_INCLUDE_DIR )
-	set( FEELPP_HAS_GMSH_H 1 )
-      else ( GMSH_ADAPTMESH_INCLUDE_DIR )
-	message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
-	message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
-      endif( GMSH_ADAPTMESH_INCLUDE_DIR )
-  endif()
+    if ( GMSH_ADAPTMESH_INCLUDE_DIR )
+      set( FEELPP_HAS_GMSH_H 1 )
+    else ( GMSH_ADAPTMESH_INCLUDE_DIR )
+      message(STATUS "Gmsh headers: some headers needed for meshadaptation are missing")
+      message(STATUS "Check wiki pages for mesh adaptation to install properly gmsh")
+    endif( GMSH_ADAPTMESH_INCLUDE_DIR )
+  endif(GMSH_INCLUDE_DIR)
   #include(CheckIncludeFiles)
   #set(CMAKE_REQUIRED_INCLUDES "${GMSH_INCLUDE_DIR};${CMAKE_REQUIRED_INCLUDES}")
   #check_include_file(Gmsh.h FEELPP_HAS_GMSH_GMSH_H )
@@ -60,30 +71,39 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
 
   FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
     PATH
-    ${CMAKE_SYSTEM_PREFIX_PATH}
     $ENV{GMSH_DIR}
+    ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
-    lib  )
+    lib )
+
   if( NOT GMSH_LIBRARY )
-    FIND_PATH(GMSH_LIBRARY_PATH
-      libGmsh.so
-      PATHS ${CMAKE_SYSTEM_PREFIX_PATH} $ENV{GMSH_DIR}/
-      PATH_SUFFIXES lib )
-    set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/libGmsh.so" )
-  endif()
+    if(APPLE)
+      set( GMSHLIB libGmsh.dylib )
+    else(APPLE)
+      set( GMSHLIB libGmsh.so )
+    endif(APPLE)
+    FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
+      PATHS
+      $ENV{GMSH_DIR}/lib
+	  NO_DEFAULT_PATH)
+
+    set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
+  endif(NOT GMSH_LIBRARY)
 
   FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
     PATH
-    ${CMAKE_SYSTEM_PREFIX_PATH}
-    $ENV{GMSH_DIR}/lib
+      $ENV{GMSH_DIR}
+      ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib  )
-  FIND_LIBRARY(GL_LIBRARY NAMES GL
-    PATH
-    ${CMAKE_SYSTEM_PREFIX_PATH}
-    $ENV{GMSH_DIR}/lib
-    PATH_SUFFIXES
-    lib  )
+
+  IF ( FEELPP_ENABLE_OPENGL )
+    FIND_LIBRARY(GL_LIBRARY NAMES GL
+      PATH
+      $ENV{GMSH_DIR}
+      PATH_SUFFIXES
+      lib  )
+  ENDIF()
 
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
     GMSH_INCLUDE_DIR GMSH_LIBRARY GMSH_EXECUTABLE
@@ -93,13 +113,17 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     set(FEELPP_HAS_GMSH_LIBRARY 1)
     MESSAGE( STATUS "GMSH found: header(${GMSH_INCLUDE_DIR}) lib(${GMSH_LIBRARY}) executable(${GMSH_EXECUTABLE})" )
     MESSAGE( STATUS "GL2PS found: lib(${GL2PS_LIBRARY})" )
-    MESSAGE( STATUS "GL found: lib(${GL_LIBRARY})" )
+    IF ( FEELPP_ENABLE_OPENGL )
+      MESSAGE( STATUS "GL found: lib(${GL_LIBRARY})" )
+    ENDIF()
   endif()
 
   mark_as_advanced( GMSH_INCLUDE_DIR )
   mark_as_advanced( GMSH_LIBRARY )
   mark_as_advanced( GL2PS_LIBRARY )
-  mark_as_advanced( GL_LIBRARY )
+  IF ( FEELPP_ENABLE_OPENGL )
+     mark_as_advanced( GL_LIBRARY )
+  ENDIF()
   mark_as_advanced( GMSH_EXECUTABLE )
 
 else(FEELPP_ENABLE_GMSH_LIBRARY)
@@ -112,8 +136,3 @@ else(FEELPP_ENABLE_GMSH_LIBRARY)
   mark_as_advanced( GMSH_EXECUTABLE )
 
 endif(FEELPP_ENABLE_GMSH_LIBRARY)
-
-
-
-
-

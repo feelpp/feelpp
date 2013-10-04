@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -28,7 +13,6 @@ template<typename MatrixType> void product_selfadjoint(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
   typedef Matrix<Scalar, 1, MatrixType::RowsAtCompileTime> RowVectorType;
 
@@ -60,11 +44,11 @@ template<typename MatrixType> void product_selfadjoint(const MatrixType& m)
 
   m2 = m1.template triangularView<Upper>();
   m2.template selfadjointView<Upper>().rankUpdate(-v1,s2*v2,s3);
-  VERIFY_IS_APPROX(m2, (m1 + (s3*(-v1)*(s2*v2).adjoint()+internal::conj(s3)*(s2*v2)*(-v1).adjoint())).template triangularView<Upper>().toDenseMatrix());
+  VERIFY_IS_APPROX(m2, (m1 + (s3*(-v1)*(s2*v2).adjoint()+numext::conj(s3)*(s2*v2)*(-v1).adjoint())).template triangularView<Upper>().toDenseMatrix());
 
   m2 = m1.template triangularView<Upper>();
   m2.template selfadjointView<Upper>().rankUpdate(-s2*r1.adjoint(),r2.adjoint()*s3,s1);
-  VERIFY_IS_APPROX(m2, (m1 + s1*(-s2*r1.adjoint())*(r2.adjoint()*s3).adjoint() + internal::conj(s1)*(r2.adjoint()*s3) * (-s2*r1.adjoint()).adjoint()).template triangularView<Upper>().toDenseMatrix());
+  VERIFY_IS_APPROX(m2, (m1 + s1*(-s2*r1.adjoint())*(r2.adjoint()*s3).adjoint() + numext::conj(s1)*(r2.adjoint()*s3) * (-s2*r1.adjoint()).adjoint()).template triangularView<Upper>().toDenseMatrix());
 
   if (rows>1)
   {
@@ -78,7 +62,7 @@ template<typename MatrixType> void product_selfadjoint(const MatrixType& m)
 
 void test_product_selfadjoint()
 {
-  int s;
+  int s = 0;
   for(int i = 0; i < g_repeat ; i++) {
     CALL_SUBTEST_1( product_selfadjoint(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( product_selfadjoint(Matrix<float, 2, 2>()) );
@@ -92,5 +76,5 @@ void test_product_selfadjoint()
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_7( product_selfadjoint(Matrix<float,Dynamic,Dynamic,RowMajor>(s,s)) );
   }
-  EIGEN_UNUSED_VARIABLE(s)
+  TEST_SET_BUT_UNUSED_VARIABLE(s)
 }

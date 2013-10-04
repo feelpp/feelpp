@@ -1,48 +1,32 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
+// Copyright (C) 2008-2012 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 #include <Eigen/Geometry>
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
-template<typename Scalar> void eulerangles(void)
+template<typename Scalar> void check_all_var(const Matrix<Scalar,3,1>& ea)
 {
   typedef Matrix<Scalar,3,3> Matrix3;
   typedef Matrix<Scalar,3,1> Vector3;
-  typedef Quaternion<Scalar> Quaternionx;
   typedef AngleAxis<Scalar> AngleAxisx;
-
-  Scalar a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
-  Quaternionx q1;
-  q1 = AngleAxisx(a, Vector3::Random().normalized());
-  Matrix3 m;
-  m = q1;
-
+  using std::abs;
+  
   #define VERIFY_EULER(I,J,K, X,Y,Z) { \
-    Vector3 ea = m.eulerAngles(I,J,K); \
-    VERIFY_IS_APPROX(m,  Matrix3(AngleAxisx(ea[0], Vector3::Unit##X()) * AngleAxisx(ea[1], Vector3::Unit##Y()) * AngleAxisx(ea[2], Vector3::Unit##Z()))); \
+    Matrix3 m(AngleAxisx(ea[0], Vector3::Unit##X()) * AngleAxisx(ea[1], Vector3::Unit##Y()) * AngleAxisx(ea[2], Vector3::Unit##Z())); \
+    Vector3 eabis = m.eulerAngles(I,J,K); \
+    Matrix3 mbis(AngleAxisx(eabis[0], Vector3::Unit##X()) * AngleAxisx(eabis[1], Vector3::Unit##Y()) * AngleAxisx(eabis[2], Vector3::Unit##Z())); \
+    VERIFY_IS_APPROX(m,  mbis); \
+    /* If I==K, and ea[1]==0, then there no unique solution. */ \
+    /* The remark apply in the case where I!=K, and |ea[1]| is close to pi/2. */ \
+    if( (I!=K || ea[1]!=0) && (I==K || !internal::isApprox(abs(ea[1]),Scalar(M_PI/2),test_precision<Scalar>())) ) VERIFY((ea-eabis).norm() <= test_precision<Scalar>()); \
   }
   VERIFY_EULER(0,1,2, X,Y,Z);
   VERIFY_EULER(0,1,0, X,Y,X);
@@ -58,6 +42,44 @@ template<typename Scalar> void eulerangles(void)
   VERIFY_EULER(2,0,2, Z,X,Z);
   VERIFY_EULER(2,1,0, Z,Y,X);
   VERIFY_EULER(2,1,2, Z,Y,Z);
+}
+
+template<typename Scalar> void eulerangles()
+{
+  typedef Matrix<Scalar,3,3> Matrix3;
+  typedef Matrix<Scalar,3,1> Vector3;
+  typedef Array<Scalar,3,1> Array3;
+  typedef Quaternion<Scalar> Quaternionx;
+  typedef AngleAxis<Scalar> AngleAxisx;
+
+  Scalar a = internal::random<Scalar>(-Scalar(M_PI), Scalar(M_PI));
+  Quaternionx q1;
+  q1 = AngleAxisx(a, Vector3::Random().normalized());
+  Matrix3 m;
+  m = q1;
+  
+  Vector3 ea = m.eulerAngles(0,1,2);
+  check_all_var(ea);
+  ea = m.eulerAngles(0,1,0);
+  check_all_var(ea);
+  
+  ea = (Array3::Random() + Array3(1,1,0))*Scalar(M_PI)*Array3(0.5,0.5,1);
+  check_all_var(ea);
+  
+  ea[2] = ea[0] = internal::random<Scalar>(0,Scalar(M_PI));
+  check_all_var(ea);
+  
+  ea[0] = ea[1] = internal::random<Scalar>(0,Scalar(M_PI));
+  check_all_var(ea);
+  
+  ea[1] = 0;
+  check_all_var(ea);
+  
+  ea.head(2).setZero();
+  check_all_var(ea);
+  
+  ea.setZero();
+  check_all_var(ea);
 }
 
 void test_geo_eulerangles()

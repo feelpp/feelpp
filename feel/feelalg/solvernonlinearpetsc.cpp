@@ -40,7 +40,6 @@
 #include <feel/feelalg/functionspetsc.hpp>
 #include <feel/feelalg/preconditionerpetsc.hpp>
 
-
 //--------------------------------------------------------------------
 // Functions with C linkage to pass to PETSc.  PETSc will call these
 // methods as needed.
@@ -139,8 +138,8 @@ extern "C"
 
         if ( solver->comm().size()>1 )
         {
-            R.reset( new Feel::VectorPetscMPI<double>( r,solver->mapRow() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
+            R.reset( new Feel::VectorPetscMPI<double>( r, solver->mapRowPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
         }
 
         else // MPI
@@ -188,14 +187,14 @@ extern "C"
 
         if ( solver->comm().size()>1 )
         {
-            Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRow(),solver->mapCol() ) );
-            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRow() ) );
+            Jac.reset( new Feel::MatrixPetscMPI<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetscMPI<double>( x,solver->mapRowPtr() ) );
         }
 
         else
         {
-            Jac.reset( new Feel::MatrixPetsc<double>( *jac ) );
-            X_global.reset( new Feel::VectorPetsc<double>( x ) );
+            Jac.reset( new Feel::MatrixPetsc<double>( *jac,solver->mapRowPtr(),solver->mapColPtr() ) );
+            X_global.reset( new Feel::VectorPetsc<double>( x,solver->mapColPtr() ) );
         }
 
 #endif
@@ -383,7 +382,12 @@ extern "C"
         MatGetSize( *jac, &size1, &size2 );
 
         PetscScalar *ja;
+
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         MatGetArray( *jac, &ja );
+#else
+        MatDenseGetArray( *jac, &ja );
+#endif
 
         int jac_size = size1*size2;
         //Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> > map_jac ( ja, size1, size2 );
@@ -397,7 +401,11 @@ extern "C"
 
 
         VecRestoreArray( x, &xa );
+#if PETSC_VERSION_LESS_THAN(3,4,0)
         MatRestoreArray(*jac, &ja);
+#else
+        MatDenseRestoreArray(*jac, &ja);
+#endif
 
         /*
           Assemble matrix
@@ -498,14 +506,22 @@ void SolverNonLinearPetsc<T>::init ()
         {
         case LINE_SEARCH :
         {
+#if PETSC_VERSION_LESS_THAN(3,4,0)
             ierr = SNESSetType( M_snes, SNESLS );
+#else
+            ierr = SNESSetType( M_snes, SNESNEWTONLS );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         break;
 
         case TRUST_REGION :
         {
+#if PETSC_VERSION_LESS_THAN(3,4,0)
             ierr = SNESSetType( M_snes, SNESTR );
+#else
+            ierr = SNESSetType( M_snes, SNESNEWTONTR );
+#endif
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         break;
@@ -632,8 +648,6 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         x = dynamic_cast<VectorPetscMPI<T>*>( x_in.get() );
         r = dynamic_cast<VectorPetscMPI<T>*>( r_in.get() );
         //usefull in __feel_petsc_snes_jacobian and __feel_petsc_snes_residual
-        this->setMapRow( jac_in->mapRow() );
-        this->setMapCol( jac_in->mapCol() );
     }
     else
     {
@@ -641,6 +655,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
         x   = dynamic_cast<VectorPetsc<T>*>( x_in.get() );
         r   = dynamic_cast<VectorPetsc<T>*>( r_in.get() );
     }
+
+    this->setMapRow( jac_in->mapRowPtr() );
+    this->setMapCol( jac_in->mapColPtr() );
 
 #endif
 
@@ -662,8 +679,17 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     ierr = SNESSetJacobian ( M_snes, jac->mat(), jac->mat(), __feel_petsc_snes_jacobian, this );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-    KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
-                     PetscGetMatStructureEnum(this->precMatrixStructure()) );
+    ierr = KSPSetOperators( M_ksp, jac->mat(), jac->mat(),
+                            PetscGetMatStructureEnum(this->precMatrixStructure()) );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    ierr = KSPSetTolerances ( M_ksp,
+                              this->rtoleranceKSP(),
+                              this->atoleranceKSP(),
+                              this->dtoleranceKSP(),
+                              this->maxitKSP() );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
         {
@@ -856,7 +882,7 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
-        Debug( 7020 )  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+        DVLOG(2)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
     this->clear();
@@ -964,7 +990,7 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
-        Debug( 7020 )  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+        DVLOG(2)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
     this->clear();
@@ -986,7 +1012,7 @@ void
 SolverNonLinearPetsc<T>::setPetscKspSolverType()
 {
     int ierr = 0;
-    Debug( 7010 ) << "[SolverNonLinearPetsc] ksp solver type:  " << this->kspSolverType() << "\n";
+    DVLOG(2) << "[SolverNonLinearPetsc] ksp solver type:  " << this->kspSolverType() << "\n";
 
     switch ( this->kspSolverType() )
     {

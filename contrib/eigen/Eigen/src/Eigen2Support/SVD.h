@@ -1,26 +1,11 @@
 // This file is part of Eigen, a lightweight C++ template library
-// for linear algebra. Eigen itself is part of the KDE project.
+// for linear algebra.
 //
 // Copyright (C) 2008 Gael Guennebaud <g.gael@free.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN2_SVD_H
 #define EIGEN2_SVD_H
@@ -330,7 +315,7 @@ void SVD<MatrixType>::compute(const MatrixType& matrix)
         e[p-2] = 0.0;
         for (j = p-2; j >= k; --j)
         {
-          Scalar t(internal::hypot(m_sigma[j],f));
+          Scalar t(numext::hypot(m_sigma[j],f));
           Scalar cs(m_sigma[j]/t);
           Scalar sn(f/t);
           m_sigma[j] = t;
@@ -359,7 +344,7 @@ void SVD<MatrixType>::compute(const MatrixType& matrix)
         e[k-1] = 0.0;
         for (j = k; j < p; ++j)
         {
-          Scalar t(internal::hypot(m_sigma[j],f));
+          Scalar t(numext::hypot(m_sigma[j],f));
           Scalar cs( m_sigma[j]/t);
           Scalar sn(f/t);
           m_sigma[j] = t;
@@ -407,7 +392,7 @@ void SVD<MatrixType>::compute(const MatrixType& matrix)
 
         for (j = k; j < p-1; ++j)
         {
-          Scalar t = internal::hypot(f,g);
+          Scalar t = numext::hypot(f,g);
           Scalar cs = f/t;
           Scalar sn = g/t;
           if (j != k)
@@ -425,7 +410,7 @@ void SVD<MatrixType>::compute(const MatrixType& matrix)
               m_matV(i,j) = t;
             }
           }
-          t = internal::hypot(f,g);
+          t = numext::hypot(f,g);
           cs = f/t;
           sn = g/t;
           m_sigma[j] = t;

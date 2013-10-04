@@ -7,24 +7,9 @@
 // Copyright (C) 2010 Hauke Heibel <hauke.heibel@gmail.com>
 // Copyright (C) 2010 Thomas Capricelli <orzel@freehackers.org>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
 /*****************************************************************************
@@ -34,6 +19,10 @@
 #ifndef EIGEN_MEMORY_H
 #define EIGEN_MEMORY_H
 
+#ifndef EIGEN_MALLOC_ALREADY_ALIGNED
+
+// Try to determine automatically if malloc is already aligned.
+
 // On 64-bit systems, glibc's malloc returns 16-byte-aligned pointers, see:
 //   http://www.gnu.org/s/libc/manual/html_node/Aligned-Memory-Blocks.html
 // This is true at least since glibc 2.8.
@@ -42,7 +31,7 @@
 // page 114, "[The] LP64 model [...] is used by all 64-bit UNIX ports" so it's indeed
 // quite safe, at least within the context of glibc, to equate 64-bit with LP64.
 #if defined(__GLIBC__) && ((__GLIBC__>=2 && __GLIBC_MINOR__ >= 8) || __GLIBC__>2) \
- && defined(__LP64__)
+ && defined(__LP64__) && ! defined( __SANITIZE_ADDRESS__ )
   #define EIGEN_GLIBC_MALLOC_ALREADY_ALIGNED 1
 #else
   #define EIGEN_GLIBC_MALLOC_ALREADY_ALIGNED 0
@@ -67,10 +56,19 @@
   #define EIGEN_MALLOC_ALREADY_ALIGNED 0
 #endif
 
-#if ((defined __QNXNTO__) || (defined _GNU_SOURCE) || ((defined _XOPEN_SOURCE) && (_XOPEN_SOURCE >= 600))) \
- && (defined _POSIX_ADVISORY_INFO) && (_POSIX_ADVISORY_INFO > 0)
-  #define EIGEN_HAS_POSIX_MEMALIGN 1
-#else
+#endif
+
+// See bug 554 (http://eigen.tuxfamily.org/bz/show_bug.cgi?id=554)
+// It seems to be unsafe to check _POSIX_ADVISORY_INFO without including unistd.h first.
+// Currently, let's include it only on unix systems:
+#if defined(__unix__) || defined(__unix)
+  #include <unistd.h>
+  #if ((defined __QNXNTO__) || (defined _GNU_SOURCE) || ((defined _XOPEN_SOURCE) && (_XOPEN_SOURCE >= 600))) && (defined _POSIX_ADVISORY_INFO) && (_POSIX_ADVISORY_INFO > 0)
+    #define EIGEN_HAS_POSIX_MEMALIGN 1
+  #endif
+#endif
+
+#ifndef EIGEN_HAS_POSIX_MEMALIGN
   #define EIGEN_HAS_POSIX_MEMALIGN 0
 #endif
 
@@ -103,11 +101,11 @@ inline void throw_std_bad_alloc()
 /** \internal Like malloc, but the returned pointer is guaranteed to be 16-byte aligned.
   * Fast, but wastes 16 additional bytes of memory. Does not throw any exception.
   */
-inline void* handmade_aligned_malloc(size_t size)
+inline void* handmade_aligned_malloc(std::size_t size)
 {
   void *original = std::malloc(size+16);
   if (original == 0) return 0;
-  void *aligned = reinterpret_cast<void*>((reinterpret_cast<size_t>(original) & ~(size_t(15))) + 16);
+  void *aligned = reinterpret_cast<void*>((reinterpret_cast<std::size_t>(original) & ~(std::size_t(15))) + 16);
   *(reinterpret_cast<void**>(aligned) - 1) = original;
   return aligned;
 }
@@ -123,13 +121,18 @@ inline void handmade_aligned_free(void *ptr)
   * Since we know that our handmade version is based on std::realloc
   * we can use std::realloc to implement efficient reallocation.
   */
-inline void* handmade_aligned_realloc(void* ptr, size_t size, size_t = 0)
+inline void* handmade_aligned_realloc(void* ptr, std::size_t size, std::size_t = 0)
 {
   if (ptr == 0) return handmade_aligned_malloc(size);
   void *original = *(reinterpret_cast<void**>(ptr) - 1);
+  std::ptrdiff_t previous_offset = static_cast<char *>(ptr)-static_cast<char *>(original);
   original = std::realloc(original,size+16);
   if (original == 0) return 0;
-  void *aligned = reinterpret_cast<void*>((reinterpret_cast<size_t>(original) & ~(size_t(15))) + 16);
+  void *aligned = reinterpret_cast<void*>((reinterpret_cast<std::size_t>(original) & ~(std::size_t(15))) + 16);
+  void *previous_aligned = static_cast<char *>(original)+previous_offset;
+  if(aligned!=previous_aligned)
+    std::memmove(aligned, previous_aligned, size);
+  
   *(reinterpret_cast<void**>(aligned) - 1) = original;
   return aligned;
 }
@@ -138,7 +141,7 @@ inline void* handmade_aligned_realloc(void* ptr, size_t size, size_t = 0)
 *** Implementation of generic aligned realloc (when no realloc can be used)***
 *****************************************************************************/
 
-void* aligned_malloc(size_t size);
+void* aligned_malloc(std::size_t size);
 void  aligned_free(void *ptr);
 
 /** \internal
@@ -198,7 +201,7 @@ inline void check_that_malloc_is_allowed()
 {
   eigen_assert(is_malloc_allowed() && "heap allocation is forbidden (EIGEN_RUNTIME_NO_MALLOC is defined and g_is_malloc_allowed is false)");
 }
-#else
+#else 
 inline void check_that_malloc_is_allowed()
 {}
 #endif
@@ -219,7 +222,7 @@ inline void* aligned_malloc(size_t size)
     if(posix_memalign(&result, 16, size)) result = 0;
   #elif EIGEN_HAS_MM_MALLOC
     result = _mm_malloc(size, 16);
-  #elif (defined _MSC_VER)
+  #elif defined(_MSC_VER) && (!defined(_WIN32_WCE))
     result = _aligned_malloc(size, 16);
   #else
     result = handmade_aligned_malloc(size);
@@ -242,7 +245,7 @@ inline void aligned_free(void *ptr)
     std::free(ptr);
   #elif EIGEN_HAS_MM_MALLOC
     _mm_free(ptr);
-  #elif defined(_MSC_VER)
+  #elif defined(_MSC_VER) && (!defined(_WIN32_WCE))
     _aligned_free(ptr);
   #else
     handmade_aligned_free(ptr);
@@ -461,7 +464,6 @@ template<typename T, bool Align> inline void conditional_aligned_delete_auto(T *
 template<typename Scalar, typename Index>
 static inline Index first_aligned(const Scalar* array, Index size)
 {
-  typedef typename packet_traits<Scalar>::type Packet;
   enum { PacketSize = packet_traits<Scalar>::size,
          PacketAlignedMask = PacketSize-1
   };
@@ -485,6 +487,13 @@ static inline Index first_aligned(const Scalar* array, Index size)
   }
 }
 
+/** \internal Returns the smallest integer multiple of \a base and greater or equal to \a size
+  */ 
+template<typename Index> 
+inline static Index first_multiple(Index size, Index base)
+{
+  return ((size+base-1)/base)*base;
+}
 
 // std::copy is much slower than memcpy, so let's introduce a smart_copy which
 // use memcpy on trivial types, i.e., on types that does not require an initialization ctor.
@@ -589,7 +598,7 @@ template<typename T> class aligned_stack_memory_handler
     Eigen::internal::check_size_for_overflow<TYPE>(SIZE); \
     TYPE* NAME = (BUFFER)!=0 ? BUFFER : reinterpret_cast<TYPE*>(Eigen::internal::aligned_malloc(sizeof(TYPE)*SIZE));    \
     Eigen::internal::aligned_stack_memory_handler<TYPE> EIGEN_CAT(NAME,_stack_memory_destructor)((BUFFER)==0 ? NAME : 0,SIZE,true)
-
+    
 #endif
 
 
@@ -650,7 +659,7 @@ template<typename T> class aligned_stack_memory_handler
 * Example:
 * \code
 * // Matrix4f requires 16 bytes alignment:
-* std::map< int, Matrix4f, std::less<int>,
+* std::map< int, Matrix4f, std::less<int>, 
 *           aligned_allocator<std::pair<const int, Matrix4f> > > my_map_mat4;
 * // Vector3f does not require 16 bytes alignment, no need to use Eigen's allocator:
 * std::map< int, Vector3f > my_map_vec3;
@@ -722,14 +731,11 @@ public:
 
     // Support for c++11
 #if (__cplusplus >= 201103L)
-//#warning std::forward disabled in eigen
-#if 0
     template<typename... Args>
     void  construct(pointer p, Args&&... args)
     {
       ::new(p) T(std::forward<Args>(args)...);
     }
-#endif // 0
 #endif
 
     void destroy( pointer p )
@@ -756,14 +762,19 @@ public:
 #    if defined(__PIC__) && defined(__i386__)
        // Case for x86 with PIC
 #      define EIGEN_CPUID(abcd,func,id) \
-         __asm__ __volatile__ ("xchgl %%ebx, %%esi;cpuid; xchgl %%ebx,%%esi": "=a" (abcd[0]), "=S" (abcd[1]), "=c" (abcd[2]), "=d" (abcd[3]) : "a" (func), "c" (id));
+         __asm__ __volatile__ ("xchgl %%ebx, %k1;cpuid; xchgl %%ebx,%k1": "=a" (abcd[0]), "=&r" (abcd[1]), "=c" (abcd[2]), "=d" (abcd[3]) : "a" (func), "c" (id));
+#    elif defined(__PIC__) && defined(__x86_64__)
+       // Case for x64 with PIC. In theory this is only a problem with recent gcc and with medium or large code model, not with the default small code model.
+       // However, we cannot detect which code model is used, and the xchg overhead is negligible anyway.
+#      define EIGEN_CPUID(abcd,func,id) \
+        __asm__ __volatile__ ("xchg{q}\t{%%}rbx, %q1; cpuid; xchg{q}\t{%%}rbx, %q1": "=a" (abcd[0]), "=&r" (abcd[1]), "=c" (abcd[2]), "=d" (abcd[3]) : "0" (func), "2" (id));
 #    else
        // Case for x86_64 or x86 w/o PIC
 #      define EIGEN_CPUID(abcd,func,id) \
-         __asm__ __volatile__ ("cpuid": "=a" (abcd[0]), "=b" (abcd[1]), "=c" (abcd[2]), "=d" (abcd[3]) : "a" (func), "c" (id) );
+         __asm__ __volatile__ ("cpuid": "=a" (abcd[0]), "=b" (abcd[1]), "=c" (abcd[2]), "=d" (abcd[3]) : "0" (func), "2" (id) );
 #    endif
 #  elif defined(_MSC_VER)
-#    if (_MSC_VER > 1500)
+#    if (_MSC_VER > 1500) && ( defined(_M_IX86) || defined(_M_X64) )
 #      define EIGEN_CPUID(abcd,func,id) __cpuidex((int*)abcd,func,id)
 #    endif
 #  endif

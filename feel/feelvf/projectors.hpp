@@ -31,7 +31,6 @@
 #define __Projectors_H 1
 
 #include <boost/timer.hpp>
-#include <boost/signal.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
@@ -92,7 +91,7 @@ public:
         M_expr( __expr ),
         M_geomap_strategy( geomap_strategy )
     {
-        Debug( 5065 ) << "Projector constructor from expression\n";
+        DVLOG(2) << "Projector constructor from expression\n";
     }
 
 
@@ -103,7 +102,7 @@ public:
         M_expr( __vfi.M_expr ),
         M_geomap_strategy( __vfi.M_geomap_strategy )
     {
-        Debug( 5065 ) << "Projector copy constructor\n";
+        DVLOG(2) << "Projector copy constructor\n";
     }
 
     virtual ~Projector() {}
@@ -154,6 +153,7 @@ private:
 
     element_type operator()( const bool sum, mpl::size_t<MESH_ELEMENTS> ) const;
     element_type operator()( const bool sum, mpl::size_t<MESH_FACES> ) const;
+    element_type operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const;
 
 private:
 
@@ -350,7 +350,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     element_type __v( M_functionspace );
     __v.setZero();
 
-    Debug( 5066 ) << "call project(MESH_FACES) " << "\n";
+    DVLOG(2) << "call project(MESH_FACES) " << "\n";
     //
     // a few typedefs
     //
@@ -396,7 +396,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     //
     // start
     //
-    Debug( 5066 )  << "assembling Dirichlet conditions\n";
+    DVLOG(2)  << "assembling Dirichlet conditions\n";
 
     dof_type const* __dof = __v.functionSpace()->dof().get();
 
@@ -423,7 +423,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     typedef typename gm1_type::precompute_ptrtype geopc1_ptrtype;
     typedef typename gm1_type::precompute_type geopc1_type;
 
-    Debug( 5066 )  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+    DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
     std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
     std::vector<std::map<permutation_type, geopc1_ptrtype> > __geopc1( geoelement_type::numTopologicalFaces );
 
@@ -434,7 +434,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         {
             __geopc[__f][__p] = geopc_ptrtype(  new geopc_type( __gm, __fe->points( __f ) ) );
             __geopc1[__f][__p] = geopc1_ptrtype(  new geopc1_type( __gm1, __fe->points( __f ) ) );
-            //Debug(5066) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
+            //DVLOG(2) << "[geopc] FACE_ID = " << __f << " ref pts=" << __fe->dual().points( __f ) << "\n";
             FEELPP_ASSERT( __geopc[__f][__p]->nPoints() ).error( "invalid number of points for geopc" );
             FEELPP_ASSERT( __geopc1[__f][__p]->nPoints() ).error( "invalid number of points for geopc1" );
         }
@@ -462,7 +462,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
     else
         nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
 
-    Debug( 5066 )  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
+    DVLOG(2)  << "[projector::operator(MESH_FACES)] nbFaceDof = " << nbFaceDof << "\n";
 
     std::vector<int> dofs;
     std::vector<value_type> values;
@@ -477,18 +477,18 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         ( __face_it->ad_second() )
         ( __face_it->pos_second() )
         ( __face_it->id() ).warn( "inconsistent data face" );
-        Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id()
+        DVLOG(2) << "[projector] FACE_ID = " << __face_it->id()
                       << " element id= " << __face_it->ad_first()
                       << " pos in elt= " << __face_it->pos_first()
                       << " marker: " << __face_it->marker() << "\n";
-        Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
+        DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __face_it->G() << "\n";
 
         uint16_type __face_id = __face_it->pos_first();
 
         std::pair<size_type,size_type> range_dof( std::make_pair( __v.start(),
                 __v.functionSpace()->nDof() ) );
-        Debug( 5066 )  << "[projector] dof start = " << range_dof.first << "\n";
-        Debug( 5066 )  << "[projector] dof range = " << range_dof.second << "\n";
+        DVLOG(2)  << "[projector] dof start = " << range_dof.first << "\n";
+        DVLOG(2)  << "[projector] dof range = " << range_dof.second << "\n";
 
         switch ( M_geomap_strategy )
         {
@@ -497,8 +497,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         case GeomapStrategyType::GEOMAP_HO:
         {
             __c->update( __face_it->element( 0 ), __face_id );
-            Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
-            Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
+            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c->xRefs() << "\n";
+            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c->xReal() << "\n";
 
             map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
 
@@ -527,8 +527,8 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         case GeomapStrategyType::GEOMAP_O1:
         {
             __c1->update( __face_it->element( 0 ), __face_id );
-            Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
-            Debug( 5066 ) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
+            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << "  ref pts=" << __c1->xRefs() << "\n";
+            DVLOG(2) << "[projector] FACE_ID = " << __face_it->id() << " real pts=" << __c1->xReal() << "\n";
 
             map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
 
@@ -560,7 +560,39 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     return __v;
 }
+
+template<ProjectorType iDim, typename FunctionSpaceType, typename Iterator, typename ExprT>
+typename Projector<iDim, FunctionSpaceType, Iterator, ExprT>::element_type
+Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum, mpl::size_t<MESH_POINTS> ) const
+{
+    boost::timer __timer;
+
+    element_type __v( M_functionspace );
+    __v.setZero();
+
+    iterator_type pt_it, pt_en;
+    boost::tie( boost::tuples::ignore, pt_it, pt_en ) = M_range;
+
+    if ( pt_it == pt_en )
+        return __v;
+#if 0
+    BOOST_FOREACH( auto dof, M_functionspace->dof()->markerToDof( pt_it->marker() ) );
+    {
+
+        // get the first element to which the point/dof belong and then build
+        // the proper geomap context in order to evaluate the expression at the
+        // point
+
+#if 0
+        if ( sum )
+            __v.add( dof.second,  );
+#endif
+    }
+#endif
+    return __v;
 }
+
+} // detail
 /// \endcond
 
 
@@ -672,7 +704,7 @@ namespace detail
 template<typename S>
 struct space_ptr
 {
-    typedef typename S::value_type type;
+    typedef typename S::element_type type;
 };
 
 template<typename S>
@@ -745,4 +777,3 @@ BOOST_PARAMETER_FUNCTION(
 
 
 #endif /* __Projectors_H */
-

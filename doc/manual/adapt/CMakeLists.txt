@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 feelpp_add_application(doc_residualestimator SRCS residualestimator.cpp LABEL doc)
 if (OCTAVE_FOUND)
@@ -28,4 +30,3 @@ if (OCTAVE_FOUND)
 endif()
 
 feelpp_add_application(doc_LShape SRCS Lshape.cpp  CFG Lshape.cfg Lshape3D.cfg LABEL doc )
-

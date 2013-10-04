@@ -112,7 +112,6 @@ namespace constants=boost::math::constants;
 const double pi = constants::pi<double>();
 const double two_pi = constants::two_pi<double>();
 
-
 namespace algorithm=boost::algorithm;
 using google::WARNING;
 using google::ERROR;
@@ -143,7 +142,7 @@ namespace detail
 template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 }
 
-/*!  \page types_page Feel Types
+/*!  \page Types Feel Types
   \section types Types
   \subsection real Real Numbers
 
@@ -510,8 +509,6 @@ const mp_type mp_eps = mpfr::pow( mp_type(  2 ), -mp_type::GetDefaultPrecision()
 #endif // FEELPP_HAS_MPFR
 
 
-#include <feel/feelcore/debug.hpp>
-
 #include <boost/shared_ptr.hpp>
 #include <boost/detail/is_xxx.hpp>
 
@@ -546,6 +543,16 @@ BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
 
 #endif /* FEELPP_HAS_OPENMP */
 
+#if !defined( DVLOG_IF )
+
+#ifndef NDEBUG
+#define DVLOG_IF(verboselevel, condition) VLOG(verboselevel)
+#else
+#define DVLOG_IF(verboselevel,condition)                                \
+    (true || ( !VLOG_IS_ON(verboselevel) && !(condition))) ?            \
+    (void) 0 : google::LogMessageVoidify() & LOG(INFO)
+#endif // NDEBUG
+
+#endif // DVLOG_IF
 
 #endif
-

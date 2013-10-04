@@ -166,9 +166,9 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas()
     :
     super1(),
-    _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>, ublas::range() ) ),
-    M_global_values_updated( false ),
-    M_global_values()
+    M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_global_values_updated( false )
+    //M_global_values()
 {
 }
 
@@ -176,32 +176,30 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s )
     :
     super1( __s ),
-    _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>, ublas::range() ) ),
-    M_global_values_updated( false ),
-    M_global_values( __s )
+    M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_global_values_updated( false )
+    //M_global_values( __s )
 {
     this->init( __s, __s, false );
 }
 
 template <typename T, typename Storage>
-VectorUblas<T,Storage>::VectorUblas( DataMap const& dm )
+VectorUblas<T,Storage>::VectorUblas( datamap_ptrtype const& dm )
     :
     super1( dm ),
-    _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>, ublas::range() ) ),
-    M_global_values_updated( false ),
-    M_global_values( dm.nGlobalElements() )
+    M_vec( detail::fake<Storage>( *boost::shared_ptr<ublas::vector<value_type>>( new ublas::vector<value_type> ), ublas::range() ) ),
+    M_global_values_updated( false )
 {
     //this->init( dm.nGlobalElements(), dm.nMyElements(), false );
-    this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
 }
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( size_type __s, size_type __n_local )
     :
     super1( __s, __n_local ),
-    _M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
-    M_global_values_updated( false ),
-    M_global_values( this->size() )
+    M_vec( detail::fake<Storage>( *new ublas::vector<value_type>(), ublas::range() ) ),
+    M_global_values_updated( false )
 {
     this->init( this->size(), this->localSize(), false );
 }
@@ -210,33 +208,30 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( VectorUblas const & m )
     :
     super1( m ),
-    _M_vec( m._M_vec ),
-    M_global_values_updated( m.M_global_values_updated ),
-    M_global_values( m.M_global_values )
+    M_vec( m.M_vec ),
+    M_global_values_updated( m.M_global_values_updated )
 {
-    Debug( 5600 ) << "[VectorUblas] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
-    Debug( 5600 ) << "[VectorUblas] copy constructor with range: size:" << this->vec().size() << "\n";
+    DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->size() << ", start:" << this->start() << "\n";
+    DVLOG(2) << "[VectorUblas] copy constructor with range: size:" << this->vec().size() << "\n";
 }
 
 template <typename T, typename Storage>
-VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type const& range, DataMap const& dm )
+VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, range_type const& range, datamap_ptrtype const& dm )
     :
     super1( dm ),
-    _M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_global_values_updated( false ),
-    M_global_values( range.size() )
+    M_vec( detail::fake<Storage>( m.vec(), range ) ),
+    M_global_values_updated( false )
 {
-    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
-    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
 }
 
 template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, range_type const& range )
     :
     super1( invalid_size_type_value, range.size() ),
-    _M_vec( detail::fake<Storage>( m, range ) ),
-    M_global_values_updated( false ),
-    M_global_values( range.size() )
+    M_vec( detail::fake<Storage>( m, range ) ),
+    M_global_values_updated( false )
 {
     //this->init( m.size(), m.size(), false );
 }
@@ -244,13 +239,13 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( VectorUblas<value_type>& m, slice_type const& range )
     :
     super1( invalid_size_type_value, range.size() ),
-    _M_vec( detail::fake<Storage>( m.vec(), range ) ),
-    M_global_values_updated( false ),
-    M_global_values( range.size() )
+    M_vec( detail::fake<Storage>( m.vec(), range ) ),
+    M_global_values_updated( false )
+    //M_global_values( range.size() )
 {
-    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
-    Debug( 5600 ) << "[VectorUblas] constructor with range: size:" << _M_vec.size() << "\n";
-    this->init( invalid_size_type_value, _M_vec.size(), true );
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << range.size() << ", start:" << range.start() << "\n";
+    DVLOG(2) << "[VectorUblas] constructor with range: size:" << M_vec.size() << "\n";
+    this->init( invalid_size_type_value, M_vec.size(), true );
 
 }
 
@@ -258,9 +253,9 @@ template <typename T, typename Storage>
 VectorUblas<T,Storage>::VectorUblas( ublas::vector<value_type>& m, slice_type const& range )
     :
     super1( invalid_size_type_value, range.size() ),
-    _M_vec( detail::fake<Storage>( m, range ) ),
-    M_global_values_updated( false ),
-    M_global_values( range.size() )
+    M_vec( detail::fake<Storage>( m, range ) ),
+    M_global_values_updated( false )
+    //M_global_values( range.size() )
 {
     //this->init( m.size(), m.size(), false );
 }
@@ -275,14 +270,14 @@ template <typename T, typename Storage>
 void
 VectorUblas<T,Storage>::resize( size_type s, bool preserve )
 {
-    detail::resize( _M_vec, s, preserve );
+    detail::resize( M_vec, s, preserve );
 }
 
 template <typename T, typename Storage>
 size_type
 VectorUblas<T,Storage>::start( ) const
 {
-    return detail::start( _M_vec );
+    return detail::start( M_vec );
 }
 
 template <typename T, typename Storage>
@@ -298,8 +293,8 @@ VectorUblas<T,Storage>::operator= ( const Vector<value_type> &V )
 
     for ( size_type i = 0; i < this->localSize(); ++i )
     {
-        _M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
-        //_M_vec.operator()( i ) = V(  i );
+        M_vec.operator()( i ) = V( V.firstLocalIndex() + i );
+        //M_vec.operator()( i ) = V(  i );
 
     }
 
@@ -326,20 +321,20 @@ VectorUblas<T,Storage>::init ( const size_type n,
     super1::init( n, n_local, fast );
 
     M_global_values_updated = false;
-    M_global_values.resize( this->size() );
+    //M_global_values.resize( this->size() );
 
     // Initialize data structures
-    detail::resize( _M_vec, this->localSize() );
+    detail::resize( M_vec, this->localSize() );
 
     // Set the initialized flag
     this->M_is_initialized = true;
 
-    Debug( 5600 ) << "        global size = " << n << "\n";
-    Debug( 5600 ) << "        global size = " << n_local << "\n";
-    Debug( 5600 ) << "        global size = " << this->size() << "\n";
-    Debug( 5600 ) << "        local  size = " << this->localSize() << "\n";
-    Debug( 5600 ) << "  first local index = " << this->firstLocalIndex() << "\n";
-    Debug( 5600 ) << "   last local index = " << this->lastLocalIndex() << "\n";
+    DVLOG(2) << "        global size = " << n << "\n";
+    DVLOG(2) << "        global size = " << n_local << "\n";
+    DVLOG(2) << "        global size = " << this->size() << "\n";
+    DVLOG(2) << "        local  size = " << this->localSize() << "\n";
+    DVLOG(2) << "  first local index = " << this->firstLocalIndex() << "\n";
+    DVLOG(2) << "   last local index = " << this->lastLocalIndex() << "\n";
 
 
     // Zero the components unless directed otherwise
@@ -350,10 +345,10 @@ VectorUblas<T,Storage>::init ( const size_type n,
 
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::init( DataMap const& dm )
+VectorUblas<T,Storage>::init( datamap_ptrtype const& dm )
 {
     super1::init( dm );
-    this->init( dm.nDof(), dm.nLocalDofWithGhost(), false );
+    this->init( dm->nDof(), dm->nLocalDofWithGhost(), false );
 }
 
 
@@ -369,7 +364,7 @@ template<typename T, typename Storage>
 void
 VectorUblas<T,Storage>::clear()
 {
-    detail::resize( _M_vec, 0, false );
+    detail::resize( M_vec, 0, false );
 }
 
 template<typename T, typename Storage>
@@ -380,7 +375,7 @@ VectorUblas<T,Storage>::close() const
 
 template<typename T, typename Storage>
 void
-VectorUblas<T,Storage>::printMatlab( const std::string filename ) const
+VectorUblas<T,Storage>::printMatlab( const std::string filename, bool renumber ) const
 {
     std::string name = filename;
     std::string separator = " , ";
@@ -396,7 +391,7 @@ VectorUblas<T,Storage>::printMatlab( const std::string filename ) const
         if ( ( unsigned int ) i != filename.size() - 2 ||
                 filename[ i + 1 ] != 'm' )
         {
-            Debug( 5600 ) << "[VectorUblas::printMatlab] adding .m extension to given file name '"
+            DVLOG(2) << "[VectorUblas::printMatlab] adding .m extension to given file name '"
                           << filename << "'\n";
             name = filename + ".m";
         }
@@ -454,7 +449,7 @@ VectorUblas<T,Storage>::localize ( Vector<T>& v_local_in ) const
 
     // Call localize on the vector's values.  This will help
     // prevent code duplication
-    localize ( v_local->_M_vec );
+    localize ( v_local->M_vec );
 
 #ifndef FEELPP_HAS_MPI
 
@@ -545,12 +540,12 @@ VectorUblas<T, Storage>::localize ( ublas::vector<value_type>& v_local ) const
 
         for ( size_type i=0; i< this->localSize(); i++ )
         {
-            v_local_in[i+this->firstLocalIndex()] = _M_vec.operator[]( i );
+            v_local_in[i+this->firstLocalIndex()] = M_vec.operator[]( i );
         }
 
         MPI_Allreduce ( &v_local_in[0], &v_local[0], v_local.size(),
                         MPI_DOUBLE, MPI_SUM, this->comm() );
-        Debug( 5600 ) << "[VectorUblas::localize] Allreduce size = " << v_local.size() << "\n";
+        DVLOG(2) << "[VectorUblas::localize] Allreduce size = " << v_local.size() << "\n";
 
     }
 
@@ -623,8 +618,8 @@ VectorUblas<T,Storage>::checkInvariant() const
     FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
     FEELPP_ASSERT ( this->localSize() <= this->size() )
     ( this->size() )( this->localSize() ).error( "vector invalid size" );
-    FEELPP_ASSERT ( _M_vec.size() == this->localSize() )
-    ( _M_vec.size() )( this->localSize() ).error( "vector invalid size" );
+    FEELPP_ASSERT ( M_vec.size() == this->localSize() )
+    ( M_vec.size() )( this->localSize() ).error( "vector invalid size" );
     FEELPP_ASSERT ( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() )
     ( this->size() )
     ( this->lastLocalIndex() )
@@ -658,7 +653,7 @@ template <typename T, typename Storage>
 typename VectorUblas<T,Storage>::this_type
 VectorUblas<T,Storage>::sqrt() const
 {
-    this_type _tmp( this->map() );
+    this_type _tmp( this->mapPtr() );
 
 #if defined( FEELPP_HAS_TBB )
     tbb::parallel_for( tbb::blocked_range<size_t>( 0, this->localSize() ),
@@ -677,7 +672,7 @@ template <typename T, typename Storage>
 typename VectorUblas<T,Storage>::this_type
 VectorUblas<T,Storage>::pow( int n ) const
 {
-    this_type _out( this->map() );
+    this_type _out( this->mapPtr() );
 
     for ( int i = 0; i < ( int )this->localSize(); ++i )
         _out[i] = math::pow( this->operator[]( i ), n );
@@ -694,7 +689,7 @@ VectorUblas<T,Storage>::dot( Vector<T> const& __v )
     real_type global_in_prod = 0;
     if ( this->comm().size() == 1 )
     {
-        local_in_prod = ublas::inner_prod( _M_vec, v->vec() );
+        local_in_prod = ublas::inner_prod( M_vec, v->vec() );
         global_in_prod = local_in_prod;
     }
     else
@@ -705,7 +700,7 @@ VectorUblas<T,Storage>::dot( Vector<T> const& __v )
         {
             if ( !this->localIndexIsGhost( start + i ) )
             {
-                real_type value1 =   _M_vec.operator()( start + i );
+                real_type value1 =   M_vec.operator()( start + i );
                 real_type value2 = v->vec().operator()( start + i );
                 local_in_prod += value1*value2;
             }

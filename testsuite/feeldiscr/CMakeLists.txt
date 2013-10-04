@@ -1,13 +1,30 @@
-foreach(TEST elementminmax project bdf interpolation integration  integration_ifaces space geomap mixed
-    auto_order_integrate interp_twomesh submesh disc vect_comp operatorinterpolation normal3d aitken
-    form_interpolation integration_opt lift trace
-    form_severaltrialtestmesh hcurl wire_basket solve_leak stencil
-    evaluator element_serialize lambda )
+set_directory_properties(PROPERTIES LABEL testdiscr )
 
-  feelpp_add_test( ${TEST} )
+feelpp_add_test( aitken NO_MPI_TEST )
+feelpp_add_test( bdf )
+feelpp_add_test( disc )
+feelpp_add_test( element )
+feelpp_add_test( elementminmax )
+feelpp_add_test( element_serialize )
+feelpp_add_test( evaluator )
 
-endforeach()
+feelpp_add_test( functionallinearfree )
+feelpp_add_test( geomap )
 
-feelpp_add_test( integration_ho GEO test_integration_ho_geometry.geo )
-# add_executable( test_wirebasket test_wirebasket.cpp )
-# target_link_libraries( test_wirebasket ${FEELPP_LIBRARIES})
+feelpp_add_test( lambda )
+feelpp_add_test( lift )
+feelpp_add_test( lm )
+feelpp_add_test( lowerdim_entity )
+feelpp_add_test( mesh_transfinite CFG test_mesh_transfinite.geocfg GEO test_mesh_transfinite.geo )
+feelpp_add_test( mixed )
+feelpp_add_test( normal3d )
+feelpp_add_test( on_inside )
+
+feelpp_add_test( operatorlinearfree )
+feelpp_add_test( project )
+feelpp_add_test( spaces )
+feelpp_add_test( stencil )
+feelpp_add_test( submesh )
+feelpp_add_test( trace )
+feelpp_add_test( vect_comp )
+feelpp_add_test( wire_basket )

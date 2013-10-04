@@ -120,6 +120,7 @@ public:
 
     typedef Faces<typename Shape::template shape<1,Shape::nOrder,Shape::nRealDim>::type,
                   typename super_elements::element_type> super_faces;
+    typedef typename super_faces::face_iterator face_iterator;
     typedef typename super_faces::faces_type faces_type;
     typedef typename super_faces::face_type face_type;
     typedef face_type edge_type;
@@ -127,6 +128,8 @@ public:
     typedef super_faces super_edges;
     typedef typename super_edges::marker_face_iterator marker_edge_iterator;
     typedef typename super_edges::marker_face_const_iterator marker_edge_const_iterator;
+    typedef typename super_edges::location_face_iterator location_edge_iterator;
+    typedef typename super_edges::location_face_const_iterator location_edge_const_iterator;
 
     typedef Mesh2D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;
@@ -152,7 +155,7 @@ public:
         super_points( worldComm ),
         super_faces( worldComm )
         {
-            Debug(4015) << "[Mesh2D] constructor...\n";
+            DVLOG(2) << "[Mesh2D] constructor...\n";
         }
 
 /**
@@ -281,6 +284,10 @@ public:
  */
 //@{
 
+    face_iterator beginEdge() { return this->beginFace(); }
+    face_iterator endEdge() { return this->endFace(); }
+    faces_type edges() { return this->faces(); }
+
     void setWorldComm( WorldComm const& _worldComm )
         {
             this->setWorldCommMeshBase( _worldComm );
@@ -368,7 +375,7 @@ private:
     void serialize( Archive & ar, const unsigned int version )
         {
             ar & boost::serialization::base_object<super>( *this );
-            Debug(4015) << "Serializing points\n";
+            DVLOG(2) << "Serializing points\n";
             std::string str;
             str = "points";
             ar & str;
@@ -376,12 +383,12 @@ private:
 #if 1
             str = "faces";
             ar & str;
-            Debug(4015) << "Serializing faces\n";
+            DVLOG(2) << "Serializing faces\n";
             ar & boost::serialization::base_object<super_faces>( *this );
 #endif
             str = "elements";
             ar & str;
-            Debug(4015) << "Serializing elements\n";
+            DVLOG(2) << "Serializing elements\n";
             ar & boost::serialization::base_object<super_elements>( *this );
         }
 

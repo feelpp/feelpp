@@ -4,11 +4,10 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
+#should check the version of gcc for -std=c++0x ou -std=c++11
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 --stdlib=libstdc++" )
-  # ensures that boost.signals2 compiles with clang++ >= 3.1
-  add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
 ENDIF()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
@@ -23,8 +22,57 @@ INCLUDE(CheckSymbolExists)
 INCLUDE(CheckCXXSourceCompiles)
 INCLUDE(CheckLibraryExists)
 
+OPTION(FEELPP_ENABLE_SYSTEM_EIGEN3 "enable system eigen3 support" ON)
 
+
+
+OPTION(FEELPP_ENABLE_MOVE_SEMANTICS "enable move semantics(elision)" ON )
+OPTION(FEELPP_ENABLE_INSTANTIATION_MODE "Instantiation mode" ON )
+OPTION(FEELPP_ENABLE_MPI_MODE "Instantiation mode" ON )
+OPTION(FEELPP_ENABLE_SCHED_SLURM "Enable Feel++ slurm submission scripts generation" OFF)
+OPTION(FEELPP_ENABLE_SCHED_CCC "Enable Feel++ tgcc/ccc submission scripts generation" OFF)
+OPTION(FEELPP_ENABLE_SCHED_LOADLEVELER "Enable Feel++ ibm(supermuc) submission scripts generation" OFF)
 OPTION(FEELPP_ENABLE_TBB "enable feel++ TBB support" OFF)
+OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
+OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
+OPTION(FEELPP_ENABLE_EXODUS "enable feel++ Exodus support" OFF)
+if ( APPLE )
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
+else()
+  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
+endif()
+OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
+
+OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
+OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
+
+# enable mpi mode
+IF ( FEELPP_ENABLE_MPI_MODE )
+  SET( FEELPP_ENABLE_MPI_MODE 1 )
+ENDIF()
+
+# disable alignement
+MARK_AS_ADVANCED(FEELPP_DISABLE_EIGEN_ALIGNMENT)
+if ( FEELPP_DISABLE_EIGEN_ALIGNMENT )
+  add_definitions(-DEIGEN_DONT_ALIGN=1 -DEIGEN_DONT_VECTORIZE=1)
+  message(STATUS "Disabling alignment and vectorisation in Feel++/Eigen")
+endif()
+
+
+# enable move semantics
+MARK_AS_ADVANCED(FEELPP_ENABLE_MOVE_SEMANTICS)
+IF ( FEELPP_ENABLE_MOVE_SEMANTICS )
+  SET( BOOST_UBLAS_MOVE_SEMANTICS 1 CACHE STRING "Enable Boost Ublas move semantics" FORCE )
+  ADD_DEFINITIONS( -DBOOST_UBLAS_MOVE_SEMANTICS )
+ENDIF( FEELPP_ENABLE_MOVE_SEMANTICS )
+
+# enable instantiation
+MARK_AS_ADVANCED(FEELPP_ENABLE_INSTANTIATION_MODE)
+IF ( FEELPP_ENABLE_INSTANTIATION_MODE )
+  SET( FEELPP_INSTANTIATION_MODE 1 )
+ENDIF()
+SET(FEELPP_MESH_MAX_ORDER "5" CACHE STRING "maximum geometrical order in templates to instantiate" )
+
 if ( FEELPP_ENABLE_TBB )
   FIND_PACKAGE(TBB)
   IF ( TBB_FOUND )
@@ -42,11 +90,11 @@ if ( APPLE )
     set(MPI_COMPILER /opt/local/lib/openmpi/bin/mpic++)
   endif()
 
-#  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
+  #  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
   MESSAGE(STATUS "Use mpi compiler ${MPI_COMPILER}")
 
 endif( APPLE )
-FIND_PACKAGE(MPI)
+FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
   SET( FEELPP_HAS_MPI 1 )
@@ -74,12 +122,7 @@ ELSE ()
   CHECK_FUNCTION_EXISTS (dlopen FEELPP_HAS_DLOPEN)
 ENDIF (FEELPP_HAS_LIBDL)
 
-#
-# Xml2
-#
-FIND_PACKAGE(LibXml2 REQUIRED)
-SET(FEELPP_LIBRARIES  ${LIBXML2_LIBRARIES} ${FEELPP_LIBRARIES})
-INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
+
 #
 # Blas and Lapack
 #
@@ -97,22 +140,39 @@ if (APPLE)
   ENDIF()
   FIND_PACKAGE(LAPACK )
 else (APPLE)
-        FIND_PACKAGE(LAPACK REQUIRED)
+  FIND_PACKAGE(LAPACK REQUIRED)
 endif (APPLE)
 SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
 
 FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization)
+if(Boost_FOUND)
+  IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
+    add_definitions(-DBOOST_RESULT_OF_USE_TR1)
+    message(STATUS "added -DBOOST_RESULT_OF_USE_TR1" )
+  ENDIF()
+  IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    # ensures that boost.signals2 compiles with clang++ >= 3.1
+    IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "52")
+      add_definitions(-DBOOST_NO_CXX11_VARIADIC_TEMPLATES)
+      message(STATUS "added -DBOOST_NO_CXX11_VARIADIC_TEMPLATES" )
+    ELSE()
+      add_definitions(-DBOOST_NO_VARIADIC_TEMPLATES)
+      message(STATUS "added -DBOOST_NO_VARIADIC_TEMPLATES" )
+    ENDIF()
+  ENDIF()
+endif()
+
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51")
+set(Boost_ADDITIONAL_VERSIONS "1.39" "1.40" "1.41" "1.42" "1.43" "1.44" "1.45" "1.46" "1.47" "1.48" "1.49" "1.50" "1.51" "1.52" "1.53")
 set( BOOST_PARAMETER_MAX_ARITY 20 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
 if (BOOST_ENABLE_TEST_DYN_LINK)
-    add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_TEST_DYN_LINK -DBOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION})
+  add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_TEST_DYN_LINK -DBOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION})
 else (BOOST_ENABLE_TEST_DYN_LINK)
-    add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION})
+  add_definitions( -DBOOST_PARAMETER_MAX_ARITY=${BOOST_PARAMETER_MAX_ARITY} -DBOOST_FILESYSTEM_VERSION=${BOOST_FILESYSTEM_VERSION})
 endif (BOOST_ENABLE_TEST_DYN_LINK)
 
 # this fix an issue with boost filesystem: boost is usually no compiled with
@@ -121,7 +181,9 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 # generate different c++ codes and undefined references at link time.
 # in a short future, this should not be necessary anymore
 ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
-
+IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
+  ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+endif()
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
 
@@ -139,35 +201,41 @@ INCLUDE_DIRECTORIES(BEFORE contrib/)
 #  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GINAC" )
 #ENDIF()
 
-add_definitions(-DIN_GINAC -DHAVE_LIBDL)
-include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
-SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
-set(DL_LIBS ${CMAKE_DL_LIBS})
-add_subdirectory(contrib/ginac)
+add_definitions(-DHAVE_LIBDL)
+# cln and ginac
+if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+  add_definitions(-DIN_GINAC -DHAVE_LIBDL)
+  include_directories(${FEELPP_BUILD_DIR}/contrib/cln/include ${FEELPP_SOURCE_DIR}/contrib/ginac/ ${FEELPP_BUILD_DIR}/contrib/ginac/ ${FEELPP_SOURCE_DIR}/contrib/ginac/ginac ${FEELPP_BUILD_DIR}/contrib/ginac/ginac )
+  SET(FEELPP_LIBRARIES feelpp_ginac ${CLN_LIBRARIES} ${FEELPP_LIBRARIES} ${CMAKE_DL_LIBS} )
+  set(DL_LIBS ${CMAKE_DL_LIBS})
+  add_subdirectory(contrib/ginac)
+endif()
+
+if ( FEELPP_ENABLE_EXODUS )
+  include_directories(${FEELPP_SOURCE_DIR}/contrib/exodus-5.24/exodus/cbind/include/)
+  add_subdirectory(contrib/exodus-5.24/exodus)
+  #add_subdirectory(contrib/exodus-5.24/nemesis)
+  set(FEELPP_HAS_EXODUS 1)
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Exodus" )
+endif()
 
 #
 # Eigen
 #
-if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
+if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
+FIND_PACKAGE(Eigen3)
+endif()
+if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/contrib )
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
   set(EIGEN_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/feel)
   add_subdirectory(contrib/eigen)
   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/eigen )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/Contrib" )
+elseif( EIGEN3_FOUND )
+  INCLUDE_DIRECTORIES( ${EIGEN3_INCLUDE_DIR} )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Eigen3/System" )
 endif()
-
-#
-# Gmm
-#
-FIND_PACKAGE(GMM)
-IF(GMM_FOUND)
-   MESSAGE(STATUS "Using built-in gmm")
-   include_directories(${GMM_INCLUDE_DIR})
-ELSE()
-   MESSAGE(STATUS "Using contrib/gmm headers")
-   FILE(GLOB files "contrib/gmm/include/*.h")
-   #add_subdirectory(contrib/gmm)
-   INCLUDE_DIRECTORIES( ${FEELPP_SOURCE_DIR}/contrib/gmm )
-ENDIF()
+message(STATUS "Eigen3: ${EIGEN3_INCLUDE_DIR}" )
 
 #FIND_PACKAGE(Eigen2 REQUIRED)
 #INCLUDE_DIRECTORIES( ${Eigen2_INCLUDE_DIR} )
@@ -186,7 +254,7 @@ ENDIF()
 FIND_PACKAGE(Metis)
 if ( METIS_FOUND )
   INCLUDE_DIRECTORIES(${METIS_INCLUDE_DIR})
-#  LINK_DIRECTORIES(${METIS_LIBRARIES})
+  #  LINK_DIRECTORIES(${METIS_LIBRARIES})
   SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Metis" )
 endif( METIS_FOUND )
@@ -214,20 +282,27 @@ if ( GLPK_FOUND )
 endif()
 
 # google perf tools
-if (APPLE)
-  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" OFF)
-else()
-  option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" ON)
-endif()
+option(FEELPP_ENABLE_GOOGLEPERFTOOLS "Enable Google Perf Tools (tcmalloc, stracktrace and profiler)" OFF)
 if ( FEELPP_ENABLE_GOOGLEPERFTOOLS )
   find_package(GooglePerfTools)
   if ( GOOGLE_PERFTOOLS_FOUND )
+    set(FEELPP_HAS_GPERFTOOLS 1 )
     message(STATUS "Google PerfTools: ${TCMALLOC_LIBRARIES} ${STACKTRACE_LIBRARIES} ${PROFILER_LIBRARIES}")
     include_directories(${GOOGLE_PERFTOOLS_INCLUDE_DIR})
-    SET(FEELPP_LIBRARIES ${TCMALLOC_LIBRARIES} ${FEELPP_LIBRARIES})
+    SET(FEELPP_LIBRARIES  ${FEELPP_LIBRARIES} ${TCMALLOC_LIBRARIES})
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GooglePerfTools" )
   endif()
 endif( FEELPP_ENABLE_GOOGLEPERFTOOLS )
+
+option(FEELPP_ENABLE_DDT "Enable DDT support" OFF)
+if ( FEELPP_ENABLE_DDT )
+  find_package(DDT)
+  if ( DDT_FOUND )
+    message(STATUS "DDT: ${DDT_LIBRARIES}")
+    SET(FEELPP_LIBRARIES  ${FEELPP_LIBRARIES} ${DDT_LIBRARIES})
+    SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} DDT" )
+  endif()
+endif( FEELPP_ENABLE_DDT )
 
 # google gflags
 find_package(GFLAGS REQUIRED)
@@ -235,152 +310,163 @@ find_package(GFLAGS REQUIRED)
 INCLUDE_DIRECTORIES( ${GFLAGS_INCLUDE_DIR} )
 
 SET(FEELPP_LIBRARIES ${GFLAGS_LIBRARIES} ${FEELPP_LIBRARIES})
-SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS" )
+if ( ${GFLAGS_INCLUDE_DIR} MATCHES "/contrib/" )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS/Contrib" )
+else()
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GFLAGS/System" )
+endif()
 
 # google glog
 find_package(GLOG REQUIRED)
 
 INCLUDE_DIRECTORIES( ${GLOG_INCLUDE_DIR} )
 SET(FEELPP_LIBRARIES ${GLOG_LIBRARIES} ${FEELPP_LIBRARIES})
-SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG" )
-
-
-#
-# MATHEVAL
-#
-option(FEELPP_ENABLE_MATHEVAL "Enable Matheval support" ON)
-FIND_PACKAGE(MATHEVAL)
-if( MATHEVAL_FOUND )
-  MESSAGE(STATUS "Using built-in libmatheval")
+if ( ${GLOG_INCLUDE_DIR} MATCHES "/contrib/" )
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG/Contrib" )
 else()
-  MESSAGE(STATUS "Using contrib/libmatheval")
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} GLOG/System" )
 endif()
-
-IF(FEELPP_ENABLE_MATHEVAL)
-  SET(FEELPP_HAS_MATHEVAL_H 1)
-  INCLUDE_DIRECTORIES( ${MATHEVAL_INCLUDE_DIR} )
-  SET(FEELPP_LIBRARIES ${MATHEVAL_LIBRARIES} ${FEELPP_LIBRARIES})
-  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} MATHEVAL" )
-ENDIF()
 
 
 # xml
 find_package(LibXml2 2.6.27)
 
-# Python
+# Python libs
 FIND_PACKAGE(PythonLibs)
 if ( PYTHONLIBS_FOUND )
-   message(STATUS "PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
-   include_directories(${PYTHON_INCLUDE_DIRS})
-#   SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
-   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
+  message(STATUS "PythonLibs: ${PYTHON_INCLUDE_DIRS} ${PYTHON_LIBRARIES}")
+  include_directories(${PYTHON_INCLUDE_DIRS})
+  #   SET(FEELPP_LIBRARIES ${PYTHON_LIBRARIES} ${FEELPP_LIBRARIES})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Python" )
 endif()
 
+#
+# Python interp
+#
+FIND_PACKAGE(PythonInterp REQUIRED)
+if(PYTHONINTERP_FOUND)
+  execute_process(COMMAND
+	${PYTHON_EXECUTABLE}
+	-c "import sys; print sys.version[0:3]"
+	OUTPUT_VARIABLE PYTHON_VERSION
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  message(STATUS "Found python version ${PYTHON_VERSION}")
+endif()
+
+# metis
 FIND_LIBRARY(METIS_LIBRARY
-    NAMES
-    metis
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-#    "/opt/local/lib"
-)
+  NAMES
+  metis
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  #    "/opt/local/lib"
+  )
 message(STATUS "Metis: ${METIS_LIBRARY}" )
 IF( METIS_LIBRARY )
- SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
+  SET(FEELPP_LIBRARIES ${METIS_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
 FIND_LIBRARY(PARMETIS_LIBRARY
-    NAMES
-    parmetis
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-)
+  NAMES
+  parmetis
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  )
 
 
 IF( PARMETIS_LIBRARY )
-message(STATUS "Parmetis: ${PARMETIS_LIBRARY}" )
-SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
+  message(STATUS "Parmetis: ${PARMETIS_LIBRARY}" )
+  SET(FEELPP_LIBRARIES ${PARMETIS_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
 FIND_LIBRARY(PTSCOTCHERREXIT_LIBRARY
-    NAMES
-    ptscotcherrexit
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    /opt/local/lib/petsc/lib
-    $ENV{PTSCOTCH_DIR}/lib
-)
+  NAMES
+  ptscotcherrexit
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  /opt/local/lib/petsc/lib
+  $ENV{PTSCOTCH_DIR}/lib
+  )
 message(STATUS "PTScotcherrexit: ${PTSCOTCHERREXIT_LIBRARY}" )
 IF( PTSCOTCHERREXIT_LIBRARY )
-#message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
-SET(FEELPP_LIBRARIES ${PTSCOTCHERREXIT_LIBRARY} ${FEELPP_LIBRARIES})
+  #message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
+  SET(FEELPP_LIBRARIES ${PTSCOTCHERREXIT_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
 FIND_LIBRARY(PTSCOTCHERR_LIBRARY
-    NAMES
-    ptscotcherr
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    /opt/local/lib/petsc/lib
-    $ENV{PTSCOTCH_DIR}/lib
-)
+  NAMES
+  ptscotcherr
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  /opt/local/lib/petsc/lib
+  $ENV{PTSCOTCH_DIR}/lib
+  )
 message(STATUS "PTScotcherr: ${PTSCOTCHERR_LIBRARY}" )
 IF( PTSCOTCHERR_LIBRARY )
-#message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
-SET(FEELPP_LIBRARIES ${PTSCOTCHERR_LIBRARY} ${FEELPP_LIBRARIES})
+  #message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
+  SET(FEELPP_LIBRARIES ${PTSCOTCHERR_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
 FIND_LIBRARY(PTSCOTCH_LIBRARY
-    NAMES
-    ptscotch
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    /opt/local/lib/petsc/lib
-    $ENV{PTSCOTCH_DIR}/lib
-)
+  NAMES
+  ptscotch
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  /opt/local/lib/petsc/lib
+  $ENV{PTSCOTCH_DIR}/lib
+  )
 message(STATUS "PTScotch: ${PTSCOTCH_LIBRARY}" )
 
 IF( PTSCOTCH_LIBRARY )
-SET(FEELPP_LIBRARIES ${PTSCOTCH_LIBRARY} ${FEELPP_LIBRARIES})
+  SET(FEELPP_LIBRARIES ${PTSCOTCH_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
 FIND_LIBRARY(PTESMUMPS_LIBRARY
-    NAMES
-    ptesmumps
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    /opt/local/lib/petsc/lib
-)
+  NAMES
+  ptesmumps
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  /opt/local/lib/petsc/lib
+  )
 message(STATUS "PTESMUMPS: ${PTESMUMPS_LIBRARY}" )
 IF( PTESMUMPS_LIBRARY )
-SET(FEELPP_LIBRARIES ${PTESMUMPS_LIBRARY} ${FEELPP_LIBRARIES})
+  set( FEELPP_HAS_MUMPS 1 )
+  SET(FEELPP_LIBRARIES ${PTESMUMPS_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
 
 
 FIND_LIBRARY(ML_LIBRARY
-    NAMES
-    ml
-    PATHS
-    $ENV{PETSC_DIR}/lib
-)
+  NAMES
+  ml
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  )
 message(STATUS "ML: ${ML_LIBRARY}" )
 IF ( ML_LIBRARY )
-SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
+  SET(FEELPP_LIBRARIES ${ML_LIBRARY} ${FEELPP_LIBRARIES})
 ENDIF()
-FIND_LIBRARY(GFORTRAN_LIBRARY
+
+if ( NOT GFORTRAN_LIBRARY )
+  FIND_LIBRARY(GFORTRAN_LIBRARY
     NAMES
     gfortran
     PATHS
-    "/opt/local/lib"
-    "/usr/lib/gcc/x86_64-linux-gnu/"
+    $ENV{LIBRARY_PATH}
+    /opt/local/lib
+    /usr/lib/gcc/x86_64-linux-gnu/
     PATH_SUFFIXES
     gcc47 gcc46 gcc45 gcc44 4.7 4.6 4.5 4.4
-)
+    )
+endif()
+
+message(STATUS "gfortran lib: ${GFORTRAN_LIBRARY} ")
 if ( GFORTRAN_LIBRARY )
   set( FEELPP_LIBRARIES ${GFORTRAN_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
@@ -390,57 +476,57 @@ if ( GFORTRAN_LIBRARY AND MUMPS_FOUND )
   set( FEELPP_LIBRARIES ${MUMPS_LIBRARIES} ${FEELPP_LIBRARIES} )
 endif()
 FIND_LIBRARY(SUITESPARSECONFIG_LIBRARY
-    NAMES
-    suitesparseconfig
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-)
+  NAMES
+  suitesparseconfig
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  $ENV{SUITESPARSE_DIR}/lib
+  )
 IF ( SUITESPARSECONFIG_LIBRARY )
   SET(FEELPP_LIBRARIES  ${SUITESPARSECONFIG_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
 FIND_LIBRARY(AMD_LIBRARY
-    NAMES
-    amd
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-)
+  NAMES
+  amd
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  $ENV{SUITESPARSE_DIR}/lib
+  )
 IF ( AMD_LIBRARY )
   SET(FEELPP_LIBRARIES  ${AMD_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
 
 FIND_LIBRARY(COLAMD_LIBRARY
-    NAMES
-    colamd
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-)
+  NAMES
+  colamd
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  $ENV{SUITESPARSE_DIR}/lib
+  )
 IF ( COLAMD_LIBRARY )
   SET(FEELPP_LIBRARIES  ${COLAMD_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
 
 FIND_LIBRARY(CHOLMOD_LIBRARY
-    NAMES
-    cholmod
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-)
+  NAMES
+  cholmod
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  $ENV{SUITESPARSE_DIR}/lib
+  )
 
 FIND_LIBRARY(UMFPACK_LIBRARY
-    NAMES
-    umfpack
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-)
+  NAMES
+  umfpack
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  $ENV{SUITESPARSE_DIR}/lib
+  )
 message(STATUS "SuiteSparseConfig: ${SUITESPARSECONFIG_LIBRARY}" )
 message(STATUS "Amd: ${AMD_LIBRARY}" )
 message(STATUS "ColAmd: ${COLAMD_LIBRARY}" )
@@ -451,26 +537,26 @@ if ( AMD_LIBRARY AND CHOLMOD_LIBRARY AND UMFPACK_LIBRARY )
 endif()
 
 FIND_LIBRARY(YAML_LIBRARY
-    NAMES
-    yaml
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-    /opt/local/lib
-)
+  NAMES
+  yaml
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  $ENV{SUITESPARSE_DIR}/lib
+  /opt/local/lib
+  )
 if ( YAML_LIBRARY )
   SET(FEELPP_LIBRARIES ${YAML_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
 FIND_LIBRARY(HDF5_LIBRARY
-    NAMES
-    hdf5
-    PATHS
-    $ENV{PETSC_DIR}/lib
-    $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
-    $ENV{SUITESPARSE_DIR}/lib
-    /opt/local/lib
-)
+  NAMES
+  hdf5
+  PATHS
+  $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  $ENV{SUITESPARSE_DIR}/lib
+  /opt/local/lib
+  )
 if ( HDF5_LIBRARY )
   SET(FEELPP_LIBRARIES ${HDF5_LIBRARY} ${FEELPP_LIBRARIES})
 endif()
@@ -496,8 +582,8 @@ endif( PETSC_FOUND )
 #
 FIND_LIBRARY(PARPACK_LIBRARY NAMES parpack)
 if (PARPACK_LIBRARY)
-    SET(PARPACK_LIBRARIES ${PARPACK_LIBRARY})
-    SET(FEELPP_LIBRARIES ${PARPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+  SET(PARPACK_LIBRARIES ${PARPACK_LIBRARY})
+  SET(FEELPP_LIBRARIES ${PARPACK_LIBRARIES} ${FEELPP_LIBRARIES})
 endif()
 MARK_AS_ADVANCED( PARPACK_LIBRARY )
 
@@ -505,7 +591,6 @@ MARK_AS_ADVANCED( PARPACK_LIBRARY )
 #
 # SLEPc
 #
-OPTION(FEELPP_ENABLE_SLEPC "enable feel++ SLEPc support" ON)
 if (FEELPP_ENABLE_SLEPC)
   FIND_PACKAGE( SLEPc )
   if ( SLEPC_FOUND )
@@ -520,9 +605,8 @@ endif(FEELPP_ENABLE_SLEPC)
 #
 # Trilinos
 #
-OPTION(FEELPP_ENABLE_TRILINOS "enable feel++ Trilinos support" OFF)
 if (FEELPP_ENABLE_TRILINOS)
-FIND_PACKAGE(Trilinos)
+  FIND_PACKAGE(Trilinos)
   if ( TRILINOS_FOUND )
     INCLUDE_DIRECTORIES(${TRILINOS_INCLUDE_DIR})
     SET(FEELPP_LIBRARIES ${TRILINOS_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -534,18 +618,14 @@ endif (FEELPP_ENABLE_TRILINOS)
 #
 # OpenTURNS
 #
-if ( APPLE )
-  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" OFF)
-else()
-  OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
-endif()
 IF ( FEELPP_ENABLE_OPENTURNS )
   FIND_PACKAGE( OpenTURNS )
   if ( OPENTURNS_FOUND )
     MESSAGE(STATUS "OpenTURNS Libraries: ${OpenTURNS_LIBRARIES}")
     MESSAGE(STATUS "OpenTURNS Headers: ${OpenTURNS_INCLUDE_DIRS}")
     INCLUDE_DIRECTORIES(${OpenTURNS_INCLUDE_DIRS})
-    SET(FEELPP_LIBRARIES ${OpenTURNS_LIBRARIES} ${FEELPP_LIBRARIES})
+    #SET(FEELPP_LIBRARIES ${OpenTURNS_LIBRARIES} ${FEELPP_LIBRARIES})
+    # now OpenTURNS_LIBRARIES are used in crb_add_python_module
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} OpenTURNS" )
   endif( OPENTURNS_FOUND )
 endif()
@@ -566,7 +646,6 @@ endif()
 #
 # Octave
 #
-OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 if ( FEELPP_ENABLE_OCTAVE )
   FIND_PACKAGE(Octave)
   if ( OCTAVE_FOUND )
@@ -609,16 +688,16 @@ FIND_PACKAGE(Gmsh REQUIRED)
 if ( GMSH_FOUND )
   ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
   if ( GL2PS_LIBRARY )
-   if ( GL_LIBRARY )
-     SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
-   else()
-     SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
-   endif()
- else()
-   SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${FEELPP_LIBRARIES})
- endif()
- include_directories(${GMSH_INCLUDE_DIR})
- SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
+    if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
+      SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${GL_LIBRARY} ${FEELPP_LIBRARIES})
+    else()
+      SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${GL2PS_LIBRARY} ${FEELPP_LIBRARIES})
+    endif()
+  else()
+    SET(FEELPP_LIBRARIES ${GMSH_LIBRARY} ${FEELPP_LIBRARIES})
+  endif()
+  include_directories(${GMSH_INCLUDE_DIR})
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmsh" )
 endif()
 
 
@@ -626,36 +705,42 @@ endif()
 # if Feel++ has been installed on the system
 #
 if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib )
-  FIND_PATH(FEELPP_INCLUDE_DIR feelconfig.h  PATHS /usr/include/feel /usr/lib/feel/include /opt/feel/include /usr/ljk/include/feel /usr/local  )
+  include(feelpp.macros)
+  FIND_PATH(FEELPP_INCLUDE_DIR feel/feelconfig.h  PATHS $ENV{FEELPP_DIR}/include/ /usr/include /opt/local/include PATH_SUFFIXES feel )
 
-  FIND_LIBRARY(FEELPP_LIBRARY feel++ PATHS /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  #  FIND_LIBRARY(FEELPP_GFLAGS_LIBRARY feelpp_gflags PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  #  FIND_LIBRARY(FEELPP_GLOG_LIBRARY feelpp_glog PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  #  FIND_LIBRARY(FEELPP_CLN_LIBRARY feelpp_cln PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_GINAC_LIBRARY feelpp_ginac PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
+  FIND_LIBRARY(FEELPP_LIBRARY feelpp PATHS $ENV{FEELPP_DIR}/lib /usr/lib /usr/lib/feel/lib /opt/feel/lib /usr/ljk/lib )
 
-  INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} )
+  INCLUDE_DIRECTORIES ( ${FEELPP_INCLUDE_DIR} ${FEELPP_INCLUDE_DIR}/feel )
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (Feel DEFAULT_MSG
     FEELPP_INCLUDE_DIR  FEELPP_LIBRARY
     )
 
 
 
- if ( FEELPP_FOUND )
+  if ( FEELPP_FOUND )
     message(STATUS "Feel++ includes: ${FEELPP_INCLUDE_DIR}")
     message(STATUS "Feel++ library: ${FEELPP_LIBRARY}")
   endif()
 
   MARK_AS_ADVANCED(
-  FEELPP_INCLUDE_DIR
-  FEELPP_LIBRARY
-  )
+    FEELPP_INCLUDE_DIR
+    FEELPP_LIBRARY
+    )
+  SET(FEELPP_LIBRARIES ${FEELPP_LIBRARY} ${FEELPP_GINAC_LIBRARY}  ${FEELPP_LIBRARIES})
 else()
-  message(STATUS "we work within Feel++ sources")
   INCLUDE_DIRECTORIES (
     ${FEELPP_BUILD_DIR}/
     ${FEELPP_SOURCE_DIR}/
     ${FEELPP_SOURCE_DIR}/contrib/gmm/include
     )
+  SET(FEELPP_LIBRARIES feelpp  ${FEELPP_LIBRARIES})
 endif()
 
-SET(FEELPP_LIBRARIES feel++  ${FEELPP_LIBRARIES})
+
 
 LINK_DIRECTORIES(
   ${VTK_LIBRARY_DIRS}
