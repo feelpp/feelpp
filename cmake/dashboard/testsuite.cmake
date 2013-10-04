@@ -297,14 +297,14 @@ foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
   set_property(GLOBAL PROPERTY SubProject ${subproject})
   set_property(GLOBAL PROPERTY Label ${subproject})
 
-  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}")
+  ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
   # Submit results to a dashboard server.
   ctest_submit(PARTS Configure)
 
   message(WARNING "build target "${subproject})
   #set(CTEST_BUILD_TARGET “${subproject}”)
   set(CTEST_BUILD_TARGET ${subproject})
-  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  )
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}"  APPEND)
   ctest_submit(PARTS Build)
 
   message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
