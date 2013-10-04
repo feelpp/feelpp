@@ -22,7 +22,7 @@ support for continuous and discontinuous Galerkin methods and in particular
 approximations in \f$L^2\f$, \f$H^1\f$-conforming and \f$H^1\f$-nonconforming, \f$H^2\f$,
 \f$H(\mathrm{div})\f$ and \f$H(\mathrm{curl})\f$\footnote{At the time of writing, \f$H^2\f$,
 \f$H(\mathrm{div})\f$ and \f$H(\mathrm{curl})\f$ approximations are in experimental
-support.}.
+support.
 
 \code
  // space of continuous piecewise
