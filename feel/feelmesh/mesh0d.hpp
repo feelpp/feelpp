@@ -61,7 +61,7 @@
 namespace Feel
 {
 /**
- * \class Mesh0d
+ * 
  * \brief 0D mesh class
  *
  * \code

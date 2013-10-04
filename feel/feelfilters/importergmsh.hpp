@@ -41,9 +41,170 @@
 #include <feel/feelfilters/gmshenums.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+// Gmsh
+#include <GModel.h>
+#include <MElement.h>
+
+// from Gmsh
+void SwapBytes(char *array, int size, int n);
 
 namespace Feel
 {
+namespace detail
+{
+class GMSHPoint
+{
+public:
+    Eigen::Vector3d x;
+    Eigen::Vector2d uv;
+    int id;
+    bool onbdy;
+    bool parametric;
+    int gdim,gtag;
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    GMSHPoint()
+        :
+        x( Eigen::Vector3d::Zero() ),
+        uv( Eigen::Vector2d::Zero() ),
+        id( 0 ),
+        onbdy( false ),
+        parametric( false ),
+        gdim( 0 ),
+        gtag( 0 )
+        {}
+    GMSHPoint(GMSHPoint const& p )
+        :
+        x( p.x ),
+        uv( p.uv ),
+        id ( p.id ),
+        onbdy( p.onbdy ),
+        parametric( p.parametric ),
+        gdim( p.gdim ),
+        gtag( p.gtag )
+        {}
+};
+struct GMSHElement
+{
+    GMSHElement()
+        :
+        num( 0 ),
+        type( MSH_PNT ),
+        physical( 0 ),
+        elementary( 0 ),
+        numPartitions( 1 ),
+        partition( 0 ),
+        ghosts(),
+        is_on_processor( false ),
+        is_ghost( false ),
+        ghost_partition_id( -1 ),
+        parent( 0 ),
+        dom1(0), dom2(0),
+        numVertices(0),
+        indices()
+        {}
+
+    GMSHElement( int n,
+                 int t,
+                 int p,
+                 int e,
+                 int _numPartitions,
+                 int _partition,
+                 std::vector<int> const& _ghosts,
+                 int _parent,
+                 int _dom1, int _dom2,
+                 int _numVertices,
+                 std::vector<int> const& _indices,
+                 int worldcommrank,int worldcommsize)
+    :
+        num( n ),
+        type( t ),
+        physical( p ),
+        elementary( e ),
+        numPartitions( _numPartitions ),
+        partition( _partition ),
+        ghosts( _ghosts ),
+        is_on_processor( false ),
+        is_ghost( false ),
+        ghost_partition_id( partition ),
+        parent( _parent ),
+        dom1(_dom1), dom2(_dom2),
+        numVertices( _numVertices ),
+        indices( _indices )
+        {
+            if ( worldcommsize == 1 )
+            {
+                is_on_processor = true;
+                is_ghost = false;
+            }
+            else if ( worldcommrank == partition )
+            {
+                is_on_processor = true;
+                is_ghost = false;
+            }
+            else
+            {
+                // is the element a ghost cell
+                // look into ghosts if 'partition' is present
+                auto it = std::find( ghosts.begin(), ghosts.end(), worldcommrank );
+                if ( it != ghosts.end() )
+                {
+                    is_on_processor = true;
+                    is_ghost = true;
+                    ghost_partition_id = partition;
+                }
+            }
+        }
+
+   GMSHElement( GMSHElement const& g )
+    :
+        num( g.num ),
+        type( g.type ),
+        physical( g.physical ),
+        elementary( g.elementary ),
+        numPartitions( g.numPartitions ),
+        partition( g.partition ),
+        ghosts( g.ghosts ),
+        is_on_processor( g.is_on_processor ),
+        is_ghost( g.is_ghost ),
+        ghost_partition_id( g.ghost_partition_id ),
+        parent( g.parent ),
+        dom1( g.dom1 ), dom2( g.dom2 ),
+        numVertices( g.numVertices ),
+        indices( g.indices )
+        {}
+
+    bool isOnProcessor() const { return is_on_processor; }
+    bool isGhost() const { return is_ghost; }
+    int ghostPartitionId() const { return ghost_partition_id; }
+
+    template<typename IteratorBegin,typename IteratorEnd>
+    bool isIgnored(IteratorBegin it, IteratorEnd en ) const { return std::find( it, en, physical ) != en; }
+
+    int num;
+    int type;
+    int physical;
+    int elementary;
+
+    //! partitioning info
+    int numPartitions;
+    int partition;
+    std::vector<int> ghosts;
+    bool is_on_processor;
+    bool is_ghost;
+    int ghost_partition_id;
+
+    int parent;
+    int dom1, dom2;
+
+    // vertices
+    int numVertices;
+    std::vector<int> indices;
+
+
+};
+}
 /**
  * \class ImporterGmsh
  * \brief gmsh importer class
@@ -118,7 +279,7 @@ public:
     ImporterGmsh( WorldComm const& _worldcomm = Environment::worldComm() )
         :
         super( GMSH, _worldcomm ),
-        _M_version( FEELPP_GMSH_FORMAT_VERSION ),
+        M_version( FEELPP_GMSH_FORMAT_VERSION ),
         M_use_elementary_region_as_physical_region( false )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
@@ -129,7 +290,7 @@ public:
                            WorldComm const& _worldcomm = Environment::worldComm() )
         :
         super( _fname, GMSH, _worldcomm ),
-        _M_version( _version ),
+        M_version( _version ),
         M_use_elementary_region_as_physical_region( false )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
@@ -138,10 +299,10 @@ public:
     ImporterGmsh( ImporterGmsh const & i )
         :
         super( i ),
-        _M_version( i._M_version ),
+        M_version( i.M_version ),
         M_use_elementary_region_as_physical_region( false ),
-        _M_ignorePhysicalGroup( i._M_ignorePhysicalGroup ),
-        _M_ignorePhysicalName( i._M_ignorePhysicalName )
+        M_ignorePhysicalGroup( i.M_ignorePhysicalGroup ),
+        M_ignorePhysicalName( i.M_ignorePhysicalName )
     {
         this->setIgnorePhysicalName( "FEELPP_GMSH_PHYSICALNAME_IGNORED" );
         //showMe();
@@ -167,7 +328,7 @@ public:
      */
     std::string version() const
     {
-        return _M_version;
+        return M_version;
     }
 
     /**
@@ -184,16 +345,16 @@ public:
 
     void setVersion( std::string const& version )
     {
-        _M_version = version;
+        M_version = version;
     }
 
     void setIgnorePhysicalGroup( int i )
     {
-        _M_ignorePhysicalGroup.insert( i );
+        M_ignorePhysicalGroup.insert( i );
     }
     void setIgnorePhysicalName( std::string s )
     {
-        _M_ignorePhysicalName.insert( s );
+        M_ignorePhysicalName.insert( s );
     }
 
     //@}
@@ -214,38 +375,41 @@ protected:
 
 private:
 
-    void addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel );
-    void addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<1> );
-    void addPoint( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> const&/*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<2> );
-    void addPoint( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> const&/*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    void addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
+    void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<2> );
+    void addPoint( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel );
-    void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<1> );
-    void addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<2> );
-    void addEdge( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> const& /*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> );
+    void addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
+    void addEdge( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel );
-    void addFace( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> const& /*tag*/, GMSH_ENTITY /*type*/, int & /*__idGmshToFeel*/, mpl::int_<1> );
-    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<2> );
-    void addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> );
+    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    void addFace( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/, mpl::int_<1> );
+    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> );
+    void addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> );
 
-    void addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel );
-    void addVolume( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> const& /*tag*/, GMSH_ENTITY,int & /*__idGmshToFeel*/ , mpl::int_<1> );
-    void addVolume( mesh_type* /*mesh*/, std::vector<int> const& /*__e*/, std::vector<int> const& /*tag*/, GMSH_ENTITY,int & /*__idGmshToFeel*/ , mpl::int_<2> );
-    void addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & /*__idGmshToFeel*/, mpl::int_<3> );
+    void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel );
+    void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<1> );
+    void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<2> );
+    void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void updateGhostCellInfo( mesh_type* mesh, std::vector<int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt );
+    void updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt );
 
 
 private:
 
-    std::string _M_version;
-    std::vector<int> _M_n_vertices;
-    std::vector<int> _M_n_b_vertices;
+    std::string M_version;
+    std::map<int,int> M_n_vertices;
+    //std::vector<int> M_n_b_vertices;
 
-    std::set<int> _M_ignorePhysicalGroup;
-    std::set<std::string> _M_ignorePhysicalName;
+    std::set<int> M_ignorePhysicalGroup;
+    std::set<std::string> M_ignorePhysicalName;
     bool M_use_elementary_region_as_physical_region;
+
+    //std::map<int,int> itoii;
+    //std::vector<int> ptseen;
 
 };
 
@@ -255,9 +419,9 @@ template<typename MeshType>
 void
 ImporterGmsh<MeshType>::showMe() const
 {
-    Debug( 8011 ) << "[ImporterGmsh::showMe] npoints_per_element = " << npoints_per_element << "\n";
-    Debug( 8011 ) << "[ImporterGmsh::showMe]    npoints_per_face = " << npoints_per_face << "\n";
-    Debug( 8011 ) << "[ImporterGmsh::showMe]    npoints_per_edge = " << npoints_per_edge << "\n";
+    DVLOG(2) << "[ImporterGmsh::showMe] npoints_per_element = " << npoints_per_element << "\n";
+    DVLOG(2) << "[ImporterGmsh::showMe]    npoints_per_face = " << npoints_per_face << "\n";
+    DVLOG(2) << "[ImporterGmsh::showMe]    npoints_per_edge = " << npoints_per_edge << "\n";
 }
 template<typename MeshType>
 boost::tuple<bool,boost::tuple<bool,int> >
@@ -298,22 +462,21 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 {
 
     if ( this->version() != "1.0" &&
-            this->version() != "2.0" &&
-            this->version() != "2.1" &&
-            this->version() != "2.2" &&
-            this->version() != FEELPP_GMSH_FORMAT_VERSION )
+         this->version() != "2.0" &&
+         this->version() != "2.1" &&
+         this->version() != "2.2" &&
+         this->version() != FEELPP_GMSH_FORMAT_VERSION )
         throw std::logic_error( "invalid gmsh file format version" );
 
-    Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit()] starts\n";
-
-    Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] starts\n";
-    Debug( 8011 ) << "[ImporterGmsh<" << typeid( *mesh ).name() << ">::visit( "  << mesh_type::nDim << "D )] filename = " << this->filename() << "\n";
+    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) starts\n";
+    DVLOG(2) << "visit("  << mesh_type::nDim << "D ) filename = " << this->filename() << "\n";
 
     std::ifstream __is ( this->filename().c_str() );
 
     if ( !__is.is_open() )
     {
         std::ostringstream ostr;
+        LOG(ERROR) << "Invalid file name " << this->filename() << " (file not found)";
         ostr << "Invalid file name " << this->filename() << " (file not found)\n";
         throw std::invalid_argument( ostr.str() );
     }
@@ -322,24 +485,51 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     __is >> __buf;
 
     std::string theversion;
+    double version = 2.2;
+
+    bool binary = false, swap = false;
 
     if ( ( ( this->version() == "2.0" ) ||
-            ( this->version() == "2.1" ) ||
-            ( this->version() == "2.2" ) ||
-            ( this->version() == FEELPP_GMSH_FORMAT_VERSION ) )  &&
-            std::string( __buf ) == "$MeshFormat" )
+           ( this->version() == "2.1" ) ||
+           ( this->version() == "2.2" ) ||
+           ( this->version() == FEELPP_GMSH_FORMAT_VERSION ) )  &&
+         std::string( __buf ) == "$MeshFormat" )
     {
 
         // version file-type(0=ASCII,1=BINARY) data-size(sizeof(double))
-        __is >> theversion >> __buf >> __buf;
-        FEELPP_ASSERT( boost::lexical_cast<double>( theversion ) >= 2 )( theversion )( this->version() ).warn( "invalid gmsh file format version " );
+        int format, size;
+        __is >> theversion >> format >> size;
+        LOG(INFO) << "GMSH mesh file version : " << theversion << " format: " << (format?"binary":"ascii") << " size of double: " << size << "\n";
+        CHECK( boost::lexical_cast<double>( theversion ) >= 2  )
+            << "Feel++ supports only Gmsh version >= 2.\n";
+        version =  boost::lexical_cast<double>( theversion );
+        if(format)
+        {
+            char c;
+            CHECK( (c=__is.get()) == '\n' ) << "Invalid character " << c << " should be newline\n";
+            binary = true;
+            LOG(INFO) << "GMSH mesh is in binary format\n";
+            int one;
+            __is.read( (char*)&one, sizeof(int) );
+            if(one != 1)
+            {
+                swap = true;
+                LOG(INFO) << "one before swap : " << one << "\n";
+                if(swap) SwapBytes((char*)&one, sizeof(int), 1);
+                LOG(INFO) << "one after swap : " << one << "\n";
+                LOG(INFO) <<"Swapping bytes from binary file (to be done)\n";
+            }
+            //__is >> c;
+            //LOG(INFO) << "character= " << c << "\n";
+        }
         // should be $EndMeshFormat
         __is >> __buf;
-        FEELPP_ASSERT( std::string( __buf ) == "$EndMeshFormat" )
-        ( __buf )
-        ( "$EndMeshFormat" ).error ( "invalid file format entry" );
+        CHECK( std::string( __buf ) == "$EndMeshFormat" )
+            << "invalid file format entry "
+            << __buf
+            << " instead of $EndMeshFormat\n";
         __is >> __buf;
-        Debug( 8011 ) << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
+        DVLOG(2) << "[importergmsh] " << __buf << " (expect $PhysicalNames)\n";
 
         std::vector<MeshMarkerName> meshMarkerNameMap = markerMap(MeshType::nDim);
         if ( std::string( __buf ) == "$PhysicalNames" )
@@ -355,7 +545,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 if ( boost::lexical_cast<double>( this->version() ) >= 2.1  )
                 {
                     __is >> topodim >> id >> name;
-                    Debug( 8011 ) << "[importergmsh] reading topodim: "  << topodim << " id: " << id << " name: " << name << "\n";
+                    DVLOG(2) << "[importergmsh] reading topodim: "  << topodim << " id: " << id << " name: " << name << "\n";
                 }
 
                 else if ( this->version() == "2.0" )
@@ -369,7 +559,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                     std::vector<int> data = {id, topodim};
                     mesh->addMarkerName( name, id, topodim );
                 }
-                if ( _M_ignorePhysicalName.find( name )!=_M_ignorePhysicalName.end() ) this->setIgnorePhysicalGroup( id );
+                if ( M_ignorePhysicalName.find( name )!=M_ignorePhysicalName.end() ) this->setIgnorePhysicalGroup( id );
             }
             if ( meshMarkerNameMap.empty() )
             {
@@ -377,8 +567,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             }
             __is >> __buf;
             FEELPP_ASSERT( std::string( __buf ) == "$EndPhysicalNames" )
-            ( __buf )
-            ( "$EndPhysicalNames" ).error ( "invalid file format entry" );
+                ( __buf )
+                ( "$EndPhysicalNames" ).error ( "invalid file format entry" );
             __is >> __buf;
         }
 
@@ -391,246 +581,302 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     //
     // Read NODES
     //
-    Debug( 8011 ) << "buf: "<< __buf << "\n";
-    FEELPP_ASSERT( std::string( __buf ) == "$NOD" ||
-                   std::string( __buf ) == "$Nodes" ||
-                   std::string( __buf ) == "$ParametricNodes" )
-    ( __buf )
-    ( "$NOD" )( "$Nodes" )( "$ParametricNodes" )
-    .error( "invalid nodes string in gmsh importer" );
+    DVLOG(2) << "buf: "<< __buf << "\n";
+    CHECK( std::string( __buf ) == "$NOD" ||
+           std::string( __buf ) == "$Nodes" ||
+           std::string( __buf ) == "$ParametricNodes" )
+        << "invalid nodes string '" << __buf << "' in gmsh importer. It should be either $NOD or $Nodes or $ParametricNodes.\n";
     bool has_parametric_nodes = ( std::string( __buf ) == "$ParametricNodes" );
     uint __n;
     __is >> __n;
-    Debug( 8011 ) << "number of nodes: " << __n;
 
-    std::vector<double> __x( 3*__n );
-    std::vector<int> __gdim( __n );
-    std::vector<int> __gtag( __n );
-    std::vector<double> __uv( 2*__n );
-    std::fill( __gdim.begin(), __gdim.end(), 0 );
-    std::fill( __gtag.begin(), __gtag.end(), 0 );
-    std::fill( __uv.begin(), __uv.end(), 0. );
+    // eat  '\n' in binary mode otherwise the next binary read will get screwd
+    if ( binary )
+        __is.get();
 
-    std::vector<bool> __isonboundary( __n );
-    std::vector<std::vector<int> > __whichboundary( __n );
-    Debug( 8011 ) << "reading "<< __n << " nodes\n";
-    std::map<int,int> itoii;
 
+    std::map<int, Feel::detail::GMSHPoint > gmshpts;
+    LOG(INFO) << "Reading "<< __n << " nodes\n";
+
+    Eigen::Vector3d x;
+    Eigen::Vector2d uv;
     for ( uint __i = 0; __i < __n; ++__i )
     {
-        uint __ni;
-        __is >> __ni
-             >> __x[3*__i]
-             >> __x[3*__i+1]
-             >> __x[3*__i+2];
+        int id = 0;
+        if ( !binary )
+        {
+            __is >> id
+                 >> x[0]
+                 >> x[1]
+                 >> x[2];
+        }
+        else
+        {
+            __is.read( (char*)&id, sizeof(int) );
+            if(swap) SwapBytes((char*)&id, sizeof(int), 1);
+            __is.read( (char*)&x[0], 3*sizeof(double) );
+            if(swap) SwapBytes((char*)&x[0], sizeof(double), 3);
+
+        }
+        gmshpts[id].id = id;
+        gmshpts[id].x = x;
 
         if ( has_parametric_nodes )
         {
-            __is >> __gdim[__i] >> __gtag[__i];
 
-            // if gdim == 0 then u = v = 0
-            // if gdim == 3 then no need for a parametric point
-            // this logic is done later when filling the mesh data structure
-            if ( __gdim[__i] == 1 )
-                __is >> __uv[2*__i];
+            gmshpts[id].parametric = true;
+            CHECK( !binary ) << "GMSH Binary format not yet supported for parametric nodes\n";
+            int gdim = 0, gtag = 0;
+            if ( !binary )
+            {
+                __is >> gdim >> gtag;
 
-            else if ( __gdim[__i] == 2 )
-                __is >> __uv[2*__i] >> __uv[2*__i+1];
+                // if gdim == 0 then u = v = 0
+                // if gdim == 3 then no need for a parametric point
+                // this logic is done later when filling the mesh data structure
+                if ( gdim == 1 )
+                    __is >> uv[0];
+
+                else if ( gdim == 2 )
+                    __is >> uv[0] >> uv[1];
+            }
+            gmshpts[id].gdim = gdim;
+            gmshpts[id].gtag = gtag;
+            gmshpts[id].uv = uv;
         }
 
         // stores mapping to be able to reorder the indices
         // so that they are contiguous
-        itoii[__ni] = __i;
+        //itoii[idpts[__i]] = __i;
     }
+    //ptseen.resize( __n );
+    //std::fill( ptseen.begin(), ptseen.end(), -1 );
+    // eat  '\n' in binary mode otherwise the next binary read will get screwd
+    if ( binary )
+        __is.get();
 
     __is >> __buf;
-    Debug( 8011 ) << "buf: "<< __buf << "\n";
+    DVLOG(2) << "buf: "<< __buf << "\n";
     // make sure that we have read all the points
-    FEELPP_ASSERT( std::string( __buf ) == "$ENDNOD" ||
-                   std::string( __buf ) == "$EndNodes" ||
-                   std::string( __buf ) == "$EndParametricNodes"
-                 )
-    ( __buf )
-    ( "$ENDNOD" )( "$EndNodes" )( "$EndParametricNodes" ).error( "invalid end nodes string in gmsh importer" );
-
+    CHECK( std::string( __buf ) == "$ENDNOD" ||
+           std::string( __buf ) == "$EndNodes" ||
+           std::string( __buf ) == "$EndParametricNodes" )
+        << "invalid end nodes string '" << __buf
+        << "' in gmsh importer. It should be either $ENDNOD or $EndNodes or $EndParametricNodes\n";
 
     //
     // Read ELEMENTS
     //
     __is >> __buf;
-    Debug( 8011 ) << "buf: "<< __buf << "\n";
-    FEELPP_ASSERT( std::string( __buf ) == "$ELM" ||
-                   std::string( __buf ) == "$Elements" )
-    ( __buf )
-    ( "$ELM" )( "$Elements" )
-    .error( "invalid elements string in gmsh importer" );
+    CHECK( std::string( __buf ) == "$ELM" ||
+           std::string( __buf ) == "$Elements" )
+        << "invalid elements string " << __buf << " in gmsh importer, it should be either $ELM or $Elements\n";
 
-    uint __nele;
-    __is >> __nele;
+    int numElements;
+    __is >> numElements;
 
-    Debug( 8011 ) << "number of elements: " << __nele << "\n";
-    std::vector<std::vector<int> > __e( __nele ); // nodes in each element
-    std::vector<std::vector<int> > __et( __nele ); // tags in each element
-    std::vector<int> __idGmshToFeel( __nele ); // id Gmsh to id Feel
-    std::vector<GMSH_ENTITY> __etype( __nele );
-    std::vector<int> __gt( 32 );
-    __gt.assign( 32, 0 );
+    // eat  '\n' in binary mode otherwise the next binary read will get screwd
+    if ( binary )
+        __is.get();
 
-    int nptable[32];
-    nptable[1]=2; // node line.
-    nptable[2]=3; // node triangle.
-    nptable[3]=4; // node quadrangle.
-    nptable[4]=4; // node tetrahedron.
-    nptable[5]=8; // node hexahedron.
-    nptable[6]=6; // node prism.
-    nptable[7]=5; // node pyramid.
-    nptable[8]=3; // node second order line (2 nodes associated with the vertices and 1 with the edge).
-    nptable[9]=6; // node second order triangle (3 nodes associated with the vertices and 3 with the edges).
-    nptable[10]=9; // node second order quadrangle (4 nodes associated with the vertices, 4 with the edges and 1 with the face).
-    nptable[11]=10; // node second order tetrahedron (4 nodes associated with the vertices and 6 with the edges).
-    nptable[12]=27; // node second order hexahedron (8 nodes associated with the vertices, 12 with the edges, 6 with the faces and 1 with the volume).
-    nptable[13]=18; //node second order prism (6 nodes associated with the vertices, 9 with the edges and 3 with the quadrangular faces).
-    nptable[14]=14; // node second order pyramid (5 nodes associated with the vertices, 8 with the edges and 1 with the quadrangular face).
-    nptable[15]=1; // node point.
-    nptable[16]=8; // node second order quadrangle (4 nodes associated with the vertices and 4 with the edges).
-    nptable[17]=20; // node second order hexahedron (8 nodes associated with the vertices and 12 with the edges).
-    nptable[18]=15; // node second order prism (6 nodes associated with the vertices and 9 with the edges).
-    nptable[19]=13; // node second order pyramid (5 nodes associated with the vertices and 8 with the edges).
+    LOG(INFO) << "Reading " << numElements << " elements...\n";
+    std::list<Feel::detail::GMSHElement> __et; // tags in each element
+    std::map<int,int> __idGmshToFeel; // id Gmsh to id Feel
+    std::map<int,int> __gt;
 
-    // ho triangle
-    nptable[20]=9;// node order 3 triangle (9 nodes)
-    nptable[21]=10;
-    nptable[22]=15;
-    nptable[23]=15;
-    nptable[24]=21;
-    nptable[25]=21;
-
-    // ho line
-    nptable[26]=4;
-    nptable[27]=5;
-    nptable[28]=6;
-
-    // ho tetra
-    nptable[29]=20;
-    nptable[30]=35;
-    nptable[31]=56;
-
-    for ( uint __i = 0; __i < __nele; ++__i )
+    if ( !binary )
     {
-        int __ne, __t, __physical_region, __np, __elementary_region = 1;
-        std::vector<int> partitions;
-
-        if ( this->version() == "1.0" )
+        for(int i = 0; i < numElements; i++)
         {
-            __is >> __ne  // elm-number
-                 >> __t // elm-type
-                 >> __physical_region // reg-phys
-                 >> __elementary_region // reg-elem
-                 >> __np; // number-of-nodes
-            FEELPP_ASSERT( __np == nptable[__t] )( __np )( __t )( nptable[__t] ).error( "invalid number of nodes" );
-        }
+          int num, type, physical = 0, elementary = 0, parent = 0;
+          int dom1 = 0, dom2 = 0, numVertices;
+          std::vector<int> ghosts;
+          int numTags;
+          // some faces may not be associated to a partition in the mesh file,
+          // hence will be read given the partition id 0 and will be discarded
+          int partition = (this->worldComm().globalSize()>1)?this->worldComm().localRank():0;
+          __is >> num  // elm-number
+               >> type // elm-type
+               >> numTags; // number-of-tags
 
-        else if ( boost::lexical_cast<double>( this->version() ) >= 2  )
+          int numPartitions = 1;
+
+          for(int j = 0; j < numTags; j++)
+          {
+              int tag;
+              __is >> tag;
+              if(j == 0) physical = tag;
+              else if(j == 1) elementary = tag;
+              else if(version < 2.2 && j == 2) partition = tag;
+              else if(version >= 2.2 && j == 2 && numTags > 3) numPartitions = tag;
+              else if(version >= 2.2 && j == 3) partition = tag-1;
+              else if(j >= 4 && j < 4 + numPartitions - 1) ghosts.push_back((-tag)-1);
+              else if(j == 3 + numPartitions && (numTags == 4 + numPartitions))
+                  parent = tag;
+              else if(j == 3 + numPartitions && (numTags == 5 + numPartitions)) {
+                  dom1 = tag; j++;
+                  __is >> dom2;
+              }
+          }
+          CHECK(type != MSH_POLYG_ && type != MSH_POLYH_ && type != MSH_POLYG_B)
+              << "GMSH Element type " << type << " not supported by Feel++\n";
+          numVertices = MElement::getInfoMSH(type);
+          CHECK(numVertices!=0) << "Unknown number of vertices for element type " << type << "\n";
+
+          std::vector<int> indices(numVertices);
+          for(int j = 0; j < numVertices; j++)
+          {
+              __is >> indices[j];
+              // we do not renumber anymore
+#if 0
+              indices[j] = itoii[ indices[j] ];
+#endif
+          }
+          if ( M_use_elementary_region_as_physical_region )
+          {
+              physical = elementary;
+          }
+
+          Feel::detail::GMSHElement gmshElt( num, type, physical, elementary,
+                                             numPartitions, partition, ghosts,
+                                             parent, dom1, dom2,
+                                             numVertices, indices,
+                                             this->worldComm().localRank(),this->worldComm().localSize() );
+
+          if ( gmshElt.isOnProcessor() == false ||
+               gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
+              continue;
+
+          __et.push_back( gmshElt );
+
+          if ( __gt.find( type ) != __gt.end() )
+              ++__gt[ type ];
+          else
+              __gt[type]=1;
+
+
+        }  // element description loop
+    } // !binary
+    else // binary case
+    {
+        int numElementsPartial = 0;
+        while(numElementsPartial < numElements)
         {
-            int __ntag;
-            __is >> __ne  // elm-number
-                 >> __t // elm-type
-                 >> __ntag; // number-of-tags
+            int header[3];
 
-            for ( int t = 0; t < __ntag; ++t )
+            __is.read( (char*)&header, 3*sizeof(int) );
+            if(swap) SwapBytes((char*)header, sizeof(int), 3);
+
+            int type = header[0];
+            int numElems = header[1];
+            int numTags = header[2];
+            char const* name;
+            CHECK( type < MSH_NUM_TYPE ) << "Invalid GMSH element type " << type << "\n";
+            int numVertices = MElement::getInfoMSH(type,&name);
+            CHECK( numVertices > 0 ) << "Unsupported element type " << name << "\n";
+
+            unsigned int n = 1 + numTags + numVertices;
+            std::vector<int> data(n);
+            std::vector<int> indices( numVertices );
+            std::vector<int> ghosts;
+
+            for(int i = 0; i < numElems; i++)
             {
-                int tag;
-                // tag=1 physical region
-                // tag=2 elementary region
-                // tag=3 n partition tags
-                // tag=4.. partition ids
-                __is >> tag;
+                ghosts.clear();
+                __is.read( (char*)data.data(), sizeof(int)*n );
+                if(swap) SwapBytes((char*)data.data(), sizeof(int), n);
 
-                if ( tag < 0 )
-                    __et[__i].push_back( -tag );
+                //if(swap) SwapBytes((char*)data, sizeof(int), n);
+                int num = data[0];
+                int physical = (numTags > 0) ? data[1] : 0;
+                int elementary = (numTags > 1) ? data[2] : 0;
+                int numPartitions = (version >= 2.2 && numTags > 3) ? data[3] : 1;
+                int partition = (version < 2.2 && numTags > 2) ? data[3]-1 :
+                    (version >= 2.2 && numTags > 3) ? data[4]-1 : 0;
+                if(numPartitions > 1)
+                    for(int j = 0; j < numPartitions - 1; j++)
+                        ghosts.push_back( (-data[5 + j]) -1 );
+                int parent = (version < 2.2 && numTags > 3) ||
+                    (version >= 2.2 && numPartitions && numTags > 3 + numPartitions) ||
+                    (version >= 2.2 && !numPartitions && numTags > 2) ?
+                    data[numTags] : 0;
+                int dom1 = 0, dom2 = 0;
 
+                std::copy( &data[numTags + 1], &data[numTags + 1]+numVertices, indices.begin() );
+
+                // we do not renumber anymore
+#if 0
+                for(int j = 0; j < numVertices; j++)
+                {
+                    indices[j] = itoii[ indices[j] ];
+                }
+#endif
+                if ( M_use_elementary_region_as_physical_region )
+                {
+                    physical = elementary;
+                }
+
+                Feel::detail::GMSHElement gmshElt( num, type, physical, elementary,
+                                                   numPartitions, partition, ghosts,
+                                                   parent, dom1, dom2,
+                                                   numVertices, indices,
+                                                   this->worldComm().localRank(),this->worldComm().localSize() );
+
+                if ( gmshElt.isOnProcessor() == false ||
+                     gmshElt.isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
+                    continue;
+
+                __et.push_back( gmshElt );
+
+                if ( __gt.find( type ) != __gt.end() )
+                    ++__gt[ type ];
                 else
-                    __et[__i].push_back( tag );
+                    __gt[type]=1;
+
             }
+            numElementsPartial += numElems;
 
-            if ( ( theversion=="2.0" || theversion=="2.1" ) &&  __ntag==3 )
-            {
-                __et[__i].push_back( __et[__i][2] );
-                __et[__i][2]=1;
-                ++__ntag;
-            }
+        } // while
+        CHECK( numElementsPartial == numElements ) << "Invalid number of elements read from GMSH, read " << numElementsPartial << " element but expected " << numElements << "\n";
+    } // binary
 
-            // shift partition id according to processor ids
-            for ( int ii = 3; ii < __ntag; ++ ii )
-                __et[__i][ii] -= 1;
-
-            for ( int jj=0; jj < ( int )__et[__i].size(); ++jj )
-                Debug( 8011 ) << __et[__i][jj] << " ";
-
-            Debug( 8011 ) << " is on proc:" << isElementOnProcessor( __et[__i] ).template get<0>() << "\n";
-            __np = nptable[__t];
-
-            Debug( 8011 ) << "element type: " << __t << " nb pts: " << __np << "\n";
-        }
-
-        ++__gt[ __t ];
-        __etype[__i] = GMSH_ENTITY( __t );
-
-        if ( M_use_elementary_region_as_physical_region )
-        {
-            __et[__i][0]=__et[__i][1];
-        }
-
-        __e[__i].resize( __np );
-        int __p = 0;
-
-        while ( __p != __np )
-        {
-            __is >> __e[__i][__p];
-            // reorder the nodes since they may not have had a contiguous ordering
-            __e[__i][__p] = itoii[ __e[__i][__p]];
-
-            ++__p;
-        }
+    auto it = __gt.begin();
+    auto en = __gt.end();
+    for( ; it != en; ++it )
+    {
+        const char* name;
+        MElement::getInfoMSH( it->first, &name );
+        LOG(INFO) << "Read " << it->second << " " << name << " elements\n";
     }
+
+    if ( binary )
+        __is >> __buf;
 
     // make sure that we have read everything
     __is >> __buf;
-    Debug( 8011 ) << "buf: "<< __buf << "\n";
-    FEELPP_ASSERT( std::string( __buf ) == "$ENDELM" ||
-                   std::string( __buf ) == "$EndElements" )
-    ( __buf )
-    ( "$ENDELM" )( "$EndElements" ).error( "invalid end elements string in gmsh importer" );
+    CHECK( std::string( __buf ) == "$ENDELM" ||
+           std::string( __buf ) == "$EndElements" )
+        << "invalid end elements string " << __buf
+        << " in gmsh importer. It should be either $ENDELM or $EndElements\n";
 
-    // read physical names
-    if ( boost::lexical_cast<double>( this->version() ) >= 2  )
-    {
-
-    }
-
+#if 0
     //
     // FILL Mesh Data Structure
     //
-    Debug( 8011 ) << "number of edges= " << __gt[1] << "\n";
-
-    __isonboundary.assign( __n, false );
-    std::vector<int> vv( 2, 0 );
-    __whichboundary.assign( __n, vv );
-
-    for ( uint __i = 0; __i < __nele; ++__i )
+    for ( uint __i = 0; __i < numElements; ++__i )
     {
-        if ( isElementOnProcessor( __et[__i] ).template get<0>() == false ||
-                _M_ignorePhysicalGroup.find( __et[__i][0] ) != _M_ignorePhysicalGroup.end() )
+        // if the element is not associated to the processor (in partition or ghost) or
+        // if the physical entity is ignored
+        if ( __et[__i].isOnProcessor() == false ||
+             __et[__i].isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
             continue;
 
-        switch ( __etype[__i] )
+        switch ( __et[__i].type )
         {
         case GMSH_POINT:
             if ( mesh_type::nDim == 1 )
             {
-                __isonboundary[ __e[__i][0] ] = true;
-
-                __whichboundary[__e[__i][0] ] = __et[__i];
+                gmshpts[ __et[__i].indices[0] ].onbdy = true;
             }
 
             break;
@@ -644,8 +890,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
                 {
-                    __isonboundary[ __e[__i][jj] ] = true;
-                    __whichboundary[__e[__i][jj] ] = __et[__i];
+                    gmshpts[ __et[__i].indices[jj] ].onbdy = true;
                 }
             }
 
@@ -662,8 +907,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             {
                 for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
                 {
-                    __isonboundary[ __e[__i][jj] ] = true;
-                    __whichboundary[__e[__i][jj] ] = __et[__i];
+                    gmshpts[ __et[__i].indices[jj] ].onbdy = true;
                 }
             }
 
@@ -673,60 +917,58 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             break;
         }
     }
-
+#endif
     std::map<int,boost::tuple<int,int> > mapGhostElt;
 
+    node_type coords( mesh_type::nRealDim );
 
-    // add the points to the mesh
-    for ( uint __i = 0; __i < __n; ++__i )
-    {
-        node_type __n( mesh_type::nRealDim );
-
-        for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
-            __n[j] = __x[3*__i+j];
-
-        point_type __pt( __i,__n, __isonboundary[ __i ] );
-        __pt.setOnBoundary( __isonboundary[ __i ] );
-        //__pt.setTags( __whichboundary[__i] );
-
-        if ( has_parametric_nodes )
-        {
-            __pt.setGDim( __gdim[__i] );
-            __pt.setGTag( __gtag[__i] );
-
-            if ( __gdim[__i] < 3 )
-            {
-                __pt.setParametricCoordinates( __uv[2*__i], __uv[2*__i+1] );
-                mesh->setParametric( true );
-            }
-        }
-        mesh->addPoint( __pt );
-    }
-
-    _M_n_vertices.resize( __n );
-    _M_n_vertices.assign( __n, 0 );
-    _M_n_b_vertices.resize( __n );
-    _M_n_b_vertices.assign( __n, 0 );
-
+    //M_n_b_vertices.resize( __n );
+    //M_n_b_vertices.assign( __n, 0 );
+    auto it_gmshElt = __et.begin();
+    auto const en_gmshElt = __et.end();
+    for ( ; it_gmshElt!=en_gmshElt ; ++it_gmshElt )
     // add the element to the mesh
-    for ( uint __i = 0; __i < __nele; ++__i )
     {
-        if ( isElementOnProcessor( __et[__i] ).template get<0>() == false ||
-                _M_ignorePhysicalGroup.find( __et[__i][0] ) != _M_ignorePhysicalGroup.end() )
+        // if the element is not associated to the processor (in partition or ghost) or
+        // if the physical entity is ignored
+        if ( it_gmshElt->isOnProcessor() == false ||
+             it_gmshElt->isIgnored(M_ignorePhysicalGroup.begin(), M_ignorePhysicalGroup.end()) )
             continue;
+        // add the points associates to the element on the processor
+        for ( uint16_type p = 0; p < it_gmshElt->numVertices; ++p )
+        {
+            int ptid = it_gmshElt->indices[p];
+            // don't do anything if the point is already registered
+            if ( mesh->hasPoint( ptid ) )
+                continue;
 
-        switch ( __etype[__i] )
+            auto const& gmshpt = gmshpts.find(ptid)->second;
+            for ( uint16_type j = 0; j < mesh_type::nRealDim; ++j )
+                coords[j] = gmshpt.x[j];
+
+            point_type pt( ptid, coords, gmshpt.onbdy );
+
+            if ( gmshpt.parametric )
+            {
+                pt.setGDim( gmshpt.gdim );
+                pt.setGTag( gmshpt.gtag );
+
+                if ( gmshpt.gdim < 3 )
+                {
+                    pt.setParametricCoordinates( gmshpt.uv[0], gmshpt.uv[1] );
+                    mesh->setParametric( true );
+                }
+            }
+            mesh->addPoint( pt );
+        } // loop over local points
+
+        switch ( it_gmshElt->type )
         {
             // Points
         case GMSH_POINT:
         {
-            addPoint( mesh, __e[__i], __et[__i], __etype[__i], __idGmshToFeel[__i] );
+            addPoint( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
 
-            if ( isElementOnProcessor( __et[__i] ).template get<1>().template get<0>() == true ) // a ghost cell
-            {
-                auto idProc=isElementOnProcessor( __et[__i] ).template get<1>().template get<1>();
-                mapGhostElt.insert( std::make_pair( __i,boost::make_tuple( __idGmshToFeel[__i], idProc ) ) );
-            }
 
             break;
         }
@@ -738,13 +980,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         case GMSH_LINE_4:
         case GMSH_LINE_5:
         {
-            addEdge( mesh, __e[__i], __et[__i], __etype[__i], __idGmshToFeel[__i] );
-
-            if ( isElementOnProcessor( __et[__i] ).template get<1>().template get<0>() == true ) // a ghost cell
-            {
-                auto idProc=isElementOnProcessor( __et[__i] ).template get<1>().template get<1>();
-                mapGhostElt.insert( std::make_pair( __i,boost::make_tuple( __idGmshToFeel[__i], idProc ) ) );
-            }
+            addEdge( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
 
             break;
         }
@@ -758,13 +994,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         case GMSH_QUADRANGLE:
         case GMSH_QUADRANGLE_2:
         {
-            addFace( mesh, __e[__i], __et[__i], __etype[__i], __idGmshToFeel[__i] );
-
-            if ( isElementOnProcessor( __et[__i] ).template get<1>().template get<0>() == true ) // a ghost cell
-            {
-                auto idProc=isElementOnProcessor( __et[__i] ).template get<1>().template get<1>();
-                mapGhostElt.insert( std::make_pair( __i,boost::make_tuple( __idGmshToFeel[__i], idProc ) ) );
-            }
+            addFace( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
 
             break;
         }
@@ -778,13 +1008,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         case GMSH_HEXAHEDRON:
         case GMSH_HEXAHEDRON_2:
         {
-            addVolume( mesh, __e[__i], __et[__i], __etype[__i], __idGmshToFeel[__i] );
-
-            if ( isElementOnProcessor( __et[__i] ).template get<1>().template get<0>() == true ) // a ghost cell
-            {
-                auto idProc=isElementOnProcessor( __et[__i] ).template get<1>().template get<1>();
-                mapGhostElt.insert( std::make_pair( __i,boost::make_tuple( __idGmshToFeel[__i], idProc ) ) );
-            }
+            addVolume( mesh, *it_gmshElt, __idGmshToFeel[it_gmshElt->num] );
 
             break;
         }
@@ -793,8 +1017,19 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             break;
         }
 
+        if ( it_gmshElt->isGhost() )
+        {
+            mapGhostElt.insert( std::make_pair( it_gmshElt->num,boost::make_tuple( __idGmshToFeel[it_gmshElt->num], it_gmshElt->ghostPartitionId() ) ) );
+        }
+
     } // loop over geometric entities in gmsh file (can be elements or faces)
 
+    if (VLOG_IS_ON(4))
+    {
+        //for(int i = 0; i < ptseen.size();  ++i )
+        //if ( ptseen[i] == -1 )
+        //LOG(WARNING) << "Point with id " << i << " not in element connectivity";
+    }
     CHECK( mesh->numElements() > 0 ) << "The mesh does not have any elements.\n"
                                      << "something was not right with GMSH mesh importation.\n"
                                      << "please check that there are elements of topological dimension "
@@ -803,189 +1038,239 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     if ( this->worldComm().localSize()>1 )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
 
-    mesh->setNumVertices( std::accumulate( _M_n_vertices.begin(), _M_n_vertices.end(), 0 ) );
+    mesh->setNumVertices( std::accumulate( M_n_vertices.begin(), M_n_vertices.end(), 0,
+                                           []( int lhs, std::pair<int,int> const& rhs )
+                                           {
+                                               return lhs+rhs.second;
+                                           } ) );
     if ( !mesh->markerNames().empty() &&
          ( mesh->markerNames().find("CrossPoints") != mesh->markerNames().end() ) &&
          ( mesh->markerNames().find("WireBasket") != mesh->markerNames().end() ) )
     {
-        LOG(INFO) << "[substructuring] marker cp" << mesh->markerName("CrossPoints")  << "\n";
-        LOG(INFO) << "[substructuring] marker wb" << mesh->markerName("WireBasket")  << "\n";
-        LOG(INFO) << "[substructuring] n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
+        //LOG(INFO) << "[substructuring] marker cp" << mesh->markerName("CrossPoints")  << "\n";
+        //LOG(INFO) << "[substructuring] marker wb" << mesh->markerName("WireBasket")  << "\n";
+        //LOG(INFO) << "[substructuring] n cp: " << std::distance( mesh->beginPointWithMarker( mesh->markerName("CrossPoints") ), mesh->endPointWithMarker( mesh->markerName("CrossPoints") ) ) << "\n";
     }
-    Debug( 8011 ) << "done with reading and creating mesh from gmsh file\n";
+    DVLOG(2) << "done with reading and creating mesh from gmsh file\n";
+    M_n_vertices.clear();
 }
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel )
+ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel )
 {
-    addPoint( mesh, __e, tag, type, __idGmshToFeel, mpl::int_<mesh_type::nDim>() );
+    addPoint( mesh, __e, __idGmshToFeel, mpl::int_<mesh_type::nDim>() );
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<1> )
+ImporterGmsh<MeshType>::addPoint( mesh_type*mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> )
 {
     face_type pf;
-    //pf.setWorldComm(this->worldComm());
     pf.setProcessIdInPartition( this->worldComm().localRank() );
     pf.setId( mesh->numFaces() );
-    pf.setTags(  tag  );
+    pf.setMarker( __e.physical );
+    pf.setMarker2( __e.elementary );
+    pf.setNumberOfPartitions( __e.numPartitions );
+    pf.setProcessId( __e.partition );
+    pf.setNeighborPartitionIds( __e.ghosts );
 
-    pf.setPoint( 0, mesh->point( __e[0] ) );
+    pf.setPoint( 0, mesh->point( __e.indices[0] ) );
+//    ptseen[mesh->point( __e.indices[0] ).id()]=1;
+    if ( mesh->point( __e.indices[0] ).isOnBoundary() )
+    {
+        pf.setOnBoundary( true );
+    }
+    M_n_vertices[ __e.indices[0] ] = 1;
 
-    _M_n_vertices[ __e[0] ] = 1;
+    //M_n_b_vertices[ __e.indices[0] ] = 1;
 
-    _M_n_b_vertices[ __e[0] ] = 1;
-
-    pf.setOnBoundary( true );
     face_iterator fit;
     bool inserted;
     boost::tie( fit, inserted ) = mesh->addFace( pf );
     __idGmshToFeel=pf.id();
 
-    auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
-
-    Debug( 8011 ) << "added point on boundary ("
+    DVLOG(2) << "added point on boundary ("
                   << fit->isOnBoundary() << ") with id :" << fit->id() << " and marker " << pf.marker()
-                  << " n1: " << mesh->point( __e[0] ).node() << "\n";
+                  << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<2> )
+ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> )
 {
-    auto pit = mesh->points().modify( mesh->pointIterator(__e[0]), [&tag]( point_type& pt ) { pt.setTags( tag ); } );
-    Debug( 8011 ) << "added point with id :" << mesh->pointIterator(__e[0])->id() << " and marker " << mesh->pointIterator(__e[0])->marker()
-                  << " n1: " << mesh->point( __e[0] ).node() << "\n";
+    auto pit = mesh->points().modify( mesh->pointIterator(__e.indices[0]),
+                                      [&__e]( point_type& e )
+                                      {
+                                          e.setMarker( __e.physical );
+                                          e.setMarker2( __e.elementary );
+                                          e.setNumberOfPartitions( __e.numPartitions );
+                                          e.setProcessId( __e.partition );
+                                          e.setNeighborPartitionIds( __e.ghosts );
+                                      } );
+    DVLOG(2) << "added point with id :" << mesh->pointIterator(__e.indices[0])->id() << " and marker " << mesh->pointIterator(__e.indices[0])->marker()
+                  << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
 
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> )
+ImporterGmsh<MeshType>::addPoint( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> )
 {
-    auto pit = mesh->pointIterator(__e[0]);
-    bool mod = mesh->points().modify( pit, [&tag]( point_type& pt ) { pt.setTags( tag ); } );
-    Debug( 8011 ) << "added point (modified: " << mod << ")with id :" << pit->id() << " and marker " << pit->marker()
-                  << " n1: " << mesh->point( __e[0] ).node() << "\n";
+    auto pit = mesh->pointIterator(__e.indices[0]);
+    bool mod = mesh->points().modify( pit,
+                                      [&__e]( point_type& e )
+                                      {
+                                          e.setMarker( __e.physical );
+                                          e.setMarker2( __e.elementary );
+                                          e.setNumberOfPartitions( __e.numPartitions );
+                                          e.setProcessId( __e.partition );
+                                          e.setNeighborPartitionIds( __e.ghosts );
+                                      } );
+    DVLOG(2) << "added point (modified: " << mod << ")with id :" << pit->id() << " and marker " << pit->marker()
+                  << " n1: " << mesh->point( __e.indices[0] ).node() << "\n";
 }
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel )
+ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel )
 {
-    addEdge( mesh, __e, tag, type, __idGmshToFeel, mpl::int_<mesh_type::nDim>() );
+    addEdge( mesh, __e, __idGmshToFeel, mpl::int_<mesh_type::nDim>() );
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<1> )
+ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<1> )
 {
     element_type e;
     //e.setWorldComm(this->worldComm());
     e.setProcessIdInPartition( this->worldComm().localRank() );
-    e.setTags(  tag  );
+    e.setMarker( __e.physical );
+    e.setMarker2( __e.elementary );
+    e.setNumberOfPartitions( __e.numPartitions );
+    e.setProcessId( __e.partition );
+    e.setNeighborPartitionIds( __e.ghosts );
 
-    if ( type == GMSH_LINE ||
-            type == GMSH_LINE_2 ||
-            type == GMSH_LINE_3 ||
-            type == GMSH_LINE_4 ||
-            type == GMSH_LINE_5 )
+    if ( __e.type == GMSH_LINE ||
+         __e.type == GMSH_LINE_2 ||
+         __e.type == GMSH_LINE_3 ||
+         __e.type == GMSH_LINE_4 ||
+         __e.type == GMSH_LINE_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
-            e.setPoint( jj, mesh->point( __e[jj] ) );
+            e.setPoint( jj, mesh->point( __e.indices[jj] ) );
+            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
         }
+        if ( count_pt_on_boundary >= 1 )
+        {
+            e.setOnBoundary( true );
+        }
+
     }
 
     mesh->addElement( e );
     __idGmshToFeel=e.id();
 
-    auto theelt = mesh->elementIterator( e.id(), e.partitionId() );
-    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), e.id() ) );
-
-    _M_n_vertices[ __e[0] ] = 1;
-    _M_n_vertices[ __e[1] ] = 1;
-    Debug( 8011 ) << "added edge with id :" << e.id()
-                  << " n1: " << mesh->point( __e[0] ).node()
-                  << " n2: " << mesh->point( __e[1] ).node() << "\n";
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
+    DVLOG(2) << "added edge with id :" << e.id()
+                  << " n1: " << mesh->point( __e.indices[0] ).node()
+                  << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 }
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<2> )
+ImporterGmsh<MeshType>::addEdge( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> )
 {
-    face_type pf;
-    pf.setProcessIdInPartition( this->worldComm().localRank() );
-    pf.setId( mesh->numFaces() );
-    pf.setTags(  tag  );
+    face_type e;
+    e.setProcessIdInPartition( this->worldComm().localRank() );
+    e.setId( mesh->numFaces() );
+    e.setMarker( __e.physical );
+    e.setMarker2( __e.elementary );
+    e.setNumberOfPartitions( __e.numPartitions );
+    e.setProcessId( __e.partition );
+    e.setNeighborPartitionIds( __e.ghosts );
 
-    if ( type == GMSH_LINE ||
-            type == GMSH_LINE_2 ||
-            type == GMSH_LINE_3 ||
-            type == GMSH_LINE_4 ||
-            type == GMSH_LINE_5 )
+    if ( __e.type == GMSH_LINE ||
+         __e.type == GMSH_LINE_2 ||
+         __e.type == GMSH_LINE_3 ||
+         __e.type == GMSH_LINE_4 ||
+         __e.type == GMSH_LINE_5 )
     {
+        DCHECK( __e.indices.size() == npoints_per_edge )
+            << "Invalid element indices, "
+            << "indices size : " << __e.indices.size() << " points per edge : " << npoints_per_edge;
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
         {
-            pf.setPoint( jj, mesh->point( __e[jj] ) );
+            e.setPoint( jj, mesh->point( __e.indices[jj] ) );
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
         }
+        if ( count_pt_on_boundary >= 2 )
+            e.setOnBoundary( true );
+
     }
 
-    _M_n_vertices[ __e[0] ] = 1;
-    _M_n_vertices[ __e[1] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
 
-    _M_n_b_vertices[ __e[0] ] = 1;
-    _M_n_b_vertices[ __e[1] ] = 1;
+    //M_n_b_vertices[ __e.indices[0] ] = 1;
+    //M_n_b_vertices[ __e.indices[1] ] = 1;
 
-    pf.setOnBoundary( true );
     bool inserted;
     face_iterator fit;
-    boost::tie( fit, inserted ) = mesh->addFace( pf );
-    __idGmshToFeel=pf.id();
+    boost::tie( fit, inserted ) = mesh->addFace( e );
+    __idGmshToFeel=e.id();
 
-    auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
-
-    Debug( 8011 ) << "added edge on boundary ("
+    DVLOG(2) << "added edge on boundary ("
                   << fit->isOnBoundary() << ") with id :" << fit->id()
-                  << " n1: " << mesh->point( __e[0] ).node()
-                  << " n2: " << mesh->point( __e[1] ).node() << "\n";
+                  << " n1: " << mesh->point( __e.indices[0] ).node()
+                  << " n2: " << mesh->point( __e.indices[1] ).node() << "\n";
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> )
+ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> )
 {
-    edge_type pe;
-    pe.setProcessIdInPartition( this->worldComm().localRank() );
-    pe.setId( mesh->numEdges() );
-    pe.setTags(  tag  );
+    edge_type e;
+    e.setProcessIdInPartition( this->worldComm().localRank() );
+    e.setId( mesh->numEdges() );
+    e.setMarker( __e.physical );
+    e.setMarker2( __e.elementary );
+    e.setNumberOfPartitions( __e.numPartitions );
+    e.setProcessId( __e.partition );
+    e.setNeighborPartitionIds( __e.ghosts );
 
-    if ( type == GMSH_LINE ||
-            type == GMSH_LINE_2 ||
-            type == GMSH_LINE_3 ||
-            type == GMSH_LINE_4 ||
-            type == GMSH_LINE_5 )
+    if ( __e.type == GMSH_LINE ||
+         __e.type == GMSH_LINE_2 ||
+         __e.type == GMSH_LINE_3 ||
+         __e.type == GMSH_LINE_4 ||
+         __e.type == GMSH_LINE_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_edge; ++jj )
         {
-            pe.setPoint( jj, mesh->point( __e[jj] ) );
+            e.setPoint( jj, mesh->point( __e.indices[jj] ) );
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
+        }
+        if ( count_pt_on_boundary >= 2 )
+        {
+            e.setOnBoundary( true );
         }
     }
 
-   _M_n_vertices[ __e[0] ] = 1;
-   _M_n_vertices[ __e[1] ] = 1;
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
 
-   _M_n_b_vertices[ __e[0] ] = 1;
-   _M_n_b_vertices[ __e[1] ] = 1;
+    //M_n_b_vertices[ __e.indices[0] ] = 1;
+    //M_n_b_vertices[ __e.indices[1] ] = 1;
 
-    pe.setOnBoundary( true );
-    auto eit = mesh->addEdge( pe );
+    auto eit = mesh->addEdge( e );
     __idGmshToFeel=eit.id();
 
-    auto theedge = mesh->edgeIterator( pe.id() );
-    mesh->edges().modify( theedge, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pe.id() ) );
-
     if ( npoints_per_edge == 2 )
-        Debug( 8011 ) << "added edge on boundary ("
+        DVLOG(2) << "added edge on boundary ("
                       << eit.isOnBoundary() << ") with id :" << eit.id()
                       << " n1: " << eit.point( 0 ).node()
                       << " n2: " << eit.point( 1 ).node() << "\n";
@@ -994,166 +1279,212 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, std::vector<int> const& __e, st
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel )
+ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel )
 {
-    addFace( mesh, __e, tag, type, __idGmshToFeel, mpl::int_<mesh_type::nDim>() );
+    addFace( mesh, __e, __idGmshToFeel, mpl::int_<mesh_type::nDim>() );
 }
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addFace( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, int & /*__idGmshToFeel*/, mpl::int_<1> )
+ImporterGmsh<MeshType>::addFace( mesh_type*, Feel::detail::GMSHElement const&, int & /*__idGmshToFeel*/, mpl::int_<1> )
 {}
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<2> )
+ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<2> )
 {
     GmshOrdering<element_type> ordering;
 
-    element_type pf;
-    pf.setProcessIdInPartition( this->worldComm().localRank() );
-    pf.setTags(  tag  );
+    element_type e;
+    e.setProcessIdInPartition( this->worldComm().localRank() );
+    e.setMarker( __e.physical );
+    e.setMarker2( __e.elementary );
+    e.setNumberOfPartitions( __e.numPartitions );
+    e.setProcessId( __e.partition );
+    e.setNeighborPartitionIds( __e.ghosts );
 
-    if ( type == GMSH_QUADRANGLE ||
-            type == GMSH_QUADRANGLE_2 ||
-            type == GMSH_TRIANGLE ||
-            type == GMSH_TRIANGLE_2 ||
-            type == GMSH_TRIANGLE_3 ||
-            type == GMSH_TRIANGLE_4 ||
-            type == GMSH_TRIANGLE_5 )
+    if ( __e.type == GMSH_QUADRANGLE ||
+         __e.type == GMSH_QUADRANGLE_2 ||
+         __e.type == GMSH_TRIANGLE ||
+         __e.type == GMSH_TRIANGLE_2 ||
+         __e.type == GMSH_TRIANGLE_3 ||
+         __e.type == GMSH_TRIANGLE_4 ||
+         __e.type == GMSH_TRIANGLE_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
-            //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
-            pf.setPoint( ordering.fromGmshId( jj ), mesh->point( __e[jj] ) );
+            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
+            e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
         }
+        if ( ( __e.type == GMSH_TRIANGLE ||
+               __e.type == GMSH_TRIANGLE_2 ||
+               __e.type == GMSH_TRIANGLE_3 ||
+               __e.type == GMSH_TRIANGLE_4 ||
+               __e.type == GMSH_TRIANGLE_5 ) &&
+             count_pt_on_boundary >= 2 )
+        {
+            e.setOnBoundary( true );
+        }
+        if ( (__e.type == GMSH_QUADRANGLE ||
+              __e.type == GMSH_QUADRANGLE_2) &&
+             count_pt_on_boundary >= 2 )
+            e.setOnBoundary( true );
+
     }
 
-    mesh->addElement( pf );
-    __idGmshToFeel=pf.id();
+    mesh->addElement( e );
+    __idGmshToFeel=e.id();
 
-    auto theelt = mesh->elementIterator( pf.id(), pf.partitionId() );
-    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[2] ] = 1;
 
-    _M_n_vertices[ __e[0] ] = 1;
-    _M_n_vertices[ __e[1] ] = 1;
-    _M_n_vertices[ __e[2] ] = 1;
-
-    if ( type == GMSH_QUADRANGLE ||
-            type == GMSH_QUADRANGLE_2 )
-        _M_n_vertices[ __e[3] ] = 1;
+    if ( __e.type == GMSH_QUADRANGLE ||
+         __e.type == GMSH_QUADRANGLE_2 )
+        M_n_vertices[ __e.indices[3] ] = 1;
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addFace( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> )
+ImporterGmsh<MeshType>::addFace( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> )
 {
     GmshOrdering<face_type> ordering;
 
-    face_type pf;
-    pf.setProcessIdInPartition( this->worldComm().localRank() );
-    pf.setId( mesh->numFaces() );
-    pf.setTags(  tag  );
+    face_type e;
+    e.setProcessIdInPartition( this->worldComm().localRank() );
+    e.setId( mesh->numFaces() );
+    e.setMarker( __e.physical );
+    e.setMarker2( __e.elementary );
+    e.setNumberOfPartitions( __e.numPartitions );
+    e.setProcessId( __e.partition );
+    e.setNeighborPartitionIds( __e.ghosts );
 
-    if ( type == GMSH_QUADRANGLE ||
-            type == GMSH_QUADRANGLE_2 ||
-            type == GMSH_TRIANGLE ||
-            type == GMSH_TRIANGLE_2 ||
-            type == GMSH_TRIANGLE_3 ||
-            type == GMSH_TRIANGLE_4 ||
-            type == GMSH_TRIANGLE_5 )
+    // we consider in 3D that all faces provided by Gmsh are on the boundary
+    // which might not be true
+    // \warning there might be a bug here
+    e.setOnBoundary( true );
+
+    if ( __e.type == GMSH_QUADRANGLE ||
+         __e.type == GMSH_QUADRANGLE_2 ||
+         __e.type == GMSH_TRIANGLE ||
+         __e.type == GMSH_TRIANGLE_2 ||
+         __e.type == GMSH_TRIANGLE_3 ||
+         __e.type == GMSH_TRIANGLE_4 ||
+         __e.type == GMSH_TRIANGLE_5 )
     {
         for ( uint16_type jj = 0; jj < npoints_per_face; ++jj )
         {
-            pf.setPoint( ordering.fromGmshId( jj ), mesh->point( __e[jj] ) );
+            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
         }
 
-        //pf.setPoint( jj, mesh->point( __e[jj] ) );
+        //e.setPoint( jj, mesh->point( __e[jj] ) );
     }
 
-    pf.setOnBoundary( true );
     bool inserted;
     face_iterator fit;
-    boost::tie( fit, inserted ) = mesh->addFace( pf );
+    boost::tie( fit, inserted ) = mesh->addFace( e );
 
-    __idGmshToFeel=pf.id();
+    __idGmshToFeel=e.id();
 
-    auto theface = mesh->faceIterator( pf.id() );
-    mesh->faces().modify( theface, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pf.id() ) );
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[2] ] = 1;
 
-    _M_n_vertices[ __e[0] ] = 1;
-    _M_n_vertices[ __e[1] ] = 1;
-    _M_n_vertices[ __e[2] ] = 1;
+    if ( __e.type == GMSH_QUADRANGLE ||
+         __e.type == GMSH_QUADRANGLE_2 )
+        M_n_vertices[ __e.indices[3] ] = 1;
 
-    if ( type == GMSH_QUADRANGLE ||
-            type == GMSH_QUADRANGLE_2 )
-        _M_n_vertices[ __e[3] ] = 1;
 }
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel )
+ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel )
 {
-    addVolume( mesh, __e, tag, type, __idGmshToFeel, mpl::int_<mesh_type::nDim>() );
+    addVolume( mesh, __e, __idGmshToFeel, mpl::int_<mesh_type::nDim>() );
 }
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addVolume( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, int & /*__idGmshToFeel*/, mpl::int_<1> )
+ImporterGmsh<MeshType>::addVolume( mesh_type*, Feel::detail::GMSHElement const&, int & /*__idGmshToFeel*/, mpl::int_<1> )
 {}
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addVolume( mesh_type*, std::vector<int> const&, std::vector<int> const&, GMSH_ENTITY, int & /*__idGmshToFeel*/, mpl::int_<2> )
+ImporterGmsh<MeshType>::addVolume( mesh_type*, Feel::detail::GMSHElement const&, int & /*__idGmshToFeel*/, mpl::int_<2> )
 {}
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, std::vector<int> const& __e, std::vector<int> const& tag, GMSH_ENTITY type, int & __idGmshToFeel, mpl::int_<3> )
+ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & __idGmshToFeel, mpl::int_<3> )
 {
-    element_type pv;
-    pv.setProcessIdInPartition( this->worldComm().localRank() );
+    element_type e;
+    e.setProcessIdInPartition( this->worldComm().localRank() );
     GmshOrdering<element_type> ordering;
-    pv.setTags(  tag  );
+    e.setMarker( __e.physical );
+    e.setMarker2( __e.elementary );
+    e.setNumberOfPartitions( __e.numPartitions );
+    e.setProcessId( __e.partition );
+    e.setNeighborPartitionIds( __e.ghosts );
+
 
     //
     // WARNING: not yet done for high order in 3D !!!
     //
-    if ( type == GMSH_HEXAHEDRON ||
-            type == GMSH_HEXAHEDRON_2 ||
-            type == GMSH_TETRAHEDRON ||
-            type == GMSH_TETRAHEDRON_2 ||
-            type == GMSH_TETRAHEDRON_3 ||
-            type == GMSH_TETRAHEDRON_4 ||
-            type == GMSH_TETRAHEDRON_5 )
+    if ( __e.type == GMSH_HEXAHEDRON ||
+         __e.type == GMSH_HEXAHEDRON_2 ||
+         __e.type == GMSH_TETRAHEDRON ||
+         __e.type == GMSH_TETRAHEDRON_2 ||
+         __e.type == GMSH_TETRAHEDRON_3 ||
+         __e.type == GMSH_TETRAHEDRON_4 ||
+         __e.type == GMSH_TETRAHEDRON_5 )
     {
+        int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
+            //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
+            if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             //std::cout << "gmsh index " << jj << " -> " << ordering.fromGmshId(jj) << " -> " << mesh->point( __e[jj] ).id()+1 << " : " << mesh->point( __e[jj] ).node() << "\n";
-            pv.setPoint( ordering.fromGmshId( jj ), mesh->point( __e[jj] ) );
+            e.setPoint( ordering.fromGmshId( jj ), mesh->point( __e.indices[jj] ) );
+
+            if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
+                ++count_pt_on_boundary;
         }
+        // the tet share a face with the boundary
+        if ( ( __e.type == GMSH_TETRAHEDRON ||
+               __e.type == GMSH_TETRAHEDRON_2 ||
+               __e.type == GMSH_TETRAHEDRON_3 ||
+               __e.type == GMSH_TETRAHEDRON_4 ||
+               __e.type == GMSH_TETRAHEDRON_5 )
+             && count_pt_on_boundary >= 3)
+            e.setOnBoundary( true );
+        // the hex share a face with the boundary
+        if ( ( __e.type == GMSH_HEXAHEDRON ||
+               __e.type == GMSH_HEXAHEDRON_2 )
+             && count_pt_on_boundary >= 4)
+            e.setOnBoundary( true );
     }
 
-    mesh->addElement( pv );
-    __idGmshToFeel=pv.id();
+    mesh->addElement( e );
+    __idGmshToFeel=e.id();
 
-    auto theelt = mesh->elementIterator( pv.id(), pv.partitionId() );
-    mesh->elements().modify( theelt, Feel::detail::update_id_in_partition_type( this->worldComm().localRank(), pv.id() ) );
+    M_n_vertices[ __e.indices[0] ] = 1;
+    M_n_vertices[ __e.indices[1] ] = 1;
+    M_n_vertices[ __e.indices[2] ] = 1;
+    M_n_vertices[ __e.indices[3] ] = 1;
 
-    _M_n_vertices[ __e[0] ] = 1;
-    _M_n_vertices[ __e[1] ] = 1;
-    _M_n_vertices[ __e[2] ] = 1;
-    _M_n_vertices[ __e[3] ] = 1;
-
-    if ( type == GMSH_HEXAHEDRON )
+    if ( __e.type == GMSH_HEXAHEDRON )
     {
-        _M_n_vertices[ __e[4] ] = 1;
-        _M_n_vertices[ __e[5] ] = 1;
-        _M_n_vertices[ __e[6] ] = 1;
-        _M_n_vertices[ __e[7] ] = 1;
+        M_n_vertices[ __e.indices[4] ] = 1;
+        M_n_vertices[ __e.indices[5] ] = 1;
+        M_n_vertices[ __e.indices[6] ] = 1;
+        M_n_vertices[ __e.indices[7] ] = 1;
     }
-
 }
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::vector<int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt )
+ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt )
 {
     // counter of msg sent for each process
     std::vector<int> nbMsgToSend( this->worldComm().localSize() );
@@ -1206,12 +1537,12 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::vector<int> c
                       << "I am the proc" << this->worldComm().localRank()
                       << " I receive of the proc " << proc << " for idGmsh " << idGmsh+1
                       << " with tag "<< cpt
-                      << " the G " << mesh->element( __idGmshToFeel[idGmsh] ).G()
-                      << " with idFeel Classic " << __idGmshToFeel[idGmsh]
+                      << " the G " << mesh->element( __idGmshToFeel.find(idGmsh)->second ).G()
+                      << " with idFeel Classic " << __idGmshToFeel.find(idGmsh)->second
                       << std::endl;
 #endif
             //re-send idFeel
-            this->worldComm().localComm().send( proc, cpt, __idGmshToFeel[ idGmsh ] );
+            this->worldComm().localComm().send( proc, cpt, __idGmshToFeel.find( idGmsh )->second );
         }
     }
 
@@ -1225,7 +1556,7 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::vector<int> c
             this->worldComm().localComm().recv( proc, cpt, idFeel );
             // update data
             auto elttt = mesh->elementIterator( mapMsg[proc][cpt],proc );
-            mesh->elements().modify( elttt, Feel::detail::update_id_in_partition_type( proc, idFeel ) );
+            mesh->elements().modify( elttt, Feel::detail::updateIdInOthersPartitions( proc, idFeel ) );
 #if 0
             std::cout << "[updateGhostCellInfo]----3---\n"
                       << "END! I am the proc" << this->worldComm().localRank()<<" I receive of the proc " << proc
@@ -1238,104 +1569,6 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::vector<int> c
 #endif
         }
     }
-
-
-    //check
-#if 0
-    std::vector<int> nbMsgToSendCheck( this->worldComm().localSize() );
-    std::fill( nbMsgToSendCheck.begin(),nbMsgToSendCheck.end(),0 );
-
-    std::vector< std::map<int,int> > mapMsgCheck( this->worldComm().localSize() );
-    auto it_ghost=mesh->beginGhostElement();
-    auto en_ghost=mesh->endGhostElement();
-
-    for ( int cpt=0 ; it_ghost != en_ghost; ++it_ghost,++cpt )
-    {
-
-        //ATTENTION WARNING int OK, but auto no!!!!!!!!!!!!!!!!!!!!!!!
-        int/*auto*/ IdProcessOfGhost = it_ghost->processId();
-        int/*auto*/ RealIdOfGhost = it_ghost->idInPartition( IdProcessOfGhost );
-        this->worldComm().localComm().send( IdProcessOfGhost, nbMsgToSendCheck[IdProcessOfGhost], RealIdOfGhost );
-#if 0
-        std::cout<< "I am the proc" << this->worldComm().localRank() << " I send to the proc " << IdProcessOfGhost
-                 <<" with tag "<< nbMsgToSendCheck[IdProcessOfGhost]
-                 << " idSend " << RealIdOfGhost
-                 << " it_ghost->G() " << it_ghost->G()
-                 << std::endl;
-#endif
-        mapMsgCheck[IdProcessOfGhost].insert( std::make_pair( cpt,nbMsgToSendCheck[IdProcessOfGhost] ) );
-
-        ++nbMsgToSendCheck[IdProcessOfGhost];
-    }
-
-    // counter of msg received for each process
-    std::vector<int> nbMsgToRecvCheck;
-    mpi::all_to_all( this->worldComm().localComm(),
-                     nbMsgToSendCheck,
-                     nbMsgToRecvCheck );
-
-    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
-    {
-        for ( int cpt=0; cpt<nbMsgToRecvCheck[proc]; ++cpt )
-        {
-            int idRecv;
-            this->worldComm().localComm().recv( proc, cpt,idRecv );
-#if 0
-            std::cout<< "I am the proc" << this->worldComm().localRank()<<" I receive to proc " << proc
-                     <<" with tag "<< cpt
-                     << " idRecv " << idRecv
-                     << " it_ghost->G() " << mesh->element( idRecv ).G()
-                     << std::endl;
-#endif
-            this->worldComm().localComm().send( proc, cpt, mesh->element( idRecv ).G() );
-        }
-    }
-
-    typedef typename matrix_node<double>::type matrix_node_type;
-    std::vector< std::vector<matrix_node_type> > getFinalInfoCheck( this->worldComm().localSize() );
-
-    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
-    {
-        getFinalInfoCheck[proc].resize( nbMsgToSendCheck[proc] );
-
-        for ( int cpt=0; cpt<nbMsgToSendCheck[proc]; ++cpt )
-        {
-            this->worldComm().localComm().recv( proc, cpt, getFinalInfoCheck[proc][cpt] );
-#if 0
-            std::cout<< "I am the proc " << this->worldComm().localRank()<<" I receive to proc " << proc
-                     <<" with tag "<< cpt
-                     << " points G " << getFinalInfoCheck[proc][cpt]
-                     << std::endl;
-#endif
-        }
-    }
-
-    // check final data
-    it_ghost=mesh->beginGhostElement();
-    en_ghost=mesh->endGhostElement();
-
-    for ( int cpt=0; it_ghost!=en_ghost; ++it_ghost,++cpt )
-    {
-        int/*auto*/ IdProcessOfGhost = it_ghost->processId();
-        auto indic = mapMsgCheck[IdProcessOfGhost][cpt];
-#if 0
-        std::cout<< "FINAL CHECK! I am the proc" << this->worldComm().localRank()
-                 << " G() initial " << it_ghost->G()
-                 << " G() returned" << getFinalInfoCheck[IdProcessOfGhost/*idProc*/][indic]
-                 << std::endl;
-#endif
-        // check test
-        auto eltG=it_ghost->G();
-        auto elt2G = getFinalInfoCheck[IdProcessOfGhost/*idProc*/][indic];
-
-        for ( int i =0 ; i<eltG.size2(); i++ )
-        {
-            for ( int j =0 ; j<eltG.size1(); j++ )
-                if ( eltG( i,j )!=elt2G( i,j ) ) std::cout << "\n BAD!!!!!!!!!!!!!!!!!!!!!!!!!!!!! " << std::endl;
-        }
-    }
-
-#endif
 
 }
 

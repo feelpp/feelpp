@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_ALLANDANY_H
 #define EIGEN_ALLANDANY_H
@@ -100,9 +85,7 @@ inline bool DenseBase<Derived>::all() const
           && SizeAtCompileTime * (CoeffReadCost + NumTraits<Scalar>::AddCost) <= EIGEN_UNROLLING_LIMIT
   };
   if(unroll)
-    return internal::all_unroller<Derived,
-                           unroll ? int(SizeAtCompileTime) : Dynamic
-     >::run(derived());
+    return internal::all_unroller<Derived, unroll ? int(SizeAtCompileTime) : Dynamic>::run(derived());
   else
   {
     for(Index j = 0; j < cols(); ++j)
@@ -126,9 +109,7 @@ inline bool DenseBase<Derived>::any() const
           && SizeAtCompileTime * (CoeffReadCost + NumTraits<Scalar>::AddCost) <= EIGEN_UNROLLING_LIMIT
   };
   if(unroll)
-    return internal::any_unroller<Derived,
-                           unroll ? int(SizeAtCompileTime) : Dynamic
-           >::run(derived());
+    return internal::any_unroller<Derived, unroll ? int(SizeAtCompileTime) : Dynamic>::run(derived());
   else
   {
     for(Index j = 0; j < cols(); ++j)
@@ -148,6 +129,26 @@ inline typename DenseBase<Derived>::Index DenseBase<Derived>::count() const
   return derived().template cast<bool>().template cast<Index>().sum();
 }
 
+/** \returns true is \c *this contains at least one Not A Number (NaN).
+  *
+  * \sa allFinite()
+  */
+template<typename Derived>
+inline bool DenseBase<Derived>::hasNaN() const
+{
+  return !((derived().array()==derived().array()).all());
+}
+
+/** \returns true if \c *this contains only finite numbers, i.e., no NaN and no +/-INF values.
+  *
+  * \sa hasNaN()
+  */
+template<typename Derived>
+inline bool DenseBase<Derived>::allFinite() const
+{
+  return !((derived()-derived()).hasNaN());
+}
+    
 } // end namespace Eigen
 
 #endif // EIGEN_ALLANDANY_H

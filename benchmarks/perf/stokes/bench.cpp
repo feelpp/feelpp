@@ -44,19 +44,28 @@ makeOptions()
 {
     Feel::po::options_description stokesoptions( "Stokes options" );
     stokesoptions.add_options()
-    ( "faster", Feel::po::value<int>()->default_value( 2 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern" )
-    ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
-    ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
-    ( "mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component" )
-    ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
-    ( "bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions" )
-    ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
-    ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
-    ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
-    ( "export-matlab", "export matrix and vectors in matlab" )
-    ( "no-solve", "dont solve the system" )
-    ( "extra-terms", "dont solve the system" )
-    ;
+        ( "faster", Feel::po::value<int>()->default_value( 2 ), "use coupled(0) or default(1) pattern or default/symmetric(2) pattern" )
+        ( "penal", Feel::po::value<double>()->default_value( 0.5 ), "penalisation parameter" )
+        ( "f", Feel::po::value<double>()->default_value( 0 ), "forcing term" )
+        ( "mu", Feel::po::value<double>()->default_value( 1.0/40 ), "reaction coefficient component" )
+        ( "bctype", Feel::po::value<int>()->default_value( 0 ), "0 = strong Dirichlet, 1 = weak Dirichlet" )
+        ( "bccoeff", Feel::po::value<double>()->default_value( 400.0 ), "coeff for weak Dirichlet conditions" )
+        ( "beta", Feel::po::value<double>()->default_value( 0.0 ), "convection coefficient" )
+        ( "shear", Feel::po::value<double>()->default_value( 0.0 ), "shear coeff" )
+        ( "recombine", Feel::po::value<bool>()->default_value( false ), "recombine triangle into quads" )
+        ( "testcase", Feel::po::value<std::string>()->default_value( "default" ), "name of the testcase" )
+        ( "2D.u_exact_x", Feel::po::value<std::string>()->default_value( "" ), "velocity first component" )
+        ( "2D.u_exact_y", Feel::po::value<std::string>()->default_value( "" ), "velocity second component" )
+        ( "2D.u_exact_z", Feel::po::value<std::string>()->default_value( "" ), "velocity third component" )
+        ( "2D.p_exact", Feel::po::value<std::string>()->default_value( "" ), "" )
+        ( "3D.u_exact_x", Feel::po::value<std::string>()->default_value( "" ), "" )
+        ( "3D.u_exact_y", Feel::po::value<std::string>()->default_value( "" ), "" )
+        ( "3D.u_exact_z", Feel::po::value<std::string>()->default_value( "" ), "" )
+        ( "3D.p_exact", Feel::po::value<std::string>()->default_value( "" ), "" )
+        ( "export-matlab", "export matrix and vectors in matlab" )
+        ( "no-solve", "dont solve the system" )
+        ( "extra-terms", "dont solve the system" )
+        ;
     return stokesoptions.add( Feel::feel_options() );
 }
 
@@ -84,20 +93,8 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( 
-#if defined( FEELPP_SOLUTION_1 ) 
-                          "stokes_solution1" ,
-                          "stokes_solution1" ,
-#elif defined( FEELPP_SOLUTION_KOVASNAY ) 
-                          "stokes_kovasnay" ,
-                          "stokes_kovasnay" ,
-#elif defined( FEELPP_SOLUTION_BERCOVIERENGELMAN )
-                          "stokes_bercovierengelman" ,
-                          "stokes_bercovierengelman" ,
-#elif defined( FEELPP_SOLUTION_ETHIERSTEINMANN )
-                          "stokes_ethiersteinmann" ,
-                          "stokes_ethiersteinmann" ,
-#endif
+    Feel::AboutData about("stokes_convergence" ,
+                          "stokes_convergence" ,
                            "0.1",
                            "Stokes equation on simplices or simplex products",
                            Feel::AboutData::License_GPL,
@@ -135,13 +132,10 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-    Environment env(argc, argv);
-    std::ofstream out;
-    if ( env.worldComm().rank() == 0 )
-        out.open( (boost::format("res-%1%.dat") % env.numberOfProcessors() ).str().c_str() );
     std::vector<std::string> boptions = boost::assign::list_of( "2D-CR1P0-Simplex" )( "2D-CR1P0-Hypercube" )
         ( "2D-P2P1-Simplex" )( "2D-P2P1-Hypercube" )
         ( "3D-P2P1-Simplex" )( "3D-P2P1-Hypercube" )
+        ( "2D-P3P2-Simplex" )( "2D-P3P2-Hypercube" )
         ( "2D-P5P4-Simplex" )( "2D-P5P4-Hypercube" )
         ( "3D-P5P4-Simplex" )( "3D-P5P4-Hypercube" );
     auto cmdoptions = makeOptions();
@@ -149,27 +143,35 @@ int main( int argc, char** argv )
     {
         cmdoptions.add( makeBenchmarkOptions( o ) );
     }
-    Application benchmark( argc, argv, makeAbout(), cmdoptions );
 
-    if ( benchmark.vm().count( "help" ) )
-    {
-        std::cout << benchmark.optionsDescription() << "\n";
-        return 0;
-    }
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=cmdoptions,
+                     _about=makeAbout() );
 
-#if defined( FEELPP_SOLUTION_1 ) || defined( FEELPP_SOLUTION_KOVASNAY ) || defined( FEELPP_SOLUTION_BERCOVIERENGELMAN )
-    //benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex",benchmark.vm(),benchmark.about() ) );
-    //benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube",benchmark.vm(),benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "2D-P5P4-Simplex", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Hypercube>( "2D-P5P4-Hypercube", benchmark.vm(), benchmark.about() ) );
-#elif defined( FEELPP_SOLUTION_ETHIERSTEINMANN )
-    benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "3D-P2P1-Hypercube", benchmark.vm(), benchmark.about() ) );
-    benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "3D-P2P1-Simplex", benchmark.vm(), benchmark.about() ) );
-#endif
+    Environment::changeRepository( boost::format( "%1%/%2%" )
+                                   % makeAbout().appName()
+                                   % option(_name="testcase").template as<std::string>() );
 
-    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "d.solver" ) );
+
+    std::ofstream out;
+    if ( env.worldComm().rank() == 0 )
+        out.open( (boost::format("res-%1%.dat") % env.numberOfProcessors() ).str().c_str() );
+    Application benchmark;
+
+    //benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Simplex>( "2D-CR1P0-Simplex"  ) );
+    //benchmark.add( new Stokes<2, CrouzeixRaviart<1, Vectorial>,Lagrange<0, Scalar,Discontinuous>, Hypercube>( "2D-CR1P0-Hypercube"  ) );
+    benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "2D-P2P1-Simplex" ) );
+    //benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube") );
+    benchmark.add( new Stokes<2, Lagrange<3, Vectorial>,Lagrange<2, Scalar>, Simplex>( "2D-P3P2-Simplex" ) );
+    //benchmark.add( new Stokes<2, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "2D-P2P1-Hypercube") );
+    //benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Simplex>( "2D-P5P4-Simplex" ) );
+    //benchmark.add( new Stokes<2, Lagrange<5, Vectorial>,Lagrange<4, Scalar>, Hypercube>( "2D-P5P4-Hypercube" ) );
+
+    //benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Hypercube>( "3D-P2P1-Hypercube" ) );
+    //benchmark.add( new Stokes<3, Lagrange<2, Vectorial>,Lagrange<1, Scalar>, Simplex>( "3D-P2P1-Simplex") );
+
+    benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" )( "d.solver" ) );
+    //benchmark.setStats( boost::assign::list_of( "e.l2" )( "e.h1" )( "n.space" )( "n.matrix" )( "t.init" )( "t.assembly.rhs" )( "t.assembly.lhs" )( "t.solver" ));
 
     benchmark.run();
     benchmark.printStats( std::cout );

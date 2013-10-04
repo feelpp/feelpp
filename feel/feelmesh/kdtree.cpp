@@ -155,11 +155,11 @@ build_tree( KDTree::points_iterator begin,
         return 0;
 
     size_type npts = std::distance( begin,end );
-    Debug( 4011 ) << "[KDTree::build_tree] nbpts = " << npts << "\n";
+    DVLOG(2) << "[KDTree::build_tree] nbpts = " << npts << "\n";
 
     if ( npts > KDTree::Element::POINTS_PER_LEAF )
     {
-        Debug( 4011 ) << "[KDTree::build_tree] split\n";
+        DVLOG(2) << "[KDTree::build_tree] split\n";
         KDTree::points_iterator itmedian;
         scalar_type median;
         size_type N = boost::get<0>( *begin ).size();
@@ -292,7 +292,7 @@ build_tree( KDTree::points_iterator begin,
 
     else
     {
-        Debug( 4011 ) << "[KDTree::build_tree] return leaf\n";
+        DVLOG(2) << "[KDTree::build_tree] return leaf\n";
         return new KDTree::Leaf( begin,end );
     }
 }
@@ -359,7 +359,7 @@ points_in_box( const points_in_box_data& p,
 
         for ( size_type i=tl->n; i; --i, ++itpt )
         {
-            Debug( 4011 ) <<  "i = " << i << " pt = " << boost::get<0>( *itpt ) << " ptindex = " << boost::get<1>( *itpt )<< "\n";
+            DVLOG(2) <<  "i = " << i << " pt = " << boost::get<0>( *itpt ) << " ptindex = " << boost::get<1>( *itpt )<< "\n";
             bool is_in = true;
             KDTree::node_type::const_iterator it = boost::get<0>( *itpt ).begin();
             KDTree::node_type::const_iterator en = boost::get<0>( *itpt ).end();
@@ -373,7 +373,7 @@ points_in_box( const points_in_box_data& p,
             {
                 // debugging output
 #if 1
-                Debug( 4011 ) << "test: k=" << k << ", "
+                DVLOG(2) << "test: k=" << k << ", "
                               << *it
                               << ", p.bmin[k]=" << p.bmin[k]
                               << ", p.bmax[k]=" << p.bmax[k]
@@ -390,9 +390,9 @@ points_in_box( const points_in_box_data& p,
 
             if ( is_in )
             {
-                Debug( 4011 ) << "new point in box pt = " << boost::get<0>( *itpt ) << " ptindex = " << boost::get<1>( *itpt )<< "\n";
+                DVLOG(2) << "new point in box pt = " << boost::get<0>( *itpt ) << " ptindex = " << boost::get<1>( *itpt )<< "\n";
                 p.ipts->push_back( *itpt );
-                Debug( 4011 ) << "size p.ipts = " << p.ipts->size() << "\n";
+                DVLOG(2) << "size p.ipts = " << p.ipts->size() << "\n";
             }
         }
     }
@@ -605,7 +605,7 @@ KDTree::pointsInBox( points_type &inpts,
     p.N = boost::get<0>( *M_pts.begin() ).size();
     detail::points_in_box( p, M_tree, 0 );
 
-    Debug( 4011 ) << "size inpts = " << inpts.size() << "\n";
+    DVLOG(2) << "size inpts = " << inpts.size() << "\n";
 
 }
 

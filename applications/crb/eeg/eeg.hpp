@@ -48,6 +48,8 @@
 
 #include <feel/feelcrb/parameterspace.hpp>
 
+#include <feel/feelcrb/modelcrbbase.hpp>
+
 namespace Feel
 {
 using namespace vf;
@@ -84,7 +86,29 @@ makeEEGAbout( std::string const& str = "eeg" )
     return about;
 }
 
+class ParameterDefinition
+{
+public:
+    static const uint16_type ParameterSpaceDimension = 8;
+    typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
+};
 
+class FunctionSpaceDefinition
+{
+public:
+    static const uint16_type Order = 1;
+    static const uint16_type Dim = 3;
+    typedef double value_type;
+    /*mesh*/
+    typedef Simplex<Dim> entity_type;
+    typedef Mesh<entity_type> mesh_type;
+
+    typedef bases<Lagrange<Order, Scalar>,Lagrange<0, Scalar> > basis_type;
+
+    /*space*/
+    typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
+    typedef functionspace_type space_type;
+};
 
 
 /**
@@ -94,9 +118,14 @@ makeEEGAbout( std::string const& str = "eeg" )
  * @author Sylvain Vallaghé
  * @see
  */
-class EEG
+class EEG : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >
 {
 public:
+
+
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition> super_type;
+    typedef typename super_type::funs_type funs_type;
+    typedef typename super_type::funsd_type funsd_type;
 
 
     /** @name Constants
@@ -167,10 +196,13 @@ public:
     typedef parameterspace_type::sampling_type sampling_type;
     typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef Eigen::VectorXd theta_vector_type;
+    typedef Eigen::VectorXd vectorN_type;
+    typedef std::vector< std::vector< double > > beta_vector_type;
 
-
-    typedef boost::tuple<std::vector<sparse_matrix_ptrtype>, std::vector<std::vector<vector_ptrtype>  > > affine_decomposition_type;
+    typedef boost::tuple<
+        std::vector< std::vector<sparse_matrix_ptrtype> >,
+        std::vector< std::vector<std::vector<vector_ptrtype> > >
+        > affine_decomposition_type;
     //@}
 
     /** @name Constructors, destructor
@@ -190,7 +222,7 @@ public:
     ~EEG() {}
 
     //! initialisation of the model
-    void init();
+    void initModel();
     //@}
 
     /** @name Operator overloads
@@ -232,6 +264,24 @@ public:
         return 0;
     }
 
+    int mMaxA( int q )
+    {
+        if ( q < Qa() )
+            return 1;
+        else
+            throw std::logic_error( "[Model EEG] ERROR : try to acces to mMaxA(q) with a bad value of q");
+    }
+
+    int mMaxF( int output_index, int q)
+    {
+        if ( q < 1 )
+            return 1;
+        else
+            throw std::logic_error( "[Model EEG] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
+    }
+
+
+
     /**
      * \brief Returns the function space
      */
@@ -256,59 +306,37 @@ public:
      * \brief compute the theta coefficient for both bilinear and linear form
      * \param mu parameter to evaluate the coefficients
      */
-    boost::tuple<theta_vector_type, std::vector<theta_vector_type> >
-    computeThetaq( parameter_type const& mu , double time=0 )
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
+    computeBetaQm( element_type const& T,parameter_type const& mu , double time=1e30 )
+    {
+        return computeBetaQm( mu , time );
+    }
+
+    boost::tuple<beta_vector_type, std::vector<beta_vector_type> >
+    computeBetaQm( parameter_type const& mu , double time=0 )
     {
         std::cout << "compute thetaq for mu " << mu << "\n" ;
-        M_thetaAq.resize( Qa() );
+        M_betaAqm.resize( Qa() );
+        for(int j=0; j<this->Qa(); j++)
+            M_betaAqm[j].resize(1);
 
-        for ( int i=0; i<nbtissue; i++ ) M_thetaAq( i ) = mu ( i );
+        for ( int i=0; i<nbtissue; i++ ) M_betaAqm[i][0] = mu ( i );
 
-        M_thetaAq( nbtissue ) = 1.0;
+        M_betaAqm[nbtissue][0] = 1.0;
 
-        M_thetaFq.resize( Nl() );
-        M_thetaFq[0].resize( Ql( 0 ) );
+        M_betaFqm.resize( Nl() );
+        M_betaFqm[0][0].resize( Ql( 0 ) );
+            for(int q=0;q<Ql(0);q++)
+                M_betaFqm[0][q].resize(1);
 
-        for ( int i=0; i<nbtissue; i++ ) M_thetaFq[0]( i ) = 1.0-mu( i )/mu( grey );
+        for ( int i=0; i<nbtissue; i++ ) M_betaFqm[0][i][0] = 1.0-mu( i )/mu( grey );
 
-        M_thetaFq[0]( nbtissue ) = 1.0 ;
-        M_thetaFq[0]( nbtissue+1 ) = 1.0/mu( grey ) ;
+        M_betaFqm[0][nbtissue][0] = 1.0 ;
+        M_betaFqm[0][nbtissue+1][0] = 1.0/mu( grey ) ;
 
-        return boost::make_tuple( M_thetaAq, M_thetaFq );
+        return boost::make_tuple( M_betaAqm, M_betaFqm );
     }
 
-    /**
-     * \brief return the coefficient vector
-     */
-    theta_vector_type const& thetaAq() const
-    {
-        return M_thetaAq;
-    }
-
-    /**
-     * \brief return the coefficient vector
-     */
-    std::vector<theta_vector_type> const& thetaFq() const
-    {
-        return M_thetaFq;
-    }
-
-    /**
-     * \brief return the coefficient vector \p q component
-     *
-     */
-    value_type thetaAq( int q ) const
-    {
-        return M_thetaAq( q );
-    }
-
-    /**
-     * \return the \p q -th term of the \p l -th output
-     */
-    value_type thetaL( int l, int q ) const
-    {
-        return M_thetaFq[l]( q );
-    }
 
     //@}
 
@@ -332,10 +360,21 @@ public:
      */
     sparse_matrix_ptrtype newMatrix() const;
 
+    vector_ptrtype newVector() const;
     /**
      * \brief Returns the affine decomposition
      */
     affine_decomposition_type computeAffineDecomposition();
+
+    std::vector< std::vector< element_ptrtype > > computeInitialGuessAffineDecomposition()
+    {
+        std::vector< std::vector<element_ptrtype> > q;
+        q.resize(1);
+        q[0].resize(1);
+        element_ptrtype elt ( new element_type ( Xh ) );
+        q[0][0] = elt;
+        return q;
+    }
 
     /**
      * \brief solve the model for parameter \p mu
@@ -347,7 +386,7 @@ public:
     /**
      * solve for a given parameter \p mu
      */
-    void solve( parameter_type const& mu );
+    element_type solve( parameter_type const& mu );
 
     /**
      * solve \f$ M u = f \f$
@@ -358,8 +397,15 @@ public:
     /**
      * update the PDE system with respect to \param mu
      */
-    void update( parameter_type const& mu , double time=0 );
+    void update( parameter_type const& mu );
     //@}
+
+
+    sparse_matrix_ptrtype innerProduct ( void )
+    {
+        return M;
+    }
+
 
     /**
      * export results to ensight format (enabled by  --export cmd line options)
@@ -393,8 +439,12 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu );
+    value_type output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=true);
 
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
 
 private:
 
@@ -411,12 +461,12 @@ private:
     element_ptrtype pT;
     element_ptrtype ginf ;
 
-    std::vector<sparse_matrix_ptrtype> Aq;
-    std::vector<std::vector<vector_ptrtype> > Lq;
+    std::vector< std::vector<sparse_matrix_ptrtype> > M_Aqm;
+    std::vector< std::vector<std::vector<vector_ptrtype> > > M_Fqm;
 
     parameterspace_ptrtype M_Dmu;
-    theta_vector_type M_thetaAq;
-    std::vector<theta_vector_type> M_thetaFq;
+    beta_vector_type M_betaAqm;
+    std::vector<beta_vector_type> M_betaFqm;
 
     enum Tissue {white, whiterad, whitetang, grey , csf, skullrad, skulltang, scalp } ;
     unsigned int domain[nbtissue];
@@ -430,9 +480,7 @@ EEG::EEG()
     exporter( Exporter<mesh_type>::New( "ensight" ) ),
     mesh( new mesh_type ),
     M_Dmu( new parameterspace_type )
-{
-    this->init();
-}
+{}
 
 
 EEG::EEG( po::variables_map const& vm )
@@ -443,11 +491,10 @@ EEG::EEG( po::variables_map const& vm )
     exporter( Exporter<mesh_type>::New( vm, "eeg" ) ),
     mesh( new mesh_type ),
     M_Dmu( new parameterspace_type )
-{
-    this->init();
-}
+{}
+
 void
-EEG::init()
+EEG::initModel()
 {
 
     // Different head tissue domains
@@ -464,10 +511,12 @@ EEG::init()
     /*
      * Loading mesh
      */
-    ImporterGmsh<mesh_type> import( "real.msh" );
-    mesh->accept( import );
-    mesh->setComponents( MESH_CHECK | MESH_UPDATE_FACES );
-    mesh->updateForUse();
+
+    loadMesh( _mesh=mesh , _filename="real.msh");
+    //ImporterGmsh<mesh_type> import( "real.msh" );
+    //mesh->accept( import );
+    //mesh->setComponents( MESH_CHECK | MESH_UPDATE_FACES );
+    //mesh->updateForUse();
 
     // Loading anisotropy tensor
 
@@ -553,26 +602,29 @@ EEG::init()
     F->close();
 
 
-    Aq.resize( nbtissue+1 );
+    M_Aqm.resize( nbtissue+1 );
+    for ( int q=0; q<Qa(); q++ )
+    {
+        M_Aqm[q].resize( 1 );
+        M_Aqm[q][0] = M_backend->newMatrix( Xh, Xh );
+    }
 
     for ( int i=0; i<nbtissue; i++ )
     {
         LOG(INFO) << "assembling Aq[" << i << "]\n" ;
-        Aq[i]=M_backend->newMatrix( Xh, Xh );
 
-        if ( i==skullrad || i==whiterad ) form2( Xh, Xh, Aq[i], _init=true ) = integrate( markedelements( mesh, domain[i] ), gradt( u )*K*trans( grad( v ) ) ) ;
+        if ( i==skullrad || i==whiterad ) form2( Xh, Xh, M_Aqm[i][0], _init=true ) = integrate( markedelements( mesh, domain[i] ), gradt( u )*K*trans( grad( v ) ) ) ;
 
-        else if ( i==skulltang || i==whitetang ) form2( Xh, Xh, Aq[i], _init=true ) = integrate( markedelements( mesh, domain[i] ), gradt( u )*trans( grad( v ) )-gradt( u )*K*trans( grad( v ) ) ) ;
+        else if ( i==skulltang || i==whitetang ) form2( Xh, Xh, M_Aqm[i][0], _init=true ) = integrate( markedelements( mesh, domain[i] ), gradt( u )*trans( grad( v ) )-gradt( u )*K*trans( grad( v ) ) ) ;
 
-        else form2( Xh, Xh, Aq[i], _init=true ) = integrate( markedelements( mesh, domain[i] ), gradt( u )*trans( grad( v ) ) ) ;
+        else form2( Xh, Xh, M_Aqm[i][0], _init=true ) = integrate( markedelements( mesh, domain[i] ), gradt( u )*trans( grad( v ) ) ) ;
 
-        Aq[i]->close();
+        M_Aqm[i][0]->close();
     }
 
-    Aq[nbtissue]=M_backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, Aq[nbtissue], _init=true ) = integrate( elements( mesh ),
-            id( v )*idt( lambda ) + idt( u )*id( nu ) + 0*idt( lambda )*id( nu ) ) ;
-    Aq[nbtissue]->close();
+    form2( Xh, Xh, M_Aqm[nbtissue][0], _init=true ) = integrate( elements( mesh ),
+                                                                 id( v )*idt( lambda ) + idt( u )*id( nu ) + 0*idt( lambda )*id( nu ) ) ;
+    M_Aqm[nbtissue][0]->close();
 
     double area = integrate( elements( mesh ), constant( 1.0 ) ).evaluate()( 0, 0 );
     double mean = integrate( elements( mesh ),-g, _Q<5>() ).evaluate()( 0, 0 )/area;
@@ -582,36 +634,39 @@ EEG::init()
     //LOG(INFO) << "int g  = " << mean << "\n";
 
 
-    Lq.resize( 1 );
-    Lq[0].resize( nbtissue+2 );
+    M_Fqm.resize( 1 );
+    M_Fqm[0].resize( nbtissue+2 );
+    for(int j=0; j<nbtissue+2 ; j++ )
+    {
+        M_Fqm[0][j].resize(1);
+        M_Fqm[0][j][0] = M_backend->newVector( Xh ) ;
+    }
+
     vector_ptrtype F( M_backend->newVector( Xh ) );
 
     for ( int i=0; i<nbtissue; i++ )
     {
-        LOG(INFO) << "assembling Lq[" << i << "]\n" ;
-        Lq[0][i]=M_backend->newVector( Xh );
+        LOG(INFO) << "assembling Fq[" << i << "]\n" ;
 
-        if ( i==skullrad || i==whiterad ) form1( Xh, Lq[0][i], _init=true ) = integrate( markedelements( mesh, domain[i] ),  grad( v )*K*grad_g, _Q<5>() ) ;
+        if ( i==skullrad || i==whiterad ) form1( Xh, M_Fqm[0][i][0], _init=true ) = integrate( markedelements( mesh, domain[i] ),  grad( v )*K*grad_g, _Q<5>() ) ;
 
-        else if ( i==skulltang || i==whitetang ) form1( Xh, Lq[0][i], _init=true ) = integrate( markedelements( mesh, domain[i] ), grad( v )*grad_g-grad( v )*K*grad_g, _Q<5>() ) ;
+        else if ( i==skulltang || i==whitetang ) form1( Xh, M_Fqm[0][i][0], _init=true ) = integrate( markedelements( mesh, domain[i] ), grad( v )*grad_g-grad( v )*K*grad_g, _Q<5>() ) ;
 
-        else form1( Xh, Lq[0][i], _init=true ) = integrate( markedelements( mesh, domain[i] ),  grad( v )*grad_g, _Q<5>() ) ;
+        else form1( Xh, M_Fqm[0][i][0], _init=true ) = integrate( markedelements( mesh, domain[i] ),  grad( v )*grad_g, _Q<5>() ) ;
 
-        Lq[0][i]->close();
+        M_Fqm[0][i][0]->close();
     }
 
-    Lq[0][nbtissue]=M_backend->newVector( Xh );
-    form1( Xh, Lq[0][nbtissue], _init=true ) = integrate( boundaryfaces( mesh ), -trans( grad_g )*N()*id( v ),_Q<5>() ) ;
-    Lq[0][nbtissue]->close();
-    Lq[0][nbtissue+1]=M_backend->newVector( Xh );
-    form1( Xh, Lq[0][nbtissue+1], _init=true ) = integrate( elements( mesh ),  mean*id( nu ) ) ;
-    Lq[0][nbtissue+1]->close();
+
+    form1( Xh, M_Fqm[0][nbtissue][0], _init=true ) = integrate( boundaryfaces( mesh ), -trans( grad_g )*N()*id( v ),_Q<5>() ) ;
+    M_Fqm[0][nbtissue][0]->close();
+    form1( Xh, M_Fqm[0][nbtissue+1][0], _init=true ) = integrate( elements( mesh ),  mean*id( nu ) ) ;
+    M_Fqm[0][nbtissue+1][0]->close();
 
     M = M_backend->newMatrix( Xh, Xh );
     form2( Xh, Xh, M, _init=true ) =
         integrate( elements( mesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) + idt( lambda )*id( nu ) );
     M->close();
-
 
     LOG(INFO) << "Assembly done\n" ;
 
@@ -623,10 +678,16 @@ EEG::newMatrix() const
     return M_backend->newMatrix( Xh, Xh );
 }
 
+EEG::vector_ptrtype
+EEG::newVector() const
+{
+    return M_backend->newVector( Xh );
+}
+
 EEG::affine_decomposition_type
 EEG::computeAffineDecomposition()
 {
-    return boost::make_tuple( Aq, Lq );
+    return boost::make_tuple( M_Aqm, M_Fqm );
 }
 
 
@@ -660,33 +721,34 @@ void
 EEG::update( parameter_type const& mu )
 {
 
-    std::cout << "update for parameter " << mu << "\n" ;
-    *D = *Aq[nbtissue];
-    std::cout << "Merging Aq\n" ;
+    LOG(INFO) << "update for parameter " << mu << "\n" ;
+    *D = *M_Aqm[nbtissue][0];
+    LOG(INFO) << "Merging Aq\n" ;
 
-    for ( size_type q = 0; q < Aq.size()-1; ++q )
+    for ( size_type q = 0; q < M_Aqm.size()-1; ++q )
     {
-        std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaAq[q] << "\n";
-        D->addMatrix( M_thetaAq[q], Aq[q] );
+        LOG( INFO ) << "[affine decomp] scale q=" << q << " with " << M_betaAqm[q][0] << "\n";
+        D->addMatrix( M_betaAqm[q][0], M_Aqm[q][0] );
     }
 
-    std::cout << "Merging Aq done\n" ;
+    LOG(INFO) << "Merging Aq done\n" ;
     F->zero();
-    std::cout << "Merging Lq\n" ;
+    LOG(INFO) << "Merging Lq\n" ;
 
-    for ( size_type q = 0; q < Lq[0].size(); ++q )
+    for ( size_type q = 0; q < M_Fqm[0].size(); ++q )
     {
-        std::cout << "[affine decomp] scale q=" << q << " with " << M_thetaFq[0][q] << "\n";
-        F->add( M_thetaFq[0][q], Lq[0][q] );
+        LOG(INFO) << "[affine decomp] scale q=" << q << " with " << M_betaFqm[0][q][0] << "\n";
+        F->add( M_betaFqm[0][q][0], M_Fqm[0][q][0] );
     }
 
-    std::cout << "Merging Lq done\n" ;
+    LOG(INFO) << "Merging Lq done\n" ;
 
 }
-void
+
+EEG::element_type
 EEG::solve( parameter_type const& mu )
 {
-    std::cout << "solve(mu) for parameter " << mu << "\n";
+    LOG(INFO) << "solve(mu) for parameter " << mu << "\n";
 
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
@@ -697,12 +759,13 @@ EEG::solve( parameter_type const& mu )
     e = vf::project( Xh->functionSpace<0>(), elements( mesh ), idv( u )+1.0/mu( grey )*idv( g ) );
     this->exportResults( E );
 
+    return *T;
 }
 
 void
 EEG::solve( parameter_type const& mu, element_ptrtype& T )
 {
-    this->computeThetaq( mu );
+    this->computeBetaQm( mu );
     this->update( mu );
     LOG(INFO) << "Solving system starts\n" ;
     M_backend->solve( _matrix=D,  _solution=T, _rhs=F );
@@ -739,7 +802,7 @@ EEG::run( const double * X, unsigned long N, double * Y, unsigned long P )
 
     if ( do_init )
     {
-        this->init();
+        this->initModel();
         do_init = false;
     }
 
@@ -750,12 +813,13 @@ EEG::run( const double * X, unsigned long N, double * Y, unsigned long P )
 }
 
 double
-EEG::output( int output_index, parameter_type const& mu )
+EEG::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
     using namespace vf;
-    this->solve( mu, pT );
-    vector_ptrtype U( M_backend->newVector( Xh ) );
-    *U = *pT;
+    if( need_to_solve )
+        this->solve( mu, pT );
+    else
+        *pT=u;
 
     return 0;
 }

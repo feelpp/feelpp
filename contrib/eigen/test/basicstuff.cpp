@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #define EIGEN_NO_STATIC_ASSERT
 
@@ -67,8 +52,7 @@ template<typename MatrixType> void basicStuff(const MatrixType& m)
   VERIFY_IS_APPROX(               v1,    v1);
   VERIFY_IS_NOT_APPROX(           v1,    2*v1);
   VERIFY_IS_MUCH_SMALLER_THAN(    vzero, v1);
-  if(!NumTraits<Scalar>::IsInteger)
-    VERIFY_IS_MUCH_SMALLER_THAN(  vzero, v1.norm());
+  VERIFY_IS_MUCH_SMALLER_THAN(  vzero, v1.squaredNorm());
   VERIFY_IS_NOT_MUCH_SMALLER_THAN(v1,    v1);
   VERIFY_IS_APPROX(               vzero, v1-v1);
   VERIFY_IS_APPROX(               m1,    m1);
@@ -157,10 +141,10 @@ template<typename MatrixType> void basicStuffComplex(const MatrixType& m)
   Scalar s1 = internal::random<Scalar>(),
          s2 = internal::random<Scalar>();
 
-  VERIFY(internal::real(s1)==internal::real_ref(s1));
-  VERIFY(internal::imag(s1)==internal::imag_ref(s1));
-  internal::real_ref(s1) = internal::real(s2);
-  internal::imag_ref(s1) = internal::imag(s2);
+  VERIFY(numext::real(s1)==numext::real_ref(s1));
+  VERIFY(numext::imag(s1)==numext::imag_ref(s1));
+  numext::real_ref(s1) = numext::real(s2);
+  numext::imag_ref(s1) = numext::imag(s2);
   VERIFY(internal::isApprox(s1, s2, NumTraits<RealScalar>::epsilon()));
   // extended precision in Intel FPUs means that s1 == s2 in the line above is not guaranteed.
 

@@ -6,7 +6,7 @@
        Date: 2005-01-17
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006,2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -59,28 +59,28 @@ public:
     OpDot ( left_expression_type const& left,
             right_expression_type const& right )
         :
-        _M_left ( left ),
-        _M_right ( right )
+        M_left ( left ),
+        M_right ( right )
     {
-        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpDot ) "] default constructor\n";
+        DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpDot ) "] default constructor\n";
 
     }
     OpDot( OpDot const& op )
         :
-        _M_left ( op._M_left ),
-        _M_right ( op._M_right )
+        M_left ( op.M_left ),
+        M_right ( op.M_right )
     {
-        Debug( 5051 ) << "[" BOOST_PP_STRINGIZE( OpDot ) "] copy constructor\n";
+        DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpDot ) "] copy constructor\n";
 
     }
 
     left_expression_type const& left() const
     {
-        return _M_left;
+        return M_left;
     }
     right_expression_type const& right() const
     {
-        return _M_right;
+        return M_right;
     }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -105,24 +105,24 @@ public:
                 Basis_i_t const& fev,
                 Basis_j_t const& feu )
             :
-            _M_left( expr.left(), geom, fev, feu ),
-            _M_right( expr.right(), geom, fev, feu )
+            M_left( expr.left(), geom, fev, feu ),
+            M_right( expr.right(), geom, fev, feu )
         {}
 
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            _M_left.update( geom, fev, feu );
-            _M_right.update( geom, fev, feu );
+            M_left.update( geom, fev, feu );
+            M_right.update( geom, fev, feu );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
-            _M_left.update( geom, fev );
-            _M_right.update( geom, fev );
+            M_left.update( geom, fev );
+            M_right.update( geom, fev );
         }
         void update( Geo_t const& geom )
         {
-            _M_left.update( geom );
-            _M_right.update( geom );
+            M_left.update( geom );
+            M_right.update( geom );
         }
 
 
@@ -160,7 +160,7 @@ public:
             {
                 i_up.setIndex( rank-1, c );
                 j_up.setIndex( rank-1, c );
-                res += _M_left( i_up, j_up, q ) * _M_right( i_up, j_up, q );
+                res += M_left( i_up, j_up, q ) * M_right( i_up, j_up, q );
             }
 
             return res;
@@ -172,11 +172,11 @@ public:
                     int q,
                     mpl::bool_<false> ) const
         {
-            return _M_left( i, j, q ) * _M_right( i, j, q );
+            return M_left( i, j, q ) * M_right( i, j, q );
         }
     private:
-        l_type _M_left;
-        r_type _M_right;
+        l_type M_left;
+        r_type M_right;
 
     };
 
@@ -185,8 +185,8 @@ protected:
 
 
 private:
-    left_expression_type const& _M_left;
-    right_expression_type const& _M_right;
+    left_expression_type const& M_left;
+    right_expression_type const& M_right;
 };
 template <class LeftExprType, typename RightExprType>
 inline Expr< OpDot< LeftExprType, RightExprType> >

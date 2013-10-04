@@ -227,17 +227,20 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                             ( test,             * )
                             ( trial,            * )
                           ) // required
-                          ( optional                                  //    four optional parameters, with defaults
-                            ( in_out( matrix ),   *, backend()->newMatrix( _test=test, _trial=trial ) )
-                            ( init,             *( boost::is_integral<mpl::_> ), false )
-                            ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
-                            ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
-                            ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
-                          ) // optional
+                          (deduced
+                           ( optional                                  //    four optional parameters, with defaults
+                             ( init,             *( boost::is_integral<mpl::_> ), false )
+                             ( pattern,          *( boost::is_integral<mpl::_> ), size_type( Pattern::COUPLED ) )
+                             ( in_out( matrix ),   *(boost::is_convertible<mpl::_, boost::shared_ptr<MatrixSparse<double>>>), backend()->newMatrix( _test=test, _trial=trial, _pattern=pattern ) )
+                             ( rowstart,         *( boost::is_integral<mpl::_> ), 0 )
+                             ( colstart,         *( boost::is_integral<mpl::_> ), 0 )
+                               ) // optional
+                              ) // deduced
                         )
 {
     Feel::detail::ignore_unused_variable_warning( args );
     //return form( test, trial, *matrix, init, false, 1e-16, pattern );
+    //if (!matrix) matrix.reset( backend()->newMatrix( _trial=trial, _test=test ) );
     bool do_threshold = false;
     double threshold = 1e-16;
     return form( test, trial, matrix, rowstart, colstart, init, do_threshold, threshold, pattern );

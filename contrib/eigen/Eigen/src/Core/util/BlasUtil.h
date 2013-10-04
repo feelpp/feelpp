@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_BLASUTIL_H
 #define EIGEN_BLASUTIL_H
@@ -57,7 +42,7 @@ template<bool Conjugate> struct conj_if;
 
 template<> struct conj_if<true> {
   template<typename T>
-  inline T operator()(const T& x) { return conj(x); }
+  inline T operator()(const T& x) { return numext::conj(x); }
   template<typename T>
   inline T pconj(const T& x) { return internal::pconj(x); }
 };
@@ -82,7 +67,7 @@ template<typename RealScalar> struct conj_helper<std::complex<RealScalar>, std::
   { return c + pmul(x,y); }
 
   EIGEN_STRONG_INLINE Scalar pmul(const Scalar& x, const Scalar& y) const
-  { return Scalar(real(x)*real(y) + imag(x)*imag(y), imag(x)*real(y) - real(x)*imag(y)); }
+  { return Scalar(numext::real(x)*numext::real(y) + numext::imag(x)*numext::imag(y), numext::imag(x)*numext::real(y) - numext::real(x)*numext::imag(y)); }
 };
 
 template<typename RealScalar> struct conj_helper<std::complex<RealScalar>, std::complex<RealScalar>, true,false>
@@ -92,7 +77,7 @@ template<typename RealScalar> struct conj_helper<std::complex<RealScalar>, std::
   { return c + pmul(x,y); }
 
   EIGEN_STRONG_INLINE Scalar pmul(const Scalar& x, const Scalar& y) const
-  { return Scalar(real(x)*real(y) + imag(x)*imag(y), real(x)*imag(y) - imag(x)*real(y)); }
+  { return Scalar(numext::real(x)*numext::real(y) + numext::imag(x)*numext::imag(y), numext::real(x)*numext::imag(y) - numext::imag(x)*numext::real(y)); }
 };
 
 template<typename RealScalar> struct conj_helper<std::complex<RealScalar>, std::complex<RealScalar>, true,true>
@@ -102,7 +87,7 @@ template<typename RealScalar> struct conj_helper<std::complex<RealScalar>, std::
   { return c + pmul(x,y); }
 
   EIGEN_STRONG_INLINE Scalar pmul(const Scalar& x, const Scalar& y) const
-  { return Scalar(real(x)*real(y) - imag(x)*imag(y), - real(x)*imag(y) - imag(x)*real(y)); }
+  { return Scalar(numext::real(x)*numext::real(y) - numext::imag(x)*numext::imag(y), - numext::real(x)*numext::imag(y) - numext::imag(x)*numext::real(y)); }
 };
 
 template<typename RealScalar,bool Conj> struct conj_helper<std::complex<RealScalar>, RealScalar, Conj,false>
@@ -128,7 +113,7 @@ template<typename From,typename To> struct get_factor {
 };
 
 template<typename Scalar> struct get_factor<Scalar,typename NumTraits<Scalar>::Real> {
-  static EIGEN_STRONG_INLINE typename NumTraits<Scalar>::Real run(const Scalar& x) { return real(x); }
+  static EIGEN_STRONG_INLINE typename NumTraits<Scalar>::Real run(const Scalar& x) { return numext::real(x); }
 };
 
 // Lightweight helper class to access matrix coefficients.

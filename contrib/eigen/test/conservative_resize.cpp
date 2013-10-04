@@ -1,26 +1,11 @@
 // This file is part of Eigen, a lightweight C++ template library
-// for linear algebra. Eigen itself is part of the KDE project.
+// for linear algebra.
 //
 // Copyright (C) 2009 Hauke Heibel <hauke.heibel@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or1 FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -110,20 +95,23 @@ void run_vector_tests()
 
 void test_conservative_resize()
 {
-  CALL_SUBTEST_1((run_matrix_tests<int, Eigen::RowMajor>()));
-  CALL_SUBTEST_1((run_matrix_tests<int, Eigen::ColMajor>()));
-  CALL_SUBTEST_2((run_matrix_tests<float, Eigen::RowMajor>()));
-  CALL_SUBTEST_2((run_matrix_tests<float, Eigen::ColMajor>()));
-  CALL_SUBTEST_3((run_matrix_tests<double, Eigen::RowMajor>()));
-  CALL_SUBTEST_3((run_matrix_tests<double, Eigen::ColMajor>()));
-  CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::RowMajor>()));
-  CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::ColMajor>()));
-  CALL_SUBTEST_5((run_matrix_tests<std::complex<double>, Eigen::RowMajor>()));
-  CALL_SUBTEST_6((run_matrix_tests<std::complex<double>, Eigen::ColMajor>()));
+  for(int i=0; i<g_repeat; ++i)
+  {
+    CALL_SUBTEST_1((run_matrix_tests<int, Eigen::RowMajor>()));
+    CALL_SUBTEST_1((run_matrix_tests<int, Eigen::ColMajor>()));
+    CALL_SUBTEST_2((run_matrix_tests<float, Eigen::RowMajor>()));
+    CALL_SUBTEST_2((run_matrix_tests<float, Eigen::ColMajor>()));
+    CALL_SUBTEST_3((run_matrix_tests<double, Eigen::RowMajor>()));
+    CALL_SUBTEST_3((run_matrix_tests<double, Eigen::ColMajor>()));
+    CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::RowMajor>()));
+    CALL_SUBTEST_4((run_matrix_tests<std::complex<float>, Eigen::ColMajor>()));
+    CALL_SUBTEST_5((run_matrix_tests<std::complex<double>, Eigen::RowMajor>()));
+    CALL_SUBTEST_6((run_matrix_tests<std::complex<double>, Eigen::ColMajor>()));
 
-  CALL_SUBTEST_1((run_vector_tests<int>()));
-  CALL_SUBTEST_2((run_vector_tests<float>()));
-  CALL_SUBTEST_3((run_vector_tests<double>()));
-  CALL_SUBTEST_4((run_vector_tests<std::complex<float> >()));
-  CALL_SUBTEST_5((run_vector_tests<std::complex<double> >()));
+    CALL_SUBTEST_1((run_vector_tests<int>()));
+    CALL_SUBTEST_2((run_vector_tests<float>()));
+    CALL_SUBTEST_3((run_vector_tests<double>()));
+    CALL_SUBTEST_4((run_vector_tests<std::complex<float> >()));
+    CALL_SUBTEST_5((run_vector_tests<std::complex<double> >()));
+  }
 }

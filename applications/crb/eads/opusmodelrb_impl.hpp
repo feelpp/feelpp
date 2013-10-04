@@ -77,7 +77,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB( po::variables_map const& vm )
 
     LOG(INFO) << "[constructor::vm] constructor, build backend done" << "\n";
     initParametrization();
-    init();
 }
 template<int OrderU, int OrderP, int OrderT>
 OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
@@ -101,7 +100,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::OpusModelRB(  )
     backendM = backend_type::build( BACKEND_PETSC );
     LOG(INFO) << "[default] constructor, build backend done" << "\n";
     initParametrization();
-    init();
     LOG(INFO) << "[default] init done" << "\n";
 }
 template<int OrderU, int OrderP, int OrderT>
@@ -132,7 +130,7 @@ OpusModelRB<OrderU, OrderP, OrderT>::initializationField( element_ptrtype& initi
 
 template<int OrderU, int OrderP, int OrderT>
 void
-OpusModelRB<OrderU,OrderP,OrderT>::init()
+OpusModelRB<OrderU,OrderP,OrderT>::initModel()
 {
     LOG(INFO) << " -- OpusModelRB::init\n";
     LOG(INFO) << "   - initialized: " << M_is_initialized << "\n";
@@ -719,12 +717,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::init()
     M_Mqm[0][0]->close();
     M_Mqm[1][0]->close();
 
-    auto ini_cond = M_Th->elementPtr();
-    ini_cond->setZero();
-    M_InitialGuessQm.resize( 1 );
-    M_InitialGuessQm[0].resize( 1 );
-    M_InitialGuessQm[0][0] = ini_cond;
-
     //
     // H_1 scalar product
     //
@@ -823,28 +815,16 @@ template<int OrderU, int OrderP, int OrderT>
 int
 OpusModelRB<OrderU,OrderP,OrderT>::mMaxF( int output_index, int q)
 {
+    int max = 0;
     if( output_index < Nl() )
     {
         if ( q < Ql( output_index ) )
-            return 1;
+            max = 1;
     }
     else
         throw std::logic_error( "[Model OpusModelRb] ERROR : try to acces to mMaxF(output_index,q) with a bad value of q");
-}
 
-//for non linearities
-template<int OrderU, int OrderP, int OrderT>
-int
-OpusModelRB<OrderU,OrderP,OrderT>::QInitialGuess() const
-{
-    return 1;
-}
-
-template<int OrderU, int OrderP, int OrderT>
-int
-OpusModelRB<OrderU,OrderP,OrderT>::mMaxInitialGuess( int q )
-{
-    return 1;
+    return max;
 }
 
 
@@ -975,11 +955,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::computeBetaQm( parameter_type const& mu, doub
     M_betaMqm[ 0 ][ 0 ] = 1 ;
     M_betaMqm[ 1 ][ 0 ] = detJ44;
 
-    M_betaInitialGuessQm.resize( QInitialGuess() );
-    M_betaInitialGuessQm[0].resize( 1 );
-    M_betaInitialGuessQm[0][0] = 0;
-
-    return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaL , M_betaInitialGuessQm );
+    return boost::make_tuple( M_betaMqm, M_betaAqm, M_betaL );
 }
 
 template<int OrderU, int OrderP, int OrderT>
@@ -1107,6 +1083,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::solve( parameter_type const& mu )
     LT[3] = inner_product( *L[3], *pV );
     LOG(INFO) << "LT(" << 3 << ")=" << LT[3] << "\n";
 
+    return *pT;
 }
 
 template<int OrderU, int OrderP, int OrderT>
@@ -1271,9 +1248,19 @@ OpusModelRB<OrderU,OrderP,OrderT>::scalarProductForPod( vector_type const& x, ve
 
 template<int OrderU, int OrderP, int OrderT>
 double
-OpusModelRB<OrderU,OrderP,OrderT>::output( int output_index, parameter_type const& mu )
+OpusModelRB<OrderU,OrderP,OrderT>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
-    this->solve( mu, pT );
+    if( need_to_solve )
+        this->solve( mu, pT );
+    else
+    {
+        if ( M_is_steady )
+        M_temp_bdf->setSteady();
+        this->computeBetaQm( mu , M_temp_bdf->timeFinal() );
+        this->update( mu , M_temp_bdf->timeFinal() );
+        *pT = u;
+    }
+
     vector_ptrtype U( backend->newVector( M_Th ) );
     *U = *pT;
     LOG(INFO) << "S1 = " << inner_product( *L[1], *U ) << "\n S2 = " << inner_product( *L[2], *U ) << "\n";
@@ -1326,7 +1313,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::run( const double * X, unsigned long N, doubl
     LOG(INFO) << "[OpusModelRB::run] parameters print done\n";
 
     LOG(INFO) << "[OpusModelRB::run] init\n";
-    this->init();
+    this->initModel();
     LOG(INFO) << "[OpusModelRB::run] init done\n";
 
     *pT = vf::project( M_Th, elements( M_Th->mesh() ), constant( M_T0 ) );

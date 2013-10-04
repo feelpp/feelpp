@@ -21,6 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
 # Natural convection problem
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
@@ -36,7 +38,8 @@ set(lib_convection
   ${CMAKE_CURRENT_SOURCE_DIR}/convection_crb_other.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/convection_crb_residual.cpp )
 
+if(FEELPP_DOC_ENABLE_CAVITY_CRB)
 add_subdirectory( cavity )
+endif()
 #add_subdirectory( cabin )
 #add_subdirectory( room )
-

@@ -34,10 +34,12 @@
 #include <list>
 
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelalg/matrixsparse.hpp>
 
 namespace Feel
 {
+
+    //template<typename T> class MatrixSparse;
+
 namespace vf
 {
 /// \cond detail
@@ -66,17 +68,17 @@ public:
 
     Block( uint16_type __ic = 0, uint16_type __jc = 0, size_type __gic = 0, size_type __gjc = 0 )
         :
-        _M_lr( __ic ),
-        _M_lc( __jc ),
-        _M_gr( __gic ),
-        _M_gc( __gjc )
+        M_lr( __ic ),
+        M_lc( __jc ),
+        M_gr( __gic ),
+        M_gc( __gjc )
     {}
     Block( Block const & __b )
         :
-        _M_lr( __b._M_lr ),
-        _M_lc( __b._M_lc ),
-        _M_gr( __b._M_gr ),
-        _M_gc( __b._M_gc )
+        M_lr( __b.M_lr ),
+        M_lc( __b.M_lc ),
+        M_gr( __b.M_gr ),
+        M_gc( __b.M_gc )
     {}
     ~Block()
     {}
@@ -91,10 +93,10 @@ public:
     {
         if ( FEELPP_ISLIKELY( this != &__b ) )
         {
-            _M_lr = __b._M_lr;
-            _M_lc = __b._M_lc;
-            _M_gr = __b._M_gr;
-            _M_gc = __b._M_gc;
+            M_lr = __b.M_lr;
+            M_lc = __b.M_lc;
+            M_gr = __b.M_gr;
+            M_gc = __b.M_gc;
         }
 
         return *this;
@@ -109,20 +111,20 @@ public:
 
     uint16_type localRow() const
     {
-        return _M_lr;
+        return M_lr;
     }
     uint16_type localColumn() const
     {
-        return _M_lc;
+        return M_lc;
     }
 
     size_type globalRowStart() const
     {
-        return _M_gr;
+        return M_gr;
     }
     size_type globalColumnStart() const
     {
-        return _M_gc;
+        return M_gc;
     }
 
     //@}
@@ -133,20 +135,20 @@ public:
 
     void setLocalRow( uint16_type __lr )
     {
-        _M_lr = __lr;
+        M_lr = __lr;
     }
     void setLocalColumn( uint16_type __lc )
     {
-        _M_lc = __lc;
+        M_lc = __lc;
     }
 
     void setGlobalRowStart( size_type __r )
     {
-        _M_gr = __r;
+        M_gr = __r;
     }
     void setGlobalColumnStart( size_type __c )
     {
-        _M_gc = __c;
+        M_gc = __c;
     }
 
     //@}
@@ -162,34 +164,12 @@ protected:
 
 private:
 
-    uint16_type _M_lr;
-    uint16_type _M_lc;
-    size_type _M_gr;
-    size_type _M_gc;
+    uint16_type M_lr;
+    uint16_type M_lc;
+    size_type M_gr;
+    size_type M_gc;
 };
 typedef std::list<Block> list_block_type;
-
-inline
-DebugStream&
-operator<<( DebugStream& __os, Block const& __b )
-{
-    std::ostringstream __str;
-    __str << "Block [ "
-          << __b.localRow() << ","
-          << __b.localColumn() << ","
-          << __b.globalRowStart() << ","
-          << __b.globalColumnStart() << "]";
-
-    __os << __str.str() << "\n";
-    return __os;
-}
-
-inline
-NdebugStream&
-operator<<( NdebugStream& __os, Block const& /*__b*/ )
-{
-    return __os;
-}
 
 inline
 std::ostream&
@@ -206,7 +186,7 @@ operator<<( std::ostream& __os, Block const& __b )
 /// \endcond
 
 
-template <typename T= boost::shared_ptr< MatrixSparse<double> > >
+template <typename T>
 struct BlocksBase
 {
     typedef T block_type;
@@ -338,7 +318,7 @@ private :
 
 
 
-template <int NR, int NC, typename T= boost::shared_ptr< MatrixSparse<double> > >
+template <int NR, int NC, typename T>
 struct Blocks : public BlocksBase<T>
 {
     static const uint16_type NBLOCKROWS = NR;

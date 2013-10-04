@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2004-10-04
 
-  Copyright (C) 2007, 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007, 2009 Universite Joseph Fourier (Grenoble I)
   Copyright (C) 2004 EPFL
 
 
@@ -132,7 +132,7 @@ SolverUMFPACK::setStrategy( int strategy )
 void
 SolverUMFPACK::setMatrix( const matrix_type& m )
 {
-    Debug( 5100 ) << "[SolverUMFPACK::setMatrix] set matrix (nr="
+    DVLOG(2) << "[SolverUMFPACK::setMatrix] set matrix (nr="
                   << m.nrows() << ", nc=" << m.ncols() << ", nz=" << m.nz() << ")\n";
     boost::timer ti;
     int *Map = 0;
@@ -157,7 +157,7 @@ SolverUMFPACK::setMatrix( const matrix_type& m )
 
     }
 
-    Debug( 5100 ) << "[SolverUMFPACK::setMatrix] set matrix done in " << ti.elapsed() << "\n";
+    DVLOG(2) << "[SolverUMFPACK::setMatrix] set matrix done in " << ti.elapsed() << "\n";
 }
 
 void
@@ -168,7 +168,7 @@ SolverUMFPACK::solve( array_type& __X, array_type const& __B )
 
     boost::timer ti;
 
-    Debug( 5100 ) << "[SolverUMFPACK::solve] solve A x = b using UMFPACK version " << UMFPACK_VERSION << "\n";
+    DVLOG(2) << "[SolverUMFPACK::solve] solve A x = b using UMFPACK version " << UMFPACK_VERSION << "\n";
     int status = umfpack_di_solve( UMFPACK_A,
                                    &M_p->Ap[0],
                                    &M_p->Ai[0],
@@ -186,24 +186,24 @@ SolverUMFPACK::solve( array_type& __X, array_type const& __B )
         Error() << "[SolverUMFPACK::solve] solve failed\n";
     }
 
-    Debug( 5100 ) << "[SolverUMFPACK::solve] solve in " << ti.elapsed() << "\n";
+    DVLOG(2) << "[SolverUMFPACK::solve] solve in " << ti.elapsed() << "\n";
 }
 void SolverUMFPACK::prepareSolve()
 {
     boost::timer ti;
-    Debug( 5100 ) << "[SolverUMFPACK::solve] preparesolve starts\n";
+    DVLOG(2) << "[SolverUMFPACK::solve] preparesolve starts\n";
 
     if ( M_matrix_reset )
     {
         if ( M_symbolic )
         {
-            Debug( 5100 ) << "[SolverUMFPACK::prepareSolve] Destroying symbolic factorization\n";
+            DVLOG(2) << "[SolverUMFPACK::prepareSolve] Destroying symbolic factorization\n";
 
             umfpack_di_free_symbolic( &M_symbolic );
             M_symbolic = 0;
         }
 
-        Debug( 5100 ) << "[SolverUMFPACK::prepareSolve] computing symbolic factorization\n";
+        DVLOG(2) << "[SolverUMFPACK::prepareSolve] computing symbolic factorization\n";
         int status = umfpack_di_symbolic( M_p->nr,
                                           M_p->nc,
                                           &M_p->Ap[0],
@@ -225,12 +225,12 @@ void SolverUMFPACK::prepareSolve()
     {
         if ( M_numeric )
         {
-            Debug( 5100 ) << "[SolverUMFPACK::prepareSolve] Destroying numeric factorization\n";
+            DVLOG(2) << "[SolverUMFPACK::prepareSolve] Destroying numeric factorization\n";
             umfpack_di_free_numeric( &M_numeric );
             M_numeric = 0;
         }
 
-        Debug( 5100 ) << "[SolverUMFPACK::prepareSolve] computing numeric factorization\n";
+        DVLOG(2) << "[SolverUMFPACK::prepareSolve] computing numeric factorization\n";
         int status = umfpack_di_numeric( &M_p->Ap[0],
                                          &M_p->Ai[0],
                                          &M_p->Ax[0],
@@ -248,7 +248,7 @@ void SolverUMFPACK::prepareSolve()
 
     M_matrix_reset = false;
     M_matrix_values_reset = false;
-    Debug( 5100 ) << "[SolverUMFPACK::solve] preparesolve done in " << ti.elapsed() << "\n";
+    DVLOG(2) << "[SolverUMFPACK::solve] preparesolve done in " << ti.elapsed() << "\n";
 }
 
 }

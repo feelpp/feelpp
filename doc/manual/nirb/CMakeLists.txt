@@ -21,5 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 feelpp_add_application( nirb SRCS nirb.cpp LABEL doc )
-

@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2009-11-12
 #
-#  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,11 +21,13 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
 project( feel-research )
 
-foreach(project apee fsi idf ifp  hamm maxwell cabine pmp m2cssi rb publications )
+foreach(project dot fsi hifimagnet idf ifp  hamm maxwell cabine pmp m2cssi rb publications rb4areo cemosis)
+#foreach(project dot fsi idf ifp  hamm maxwell cabine pmp m2cssi rb publications cemosis cours.mn)
 
-# a posteriori error estimation project
 if ( EXISTS ${FEELPP_SOURCE_DIR}/research/${project} )
   add_subdirectory( ${project} )
 endif()

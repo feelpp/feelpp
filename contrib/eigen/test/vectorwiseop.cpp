@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2011 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #define EIGEN_NO_STATIC_ASSERT
 
@@ -30,7 +15,6 @@ template<typename ArrayType> void vectorwiseop_array(const ArrayType& m)
 {
   typedef typename ArrayType::Index Index;
   typedef typename ArrayType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Array<Scalar, ArrayType::RowsAtCompileTime, 1> ColVectorType;
   typedef Array<Scalar, 1, ArrayType::ColsAtCompileTime> RowVectorType;
 
@@ -126,6 +110,8 @@ template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> ColVectorType;
   typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType;
+  typedef Matrix<RealScalar, MatrixType::RowsAtCompileTime, 1> RealColVectorType;
+  typedef Matrix<RealScalar, 1, MatrixType::ColsAtCompileTime> RealRowVectorType;
 
   Index rows = m.rows();
   Index cols = m.cols();
@@ -138,6 +124,8 @@ template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)
 
   ColVectorType colvec = ColVectorType::Random(rows);
   RowVectorType rowvec = RowVectorType::Random(cols);
+  RealColVectorType rcres;
+  RealRowVectorType rrres;
 
   // test addition
 
@@ -174,6 +162,26 @@ template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)
 
   VERIFY_RAISES_ASSERT(m2.rowwise() -= rowvec.transpose());
   VERIFY_RAISES_ASSERT(m1.rowwise() - rowvec.transpose());
+  
+  // test norm
+  rrres = m1.colwise().norm();
+  VERIFY_IS_APPROX(rrres(c), m1.col(c).norm());
+  rcres = m1.rowwise().norm();
+  VERIFY_IS_APPROX(rcres(r), m1.row(r).norm());
+  
+  // test normalized
+  m2 = m1.colwise().normalized();
+  VERIFY_IS_APPROX(m2.col(c), m1.col(c).normalized());
+  m2 = m1.rowwise().normalized();
+  VERIFY_IS_APPROX(m2.row(r), m1.row(r).normalized());
+  
+  // test normalize
+  m2 = m1;
+  m2.colwise().normalize();
+  VERIFY_IS_APPROX(m2.col(c), m1.col(c).normalized());
+  m2 = m1;
+  m2.rowwise().normalize();
+  VERIFY_IS_APPROX(m2.row(r), m1.row(r).normalized());
 }
 
 void test_vectorwiseop()

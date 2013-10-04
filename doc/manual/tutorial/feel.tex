@@ -4,6 +4,7 @@
             {cha:appendix-feel}
 
 \section{Keywords}
+\label{sec:keywords}
 
 One of \feel assets is it finite element embedded language. The language follows the C++ grammar, and provides keywords
 as well as operations between objects which are, mathematically, tensors of rank 0, 1 or 2. \\
@@ -173,7 +174,7 @@ and here is the table which gathers all tools you may need:
   %% Operations
   %%
   \lstinline!-! & $-g$ & element wise unary minus  & & \\
-  \lstinline!-! & $!g$ & element wise logical not  & & \\\hline\\
+  \lstinline!!! & $!g$ & element wise logical not  & & \\\hline\\
 
   \lstinline!+! & $f+g$ & tensor sum  & & \\
   \lstinline!-! & $f-g$ & tensor substraction  & & \\
@@ -234,37 +235,181 @@ where
  \item \lstinline!_space!  is the space in which lives the projected expression, it should be a nodal function space
   \item \lstinline!_expr!  the expression to project
   \item \lstinline!_range!  is the domain for the projection (optional, default: all elements from \lstinline!space->mesh()!) 
-  \item \lstinline!_geomap!  is the type of geometric mapping approximation (optional, default = \lstinline!GEOMAP_HO!)
+  \item \lstinline!_geomap!  is the type of geometric mapping approximation (optional, default = \lstinline!GEOMAP_OPT!)
   \item \lstinline!_accumulate!  (optional, default = false)
 \end{itemize}
 
+\subsection{Mean value}
+Let $f$ a bounded function on domain $\Omega$. You can evaluate the mean value :
+\begin{align*}
+ \bar{f}&=\frac{1}{|\Omega|}\int_\Omega f\\
+&=\frac{1}{\int\limits_\Omega 1}\int_\Omega f.
+\end{align*}
+
+\label{keywords:mean}
+\noindent Interface :
+\begin{lstlisting}
+mean( _range, _expr, _quad, _geomap );
+\end{lstlisting}
+
+\noindent Required parameters :
+\begin{itemize}
+ \item \lstinline!_range! = domain of integration
+ \item \lstinline!_expr! = mesurable function
+\end{itemize}
+
+\noindent Optional parameters :
+\begin{itemize}
+ \item \lstinline!_quad! = quadrature to use. Default = \lstinline!_Q<integer>()!
+ \item \lstinline!_geomap! = type of geometric mapping. Default = \lstinline!GEOMAP_OPT!
+\end{itemize}
 
 \subsection{Meshes}
 \label{keywords:meshes}
 
 \feel enables full different ways to interact with the mesh on which you want to work. Mainly with the function \lstinline!integrate!, the various keywords we have established will make your program's code easier. The interoperability between \feel and \textsc{Gmsh} is huge and provides various access to any point, item, domain or almost anything you want in a mesh.
 The access to different items of a mesh is possible thanks to the filters which enable the access of only a mesh's part. Theses helpfull keywords are coded in \lstinline!feel/feelmesh/filters.hpp!, we are here going to describe most of them. \\ \\ To access one particular part of a mesh, you can use :
+
 \begin{itemize}
 \item \lstinline!elements(mesh)!  corresponds to all the elements of a mesh
-
 \item \lstinline!markedelements(mesh, id)!  corresponds to the precise element defined by the id. It can be any element (line, surface, domain, and so on).
-
 \item \lstinline!faces(mesh)!  corresponds to all the faces of the mesh.
-
 \item \lstinline!markedfaces(mesh)!  corresponds to all the faces of the mesh which are marked.
-
 \item \lstinline!boundaryfaces(mesh)!  corresponds to all elements that own a topological dimension one below the mesh. For example, if you mesh is a 2D one, \lstinline!boundaryfaces(mesh)! will return all the lines (because of dimension $2-1=1$). These elements which have one dimension less, are corresponding to the boundary faces.
-
 \item \lstinline!internalelements(mesh)!  corresponds to all the elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary.
-
 \item \lstinline!boundaryelements(mesh)!  corresponds to all the elements of the mesh which share a face with the boundary of the mesh.
-
 \item \lstinline!edges(mesh)!  corresponds to all the edges of the mesh.
-
 \item \lstinline!boundaryedges(mesh)!  corresponds to all boundary edges of the mesh.
-
 \end{itemize}
 where id is the element's identifier : thanks to \textsc{Gmsh}, this identifier can be an integer or a string, it depends on the identifier your have or you gave in the mesh .geo file.
+
+\section{Norms}
+You can directly use the library to evaluate commun norms. Parameters are mostly similar to \lstinline!integrate()! function.
+
+\subsection{L$^2$ Norm}
+Let $f \in L^2(\Omega)$ you can evaluate the L2 norm :
+$$\parallel f\parallel_{L^2(\Omega)}=\sqrt{\int_\Omega |f|^2}$$
+
+\label{keywords:normL2}
+\noindent Interface :
+\begin{lstlisting}
+normL2( _range, _expr, _quad, _geomap );
+\end{lstlisting}
+or squared norm :
+\begin{lstlisting}
+normL2Squared( _range, _expr, _quad, _geomap );
+\end{lstlisting}
+
+\noindent Required parameters :
+\begin{itemize}
+ \item \lstinline!_range! = domain of integration
+ \item \lstinline!_expr! = mesurable function
+\end{itemize}
+
+\noindent Optional parameters :
+\begin{itemize}
+ \item \lstinline!_quad! = quadrature to use. Default = \lstinline!_Q<integer>()!
+ \item \lstinline!_geomap! = type of geometric mapping. Default = \lstinline!GEOMAP_OPT!
+\end{itemize}
+
+\noindent Exemples :\\
+With expression :
+\begin{lstlisting}
+double normL2_expr = normL2( _range=elements(mesh), \
+			     _expr=sin(2*pi*Px())*cos(2*pi*Py()) );
+\end{lstlisting}
+With test or trial function \lstinline!u! :
+\begin{lstlisting}
+auto f = sin(2*pi*Px())*cos(2*pi*Py());
+double errorL2 = normL2( _range=elements(mesh), \
+			 _expr=(idv(u) - f) );
+\end{lstlisting}
+
+
+\subsection{H$^1$ Norm}
+In the same idea, you can evaluate the H1 norm or semi norm, for any function $f \in H^1(\Omega)$ :
+\begin{align*}
+ \parallel f \parallel_{H^1(\Omega)}&=\sqrt{\int_\Omega |f|^2+|\nabla f|^2}\\
+&=\sqrt{\int_\Omega |f|^2+\nabla f*\nabla f^T}\\
+|f|_{H^1(\Omega)}&=\sqrt{\int_\Omega |\nabla f|^2}
+\end{align*}
+
+\label{keywords:normH1}
+\noindent Interface :
+\begin{lstlisting}
+normH1( _range, _expr, _grad_expr, _quad, _geomap );
+\end{lstlisting}
+or semi norm :
+\begin{lstlisting}
+normSemiH1( _range, _grad_expr, _quad, _geomap );
+\end{lstlisting}
+
+\noindent Required parameters :
+\begin{itemize}
+ \item \lstinline!_range! = domain of integration
+ \item \lstinline!_expr! = mesurable function
+ \item \lstinline!_grad_expr! = gradient of function (Row vector !)
+\end{itemize}
+
+\noindent Optional parameters :
+\begin{itemize}
+ \item \lstinline!_quad! = quadrature to use. Default = \lstinline!_Q<integer>()!
+ \item \lstinline!_geomap! = type of geometric mapping. Default = \lstinline!GEOMAP_OPT!
+\end{itemize}
+
+\noindent Exemples :\\
+With expression :
+\begin{lstlisting}
+auto g = sin(2*pi*Px())*cos(2*pi*Py());
+auto gradg = 2*pi*cos(2* pi*Px())*cos(2*pi*Py())*oneX() \
+	     -2*pi*sin(2*pi*Px())*sin(2*pi*Py())*oneY();
+// There gradg is a column vector !
+// Use trans() to get a row vector
+double normH1_g = normH1( _range=elements(mesh),\
+			  _expr=g,\
+			  _grad_expr=trans(gradg) );
+\end{lstlisting}
+With test or trial function \lstinline!u! :
+\begin{lstlisting} 
+double errorH1 = normH1( _range=elements(mesh),\
+			 _expr=(u-g),\ 
+			 _grad_expr=(gradv(u)-trans(gradg)) );
+\end{lstlisting}
+
+
+\subsection{Infinity Norm}
+Let $f$ a bounded function on domain $\Omega$. You can evaluate the infinity norm :
+$$\parallel f \parallel_\infty=\sup_\Omega(|f|)$$
+\label{keywords:normLinf}
+\noindent Interface :
+\begin{lstlisting}
+normLinf( _range, _expr, _pset, _geomap );
+\end{lstlisting}
+
+\noindent Required parameters :
+\begin{itemize}
+ \item \lstinline!_range! = domain of integration
+ \item \lstinline!_expr! = mesurable function
+ \item \lstinline!_pset! = set of points (e.g. quadrature points)
+\end{itemize}
+
+\noindent Optional parameters :
+\begin{itemize}
+ \item \lstinline!_geomap! = type of geometric mapping. Default = \lstinline!GEOMAP_OPT!
+\end{itemize}
+
+\noindent Exemples :
+\begin{lstlisting}
+auto uMax = normLinf( _range=elements(mesh),\
+		     _expr=idv(u),\
+		     _pset=_Q<5>() );
+\end{lstlisting}
+
+
+
+
+
+
 
 %%% Local Variables:
 %%% coding: utf-8

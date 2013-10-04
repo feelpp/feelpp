@@ -21,13 +21,24 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+
 INCLUDE_DIRECTORIES( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex)" ON)
+find_program(LATEX NAMES latex pdflatex)
+find_program(CONVERT NAMES convert)
+if ( LATEX AND CONVERT )
+  option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex)" ON)
+else()
+  option(FEELPP_ENABLE_MANUAL "enable compilation of Feel++ manual (requires latex)" OFF)
+endif()
+
 if ( FEELPP_ENABLE_MANUAL )
 include(UseLATEX OPTIONAL)
 
-foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../mycode/laplacian_dirichlet_homogene.cpp")
+foreach(cppfile "tutorial/*.cpp" "nonlinear/*.cpp" "../../quickstart/laplacian.cpp"
+    "laplacian/laplacian.cpp"
+    "stokes/stokes.cpp"
+    )
  FILE(GLOB CPPFILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${cppfile})
  SET(CPPFILES "${CPPFILES};${CPPFILE}")
 endforeach()
@@ -35,23 +46,32 @@ FILE(GLOB STYFILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "styles/*.sty")
 
 FILE(WRITE version.tex "\\newcommand{\\feelversion}{${FEELPP_VERSION_STRING}}")
 
-FIND_PACKAGE(Subversion)
-IF(Subversion_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.svn" )
-   Subversion_WC_INFO(${PROJECT_SOURCE_DIR} FEEL)
-   MESSAGE("Current revision is ${FEELPP_WC_REVISION}")
-   MESSAGE("Last changed date is ${FEELPP_WC_LAST_CHANGED_DATE}")
+MESSAGE("Current revision is ${FEELPP_WC_REVISION}")
+MESSAGE("Last changed date is ${FEELPP_WC_LAST_CHANGED_DATE}")
 
-   FILE(APPEND version.tex "\\newcommand{\\feelsvnrevision}{${FEELPP_WC_REVISION}}")
-   FILE(APPEND version.tex "\\newcommand{\\feelsvndate}{${FEELPP_WC_LAST_CHANGED_DATE}}")
-ENDIF()
+MACRO (TODAY RESULT)
+    IF (WIN32)
+        EXECUTE_PROCESS(COMMAND "date" "/T" OUTPUT_VARIABLE ${RESULT})
+        string(REGEX REPLACE "(..)/(..)/..(..).*" "\\3\\2\\1"
+${RESULT} ${${RESULT}})
+    ELSEIF(UNIX)
+        EXECUTE_PROCESS(COMMAND "date" "+%d/%m/%Y" OUTPUT_VARIABLE ${RESULT})
+        string(REGEX REPLACE "(..)/(..)/..(..).*" "\\3\\2\\1"
+${RESULT} ${${RESULT}})
+    ELSE (WIN32)
+        MESSAGE(SEND_ERROR "date not implemented")
+        SET(${RESULT} 000000)
+    ENDIF (WIN32)
+ENDMACRO (TODAY)
+TODAY(THEDATE)
+FILE(APPEND version.tex "\\newcommand{\\feelbuildid}{${FEELPP_BUILDID}}")
+FILE(APPEND version.tex "\\newcommand{\\feeldate}{${THEDATE}}")
 
+FILE(GLOB TUTO_DOC_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} tutorial/*.tex)
 
-add_latex_document(feel-manual.tex
+add_latex_document(feelpp-manual.tex
   INPUTS
-  tutorial/crash_course.tex
-  tutorial/building.tex
-  tutorial/getting-started.tex
-  tutorial/feel.tex
+  ${TUTO_DOC_FILES}
   nonlinear/nonlinear.tex
   heatns/natural-convection-2d.tex
   heat/heatsink.tex
@@ -59,15 +79,15 @@ add_latex_document(feel-manual.tex
   maxwell/maxwell.tex
   randomnotes.tex gfdl.tex howto.tex version.tex ${CPPFILES} ${STYFILES}
   BIBFILES
-  ../biblio/feel-manual.bib
+  ../biblio/feelpp-manual.bib
   ../biblio/feelpp.bib
   ../biblio/feelpp-thesis.bib
-  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian
+  IMAGE_DIRS pngs pdfs pngs/mymesh pngs/heatsink pngs/Laplacian pngs/myadvection
   USE_INDEX
   DEFAULT_PDF
   MANGLE_TARGET_NAMES
   )
-SET_TARGET_PROPERTIES(feel-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
+SET_TARGET_PROPERTIES(feelpp-manual_pdf PROPERTIES EXCLUDE_FROM_ALL true)
 endif()
 
 # this target allows to create all the required figures for the tutorial
@@ -136,8 +156,6 @@ if ( NOT FEELPP_MINIMAL_CONFIGURATION )
 endif ( NOT FEELPP_MINIMAL_CONFIGURATION )
 
 set(FEELPP_INSTALL_APPS ${FEELPP_INSTALL_APPS};${LIST_APPS} PARENT_SCOPE)
-message(STATUS "doc tutorial: ${LIST_APPS}")
-
 
 IF ( OCTAVE_FOUND )
 
@@ -177,13 +195,19 @@ ENDIF( OCTAVE_FOUND )
 add_subdirectory(tutorial)
 
 if (NOT FEELPP_MINIMAL_CONFIGURATION)
+  add_subdirectory(laplacian)
+  add_subdirectory(stokes)
+  add_subdirectory(advection)
+  add_subdirectory(accoustic)
   add_subdirectory(dd)
   add_subdirectory(heat)
   add_subdirectory(solid)
+  add_subdirectory(ns)
   add_subdirectory(heatns)
   add_subdirectory(nonlinear)
   add_subdirectory(adapt)
   add_subdirectory(nirb)
   add_subdirectory(fd)
   add_subdirectory(maxwell)
+  add_subdirectory(eikonal)
 endif()

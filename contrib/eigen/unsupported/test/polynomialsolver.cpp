@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2010 Manuel Yguel <manuel.yguel@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 #include <unsupported/Eigen/Polynomials>
@@ -107,6 +92,7 @@ void evalSolver( const POLYNOMIAL& pols )
 template< int Deg, typename POLYNOMIAL, typename ROOTS, typename REAL_ROOTS >
 void evalSolverSugarFunction( const POLYNOMIAL& pols, const ROOTS& roots, const REAL_ROOTS& real_roots )
 {
+  using std::sqrt;
   typedef typename POLYNOMIAL::Scalar Scalar;
 
   typedef PolynomialSolver<Scalar, Deg >              PolynomialSolverType;
@@ -120,17 +106,14 @@ void evalSolverSugarFunction( const POLYNOMIAL& pols, const ROOTS& roots, const 
 
     typedef typename POLYNOMIAL::Scalar                 Scalar;
     typedef typename REAL_ROOTS::Scalar                 Real;
-
     typedef PolynomialSolver<Scalar, Deg >              PolynomialSolverType;
-    typedef typename PolynomialSolverType::RootsType    RootsType;
-    typedef Matrix<Scalar,Deg,1>                        EvalRootsType;
 
     //Test realRoots
     std::vector< Real > calc_realRoots;
     psolve.realRoots( calc_realRoots );
     VERIFY( calc_realRoots.size() == (size_t)real_roots.size() );
 
-    const Scalar psPrec = internal::sqrt( test_precision<Scalar>() );
+    const Scalar psPrec = sqrt( test_precision<Scalar>() );
 
     for( size_t i=0; i<calc_realRoots.size(); ++i )
     {
@@ -145,24 +128,24 @@ void evalSolverSugarFunction( const POLYNOMIAL& pols, const ROOTS& roots, const 
 
     //Test greatestRoot
     VERIFY( internal::isApprox( roots.array().abs().maxCoeff(),
-          internal::abs( psolve.greatestRoot() ), psPrec ) );
+          abs( psolve.greatestRoot() ), psPrec ) );
 
     //Test smallestRoot
     VERIFY( internal::isApprox( roots.array().abs().minCoeff(),
-          internal::abs( psolve.smallestRoot() ), psPrec ) );
+          abs( psolve.smallestRoot() ), psPrec ) );
 
     bool hasRealRoot;
     //Test absGreatestRealRoot
     Real r = psolve.absGreatestRealRoot( hasRealRoot );
     VERIFY( hasRealRoot == (real_roots.size() > 0 ) );
     if( hasRealRoot ){
-      VERIFY( internal::isApprox( real_roots.array().abs().maxCoeff(), internal::abs(r), psPrec ) );  }
+      VERIFY( internal::isApprox( real_roots.array().abs().maxCoeff(), abs(r), psPrec ) );  }
 
     //Test absSmallestRealRoot
     r = psolve.absSmallestRealRoot( hasRealRoot );
     VERIFY( hasRealRoot == (real_roots.size() > 0 ) );
     if( hasRealRoot ){
-      VERIFY( internal::isApprox( real_roots.array().abs().minCoeff(), internal::abs( r ), psPrec ) ); }
+      VERIFY( internal::isApprox( real_roots.array().abs().minCoeff(), abs( r ), psPrec ) ); }
 
     //Test greatestRealRoot
     r = psolve.greatestRealRoot( hasRealRoot );

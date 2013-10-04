@@ -89,7 +89,12 @@ public:
     /** @name  Methods
      */
     //@{
-
+    
+    std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
+    pointIdToDofRelation(std::string fname="") const
+    {
+        return std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >();
+    }
 
     //@}
 

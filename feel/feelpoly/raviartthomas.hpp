@@ -71,8 +71,8 @@ struct times_x
     typedef typename P::points_type points_type;
     times_x ( P const& p, int c  )
         :
-        _M_p ( p ),
-        _M_c( c )
+        M_p ( p ),
+        M_c( c )
     {
         //std::cout << "component : " << c << std::endl;
     }
@@ -80,16 +80,16 @@ struct times_x
     {
 #if 0
         std::cout << "times_x(pts) : " << __pts << std::endl;
-        std::cout << "times_x(pts) : " << _M_p.evaluate( __pts ) << std::endl;
-        std::cout << "times_x(coeff) : " << _M_p.coefficients() << std::endl;
+        std::cout << "times_x(pts) : " << M_p.evaluate( __pts ) << std::endl;
+        std::cout << "times_x(coeff) : " << M_p.coefficients() << std::endl;
 #endif
         // __pts[c] * p( __pts )
-        return ublas::element_prod( ublas::row( __pts, _M_c ),
-                                    ublas::row( _M_p.evaluate( __pts ), 0 ) );
+        return ublas::element_prod( ublas::row( __pts, M_c ),
+                                    ublas::row( M_p.evaluate( __pts ), 0 ) );
     }
-    //P const& _M_p;
-    P _M_p;
-    int _M_c;
+    //P const& M_p;
+    P M_p;
+    int M_c;
 };
 
 template< class T >
@@ -257,11 +257,11 @@ public:
     RaviartThomasDual( primal_space_type const& primal )
         :
         super( primal ),
-        _M_convex_ref(),
-        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
-        _M_pts( nDim, numPoints ),
-        _M_pts_per_face( convex_type::numTopologicalFaces ),
-        _M_fset( primal )
+        M_convex_ref(),
+        M_eid( M_convex_ref.topologicalDimension()+1 ),
+        M_pts( nDim, numPoints ),
+        M_pts_per_face( convex_type::numTopologicalFaces ),
+        M_fset( primal )
     {
 #if 1
         std::cout << "Raviart-Thomas finite element(dual): \n";
@@ -277,20 +277,20 @@ public:
 
         // loop on each entity forming the convex of topological
         // dimension nDim-1 ( the faces)
-        for ( int p = 0, e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                e < _M_convex_ref.entityRange( nDim-1 ).end();
+        for ( int p = 0, e = M_convex_ref.entityRange( nDim-1 ).begin();
+                e < M_convex_ref.entityRange( nDim-1 ).end();
                 ++e )
         {
-            points_type Gt ( _M_convex_ref.makePoints( nDim-1, e ) );
-            _M_pts_per_face[e] =  Gt ;
+            points_type Gt ( M_convex_ref.makePoints( nDim-1, e ) );
+            M_pts_per_face[e] =  Gt ;
 
             if ( Gt.size2() )
             {
                 //VLOG(1) << "Gt = " << Gt << "\n";
                 //VLOG(1) << "p = " << p << "\n";
-                ublas::subrange( _M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
+                ublas::subrange( M_pts, 0, nDim, p, p+Gt.size2() ) = Gt;
                 //for ( size_type j = 0; j < Gt.size2(); ++j )
-                //_M_eid[d].push_back( p+j );
+                //M_eid[d].push_back( p+j );
                 p+=Gt.size2();
             }
         }
@@ -317,14 +317,14 @@ public:
         //for( int k = 0; k < nDim; ++k )
         {
             // loopover the each edge entities and add the correponding functionals
-            for ( int e = _M_convex_ref.entityRange( nDim-1 ).begin();
-                    e < _M_convex_ref.entityRange( nDim-1 ).end();
+            for ( int e = M_convex_ref.entityRange( nDim-1 ).begin();
+                    e < M_convex_ref.entityRange( nDim-1 ).end();
                     ++e )
             {
                 typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                node_type dir = _M_convex_ref.normal( e )*j[e];
+                node_type dir = M_convex_ref.normal( e )*j[e];
                 //dcpe_type __dcpe( primal, 1, dir, pts_per_face[e] );
-                dcpe_type __dcpe( primal, dir, _M_pts_per_face[e] );
+                dcpe_type __dcpe( primal, dir, M_pts_per_face[e] );
                 std::copy( __dcpe.begin(), __dcpe.end(), std::back_inserter( fset ) );
             }
         }
@@ -354,8 +354,8 @@ public:
         }
 
         //std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
-        _M_fset.setFunctionalSet( fset );
-        //        std::cout << "[RT DUAL matrix] mat = " << _M_fset.rep() << "\n";
+        M_fset.setFunctionalSet( fset );
+        //        std::cout << "[RT DUAL matrix] mat = " << M_fset.rep() << "\n";
         //std::cout << "[RT Dual] done 4\n";
 
     }
@@ -367,27 +367,27 @@ public:
 
     points_type const& points() const
     {
-        return _M_pts;
+        return M_pts;
     }
 
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        //std::cout << "RT matrix = " << _M_fset( pset ) << std::endl;
-        return _M_fset( pset );
+        //std::cout << "RT matrix = " << M_fset( pset ) << std::endl;
+        return M_fset( pset );
     }
 
     points_type const& points( uint16_type f ) const
     {
-        return _M_pts_per_face[f];
+        return M_pts_per_face[f];
     }
     ublas::matrix_column<points_type const> point( uint16_type f, uint32_type __i ) const
     {
-        return ublas::column( _M_pts_per_face[f], __i );
+        return ublas::column( M_pts_per_face[f], __i );
     }
     ublas::matrix_column<points_type> point( uint16_type f, uint32_type __i )
     {
-        return ublas::column( _M_pts_per_face[f], __i );
+        return ublas::column( M_pts_per_face[f], __i );
     }
 
 private:
@@ -396,16 +396,16 @@ private:
      */
     void setPoints( uint16_type f, points_type const& n )
     {
-        _M_pts_per_face[f].resize( n.size1(), n.size2(), false );
-        _M_pts_per_face[f] = n;
+        M_pts_per_face[f].resize( n.size1(), n.size2(), false );
+        M_pts_per_face[f] = n;
     }
 
 private:
-    reference_convex_type _M_convex_ref;
-    std::vector<std::vector<uint16_type> > _M_eid;
-    points_type _M_pts;
-    std::vector<points_type> _M_pts_per_face;
-    FunctionalSet<primal_space_type> _M_fset;
+    reference_convex_type M_convex_ref;
+    std::vector<std::vector<uint16_type> > M_eid;
+    points_type M_pts;
+    std::vector<points_type> M_pts_per_face;
+    FunctionalSet<primal_space_type> M_fset;
 
 
 };
@@ -643,7 +643,7 @@ public:
         if ( do_hessian )
             std::fill( h_phi_t.data(), h_phi_t.data()+h_phi_t.num_elements(), value_type( 0 ) );
 
-        const uint16_type Q = gmc.nPoints();//_M_grad.size2();
+        const uint16_type Q = gmc.nPoints();//M_grad.size2();
 
         // transform
         for ( uint16_type i = 0; i < nLocalDof; ++i )
@@ -760,4 +760,3 @@ public:
 
 } // Feel
 #endif /* __RaviartThomas_H */
-

@@ -117,6 +117,8 @@ private:
     mesh_ptrtype M_mesh;
 };
 
+
+
 template<typename MeshType>
 template<typename DisplType>
 typename MeshMover<MeshType>::value_type
@@ -137,7 +139,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     // check that the displacement function is vectorial
     //BOOST_MPL_ASSERT_MSG( DisplType::is_vectorial, INVALID_DISPLACEMENT_TYPE, DisplType );
 
-    Debug( 5005 ) << "[Dof::generateDofPoints] generating dof coordinates\n";
+    DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates\n";
     typedef typename mesh_type::element_type element_type;
     typedef typename gm_type::template Context<vm::POINT, element_type> gm_context_type;
     typedef boost::shared_ptr<gm_context_type> gm_context_ptrtype;
@@ -181,8 +183,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //const uint16_type ndofv = fe_type::nDof;
 
 
-    std::vector<bool> points_done( imesh->numPoints() );
-    std::fill( points_done.begin(), points_done.end(),false );
+    std::map<int,bool> points_done;
 
     //if ( !u.areGlobalValuesUpdated() )
     u.updateGlobalValues();
@@ -205,7 +206,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 val[ comp ] = uvalues[l]( comp,0 );
             }
 
-            if ( points_done[ it_elt->point( l ).id() ] == false )
+            if ( points_done.find( it_elt->point( l ).id() ) == points_done.end() )
             {
                 //std::cout << "Pt: " << thedof << "Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
                 imesh->elements().modify( it_elt,
@@ -237,5 +238,13 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     imesh->tool_localization()->reset();
 }
 
+template<typename MeshType, typename DisplType>
+boost::shared_ptr<MeshType>
+meshMove( boost::shared_ptr<MeshType>& m, DisplType const& u )
+{
+    MeshMover<MeshType> mover( m );
+    mover.apply( m, u );
+    return m;
+}
 } // Feel
 #endif /* __MeshMover_H */

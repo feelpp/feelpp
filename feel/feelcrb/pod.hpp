@@ -373,6 +373,10 @@ void POD<TruthModelType>::fillPodMatrix()
         int i = bdfi->iteration()-1;
         bdfi->loadCurrent();
 
+        //here is a barrier. For now, if this barrier is removed, during the bdfj->restart() the program will wait and the memory increase.
+        //during the init step in bdf, the metadata are read, and it is during this step that the memory could increase dangerously.
+        Environment::worldComm().barrier();
+
         for ( bdfj->restart(); !bdfj->isFinished() && ( bdfj->iteration() < bdfi->iteration() ); bdfj->next() )
         {
             int j = bdfj->iteration()-1;

@@ -51,7 +51,7 @@ namespace Feel
 template<typename T, typename Storage> class VectorUblas;
 
 /*!
- * \class MatrixEigen
+ *
  * \brief interface to eigen sparse matrix
  *
  * this class is a wrapper around \c csr_matrix<> and \c csc_matrix<>
@@ -114,7 +114,7 @@ public:
 
     value_type  operator()( size_type i, size_type j ) const
     {
-        //return _M_mat.row(i).col(j);
+        //return M_mat.row(i).col(j);
         return 0.;
     }
 
@@ -130,7 +130,7 @@ public:
      */
     size_type size1 () const
     {
-        return _M_mat.rows();
+        return M_mat.rows();
     }
 
     /**
@@ -139,7 +139,7 @@ public:
      */
     size_type size2 () const
     {
-        return _M_mat.cols();
+        return M_mat.cols();
     }
 
     /**
@@ -147,7 +147,7 @@ public:
      */
     size_type nnz() const
     {
-        return _M_mat.rows()*_M_mat.cols();
+        return M_mat.rows()*M_mat.cols();
     }
 
     /**
@@ -173,7 +173,7 @@ public:
      */
     bool isInitialized() const
     {
-        return _M_is_initialized;
+        return M_is_initialized;
     }
 
     /**
@@ -189,7 +189,7 @@ public:
      */
     bool closed() const
     {
-        return _M_is_closed;
+        return M_is_closed;
     }
 
 
@@ -198,7 +198,7 @@ public:
      */
     matrix_type const& mat () const
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -206,7 +206,7 @@ public:
      */
     matrix_type & mat ()
     {
-        return _M_mat;
+        return M_mat;
     }
 
     //@}
@@ -254,8 +254,8 @@ public:
      */
     void clear ()
     {
-        //eigen::resize( _M_mat, 0, 0 );
-        _M_mat.setZero();
+        //eigen::resize( M_mat, 0, 0 );
+        M_mat.setZero();
     }
 
     /**
@@ -264,7 +264,7 @@ public:
      */
     void zero ()
     {
-        _M_mat.setZero();
+        M_mat.setZero();
     }
 
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
@@ -322,7 +322,7 @@ public:
     /**
      * \return \f$ v^T M u \f$
      */
-    value_type
+    real_type
     energy( Vector<value_type> const& __v,
             Vector<value_type> const& __u, bool transpose = false ) const;
 
@@ -333,7 +333,7 @@ public:
      *\warning if the matrix was symmetric before this operation, it
      * won't be afterwards. So use the proper solver (nonsymmetric)
      */
-    void zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
+    void zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context );
 
     void init() {}
 
@@ -410,7 +410,7 @@ public:
     /**
      * update a block matrix
      */
-    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, size_type start_i, size_type start_j );
+    void updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> > m, std::vector<size_type> start_i, std::vector<size_type> start_j );
 
     //@}
 
@@ -420,45 +420,17 @@ protected:
 
 private:
 
-    bool _M_is_initialized;
-    mutable bool _M_is_closed;
+    bool M_is_initialized;
+    mutable bool M_is_closed;
 
     /**
      * the eigen sparse matrix data structure
      */
-    mutable matrix_type _M_mat;
+    mutable matrix_type M_mat;
     mutable std::vector<triplet> M_tripletList;
 };
 
 
-template<typename T>
-void
-MatrixEigenSparse<T>::zeroRows( std::vector<int> const& rows,
-                               std::vector<value_type> const& vals,
-                               Vector<value_type>& rhs,
-                               Context const& on_context )
-{
-    Feel::detail::ignore_unused_variable_warning( rhs );
-    Feel::detail::ignore_unused_variable_warning( vals );
-
-    for (int k=0; k<rows.size(); ++k)
-    {
-        for (typename matrix_type::InnerIterator it(_M_mat,rows[k]); it; ++it)
-        {
-            double value = 1.0;
-            if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
-                value = it.value();
-            it.valueRef() = 0;
-            if ( it.row() == it.col() )
-            {
-                it.valueRef() = value;
-                // multiply rhs by value of the diagonal entry value
-                rhs.set( rows[k], value * vals[k] );
-            }
-        }
-
-    }
-}
 
 } // Feel
 #endif /* __MatrixEigenSparse_H */

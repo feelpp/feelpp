@@ -2,25 +2,6 @@
 // for linear algebra.
 //
 // Copyright (C) 2008-2009 Gael Guennebaud <gael.guennebaud@inria.fr>
-//
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
 
 /* NOTE The class IterationController has been adapted from the iteration
  *      class of the GMM++ and ITL libraries.
@@ -71,6 +52,8 @@
 // USA.
 //
 //========================================================================
+
+#include "../../../../Eigen/src/Core/util/NonMPL2.h"
 
 #ifndef EIGEN_ITERATION_CONTROLLER_H
 #define EIGEN_ITERATION_CONTROLLER_H
@@ -142,7 +125,8 @@ class IterationController
     bool converged() const { return m_res <= m_rhsn * m_resmax; }
     bool converged(double nr)
     {
-      m_res = internal::abs(nr); 
+      using std::abs;
+      m_res = abs(nr); 
       m_resminreach = (std::min)(m_resminreach, m_res);
       return converged();
     }

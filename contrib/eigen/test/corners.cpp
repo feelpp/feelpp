@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2006-2010 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 
@@ -77,6 +62,16 @@ template<typename MatrixType, int CRows, int CCols, int SRows, int SCols> void c
   VERIFY_IS_EQUAL((matrix.template bottomLeftCorner<r,c>()), (matrix.template block<r,c>(rows-r,0)));
   VERIFY_IS_EQUAL((matrix.template bottomRightCorner<r,c>()), (matrix.template block<r,c>(rows-r,cols-c)));
 
+  VERIFY_IS_EQUAL((matrix.template topLeftCorner<r,c>()), (matrix.template topLeftCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template topRightCorner<r,c>()), (matrix.template topRightCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template bottomLeftCorner<r,c>()), (matrix.template bottomLeftCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template bottomRightCorner<r,c>()), (matrix.template bottomRightCorner<r,Dynamic>(r,c)));
+
+  VERIFY_IS_EQUAL((matrix.template topLeftCorner<r,c>()), (matrix.template topLeftCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template topRightCorner<r,c>()), (matrix.template topRightCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template bottomLeftCorner<r,c>()), (matrix.template bottomLeftCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template bottomRightCorner<r,c>()), (matrix.template bottomRightCorner<Dynamic,c>(r,c)));
+
   VERIFY_IS_EQUAL((matrix.template topRows<r>()), (matrix.template block<r,cols>(0,0)));
   VERIFY_IS_EQUAL((matrix.template middleRows<r>(sr)), (matrix.template block<r,cols>(sr,0)));
   VERIFY_IS_EQUAL((matrix.template bottomRows<r>()), (matrix.template block<r,cols>(rows-r,0)));
@@ -88,6 +83,16 @@ template<typename MatrixType, int CRows, int CCols, int SRows, int SCols> void c
   VERIFY_IS_EQUAL((const_matrix.template topRightCorner<r,c>()), (const_matrix.template block<r,c>(0,cols-c)));
   VERIFY_IS_EQUAL((const_matrix.template bottomLeftCorner<r,c>()), (const_matrix.template block<r,c>(rows-r,0)));
   VERIFY_IS_EQUAL((const_matrix.template bottomRightCorner<r,c>()), (const_matrix.template block<r,c>(rows-r,cols-c)));
+
+  VERIFY_IS_EQUAL((const_matrix.template topLeftCorner<r,c>()), (const_matrix.template topLeftCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template topRightCorner<r,c>()), (const_matrix.template topRightCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template bottomLeftCorner<r,c>()), (const_matrix.template bottomLeftCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template bottomRightCorner<r,c>()), (const_matrix.template bottomRightCorner<r,Dynamic>(r,c)));
+
+  VERIFY_IS_EQUAL((const_matrix.template topLeftCorner<r,c>()), (const_matrix.template topLeftCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template topRightCorner<r,c>()), (const_matrix.template topRightCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template bottomLeftCorner<r,c>()), (const_matrix.template bottomLeftCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template bottomRightCorner<r,c>()), (const_matrix.template bottomRightCorner<Dynamic,c>(r,c)));
 
   VERIFY_IS_EQUAL((const_matrix.template topRows<r>()), (const_matrix.template block<r,cols>(0,0)));
   VERIFY_IS_EQUAL((const_matrix.template middleRows<r>(sr)), (const_matrix.template block<r,cols>(sr,0)));

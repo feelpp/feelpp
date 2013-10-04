@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_TRIANGULAR_SOLVER_MATRIX_H
 #define EIGEN_TRIANGULAR_SOLVER_MATRIX_H
@@ -33,7 +18,7 @@ namespace internal {
 template <typename Scalar, typename Index, int Side, int Mode, bool Conjugate, int TriStorageOrder>
 struct triangular_solve_matrix<Scalar,Index,Side,Mode,Conjugate,TriStorageOrder,RowMajor>
 {
-  static EIGEN_DONT_INLINE void run(
+  static void run(
     Index size, Index cols,
     const Scalar*  tri, Index triStride,
     Scalar* _other, Index otherStride,
@@ -54,6 +39,13 @@ template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStor
 struct triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor>
 {
   static EIGEN_DONT_INLINE void run(
+    Index size, Index otherSize,
+    const Scalar* _tri, Index triStride,
+    Scalar* _other, Index otherStride,
+    level3_blocking<Scalar,Scalar>& blocking);
+};
+template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
+EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor>::run(
     Index size, Index otherSize,
     const Scalar* _tri, Index triStride,
     Scalar* _other, Index otherStride,
@@ -188,7 +180,6 @@ struct triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageO
       }
     }
   }
-};
 
 /* Optimized triangular solver with multiple left hand sides and the trinagular matrix on the right
  */
@@ -196,6 +187,13 @@ template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStor
 struct triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor>
 {
   static EIGEN_DONT_INLINE void run(
+    Index size, Index otherSize,
+    const Scalar* _tri, Index triStride,
+    Scalar* _other, Index otherStride,
+    level3_blocking<Scalar,Scalar>& blocking);
+};
+template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
+EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor>::run(
     Index size, Index otherSize,
     const Scalar* _tri, Index triStride,
     Scalar* _other, Index otherStride,
@@ -323,7 +321,6 @@ struct triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorage
       }
     }
   }
-};
 
 } // end namespace internal
 

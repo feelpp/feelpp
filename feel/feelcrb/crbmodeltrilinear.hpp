@@ -121,23 +121,20 @@ public:
 
     typedef typename boost::tuple<sparse_matrix_ptrtype,
                                   sparse_matrix_ptrtype,
-                                  std::vector<vector_ptrtype>,
-                                  element_ptrtype
+                                  std::vector<vector_ptrtype>
                                   > offline_merge_type;
 
 
 
     typedef typename boost::tuple<std::vector< std::vector<sparse_matrix_ptrtype> >,
                                   std::vector< std::vector<sparse_matrix_ptrtype> >,
-                                  std::vector< std::vector< std::vector<vector_ptrtype> > >,
-                                  std::vector< std::vector< vector_ptrtype> >
+                                  std::vector< std::vector< std::vector<vector_ptrtype> > >
                                   > affine_decomposition_type;
 
 
     typedef typename boost::tuple< beta_vector_type,
                                    beta_vector_type,
-                                   std::vector<beta_vector_type>,
-                                   beta_vector_type
+                                   std::vector<beta_vector_type>
                                    > betaqm_type;
 
 
@@ -221,6 +218,15 @@ public:
     {
         if ( M_is_initialized )
             return;
+
+        M_is_initialized=true;
+
+        if( ! M_model->isInitialized() )
+        {
+            LOG( INFO ) << "CRBModel Model is not initialized";
+            M_model->initModel();
+            M_model->setInitialized( true );
+        }
 
         M_is_initialized=true;
     }
@@ -311,6 +317,12 @@ public:
     }
 
 
+    vectorN_type computeStatistics ( Eigen::VectorXd vector , std::string name )
+    {
+        return M_model->computeStatistics( vector , name );
+    }
+
+
     //! return the number of outputs
     size_type Nl() const
     {
@@ -328,6 +340,12 @@ public:
     {
         return M_model->parameterSpace();
     }
+
+    parameter_type refParameter()
+    {
+        return M_model->refParameter();
+    }
+
 
     //@}
 
@@ -353,22 +371,29 @@ public:
     /**
      * \brief compute the betaqm given \p mu
      */
-    betaqm_type computeBetaQm( parameter_type const& mu )
+    betaqm_type computeBetaQm( parameter_type const& mu , double time=0 )
+    {
+        return computeBetaQm( mu , mpl::bool_<model_type::is_time_dependent>(), time  );
+    }
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<true>, double time=0 )
+    {
+        return M_model->computeBetaQm( mu , time );
+    }
+    betaqm_type computeBetaQm( parameter_type const& mu , mpl::bool_<false>, double time=0)
     {
         beta_vector_type betaAqm;
-        beta_vector_type betaMqm, betaInitialGuessQm;
+        beta_vector_type betaMqm;
         std::vector<beta_vector_type>  betaFqm;
         boost::tuple<
             beta_vector_type,
-            std::vector<beta_vector_type> ,
-            beta_vector_type >
-        model_beta;
+            std::vector<beta_vector_type> >
+            model_beta;
 
         model_beta = M_model->computeBetaQm( mu );
         betaAqm = model_beta.get<0>();
         betaFqm = model_beta.get<1>();
 
-        return boost::make_tuple( betaMqm, betaAqm, betaFqm, betaInitialGuessQm );
+        return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
 
@@ -380,13 +405,12 @@ public:
      * independant part of the affine decomposition of the bilinear and linear
      * forms.
      */
-    affine_decomposition_type computeAffineDecomposition(  )
+    affine_decomposition_type computeAffineDecomposition()
     {
-        std::vector< std::vector< vector_ptrtype> > initial_guess;
         std::vector< std::vector<sparse_matrix_ptrtype> > mass;
-        boost::tie( M_Aqm, M_Fqm , boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+        boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
         // to have compatibility with SCM, we need to provide the same interface than CRBModel
-        return boost::make_tuple( mass, M_Aqm, M_Fqm , initial_guess );
+        return boost::make_tuple( mass, M_Aqm, M_Fqm );
     }
 
 
@@ -422,41 +446,6 @@ public:
     {
         return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
     }
-
-
-    /**
-     * \brief Returns the vector coefficients
-     */
-    beta_vector_type const& betaAqm() const
-    {
-        return M_model->betaAqm();
-    }
-
-    /**
-     * \brief Returns the value of the \f$A_{qm}\f$ coefficient at \f$\mu\f$
-     */
-    value_type betaAqm( int q, int m ) const
-    {
-        return M_model->betaAqm(q,m);
-    }
-
-
-    /**
-     * \brief Returns the vector coefficients
-     */
-    std::vector<beta_vector_type> const& betaL() const
-    {
-        return M_model->betaL();
-    }
-
-    /**
-     * \brief Returns the value of the \f$L_qm\f$ coefficient at \f$\mu\f$
-     */
-    value_type betaL( int l, int q, int m ) const
-    {
-        return M_model->betaL( l, q , m);
-    }
-
 
     /**
      * \brief the vector \c Fq[q][m] of the affine decomposition of the right hand side
@@ -518,6 +507,21 @@ public:
         return M_model->scalarProduct( X, Y );
     }
 
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+
 
 
     /**
@@ -565,13 +569,76 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu )
+    value_type output( int output_index, parameter_type const& mu, element_type &u, bool need_to_solve=false  )
     {
-        return M_model->output( output_index, mu );
+        return M_model->output( output_index, mu , u , need_to_solve);
     }
 
+
+
+    double timeStep()
+    {
+        return timeStep( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    double timeStep( mpl::bool_<true> )
+    {
+        double timestep;
+
+        if ( M_model->isSteady() )
+            timestep=1e30;
+        else
+            timestep = M_model->timeStep();
+        return timestep;
+    }
+    double timeStep( mpl::bool_<false> )
+    {
+        return 1e30;
+    }
+
+    double timeInitial()
+    {
+        return timeInitial( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    double timeInitial( mpl::bool_<true> )
+    {
+        return M_model->timeInitial();
+    }
+    double timeInitial( mpl::bool_<false> )
+    {
+        return 0;
+    }
+
+    double timeFinal()
+    {
+        return timeFinal( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    double timeFinal( mpl::bool_<true> )
+    {
+        double timefinal;
+        if ( M_model->isSteady() )
+            timefinal=1e30;
+        else
+            timefinal = M_model->timeFinal();
+        return timefinal;
+    }
+    double timeFinal( mpl::bool_<false> )
+    {
+        return 1e30;
+    }
+
+
     //only to compile
-    element_type solveFemUsingOnlineEimPicard( parameter_type const& mu ){};
+    element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+    {
+        auto zero=this->functionSpace()->element();
+        return zero;
+    }
+    element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+    {
+        auto zero=this->functionSpace()->element();
+        return zero;
+    }
+
     element_type solveFemUsingOfflineEim( parameter_type const& mu ){};
     offline_merge_type result_offline_merge_type;
     offline_merge_type update( parameter_type const& mu,  double time=0 )  // for scm
@@ -582,9 +649,18 @@ public:
     {
         return sparse_matrix ;
     }
+    sparse_matrix_ptrtype const& innerProductForMassMatrix() const //  for the scm
+    {
+        return sparse_matrix ;
+    }
+
     sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
         return sparse_matrix;
+    }
+    value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
+    {
+        return 0;
     }
     size_type Qm() const
     {
@@ -619,6 +695,22 @@ public:
     bool isSteady( mpl::bool_<false> )
     {
         return true;
+    }
+
+    /**
+     * returns list of eim objects ( scalar continuous)
+     */
+    typename model_type::funs_type scalarContinuousEim()
+    {
+        return M_model->scalarContinuousEim();
+    }
+
+    /**
+     * returns list of eim objects ( scalar discontinuous)
+     */
+    typename model_type::funsd_type scalarDiscontinuousEim()
+    {
+        return M_model->scalarDiscontinuousEim();
     }
 
 

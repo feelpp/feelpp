@@ -60,18 +60,18 @@ GFLAGS_SOURCES = $(gflagsinclude_HEADERS) src/mutex.h src/util.h \
                  src/gflags.cc src/gflags_reporting.cc \
                  src/gflags_completions.cc
 
-lib_LTLIBRARIES += libgflags.la
+lib_LTLIBRARIES += libfeelpp_gflags.la
 WINDOWS_PROJECTS += vsprojects/libgflags/libgflags.vcproj
-libgflags_la_SOURCES = $(GFLAGS_SOURCES)
-libgflags_la_CXXFLAGS = $(PTHREAD_CFLAGS) -DNDEBUG
+libfeelpp_gflags_la_SOURCES = $(GFLAGS_SOURCES)
+libfeelpp_gflags_la_CXXFLAGS = $(PTHREAD_CFLAGS) -DNDEBUG
 # -version-info gets passed to libtool
-libgflags_la_LDFLAGS = $(PTHREAD_CFLAGS) -version-info @SO_VERSION@
-libgflags_la_LIBADD = $(PTHREAD_LIBS)
+libfeelpp_gflags_la_LDFLAGS = $(PTHREAD_CFLAGS) -version-info @SO_VERSION@
+libfeelpp_gflags_la_LIBADD = $(PTHREAD_LIBS)
 
-lib_LTLIBRARIES += libgflags_nothreads.la
-libgflags_nothreads_la_SOURCES = $(GFLAGS_SOURCES)
-libgflags_nothreads_la_CXXFLAGS = -DNDEBUG -DNO_THREADS
-libgflags_nothreads_la_LDFLAGS = -version-info @SO_VERSION@
+lib_LTLIBRARIES += libfeelpp_gflags_nothreads.la
+libfeelpp_gflags_nothreads_la_SOURCES = $(GFLAGS_SOURCES)
+libfeelpp_gflags_nothreads_la_CXXFLAGS = -DNDEBUG -DNO_THREADS
+libfeelpp_gflags_nothreads_la_LDFLAGS = -version-info @SO_VERSION@
 
 TESTS += gflags_unittest
 WINDOWS_PROJECTS += vsprojects/gflags_unittest/gflags_unittest.vcproj
@@ -80,12 +80,12 @@ gflags_unittest_SOURCES = $(gflagsinclude_HEADERS) \
                           src/gflags_unittest.cc
 gflags_unittest_CXXFLAGS = $(PTHREAD_CFLAGS)
 gflags_unittest_LDFLAGS = $(PTHREAD_CFLAGS)
-gflags_unittest_LDADD = libgflags.la
+gflags_unittest_LDADD = libfeelpp_gflags.la
 
 # Also make sure this works when we don't link in pthreads
 TESTS += gflags_nothreads_unittest
 gflags_nothreads_unittest_SOURCES = $(gflags_unittest_SOURCES)
-gflags_nothreads_unittest_LDADD = libgflags_nothreads.la
+gflags_nothreads_unittest_LDADD = libfeelpp_gflags_nothreads.la
 
 # We also want to test that things work properly when the file that
 # holds main() has a name ending with -main or _main.  To keep the
@@ -93,7 +93,7 @@ gflags_nothreads_unittest_LDADD = libgflags_nothreads.la
 TESTS += gflags_unittest2
 gflags_unittest2_SOURCES = $(gflagsinclude_HEADERS) \
                            src/gflags_unittest-main.cc
-gflags_unittest2_LDADD = libgflags_nothreads.la
+gflags_unittest2_LDADD = libfeelpp_gflags_nothreads.la
 src/gflags_unittest-main.cc: src/gflags_unittest.cc
 	rm -f src/gflags_unittest-main.cc
 	cp -p $(top_srcdir)/src/gflags_unittest.cc src/gflags_unittest-main.cc
@@ -102,7 +102,7 @@ CLEANFILES += src/gflags_unittest-main.cc
 TESTS += gflags_unittest3
 gflags_unittest3_SOURCES = $(gflagsinclude_HEADERS) \
 	                   src/gflags_unittest_main.cc
-gflags_unittest3_LDADD = libgflags_nothreads.la
+gflags_unittest3_LDADD = libfeelpp_gflags_nothreads.la
 src/gflags_unittest_main.cc: src/gflags_unittest.cc
 	rm -f src/gflags_unittest_main.cc
 	cp -p $(top_srcdir)/src/gflags_unittest.cc src/gflags_unittest_main.cc
@@ -128,7 +128,7 @@ gflags_strip_flags_test_SOURCES = $(gflagsinclude_HEADERS) \
                                   src/gflags_strip_flags_test.cc
 gflags_strip_flags_test_CXXFLAGS = $(PTHREAD_CFLAGS)
 gflags_strip_flags_test_LDFLAGS = $(PTHREAD_CFLAGS)
-gflags_strip_flags_test_LDADD = libgflags.la
+gflags_strip_flags_test_LDADD = libfeelpp_gflags.la
 
 check_SCRIPTS += gflags_strip_flags_test_sh
 noinst_SCRIPTS += src/gflags_strip_flags_test.sh

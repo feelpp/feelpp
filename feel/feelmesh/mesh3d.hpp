@@ -205,7 +205,7 @@ public Edges<typename Shape::template shape<1>::type,
              super_points::isEmpty() &&
              super_faces::isEmpty() &&
              super_edges::isEmpty() &&
-             _M_e2e.empty() );
+             M_e2e.empty() );
 }
 
 
@@ -272,7 +272,7 @@ size_type numPoints() const
 element_edge_type const& localEdgeId( element_type const& e,
                                       size_type const n ) const
 {
-    return _M_e2e[e.id()][n];
+    return M_e2e[e.id()][n];
 }
 
 /**
@@ -281,7 +281,7 @@ element_edge_type const& localEdgeId( element_type const& e,
 element_edge_type const& localEdgeId( size_type const e,
                                       size_type const n ) const
 {
-    return _M_e2e[e][n];
+    return M_e2e[e][n];
 }
 
 //@}
@@ -364,13 +364,13 @@ private:
     void serialize( Archive & ar, const unsigned int version )
         {
             ar & boost::serialization::base_object<super>( *this );
-            Debug(4015) << "Serializing points\n";
+            DVLOG(2) << "Serializing points\n";
             ar & boost::serialization::base_object<super_points>( *this );
-            Debug(4015) << "Serializing edges\n";
+            DVLOG(2) << "Serializing edges\n";
             ar & boost::serialization::base_object<super_edges>( *this );
-            Debug(4015) << "Serializing faces\n";
+            DVLOG(2) << "Serializing faces\n";
             ar & boost::serialization::base_object<super_faces>( *this );
-            Debug(4015) << "Serializing elements\n";
+            DVLOG(2) << "Serializing elements\n";
             ar & boost::serialization::base_object<super_elements>( *this );
         }
 
@@ -395,7 +395,7 @@ void determineFacePermutation( uint16_type numZeros, std::vector<size_type> cons
 /**
  * Arrays containing the global ids of edges of each element
  */
-boost::multi_array<element_edge_type,2> _M_e2e;
+boost::multi_array<element_edge_type,2> M_e2e;
 };
 
 template <typename GEOSHAPE>
@@ -407,7 +407,7 @@ Mesh3D<GEOSHAPE>::Mesh3D( WorldComm const& worldComm )
     super_points( worldComm ),
     super_faces( worldComm ),
     super_edges( worldComm ),
-    _M_e2e()
+    M_e2e()
 {}
 
 template <typename GEOSHAPE>
@@ -419,7 +419,7 @@ Mesh3D<GEOSHAPE>::Mesh3D( Mesh3D const & m )
     super_points( m ),
     super_faces( m ),
     super_edges( m ),
-    _M_e2e( m._M_e2e )
+    M_e2e( m.M_e2e )
 {}
 
 template <typename GEOSHAPE>
@@ -438,7 +438,7 @@ Mesh3D<GEOSHAPE>::operator=( Mesh3D const& m )
         super_faces::operator=( m );
         super_edges::operator=( m );
 
-        _M_e2e = m._M_e2e;
+        M_e2e = m.M_e2e;
     }
 
     return *this;
@@ -453,7 +453,7 @@ Mesh3D<GEOSHAPE>::clear()
     this->faces().clear();
     this->edges().clear();
 
-    _M_e2e.resize( boost::extents[0][0] );
+    M_e2e.resize( boost::extents[0][0] );
     FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
 }
 
@@ -592,7 +592,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionOnePermutation()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
 }
 
 template <typename GEOSHAPE>
@@ -603,7 +603,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     std::map<std::set<int>, size_type > _edges;
     typename std::map<std::set<int>, size_type >::iterator _edgeit;
     int next_edge = 0;
-    _M_e2e.resize( boost::extents[this->numElements()][this->numLocalEdges()] );
+    M_e2e.resize( boost::extents[this->numElements()][this->numLocalEdges()] );
 
     size_type vid, i1, i2;
     element_type ele;
@@ -638,10 +638,11 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
     ti.restart();
 
     edge_type edg;
+    edg.setProcessIdInPartition( this->worldComm().localRank() );
 
     if ( this->edges().empty() )
     {
@@ -670,11 +671,14 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 if ( edgeinserted )
                     ++next_edge;
 
+                // reset the process id (edge not connected to an active elt take this value)
+                edg.setProcessId( invalid_uint16_type_value );
+
                 if ( edgeinserted )
                 {
                     // set edge id
                     edg.setId( _edgeit->second );
-                    edg.setOnBoundary( true );
+                    edg.setOnBoundary( true, 0 );
 
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
                         edg.setPoint( k, ifa->point( bele.eToP( j, k ) ) );
@@ -683,11 +687,13 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     //edg.addElement( ifa->ad_first() );
                     this->addEdge( edg );
                 }
+                // set the process id from element (only active element)
+                if (!ifa->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(ifa->processId()) );
             }
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] adding edges : " << ti.elapsed() << "\n";
     ti.restart();
 
     std::map<size_type, edge_pair_type> _oriented_edges;
@@ -715,7 +721,10 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             if ( edgeinserted )
                 ++next_edge;
 
-            _M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
+            M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
+
+            // reset the process id (edge not connected to an active elt take this value)
+            edg.setProcessId( invalid_uint16_type_value );
 
             if ( edgeinserted )
             {
@@ -725,6 +734,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 // we have already inserted edges on the boundary so
                 // this one _is_ not on the boundary
                 edg.setOnBoundary( false );
+
                 if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
                     edg.addElement( vid );
 
@@ -745,6 +755,9 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                     this->edges().modify( this->edgeIterator( _edgeit->second ), [vid] ( edge_type& e ) { e.addElement( vid ); } );
             }
 
+            // set the process id from element (only active element)
+            if (!elt_it->isGhostCell()) this->edges().modify( this->edgeIterator( _edgeit->second ), Feel::detail::UpdateProcessId(elt_it->processId()) );
+
             this->elements().modify( elt_it,
                                      detail::UpdateEdge<edge_type>( j, boost::cref( this->edge( _edgeit->second ) ) ) );
 #if !defined(NDEBUG)
@@ -764,7 +777,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] updating element/edges : " << ti.elapsed() << "\n";
     ti.restart();
 
     for ( element_iterator elt_it = this->beginElement();
@@ -817,7 +830,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
         }
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] updating edges orientation : " << ti.elapsed() << "\n";
     ti.restart();
 #if 0
     edge_iterator e_it = this->beginEdge();
@@ -835,7 +848,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
 
     }
 
-    Debug( 4015 ) << "[Mesh3D::updateEdges] cleaning up edges : " << ti.elapsed() << "\n";
+    DVLOG(2) << "[Mesh3D::updateEdges] cleaning up edges : " << ti.elapsed() << "\n";
 #endif
     ti.restart();
 }

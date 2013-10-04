@@ -127,18 +127,18 @@ public:
                      Pts const& pts,
                      expression_type const& __expr )
         :
-        _M_eltbegin( __elts.template get<1>() ),
-        _M_eltend( __elts.template get<2>() ),
-        _M_pts( pts ),
-        _M_expr( __expr )
+        M_eltbegin( __elts.template get<1>() ),
+        M_eltend( __elts.template get<2>() ),
+        M_pts( pts ),
+        M_expr( __expr )
     {
     }
     IntegratorDirac( IntegratorDirac const& ioe )
         :
-        _M_eltbegin( ioe._M_eltbegin ),
-        _M_eltend( ioe._M_eltend ),
-        _M_pts( ioe._M_pts ),
-        _M_expr( ioe._M_expr )
+        M_eltbegin( ioe.M_eltbegin ),
+        M_eltend( ioe.M_eltend ),
+        M_pts( ioe.M_pts ),
+        M_expr( ioe.M_expr )
     {
     }
 
@@ -157,7 +157,7 @@ public:
      */
     element_iterator beginElement() const
     {
-        return _M_eltbegin;
+        return M_eltbegin;
     }
 
     /**
@@ -166,7 +166,7 @@ public:
      */
     element_iterator endElement() const
     {
-        return _M_eltend;
+        return M_eltend;
     }
 
 
@@ -185,7 +185,7 @@ public:
                    FormType& __f ) const
     {
         typedef typename Elem1::functionspace_type functionspace_type;
-        Debug( 5066 ) << "[IntegratorDirac::assemble()] is_same: "
+        DVLOG(2) << "[IntegratorDirac::assemble()] is_same: "
                       << mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>::value << "\n";
         assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>() );
     }
@@ -215,11 +215,11 @@ private:
 
 private:
 
-    element_iterator _M_eltbegin;
-    element_iterator _M_eltend;
+    element_iterator M_eltbegin;
+    element_iterator M_eltend;
 
-    Pts const& _M_pts;
-    expression_type _M_expr;
+    Pts const& M_pts;
+    expression_type M_expr;
 };
 
 template<typename ElementRange, typename Pts, typename DiracExpr>
@@ -330,7 +330,7 @@ IntegratorDirac<ElementRange, Pts,  DiracExpr>::assemble( boost::shared_ptr<Elem
                             //std::cout << "interpfunc :  " << interpfunc << "\n";
 
                             rhs->add( globaldof, atomcharges[dof] * interpfunc( comp, 0, 0 ) );
-                            // Debug(  ) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
+                            // DVLOG(2) << "rhs( " << globaldof << ")=" << (*rhs)( globaldof )
                             //           << " (just added " << atomcharges[dof] * interpfunc( comp, 0, 0 ) << " )" << "\n";
                             v.setGlobalValue( globaldof, 0 );
 
@@ -352,8 +352,8 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
 {
     mesh_type::Inverse meshinv( M_mesh );
 
-    pts_iterator ptit = _M_pts.begin();
-    pts_iterator pten = _M_pts.end();
+    pts_iterator ptit = M_pts.begin();
+    pts_iterator pten = M_pts.end();
 
     /* initialisation of the mesh::inverse data structure */
     for ( size_type ptid = 0; ptit != pten; ++ptit, ++ptid )
@@ -363,7 +363,7 @@ IntegratorDirac<Elements, Pts, DiracExpr>::evaluate( mpl::int_<MESH_ELEMENTS> ) 
 
     meshinv.distribute();
 
-    std::vector<bool> dof_done( _M_pts.size() );
+    std::vector<bool> dof_done( M_pts.size() );
     std::fill( dof_done.begin(), dof_done.end(), false );
     std::vector<size_type> itab;
     matrix_node<value_type>::type pts( mesh_type::nDim, 1 );

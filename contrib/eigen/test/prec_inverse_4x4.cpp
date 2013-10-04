@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 #include <Eigen/LU>
@@ -29,7 +14,6 @@
 template<typename MatrixType> void inverse_permutation_4x4()
 {
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::RealScalar RealScalar;
   Vector4i indices(0,1,2,3);
   for(int i = 0; i < 24; ++i)
   {
@@ -44,6 +28,7 @@ template<typename MatrixType> void inverse_permutation_4x4()
 
 template<typename MatrixType> void inverse_general_4x4(int repeat)
 {
+  using std::abs;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
   double error_sum = 0., error_max = 0.;
@@ -53,7 +38,7 @@ template<typename MatrixType> void inverse_general_4x4(int repeat)
     RealScalar absdet;
     do {
       m = MatrixType::Random();
-      absdet = internal::abs(m.determinant());
+      absdet = abs(m.determinant());
     } while(absdet < NumTraits<Scalar>::epsilon());
     MatrixType inv = m.inverse();
     double error = double( (m*inv-MatrixType::Identity()).norm() * absdet / NumTraits<Scalar>::epsilon() );
