@@ -283,7 +283,7 @@ public:
 
     vector_ptrtype newVector( const size_type n, const size_type n_local )
     {
-        return vector_ptrtype( new petsc_vector_type( n, n_local ) );
+        return vector_ptrtype( new petsc_vector_type( n, n_local, this->comm() ) );
     }
 
 

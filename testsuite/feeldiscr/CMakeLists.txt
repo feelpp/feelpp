@@ -12,7 +12,7 @@ foreach(TEST element elementminmax project bdf interpolation integration  integr
 endforeach()
 
 feelpp_add_test( integration_ho GEO test_integration_ho_geometry.geo test_on_inside.geo)
-# add_executable( test_wirebasket test_wirebasket.cpp )
+# add_executable( test_operatorinterpolation test_operatorinterpolation.cpp )
 # target_link_libraries( test_wirebasket ${FEELPP_LIBRARIES})
 
 feelpp_add_test( mesh_transfinite CFG test_mesh_transfinite.geocfg GEO test_mesh_transfinite.geo )

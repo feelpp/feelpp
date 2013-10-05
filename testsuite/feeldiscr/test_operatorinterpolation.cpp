@@ -63,8 +63,11 @@ test2dTo1d()
 {
     typedef Backend<double> backend_type;
 
-    typedef Mesh<Simplex<1,OrderGeo,2> > mesh_1d_type;
-    typedef Mesh<Simplex<2,OrderGeo,2> > mesh_2d_type;
+    // typedef Mesh<Simplex<1,OrderGeo,2> > mesh_1d_type;
+    // typedef Mesh<Simplex<2,OrderGeo,2> > mesh_2d_type;
+
+    typedef Mesh<Hypercube<1,OrderGeo,2> > mesh_1d_type;
+    typedef Mesh<Hypercube<2,OrderGeo,2> > mesh_2d_type;
 
     typedef bases<Lagrange<3,Vectorial,Continuous,PointSetFekete> > basis_2d_type;
     typedef FunctionSpace<mesh_2d_type, basis_2d_type> space_2d_type;

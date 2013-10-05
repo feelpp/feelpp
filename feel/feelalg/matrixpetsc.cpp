@@ -342,7 +342,7 @@ void MatrixPetsc<T>::init ( const size_type m,
                                  dnz,
                                  //(int*) this->graph()->nNzOnProc().data(),
                                  &M_mat );
-        CHKERRABORT( this->comm(),ierr );
+        //CHKERRABORT( this->comm(),ierr );
         delete[] dnz;
         //ierr = MatSeqAIJSetPreallocation( M_mat, 0, (int*)this->graph()->nNzOnProc().data() );
 #if 0
@@ -918,7 +918,7 @@ template <typename T>
 void
 MatrixPetsc<T>::printMatlab ( const std::string name ) const
 {
-    FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" );
+    //FEELPP_ASSERT ( this->isInitialized() ).error( "petsc matrix not properly initialized" );
 
     // assert (this->closed());
     this->close();
