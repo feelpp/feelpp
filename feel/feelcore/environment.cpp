@@ -650,11 +650,14 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
 void
 Environment::clearSomeMemory()
 {
+    Environment::logMemoryUsage( "Environment::clearSomeMemory before:" );
+
     // send signal to all deleters
     S_deleteObservers();
     google::FlushLogFiles(google::GLOG_INFO);
     VLOG(2) << "clearSomeMemory: delete signal sent" << "\n";
 
+    Environment::logMemoryUsage( "Environment::clearSomeMemory after:" );
 }
 Environment::~Environment()
 {
