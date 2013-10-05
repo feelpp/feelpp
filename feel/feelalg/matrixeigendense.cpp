@@ -33,6 +33,7 @@
 
 #include <Eigen/Dense>
 #include <feel/feelalg/matrixeigendense.hpp>
+#include <feel/feelalg/vectoreigen.hpp>
 
 namespace Feel
 {
@@ -328,6 +329,38 @@ MatrixEigenDense<T>::createSubmatrix( MatrixSparse<T>& submatrix,
     MatrixEigenDense<T>* A = dynamic_cast<MatrixEigenDense<T>*> ( &submatrix );
 
     A->mat() = this->M_mat.block(rows[0],cols[0],rows.size(),cols.size());
+}
+
+template <typename T>
+void
+MatrixEigenDense<T>::zeroRows( std::vector<int> const& rows,
+                               Vector<value_type> const& vals,
+                               Vector<value_type>& rhs,
+                               Context const& on_context )
+{
+    Feel::detail::ignore_unused_variable_warning( rhs );
+    Feel::detail::ignore_unused_variable_warning( vals );
+
+    VectorEigen<T>* prhs = dynamic_cast<VectorEigen<T>*> ( &rhs );
+    VectorEigen<T> const* pvals = dynamic_cast<const VectorEigen<T>*> ( &vals );
+
+    for ( size_type i = 0; i < rows.size(); ++i )
+    {
+        value_type value = 1.0;
+
+        if ( on_context.test( ON_ELIMINATION_KEEP_DIAGONAL ) )
+            value = M_mat( rows[i], rows[i] );
+        M_mat.row( rows[i] ).setZero();
+
+        prhs->vec() -= M_mat.col(rows[i])*vals(rows[i]);
+        M_mat.col( rows[i] ).setZero();
+
+        // set diagonal
+        M_mat( rows[i], rows[i] ) = value;
+
+        // multiply rhs by value of the diagonal entry value
+        rhs.set( rows[i], value * vals(rows[i]) );
+    }
 }
 
 
