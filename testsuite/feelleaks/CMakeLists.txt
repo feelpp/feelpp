@@ -22,6 +22,6 @@
 #
 #
 set_directory_properties(PROPERTIES LABEL testleaks )
-feelpp_add_test( solve_leak  )
+feelpp_add_test( solve_leak  CFG test_solve_leak.cfg )
 feelpp_add_test( leak_exporter )
 feelpp_add_test( matrix_destructor )
