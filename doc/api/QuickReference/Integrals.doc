@@ -12,16 +12,16 @@ namespace Feel {
 
 <hr>
 \section Integrals_Introduction Introduction
-You should be able to create a mesh now. If it is not the case, get back to the section \ref Mesh .<br>
+You should be able to create a mesh now. If it is not the case, get back to the section \ref Mesh.<br>
 
-To use tools of this sections you have to precise the domain range using the following keywords :
+To use the tools of this sections, you have to precise the domain range using the following keywords :
 <table class="manual">
 <tr><th>\feel Keyword</th><th>>Descriptionn</th></tr>
 <tr><td> \co elements(mesh) \eco</td><td>All the elements of a mesh</td></tr>
 <tr><td> \co markedelements(mesh, id) \eco</td><td>The precise element defined by the id.<br>It can be any element (line, surface, domain, and so on).</td></tr>
 <tr><td> \co faces(mesh) \eco</td><td>All the faces of the mesh.</td></tr>
 <tr><td> \co markedfaces(mesh) \eco</td><td>All the faces of the mesh which are marked.</td></tr>
-<tr><td> \co boundaryfaces(mesh) \eco</td><td>All elements that own a topological dimension one below the mesh. <br>For example, if you mesh is a 2D one,\c boundaryfaces(mesh) will return all the lines (because of dimension $2-1=1$).<br>These elements which have one dimension less, are corresponding to the boundary faces.</td></tr>
+<tr><td> \co boundaryfaces(mesh) \eco</td><td>All elements that own a topological dimension one below the mesh. <br>For example, if you mesh is a 2D one, \c boundaryfaces(mesh) will return all the lines (because of dimension \f$2-1=1\f$).<br>These elements which have one dimension less, are corresponding to the boundary faces.</td></tr>
 <tr><td> \co internalelements(mesh) \eco</td><td>All the elements of the mesh which are stricly within the domain that is to say they do not share a face with the boundary.</td></tr>
 <tr><td> \co boundaryelements(mesh) \eco</td><td>All the elements of the mesh which share a face with the boundary of the mesh.</td></tr>
 <tr><td> \co edges(mesh) \eco</td><td>All the edges of the mesh.</td></tr>
@@ -156,7 +156,7 @@ Required parameters :
 \li <tt>_expr</tt> : the expression to project
 
 Optional parameters :
-\li <tt>_range</tt> : the domain for the projection Default = all elements from <tt>space->mesh()</tt>
+\li <tt>_range</tt> : the domain for the projection. Default = all elements from <tt>space->mesh()</tt>
 \li <tt>_geomap</tt> : type of geometric mapping. Default = <tt>GEOMAP_OPT</tt>
 
 \Examples

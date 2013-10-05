@@ -9,8 +9,8 @@ namespace Feel {
 
 <hr>
 \section Mesh_Introduction Introduction
-Feel++ provides some tools to manipulate mesh.<br>
-Here is a basic example that shows you how to generate a mesh for a square geometry (source \c "doc/manual/tutorial/mymesh.cpp").
+Feel++ provides some tools to manipulate meshes.<br>
+Here is a basic example that shows how to generate a mesh for a square geometry (source \c "doc/manual/tutorial/mymesh.cpp").
 \co
 int main( int argc, char** argv )
 {
@@ -32,13 +32,13 @@ int main( int argc, char** argv )
 // main
 \eco
 
-As always, we initialise the \feel environment (see section \ref FirstApp ).<br>
+As always, we initialize the \feel environment (see section \ref FirstApp ).<br>
 The \c unitSquare() will generate a mesh for a square geometry. \feel provides several functions to automate the GMSH mesh generation for different topologies. These functions will create a geometry file \c .geo and a mesh file \c .msh. We can visualize them in GMSH.
 \verbatim
   gmsh <entity_name>.msh
 \endverbatim
 
-Finally we use the \c exporter() (see \ref Exporter ) function to export the mesh for post processing. It will create by default a Paraview format file \c .sos and an Ensight format file \c .case.
+Finally we use the \c exporter() (see \ref Exporter) function to export the mesh for post processing. It will create by default a Paraview format file \c .sos and an Ensight format file \c .case.
 \verbatim
   paraview <app_name>.sos
 \endverbatim
@@ -60,7 +60,7 @@ There is a list of basic geometries you can automatically generate with \feel li
 
 
 <b>Examples :</b><br>
-From "doc/manual/tutorial/myfunctionspace.cpp
+From "doc/manual/tutorial/myfunctionspace.cpp" :
 \co auto mesh = unitSquare();\eco
 
 
@@ -111,7 +111,7 @@ Optional Parameters :
 
 <br>
 The file you want to load has to be in an appropriate repository.<br>
-\feel looks for \c .geo and \c .msh files in following directories (in this order) :
+\feel looks for \c .geo and \c .msh files in the following directories (in this order) :
 \li current path
 \li paths that went through changeRepository(), it means that we look for example into the path from which the executable was run
 \li localGeoRepository() which is usually \c "$HOME/feel/geo"  (cf: \ref Environment )
@@ -137,7 +137,7 @@ auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
 \eco
 
 \subsection LoadGMSh loadGMSHMesh
-In order to load only \c .msh file, you can also use the loadGMSHMesh
+In order to load only \c .msh file, you can also use the loadGMSHMesh.
 
 <b>Interface :</b><br>
 \co
@@ -204,7 +204,7 @@ Required Parameters :
 \li \c filename : file to load.
 
 Optional Parameters :
-\li \c _h : characteristic size of the mesh. Default =
+\li \c _h : characteristic size of the mesh. Default = \c 0.1.
 \li \c _dim : dimension. Default = \c 3.
 \li \c _order : order. Default = \c 1.
 \li \c _files_path : path to the file. Default = \c localGeoRepository().
