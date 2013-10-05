@@ -831,9 +831,14 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                      )
                                    )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::solve begin" );
+        }
         this->setTolerances( _dtolerance=dtolerance,
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
@@ -871,6 +876,10 @@ public:
         //new
         _sol->close();
         detail::ref( solution ) = *_sol;
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::solve end" );
+        }
         return ret;
     }
 
