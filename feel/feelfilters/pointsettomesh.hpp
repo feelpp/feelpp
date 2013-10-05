@@ -38,6 +38,11 @@
 
 #if defined(FEELPP_HAS_VTK)
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#warnings"
+#endif
+
 #include <vtkPointSet.h>
 #include <vtkDelaunay2D.h>
 #include <vtkDelaunay3D.h>
@@ -46,6 +51,10 @@
 #include <vtkExtractEdges.h>
 #include <vtkPolyDataMapper.h>
 #include <vtkDataSetMapper.h>
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #endif /* FEELPP_HAS_VTK */
 
