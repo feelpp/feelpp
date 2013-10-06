@@ -388,13 +388,17 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
 
         VLOG(2) << "try processing cfg files...\n";
         std::string config_name;
+        bool found = false;
         BOOST_FOREACH( auto prefix, prefixes )
         {
             config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
             VLOG(2) << " Looking for " << config_name << "\n";
 
             if ( fs::exists( config_name ) )
+            {
+                found = true;
                 break;
+            }
             else
             {
                 // try with a prefix feel_
@@ -402,15 +406,18 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
                 VLOG(2) << " Looking for " << config_name << "\n";
                 if ( fs::exists( config_name ) )
                 {
+                    found = true;
                     break;
                 }
             }
         }
-        LOG(INFO) << "Reading  " << config_name << "...\n";
-        std::ifstream ifs( config_name.c_str() );
-        store( parse_config_file( ifs, desc, true ), S_vm );
-        LOG(INFO) << "Reading  " << config_name << " done.\n";
-
+        if ( found )
+        {
+            LOG(INFO) << "Reading  " << config_name << "...\n";
+            std::ifstream ifs( config_name.c_str() );
+            store( parse_config_file( ifs, desc, true ), S_vm );
+            LOG(INFO) << "Reading  " << config_name << " done.\n";
+        }
         //po::store(po::parse_command_line(argc, argv, desc), S_vm);
         po::notify( S_vm );
 
@@ -896,7 +903,10 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         rep_path = Environment::rootRepository();
 
     if ( !fs::exists( rep_path ) )
+    {
+        LOG(INFO) << "Creating directory " << rep_path << "...";
         fs::create_directory( rep_path );
+    }
 
 
     BOOST_FOREACH( std::string const& dir, dirs )
