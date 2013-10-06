@@ -687,7 +687,9 @@ public:
                                 //dimension of the RB (not necessarily the max)
                                 int N =  option(_name="crb.dimension").template as<int>();
 
-                                auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+                                bool print_rb_matrix = option(_name="crb.print-rb-matrix").template as<bool>();
+                                double online_tol = option(_name="crb.online-tolerance").template as<double>();
+                                auto o = crb->run( mu, online_tol , N, print_rb_matrix);
                                 double time_crb = ti.elapsed();
 
                                 auto WN = crb->wn();
@@ -887,7 +889,7 @@ public:
                                     int Nmax = crb->dimension();
                                     for( int N = 1; N <= Nmax ; N++ )
                                     {
-                                        auto o= crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+                                        auto o= crb->run( mu,  online_tol , N, print_rb_matrix);
                                         auto ocrb = o.template get<0>();
                                         auto solutions=o.template get<2>();
                                         auto u_crb = solutions.template get<0>();
