@@ -95,6 +95,7 @@ crbOptions( std::string const& prefix )
     ( "crb.compute-fem-during-online",Feel::po::value<bool>()->default_value( true ), "compute fem during online step, necessary to compute the error between fem and crb")
 
     ( "crb.compute-matrix-information",Feel::po::value<bool>()->default_value( false ), "compute matrix information (i.e. conditioning, determinant) of reduced matrix if true")
+    ( "crb.print-rb-matrix",Feel::po::value<bool>()->default_value( false ), "write rb matrix (octave format) in a file if true")
 
     ( "crb.use-symmetric-matrix",Feel::po::value<bool>()->default_value( true ), "don't transpose to have the matrix associated to the dual problem if true")
     ( "crb.stock-matrices",Feel::po::value<bool>()->default_value( true ), "assemble and stock all matrices/vectors if true, but it can takes a lot of memory")
