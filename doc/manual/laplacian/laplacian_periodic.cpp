@@ -33,14 +33,13 @@ int main(int argc, char**argv )
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                     _directory=".",
                      _about=about(_name="laplacian_periodic",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
     PeriodicEntities pe;
     pe[1] = std::make_pair(1,3);
-    auto mesh = unitSquare(option(_name="gmsh.hsize").as<double(), pe);
+    auto mesh = unitSquare(option(_name="gmsh.hsize").as<double>(), pe);
     auto Vh = Pch<1>( mesh );
     auto u = Vh->element();
     auto v = Vh->element();
