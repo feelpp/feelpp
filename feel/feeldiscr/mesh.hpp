@@ -91,7 +91,19 @@ const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
 
 namespace Feel
 {
-
+struct PeriodicEntity
+{
+    PeriodicEntity( int d, int s, int m )
+        :
+        dim(d),
+        slave(s),
+        master(m)
+        {}
+    int dim;
+    int slave;
+    int master;
+    std::map<int,int> correspondingVertices;
+};
 struct MeshMarkerName
 {
 	std::string name;
@@ -462,6 +474,16 @@ public:
     }
 
     //@}
+
+    /**
+     * set the periodic entities
+     */
+    void setPeriodicEntities( std::vector<PeriodicEntity> const& e ) { M_periodic_entities = e; }
+
+    /**
+     * @return true if the mesh has periodic entities
+     */
+    bool isPeriodic() const { return M_periodic_entities.empty() == false; }
 
     /** @name  Methods
      */
@@ -1365,6 +1387,11 @@ private:
      * get<1>() provides the topological dimension
      */
     std::map<std::string, std::vector<size_type> > M_markername;
+
+    /**
+     * periodic entities
+     */
+    std::vector<PeriodicEntity> M_periodic_entities;
 
     /**
      * to encode points coordinates
