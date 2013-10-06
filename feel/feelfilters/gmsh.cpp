@@ -858,8 +858,8 @@ unitSquare( double h, PeriodicEntities pe )
                           _desc=domain( _name="square",
                                         _shape="hypercube",
                                         _dim=2,
-                                        _h=h,
-                                        _periodic = pe) );
+                                        _h=h),
+                          _periodic = pe );
 }
 
 boost::shared_ptr<Mesh<Simplex<3> > >
