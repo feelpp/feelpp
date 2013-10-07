@@ -16,14 +16,15 @@ namespace Feel {
 
 We now turn to the next crucial mathematical ingredient: the function space,
 whose definition depends on \f$\Omega_h\f$ --- or more precisely its partitioning
-\f$\calT_h\f$ --- and the choice of basis function. Function spaces in \Feel
-follow the same definition, see listing~\ref{fspace1}, and \Feel provides
+\f$\calT_h\f$ --- and the choice of basis function. Function spaces in \feel
+follow the same definition, see listing~\ref fspace1, and \feel provides
 support for continuous and discontinuous Galerkin methods and in particular
 approximations in \f$L^2\f$, \f$H^1\f$-conforming and \f$H^1\f$-nonconforming, \f$H^2\f$,
 \f$H(\mathrm{div})\f$ and \f$H(\mathrm{curl})\f$\footnote{At the time of writing, \f$H^2\f$,
 \f$H(\mathrm{div})\f$ and \f$H(\mathrm{curl})\f$ approximations are in experimental
-support.}.
+support.
 
+\anchor fspace1
 \code
  // space of continuous piecewise
  // \f$\P_3\f$ functions defined on a mesh
@@ -62,7 +63,7 @@ We introduce the following spaces
     \N_k; \forall F \in \calF^i_h\ \jump{\bm{v}_h \times \normal}_F = 0 \}
   \end{aligned}
 \f]
-where \f$\RT_k\f$ and \f$\N_k\f$ are respectively the Raviart-Thomas and N\'ed\'elec finite
+where \f$\RT_k\f$ and \f$\N_k\f$ are respectively the Raviart-Thomas and N&eacute;d&eacute;lec finite
 elements of degree \f$k\f$.
 
 The Legrendre and Dubiner basis yield implicitely discontinuous
@@ -72,7 +73,7 @@ whereas the Lagrange basis can yield either discontinuous or continuous
 (default behavior) approximations.  \f$\RT_h\f$ and \f$\N_h\f$ are implicitely spaces
 of vectorial functions \f$\bm{f}\f$ \st \f$\bm{f}: \Omega_h \subset \R^d \mapsto
 \R^d\f$. As to the other basis functions, \ie Lagrange, Legrendre, Dubiner,
-\etc, they are parametrized by their values namely \c Scalar ,
+etc., they are parametrized by their values namely \c Scalar ,
 \c Vectorial or \c Matricial.  Note that
 \c FunctionSpace handles also products of function spaces.  This is
 very powerful to describe complex multiphysics problems when coupled with
@@ -128,7 +129,7 @@ auto q = U.element<2>();
 \endcode
 
 Finally Feel++ provides the Lagrange, \f$\Iclag, \Idlag\f$, Crouzeix-Raviart, \f$\Icr\f$,
-Raviart-Thomas, \f$\Irt\f$ and N\'ed\'elec, \f$\In\f$ global interpolation operators.
+Raviart-Thomas, \f$\Irt\f$ and N&eacute;d&eacute;lec, \f$\In\f$ global interpolation operators.
 In abstract form, they read
 \f[
   \calI : \X \ni v \mapsto \sum_{i=1}^{\opdim\X} \ell_i(v) \phi_i
