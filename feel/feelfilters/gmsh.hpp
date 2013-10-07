@@ -57,6 +57,7 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
+class PeriodicEntities: public std::map<int,std::pair<int,int> > {};
 
 /**
  * \class Gmsh
@@ -190,6 +191,8 @@ public:
         {
             return M_name;
         }
+
+    PeriodicEntities const& periodic() const { return M_periodic; }
 
     /**
      * \return bounding box
@@ -553,6 +556,10 @@ public:
             M_recombine = _recombine;
         }
 
+    void setPeriodic( PeriodicEntities const& p )
+        {
+            M_periodic = p;
+        }
     //@}
 
     /** \name  Methods
@@ -689,6 +696,8 @@ protected:
     int M_refine_levels;
 
     bool M_substructuring;
+
+    PeriodicEntities M_periodic;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -1098,6 +1107,7 @@ BOOST_PARAMETER_FUNCTION(
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
+      ( periodic,        *, PeriodicEntities() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( worldcomm,      *, Environment::worldComm() )
@@ -1124,6 +1134,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setRefinementLevels( refine );
         desc->setFileFormat( (GMSH_FORMAT)format );
         desc->setStructuredMesh( structured );
+        desc->setPeriodic( periodic );
 
         std::string fname;
         bool generated_or_modified;
@@ -1423,7 +1434,8 @@ boost::shared_ptr<Mesh<Simplex<1> > > unitSegment( double h = option(_name="gmsh
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
-boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").as<double>() );
+boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").as<double>(),
+                                                  PeriodicEntities pe = PeriodicEntities() );
 
 /**
  * build a mesh of the unit circle using triangles

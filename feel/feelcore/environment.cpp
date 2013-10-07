@@ -362,58 +362,67 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
 
             if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
-                VLOG(2) << " parsing " << S_vm["config-file"].as<std::string>() << "...";
+                LOG(INFO) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
 
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
                 po::store( parse_config_file( ifs, desc, true ), S_vm );
                 po::notify( S_vm );
             }
         }
-        using namespace boost::assign;
-        std::vector<fs::path> prefixes = S_paths;
+        else
+        {
+            using namespace boost::assign;
+            std::vector<fs::path> prefixes = S_paths;
 #if 0
-        prefixes += boost::assign::list_of( fs::current_path() )
-            ( fs::path ( Environment::localConfigRepository() ) )
-            ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
-            ( fs::path ( "/usr/share/feel/config" ) )
-            ( fs::path ( "/usr/local/share/feel/config" ) )
-            ( fs::path ( "/opt/local/share/feel/config" ) );
+            prefixes += boost::assign::list_of( fs::current_path() )
+                ( fs::path ( Environment::localConfigRepository() ) )
+                ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
+                ( fs::path ( "/usr/share/feel/config" ) )
+                ( fs::path ( "/usr/local/share/feel/config" ) )
+                ( fs::path ( "/opt/local/share/feel/config" ) );
 #endif
-        char* env;
-        env = getenv("FEELPP_DIR");
-        if (env != NULL && env[0] != '\0')
-        {
-            prefixes.push_back( fs::path( env ) );
-        }
-
-        VLOG(2) << "try processing cfg files...\n";
-        std::string config_name;
-        BOOST_FOREACH( auto prefix, prefixes )
-        {
-            config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-            VLOG(2) << " Looking for " << config_name << "\n";
-
-            if ( fs::exists( config_name ) )
-                break;
-            else
+            char* env;
+            env = getenv("FEELPP_DIR");
+            if (env != NULL && env[0] != '\0')
             {
-                // try with a prefix feel_
-                config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                prefixes.push_back( fs::path( env ) );
+            }
+
+            VLOG(2) << "try processing cfg files...\n";
+            std::string config_name;
+            bool found = false;
+            BOOST_FOREACH( auto prefix, prefixes )
+            {
+                config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
                 VLOG(2) << " Looking for " << config_name << "\n";
+
                 if ( fs::exists( config_name ) )
                 {
+                    found = true;
                     break;
                 }
+                else
+                {
+                    // try with a prefix feel_
+                    config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                    VLOG(2) << " Looking for " << config_name << "\n";
+                    if ( fs::exists( config_name ) )
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if ( found )
+            {
+                LOG(INFO) << "Reading  " << config_name << "...\n";
+                std::ifstream ifs( config_name.c_str() );
+                store( parse_config_file( ifs, desc, true ), S_vm );
+                LOG(INFO) << "Reading  " << config_name << " done.\n";
+                //po::store(po::parse_command_line(argc, argv, desc), S_vm);
+                po::notify( S_vm );
             }
         }
-        LOG(INFO) << "Reading  " << config_name << "...\n";
-        std::ifstream ifs( config_name.c_str() );
-        store( parse_config_file( ifs, desc, true ), S_vm );
-        LOG(INFO) << "Reading  " << config_name << " done.\n";
-
-        //po::store(po::parse_command_line(argc, argv, desc), S_vm);
-        po::notify( S_vm );
-
     }
 
     // catches program_options exceptions
@@ -650,11 +659,14 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
 void
 Environment::clearSomeMemory()
 {
+    Environment::logMemoryUsage( "Environment::clearSomeMemory before:" );
+
     // send signal to all deleters
     S_deleteObservers();
     google::FlushLogFiles(google::GLOG_INFO);
     VLOG(2) << "clearSomeMemory: delete signal sent" << "\n";
 
+    Environment::logMemoryUsage( "Environment::clearSomeMemory after:" );
 }
 Environment::~Environment()
 {
@@ -893,7 +905,10 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         rep_path = Environment::rootRepository();
 
     if ( !fs::exists( rep_path ) )
+    {
+        LOG(INFO) << "Creating directory " << rep_path << "...";
         fs::create_directory( rep_path );
+    }
 
 
     BOOST_FOREACH( std::string const& dir, dirs )

@@ -704,7 +704,7 @@ public:
 
     //    boost::tuple<double,double> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu , std::vector<vectorN_type> & uNold=std::vector<vectorN_type>(), std::vector<vectorN_type> & uNduold=std::vector<vectorN_type>(), int K=0) const;
     boost::tuple<double,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
-                                               std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, int K=0 ) const;
+                                               std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0 ) const;
 
     /*
      * update the jacobian
@@ -769,7 +769,7 @@ public:
      * \param K : number of time step ( default value, must be >0 if used )
      */
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
-                                        std::vector< double > & output_vector, int K=0) const;
+                                        std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
     /*
      * fixed point ( dual problem ) - ONLINE step
@@ -795,7 +795,7 @@ public:
      */
     matrix_info_tuple fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                                    std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
-                                   std::vector< double > & output_vector, int K=0) const;
+                                   std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
     /**
      * computation of the conditioning number of a given matrix
@@ -950,7 +950,7 @@ public:
     //boost::tuple<double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //boost::tuple<double,double,double,double> run( parameter_type const& mu, double eps = 1e-6 );
     //by default N=-1 so we take dimension-max but if N>0 then we take N basis functions toperform online step
-    boost::tuple<double,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu, double eps = 1e-6, int N = -1, bool print_rb_matrix=false );
 
     /**
      * run the certified reduced basis with P parameters and returns 1 output
@@ -1062,6 +1062,29 @@ public:
     void buildVarianceMatrixPhi(int const N , mpl::bool_<false> );
 
     WorldComm const& worldComm() const { return Environment::worldComm() ; }
+
+    void printRBMatrix(matrixN_type const& A, parameter_type const& mu) const
+    {
+        int rows=A.rows();
+        int cols=A.cols();
+        int N = rows;
+        std::string file_name = ( boost::format("RBmatrix-N%1%-mu-%2%") %N  %mu[0] ).str();
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        {
+            std::ofstream file;
+            file.open( file_name,std::ios::out );
+            file<<"# name: A\n";
+            file<<"# type: matrix\n";
+            file<<"# rows: "<<rows<<"\n";
+            file<<"# columns: "<<cols<<"\n";
+            for(int i=0; i<rows; i++)
+            {
+                for(int j=0; j<cols; j++)
+                    file<<std::setprecision(15)<<A(i,j)<<" ";
+                file<<"\n";
+            }
+        }
+    }
 
     /**
      * evaluate online time via the option crb.computational-time-neval
@@ -3621,6 +3644,9 @@ CRB<TruthModelType>::computeConditioning( matrixN_type & A ) const
         eigen_values[i]=real( eigen_solver.eigenvalues()[i] );
     }
 
+    //LOG( INFO ) << " °°°°°°°°°°°°°°°°° EIGENVALUES ";
+    //for(int i=0; i<number_of_eigenvalues; i++)
+    //    LOG( INFO ) << "eig "<<i<<" : "<<eigen_values[i];
     int position_of_largest_eigenvalue=number_of_eigenvalues-1;
     int position_of_smallest_eigenvalue=0;
     double eig_max = eigen_values[position_of_largest_eigenvalue];
@@ -3788,7 +3814,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
-CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold, std::vector< double > & output_vector , int K) const
+CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
+                                        std::vector< double > & output_vector , int K, bool print_rb_matrix) const
 {
 
     double time_for_output;
@@ -3960,6 +3987,9 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
     auto matrix_info = boost::make_tuple(condition_number,determinant);
 
+    if( print_rb_matrix && !M_offline_step )
+        this->printRBMatrix( A,mu );
+
     return matrix_info;
 }
 
@@ -3967,7 +3997,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                                   std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
-                                  std::vector< double > & output_vector, int K) const
+                                  std::vector< double > & output_vector, int K, bool print_rb_matrix) const
 {
 
     double time_for_output;
@@ -3993,7 +4023,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
             time_for_output = number_of_time_step * time_step;
         }
     }
-    auto matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K ) ;
+    auto matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
 
     int size=output_vector.size();
     double o =output_vector[size-1];
@@ -4020,7 +4050,8 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
 template<typename TruthModelType>
 typename boost::tuple<double,typename CRB<TruthModelType>::matrix_info_tuple >
-CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,  std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,int K  ) const
+CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
+                         std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K  ) const
 {
 
     bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
@@ -4092,7 +4123,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
     if( M_use_newton )
         boost::tie(conditioning, determinant) = newton( N , mu , uN[0], output_vector[0] );
     else
-        boost::tie(conditioning, determinant) = fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K );
+        boost::tie(conditioning, determinant) = fixedPoint( N ,  mu , uN , uNdu , uNold , uNduold , output_vector , K , print_rb_matrix);
 
     auto matrix_info = boost::make_tuple( conditioning, determinant );
 
@@ -6009,7 +6040,7 @@ CRB<TruthModelType>::expansion( vectorN_type const& u , int const N, wn_type con
 template<typename TruthModelType>
 typename boost::tuple<double,double, typename CRB<TruthModelType>::solutions_tuple, typename CRB<TruthModelType>::matrix_info_tuple,
                       double, double, typename CRB<TruthModelType>::upper_bounds_tuple >
-CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
+CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool print_rb_matrix)
 {
 
     M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
@@ -6061,7 +6092,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N)
         //M_N may be different of dimension-max
         Nwn = M_N;
     }
-    auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold );
+    auto o = lb( Nwn, mu, uN, uNdu , uNold, uNduold , print_rb_matrix);
     double output = o.template get<0>();
 
     auto error_estimation = delta( Nwn, mu, uN, uNdu , uNold, uNduold );

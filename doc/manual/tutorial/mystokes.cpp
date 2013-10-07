@@ -146,6 +146,7 @@ int main(int argc, char**argv )
     // create the mesh
     auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
 
+
     // function space
     auto Vh = THch<2>( mesh );
 
@@ -160,19 +161,33 @@ int main(int argc, char**argv )
                   _expr=trace(gradt(u)*trans(grad(u))) );
 
     a+= integrate(_range=elements(mesh),
-                  _expr=-div(u)*idt(p)+divt(u)*id(p));
+                  _expr=-div(u)*idt(p)-divt(u)*id(p));
+
+    auto syms = symbols<2>();
+    auto u1 = parse( option(_name="functions.alpha").as<std::string>(), syms );
+    auto u2 = parse( option(_name="functions.beta").as<std::string>(), syms );
+    matrix u_exact = matrix(2,1);
+    u_exact = u1,u2;
+    auto p_exact = parse( option(_name="functions.gamma").as<std::string>(), syms );
+	auto f = -laplacian( u_exact, syms ) + grad( p_exact, syms ).transpose();
+    LOG(INFO) << "rhs : " << f;
 
     // right hand side
     auto l = form1( _test=Vh );
-
-    // boundary condition
-    a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
-          _expr=vec(Py()*(1-Py()),cst(0.)));
-    a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
-          _expr=vec(cst(0.),cst(0.)));
+    l = integrate(_range=elements(mesh),
+                  _expr=trans(expr<2,1,5>( f, syms ))*id(u));
+    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
+          _expr=expr<2,1,5>(u_exact,syms));
 
     // solve a(u,v)=l(v)
     a.solve(_rhs=l,_solution=U);
+
+    double mean_p = mean(_range=elements(mesh),_expr=idv(p))(0,0);
+    double mean_p_exact = mean(_range=elements(mesh),_expr=expr(p_exact,syms))(0,0);
+    double l2error_u = normL2( _range=elements(mesh), _expr=idv(u)-expr<2,1,5>( u_exact, syms ) );
+    double l2error_p = normL2( _range=elements(mesh), _expr=idv(p)-mean_p-(expr( p_exact, syms )-mean_p_exact) );
+    LOG(INFO) << "L2 error norm u: " << l2error_u;
+    LOG(INFO) << "L2 error norm p: " << l2error_p;
 
     // save results
     auto e = exporter( _mesh=mesh );
@@ -181,4 +196,3 @@ int main(int argc, char**argv )
     e->save();
 }
 /// [marker_main]
-

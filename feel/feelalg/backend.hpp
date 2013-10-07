@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-12-23
  */
-#ifndef __Backend_H
-#define __Backend_H 1
+#ifndef Backend_H
+#define Backend_H 1
 
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -290,11 +290,14 @@ public:
                                        ( buildGraphWithTranspose, ( bool ),false )
                                        ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,( int ),0 )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                        ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
-
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::newMatrix begin" );
+        }
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
         auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
 
@@ -338,6 +341,10 @@ public:
 
         mat->zero();
         mat->setIndexSplit( trial->dofIndexSplit() );
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::newMatrix end" );
+        }
         return mat;
     }
 
@@ -831,9 +838,14 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                      )
                                    )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::solve begin" );
+        }
         this->setTolerances( _dtolerance=dtolerance,
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
@@ -871,6 +883,10 @@ public:
         //new
         _sol->close();
         detail::ref( solution ) = *_sol;
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::solve end" );
+        }
         return ret;
     }
 
@@ -942,9 +958,14 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                      )
                                    )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::nlSolve begin" );
+        }
         this->setTolerancesSNES( _stolerance=stolerance,
                                  _rtolerance=rtolerance,
                                  _atolerance=atolerance,
@@ -981,6 +1002,10 @@ public:
         _sol->close();
         detail::ref( solution ) = *_sol;
         detail::ref( solution ).close();
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::nlSolve end" );
+        }
         return ret;
     }
 
@@ -1187,4 +1212,4 @@ BOOST_PARAMETER_FUNCTION(
 }
 
 }
-#endif /* __Backend_H */
+#endif /* Backend_H */
