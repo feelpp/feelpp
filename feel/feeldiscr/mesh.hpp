@@ -258,9 +258,16 @@ public:
 
     ~Mesh()
         {
+            VLOG(1) << "Mesh Destructor";
+            this->clear();
+        }
+    void clear()
+        {
+            VLOG(1) << "Mesh clear()";
             M_gm.reset();
             M_gm1.reset();
             M_tool_localization.reset();
+            super::clear();
         }
     /**
      * generate a new Mesh shared pointer
@@ -997,6 +1004,8 @@ public:
 
         typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
 
+        typedef boost::weak_ptr<self_type> mesh_ptrtype;
+
         typedef KDTree kdtree_type;
         typedef typename boost::shared_ptr<KDTree> kdtree_ptrtype;
 
@@ -1126,11 +1135,11 @@ public:
             return M_doExtrapolation;
         }
 
-        boost::shared_ptr<self_type> mesh()
+        mesh_ptrtype mesh()
         {
             return M_mesh;
         }
-        boost::shared_ptr<self_type> const& mesh() const
+        mesh_ptrtype mesh() const
         {
             return M_mesh;
         }
@@ -1257,7 +1266,7 @@ public:
 
     private:
 
-        boost::shared_ptr<self_type> M_mesh;
+        mesh_ptrtype M_mesh;
         //KDTree M_kd_tree;
         kdtree_ptrtype M_kd_tree;
         //map between node and list elements
