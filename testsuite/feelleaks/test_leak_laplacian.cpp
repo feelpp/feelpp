@@ -16,7 +16,7 @@ int main(int argc, char**argv )
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
-                     _about=about(_name="qs_laplacian",
+                     _about=about(_name="test_leak_laplacian",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     //# endmarker1 #
@@ -56,15 +56,20 @@ int main(int argc, char**argv )
         a.solve(_rhs=l,_solution=u);
 
 
-
+#if 0
         e = exporter( _mesh=mesh );
         e->add( "u", u );
         e->save();
-
+#endif
+        LOG(INFO) << "Destructors being called...";
 
         Vh.reset();
         mesh.reset();
         e.reset();
+
+        CHECK( mesh.use_count() == 0 ) << "Invalid mesh shared_ptr";
+        CHECK( Vh.use_count() == 0 ) << "Invalid functionspace shared_ptr";
+        CHECK( e.use_count() == 0 ) << "Invalid exporter shared_ptr";
     }
 #if defined(FEELPP_HAS_GPERFTOOLS)
     CHECK(check3.NoLeaks()) << "There are leaks";
