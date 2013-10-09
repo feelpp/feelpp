@@ -235,8 +235,14 @@ public:
     {}
 
     virtual ~Faces()
-    {}
-
+    {
+        this->clear();
+    }
+    void clear()
+        {
+            VLOG(1) << "deleting faces...\n";
+            M_faces.clear();
+        }
     //@}
 
     /** @name Operator overloads
