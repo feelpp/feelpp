@@ -27,6 +27,7 @@
    \date 2006-11-23
  */
 #include <feel/feel.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
 #include <gperftools/heap-checker.h>
@@ -34,49 +35,54 @@
 
 int main(int argc, char**argv )
 {
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    HeapLeakChecker check("checker -1");
+#endif /* FEELPP_HAS_GPERFTOOLS */
+    {
+    }
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    CHECK(check.NoLeaks()) << "There are leaks";
+#endif /* FEELPP_HAS_GPERFTOOLS */
 
     using namespace Feel;
     Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options().add( Feel::backend_options("toto") ),
-                     _about=about(_name="test_solve_leak",
+                     _desc=feel_options(),
+                     _about=about(_name="test_leak_fspace",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
+    boost::shared_ptr<Mesh<Simplex<2>>> aMesh;
 #if defined(FEELPP_HAS_GPERFTOOLS)
-    HeapLeakChecker checkere("checker");
+    HeapLeakChecker check0("checker 0");
 #endif /* FEELPP_HAS_GPERFTOOLS */
     {
-        for(int i = 0; i < 2; ++i )
-        {
-            auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-            auto Vh = Pch<1>( mesh );
-            auto u = Vh->element();
-            auto v = Vh->element();
-
-            auto syms = symbols<3>();
-            auto g = option(_name="functions.g").as<std::string>();
-            auto laplacian_g = laplacian( g, syms  );
-
-            auto l = form1( _test=Vh );
-            l = integrate(_range=elements(mesh),
-                          _expr=-expr( laplacian_g, syms )*id(v));
-
-            auto a = form2( _trial=Vh, _test=Vh);
-            a = integrate(_range=elements(mesh),
-                          _expr=gradt(u)*trans(grad(v)) );
-            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=expr( g, syms ) );
-            a.solve(_rhs=l,_solution=u);
-
-            LOG(INFO) << " 1- L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-expr( g, syms ) );
-            backend(_name="toto",_rebuild=true)->solve(_matrix=a.matrixPtr(),_rhs=l.vectorPtr(),_solution=u);
-
-            LOG(INFO) << " 2- L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-expr( g, syms ) );
-
-            Environment::clearSomeMemory();
-        }
     }
 #if defined(FEELPP_HAS_GPERFTOOLS)
-    CHECK(checkere.NoLeaks()) << "There are leaks";
+    CHECK(check0.NoLeaks()) << "There are leaks";
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
+
+
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    HeapLeakChecker check3("checker 3");
+#endif /* FEELPP_HAS_GPERFTOOLS */
+    {
+        aMesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
+        CHECK( aMesh.use_count() == 1 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
+        decltype( Pch<1>( aMesh ) ) Xh;
+        {
+            Xh = Pch<1>( aMesh );
+            CHECK( Xh.use_count() == 1 ) << "Invalid functionspace shared_ptr, count: " << Xh.use_count();
+            CHECK( aMesh.use_count() == 2 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
+            Xh.reset();
+        }
+        CHECK( Xh.use_count() == 0 ) << "Invalid functionspace shared_ptr, count: " << Xh.use_count();
+        CHECK( aMesh.use_count() == 1 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
+        aMesh.reset();
+    }
+    CHECK( aMesh.use_count() == 0 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
+#if defined(FEELPP_HAS_GPERFTOOLS)
+    CHECK(check3.NoLeaks()) << "There are leaks";
+#endif /* FEELPP_HAS_GPERFTOOLS */
+    CHECK( aMesh.use_count() == 0 ) << "Invalid shared_ptr, count: " << aMesh.use_count();
 }
