@@ -1,6 +1,10 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 #include <feel/feel.hpp>
 
+#if defined(FEELPP_HAS_GPERFTOOLS)
+#include <gperftools/heap-checker.h>
+#endif /* FEELPP_HAS_GPERFTOOLS */
+
 int main(int argc, char**argv )
 {
 #if defined(FEELPP_HAS_GPERFTOOLS)
@@ -20,7 +24,7 @@ int main(int argc, char**argv )
 
 
     boost::shared_ptr<Mesh<Simplex<2>>> mesh;
-    decltype( Pch<2>( mesh ) ) Xh;
+    decltype( Pch<2>( mesh ) ) Vh;
     decltype( exporter( _mesh=mesh ) ) e;
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
@@ -50,14 +54,17 @@ int main(int argc, char**argv )
         a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
               _expr=expr( option(_name="functions.g").as<std::string>(), symbols<2>() ) );
         a.solve(_rhs=l,_solution=u);
-        //# endmarker3 #
 
-        //# marker4 #
+
+
         e = exporter( _mesh=mesh );
         e->add( "u", u );
         e->save();
-        return 0;
-        //# endmarker4 #
+
+
+        Vh.reset();
+        mesh.reset();
+        e.reset();
     }
 #if defined(FEELPP_HAS_GPERFTOOLS)
     CHECK(check3.NoLeaks()) << "There are leaks";
