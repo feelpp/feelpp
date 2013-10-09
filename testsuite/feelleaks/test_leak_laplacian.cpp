@@ -62,15 +62,21 @@ int main(int argc, char**argv )
         e->save();
 #endif
         LOG(INFO) << "Destructors being called...";
-
-        Vh.reset();
+        LOG(INFO) << "mesh count : " << mesh.use_count();
+        LOG(INFO) << "Vh count : " << Vh.use_count();
+        LOG(INFO) << "e count : " << e.use_count();
+    }
+        LOG(INFO) << "after block mesh count : " << mesh.use_count();
+        LOG(INFO) << "after block Vh count : " << Vh.use_count();
+        LOG(INFO) << "after block e count : " << e.use_count();
         mesh.reset();
+        Vh.reset();
         e.reset();
-
+        LOG(INFO) << "Destructors done.";
         CHECK( mesh.use_count() == 0 ) << "Invalid mesh shared_ptr";
         CHECK( Vh.use_count() == 0 ) << "Invalid functionspace shared_ptr";
         CHECK( e.use_count() == 0 ) << "Invalid exporter shared_ptr";
-    }
+
 #if defined(FEELPP_HAS_GPERFTOOLS)
     CHECK(check3.NoLeaks()) << "There are leaks";
 #endif /* FEELPP_HAS_GPERFTOOLS */
