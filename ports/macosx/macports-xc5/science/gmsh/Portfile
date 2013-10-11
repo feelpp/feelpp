@@ -30,8 +30,8 @@ checksums           sha1    1b1d3933738eee22da928c26e664ef8aa430b7c6 \
 #patchfiles          patch-Graphics-gl2png.cpp.diff
 
 # TODO: Fix these missing includes in the appropriate files
-configure.cxxflags-append -include /usr/include/stdlib.h \
- -stdlib=libc++
+configure.cxxflags-append "-include /usr/include/stdlib.h -stdlib=libc++"
+configure.ldflags-append "-stdlib=libc++"
 
 configure.args-append \
     -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
