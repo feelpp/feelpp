@@ -744,6 +744,8 @@ protected:
         // if directory does not exist, create it
         if ( !fs::exists( M_path_save ) && this->saveInFile() && this->worldComm().isMasterRank() )
             fs::create_directories( M_path_save );
+        // be sure that all process can find the path after
+        this->worldComm().barrier();
 
         if ( M_restart )
         {
