@@ -39,22 +39,24 @@ int main(int argc, char**argv )
     {
         mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
         Vh = Pch<2>( mesh );
+        LOG(INFO) << "Vh.use_count(): " << Vh.use_count();
         auto u = Vh->element();
         auto v = Vh->element();
+        LOG(INFO) << "Vh.use_count() after element: " << Vh.use_count();
         //# endmarker2 #
 
         //# marker3 #
         auto l = form1( _test=Vh );
         l = integrate(_range=elements(mesh),
                       _expr=id(v));
-
+        LOG(INFO) << "Vh.use_count() after form1: " << Vh.use_count();
         auto a = form2( _trial=Vh, _test=Vh);
         a = integrate(_range=elements(mesh),
                       _expr=gradt(u)*trans(grad(v)) );
         a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
               _expr=expr( option(_name="functions.g").as<std::string>(), symbols<2>() ) );
         a.solve(_rhs=l,_solution=u);
-
+        LOG(INFO) << "Vh.use_count() after form2: " << Vh.use_count();
 
 #if 0
         e = exporter( _mesh=mesh );
