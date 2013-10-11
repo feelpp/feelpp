@@ -650,6 +650,7 @@ void
 ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 {
     char buffer[ 80 ];
+    char buffer2[ 1024 ];
     std::vector<int> idnode, idelem;
 
     std::fstream __out( M_filename.c_str(), std::ios::out | std::ios::binary );
@@ -657,7 +658,7 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
 
     strcpy( buffer, "C Binary" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
-    strcpy( buffer, M_filename.c_str() );
+    strcpy( buffer2, M_filename.c_str() );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
     strcpy( buffer, "elements" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
