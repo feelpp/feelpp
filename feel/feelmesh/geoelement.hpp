@@ -76,6 +76,8 @@ public:
     {
         return false;
     }
+    size_type partition1() const { return invalid_size_type_value; }
+    size_type partition2() const { return invalid_size_type_value; }
 private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -174,6 +176,10 @@ public:
     {
         return boost::get<3>( M_element0 );
     }
+    size_type partition1() const
+    {
+        return boost::get<3>( M_element0 );
+    }
 
     size_type ad_second() const
     {
@@ -184,6 +190,10 @@ public:
         return boost::get<2>( M_element1 );
     }
     size_type proc_second() const
+    {
+        return boost::get<3>( M_element1 );
+    }
+    size_type partition2() const
     {
         return boost::get<3>( M_element1 );
     }
@@ -578,6 +588,22 @@ public:
         return super::processId();
     }
 
+    /**
+     * \return process id
+     */
+    size_type partition1() const
+    {
+        return super2::partition1();
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition2() const
+    {
+        return super2::partition2();
+    }
+
     bool isGhostFace() const
     {
         return super2::isGhostFace( super::processId()  );
@@ -847,6 +873,22 @@ public:
     uint16_type processId() const
     {
         return super::processId();
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition1() const
+    {
+        return super2::partition1();
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition2() const
+    {
+        return super2::partition2();
     }
 
     void setMap( uint8_type k_1, uint8_type k_2 )
@@ -1149,6 +1191,23 @@ public:
     {
         return super::processId();
     }
+
+    /**
+     * \return process id
+     */
+    size_type partition1() const
+    {
+        return super2::partition1();
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition2() const
+    {
+        return super2::partition2();
+    }
+
 
 
 
@@ -1486,6 +1545,23 @@ public:
     {
         return super::processId();
     }
+
+    /**
+     * \return process id
+     */
+    size_type partition1() const
+    {
+        return super2::partition1();
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition2() const
+    {
+        return super2::partition2();
+    }
+
 
     size_type ad_first() const
     {
