@@ -1299,6 +1299,10 @@ public:
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
 
+    typename std::set<size_type>::const_iterator beginFaceNeighborSubdomains() const { M_face_neighbor_processors.begin(); }
+    typename std::set<size_type>::const_iterator endFaceNeighborSubdomains() const { M_face_neighbor_processors.end(); }
+    std::set<size_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
+    void addFaceNeighborSubdomain( size_type p ) { M_face_neighbor_processors.insert( p ); }
 
     //@}
 
@@ -1377,6 +1381,7 @@ private:
      * processor
      */
     std::vector<uint16_type> M_neighboring_processors;
+    std::set<size_type> M_face_neighbor_processors;
 
     //partitioner_ptrtype M_part;
 
