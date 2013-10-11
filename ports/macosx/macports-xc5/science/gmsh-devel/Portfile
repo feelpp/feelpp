@@ -30,16 +30,17 @@ worksrcdir          trunk
 conflicts           gmsh
 
 # https://trac.macports.org/ticket/33925
-compiler.blacklist  clang
-configure.compiler macports-gcc-4.8
+#compiler.blacklist  clang
+#configure.compiler macports-gcc-4.8
+
+configure.cxxflags-append "-stdlib=libc++"
+configure.ldflags-append "-stdlib=libc++"
 
 worksrcdir	build
 configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../trunk" }
 
 #configure.pre_args
 configure.args-append \
-    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8\
-    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8\
     -DCMAKE_INSTALL_PREFIX=${prefix}\
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     -DCMAKE_COLOR_MAKEFILE=ON \
@@ -48,7 +49,7 @@ configure.args-append \
     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
     -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
     -DENABLE_OS_SPECIFIC_INSTALL=OFF\
-    -DENABLE_BUILD_LIB=OFF\
+    -DENABLE_BUILD_LIB=ON\
     -DENABLE_BUILD_SHARED=ON\
     -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
     -DENABLE_OCC:BOOL=OFF \
@@ -56,6 +57,9 @@ configure.args-append \
     -DENABLE_GRAPHICS:BOOL=ON\
     -DENABLE_METIS=ON \
     -DENABLE_TAUCS=OFF
+
+#    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8\
+#    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8\
 
 build.target all shared
 
