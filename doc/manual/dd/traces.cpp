@@ -45,7 +45,8 @@ int main(int argc, char**argv )
     {
         LOG(INFO) << "Extracting trace mesh from neighbor : " << neighbor_subdomain;
         auto trace = createSubmesh( mesh, interprocessfaces(mesh, neighbor_subdomain ) );
-        LOG(INFO) << "number of elements in trace mesh " << nelements(trace);
+        LOG(INFO) << "number of elements in trace mesh " << nelements(elements(trace)) <<      " (" << env.rank() << " vs. " << neighbor_subdomain << ")";
+        LOG(INFO) << "number of faces in trace mesh    " << nelements(boundaryfaces(trace)) << " (" << env.rank() << " vs. " << neighbor_subdomain << ")";
         auto Xh = Pch<1>( trace );
         auto l = Xh->element();
         l = vf::project( Xh, elements(trace), cst( neighbor_subdomain ) );
