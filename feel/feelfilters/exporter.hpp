@@ -285,6 +285,8 @@ public:
     {
         if ( !fs::exists(path) && this->worldComm().isMasterRank() )
             fs::create_directories( path );
+        // be sure that all process can find the path after
+        this->worldComm().barrier();
 
         M_path = path;
     }
