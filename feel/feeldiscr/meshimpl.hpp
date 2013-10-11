@@ -45,6 +45,7 @@ template<typename Shape, typename T, int Tag>
 Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     :
     super(worldComm),
+    M_numGlobalElements( 0 ),
     M_gm( new gm_type ),
     M_gm1( new gm1_type ),
     M_meas( 0 ),
@@ -296,14 +297,15 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
         }
     }
-    //std::cout<<"this->worldComm().localSize()=     "<< this->worldComm().localSize() << std::endl;
-#if defined(FEELPP_ENABLE_MPI_MODE)
 
+#if defined(FEELPP_ENABLE_MPI_MODE)
     if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
     {
         this->updateEntitiesCoDimensionOneGhostCell();
     }
 #endif
+
+    this->updateNumGlobalElements();
 
     if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
         propagateMarkers(mpl::int_<nDim>() );
