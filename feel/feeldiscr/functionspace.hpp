@@ -4057,7 +4057,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 {
     DVLOG(2) << "calling init(<space>) begin\n";
     DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
+
     M_mesh = __m;
+    VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
 
     if ( basis_type::nDofPerEdge || nDim >= 3 )
@@ -4117,7 +4119,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
 
     DVLOG(2) << "calling init(<space>) end\n";
-
+    VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
