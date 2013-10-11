@@ -464,7 +464,7 @@ public:
         std::ostringstream ostr;
 
         if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+            ostr << M_name << "-" << M_iteration<<"-proc"<< this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
         else
             ostr << M_name << "-" << M_iteration;
 
@@ -1098,7 +1098,7 @@ Bdf<SpaceType>::init()
             std::ostringstream ostr;
 
             if( M_rankProcInNameOfFiles )
-                ostr << M_name << "-" << M_iteration-p<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+                ostr << M_name << "-" << M_iteration-p<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
             else
                 ostr << M_name << "-" << M_iteration-p;
 
@@ -1133,7 +1133,7 @@ Bdf<SpaceType>::initialize( element_type const& u0 )
     std::ostringstream ostr;
 
     if( M_rankProcInNameOfFiles )
-        ostr << M_name << "-" << 0<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+        ostr << M_name << "-" << 0<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
     else
         ostr << M_name << "-" << 0;
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
@@ -1151,7 +1151,7 @@ Bdf<SpaceType>::initialize( unknowns_type const& uv0 )
     std::ostringstream ostr;
 
     if( M_rankProcInNameOfFiles )
-        ostr << M_name << "-" << 0<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+        ostr << M_name << "-" << 0<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
     else
         ostr << M_name << "-" << 0;
     //M_time_values_map.insert( std::make_pair( 0, boost::make_tuple( 0, ostr.str() ) ) );
@@ -1239,7 +1239,7 @@ Bdf<SpaceType>::saveCurrent()
         std::ostringstream ostr;
 
         if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+            ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
         else
             ostr << M_name << "-" << M_iteration;
 
@@ -1263,7 +1263,7 @@ Bdf<SpaceType>::loadCurrent()
         std::ostringstream ostr;
 
         if( M_rankProcInNameOfFiles )
-            ostr << M_name << "-" << M_iteration<<"-proc"<<Environment::worldComm().globalRank()<<"on"<<Environment::worldComm().globalSize();
+            ostr << M_name << "-" << M_iteration<<"-proc"<<this->worldComm().globalRank()<<"on"<<this->worldComm().globalSize();
         else
             ostr << M_name << "-" << M_iteration;
 
