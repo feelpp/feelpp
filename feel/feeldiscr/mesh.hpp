@@ -296,19 +296,30 @@ public:
         }
 #endif
 
+    size_type numGlobalElements() const { return M_numGlobalElements; }
 
-    size_type numGlobalElements() const
+    void updateNumGlobalElements()
+    {
+        //int ne = numElements();
+        int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                this->endElementWithProcessId( this->worldComm().rank() ) );
+
+        if ( this->worldComm().localSize() >1 )
         {
-            //int ne = numElements();
-            int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
-                                    this->endElementWithProcessId( this->worldComm().rank() ) );
-            int gne;
+#if defined(FEELPP_ENABLE_MPI_MODE)
+            int gne = 0;
             mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
                              {
                                  return x + y;
                              } );
-            return gne;
+            M_numGlobalElements = gne;
+#endif
         }
+        else
+        {
+            M_numGlobalElements = ne;
+        }
+    }
     /**
      * \return the topological dimension
      */
@@ -1365,7 +1376,7 @@ private:
 private:
 
     //! communicator
-    //WorldComm M_worldComm;
+    size_type M_numGlobalElements;
 
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
