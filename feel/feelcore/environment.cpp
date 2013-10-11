@@ -513,9 +513,18 @@ fs::path scratchdir()
         }
         else
         {
-            std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
-            setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
-         }
+            env = getenv("SCRATCH");
+            if (env != NULL && env[0] != '\0')
+            {
+                std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
+                setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
+            }
+            else
+            {
+                std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
+                setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
+            }
+        }
     }
     env = getenv("FEELPP_SCRATCHDIR");
     if (env != NULL && env[0] != '\0')
@@ -584,11 +593,25 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
+    mpi::communicator world;
     S_scratchdir = scratchdir();
     fs::path a0 = std::string(argv[0]);
-    S_scratchdir/= a0.filename();
-    if ( !fs::exists( S_scratchdir ) )
-        fs::create_directories( S_scratchdir );
+    const int Nproc = 200;
+    if ( world.size() > Nproc )
+    {
+        std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor(world.rank()/Nproc) );
+        std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil(double(world.rank()+1)/Nproc)-1 );
+        std::string replog = smin + "-" + smax;
+        S_scratchdir/= a0.filename()/replog;
+    }
+    else
+        S_scratchdir/= a0.filename();
+    // only one processor every Nproc creates the corresponding log directory
+    if ( world.rank() % Nproc == 0 )
+    {
+        if ( !fs::exists( S_scratchdir ) )
+            fs::create_directories( S_scratchdir );
+    }
     FLAGS_log_dir=S_scratchdir.string();
 
     // duplicate argv before passing to gflags because gflags is going to
@@ -621,7 +644,7 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     //tbb::task_scheduler_init init(2);
 #endif
 
-    mpi::communicator world;
+
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
