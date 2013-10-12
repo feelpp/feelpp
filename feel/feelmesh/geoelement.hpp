@@ -76,8 +76,8 @@ public:
     {
         return false;
     }
-    size_type partition1() const { return invalid_size_type_value; }
-    size_type partition2() const { return invalid_size_type_value; }
+    size_type partition1( size_type /*p*/ ) const { return invalid_size_type_value; }
+    size_type partition2( size_type /*p*/ ) const { return invalid_size_type_value; }
 private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -176,9 +176,9 @@ public:
     {
         return boost::get<3>( M_element0 );
     }
-    size_type partition1() const
+    size_type partition1( size_type p ) const
     {
-        return boost::get<3>( M_element0 );
+        return p;
     }
 
     size_type ad_second() const
@@ -193,9 +193,9 @@ public:
     {
         return boost::get<3>( M_element1 );
     }
-    size_type partition2() const
+    size_type partition2( size_type p ) const
     {
-        return boost::get<3>( M_element1 );
+        return ( p==boost::get<3>( M_element0 ) )? boost::get<3>( M_element1 ) : boost::get<3>( M_element0 );
     }
 
     element_connectivity_type const& connection0() const
@@ -593,7 +593,7 @@ public:
      */
     size_type partition1() const
     {
-        return super2::partition1();
+        return super2::partition1( super::processId() );
     }
 
     /**
@@ -601,7 +601,7 @@ public:
      */
     size_type partition2() const
     {
-        return super2::partition2();
+        return super2::partition2( super::processId() );
     }
 
     bool isGhostFace() const
@@ -880,7 +880,7 @@ public:
      */
     size_type partition1() const
     {
-        return super2::partition1();
+        return super2::partition1( super::processId() );
     }
 
     /**
@@ -888,7 +888,7 @@ public:
      */
     size_type partition2() const
     {
-        return super2::partition2();
+        return super2::partition2( super::processId() );
     }
 
     void setMap( uint8_type k_1, uint8_type k_2 )
@@ -1197,7 +1197,7 @@ public:
      */
     size_type partition1() const
     {
-        return super2::partition1();
+        return super2::partition1( super::processId() );
     }
 
     /**
@@ -1205,7 +1205,7 @@ public:
      */
     size_type partition2() const
     {
-        return super2::partition2();
+        return super2::partition2( super::processId() );
     }
 
 
@@ -1551,7 +1551,7 @@ public:
      */
     size_type partition1() const
     {
-        return super2::partition1();
+        return super2::partition1( super::processId() );
     }
 
     /**
@@ -1559,7 +1559,7 @@ public:
      */
     size_type partition2() const
     {
-        return super2::partition2();
+        return super2::partition2( super::processId() );
     }
 
 
