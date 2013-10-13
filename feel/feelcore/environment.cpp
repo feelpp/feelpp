@@ -576,6 +576,7 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
+    mpi::communicator world;
     S_scratchdir = scratchdir();
     fs::path a0 = std::string(argv[0]);
     S_scratchdir/= a0.filename();
@@ -619,7 +620,6 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     //tbb::task_scheduler_init init(2);
 #endif
 
-    mpi::communicator world;
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
