@@ -51,6 +51,7 @@ int main(int argc, char**argv )
         auto l = Xh->element();
         l = vf::project( Xh, elements(trace), cst( neighbor_subdomain ) );
         auto m = mean(elements(trace), idv(l))(0,0);
+        LOG(INFO) << "m=" << measure(elements(trace) );
         CHECK( math::abs( m -  neighbor_subdomain ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
         // need to introduce interpolation operator with current subdomaine to
         // interpolate l onto the subdomain and set on the interfaces l
