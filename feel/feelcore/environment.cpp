@@ -600,7 +600,13 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     // Initialize Google's logging library.
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
-        if ( argc > 0 )
+        if ( FLAGS_no_log )
+        {
+            if ( world.rank() == 0 && FLAGS_no_log == 1 )
+                FLAGS_no_log = 0;
+            google::InitGoogleLogging(argv[0]);
+        }
+        else if ( argc > 0 )
             google::InitGoogleLogging(argv[0]);
         else
             google::InitGoogleLogging("feel++");
