@@ -57,6 +57,7 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
+class PeriodicEntities: public std::map<int,std::pair<int,int> > {};
 
 /**
  * \class Gmsh
@@ -191,6 +192,8 @@ public:
             return M_name;
         }
 
+    PeriodicEntities const& periodic() const { return M_periodic; }
+
     /**
      * \return bounding box
      */
@@ -310,6 +313,10 @@ public:
     bool recombine() const
         {
             return M_recombine;
+        }
+    int structuredMesh() const
+        {
+            return M_structured;
         }
     int refinementLevels() const
         {
@@ -522,6 +529,10 @@ public:
             M_partition_file = p;
         }
 
+    void setStructuredMesh( int s )
+        {
+            M_structured = s;
+        }
     void setRefinementLevels( int levels )
         {
             M_refine_levels = levels;
@@ -538,12 +549,17 @@ public:
             M_shear = _shear;
         }
 
+
     //! recombine simplices into quads
     void setRecombine( bool _recombine )
         {
             M_recombine = _recombine;
         }
 
+    void setPeriodic( PeriodicEntities const& p )
+        {
+            M_periodic = p;
+        }
     //@}
 
     /** \name  Methods
@@ -674,10 +690,14 @@ protected:
     double M_shear;
     //! recombine simplices into hypercubes
     bool M_recombine;
+    // build structured mesh
+    int M_structured;
     //! number of refinement levels
     int M_refine_levels;
 
     bool M_substructuring;
+
+    PeriodicEntities M_periodic;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -720,6 +740,8 @@ struct meshFromGeoEntity
                                mpl::identity< Mesh< Simplex< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >,
                                mpl::identity< Mesh< Hypercube< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >
                                >::type::type type;
+
+    typedef PointSet<GeoShape, typename type::value_type> pointset_type;
 };
 
 
@@ -1034,6 +1056,8 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( geoentity, * )
       ( filename, * ) ) // 4. one required parameter, and
+    ( optional
+      ( pointset, *, typename Feel::detail::meshFromGeoEntity<Args>::pointset_type() ) )
     )
 {
     typedef typename Feel::detail::meshFromGeoEntity<Args>::type _mesh_type;
@@ -1043,7 +1067,7 @@ BOOST_PARAMETER_FUNCTION(
 #elif BOOST_FILESYSTEM_VERSION == 2
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
 #endif
-    exporter.gmshSaveOneElementAsMesh( filename, geoentity );
+    exporter.gmshSaveOneElementAsMesh( filename, geoentity, pointset );
 }
 
 
@@ -1079,9 +1103,11 @@ BOOST_PARAMETER_FUNCTION(
       ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
       ( straighten,      *( boost::is_integral<mpl::_> ), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
+      ( structured,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.structured").template as<int>() )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
+      ( periodic,        *, PeriodicEntities() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( worldcomm,      *, Environment::worldComm() )
@@ -1107,6 +1133,8 @@ BOOST_PARAMETER_FUNCTION(
         desc->setMshFileByPartition( partition_file );
         desc->setRefinementLevels( refine );
         desc->setFileFormat( (GMSH_FORMAT)format );
+        desc->setStructuredMesh( structured );
+        desc->setPeriodic( periodic );
 
         std::string fname;
         bool generated_or_modified;
@@ -1406,7 +1434,8 @@ boost::shared_ptr<Mesh<Simplex<1> > > unitSegment( double h = option(_name="gmsh
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
-boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").as<double>() );
+boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").as<double>(),
+                                                  PeriodicEntities pe = PeriodicEntities() );
 
 /**
  * build a mesh of the unit circle using triangles
@@ -1503,6 +1532,10 @@ BOOST_PARAMETER_FUNCTION(
         )
     )
 {
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsequenced"
+#endif
     typedef typename Feel::detail::mesh<Args>::type _mesh_type;
     typedef typename Feel::detail::mesh<Args>::ptrtype _mesh_ptrtype;
 
@@ -1567,6 +1600,9 @@ BOOST_PARAMETER_FUNCTION(
                           _partitions=partitions,
                           _partitioner=partitioner,
                           _partition_file=partition_file );
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 }
 
 } // Feel

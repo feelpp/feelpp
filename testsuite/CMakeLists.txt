@@ -25,6 +25,8 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 add_custom_target( testsuite )
 
-foreach( testdir core alg mesh poly filters material discr crb vf leaks )
+foreach( testdir core alg mesh poly filters material interpolation integration discr crb vf leaks )
+  add_custom_target( test${testdir} )
   add_subdirectory( feel${testdir} )
+
 endforeach()

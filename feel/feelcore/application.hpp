@@ -123,11 +123,14 @@ public:
      * @param argv arguments in the command line
      * @param ad \p AboutData structure for this \p Application
      * @param Comm MPI communicator
+     *
+     * \warning this function is marked deprecated and should not be used
+     * anymore, use the Environment class instead to initialize the Feel++
      */
 #if defined( FEELPP_HAS_MPI )
-    Application( int argc, char** argv, AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD );
+    Application( int argc, char** argv, AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD ) FEELPP_DEPRECATED;
 #else
-    Application( int argc, char** argv, AboutData const& ad );
+    Application( int argc, char** argv, AboutData const& ad ) FEELPP_DEPRECATED;
 #endif
 
     /**
@@ -138,11 +141,14 @@ public:
      * @param ad \p AboutData structure for this \p Application
      * @param od \p po::options_description structure for this \p Application
      * @param Comm MPI communicator
+     *
+     * \warning this function is marked deprecated and should not be used
+     * anymore, use the Environment class instead to initialize the Feel++
      */
 #if defined( FEELPP_HAS_MPI )
-    Application( int argc, char** argv, AboutData const& ad, po::options_description const& od, MPI_Comm Comm = MPI_COMM_WORLD );
+    Application( int argc, char** argv, AboutData const& ad, po::options_description const& od, MPI_Comm Comm = MPI_COMM_WORLD ) FEELPP_DEPRECATED;
 #else
-    Application( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    Application( int argc, char** argv, AboutData const& ad, po::options_description const& od ) FEELPP_DEPRECATED;
 #endif
 
     /**
@@ -174,7 +180,7 @@ public:
      */
     po::options_description const& optionsDescription() const
     {
-        return _M_desc;
+        return M_desc;
     }
 
     /**
@@ -185,7 +191,7 @@ public:
      */
     po::variables_map const& vm() const
     {
-        return _M_vm;
+        return M_vm;
     }
 
     /**
@@ -197,7 +203,7 @@ public:
      */
     AboutData const& about() const
     {
-        return _M_about;
+        return M_about;
     }
 
     /**
@@ -205,7 +211,7 @@ public:
      */
     int unknownArgc() const
     {
-        return _M_to_pass_further.size()+1;
+        return M_to_pass_further.size()+1;
     }
 
     /**
@@ -305,7 +311,7 @@ public:
      */
     bool verbose() const
     {
-        return _M_vm.count( "verbose" );
+        return M_vm.count( "verbose" );
     }
 
     //@}
@@ -468,17 +474,17 @@ private:
 
 private:
 
-    AboutData _M_about;
+    AboutData M_about;
 
-    po::options_description _M_desc;
-    po::variables_map _M_vm;
+    po::options_description M_desc;
+    po::variables_map M_vm;
 
-    boost::optional<std::string> _M_name1;
-    boost::optional<std::string> _M_name2;
-    boost::optional<std::pair<double, int> > _M_h;
-    boost::optional<int> _M_dim;
+    boost::optional<std::string> M_name1;
+    boost::optional<std::string> M_name2;
+    boost::optional<std::pair<double, int> > M_h;
+    boost::optional<int> M_dim;
 
-    std::vector<std::string> _M_to_pass_further;
+    std::vector<std::string> M_to_pass_further;
 
 
     boost::shared_ptr<mpi::environment> M_env;

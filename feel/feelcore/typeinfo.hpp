@@ -105,7 +105,7 @@ public:
 
 private:
 
-    const std::type_info* _M_info;
+    const std::type_info* M_info;
 };
 
 inline bool operator==( const TypeInfo& lhs, const TypeInfo& rhs )
