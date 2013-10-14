@@ -3107,7 +3107,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
 {
 
 
-    if ( orthonormalize_primal || orthonormalize_dual )
+    if ( 0 )// orthonormalize_primal || orthonormalize_dual )
     {
         throw std::logic_error( "[CRB::checkResidual] ERROR : to check residual don't use orthonormalization" );
     }
@@ -3183,6 +3183,8 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     Atun->scale( -1 );
     *Frhs = *F[0];
     *Lrhs = *F[M_output_index];
+
+
 #if 0
     LOG(INFO) << "[CRB::checkResidual] residual (f,f) " << M_N-1 << ":=" << M_model->scalarProduct( Frhs, Frhs ) << "\n";
     LOG(INFO) << "[CRB::checkResidual] residual (f,A) " << M_N-1 << ":=" << 2*M_model->scalarProduct( Frhs, Aun ) << "\n";
@@ -3194,7 +3196,6 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
 #endif
 
     Lrhs->scale( -1 );
-
 
     vector_ptrtype __ef_pr(  M_backend->newVector( M_model->functionSpace() ) );
     vector_ptrtype __ea_pr(  M_backend->newVector( M_model->functionSpace() ) );
@@ -3275,6 +3276,27 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     double errGammadu = err_Gamma_pr/check_Gamma_pr;
     LOG(INFO)<<std::setprecision( 16 )<<errC0pr<<"\t"<<errLambdapr<<"\t"<<errGammapr;
     LOG(INFO)<<std::setprecision( 16 )<<errC0du<<"\t"<<errLambdadu<<"\t"<<errGammadu;
+#if 1
+    auto primal_residual = Frhs ;
+    primal_residual->add( *Aun );
+    auto dual_residual = Lrhs ;
+    dual_residual->add( *Atun );
+
+    vector_ptrtype __e_pr(  M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype __e_du(  M_backend->newVector( M_model->functionSpace() ) );
+    M_model->l2solve( __e_pr, primal_residual );
+    M_model->l2solve( __e_du, dual_residual );
+
+    double check_dual_norm_pr = math::sqrt( M_model->scalarProduct( __e_pr,__e_pr ) );
+    double dual_norm_pr = math::sqrt( math::abs( C0_pr + Lambda_pr + Gamma_pr) );
+    double check_dual_norm_du = math::sqrt( M_model->scalarProduct( __e_du,__e_du ) );
+    double dual_norm_du = math::sqrt( math::abs(C0_du + Lambda_du + Gamma_du) );
+    LOG( INFO )<< "dual norm of primal residual without affine decomposition : "<<check_dual_norm_pr;
+    LOG( INFO )<< "dual norm of primal residual with affine decomposition    : "<<dual_norm_pr;
+    LOG( INFO )<< "dual norm of dual residual without affine decomposition : "<<check_dual_norm_du;
+    LOG( INFO )<< "dual norm of dual residual with affine decomposition    : "<<dual_norm_du;
+#endif
+#if 0
 
     //residual r(v)
     Aun->add( *Frhs );
@@ -3290,7 +3312,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     M_model->l2solve( __e_du, Atun );
     double dual_norm_du = math::sqrt ( M_model->scalarProduct( __e_du,__e_du ) );
     LOG(INFO) <<"[CRB::checkResidual] dual norm of dual residual without isolate terms = "<<dual_norm_du<<"\n";
-#if 0
+
     double err_primal = math::sqrt ( M_model->scalarProduct( Aun, Aun ) );
     double err_dual = math::sqrt ( M_model->scalarProduct( Atun, Atun ) );
     LOG(INFO) << "[CRB::checkResidual] true primal residual for reduced basis function " << M_N-1 << ":=" << err_primal << "\n";
