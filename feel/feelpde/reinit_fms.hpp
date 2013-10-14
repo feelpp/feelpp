@@ -70,10 +70,10 @@ public:
 
     // ReinitializerFMS( ReinitializerFMS const& __vfi )
     //     :
-    //     _M_functionspace( __vfi._M_functionspace ),
-    //     _M_range( __vfi._M_range ),
-    //     _M_neighbors( __vfi._M_neighbors ),
-    //     _M_coords( __vfi._M_coords )
+    //     M_functionspace( __vfi.M_functionspace ),
+    //     M_range( __vfi.M_range ),
+    //     M_neighbors( __vfi.M_neighbors ),
+    //     M_coords( __vfi.M_coords )
     //     {
     //         Debug( 5065 ) << "ReinitializerFMS copy constructor\n";
     //     }
@@ -131,12 +131,12 @@ private:
         return a*a < b*b ? a : b;
     }
 
-    functionspace_ptrtype const& _M_functionspace;
-    range_iterator _M_range;
-    periodicity_type _M_periodicity;
-    neighbors_type _M_neighbors;
-    std::vector<point_type> _M_coords;
-    vf::node_type _M_translation;
+    functionspace_ptrtype const& M_functionspace;
+    range_iterator M_range;
+    periodicity_type M_periodicity;
+    neighbors_type M_neighbors;
+    std::vector<point_type> M_coords;
+    vf::node_type M_translation;
 };
 
 // needed for instantiation (copied from levelset.hpp)

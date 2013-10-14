@@ -6,7 +6,7 @@
        Date: 2005-07-18
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -39,8 +39,8 @@ namespace vf
 UnaryFunctor::UnaryFunctor( std::string const& name,
                             boost::shared_ptr<FunctorDomain> const& domain )
     :
-    _M_name( name ),
-    _M_domain( domain )
+    M_name( name ),
+    M_domain( domain )
 {}
 
 /// \endcond

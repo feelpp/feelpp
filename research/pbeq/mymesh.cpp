@@ -97,8 +97,8 @@ myMesh::getDescription( ) const
 
 
     ostr << " x = 0 ; y = 0 ; z = 0 ; "
-         << "lcar = " << this->h() * _M_farfactor << ";\n"
-         << "t=2; r = 1.8*" << _M_farBnd << " ;\n"
+         << "lcar = " << this->h() * M_farfactor << ";\n"
+         << "t=2; r = 1.8*" << M_farBnd << " ;\n"
          << "Call mySphere ;\n"
          << "// We define a physical volume :\n"
          << "//Physical Volume (4) = thesphere ;\n"
@@ -127,11 +127,11 @@ myMesh::getPointCharacteristicDescription( ) const
 {
     int i;
     std::ostringstream ostr;
-    std::list<std::vector<double> >::const_iterator it( _M_ptChar.begin() );
+    std::list<std::vector<double> >::const_iterator it( M_ptChar.begin() );
 
-    if ( it == _M_ptChar.end() ) return ostr.str();
+    if ( it == M_ptChar.end() ) return ostr.str();
 
-    ostr << "fact = " << _M_factor << ";\n";
+    ostr << "fact = " << M_factor << ";\n";
     ostr << "p1 = newp; Point(p1) = { ";
 
     for ( i=0; i< nDim; i++ )
@@ -139,7 +139,7 @@ myMesh::getPointCharacteristicDescription( ) const
 
     ostr << " fact};\n";
 
-    for ( it++ ; it != _M_ptChar.end() ; it++ )
+    for ( it++ ; it != M_ptChar.end() ; it++ )
     {
         ostr << "p = newp; Point(p) = { ";
 

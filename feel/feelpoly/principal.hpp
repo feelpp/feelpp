@@ -91,11 +91,11 @@ public:
     //@{
 
     Principal()
-        : _M_a( value_type( 1.0 ) ), _M_b( value_type( 1.0 ) )
+        : M_a( value_type( 1.0 ) ), M_b( value_type( 1.0 ) )
     {}
 
     Principal( value_type a,value_type b )
-        : _M_a( a ), _M_b( b )
+        : M_a( a ), M_b( b )
     {}
 
 
@@ -109,8 +109,8 @@ public:
     {
         if ( this != &d )
         {
-            _M_a = d._M_a;
-            _M_b = d._M_b;
+            M_a = d.M_a;
+            M_b = d.M_b;
         }
 
         return *this;
@@ -133,11 +133,11 @@ public:
 
     value_type a() const
     {
-        return _M_a;
+        return M_a;
     }
     value_type b() const
     {
-        return _M_b;
+        return M_b;
     }
 
     /**
@@ -169,8 +169,8 @@ public:
 
 private:
 
-    value_type _M_a;
-    value_type _M_b;
+    value_type M_a;
+    value_type M_b;
 
 
 };
@@ -182,7 +182,7 @@ typename Principal<Degree, T, StoragePolicy>::matrix_type
 Principal<Degree,  T, StoragePolicy>::evaluate_1( vector_type const& __pts ) const
 {
     //  std::cout <<"[principal]1D evaluation ..."<< std::endl;
-    matrix_type J ( JacobiBatchEvaluation<nOrder-1,value_type>( _M_a, _M_b, __pts ) );
+    matrix_type J ( JacobiBatchEvaluation<nOrder-1,value_type>( M_a, M_b, __pts ) );
     matrix_type D( nOrder+1,__pts.size() );
 
     vector_type ones( ublas::scalar_vector<value_type>( __pts.size(), value_type( 1.0 ) ) );
@@ -224,7 +224,7 @@ Principal<Degree,  T, StoragePolicy>::evaluate_2( vector_type const& __pts ) con
     for ( uint16_type i= 1; i <= J.size() ; ++i )
     {
         m[i].resize( nOrder ,__pts.size() );
-        J[i-1] = JacobiBatchEvaluation<nOrder-1,value_type>( value_type( 2.0*i+1.0 ), _M_b, __pts );
+        J[i-1] = JacobiBatchEvaluation<nOrder-1,value_type>( value_type( 2.0*i+1.0 ), M_b, __pts );
 
         tmp_i=ublas::element_prod( tmp_i,tmp1 );
 
@@ -313,7 +313,7 @@ Principal<Degree,  T, StoragePolicy>::derivate_1( vector_type const& __pts ) con
 {
     //  std::cout <<"[principal]1D derivation ..."<< std::endl;
     matrix_type D(  nOrder+1, __pts.size() );
-    matrix_type J ( JacobiBatchDerivation<nOrder-1,value_type>( _M_a, _M_b, __pts ) );
+    matrix_type J ( JacobiBatchDerivation<nOrder-1,value_type>( M_a, M_b, __pts ) );
     vector_type demi( ublas::scalar_vector<value_type>( __pts.size(), value_type( 0.5 ) ) );
 
     ublas::row( D,0 ) = -demi;
@@ -322,7 +322,7 @@ Principal<Degree,  T, StoragePolicy>::derivate_1( vector_type const& __pts ) con
     vector_type ones( ublas::scalar_vector<value_type>( __pts.size(), value_type( 1.0 ) ) );
 
 
-    matrix_type E ( JacobiBatchEvaluation<nOrder-1,value_type>( _M_a, _M_b, __pts ) );
+    matrix_type E ( JacobiBatchEvaluation<nOrder-1,value_type>( M_a, M_b, __pts ) );
 
     vector_type tmp( ublas::element_prod( 0.5*( ones - __pts ),0.5*( ones + __pts ) ) );
 
@@ -361,8 +361,8 @@ Principal<Degree,  T, StoragePolicy>::derivate_2( vector_type const& __pts ) con
     for ( uint16_type i= 1; i <= J.size() ; ++i )
     {
         m[i].resize( nOrder ,__pts.size() );
-        J[i-1]  = JacobiBatchEvaluation<nOrder-1,value_type>( ( 2.0*i+1.0 ), _M_b, __pts );
-        dJ[i-1] = JacobiBatchDerivation<nOrder-1,value_type>( ( 2.0*i+1.0 ), _M_b, __pts );
+        J[i-1]  = JacobiBatchEvaluation<nOrder-1,value_type>( ( 2.0*i+1.0 ), M_b, __pts );
+        dJ[i-1] = JacobiBatchDerivation<nOrder-1,value_type>( ( 2.0*i+1.0 ), M_b, __pts );
 
         ublas::row( m[i],0 ) = ( - value_type( i ) - 1.0 ) *  tmp_i / 2.0;
 

@@ -205,7 +205,7 @@ public Edges<typename Shape::template shape<1>::type,
              super_points::isEmpty() &&
              super_faces::isEmpty() &&
              super_edges::isEmpty() &&
-             _M_e2e.empty() );
+             M_e2e.empty() );
 }
 
 
@@ -272,7 +272,7 @@ size_type numPoints() const
 element_edge_type const& localEdgeId( element_type const& e,
                                       size_type const n ) const
 {
-    return _M_e2e[e.id()][n];
+    return M_e2e[e.id()][n];
 }
 
 /**
@@ -281,7 +281,7 @@ element_edge_type const& localEdgeId( element_type const& e,
 element_edge_type const& localEdgeId( size_type const e,
                                       size_type const n ) const
 {
-    return _M_e2e[e][n];
+    return M_e2e[e][n];
 }
 
 //@}
@@ -395,7 +395,7 @@ void determineFacePermutation( uint16_type numZeros, std::vector<size_type> cons
 /**
  * Arrays containing the global ids of edges of each element
  */
-boost::multi_array<element_edge_type,2> _M_e2e;
+boost::multi_array<element_edge_type,2> M_e2e;
 };
 
 template <typename GEOSHAPE>
@@ -407,7 +407,7 @@ Mesh3D<GEOSHAPE>::Mesh3D( WorldComm const& worldComm )
     super_points( worldComm ),
     super_faces( worldComm ),
     super_edges( worldComm ),
-    _M_e2e()
+    M_e2e()
 {}
 
 template <typename GEOSHAPE>
@@ -419,7 +419,7 @@ Mesh3D<GEOSHAPE>::Mesh3D( Mesh3D const & m )
     super_points( m ),
     super_faces( m ),
     super_edges( m ),
-    _M_e2e( m._M_e2e )
+    M_e2e( m.M_e2e )
 {}
 
 template <typename GEOSHAPE>
@@ -438,7 +438,7 @@ Mesh3D<GEOSHAPE>::operator=( Mesh3D const& m )
         super_faces::operator=( m );
         super_edges::operator=( m );
 
-        _M_e2e = m._M_e2e;
+        M_e2e = m.M_e2e;
     }
 
     return *this;
@@ -453,7 +453,7 @@ Mesh3D<GEOSHAPE>::clear()
     this->faces().clear();
     this->edges().clear();
 
-    _M_e2e.resize( boost::extents[0][0] );
+    M_e2e.resize( boost::extents[0][0] );
     FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
 }
 
@@ -603,7 +603,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
     std::map<std::set<int>, size_type > _edges;
     typename std::map<std::set<int>, size_type >::iterator _edgeit;
     int next_edge = 0;
-    _M_e2e.resize( boost::extents[this->numElements()][this->numLocalEdges()] );
+    M_e2e.resize( boost::extents[this->numElements()][this->numLocalEdges()] );
 
     size_type vid, i1, i2;
     element_type ele;
@@ -678,7 +678,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
                 {
                     // set edge id
                     edg.setId( _edgeit->second );
-                    edg.setOnBoundary( true );
+                    edg.setOnBoundary( true, 0 );
 
                     for ( uint16_type k = 0; k < 2 + face_type::nbPtsPerEdge; k++ )
                         edg.setPoint( k, ifa->point( bele.eToP( j, k ) ) );
@@ -721,7 +721,7 @@ Mesh3D<GEOSHAPE>::updateEntitiesCoDimensionTwo()
             if ( edgeinserted )
                 ++next_edge;
 
-            _M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
+            M_e2e[ vid ][ j] = boost::make_tuple( _edgeit->second, 1 );
 
             // reset the process id (edge not connected to an active elt take this value)
             edg.setProcessId( invalid_uint16_type_value );

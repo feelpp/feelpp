@@ -8877,6 +8877,7 @@ public:
     /** @name Typedefs
      */
     //@{
+    typedef Simplex<Dim,1> convex_type;
     typedef T value_type;
     typedef ublas::matrix<value_type,ublas::column_major> matrix_type;
     typedef ublas::vector<value_type> vector_type;
@@ -8899,6 +8900,7 @@ public:
     typedef IMSimplex<Dim,Order,T> parent_quadrature_type;
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
+    static const uint16_type nQuadPoints = quad_type::nPoints;
 
     //@}
 
@@ -8908,17 +8910,17 @@ public:
     IMSimplex(  )
         :
         super( quad_type::nPoints ),
-        _M_quad()
+        M_quad()
     {
         for ( size_type i=0; i< quad_type::nPoints; i++ )
         {
 
             for ( int j = 0; j < Dim; ++j )
             {
-                this->_M_points( j, i ) = _M_quad.q[( Dim+1 )*i+j];
+                this->M_points( j, i ) = M_quad.q[( Dim+1 )*i+j];
             }
 
-            this->_M_w( i ) = _M_quad.q[( Dim+1 )*i+Dim];
+            this->M_w( i ) = M_quad.q[( Dim+1 )*i+Dim];
         }
 
         boost::shared_ptr<GT_Lagrange<Dim,1,Dim,Simplex,T> > gm( new GT_Lagrange<Dim, 1, Dim, Simplex, T> );
@@ -8948,7 +8950,7 @@ public:
     {
         if ( this != &i )
         {
-            _M_quad = i._M_quad;
+            M_quad = i.M_quad;
         }
 
         return *this;
@@ -8957,7 +8959,7 @@ public:
 
 
 private:
-    quad_type _M_quad;
+    quad_type M_quad;
 };
 
 }

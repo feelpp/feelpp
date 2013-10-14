@@ -777,19 +777,40 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
 
 template<typename MeshType, int N>
+template<typename ConvexType>
 void
-ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename, typename mesh_type::element_type::super const& elt ) const
+ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
+                                                    typename mesh_type::element_type::super const& elt,
+                                                    PointSet<ConvexType,typename MeshType::value_type> const& ptset ) const
 {
-    std::ofstream out( filename.c_str(), std::ios::app );
-
+    std::ofstream out( filename.c_str(), std::ios::out );
     gmshSaveFormat( out );
 
+    const uint32_type nPointInPtSet = ptset.nPoints();
+
     out << "$Nodes\n";
-    out << elt.nPoints() << "\n";//number points
+    out << ptset.nPoints()+elt.nPoints() << "\n";//number points
+
+    for ( uint32_type i = 0; i < nPointInPtSet; ++i )
+    {
+        auto const thepoint = ptset.point(i);
+        out << i+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(0);
+        if ( thepoint.size() >= 2 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(1);
+        else
+            out << " 0";
+        if ( thepoint.size() >= 3 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(2);
+        else
+            out << " 0";
+        out << "\n";
+    }
+
 
     for ( int i = 0; i < elt.nPoints(); ++i )
     {
-        out << i+1
+        out << nPointInPtSet+i+1
             << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i).node()[0];
         if ( mesh_type::nRealDim >= 2 )
             out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i).node()[1];
@@ -804,12 +825,18 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
 
     out << "$EndNodes\n";
 
+    out << "$Elements\n"
+        << nPointInPtSet+1 << "\n";// number element
+    for ( uint32_type i = 0; i < nPointInPtSet; ++i )
+    {
+        out << i+1 << " " << GMSH_ENTITY::GMSH_POINT
+            << " 2 0 " << i << " " // add elementary tag as feel id
+            << i+1 << "\n";
+    }
+
     typedef typename MeshType::element_type element_type;
     GmshOrdering<element_type> ordering;
-
-    out << "$Elements\n"
-        << "1\n";// number element
-    out << "1 "; // id element
+    out << nPointInPtSet+1 << " "; // id element
     out << ordering.type();
 
     if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
@@ -831,13 +858,87 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
 
     for ( uint16_type p=0; p<element_type::numPoints; ++p )
     {
-        out << " " << ordering.fromGmshId( p ) + 1;
+        out << " " << nPointInPtSet +ordering.fromGmshId( p ) + 1;
     }
 
     out<<"\n";
     out << "$EndElements\n";
     out.close();
 
+}
+
+
+template<typename MeshType, int N>
+template<typename ConvexType>
+void
+ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
+                                                    typename mesh_type::element_type::super::reference_convex_type const& elt,
+                                                    PointSet<ConvexType,typename MeshType::value_type> const& ptset ) const
+{
+    std::ofstream out( filename.c_str(), std::ios::out );
+    gmshSaveFormat( out );
+
+    const uint32_type nPointInPtSet = ptset.nPoints();
+
+    out << "$Nodes\n";
+    out << ptset.nPoints()+elt.nPoints() << "\n";//number points
+
+    for ( uint32_type i = 0; i < nPointInPtSet; ++i )
+    {
+        auto const thepoint = ptset.point(i);
+        out << i+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(0);
+        if ( thepoint.size() >= 2 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(1);
+        else
+            out << " 0";
+        if ( thepoint.size() >= 3 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(2);
+        else
+            out << " 0";
+        out << "\n";
+    }
+
+    for ( int i = 0; i < elt.nPoints(); ++i )
+    {
+        out << nPointInPtSet+i+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(0);
+        if ( mesh_type::nRealDim >= 2 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(1);
+        else
+            out << " 0";
+        if ( mesh_type::nRealDim >= 3 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(2);
+        else
+            out << " 0";
+        out << "\n";
+    }
+    out << "$EndNodes\n";
+
+
+    out << "$Elements\n"
+        << nPointInPtSet+1 <<"\n";// number element
+
+    for ( uint32_type i = 0; i < nPointInPtSet; ++i )
+    {
+        out << i+1 << " " << GMSH_ENTITY::GMSH_POINT
+            << " 2 0 " << i << " " // add elementary tag as feel id
+            << i+1 << "\n";
+    }
+
+    typedef typename MeshType::element_type element_type;
+    GmshOrdering<element_type> ordering;
+    out << nPointInPtSet+1 << " "; // id element
+    out << ordering.type();
+    out << " 2 0 0 ";
+    for ( uint16_type p=0; p<element_type::numPoints; ++p )
+    {
+        out << " " << nPointInPtSet + ordering.fromGmshId( p ) + 1;
+    }
+    out<<"\n";
+    out << "$EndElements\n";
+
+    out.close();
 }
 
 

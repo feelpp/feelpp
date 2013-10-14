@@ -107,7 +107,7 @@ heavysideFunction::transformToReal( nodes_type const& Gt ) const
 
     gm_type::precompute_ptrtype __geopc( new gm_type::precompute_type( _gm_ptr, Gt ) );
 
-    gm_type::Context<vm::POINT, element_type> gmc( _gm_ptr, *_M_elt, __geopc );
+    gm_type::Context<vm::POINT, element_type> gmc( _gm_ptr, *M_elt, __geopc );
 
     return gmc.xReal();
 }
@@ -139,4 +139,3 @@ heavysideFunction::operator()( node_type const& pointHat ) const
 }
 
 } // namespace Feel
-

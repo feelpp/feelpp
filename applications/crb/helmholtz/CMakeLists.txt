@@ -21,7 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-OPTION(FEELPP_OPUS_ENABLE_HELMHOLTZ_AW "enable HELMHOLTZ Anisotropic-Wavespeed testcase" ON)
+OPTION(FEELPP_OPUS_ENABLE_HELMHOLTZ_AW "enable HELMHOLTZ Anisotropic-Wavespeed testcase" OFF)
 IF ( FEELPP_OPUS_ENABLE_HELMHOLTZ_AW )
   add_subdirectory(anisotropic-wavespeed)
 ENDIF()

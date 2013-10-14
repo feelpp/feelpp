@@ -360,7 +360,7 @@ MatrixBlockBase<T>::operator = ( MatrixSparse<value_type> const& M )
 
 template <typename T>
 void
-MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, std::vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
+MatrixBlockBase<T>::zeroRows( std::vector<int> const& rows, Vector<value_type> const& values, Vector<value_type>& rhs, Context const& on_context )
 {
     M_mat->zeroRows( rows,values,rhs,on_context );
 }
@@ -389,5 +389,3 @@ MatrixBlockBase<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<value_type> >
 template class MatrixBlockBase<double>;
 
 } // Feel
-
-

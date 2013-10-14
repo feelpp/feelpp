@@ -54,26 +54,26 @@ namespace detail
 class print
 {
 public:
-    explicit print ( std::ostream& __os ) : _M_os ( __os ) {}
+    explicit print ( std::ostream& __os ) : M_os ( __os ) {}
 
     template<typename T>
     std::ostream& operator<< ( T const& __t )
     {
         __print ( __t, St::SInt2Type<St::STypeTraits<T>::isFundamental>() );
-        return _M_os;
+        return M_os;
     }
     template<typename T>
     std::ostream& operator<< ( T const* __t )
     {
         //__print ( __t, St::SInt2Type<St::STypeTraits<T>::isFundamental>() );
-        _M_os << __t;
-        return _M_os;
+        M_os << __t;
+        return M_os;
     }
 private:
     template<typename T>
     void __print ( T const& __t, St::SInt2Type<true> )
     {
-        _M_os << __t;
+        M_os << __t;
     }
     template<typename T>
     void __print ( T const& __t, St::SInt2Type<false> )
@@ -81,7 +81,7 @@ private:
 
     }
 private:
-    std::ostream& _M_os;
+    std::ostream& M_os;
 };
 #endif
 } // end namespace detail

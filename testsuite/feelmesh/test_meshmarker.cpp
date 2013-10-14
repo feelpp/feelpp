@@ -70,7 +70,7 @@ test_meshmarker( Application_ptrtype test_app )
     GeoTool::Node x6( 1,-1, 1);
     GeoTool::Node x7( 1, 1, 1);
     GeoTool::Node x8(-1, 1, 1);
-    GeoTool::Hexaedre H(meshSize,"UnHexa",x1,x2,x3,x4,x5,x6,x7,x8);
+    GeoTool::Hexahedron H(meshSize,"UnHexa",x1,x2,x3,x4,x5,x6,x7,x8);
     H.setMarker(_type="surface",_name="GammaDirichlet",_marker2=true,_marker3=true,_marker4=true,_marker5=true,_marker6=true);
     H.setMarker(_type="surface",_name="GammaNeumann",_marker1=true);
     H.setMarker(_type="volume",_name="OmegaFluid",_markerAll=true);
