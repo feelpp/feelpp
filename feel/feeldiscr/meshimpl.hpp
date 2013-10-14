@@ -2777,7 +2777,8 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
     bool isin=false,isin2=false;
     double dmin=0.;
     node_type x_ref;
-    size_type idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
+    auto mesh=this->mesh().lock();
+    size_type idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     searchInKdTree( p,ListTri );
@@ -2807,15 +2808,15 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
                 {
                     std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
                     //std::cout << "W";
-                    auto const& eltUsedForExtrapolation = this->mesh()->element(ListTri.begin()->first);
-                    gmc_inverse_type gic( this->mesh()->gm(), eltUsedForExtrapolation, this->mesh()->worldComm().subWorldCommSeq() );
+                    auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
+                    gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
                     //apply the inverse geometric transformation for the point p
                     gic.setXReal( p);
                     boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
                 }
             else
                 {
-                    idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
+                    idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
                     isin = false;
                     //x_ref=?
                 }
