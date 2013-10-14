@@ -86,15 +86,15 @@ public:
     Functional()
         :
         super(),
-        _M_p(),
-        _M_coeff()
+        M_p(),
+        M_coeff()
     {}
 
     Functional( space_type const& P )
         :
         super(),
-        _M_p( P ),
-        _M_coeff( _M_p.coeff() )
+        M_p( P ),
+        M_coeff( M_p.coeff() )
 
     {
 
@@ -106,21 +106,21 @@ public:
     //ublas::matrix_expression<AE> const& coeff )
         :
         super(),
-        _M_p( P ),
-        _M_coeff( coeff )
+        M_p( P ),
+        M_coeff( coeff )
     {
-        //FEELPP_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
-        //( _M_coeff.size1() )( _M_coeff.size2() )( _M_p.polynomialDimension() ).error( "invalid coefficient size" );
-        //         FEELPP_ASSERT( _M_coeff.size2() == 1 )( _M_coeff.size2() ).error( "there should be only one column" );
+        //FEELPP_ASSERT( M_coeff.size1() == nComponents && M_coeff.size2() == M_p.polynomialDimensionPerComponent() )
+        //( M_coeff.size1() )( M_coeff.size2() )( M_p.polynomialDimension() ).error( "invalid coefficient size" );
+        //         FEELPP_ASSERT( M_coeff.size2() == 1 )( M_coeff.size2() ).error( "there should be only one column" );
     }
 
     Functional( Functional const & __f )
         :
-        _M_p( __f._M_p ),
-        _M_coeff( __f._M_coeff )
+        M_p( __f.M_p ),
+        M_coeff( __f.M_coeff )
     {
-        //FEELPP_ASSERT( _M_coeff.size1() == nComponents && _M_coeff.size2() == _M_p.polynomialDimensionPerComponent() )
-        //( _M_coeff.size1() )( _M_coeff.size2() )( _M_p.polynomialDimensionPerComponent() ).error( "invalid coefficient size" );
+        //FEELPP_ASSERT( M_coeff.size1() == nComponents && M_coeff.size2() == M_p.polynomialDimensionPerComponent() )
+        //( M_coeff.size1() )( M_coeff.size2() )( M_p.polynomialDimensionPerComponent() ).error( "invalid coefficient size" );
     }
 
     virtual ~Functional()
@@ -136,8 +136,8 @@ public:
     {
         if ( this != &__f )
         {
-            _M_p = __f._M_p;
-            _M_coeff = __f._M_coeff;
+            M_p = __f.M_p;
+            M_coeff = __f.M_coeff;
         }
 
         return *this;
@@ -149,7 +149,7 @@ public:
      */
     self_type& operator+=( const self_type& __f )
     {
-        _M_coeff += __f.M_coeff;
+        M_coeff += __f.M_coeff;
         return *this;
     }
 
@@ -162,10 +162,10 @@ public:
      */
     virtual matrix_type operator()( polynomial_type const& p ) const
     {
-        FEELPP_ASSERT( p.coeff().size2()  == _M_coeff.size2() )
-        ( p.coeff() )( _M_coeff ).error( "invalid polynomial" );
+        FEELPP_ASSERT( p.coeff().size2()  == M_coeff.size2() )
+        ( p.coeff() )( M_coeff ).error( "invalid polynomial" );
 
-        return ublas::prod( p.coeff(), ublas::trans( _M_coeff ) );
+        return ublas::prod( p.coeff(), ublas::trans( M_coeff ) );
     }
 
     //@}
@@ -179,7 +179,7 @@ public:
      */
     uint16_type size() const
     {
-        return _M_coeff.size2();
+        return M_coeff.size2();
     }
 
     /**
@@ -188,7 +188,7 @@ public:
      */
     rep_type const& coeff() const
     {
-        return _M_coeff;
+        return M_coeff;
     }
 
     //@}
@@ -201,7 +201,7 @@ public:
     //void setCoefficient( ublas::matrix_expression<AE> const& __coeff )
     void setCoefficient( matrix_type const& __coeff )
     {
-        _M_coeff = __coeff;
+        M_coeff = __coeff;
     }
 
 
@@ -219,8 +219,8 @@ public:
 protected:
 
 private:
-    space_type _M_p;
-    rep_type _M_coeff;
+    space_type M_p;
+    rep_type M_coeff;
 };
 
 }

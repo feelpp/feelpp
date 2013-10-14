@@ -63,17 +63,17 @@ public:
     myMesh()
         :
         super(),
-        _M_factor ( 1 ),
-        _M_farfactor( 1 ),
-        _M_farBnd( 2 )
+        M_factor ( 1 ),
+        M_farfactor( 1 ),
+        M_farBnd( 2 )
     {}
 
     myMesh( myMesh const & td )
         :
         super( td ),
-        _M_factor ( td._M_factor ),
-        _M_farfactor( td._M_farfactor ),
-        _M_farBnd( td._M_farBnd )
+        M_factor ( td.M_factor ),
+        M_farfactor( td.M_farfactor ),
+        M_farBnd( td.M_farBnd )
     {}
 
     ~myMesh()
@@ -104,8 +104,8 @@ public:
     void setFarCharacteristic( double const&  farfactor,
                                double const&  farBnd )
     {
-        _M_farfactor = farfactor;
-        _M_farBnd = farBnd;
+        M_farfactor = farfactor;
+        M_farBnd = farBnd;
     }
 
     /** adds a point (ptChar[0],ptChar[1],ptChar[2])
@@ -113,14 +113,14 @@ public:
      */
     void setPointCharacteristic( double const&  factor )
     {
-        _M_factor = factor;
+        M_factor = factor;
     }
 
 
     void setPointCharacteristic( std::vector<double> const&  ptChar )
     {
         FEELPP_ASSERT( this->nDim != ptChar.size() )( this->nDim ).error( "invalid dimension" );
-        _M_ptChar.push_back( ptChar );
+        M_ptChar.push_back( ptChar );
     }
 
     //@}
@@ -154,10 +154,10 @@ private:
 
 private:
 
-    double _M_factor;
-    double _M_farfactor;
-    double _M_farBnd;
-    std::list<std::vector<double> >  _M_ptChar;
+    double M_factor;
+    double M_farfactor;
+    double M_farBnd;
+    std::list<std::vector<double> >  M_ptChar;
 
 }; // end class myMesh
 

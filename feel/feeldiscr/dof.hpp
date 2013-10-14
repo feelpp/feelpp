@@ -75,6 +75,17 @@ public:
         super()
     {
     }
+
+    Dof( size_type gid )
+        :
+        super( )
+        {
+            this->get<0>() =  gid;
+            this->get<1>() =  1;
+            this->get<2>() =  false;
+
+        }
+
     Dof( boost::tuple<size_type, int16_type, bool> const& t )
         :
         super( )
@@ -119,6 +130,13 @@ public:
             super::operator=( o );
         }
 
+        return *this;
+    }
+    Dof& operator=( size_type t )
+    {
+        this->get<0>() =  t;
+        this->get<1>() =  1;
+        this->get<2>() =  false;
         return *this;
     }
     Dof& operator=( boost::tuple<size_type, int16_type, bool> const& t )

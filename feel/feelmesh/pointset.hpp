@@ -69,41 +69,41 @@ public:
     PointSet()
         :
         super(),
-        _M_npoints( 0 ),
-        _M_points(),
-        _M_points_face( Convex::numTopologicalFaces )
+        M_npoints( 0 ),
+        M_points(),
+        M_points_face( Convex::numTopologicalFaces )
     {}
 
     PointSet( const self_type& P )
         :
         super(),
-        _M_npoints( P.nPoints() ),
-        _M_points( P.points() ),
-        _M_points_face( P._M_points_face )
+        M_npoints( P.nPoints() ),
+        M_points( P.points() ),
+        M_points_face( P.M_points_face )
     {}
 
     PointSet( uint32_type Npoints )
         :
         super(),
-        _M_npoints( Npoints ),
-        _M_points( Convex::nDim, Npoints ),
-        _M_points_face( Convex::numTopologicalFaces )
+        M_npoints( Npoints ),
+        M_points( Convex::nDim, Npoints ),
+        M_points_face( Convex::numTopologicalFaces )
     {}
 
     PointSet( uint32_type Npoints, uint16_type Dim )
         :
         super(),
-        _M_npoints( Npoints ),
-        _M_points( Dim, Npoints ),
-        _M_points_face( Convex::numTopologicalFaces )
+        M_npoints( Npoints ),
+        M_points( Dim, Npoints ),
+        M_points_face( Convex::numTopologicalFaces )
     {}
 
     PointSet( nodes_type const& SomePoints )
         :
         super(),
-        _M_npoints( SomePoints.size2() ),
-        _M_points( SomePoints ),
-        _M_points_face( Convex::numTopologicalFaces )
+        M_npoints( SomePoints.size2() ),
+        M_points( SomePoints ),
+        M_points_face( Convex::numTopologicalFaces )
     {}
 
     virtual ~PointSet()
@@ -113,9 +113,9 @@ public:
     {
         if ( this != &p )
         {
-            _M_npoints = p._M_npoints;
-            _M_points = p._M_points;
-            _M_points_face = p._M_points_face;
+            M_npoints = p.M_npoints;
+            M_points = p.M_points;
+            M_points_face = p.M_points_face;
         }
 
         return *this;
@@ -124,33 +124,33 @@ public:
 
     uint32_type nPoints() const
     {
-        return _M_npoints;
+        return M_npoints;
     }
     nodes_type const& points() const
     {
-        return _M_points;
+        return M_points;
     }
     ublas::matrix_column<nodes_type const> point( uint32_type __i ) const
     {
-        return ublas::column( _M_points, __i );
+        return ublas::column( M_points, __i );
     }
     ublas::matrix_column<nodes_type> point( uint32_type __i )
     {
-        return ublas::column( _M_points, __i );
+        return ublas::column( M_points, __i );
     }
 
 
     nodes_type const& points( uint16_type f ) const
     {
-        return _M_points_face[f];
+        return M_points_face[f];
     }
     ublas::matrix_column<nodes_type const> point( uint16_type f, uint32_type __i ) const
     {
-        return ublas::column( _M_points_face[f], __i );
+        return ublas::column( M_points_face[f], __i );
     }
     ublas::matrix_column<nodes_type> point( uint16_type f, uint32_type __i )
     {
-        return ublas::column( _M_points_face[f], __i );
+        return ublas::column( M_points_face[f], __i );
     }
 
     void setName( std::string name, uint32_type order )
@@ -266,8 +266,8 @@ protected:
      */
     void setPoints( nodes_type const& pts )
     {
-        _M_points = pts;
-        _M_npoints = pts.size2();
+        M_points = pts;
+        M_npoints = pts.size2();
     }
 
     /**
@@ -275,13 +275,13 @@ protected:
      */
     void setPoints( uint16_type f, nodes_type const& n )
     {
-        _M_points_face[f] = n;
+        M_points_face[f] = n;
     }
 protected:
 
-    uint32_type _M_npoints;
-    nodes_type _M_points;
-    std::vector<nodes_type> _M_points_face;
+    uint32_type M_npoints;
+    nodes_type M_points;
+    std::vector<nodes_type> M_points_face;
 
     //Identifies if points are equispaced, warpblend, fekete
     std::string pointsName;

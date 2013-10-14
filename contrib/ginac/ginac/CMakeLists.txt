@@ -151,8 +151,8 @@ add_library(feelpp_ginac ${ginaclib_sources})
 set_target_properties(feelpp_ginac PROPERTIES
 	SOVERSION ${ginaclib_soversion}
 	VERSION ${ginaclib_version})
-target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${MPI_LIBRARIES})
-include_directories(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac)
+target_link_libraries(feelpp_ginac ${CLN_LIBRARIES} ${CMAKE_DL_LIBS} ${Boost_MPI_LIBRARY} ${Boost_SERIALIZATION_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${MPI_CXX_LIBRARIES})
+include_directories(${CMAKE_SOURCE_DIR}/contrib/ginac/ginac ${MPI_CXX_INCLUDE_PATH})
 
 if (NOT BUILD_SHARED_LIBS)
 	set_target_properties(feelpp_ginac PROPERTIES OUTPUT_NAME "ginac")

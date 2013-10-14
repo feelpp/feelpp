@@ -126,7 +126,7 @@ public:
      */
     Epetra_BlockMap Map() const
     {
-        return _M_vec.Map();
+        return M_vec.Map();
     }
 
 
@@ -163,7 +163,7 @@ public:
     /** @name Operator overloads
      */
     //@{
-    //operator Epetra_Vector() { return _M_vec; }
+    //operator Epetra_Vector() { return M_vec; }
 
 
 
@@ -178,7 +178,7 @@ public:
         int ierr=0, dummy;
         double* values;
 
-        ierr = _M_vec.ExtractView( &values, &dummy );
+        ierr = M_vec.ExtractView( &values, &dummy );
 
         value = values[i - this->firstLocalIndex()];
         return static_cast<value_type>( value );
@@ -192,7 +192,7 @@ public:
         FEELPP_ASSERT ( ( ( i >= this->firstLocalIndex() ) &&
                           ( i <  this->lastLocalIndex() ) ) )( i )( this->firstLocalIndex() )( this->lastLocalIndex() ).warn( "invalid vector index" );
 
-        return _M_vec[0][ ( int )i-this->firstLocalIndex() ];
+        return M_vec[0][ ( int )i-this->firstLocalIndex() ];
 
     }
 
@@ -202,8 +202,8 @@ public:
         if ( &v != this )
         {
             super::operator=( v );
-            _M_emap = v.Map();
-            _M_vec = v.vec();
+            M_emap = v.Map();
+            M_vec = v.vec();
 
             this->M_is_initialized = true;
         }
@@ -259,7 +259,7 @@ public:
             return 0;
 
         int epetra_size=0;
-        epetra_size = _M_vec.GlobalLength();
+        epetra_size = M_vec.GlobalLength();
         return static_cast<size_type>( epetra_size );
 
         return 0;
@@ -273,7 +273,7 @@ public:
         FEELPP_ASSERT ( this->isInitialized() ).error( "VectorEpetra not initialized" );
 
         int epetra_size=0;
-        epetra_size = _M_vec.MyLength();
+        epetra_size = M_vec.MyLength();
         DVLOG(2) << "[VectorEpetra::localSize] localSize= " << epetra_size  << "\n";
         return static_cast<size_type>( epetra_size );
     }
@@ -285,8 +285,8 @@ public:
      */
     Epetra_FEVector const& vec () const
     {
-        //FEELPP_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
-        return _M_vec;
+        //FEELPP_ASSERT (M_vec != 0).error( "invalid epetra vector" );
+        return M_vec;
     }
 
     /**
@@ -296,8 +296,8 @@ public:
      */
     Epetra_FEVector& vec ()
     {
-        //FEELPP_ASSERT (_M_vec != 0).error( "invalid epetra vector" );
-        return _M_vec;
+        //FEELPP_ASSERT (M_vec != 0).error( "invalid epetra vector" );
+        return M_vec;
     }
 
     /**
@@ -310,8 +310,8 @@ public:
     boost::shared_ptr<Epetra_Vector> epetraVector ()
     {
         double** V;
-        _M_vec.ExtractView( &V );
-        boost::shared_ptr<Epetra_Vector> EV( new Epetra_Vector( View,_M_vec.Map(),V[0] ) );
+        M_vec.ExtractView( &V );
+        boost::shared_ptr<Epetra_Vector> EV( new Epetra_Vector( View,M_vec.Map(),V[0] ) );
         return EV;
     }
 
@@ -336,7 +336,7 @@ public:
         FEELPP_ASSERT ( this->isInitialized() ).error( "VectorEpetra<> not initialized" );
 
         int ierr=0;
-        ierr = _M_vec.GlobalAssemble( Add );
+        ierr = M_vec.GlobalAssemble( Add );
 
         this->M_is_closed = true;
     }
@@ -349,7 +349,7 @@ public:
     {
         FEELPP_ASSERT ( this->isInitialized() ).error( "VectorEpetra<> not initialized" );
 
-        _M_vec.PutScalar( 0.0 );
+        M_vec.PutScalar( 0.0 );
 
     }
 
@@ -374,11 +374,11 @@ public:
      */
     void clear ()
     {
-        if ( this->isInitialized() ) //&& (this->_M_destroy_vec_on_exit))
+        if ( this->isInitialized() ) //&& (this->M_destroy_vec_on_exit))
         {
-            _M_emap = Epetra_BlockMap( -1, 0, 0, _M_vec.Comm() );
-            _M_vec.ReplaceMap( _M_emap );
-            _M_vec.PutScalar( 0.0 );
+            M_emap = Epetra_BlockMap( -1, 0, 0, M_vec.Comm() );
+            M_vec.ReplaceMap( M_emap );
+            M_vec.PutScalar( 0.0 );
         }
 
         this->M_is_closed = this->M_is_initialized = false;
@@ -407,7 +407,7 @@ public:
 
     void addVector ( VectorEpetra& v )
     {
-        _M_vec.Update( 1.0, v.vec(), 1.0 );
+        M_vec.Update( 1.0, v.vec(), 1.0 );
     }
 
 
@@ -487,8 +487,8 @@ public:
 
         for ( int i=0 ; i<n ; i++ )
         {
-            _M_vec.SumIntoGlobalValues( 1,&i,&v );  //indices are in global index space
-            //_M_vec.SumIntoMyValues(1,&v,&i);      //indices are in local index space
+            M_vec.SumIntoGlobalValues( 1,&i,&v );  //indices are in global index space
+            //M_vec.SumIntoMyValues(1,&v,&i);      //indices are in local index space
         }
 
     }
@@ -519,7 +519,7 @@ public:
         assert ( v != NULL );
         assert( this->size() == v->size() );
 
-        _M_vec.Update( a, v->_M_vec,1. );
+        M_vec.Update( a, v->M_vec,1. );
 
     }
 
@@ -628,7 +628,7 @@ public:
 
         double min=0.;
 
-        _M_vec.MinValue( &min );
+        M_vec.MinValue( &min );
 
         // this return value is correct: VecMin returns a PetscReal
         return static_cast<double>( min );
@@ -645,7 +645,7 @@ public:
 
         double max=0.;
 
-        _M_vec.MaxValue( &max );
+        M_vec.MaxValue( &max );
 
         // this return value is correct: VecMin returns a PetscReal
         return static_cast<double>( max );
@@ -661,7 +661,7 @@ public:
 
         double value=0.;
 
-        _M_vec.Norm1( &value );
+        M_vec.Norm1( &value );
 
         return static_cast<Real>( value );
     }
@@ -677,7 +677,7 @@ public:
 
         double value=0.;
 
-        _M_vec.Norm2( &value );
+        M_vec.Norm2( &value );
 
         return static_cast<Real>( value );
 
@@ -694,7 +694,7 @@ public:
 
         double value=0.;
 
-        _M_vec.NormInf( &value );
+        M_vec.NormInf( &value );
 
         return static_cast<Real>( value );
 
@@ -710,12 +710,12 @@ public:
         double value=0.;
         double global_sum=0;
 
-        double const * pointers( _M_vec[0] );
+        double const * pointers( M_vec[0] );
 
-        for ( int i( 0 ); i < _M_vec.MyLength(); ++i , ++pointers )
+        for ( int i( 0 ); i < M_vec.MyLength(); ++i , ++pointers )
             value += *pointers;
 
-        _M_vec.Comm().SumAll( &value, &global_sum, 1 );
+        M_vec.Comm().SumAll( &value, &global_sum, 1 );
 
         return static_cast<Real>( global_sum );
 
@@ -734,8 +734,8 @@ public:
 
         int epetra_first = 0;
         assert ( this->isInitialized() );
-        //epetra_first = _M_vec.Map().MinMyGID();
-        epetra_first = _M_vec.Map().MinLID();
+        //epetra_first = M_vec.Map().MinMyGID();
+        epetra_first = M_vec.Map().MinLID();
         DVLOG(2) << "[VectorEpetra::firstLocalIndex] firstLocalIndex= " << epetra_first  << "\n";
         return static_cast<size_type>( epetra_first );
     }
@@ -752,8 +752,8 @@ public:
     {
         int epetra_last = 0;
         assert ( this->isInitialized() );
-        //epetra_last = _M_vec.Map().MaxMyGID();
-        epetra_last = _M_vec.Map().MaxLID();
+        //epetra_last = M_vec.Map().MaxMyGID();
+        epetra_last = M_vec.Map().MaxLID();
         DVLOG(2) << "[VectorEpetra::lastLocalIndex] lastLocalIndex= " << epetra_last+1  << "\n";
         return static_cast<size_type>( epetra_last )+1;
     }
@@ -774,14 +774,14 @@ protected:
 private:
     void checkInvariants() const;
 private:
-    Epetra_BlockMap _M_emap;
-    Epetra_FEVector _M_vec;
+    Epetra_BlockMap M_emap;
+    Epetra_FEVector M_vec;
 
     /**
      * This boolean value should only be set to false
      * for the constructor which takes a Epetra Vec object.
      */
-    //const bool _M_destroy_vec_on_exit;
+    //const bool M_destroy_vec_on_exit;
 };
 
 template<typename T>

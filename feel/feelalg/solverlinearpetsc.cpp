@@ -133,13 +133,13 @@ SolverLinearPetsc<T>::clear ()
         // 2.1.x & earlier style
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 
-        ierr = SLESDestroy( _M_sles );
+        ierr = SLESDestroy( M_sles );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // 2.2.0 & newer style
 #else
-        FEELPP_ASSERT( _M_ksp != 0 ).error( "invalid ksp" );
-        ierr = PETSc::KSPDestroy( _M_ksp );
+        FEELPP_ASSERT( M_ksp != 0 ).error( "invalid ksp" );
+        ierr = PETSc::KSPDestroy( M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 #endif
 
@@ -170,17 +170,17 @@ void SolverLinearPetsc<T>::init ()
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 
         // Create the linear solver context
-        ierr = SLESCreate ( this->worldComm().globalComm(), &_M_sles );
+        ierr = SLESCreate ( this->worldComm().globalComm(), &M_sles );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Create the Krylov subspace & preconditioner contexts
-        ierr = SLESGetKSP       ( _M_sles, &_M_ksp );
+        ierr = SLESGetKSP       ( M_sles, &M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
-        ierr = SLESGetPC        ( _M_sles, &_M_pc );
+        ierr = SLESGetPC        ( M_sles, &M_pc );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Have the Krylov subspace method use our good initial guess rather than 0
-        ierr = KSPSetInitialGuessNonzero ( _M_ksp, PETSC_TRUE );
+        ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_TRUE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Set user-specified  solver and preconditioner types
@@ -195,22 +195,22 @@ void SolverLinearPetsc<T>::init ()
         //  SLESSetFromOptions() is called _after_ any other customization
         //  routines.
 
-        ierr = SLESSetFromOptions ( _M_sles );
+        ierr = SLESSetFromOptions ( M_sles );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // 2.2.0 & newer style
 #else
 
         // Create the linear solver context
-        ierr = KSPCreate ( this->worldComm().globalComm(), &_M_ksp );
+        ierr = KSPCreate ( this->worldComm().globalComm(), &M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Create the preconditioner context
-        ierr = KSPGetPC        ( _M_ksp, &_M_pc );
+        ierr = KSPGetPC        ( M_ksp, &M_pc );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Have the Krylov subspace method use our good initial guess rather than 0
-        ierr = KSPSetInitialGuessNonzero ( _M_ksp, PETSC_TRUE );
+        ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_TRUE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Set user-specified  solver and preconditioner types
@@ -218,7 +218,7 @@ void SolverLinearPetsc<T>::init ()
         this->setPetscPreconditionerType();
         this->setPetscConstantNullSpace();
         // sets the software that is used to perform the factorization
-        PetscPCFactorSetMatSolverPackage( _M_pc,this->matSolverPackageType() );
+        PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
 
         // Set the options from user-input
@@ -227,9 +227,9 @@ void SolverLinearPetsc<T>::init ()
         //  These options will override those specified above as long as
         //  KSPSetFromOptions() is called _after_ any other customization
         //  routines.
-        //ierr = PCSetFromOptions ( _M_pc );
+        //ierr = PCSetFromOptions ( M_pc );
         //CHKERRABORT( this->worldComm().globalComm(),ierr );
-        ierr = KSPSetFromOptions ( _M_ksp );
+        ierr = KSPSetFromOptions ( M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
@@ -248,19 +248,19 @@ void SolverLinearPetsc<T>::init ()
 #endif
 #endif
 
-        ierr = KSPGetType ( _M_ksp, &ksp_type );
+        ierr = KSPGetType ( M_ksp, &ksp_type );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         if ( strcmp( ksp_type, "preonly" ) )
         {
-            ierr = KSPSetInitialGuessNonzero ( _M_ksp, PETSC_TRUE );
+            ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_TRUE );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
         if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
         {
             int nRestartGMRES = option(_name="gmres-restart", _prefix=this->prefix() ).template as<int>();
-            ierr = KSPGMRESSetRestart( _M_ksp, nRestartGMRES );
+            ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         // Notify PETSc of location to store residual history.
@@ -268,7 +268,7 @@ void SolverLinearPetsc<T>::init ()
         // it sets the residual history length to zero.  The default
         // behavior is for PETSc to allocate (internally) an array
         // of size 1000 to hold the residual norm history.
-        ierr = KSPSetResidualHistory( _M_ksp,
+        ierr = KSPSetResidualHistory( M_ksp,
                                       PETSC_NULL,   // pointer to the array which holds the history
                                       PETSC_DECIDE, // size of the array holding the history
                                       PETSC_TRUE ); // Whether or not to reset the history for each solve.
@@ -279,17 +279,17 @@ void SolverLinearPetsc<T>::init ()
         {
             VLOG(2) << "preconditioner: "  << this->M_preconditioner << "\n";
 
-            PCSetType(_M_pc, PCSHELL);
-            PCShellSetName( _M_pc, this->M_preconditioner->name().c_str() );
-            PCShellSetContext( _M_pc,( void* )this->M_preconditioner.get() );
-            PCShellSetSetUp( _M_pc,__feel_petsc_preconditioner_setup );
-            PCShellSetApply( _M_pc,__feel_petsc_preconditioner_apply );
+            PCSetType(M_pc, PCSHELL);
+            PCShellSetName( M_pc, this->M_preconditioner->name().c_str() );
+            PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );
+            PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
+            PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
 #if PETSC_VERSION_LESS_THAN(3,4,0)
             const PCType pc_type;
 #else
             PCType pc_type;
 #endif
-            ierr = PCGetType ( _M_pc, &pc_type );
+            ierr = PCGetType ( M_pc, &pc_type );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
 
             VLOG(2) << "preconditioner set as "  << pc_type << "\n";
@@ -297,7 +297,7 @@ void SolverLinearPetsc<T>::init ()
 
         if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
         {
-            KSPMonitorSet( _M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
+            KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
         }
 
 
@@ -349,7 +349,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
 
     if ( !this->M_preconditioner && this->preconditionerType() == FIELDSPLIT_PRECOND )
-        matrix->updatePCFieldSplit( _M_pc );
+        matrix->updatePCFieldSplit( M_pc );
 
     //   // If matrix != precond, then this means we have specified a
     //   // special preconditioner, so reset preconditioner type to PCMAT.
@@ -363,14 +363,14 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 #if (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1)
 
     // Set operators. The input matrix works as the preconditioning matrix
-    ierr = SLESSetOperators( _M_sles, matrix->mat(), precond->mat(),
+    ierr = SLESSetOperators( M_sles, matrix->mat(), precond->mat(),
                              SAME_NONZERO_PATTERN );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
     // Set the tolerances for the iterative solver.  Use the user-supplied
     // tolerance for the relative residual & leave the others at default values.
-    ierr = KSPSetTolerances ( _M_ksp,
+    ierr = KSPSetTolerances ( M_ksp,
                               this->rTolerance(),
                               this->aTolerance(),
                               this->dTolerance(),
@@ -381,23 +381,23 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     // instead of || B*b ||. In the case of right preconditioner or if
     // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
     // the above formula. UIRNorm is short for Use Initial Residual Norm.
-    KSPDefaultConvergedSetUIRNorm( _M_ksp );
+    KSPDefaultConvergedSetUIRNorm( M_ksp );
 
 
     // Solve the linear system
-    ierr = SLESSolve ( _M_sles, rhs->vec(), solution->vec(), &its );
+    ierr = SLESSolve ( M_sles, rhs->vec(), solution->vec(), &its );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
     // Get the norm of the final residual to return to the user.
-    ierr = KSPGetResidualNorm ( _M_ksp, &final_resid );
+    ierr = KSPGetResidualNorm ( M_ksp, &final_resid );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // 2.2.0
 #elif (PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR == 2) && (PETSC_VERSION_SUBMINOR == 0)
 
     // Set operators. The input matrix works as the preconditioning matrix
-    ierr = KSPSetOperators( _M_ksp, matrix->mat(), precond->mat(),
+    ierr = KSPSetOperators( M_ksp, matrix->mat(), precond->mat(),
                             MatStructure::SAME_NONZERO_PATTERN );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
@@ -409,7 +409,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     // where r_k is the residual vector and b is the right-hand side.  Note that
     // it is the *maximum* of the two values, the larger of which will almost
     // always be rtol*||b||_2.
-    ierr = KSPSetTolerances ( _M_ksp,
+    ierr = KSPSetTolerances ( M_ksp,
                               this->rTolerance(),
                               this->aTolerance(),
                               this->dTolerance(),
@@ -418,47 +418,47 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
 
 
     // Set the solution vector to use
-    ierr = KSPSetSolution ( _M_ksp, solution->vec() );
+    ierr = KSPSetSolution ( M_ksp, solution->vec() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the RHS vector to use
-    ierr = KSPSetRhs ( _M_ksp, rhs->vec() );
+    ierr = KSPSetRhs ( M_ksp, rhs->vec() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // makes the default convergence test use || B*(b - A*(initial guess))||
     // instead of || B*b ||. In the case of right preconditioner or if
     // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
     // the above formula. UIRNorm is short for Use Initial Residual Norm.
-    KSPDefaultConvergedSetUIRNorm( _M_ksp );
+    KSPDefaultConvergedSetUIRNorm( M_ksp );
 
     // Solve the linear system
     if ( transpose )
-        ierr = KSPSolveTranspose ( _M_ksp );
+        ierr = KSPSolveTranspose ( M_ksp );
 
     else
-        ierr = KSPSolve ( _M_ksp );
+        ierr = KSPSolve ( M_ksp );
 
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Get the number of iterations required for convergence
-    ierr = KSPGetIterationNumber ( _M_ksp, &its );
+    ierr = KSPGetIterationNumber ( M_ksp, &its );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Get the norm of the final residual to return to the user.
-    ierr = KSPGetResidualNorm ( _M_ksp, &final_resid );
+    ierr = KSPGetResidualNorm ( M_ksp, &final_resid );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // 2.2.1 & newer style
 #else
     //std::cout << "sles: " << this->precMatrixStructure() << "\n";
     // Set operators. The input matrix works as the preconditioning matrix
-    ierr = KSPSetOperators( _M_ksp, matrix->mat(), precond->mat(),
+    ierr = KSPSetOperators( M_ksp, matrix->mat(), precond->mat(),
                             PetscGetMatStructureEnum(this->precMatrixStructure()) );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Set the tolerances for the iterative solver.  Use the user-supplied
     // tolerance for the relative residual & leave the others at default values.
-    ierr = KSPSetTolerances ( _M_ksp,
+    ierr = KSPSetTolerances ( M_ksp,
                               this->rTolerance(),
                               //1e-15,
                               this->aTolerance(),
@@ -466,36 +466,36 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
                               this->maxIterations() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-    //PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),_M_pc, this->worldComm() );
+    //PreconditionerPetsc<T>::setPetscPreconditionerType( this->preconditionerType(),this->matSolverPackageType(),M_pc, this->worldComm() );
 
 
     // makes the default convergence test use || B*(b - A*(initial guess))||
     // instead of || B*b ||. In the case of right preconditioner or if
     // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
     // the above formula. UIRNorm is short for Use Initial Residual Norm.
-    KSPDefaultConvergedSetUIRNorm( _M_ksp );
+    KSPDefaultConvergedSetUIRNorm( M_ksp );
 
     // Solve the linear system
     if ( transpose )
-        ierr = KSPSolveTranspose ( _M_ksp, rhs->vec(), solution->vec() );
+        ierr = KSPSolveTranspose ( M_ksp, rhs->vec(), solution->vec() );
 
     else
-        ierr = KSPSolve ( _M_ksp, rhs->vec(), solution->vec() );
+        ierr = KSPSolve ( M_ksp, rhs->vec(), solution->vec() );
 
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Get the number of iterations required for convergence
-    ierr = KSPGetIterationNumber ( _M_ksp, &its );
+    ierr = KSPGetIterationNumber ( M_ksp, &its );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Get the norm of the final residual to return to the user.
-    ierr = KSPGetResidualNorm ( _M_ksp, &final_resid );
+    ierr = KSPGetResidualNorm ( M_ksp, &final_resid );
     //std::cout << "final residual = " << final_resid << "\n";
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
     KSPConvergedReason reason;
-    KSPGetConvergedReason( _M_ksp,&reason );
+    KSPGetConvergedReason( M_ksp,&reason );
 
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
@@ -560,7 +560,7 @@ SolverLinearPetsc<T>::getResidualHistory( std::vector<double>& hist )
     // vector may be different from what you are expecting.  For
     // example, TFQMR returns two residual values per iteration step.
     double* p;
-    ierr = KSPGetResidualHistory( _M_ksp, &p, &its );
+    ierr = KSPGetResidualHistory( M_ksp, &p, &its );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Check for early return
@@ -594,7 +594,7 @@ SolverLinearPetsc<T>::getInitialResidual()
     // vector may be different from what you are expecting.  For
     // example, TFQMR returns two residual values per iteration step.
     double* p;
-    ierr = KSPGetResidualHistory( _M_ksp, &p, &its );
+    ierr = KSPGetResidualHistory( M_ksp, &p, &its );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
 
     // Check no residual history
@@ -618,7 +618,7 @@ SolverLinearPetsc<T>::setPetscConstantNullSpace()
         MatNullSpace nullsp;
 
         MatNullSpaceCreate( PETSC_COMM_WORLD, PETSC_TRUE, 0, PETSC_NULL, &nullsp );
-        KSPSetNullSpace( _M_ksp, nullsp );
+        KSPSetNullSpace( M_ksp, nullsp );
         PETSc::MatNullSpaceDestroy( nullsp );
     }
 
@@ -635,65 +635,65 @@ SolverLinearPetsc<T>::setPetscSolverType()
     {
 
     case CG:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPCG );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCG );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case CR:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPCR );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCR );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case CGS:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPCGS );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCGS );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case BICG:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPBICG );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPBICG );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case TCQMR:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPTCQMR );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPTCQMR );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case TFQMR:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPTFQMR );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPTFQMR );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case LSQR:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPLSQR );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPLSQR );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case BICGSTAB:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPBCGS );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPBCGS );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case MINRES:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPMINRES );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPMINRES );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case GMRES:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPGMRES );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPGMRES );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case RICHARDSON:
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPRICHARDSON );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPRICHARDSON );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case CHEBYSHEV:
 #if PETSC_VERSION_LESS_THAN(3,3,0)
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPCHEBYCHEV );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYCHEV );
 #else
-        ierr = KSPSetType ( _M_ksp, ( char* ) KSPCHEBYSHEV );
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYSHEV );
 #endif
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
@@ -720,28 +720,28 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
 
     int ierr = 0;
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-    ierr = PCFactorSetMatSolverPackage( _M_pc,MATSOLVERUMFPACK );
+    ierr = PCFactorSetMatSolverPackage( M_pc,MATSOLVERUMFPACK );
 
     if ( ierr )
     {
-        ierr = PCFactorSetMatSolverPackage( _M_pc,MATSOLVERSUPERLU );
+        ierr = PCFactorSetMatSolverPackage( M_pc,MATSOLVERSUPERLU );
 
         if ( ierr )
         {
-            ierr = PCFactorSetMatSolverPackage( _M_pc,MATSOLVERPETSC );
+            ierr = PCFactorSetMatSolverPackage( M_pc,MATSOLVERPETSC );
         }
     }
 
 #elif (PETSC_VERSION_MAJOR >= 3)
-    ierr = PCFactorSetMatSolverPackage( _M_pc,MAT_SOLVER_UMFPACK );
+    ierr = PCFactorSetMatSolverPackage( M_pc,MAT_SOLVER_UMFPACK );
 
     if ( ierr )
     {
-        ierr = PCFactorSetMatSolverPackage( _M_pc,MAT_SOLVER_SUPERLU );
+        ierr = PCFactorSetMatSolverPackage( M_pc,MAT_SOLVER_SUPERLU );
 
         if ( ierr )
         {
-            ierr = PCFactorSetMatSolverPackage( _M_pc,MAT_SOLVER_PETSC );
+            ierr = PCFactorSetMatSolverPackage( M_pc,MAT_SOLVER_PETSC );
         }
     }
 
@@ -751,101 +751,101 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
     switch ( this->preconditionerType() )
     {
     case IDENTITY_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCNONE );
+        ierr = PCSetType ( M_pc, ( char* ) PCNONE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case CHOLESKY_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCCHOLESKY );
+        ierr = PCSetType ( M_pc, ( char* ) PCCHOLESKY );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case ICC_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCICC );
+        ierr = PCSetType ( M_pc, ( char* ) PCICC );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case ILU_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCILU );
+        ierr = PCSetType ( M_pc, ( char* ) PCILU );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         if ( this->vm().count( "pc-factor-levels" ) )
         {
-            PCFactorSetLevels( _M_pc,this->vm()["pc-factor-levels"].template as<int>() );
+            PCFactorSetLevels( M_pc,this->vm()["pc-factor-levels"].template as<int>() );
         }
 
         else
-            PCFactorSetLevels( _M_pc,3 );
+            PCFactorSetLevels( M_pc,3 );
 
         if ( this->vm().count( "pc-factor-fill" ) )
         {
-            PCFactorSetFill( _M_pc,this->vm()["pc-factor-fill"].template as<double>() );
+            PCFactorSetFill( M_pc,this->vm()["pc-factor-fill"].template as<double>() );
         }
 
         else
-            PCFactorSetFill( _M_pc,40 );
+            PCFactorSetFill( M_pc,40 );
 
         return;
 
     case LU_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCLU );
+        ierr = PCSetType ( M_pc, ( char* ) PCLU );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case ASM_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCASM );
+        ierr = PCSetType ( M_pc, ( char* ) PCASM );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     case GASM_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCGASM );
+        ierr = PCSetType ( M_pc, ( char* ) PCGASM );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 #endif
 
     case JACOBI_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCJACOBI );
+        ierr = PCSetType ( M_pc, ( char* ) PCJACOBI );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case BLOCK_JACOBI_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCBJACOBI );
+        ierr = PCSetType ( M_pc, ( char* ) PCBJACOBI );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case SOR_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCSOR );
+        ierr = PCSetType ( M_pc, ( char* ) PCSOR );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case EISENSTAT_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCEISENSTAT );
+        ierr = PCSetType ( M_pc, ( char* ) PCEISENSTAT );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
 #if !((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
 
     case USER_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCMAT );
+        ierr = PCSetType ( M_pc, ( char* ) PCMAT );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 #endif
 
     case SHELL_PRECOND:
-        ierr = PCSetType ( _M_pc, ( char* ) PCSHELL );
+        ierr = PCSetType ( M_pc, ( char* ) PCSHELL );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case FIELDSPLIT_PRECOND:
-        ierr = PCSetType( _M_pc,( char* ) PCFIELDSPLIT );
+        ierr = PCSetType( M_pc,( char* ) PCFIELDSPLIT );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
-        ierr = PCFieldSplitSetType( _M_pc,PC_COMPOSITE_SCHUR );
+        ierr = PCFieldSplitSetType( M_pc,PC_COMPOSITE_SCHUR );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
     case ML_PRECOND:
-        ierr = PCSetType( _M_pc,( char* ) PCML );
+        ierr = PCSetType( M_pc,( char* ) PCML );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 

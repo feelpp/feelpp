@@ -117,6 +117,8 @@ public:
     typedef typename super_points::point_type point_type;
 
     typedef Faces<typename Shape::template shape<0,Shape::nOrder,Shape::nRealDim>::type,typename super_elements::element_type> super_faces;
+    typedef typename super_faces::face_iterator face_iterator;
+    typedef typename super_faces::face_const_iterator face_const_iterator;
     typedef typename super_faces::faces_type faces_type;
     typedef typename super_faces::face_type face_type;
     typedef face_type edge_type;
@@ -124,6 +126,8 @@ public:
     typedef super_faces super_edges;
     typedef typename super_edges::marker_face_iterator marker_edge_iterator;
     typedef typename super_edges::marker_face_const_iterator marker_edge_const_iterator;
+    typedef typename super_edges::location_face_iterator location_edge_iterator;
+    typedef typename super_edges::location_face_const_iterator location_edge_const_iterator;
 
     typedef Mesh1D<Shape> self_type;
     typedef boost::shared_ptr<self_type> self_ptrtype;

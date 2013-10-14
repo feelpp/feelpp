@@ -43,7 +43,7 @@ template<typename MeshType, int N>
 ExporterEnsight<MeshType,N>::ExporterEnsight( WorldComm const& worldComm )
 :
 super( worldComm ),
-_M_element_type()
+M_element_type()
 
 {
     init();
@@ -52,7 +52,7 @@ template<typename MeshType, int N>
 ExporterEnsight<MeshType,N>::ExporterEnsight( std::string const& __p, int freq, WorldComm const& worldComm )
     :
     super( "ensight", __p, freq, worldComm ),
-    _M_element_type()
+    M_element_type()
 {
     init();
 }
@@ -68,7 +68,7 @@ template<typename MeshType, int N>
 ExporterEnsight<MeshType,N>::ExporterEnsight( ExporterEnsight const & __ex )
     :
     super( __ex ),
-    _M_element_type( __ex._M_element_type )
+    M_element_type( __ex.M_element_type )
 {
 }
 
@@ -82,24 +82,24 @@ ExporterEnsight<MeshType,N>::init()
 {
     if ( mesh_type::nDim == 1 )
         if ( mesh_type::Shape == SHAPE_LINE )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
+            M_element_type = ( mesh_type::nOrder == 1 )?"bar2":"bar3";
 
     if ( mesh_type::nDim == 2 )
     {
         if ( mesh_type::Shape == SHAPE_TRIANGLE )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
+            M_element_type = ( mesh_type::nOrder == 1 )?"tria3":"tria6";
 
         else if ( mesh_type::Shape == SHAPE_QUAD )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
+            M_element_type = ( mesh_type::nOrder == 1 )?"quad4":"quad8";
     }
 
     if ( mesh_type::nDim == 3 )
     {
         if ( mesh_type::Shape == SHAPE_TETRA )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"tetra4":"tetra10";
+            M_element_type = ( mesh_type::nOrder == 1 )?"tetra4":"tetra10";
 
         else if ( mesh_type::Shape == SHAPE_HEXA )
-            _M_element_type = ( mesh_type::nOrder == 1 )?"hexa8":"hexa20";
+            M_element_type = ( mesh_type::nOrder == 1 )?"hexa8":"hexa20";
     }
 }
 template<typename MeshType, int N>
@@ -377,7 +377,7 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
                        << __ts->name()
                        << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
                        << ".geo";
-            _M_filename =  __geofname.str();
+            M_filename =  __geofname.str();
             CHECK( (*__it)->hasMesh() || __ts->hasMesh()  ) << "Invalid mesh data structure in static geometry mode\n";
             if ( __ts->hasMesh() )
                 __ts->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
@@ -402,7 +402,7 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
                 {
                     //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
                     //, __ts->name(), __geofname.str() );
-                    _M_filename =  __geofname.str();
+                    M_filename =  __geofname.str();
                     __step->mesh()->accept( const_cast<ExporterEnsight<MeshType,N>&>( *this ) );
                 }
             }
@@ -652,12 +652,12 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     char buffer[ 80 ];
     std::vector<int> idnode, idelem;
 
-    std::fstream __out( _M_filename.c_str(), std::ios::out | std::ios::binary );
+    std::fstream __out( M_filename.c_str(), std::ios::out | std::ios::binary );
 
 
     strcpy( buffer, "C Binary" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
-    strcpy( buffer, _M_filename.c_str() );
+    strcpy( buffer, M_filename.c_str() );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
     strcpy( buffer, "elements" );
     __out.write( ( char * ) & buffer, sizeof( buffer ) );

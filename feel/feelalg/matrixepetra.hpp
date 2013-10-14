@@ -191,11 +191,11 @@ public:
     {
         if ( &T != this )
         {
-            _M_emap = T.getRowMap();
-            _M_col_emap = T.getColMap();
-            _M_dom_map = T.mat().DomainMap();
-            _M_range_map = T.mat().RangeMap();
-            *_M_mat = T.mat();
+            M_emap = T.getRowMap();
+            M_col_emap = T.getColMap();
+            M_dom_map = T.mat().DomainMap();
+            M_range_map = T.mat().RangeMap();
+            *M_mat = T.mat();
 
             this->setInitialized( T.isInitialized() );
         }
@@ -239,7 +239,7 @@ public:
      */
     Epetra_Map getRowMap() const
     {
-        return _M_emap;
+        return M_emap;
     }
 
     /**
@@ -247,7 +247,7 @@ public:
      */
     Epetra_Map getColMap() const
     {
-        return _M_col_emap;
+        return M_col_emap;
     }
 
     /**
@@ -255,7 +255,7 @@ public:
      */
     Epetra_Map getDomainMap() const
     {
-        return _M_mat->DomainMap();
+        return M_mat->DomainMap();
     }
 
     /**
@@ -263,7 +263,7 @@ public:
      */
     Epetra_Map getRangeMap() const
     {
-        return _M_mat->RangeMap();
+        return M_mat->RangeMap();
     }
     //@}
 
@@ -275,7 +275,7 @@ public:
 
     boost::shared_ptr<Epetra_FECrsMatrix> matrix()
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /** @name  Mutators
@@ -445,12 +445,12 @@ public:
     {
         epetra_vector_type const& ev( dynamic_cast<epetra_vector_type const&>( v ) );
         epetra_vector_type& er( dynamic_cast<epetra_vector_type&>( r ) );
-        _M_mat->Multiply( trans, ev.vec(), er.vec() );
+        M_mat->Multiply( trans, ev.vec(), er.vec() );
     }
 
     void multiply ( bool trans, const Epetra_MultiVector &X, Epetra_MultiVector &Y ) const
     {
-        _M_mat->Multiply( trans, X, Y );
+        M_mat->Multiply( trans, X, Y );
     }
 
 
@@ -531,8 +531,8 @@ public:
      */
     Epetra_FECrsMatrix& mat ()
     {
-        //FEELPP_ASSERT (_M_mat != NULL).error("null epetra matrix");
-        return *_M_mat;
+        //FEELPP_ASSERT (M_mat != NULL).error("null epetra matrix");
+        return *M_mat;
     }
 
     /**
@@ -540,8 +540,8 @@ public:
      */
     Epetra_FECrsMatrix const& mat () const
     {
-        //FEELPP_ASSERT (_M_mat != NULL).error("null epetra matrix");
-        return *_M_mat;
+        //FEELPP_ASSERT (M_mat != NULL).error("null epetra matrix");
+        return *M_mat;
     }
 
     /**
@@ -603,12 +603,12 @@ private:
      * Epetra matrix datatype to store values
      */
 
-    Epetra_Map _M_emap;
-    Epetra_Map _M_col_emap;
-    Epetra_Map _M_dom_map;
-    Epetra_Map _M_range_map;
+    Epetra_Map M_emap;
+    Epetra_Map M_col_emap;
+    Epetra_Map M_dom_map;
+    Epetra_Map M_range_map;
 
-    mutable boost::shared_ptr<Epetra_FECrsMatrix> _M_mat;
+    mutable boost::shared_ptr<Epetra_FECrsMatrix> M_mat;
 
     std::vector<size_type> M_bc_index;
 };
@@ -621,17 +621,17 @@ MatrixEpetra::MatrixEpetra()
     super(),
 
 #ifdef FEELPP_HAS_MPI
-    _M_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm( M_comm ) ) ),
-    _M_col_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm( M_comm ) ) ),
-    _M_dom_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm( M_comm ) ) ),
-    _M_range_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm( M_comm ) ) ),
-    _M_mat( new Epetra_FECrsMatrix( Copy, _M_emap, 0 ) )
+    M_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm( M_comm ) ) ),
+    M_col_emap( Epetra_Map( -1, 0, 0, Epetra_MpiComm( M_comm ) ) ),
+    M_dom_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm( M_comm ) ) ),
+    M_range_map( Epetra_Map( -1, 0, 0, Epetra_MpiComm( M_comm ) ) ),
+    M_mat( new Epetra_FECrsMatrix( Copy, M_emap, 0 ) )
 #else
-    _M_emap( Epetra_Map( -1, 0, 0, Epetra_SerialComm ) ),
-    _M_col_emap( Epetra_Map( -1, 0, 0, Epetra_SerialComm ) ),
-    _M_dom_map( Epetra_Map( -1, 0, 0, Epetra_SerialComm ) ),
-    _M_range_map( Epetra_Map( -1, 0, 0, Epetra_SerialComm ) ),
-    _M_mat( new Epetra_FECrsMatrix( Copy, _M_emap, 0 ) )
+    M_emap( Epetra_Map( -1, 0, 0, Epetra_SerialComm ) ),
+    M_col_emap( Epetra_Map( -1, 0, 0, Epetra_SerialComm ) ),
+    M_dom_map( Epetra_Map( -1, 0, 0, Epetra_SerialComm ) ),
+    M_range_map( Epetra_Map( -1, 0, 0, Epetra_SerialComm ) ),
+    M_mat( new Epetra_FECrsMatrix( Copy, M_emap, 0 ) )
 
 #endif
 {}
@@ -640,11 +640,11 @@ inline
 MatrixEpetra::MatrixEpetra( Epetra_Map const& emap, int nnz )
     :
     super(),
-    _M_emap( emap ),
-    _M_col_emap( emap ),
-    _M_dom_map( emap ),
-    _M_range_map( emap ),
-    _M_mat( new Epetra_FECrsMatrix( Copy, emap, 0 ) )
+    M_emap( emap ),
+    M_col_emap( emap ),
+    M_dom_map( emap ),
+    M_range_map( emap ),
+    M_mat( new Epetra_FECrsMatrix( Copy, emap, 0 ) )
 {
     //this->setInitialized( true );
 }
@@ -654,11 +654,11 @@ inline
 MatrixEpetra::MatrixEpetra( Epetra_Map const& row_emap, Epetra_Map const& col_emap )
     :
     super(),
-    _M_emap( row_emap ),
-    _M_col_emap( col_emap ),
-    _M_dom_map( col_emap ),
-    _M_range_map( row_emap ),
-    _M_mat( new Epetra_FECrsMatrix( Copy, row_emap, col_emap, 0 ) )
+    M_emap( row_emap ),
+    M_col_emap( col_emap ),
+    M_dom_map( col_emap ),
+    M_range_map( row_emap ),
+    M_mat( new Epetra_FECrsMatrix( Copy, row_emap, col_emap, 0 ) )
 {
     //this->setInitialized( true );
 
@@ -669,11 +669,11 @@ MatrixEpetra::MatrixEpetra( Epetra_Map const& row_emap, Epetra_Map const& col_em
                             Epetra_Map const& dom_map, Epetra_Map const& range_map )
     :
     super(),
-    _M_emap( row_emap ),
-    _M_col_emap( col_emap ),
-    _M_dom_map( dom_map ),
-    _M_range_map( range_map ),
-    _M_mat( new Epetra_FECrsMatrix( Copy, _M_emap, _M_col_emap, 0 ) )
+    M_emap( row_emap ),
+    M_col_emap( col_emap ),
+    M_dom_map( dom_map ),
+    M_range_map( range_map ),
+    M_mat( new Epetra_FECrsMatrix( Copy, M_emap, M_col_emap, 0 ) )
 {
     //this->setInitialized( true );
 
@@ -684,11 +684,11 @@ inline
 MatrixEpetra::MatrixEpetra( Epetra_FECrsMatrix const& M )
     :
     super(),
-    _M_emap( M.RowMap() ),
-    _M_col_emap( M.ColMap() ),
-    _M_dom_map( M.DomainMap() ),
-    _M_range_map( M.RangeMap() ),
-    _M_mat( new Epetra_FECrsMatrix( Copy, _M_emap, _M_col_emap, 0 ) )
+    M_emap( M.RowMap() ),
+    M_col_emap( M.ColMap() ),
+    M_dom_map( M.DomainMap() ),
+    M_range_map( M.RangeMap() ),
+    M_mat( new Epetra_FECrsMatrix( Copy, M_emap, M_col_emap, 0 ) )
 {
 }
 
@@ -697,11 +697,11 @@ inline
 MatrixEpetra::MatrixEpetra( MatrixEpetra const& T )
     :
     super(),
-    _M_emap( T._M_emap ),
-    _M_col_emap( T._M_col_emap ),
-    _M_dom_map( T._M_dom_map ),
-    _M_range_map( T._M_range_map ),
-    _M_mat( new Epetra_FECrsMatrix( T.mat() ) )
+    M_emap( T.M_emap ),
+    M_col_emap( T.M_col_emap ),
+    M_dom_map( T.M_dom_map ),
+    M_range_map( T.M_range_map ),
+    M_mat( new Epetra_FECrsMatrix( T.mat() ) )
 
 {
 }
@@ -716,11 +716,11 @@ MatrixEpetra::MatrixEpetra( const size_type m,
                             const size_type /*noz*/ )
     :
     super(),
-    _M_emap( Epetra_Map( m, m_l, 0, Epetra_MpiComm( M_comm ) ) ),
-    _M_col_emap( Epetra_Map( n, n, 0, Epetra_MpiComm( M_comm ) ) ),
-    _M_dom_map( _M_emap ),
-    _M_range_map( _M_emap ),
-    _M_mat( new Epetra_FECrsMatrix( Copy, _M_emap, _M_col_emap, nnz ) )
+    M_emap( Epetra_Map( m, m_l, 0, Epetra_MpiComm( M_comm ) ) ),
+    M_col_emap( Epetra_Map( n, n, 0, Epetra_MpiComm( M_comm ) ) ),
+    M_dom_map( M_emap ),
+    M_range_map( M_emap ),
+    M_mat( new Epetra_FECrsMatrix( Copy, M_emap, M_col_emap, nnz ) )
 {
 }
 
@@ -771,7 +771,7 @@ void MatrixEpetra::zero ()
     FEELPP_ASSERT ( this->isInitialized() ).error( "epetra matrix not properly initialized" ) ;
 
     M_bc_index.resize( 0 );
-    _M_mat->PutScalar( 0.0 );
+    M_mat->PutScalar( 0.0 );
 
 }
 
@@ -781,7 +781,7 @@ void MatrixEpetra::clear ()
 {
     if ( this->isInitialized() )
     {
-        _M_mat = boost::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, _M_emap, _M_col_emap, 50 ) );
+        M_mat = boost::shared_ptr<Epetra_FECrsMatrix>( new Epetra_FECrsMatrix( Copy, M_emap, M_col_emap, 50 ) );
 
         this->setInitialized( false );
     }
@@ -796,7 +796,7 @@ void MatrixEpetra::close () const
     int ierr=0;
 
     if ( !this->closed() )
-        ierr =  _M_mat->GlobalAssemble( _M_dom_map, _M_range_map, true );
+        ierr =  M_mat->GlobalAssemble( M_dom_map, M_range_map, true );
 
     if ( ierr != 0 )
     {
@@ -810,8 +810,8 @@ void MatrixEpetra::setDiagonal ( Epetra_Vector const& x )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );;
 
-    const Epetra_Map& rowMap( _M_mat->RowMatrixRowMap() );
-    const Epetra_Map& colMap( _M_mat->RowMatrixColMap() );
+    const Epetra_Map& rowMap( M_mat->RowMatrixRowMap() );
+    const Epetra_Map& colMap( M_mat->RowMatrixColMap() );
 
     size_type L = x.MyLength();
 
@@ -822,12 +822,12 @@ void MatrixEpetra::setDiagonal ( Epetra_Vector const& x )
         int i_val = static_cast<int>( rowMap.GID( i ) );
         int j_val = static_cast<int>( colMap.GID( i ) );
 
-        _M_mat->InsertGlobalValues( 1, &i_val, 1,  &j_val, &zero_value );
+        M_mat->InsertGlobalValues( 1, &i_val, 1,  &j_val, &zero_value );
     }
 
     this->close();
 
-    _M_mat->ReplaceDiagonalValues( x );
+    M_mat->ReplaceDiagonalValues( x );
 }
 
 
@@ -837,9 +837,9 @@ size_type MatrixEpetra::size1 () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );;
 
-    DVLOG(2) << "Size in size1(): " << _M_mat->NumGlobalRows() << "\n";
+    DVLOG(2) << "Size in size1(): " << M_mat->NumGlobalRows() << "\n";
 
-    int epetra_m = _M_mat->NumGlobalRows();
+    int epetra_m = M_mat->NumGlobalRows();
 
     return static_cast<size_type>( epetra_m );
 }
@@ -851,7 +851,7 @@ size_type MatrixEpetra::size2 () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );;
 
-    int epetra_n = _M_mat->NumGlobalCols();
+    int epetra_n = M_mat->NumGlobalCols();
 
     return static_cast<size_type>( epetra_n );
 }
@@ -863,7 +863,7 @@ size_type MatrixEpetra::rowStart () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );;
 
-    int start = _M_emap.MinMyGID();
+    int start = M_emap.MinMyGID();
 
     return static_cast<size_type>( start );
 }
@@ -876,7 +876,7 @@ size_type MatrixEpetra::rowStop () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );;
 
-    int stop = _M_emap.MaxMyGID();
+    int stop = M_emap.MaxMyGID();
 
     return static_cast<size_type>( stop );
 }
@@ -896,11 +896,11 @@ void MatrixEpetra::set ( const size_type i,
 
     value_type epetra_value = static_cast<value_type>( value );
 
-    ierr = _M_mat->ReplaceGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
+    ierr = M_mat->ReplaceGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
 
     if ( ierr )
     {
-        ierr = _M_mat->InsertGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
+        ierr = M_mat->InsertGlobalValues( 1, &i_val, 1,  &j_val, &epetra_value );
 
         if ( ierr != 0 )
         {
@@ -920,7 +920,7 @@ bool MatrixEpetra::closed() const
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );
 
     bool filled;
-    filled = _M_mat->Filled();
+    filled = M_mat->Filled();
 
     return static_cast<bool>( filled );
 }
@@ -932,7 +932,7 @@ bool MatrixEpetra::EpetraIndicesAreLocal() const
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );
 
     bool IsLocal;
-    IsLocal = _M_mat->IndicesAreLocal();
+    IsLocal = M_mat->IndicesAreLocal();
 
     return static_cast<bool>( IsLocal );
 }
@@ -944,7 +944,7 @@ bool MatrixEpetra::HaveColMap() const
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixEpetra<> not properly initialized" );
 
     bool HaveMap;
-    HaveMap = _M_mat->HaveColMap();
+    HaveMap = M_mat->HaveColMap();
 
     return static_cast<bool>( HaveMap );
 }
@@ -966,7 +966,7 @@ MatrixEpetra::scale ( double scalar )
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "epetra matrix not initialized" );
     this->close();
-    _M_mat->Scale( scalar );
+    M_mat->Scale( scalar );
 }
 
 inline
@@ -976,7 +976,7 @@ MatrixEpetra::l1Norm() const
     FEELPP_ASSERT ( this->isInitialized() ).error( "epetra matrix not initialized" );
     this->close();
 
-    real_type NormOne = _M_mat->NormOne();
+    real_type NormOne = M_mat->NormOne();
 
     return static_cast<real_type>( NormOne );
 }
@@ -988,7 +988,7 @@ MatrixEpetra::linftyNorm() const
     FEELPP_ASSERT ( this->isInitialized() ).error( "epetra matrix not initialized" );
     this->close();
 
-    real_type NormInf = _M_mat->NormInf();
+    real_type NormInf = M_mat->NormInf();
 
     return static_cast<real_type>( NormInf );
 }
@@ -1012,8 +1012,8 @@ MatrixEpetra::operator () ( const size_type i,
     int* Indices;
 
 
-    // int ierr = _M_mat->ExtractMyRowView( i_val, NumEntries, Values, Indices);
-    _M_mat->ExtractMyRowView( i_val, NumEntries, Values, Indices );
+    // int ierr = M_mat->ExtractMyRowView( i_val, NumEntries, Values, Indices);
+    M_mat->ExtractMyRowView( i_val, NumEntries, Values, Indices );
 
     for ( int k = 0; k < NumEntries; ++k )
     {
@@ -1034,7 +1034,7 @@ MatrixEpetra::operator () ( const size_type i,
         //    this->close();
 
 
-        _M_mat->ExtractGlobalRowView(i_val, ncols, epetra_row, epetra_cols);
+        M_mat->ExtractGlobalRowView(i_val, ncols, epetra_row, epetra_cols);
 
         // Perform a binary search to find the contiguous index in
         // petsc_cols (resp. petsc_row) corresponding to global index j_val
@@ -1066,7 +1066,7 @@ MatrixEpetra::operator () ( const size_type i,
     // i.e. it is 0.
     return 0.;
 
-    //return _M_mat[i_val][j_val]; //no good: locally indexed!
+    //return M_mat[i_val][j_val]; //no good: locally indexed!
 }
 
 inline
@@ -1088,4 +1088,3 @@ operator<<( NdebugStream& __os, MatrixEpetra const& /*__n*/ )
 
 #endif /* FEELPP_HAS_TRILINOS_EPETRA */
 #endif /* __MatrixEpetra_H */
-
