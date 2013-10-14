@@ -2,18 +2,21 @@
 
 function builddox
 {
-  doxygen_dir=$HOME/doxygen-$1
+  branch=${1/\//_}
+  doxygen_dir=$HOME/doxygen-$branch
   feelpp_source=$2
   gh_pages=$3
 
   cd $feelpp_source
   git checkout $1
 
-  if [ ! -d ${doxygen_dir} ]; 
+  if [ ! -d $doxygen_dir ]; 
   then 
-    mkdir ${doxygen_dir};
-  fi 
+    mkdir $doxygen_dir;
+  fi
+ echo $doxygen_dir 
   cd $doxygen_dir
+  pwd
 
   cmake $feelpp_source -DFEELPP_ENABLE_DOXYGEN=ON
   make doxygen #generate the doc associated to the branch $1 in ${doxygen_dir}/doc/api/html
@@ -23,7 +26,7 @@ function builddox
   then 
     mkdir -p $gh_pages/$branch;
   fi
-  cd $gh_pages;
+  cd $gh_pages
   rsync -avz $doxygen_dir/doc/api/html/ $branch/
   git commit -m "update Feel++ online documentation of branch $branch" -a
 }
@@ -35,13 +38,13 @@ feelpp_source=$base_dir/${2:-feelpp}
 gh_pages=$base_dir/${3:-gh-pages}
 
 #Create and/or update the ${gh-pages}/feelpp clone's repo
-if [ ! -d ${gh_pages} ]; 
+if [ ! -d $gh_pages ]; 
 then 
-  mkdir ${gh_pages}; 
-  cd ${gh_pages}; 
-  git clone -b gh-pages --single-branch https://github.com/feelpp/feelpp.git
+  mkdir $gh_pages
+  cd $gh_pages
+  git clone -b gh-pages --single-branch https://github.com/feelpp/feelpp.git $gh_pages
 else
-  cd ${gh_pages}/feelpp;
+  cd $gh_pages
   git pull
 fi
 
@@ -52,7 +55,7 @@ then
   cd ${feelpp_source};
   git clone https://github.com/feelpp/feelpp.git
 else
-  cd $feelpp_source;
+  cd $feelpp_source
   git pull
 fi
 
@@ -61,9 +64,9 @@ builddox develop $feelpp_source $gh_pages
 builddox release/version-0.92 $feelpp_source $gh_pages
 builddox release/v0.95.0 $feelpp_source $gh_pages
 
-cd $feelpp_source
-git checkout develop
-cd ${gh_pages}
-git push origin gh-pages
+#cd $feelpp_source
+#git checkout develop
+#cd ${gh_pages}
+#git push origin gh-pages
 
 
