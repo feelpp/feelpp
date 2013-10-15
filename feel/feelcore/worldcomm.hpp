@@ -167,6 +167,12 @@ public:
         return M_masterRank;
     }
 
+    bool isMasterRank() const
+    {
+        return ( this->globalRank() ==  this->masterRank() );
+    }
+
+
     WorldComm subWorldComm() const;
     WorldComm subWorldComm( int color ) const;
     WorldComm subWorldComm( std::vector<int> const& colormap ) ;

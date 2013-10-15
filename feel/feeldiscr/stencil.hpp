@@ -471,7 +471,11 @@ private:
             }
             return idsFind;
         }
-
+    std::set<size_type> trialElementId( size_type test_eid, mpl::int_<2> /**/ )
+    {
+        CHECK ( false ) << "[trial_related_to_test<2>] : submesh relation with codim=2 is not implement\n";
+        return std::set<size_type>();
+    }
 
 
 public :
@@ -1286,9 +1290,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
     for ( ; elem_it != elem_en; ++elem_it )
     {
-#if !defined(NDEBUG)
-        DVLOG(2) << "[Stencil::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
-#endif /* NDEBUG */
+        DVLOG(4) << "[Stencil::computePattern] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+
         const auto & elem = *elem_it;
 
         auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
@@ -1349,7 +1352,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                     row.get<0>() = theproc ;
                     row.get<1>() = il1;
 #endif
-                    DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                    DVLOG(4) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
                     if ( do_less )
                     {

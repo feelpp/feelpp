@@ -3594,29 +3594,33 @@ public:
     //! destructor: do nothing thanks to shared_ptr<>
     ~FunctionSpace()
         {
+            VLOG(1) << "FunctionSpace Destructor...";
             M_dof.reset();
+            CHECK( M_dof.use_count() == 0 ) << "Invalid Dof Table shared_ptr";
             M_dofOnOff.reset();
+            CHECK( M_dofOnOff.use_count() == 0 ) << "Invalid Dof OnOff shared_ptr";
             M_ref_fe.reset();
+            CHECK( M_ref_fe.use_count() == 0 ) << "Invalid reffe shared_ptr";
         }
 
 
     void setWorldsComm( std::vector<WorldComm> const& _worldsComm )
     {
         M_worldsComm=_worldsComm;
-    };
+    }
     void setWorldComm( WorldComm const& _worldComm )
     {
         M_worldComm.reset( new WorldComm( _worldComm ) );
-    };
+    }
 
     std::vector<WorldComm> const& worldsComm() const
     {
         return M_worldsComm;
-    };
+    }
     WorldComm const& worldComm() const
     {
         return *M_worldComm;
-    };
+    }
 
     bool hasEntriesForAllSpaces()
     {
@@ -4321,7 +4325,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 {
     DVLOG(2) << "calling init(<space>) begin\n";
     DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
+
     M_mesh = __m;
+    VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
 
     if ( basis_type::nDofPerEdge || nDim >= 3 )
@@ -4381,7 +4387,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
 
     DVLOG(2) << "calling init(<space>) end\n";
-
+    VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4811,7 +4817,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::~Element()
-{}
+{
+    VLOG(1) << "Element destructor...";
+}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
