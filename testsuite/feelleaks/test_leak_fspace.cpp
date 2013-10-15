@@ -74,7 +74,16 @@ int main(int argc, char**argv )
             Xh = Pch<1>( aMesh );
             CHECK( Xh.use_count() == 1 ) << "Invalid functionspace shared_ptr, count: " << Xh.use_count();
             CHECK( aMesh.use_count() == 2 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
+            {
+                auto u = Xh->element();
+                CHECK( Xh.use_count() == 2 ) << "Invalid functionspace shared_ptr, count: " << Xh.use_count();
+                CHECK( aMesh.use_count() == 2 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
+            }
+            CHECK( Xh.use_count() == 1 ) << "Invalid functionspace shared_ptr, count: " << Xh.use_count();
+            CHECK( aMesh.use_count() == 2 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
             Xh.reset();
+            CHECK( Xh.use_count() == 0 ) << "Invalid functionspace shared_ptr, count: " << Xh.use_count();
+            CHECK( aMesh.use_count() == 1 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
         }
         CHECK( Xh.use_count() == 0 ) << "Invalid functionspace shared_ptr, count: " << Xh.use_count();
         CHECK( aMesh.use_count() == 1 ) << "Invalid mesh shared_ptr, count: " << aMesh.use_count();
