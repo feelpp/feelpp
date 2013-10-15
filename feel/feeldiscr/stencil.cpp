@@ -42,8 +42,10 @@ stencilManagerGarbageCollect()
 
     BOOST_FOREACH( StencilManagerImpl::value_type & entry, StencilManager::instance() )
     {
+        auto fspace1 = entry.first.get<0>().lock();
+        auto fspace2 = entry.first.get<1>().lock();
         // each entry is a pair of tuple and graph
-        if ( entry.second.unique() )
+        if ( entry.second.unique() || entry.first.get<0>().expired() || entry.first.get<1>().expired() )
         {
 #if !defined ( NDEBUG )
             std::ostringstream ostr;
@@ -51,8 +53,8 @@ stencilManagerGarbageCollect()
                            entry.first.get<3>().end(),
                            [&ostr]( size_type i ) { ostr << i << ","; } );
             LOG(INFO) << "[stencilManagerGarbageCollect] deleting entry space: ( "
-                      << entry.first.get<0>()
-                      << "," << entry.first.get<1>()
+                      << fspace1
+                      << "," << fspace2
                       << "," << int(entry.first.get<2>())
                       << ",( " << ostr.str()
                       << "),"
@@ -63,7 +65,7 @@ stencilManagerGarbageCollect()
             eltToDelete.push_back(entry.first);
         }
     }
-
+    VLOG(1) << "Deleting " << eltToDelete.size() << " stencils...";
     for ( auto it=eltToDelete.begin(),en=eltToDelete.end();it!=en;++it)
     {
         auto ki=StencilManager::instance().erase( *it );
@@ -103,13 +105,15 @@ stencilManagerPrint()
     }
     BOOST_FOREACH( StencilManagerImpl::value_type& entry, StencilManager::instance() )
     {
+        auto fspace1 = entry.first.get<0>().lock();
+        auto fspace2 = entry.first.get<1>().lock();
         std::ostringstream ostr;
         std::for_each( entry.first.get<3>().begin(),
                        entry.first.get<3>().end(),
                        [&ostr]( size_type i ) { ostr << i << ","; } );
         LOG(INFO) << "[stencilManagerPrint] ("
-                  << entry.first.get<0>() << "[" << entry.first.get<0>().use_count() << "]"
-                  << "," << entry.first.get<1>() << "[" << entry.first.get<1>().use_count() << "]"
+                  << fspace1 << "[" << fspace2.use_count() << "]"
+                  << "," << fspace2 << "[" << fspace2.use_count() << "]"
                   << "," << int(entry.first.get<2>())
                   << ", (" << ostr.str()
                   << "),"
