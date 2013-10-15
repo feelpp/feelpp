@@ -154,6 +154,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( funcs )
     BOOST_PARAMETER_NAME( mesh )
     BOOST_PARAMETER_NAME( geoentity )
+    BOOST_PARAMETER_NAME( pointset )
     BOOST_PARAMETER_NAME( desc )
     BOOST_PARAMETER_NAME( shape )
     BOOST_PARAMETER_NAME( convex )
@@ -214,6 +215,7 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( components )
     BOOST_PARAMETER_NAME( periodicity )
+    BOOST_PARAMETER_NAME( periodic )
 
     BOOST_PARAMETER_NAME( collect_garbage )
 
@@ -225,6 +227,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( worldscomm )
     BOOST_PARAMETER_NAME( parallel )
     BOOST_PARAMETER_NAME( substructuring )
+    BOOST_PARAMETER_NAME( structured )
 
     BOOST_PARAMETER_NAME( jacobian )
     BOOST_PARAMETER_NAME( residual )

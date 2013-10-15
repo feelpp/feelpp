@@ -859,6 +859,42 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         << "invalid end elements string " << __buf
         << " in gmsh importer. It should be either $ENDELM or $EndElements\n";
 
+    // read periodic data if present
+    __is >> __buf;
+    std::vector<PeriodicEntity> periodic_entities;
+    if ( std::string( __buf ) == "$Periodic" )
+    {
+        int count;
+        __is >> count;
+        LOG(INFO) << "Reading " << count << " periodic entities\n";
+        for(int i = 0; i < count; i++)
+        {
+            int dim,slave,master;
+            __is >> dim >> slave >> master;
+            PeriodicEntity e( dim, slave, master );
+            int numv;
+            __is >> numv;
+            for(int j = 0; j < numv; j++)
+            {
+                int v1,v2;
+                __is >> v1 >> v2;
+                e.correspondingVertices[v1] = v2;
+            }
+            CHECK( e.correspondingVertices.size() == numv ) << "Invalid number of vertices in periodic entity"
+                                                            << " dim: " << e.dim
+                                                            << " slave: " << e.slave
+                                                            << " master: " << e.master
+                                                            << " got: " << e.correspondingVertices.size()
+                                                            << " expected : " << numv << "\n";
+            periodic_entities.push_back( e );
+        }
+        __is >> __buf;
+        CHECK( std::string( __buf ) == "$EndPeriodic" )
+            << "invalid end $Periodic string " << __buf
+            << " in gmsh importer. It should be either $EndPeriodic\n";
+    }
+    // we are done reading the MSH file
+
 #if 0
     //
     // FILL Mesh Data Structure
@@ -962,6 +998,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
             mesh->addPoint( pt );
         } // loop over local points
 
+
         switch ( it_gmshElt->type )
         {
             // Points
@@ -1020,9 +1057,35 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         if ( it_gmshElt->isGhost() )
         {
             mapGhostElt.insert( std::make_pair( it_gmshElt->num,boost::make_tuple( __idGmshToFeel[it_gmshElt->num], it_gmshElt->ghostPartitionId() ) ) );
+
+            mesh->addFaceNeighborSubdomain( it_gmshElt->ghostPartitionId() );
         }
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
+
+    // treat periodic entities if any
+    auto eit = periodic_entities.begin();
+    auto een = periodic_entities.end();
+    for( ; eit != een ; ++eit )
+    {
+        auto vit = eit->correspondingVertices.begin();
+        auto ven = eit->correspondingVertices.end();
+        for( ; vit != ven ; ++vit )
+        {
+            auto pit1 = mesh->pointIterator( vit->first );
+            auto pit2 = mesh->pointIterator( vit->second );
+            CHECK( pit1 != mesh->endPoint() &&
+                   pit2 != mesh->endPoint() )
+                << "Periodic points data is screwd in periodic entity slave " << eit->slave
+                << " master : " << eit->master << " dimension: " << eit->dim;
+            auto p1 = *pit1;
+            auto p2 = *pit2;
+            p1.setMasterId( p2.id() );
+            p1.setMasterVertex( boost::addressof( *pit2 ) );
+
+        }
+    }
+    mesh->setPeriodicEntities( periodic_entities );
 
     if (VLOG_IS_ON(4))
     {
@@ -1030,10 +1093,20 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         //if ( ptseen[i] == -1 )
         //LOG(WARNING) << "Point with id " << i << " not in element connectivity";
     }
-    CHECK( mesh->numElements() > 0 ) << "The mesh does not have any elements.\n"
-                                     << "something was not right with GMSH mesh importation.\n"
-                                     << "please check that there are elements of topological dimension "
-                                     << mesh_type::nDim << "  in the mesh\n";
+
+#if !defined( NDEBUG )
+    int ne = mesh->numElements();
+    int gne = 0;
+    mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
+                     {
+                         return x + y;
+                     } );
+
+    CHECK( gne > 0 ) << "The mesh does not have any elements.\n"
+                     << "something was not right with GMSH mesh importation.\n"
+                     << "please check that there are elements of topological dimension "
+                     << mesh_type::nDim << "  in the mesh\n";
+#endif
 
     if ( this->worldComm().localSize()>1 )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );

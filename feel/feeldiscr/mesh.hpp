@@ -91,7 +91,19 @@ const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
 
 namespace Feel
 {
-
+struct PeriodicEntity
+{
+    PeriodicEntity( int d, int s, int m )
+        :
+        dim(d),
+        slave(s),
+        master(m)
+        {}
+    int dim;
+    int slave;
+    int master;
+    std::map<int,int> correspondingVertices;
+};
 struct MeshMarkerName
 {
 	std::string name;
@@ -246,9 +258,16 @@ public:
 
     ~Mesh()
         {
+            VLOG(1) << "Mesh Destructor";
+            this->clear();
+        }
+    void clear()
+        {
+            VLOG(1) << "Mesh clear()";
             M_gm.reset();
             M_gm1.reset();
             M_tool_localization.reset();
+            super::clear();
         }
     /**
      * generate a new Mesh shared pointer
@@ -277,19 +296,30 @@ public:
         }
 #endif
 
+    size_type numGlobalElements() const { return M_numGlobalElements; }
 
-    size_type numGlobalElements() const
+    void updateNumGlobalElements()
+    {
+        //int ne = numElements();
+        int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                this->endElementWithProcessId( this->worldComm().rank() ) );
+
+        if ( this->worldComm().localSize() >1 )
         {
-            //int ne = numElements();
-            int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
-                                    this->endElementWithProcessId( this->worldComm().rank() ) );
-            int gne;
+#if defined(FEELPP_ENABLE_MPI_MODE)
+            int gne = 0;
             mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
                              {
                                  return x + y;
                              } );
-            return gne;
+            M_numGlobalElements = gne;
+#endif
         }
+        else
+        {
+            M_numGlobalElements = ne;
+        }
+    }
     /**
      * \return the topological dimension
      */
@@ -462,6 +492,16 @@ public:
     }
 
     //@}
+
+    /**
+     * set the periodic entities
+     */
+    void setPeriodicEntities( std::vector<PeriodicEntity> const& e ) { M_periodic_entities = e; }
+
+    /**
+     * @return true if the mesh has periodic entities
+     */
+    bool isPeriodic() const { return M_periodic_entities.empty() == false; }
 
     /** @name  Methods
      */
@@ -975,6 +1015,8 @@ public:
 
         typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
 
+        typedef boost::weak_ptr<self_type> mesh_ptrtype;
+
         typedef KDTree kdtree_type;
         typedef typename boost::shared_ptr<KDTree> kdtree_ptrtype;
 
@@ -1104,11 +1146,11 @@ public:
             return M_doExtrapolation;
         }
 
-        boost::shared_ptr<self_type> mesh()
+        mesh_ptrtype mesh()
         {
             return M_mesh;
         }
-        boost::shared_ptr<self_type> const& mesh() const
+        mesh_ptrtype mesh() const
         {
             return M_mesh;
         }
@@ -1235,7 +1277,7 @@ public:
 
     private:
 
-        boost::shared_ptr<self_type> M_mesh;
+        mesh_ptrtype M_mesh;
         //KDTree M_kd_tree;
         kdtree_ptrtype M_kd_tree;
         //map between node and list elements
@@ -1268,6 +1310,10 @@ public:
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
 
+    typename std::set<size_type>::const_iterator beginFaceNeighborSubdomains() const { return M_face_neighbor_processors.begin(); }
+    typename std::set<size_type>::const_iterator endFaceNeighborSubdomains() const { return M_face_neighbor_processors.end(); }
+    std::set<size_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
+    void addFaceNeighborSubdomain( size_type p ) { M_face_neighbor_processors.insert( p ); }
 
     //@}
 
@@ -1330,7 +1376,7 @@ private:
 private:
 
     //! communicator
-    //WorldComm M_worldComm;
+    size_type M_numGlobalElements;
 
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
@@ -1346,6 +1392,7 @@ private:
      * processor
      */
     std::vector<uint16_type> M_neighboring_processors;
+    std::set<size_type> M_face_neighbor_processors;
 
     //partitioner_ptrtype M_part;
 
@@ -1365,6 +1412,11 @@ private:
      * get<1>() provides the topological dimension
      */
     std::map<std::string, std::vector<size_type> > M_markername;
+
+    /**
+     * periodic entities
+     */
+    std::vector<PeriodicEntity> M_periodic_entities;
 
     /**
      * to encode points coordinates

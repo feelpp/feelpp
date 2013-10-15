@@ -176,6 +176,17 @@ GmshHypercubeDomain::getDescription2D() const
          << "Line Loop(5) = {1,2,3,4};\n"
          << "Plane Surface(6) = {5};\n";
 
+    if ( !this->periodic().empty() )
+    {
+        std::for_each( this->periodic().begin(),
+                      this->periodic().end(),
+                       [&ostr]( std::pair<int,std::pair<int,int> > const& p )
+                       {
+                           CHECK( p.first == 1 ) << "Invalid periodic entity dimension : " << p.first << ",  should be 1";
+                           ostr << "Periodic Line ( " << p.second.first << " ) = { " << p.second.second << " };\n";
+                      } );
+    }
+
     if ( this->subStructuring() == true )
     {
         ostr << "Physical Point(\"CrossPoints\") = {1,2,3,4};\n";
@@ -201,17 +212,25 @@ GmshHypercubeDomain::getDescription2D() const
              << "Physical Surface(\"Mat1\") = {6};\n";
     }
 
-    if ( M_use_hypercube )
+    if ( this->structuredMesh() || M_use_hypercube )
     {
+        if ( this->structuredMesh() == 1 || M_use_hypercube )
+            ostr << "nx = (xmax-xmin)/h;\n"
+                 << "ny = (ymax-ymin)/h;\n";
+        else if ( this->structuredMesh() == 2 )
+            ostr << "nx = 1/h;\n"
+                 << "ny = 1/h;\n";
 
-        ostr << "nx = 1/h;\n"
-             << "ny = 1/h;\n"
-             << "\n"
+        ostr << "\n"
              << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
              << "Transfinite Line {2,4} = nx + 1 Using Progression 1.0;\n"
              << "\n"
-             << "Transfinite Surface {6} = {1,2,3,4};\n"
-             << "Recombine Surface {6};\n";
+             << "Transfinite Surface {6} = {1,2,3,4};\n";
+
+    }
+    if ( M_use_hypercube )
+    {
+        ostr << "Recombine Surface {6};\n";
     }
 
     return ostr.str();
