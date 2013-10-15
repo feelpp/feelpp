@@ -69,6 +69,8 @@
 
 #include <feel/feelcrb/crbelementsdb.hpp>
 
+#include <feel/feelcore/pslogger.hpp>
+
 
 namespace Feel
 {
@@ -2521,7 +2523,6 @@ CRB<TruthModelType>::offline()
             }//loop over m
         }//loop over q
 
-
         LOG(INFO) << "compute coefficients needed for the initialization of unknown in the online step\n";
 
         element_ptrtype primal_initial_field ( new element_type ( M_model->functionSpace() ) );
@@ -2687,8 +2688,9 @@ CRB<TruthModelType>::offline()
 
         //save DB after adding an element
         this->saveDB();
-	M_elements_database.setWn( boost::make_tuple( M_WN , M_WNdu ) );
-	M_elements_database.saveDB();
+
+        M_elements_database.setWn( boost::make_tuple( M_WN , M_WNdu ) );
+        M_elements_database.saveDB();
 
     }
 
@@ -6473,17 +6475,6 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
 
     LOG(INFO) <<"[CRB::save] version : "<<version<<std::endl;
 
-    auto mesh = mesh_type::New();
-    auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-
-    if ( ! is_mesh_loaded )
-    {
-        auto first_element = M_WN[0];
-        mesh = first_element.functionSpace()->mesh() ;
-        mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
-    }
-
-
     ar & boost::serialization::base_object<super>( *this );
     ar & BOOST_SERIALIZATION_NVP( M_output_index );
     ar & BOOST_SERIALIZATION_NVP( M_N );
@@ -6528,23 +6519,34 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     if( M_database_contains_variance_info )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
 
-        ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
-        ar & BOOST_SERIALIZATION_NVP( M_InitialGuessV_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_InitialGuessV_pr );
 
-        ar & BOOST_SERIALIZATION_NVP( M_current_mu );
-        ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
+    ar & BOOST_SERIALIZATION_NVP( M_current_mu );
+    ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
 
+    ar & BOOST_SERIALIZATION_NVP( M_maxerror );
+    ar & BOOST_SERIALIZATION_NVP( M_use_newton );
+    ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
 #if 0
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WNdu[i] );
+
+        auto mesh = mesh_type::New();
+        auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+
+        if ( ! is_mesh_loaded )
+        {
+            auto first_element = M_WN[0];
+            mesh = first_element.functionSpace()->mesh() ;
+            mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
+        }
+
 #endif
 
-        ar & BOOST_SERIALIZATION_NVP( M_maxerror );
-        ar & BOOST_SERIALIZATION_NVP( M_use_newton );
-        ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
-        ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
 }
 
 
