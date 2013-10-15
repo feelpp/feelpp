@@ -27,11 +27,15 @@
 
 FIND_PACKAGE(GFLAGS)
 
+option(FEELPP_FINDINSYSTEM_GLOG "start by search glog in system" OFF)
+
+if (FEELPP_FINDINSYSTEM_GLOG)
 # try installed version
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   /usr/include/feel
   /usr/local/include/feel
   /opt/local/include/feel
+  NO_DEFAULT_PATH
   )
 
 # try to find glog headers, if not found then install glog from contrib into
@@ -44,6 +48,7 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   )
 
 message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
+endif(FEELPP_FINDINSYSTEM_GLOG)
 
 
 if (NOT GLOG_INCLUDE_DIR )
@@ -73,9 +78,12 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog/ )
   endif()
 endif()
 
-FIND_LIBRARY(GLOG_LIBRARY  NAMES glog feelpp_glog   )
+if (FEELPP_FINDINSYSTEM_GLOG)
+  FIND_LIBRARY(GLOG_LIBRARY  NAMES feelpp_glog   )
+endif(FEELPP_FINDINSYSTEM_GLOG)
+
 FIND_LIBRARY(GLOG_LIBRARY
-  NAMES feelpp_glog glog
+  NAMES feelpp_glog
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/glog/lib64/
   ${CMAKE_BINARY_DIR}/contrib/glog/lib/

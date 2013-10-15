@@ -123,11 +123,14 @@ public:
      * @param argv arguments in the command line
      * @param ad \p AboutData structure for this \p Application
      * @param Comm MPI communicator
+     *
+     * \warning this function is marked deprecated and should not be used
+     * anymore, use the Environment class instead to initialize the Feel++
      */
 #if defined( FEELPP_HAS_MPI )
-    Application( int argc, char** argv, AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD );
+    Application( int argc, char** argv, AboutData const& ad, MPI_Comm Comm = MPI_COMM_WORLD ) FEELPP_DEPRECATED;
 #else
-    Application( int argc, char** argv, AboutData const& ad );
+    Application( int argc, char** argv, AboutData const& ad ) FEELPP_DEPRECATED;
 #endif
 
     /**
@@ -138,11 +141,14 @@ public:
      * @param ad \p AboutData structure for this \p Application
      * @param od \p po::options_description structure for this \p Application
      * @param Comm MPI communicator
+     *
+     * \warning this function is marked deprecated and should not be used
+     * anymore, use the Environment class instead to initialize the Feel++
      */
 #if defined( FEELPP_HAS_MPI )
-    Application( int argc, char** argv, AboutData const& ad, po::options_description const& od, MPI_Comm Comm = MPI_COMM_WORLD );
+    Application( int argc, char** argv, AboutData const& ad, po::options_description const& od, MPI_Comm Comm = MPI_COMM_WORLD ) FEELPP_DEPRECATED;
 #else
-    Application( int argc, char** argv, AboutData const& ad, po::options_description const& od );
+    Application( int argc, char** argv, AboutData const& ad, po::options_description const& od ) FEELPP_DEPRECATED;
 #endif
 
     /**

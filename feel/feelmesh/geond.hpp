@@ -124,6 +124,9 @@ public:
     typedef typename GetGm<1>::type gm1_type;
     typedef typename GetGm<1>::ptrtype gm1_ptrtype;
 
+    typedef typename gm_type::super::reference_convex_type reference_convex_type;
+    typedef typename gm1_type::super::reference_convex_type reference_convex1_type;
+
     typedef typename super::vertex_permutation_type vertex_permutation_type;
     typedef typename super::edge_permutation_type edge_permutation_type;
     typedef typename super::face_permutation_type face_permutation_type;
@@ -224,7 +227,6 @@ public:
      */
     ~GeoND()
     {
-
     }
 
 #if 0

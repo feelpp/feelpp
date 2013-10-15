@@ -459,7 +459,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                         thedof ) != dofs.end() )
                             continue;
 
-                        if ( M_on_strategy.test( ON_ELIMINATION ) )
+                        if ( M_on_strategy.test( ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC ) )
                         {
                             DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
 
@@ -478,7 +478,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                         }
 
                         else if (  M_on_strategy.test( ON_PENALISATION ) &&
-                                   !M_on_strategy.test( ON_ELIMINATION ) )
+                                   !M_on_strategy.test( ON_ELIMINATION | ON_ELIMINATION_SYMMETRIC ) )
                         {
                             __form.set( thedof, thedof, 1.0*1e30 );
                             M_rhs->set( thedof, __value*1e30 );
@@ -498,6 +498,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
             *itd+=thedofshift;
     }
     auto x = M_rhs->clone();
+    //CHECK( dofs.size() > 0 ) << "Invalid number of Dirichlet dof, should be > 0 ";
+    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
     //x->zero();
     x->addVector( dofs.data(), dofs.size(), values.data() );
     //values->zero();
@@ -506,7 +508,6 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     x.reset();
 }
 
-#if 1
 
 namespace detail
 {
@@ -588,107 +589,48 @@ BOOST_PARAMETER_FUNCTION(
       ( element, *  )
       ( rhs, *  )
       ( expr,   * )
-    ) // 4. one required parameter, and
+        ) // 4. one required parameter, and
 
     ( optional
-      ( type,   ( size_type ), ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
-      ( verbose,   ( bool ), false )
+      ( prefix,   ( std::string ), "" )
+      ( type,   ( int ), option(_prefix=prefix,_name="on.type").template as<int>() )
+      ( verbose,   ( bool ), option(_prefix=prefix,_name="on.verbose").template as<bool>() )
+        )
     )
-)
 {
-    typename vf::detail::integratoron_type<Args>::type ion( range, element, Feel::vf::detail::getRhsVector(rhs), expr, type );
+    typename vf::detail::integratoron_type<Args>::type ion( range,
+                                                            element,
+                                                            Feel::vf::detail::getRhsVector(rhs),
+                                                            expr,
+                                                            on_context_type(type) );
+    if ( verbose )
+    {
+        LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
+        switch( type )
+        {
+        case ON_ELIMINATION:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, unsymmetric)";
+            break;
+        case ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, unsymmetric)";
+            break;
+        case ON_ELIMINATION_SYMMETRIC:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, symmetric, more expensive than unsymmetric treatment)";
+            break;
+        case ON_ELIMINATION_SYMMETRIC|ON_ELIMINATION_KEEP_DIAGONAL:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, symmetric, more expensive than unsymmetric treatment)";
+            break;
+        case ON_PENALISATION:
+            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (penalisation, symmetric, very big value on diagonal)";
+            break;
+        default:
+            break;
+        }
+    }
     //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
     return typename vf::detail::integratoron_type<Args>::expr_type( ion );
 }
 
-#else
-namespace detail
-{
-
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-Expr<IntegratorOnExpr<ElementRange, Elem,RhsElem,
-     typename mpl::if_<boost::is_arithmetic<OnExpr>,
-     mpl::identity<Expr<Cst<OnExpr> > >,
-     mpl::identity<OnExpr> >::type::type> >
-     on( ElementRange const& __r,
-         Elem const& __u,
-         RhsElem&  __rhs,
-         OnExpr const& __e,
-         size_type __on,
-         mpl::bool_<false> )
-{
-    typedef typename mpl::if_<boost::is_arithmetic<OnExpr>,
-            mpl::identity<Expr<Cst<OnExpr> > >,
-            mpl::identity<OnExpr> >::type::type expr_type;
-    expr_type expr( __e );
-    typedef IntegratorOnExpr<ElementRange, Elem,RhsElem, expr_type> expr_t;
-    return Expr<expr_t>( expr_t( __r, __u, __rhs, expr, __on ) );
-    //return on( __r, __u, __rhs, expr, __on, mpl::bool_<boost::is_arithmetic<OnExpr>::value>() );
-}
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-Expr<IntegratorOnExpr<ElementRange, Elem, typename RhsElem::value_type,
-     typename mpl::if_<boost::is_arithmetic<OnExpr>,
-     mpl::identity<Expr<Cst<OnExpr> > >,
-     mpl::identity<OnExpr> >::type::type> >
-     on( ElementRange const& __r,
-         Elem const& __u,
-         RhsElem&  __rhs,
-         OnExpr const& __e,
-         size_type __on,
-         mpl::bool_<true> )
-{
-    return on( __r, __u, __rhs, __e, __on, mpl::bool_<false>() );
-}
-
-} // detail namespace
-/// \endcond
-
-/**
- * Apply Dirichlet boundary condition over of a set of \p Dof.
- *
- * \param __r tuple of iterators over geometric entities (faces)
- * \param __u element of a functional space whose \p Dof will be constrained
- * \param __rhs right hand side of the system which shall be modified
- * \param __e expression which gives the value of the constraint
- * \param  __on type of strategy to impose the constraint
- *
- */
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-Expr<IntegratorOnExpr<ElementRange, Elem,
-     typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
-     mpl::identity<typename RhsElem::value_type>,
-     mpl::identity<RhsElem> >::type::type,
-     typename mpl::if_<boost::is_arithmetic<OnExpr>,
-     mpl::identity<Expr<Cst<OnExpr> > >,
-     mpl::identity<OnExpr> >::type::type> >
-     on( ElementRange const& __r,
-         Elem const& __u,
-         RhsElem&  __rhs,
-         OnExpr const& __e,
-         size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
-{
-    returnvf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
-
-}
-
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-Expr<IntegratorOnExpr<ElementRange, Elem,
-     typename mpl::if_<mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >,
-     mpl::identity<typename RhsElem::value_type>,
-     mpl::identity<RhsElem> >::type::type,
-     typename mpl::if_<boost::is_arithmetic<OnExpr>,
-     mpl::identity<Expr<Cst<OnExpr> > >,
-     mpl::identity<OnExpr> >::type::type> >
-     on( ElementRange const& __r,
-         boost::shared_ptr<Elem>  __u,
-         boost::shared_ptr<RhsElem>  __rhs,
-         OnExpr const& __e,
-         size_type __on = ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL )
-{
-    returnvf::detail::on( __r, __u, __rhs, __e, __on,  mpl::or_<is_shared_ptr<RhsElem>, boost::is_pointer<RhsElem> >() );
-
-}
-#endif // 0
 
 } // vf
 } // feel

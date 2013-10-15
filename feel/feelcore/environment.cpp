@@ -53,6 +53,9 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/options.hpp>
 
+namespace GiNaC {
+extern void cleanup_ex( bool verbose );
+}
 namespace detail
 {
 class Env{
@@ -359,62 +362,67 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
 
             if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
-                VLOG(2) << " parsing " << S_vm["config-file"].as<std::string>() << "...";
+                LOG(INFO) << "Reading " << S_vm["config-file"].as<std::string>() << "...";
 
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
                 po::store( parse_config_file( ifs, desc, true ), S_vm );
                 po::notify( S_vm );
             }
         }
-        using namespace boost::assign;
-        std::vector<fs::path> prefixes = S_paths;
+        else
+        {
+            using namespace boost::assign;
+            std::vector<fs::path> prefixes = S_paths;
 #if 0
-        prefixes += boost::assign::list_of( fs::current_path() )
-            ( fs::path ( Environment::localConfigRepository() ) )
-            ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
-            ( fs::path ( "/usr/share/feel/config" ) )
-            ( fs::path ( "/usr/local/share/feel/config" ) )
-            ( fs::path ( "/opt/local/share/feel/config" ) );
+            prefixes += boost::assign::list_of( fs::current_path() )
+                ( fs::path ( Environment::localConfigRepository() ) )
+                ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
+                ( fs::path ( "/usr/share/feel/config" ) )
+                ( fs::path ( "/usr/local/share/feel/config" ) )
+                ( fs::path ( "/opt/local/share/feel/config" ) );
 #endif
-        char* env;
-        env = getenv("FEELPP_DIR");
-        if (env != NULL && env[0] != '\0')
-        {
-            prefixes.push_back( fs::path( env ) );
-        }
-
-        VLOG(2) << "try processing cfg files...\n";
-        BOOST_FOREACH( auto prefix, prefixes )
-        {
-            std::string config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
-            VLOG(2) << " Looking for " << config_name << "\n";
-
-            if ( fs::exists( config_name ) )
+            char* env;
+            env = getenv("FEELPP_DIR");
+            if (env != NULL && env[0] != '\0')
             {
-                VLOG(2)<< " parsing " << config_name << "\n";
-                std::ifstream ifs( config_name.c_str() );
-                store( parse_config_file( ifs, desc, true ), S_vm );
-                break;
+                prefixes.push_back( fs::path( env ) );
             }
 
-            else
+            VLOG(2) << "try processing cfg files...\n";
+            std::string config_name;
+            bool found = false;
+            BOOST_FOREACH( auto prefix, prefixes )
             {
-                // try with a prefix feel_
-                std::string config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                config_name = ( boost::format( "%1%/%2%.cfg" ) % prefix.string() % appName ).str();
                 VLOG(2) << " Looking for " << config_name << "\n";
 
                 if ( fs::exists( config_name ) )
                 {
-                    VLOG(2)<< " loading configuration file " << config_name << "...\n";
-                    std::ifstream ifs( config_name.c_str() );
-                    store( parse_config_file( ifs, desc, true ), S_vm );
+                    found = true;
                     break;
                 }
+                else
+                {
+                    // try with a prefix feel_
+                    config_name = ( boost::format( "%1%/feelpp_%2%.cfg" ) % prefix.string() % appName ).str();
+                    VLOG(2) << " Looking for " << config_name << "\n";
+                    if ( fs::exists( config_name ) )
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if ( found )
+            {
+                LOG(INFO) << "Reading  " << config_name << "...\n";
+                std::ifstream ifs( config_name.c_str() );
+                store( parse_config_file( ifs, desc, true ), S_vm );
+                LOG(INFO) << "Reading  " << config_name << " done.\n";
+                //po::store(po::parse_command_line(argc, argv, desc), S_vm);
+                po::notify( S_vm );
             }
         }
-        //po::store(po::parse_command_line(argc, argv, desc), S_vm);
-        po::notify( S_vm );
-
     }
 
     // catches program_options exceptions
@@ -505,9 +513,18 @@ fs::path scratchdir()
         }
         else
         {
-            std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
-            setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
-         }
+            env = getenv("SCRATCH");
+            if (env != NULL && env[0] != '\0')
+            {
+                std::string value = (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName()).str();
+                setenv("FEELPP_SCRATCHDIR", (boost::format("%1%/%2%/feelpp/") % env % ::detail::Env::getUserName() ).str().c_str(),0);
+            }
+            else
+            {
+                std::string value = (boost::format("/tmp/%1%/feelpp/") % ::detail::Env::getUserName()).str();
+                setenv("FEELPP_SCRATCHDIR", value.c_str(),0);
+            }
+        }
     }
     env = getenv("FEELPP_SCRATCHDIR");
     if (env != NULL && env[0] != '\0')
@@ -576,11 +593,25 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
+    mpi::communicator world;
     S_scratchdir = scratchdir();
     fs::path a0 = std::string(argv[0]);
-    S_scratchdir/= a0.filename();
-    if ( !fs::exists( S_scratchdir ) )
-        fs::create_directories( S_scratchdir );
+    const int Nproc = 200;
+    if ( world.size() > Nproc )
+    {
+        std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor(world.rank()/Nproc) );
+        std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil(double(world.rank()+1)/Nproc)-1 );
+        std::string replog = smin + "-" + smax;
+        S_scratchdir/= a0.filename()/replog;
+    }
+    else
+        S_scratchdir/= a0.filename();
+    // only one processor every Nproc creates the corresponding log directory
+    if ( world.rank() % Nproc == 0 )
+    {
+        if ( !fs::exists( S_scratchdir ) )
+            fs::create_directories( S_scratchdir );
+    }
     FLAGS_log_dir=S_scratchdir.string();
 
     // duplicate argv before passing to gflags because gflags is going to
@@ -600,7 +631,13 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     // Initialize Google's logging library.
     if ( !google::glog_internal_namespace_::IsGoogleLoggingInitialized() )
     {
-        if ( argc > 0 )
+        if ( FLAGS_no_log )
+        {
+            if ( world.rank() == 0 && FLAGS_no_log == 1 )
+                FLAGS_no_log = 0;
+            google::InitGoogleLogging(argv[0]);
+        }
+        else if ( argc > 0 )
             google::InitGoogleLogging(argv[0]);
         else
             google::InitGoogleLogging("feel++");
@@ -613,7 +650,7 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     //tbb::task_scheduler_init init(2);
 #endif
 
-    mpi::communicator world;
+
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
@@ -651,11 +688,14 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
 void
 Environment::clearSomeMemory()
 {
+    Environment::logMemoryUsage( "Environment::clearSomeMemory before:" );
+
     // send signal to all deleters
     S_deleteObservers();
     google::FlushLogFiles(google::GLOG_INFO);
     VLOG(2) << "clearSomeMemory: delete signal sent" << "\n";
 
+    Environment::logMemoryUsage( "Environment::clearSomeMemory after:" );
 }
 Environment::~Environment()
 {
@@ -667,6 +707,10 @@ Environment::~Environment()
     {
         VLOG(2) << "clearing known paths\n";
         S_paths.clear();
+
+        VLOG(2) << "[~Environment] cleaning up global excompiler\n";
+
+        GiNaC::cleanup_ex( false );
 
         VLOG(2) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -842,7 +886,7 @@ Environment::systemGeoRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -865,7 +909,7 @@ Environment::systemConfigRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/config";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -890,7 +934,10 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
         rep_path = Environment::rootRepository();
 
     if ( !fs::exists( rep_path ) )
+    {
+        LOG(INFO) << "Creating directory " << rep_path << "...";
         fs::create_directory( rep_path );
+    }
 
 
     BOOST_FOREACH( std::string const& dir, dirs )
@@ -993,7 +1040,9 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 
-std::vector<fs::path> Environment::S_paths;
+std::vector<fs::path> Environment::S_paths = { fs::current_path(),
+                                               Environment::systemConfigRepository().get<0>(),
+                                               Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
 
 } // detail
