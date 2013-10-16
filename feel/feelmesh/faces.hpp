@@ -138,8 +138,11 @@ public:
                                                                        bool,
                                                                        &face_type::isInterProcessDomain>,
                                             multi_index::const_mem_fun<face_type,
-                                                                       uint16_type,
-                                                                       &face_type::processId>
+                                                                       size_type,
+                                                                       &face_type::partition1>,
+                                            multi_index::const_mem_fun<face_type,
+                                                                       size_type,
+                                                                       &face_type::partition2>
                                             >
                                         >,
         // sort by less<int> on boundary
@@ -180,6 +183,7 @@ public:
     typedef typename faces_type::template index<detail::by_interprocessdomain>::type interprocess_faces;
     typedef typename interprocess_faces::iterator interprocess_face_iterator;
     typedef typename interprocess_faces::const_iterator interprocess_face_const_iterator;
+
     //@}
 
     /**
@@ -235,8 +239,14 @@ public:
     {}
 
     virtual ~Faces()
-    {}
-
+    {
+        this->clear();
+    }
+    void clear()
+        {
+            VLOG(1) << "deleting faces...\n";
+            M_faces.clear();
+        }
     //@}
 
     /** @name Operator overloads
@@ -512,6 +522,18 @@ public:
     {
         return M_faces.template get<detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, this->worldCommFaces().localRank() ) );
     }
+
+
+    /**
+     * \return the range of iterator \c (begin,end) over the inter-process domain faces
+     * on processor \p p
+     */
+    std::pair<interprocess_face_iterator, interprocess_face_iterator>
+    interProcessFaces(uint16_type j) const
+    {
+        return M_faces.template get<detail::by_interprocessdomain>().equal_range( boost::make_tuple( true, this->worldCommFaces().localRank(), j ) );
+    }
+
 
 #if 0
     /**

@@ -1088,16 +1088,20 @@ public:
                                             LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
                                             LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_estimated_error : "<<relative_primal_solution_estimated_error;
                                             LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_error : "<<relative_primal_solution_error;
-                                            LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
+                                            LOG( INFO ) << std::setprecision(15)<<"primal_solution_estimated_error : "<<solution_estimated_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"primal_solution_error : "<<solution_error;
+                                            //LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
                                             LOG( INFO ) << std::setprecision(15)<<"primal solution norme  : "<<uN.l2Norm();
                                         }
                                         if( relative_dual_solution_error_bound_efficiency < 1 )
                                         {
                                             LOG( INFO ) <<std::setprecision(15)<< "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
                                             LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
-                                            LOG( INFO ) <<std::setprecision(15)<< "relative_dual_solution_estimated_error : "<<relative_dual_solution_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_estimated_error : "<<relative_dual_solution_estimated_error;
                                             LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_error : "<<relative_dual_solution_error;
-                                            LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
+                                            LOG( INFO ) <<std::setprecision(15)<<"dual_solution_estimated_error : "<<dual_solution_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<<"dual_solution_error : "<<dual_solution_error;
+                                            //LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
                                             LOG( INFO ) << std::setprecision(15)<<"dual solution norme  : "<<uNdu.l2Norm();
                                         }
                                         if( output_error_bound_efficiency < 1 )
@@ -1106,6 +1110,8 @@ public:
                                             LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
                                             LOG( INFO ) <<std::setprecision(15)<< "output_relative_estimated_error : "<<output_relative_estimated_error;
                                             LOG( INFO ) <<std::setprecision(15)<< "output_relative_error : "<<rel_err;
+                                            LOG( INFO ) <<std::setprecision(15)<< "output_estimated_error : "<<output_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<< "output_error : "<< std::abs( output_fem-ocrb );
                                         }
 
                                         if ( option(_name="crb.check.residual").template as<bool>()  && solve_dual_problem  )

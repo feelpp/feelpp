@@ -321,8 +321,15 @@ public:
     {}
 
     virtual ~Elements()
-    {}
+    {
+        this->clear();
+    }
 
+    void clear()
+        {
+            VLOG(1) << "deleting elements...\n";
+            M_elements.clear();
+        }
     //@}
 
     /** @name Operator overloads

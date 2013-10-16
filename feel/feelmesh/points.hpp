@@ -121,7 +121,14 @@ public:
     {}
 
     virtual ~Points()
-    {}
+        {
+            this->clear();
+        }
+    void clear()
+    {
+        VLOG(1) << "deleting points...\n";
+        M_points.clear();
+    }
 
     //@}
 
