@@ -37,11 +37,11 @@ checksums           rmd160  42926cb5278844694d6a032d9d814049a290cec0 \
 patchfiles	patch-conf-rules.diff
 
 depends_build-append  port:cmake
-# depends_lib-append  port:libyaml
-# depends_lib-append  port:hdf5-18 \
+depends_lib-append  port:libyaml
+#depends_lib-append  port:hdf5-18 \
 #                    port:libyaml
 
-#require_active_variants hdf5-18 fortran
+require_active_variants hdf5-18 fortran gcc47
 
 configure.cxxflags-append "-stdlib=libc++"
 # configure.ldflags-append "-stdlib=libc++"
@@ -63,9 +63,9 @@ configure.args      --prefix=${prefix}/lib/petsc \
 #                    --with-hdf5-dir=${prefix} \
 
 pre-configure {
-    if {![file exists ${prefix}/lib/libhdf5_fortran.a]} {
-        return -code error "Please install hdf5-18 with the +fortran variant enabled first."
-    }
+#    if {![file exists ${prefix}/lib/libhdf5_fortran.a]} {
+#        return -code error "Please install hdf5-18 with the +fortran variant enabled first."
+#    }
     configure.args-append \
         --COPTFLAGS="${configure.optflags}" \
         --CXXOPTFLAGS="${configure.optflags}" \
