@@ -1057,6 +1057,8 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         if ( it_gmshElt->isGhost() )
         {
             mapGhostElt.insert( std::make_pair( it_gmshElt->num,boost::make_tuple( __idGmshToFeel[it_gmshElt->num], it_gmshElt->ghostPartitionId() ) ) );
+
+            mesh->addFaceNeighborSubdomain( it_gmshElt->ghostPartitionId() );
         }
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
@@ -1091,10 +1093,20 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         //if ( ptseen[i] == -1 )
         //LOG(WARNING) << "Point with id " << i << " not in element connectivity";
     }
-    CHECK( mesh->numElements() > 0 ) << "The mesh does not have any elements.\n"
-                                     << "something was not right with GMSH mesh importation.\n"
-                                     << "please check that there are elements of topological dimension "
-                                     << mesh_type::nDim << "  in the mesh\n";
+
+#if !defined( NDEBUG )
+    int ne = mesh->numElements();
+    int gne = 0;
+    mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
+                     {
+                         return x + y;
+                     } );
+
+    CHECK( gne > 0 ) << "The mesh does not have any elements.\n"
+                     << "something was not right with GMSH mesh importation.\n"
+                     << "please check that there are elements of topological dimension "
+                     << mesh_type::nDim << "  in the mesh\n";
+#endif
 
     if ( this->worldComm().localSize()>1 )
         updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );

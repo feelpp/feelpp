@@ -554,8 +554,8 @@ struct compute_stencil_type
 }
 
 class StencilManagerImpl:
-    public std::map<boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
-    boost::shared_ptr<FunctionSpaceBase>,
+    public std::map<boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
+    boost::weak_ptr<FunctionSpaceBase>,
     size_type,
     std::vector<size_type>,
     bool >, boost::shared_ptr<GraphCSR> >,
@@ -563,8 +563,8 @@ public boost::noncopyable
 {
 public:
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
-    typedef boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
-            boost::shared_ptr<FunctionSpaceBase>,
+    typedef boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
+            boost::weak_ptr<FunctionSpaceBase>,
             size_type,
             std::vector<size_type>,
             bool > key_type;

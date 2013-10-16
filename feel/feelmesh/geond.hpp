@@ -227,7 +227,6 @@ public:
      */
     ~GeoND()
     {
-
     }
 
 #if 0

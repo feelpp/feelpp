@@ -24,6 +24,10 @@
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
+
+feelpp_add_application( doc_traces SRCS traces.cpp LABEL doc   )
+
+
 # Overlapping schwartz domain decomposition method
 feelpp_add_application( doc_overlapping SRCS overlapping_ddmethodgeo.cpp overlapping_ddmethod.cpp LABEL doc NO_MPI_TEST  )
 

@@ -362,12 +362,12 @@ public:
     bool operator<( Geo0D const& e ) const
     {
         return this->id() < e.id();
-    };
+    }
 
     bool operator<( size_type __i ) const
     {
         return this->id() < __i;
-    };
+    }
 
     /**
      * show the information about the Geo0D
@@ -794,4 +794,3 @@ cross( Geo0D<3,T> p1,
 } // Feel
 
 #endif
-
