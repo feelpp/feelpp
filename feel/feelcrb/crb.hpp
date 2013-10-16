@@ -2140,8 +2140,20 @@ CRB<TruthModelType>::offline()
         M_maxerror = 1e10;
     }
 
+    bool all_procs = option(_name="crb.system-memory-evolution-on-all-procs").template as<bool>() ;
+    PsLogger ps ("PsLogCrbOffline" , Environment::worldComm() , "rss pmem pcpu" , all_procs );
+
+    bool only_master=option(_name="crb.system-memory-evolution").template as<bool>();
+    bool only_one_proc= only_master * ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
+    bool write_memory_evolution = all_procs || only_one_proc ;
+
     while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
     {
+
+        std::string pslogname = (boost::format("N-%1%") %M_N ).str();
+
+        if( write_memory_evolution )
+            ps.log(pslogname);
 
         boost::timer timer, timer2;
         LOG(INFO) <<"========================================"<<"\n";
