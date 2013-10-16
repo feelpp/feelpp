@@ -35,45 +35,17 @@
 int main(int argc, char**argv )
 {
 
-    using namespace Feel;
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options().add( Feel::backend_options("toto") ),
-                     _about=about(_name="test_solve_leak",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
     HeapLeakChecker checkere("checker");
 #endif /* FEELPP_HAS_GPERFTOOLS */
     {
-        for(int i = 0; i < 2; ++i )
-        {
-            auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-            auto Vh = Pch<1>( mesh );
-            auto u = Vh->element();
-            auto v = Vh->element();
-
-            auto syms = symbols<3>();
-            auto g = option(_name="functions.g").as<std::string>();
-            auto laplacian_g = laplacian( g, syms  );
-
-            auto l = form1( _test=Vh );
-            l = integrate(_range=elements(mesh),
-                          _expr=-expr( laplacian_g, syms )*id(v));
-
-            auto a = form2( _trial=Vh, _test=Vh);
-            a = integrate(_range=elements(mesh),
-                          _expr=gradt(u)*trans(grad(v)) );
-            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=expr( g, syms ) );
-            a.solve(_rhs=l,_solution=u);
-
-            LOG(INFO) << " 1- L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-expr( g, syms ) );
-            backend(_name="toto",_rebuild=true)->solve(_matrix=a.matrixPtr(),_rhs=l.vectorPtr(),_solution=u);
-
-            LOG(INFO) << " 2- L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-expr( g, syms ) );
-
-            Environment::clearSomeMemory();
-        }
+        using namespace Feel;
+        Environment env( _argc=argc, _argv=argv,
+                         _desc=feel_options(),
+                         _about=about(_name="test_leak_mesh",
+                                      _author="Feel++ Consortium",
+                                      _email="feelpp-devel@feelpp.org"));
     }
 #if defined(FEELPP_HAS_GPERFTOOLS)
     CHECK(checkere.NoLeaks()) << "There are leaks";
