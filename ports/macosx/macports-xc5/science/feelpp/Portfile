@@ -5,6 +5,7 @@
 PortSystem  1.0
 # Portgroup is not an option until we find a way to get rid of the -arch option
 #PortGroup   cmake 1.0
+PortGroup   active_variants 1.1
 
 name                 feel++
 
@@ -55,6 +56,26 @@ depends_lib-append  port:gcc47
 
 #require_active_variants gcc47 fortran openmpi
 
+# Append dependency on readline
+# Apparently MacOs X packs an old gcc version that causes a cast error
+# between incompatible 'const char *' to 'char *'
+# Old topic: http://www.ginac.de/pipermail/ginac-list/2007-January/001045.html
+depends_lib    \
+    port:cmake\
+    port:openmpi\
+    port:boost \
+    port:petsc\
+    port:gmsh-devel\
+    port:libANN \
+    port:glpk \
+    port:readline \
+    port:bison \
+    port:flex
+
+#    port:slepc\
+
+require_active_variants boost openmpi
+
 
 #worksrcdir	feelpp-${version}
 configure	{
@@ -77,12 +98,12 @@ configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
                     -DCMAKE_BUILD_TYPE=Release \
                     -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
                     -DCMAKE_CC_COMPILER=/usr/bin/clang \
+                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.7 \
                     -DMPI_Fortran_COMPILER=${prefix}/bin/openmpif90 \
                     -Wno-dev
 #                    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
 #                    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
 #                    -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
-#                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.7 \
 #                    -DMPI_Fortran_INCLUDE_PATH=${prefix}/include/openmpi \
 #                    -DFEEL_ENABLE_DOCUMENTATION=OFF \
 #                    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=TRUE \
@@ -105,18 +126,6 @@ destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
 #   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
 #}
 
-depends_lib    \
-    port:cmake\
-    port:openmpi\
-    port:boost \
-    port:petsc\
-    port:gmsh-devel\
-    port:libANN \
-    port:glpk
-
-#    port:slepc\
-
-#require_active_variants boost openmpi
 
 variant octave description {Add octave bindings} {
   depends_lib_append \
