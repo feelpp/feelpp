@@ -30,7 +30,7 @@
 #define __FEELPP_EVALUATORCONTEXT_H 1
 
 #include <boost/timer.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
