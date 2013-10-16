@@ -139,7 +139,7 @@ public:
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef std::vector<mesh_ptrtype> meshparts_type;
+    typedef mesh_type meshparts_type;
     typedef boost::shared_ptr<meshparts_type> meshparts_ptrtype;
     //@}
 
@@ -176,7 +176,7 @@ public:
     /*!
      * Initialization method that is used with the default constructor
      * \param fileName the name of the HDF5 file to be used
-     * \param comm pointer to Epetra_Comm
+     * \param comm WorldComm
      * \param transposeInFile (default false) write/read tables transposed
      *        in the HDF5. This option is available because the transposed
      *        format may be faster on certain machines. Leave as default
@@ -188,20 +188,19 @@ public:
     //! Write method
     /*!
      * Call this method to write the mesh parts to disk
-     * \param meshParts pointer to a vector containing pointers to the mesh
+     * \param mesh pointer to a vector containing pointers to the mesh
      *        parts (RegionMesh objects). This pointer is released after
      *        writing, so the mesh parts can be cleared from memory
      */
-    void write (const meshparts_ptrtype& meshParts);
+    void write (const mesh_ptrtype& mesh);
     //! Read method
     /*!
      * Call this method to read from the HDF5 file the mesh part associated
      * with the rank of the current MPI process
-     * \param meshPart pointer to a RegionMesh that will contain the mesh
-     *        part. If the RegionMesh has been initialized and contains any
+     * \param mesh pointer to a mesh . If the RegionMesh has been initialized and contains any
      *        state, it will be destroyed before reading
      */
-    void read (meshPtr_Type& meshPart);
+    void read (mesh_ptrtype& mesh);
 
 
     //@}
@@ -265,17 +264,17 @@ inline PartitionIO<MeshType>::PartitionIO (const std::string& fileName,
                                            const WorldComm& comm,
                                            const bool transposeInFile) :
     M_comm (comm),
+    M_myRank( comm.globalRank() ),
     M_fileName (fileName),
     M_transposeInFile (transposeInFile),
+    M_elementNodes(0),
+    M_faceNodes(0),
     M_maxNumPoints (0),
     M_maxNumEdges (0),
     M_maxNumFaces (0),
     M_maxNumElements (0)
 {
-    M_elementNodes = MeshType::elementShape_Type::S_numPoints;
-    M_faceNodes = MeshType::elementShape_Type::GeoBShape::S_numPoints;
 
-    M_myRank = M_comm->MyPID();
 }
 
 template<typename MeshType>
@@ -291,15 +290,16 @@ inline void PartitionIO<MeshType>::setup (const std::string& fileName,
     M_maxNumFaces = 0;
     M_maxNumElements = 0;
 
-    M_elementNodes = MeshType::elementShape_Type::S_numPoints;
-    M_faceNodes = MeshType::elementShape_Type::GeoBShape::S_numPoints;
+    M_elementNodes = 0;
+    M_faceNodes = 0;
 }
 
 template<typename MeshType>
-void PartitionIO<MeshType>::write (const meshparts_ptrtype& meshParts)
+void PartitionIO<MeshType>::write (const mesh_ptrtype& meshParts)
 {
-    M_meshPartsOut = meshParts;
-    M_numParts = M_meshPartsOut->size();
+    M_meshPartsOut = mesh;
+    // TODO:
+    //M_numParts = M_meshParts->size();
 
     M_HDF5IO.openFile (M_fileName, M_comm, false);
     writeStats();
@@ -316,7 +316,7 @@ template<typename MeshType>
 void PartitionIO<MeshType>::read (mesh_ptrtype& meshPart)
 {
     meshPart.reset();
-    M_meshPartIn.reset (new mesh_Type);
+    M_meshPartIn.reset (new mesh_type);
 
     M_HDF5IO.openFile (M_fileName, M_comm, true);
     readStats();
@@ -354,12 +354,12 @@ void PartitionIO<MeshType>::writeStats()
 
     // Create new table
     M_HDF5IO.createTable ("stats", H5T_STD_U32BE, currentSpaceDims);
-
+#if 0
     // Fill buffer
     M_uintBuffer.resize (15);
     for (size_type i = 0; i < M_numParts; ++i)
     {
-        mesh_Type& currentPart = (* (*M_meshPartsOut) [i]);
+        mesh_type& currentPart = (* (*M_meshPartsOut) [i]);
         M_uintBuffer[0] = M_numParts;
         // Next one is unused. I'll put it to keep compatibility
         // in case I decide to write the graphs
@@ -408,13 +408,14 @@ void PartitionIO<MeshType>::writeStats()
         M_HDF5IO.write ("stats", H5T_NATIVE_UINT, currentCount, currentOffset,
                         &M_uintBuffer[0]);
     }
-
+#endif
     M_HDF5IO.closeTable ("stats");
 }
 
 template<typename MeshType>
 void PartitionIO<MeshType>::writePoints()
 {
+
     // Write points (N = number of parts)
     // Two tables: one is (3 * N) x max_num_points of int
     //             second is (3 * N) x max_num_points of real
@@ -437,7 +438,7 @@ void PartitionIO<MeshType>::writePoints()
 
     M_HDF5IO.createTable ("point_ids", H5T_STD_U32BE, currentSpaceDims);
     M_HDF5IO.createTable ("point_coords", H5T_IEEE_F64BE, currentSpaceDims);
-
+#if 0
     // Fill buffer
     M_uintBuffer.resize (currentCount[0] * currentCount[1], 0);
     M_realBuffer.resize (currentCount[0] * currentCount[1], 0);
@@ -489,7 +490,7 @@ void PartitionIO<MeshType>::writePoints()
         }
     }
     M_realBuffer.resize (0);
-
+#endif
     M_HDF5IO.closeTable ("point_ids");
     M_HDF5IO.closeTable ("point_coords");
 }
@@ -517,7 +518,7 @@ void PartitionIO<MeshType>::writeEdges()
     }
 
     M_HDF5IO.createTable ("edges", H5T_STD_U32BE, currentSpaceDims);
-
+#if 0
     // Fill buffer
     M_uintBuffer.resize (currentCount[0] * currentCount[1], 0);
     size_type stride = currentCount[1];
@@ -566,7 +567,7 @@ void PartitionIO<MeshType>::writeEdges()
                             currentOffset, &M_uintBuffer[0]);
         }
     }
-
+#endif
     M_HDF5IO.closeTable ("edges");
 }
 
@@ -593,7 +594,7 @@ void PartitionIO<MeshType>::writeFaces()
     }
 
     M_HDF5IO.createTable ("faces", H5T_STD_U32BE, currentSpaceDims);
-
+#if 0
     // Fill buffer
     M_uintBuffer.resize (currentCount[0] * currentCount[1], 0);
     size_type stride = currentCount[1];
@@ -663,7 +664,7 @@ void PartitionIO<MeshType>::writeFaces()
                             currentOffset, &M_uintBuffer[0]);
         }
     }
-
+#endif
     M_HDF5IO.closeTable ("faces");
 }
 
@@ -690,7 +691,7 @@ void PartitionIO<MeshType>::writeElements()
     }
 
     M_HDF5IO.createTable ("elements", H5T_STD_U32BE, currentSpaceDims);
-
+#if 0
     // Fill buffer
     M_uintBuffer.resize (currentCount[0] * currentCount[1], 0);
     size_type stride = currentCount[1];
@@ -744,7 +745,7 @@ void PartitionIO<MeshType>::writeElements()
                             currentOffset, &M_uintBuffer[0]);
         }
     }
-
+#endif
     M_HDF5IO.closeTable ("elements");
 }
 
@@ -758,7 +759,7 @@ void PartitionIO<MeshType>::readStats()
     hsize_t currentOffset[2];
 
     M_HDF5IO.openTable ("stats", currentSpaceDims);
-
+#if 0
     if (! M_transposeInFile)
     {
         currentCount[0] = 1;
@@ -809,6 +810,7 @@ void PartitionIO<MeshType>::readStats()
     M_numElements = M_uintBuffer[13];
     M_meshPartIn->setMaxNumVolumes (M_uintBuffer[13], true);
     M_meshPartIn->setMaxNumGlobalVolumes (M_uintBuffer[14]);
+#endif
 }
 
 template<typename MeshType>
@@ -825,7 +827,7 @@ void PartitionIO<MeshType>::readPoints()
 
     M_HDF5IO.openTable ("point_ids", currentSpaceDims);
     M_HDF5IO.openTable ("point_coords", currentSpaceDims);
-
+#if 0
     if (! M_transposeInFile)
     {
         currentCount[0] = 3;
@@ -887,6 +889,7 @@ void PartitionIO<MeshType>::readPoints()
         }
     }
     M_realBuffer.resize (0);
+#endif
 }
 
 template<typename MeshType>
@@ -899,7 +902,7 @@ void PartitionIO<MeshType>::readEdges()
     hsize_t currentOffset[2];
 
     M_HDF5IO.openTable ("edges", currentSpaceDims);
-
+#if 0
     if (! M_transposeInFile)
     {
         currentCount[0] = 5;
@@ -953,6 +956,8 @@ void PartitionIO<MeshType>::readEdges()
         }
     }
 }
+#endif
+
 
 template<typename MeshType>
 void PartitionIO<MeshType>::readFaces()
@@ -964,7 +969,7 @@ void PartitionIO<MeshType>::readFaces()
     hsize_t currentOffset[2];
 
     M_HDF5IO.openTable ("faces", currentSpaceDims);
-
+#if 0
     if (! M_transposeInFile)
     {
         currentCount[0] = 7 + M_faceNodes;
@@ -1044,6 +1049,7 @@ void PartitionIO<MeshType>::readFaces()
 
     M_meshPartIn->setLinkSwitch ("HAS_ALL_FACETS");
     M_meshPartIn->setLinkSwitch ("FACETS_HAVE_ADIACENCY");
+#endif
 }
 
 template<typename MeshType>
@@ -1056,7 +1062,7 @@ void PartitionIO<MeshType>::readElements()
     hsize_t currentOffset[2];
 
     M_HDF5IO.openTable ("elements", currentSpaceDims);
-
+#if 0
     if (! M_transposeInFile)
     {
         currentCount[0] = 3 + M_elementNodes;
@@ -1120,6 +1126,7 @@ void PartitionIO<MeshType>::readElements()
 
     M_meshPartIn->updateElementEdges (false, false);
     M_meshPartIn->updateElementFaces (false, false);
+#endif
 }
 
 } // Feel
@@ -1127,5 +1134,42 @@ void PartitionIO<MeshType>::readElements()
 
 
 #endif /* FEELPP_HAS_HDF5 */
+
+
+BOOST_PARAMETER_FUNCTION( ( void ),
+                          h5partition,                                       // 2. name of the function template
+                          tag,                                        // 3. namespace of tag types
+                          ( required                                  // 4. one required parameter, and
+                            ( mesh, * )
+                              ) // required
+                          ( optional                                  // 4. one required parameter, and
+                            ( name,  *, Environment::about().appName() )
+                            ( worldcomm, *, Environment::worldComm() )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
+                          ) )
+{
+    typedef typename Feel::detail::partition<Args>::type mesh_type;
+    std::string filename = prefix + "_mesh.h5";
+    PartitionIO<mesh_type> p( filename, worldcomm );
+    p.write(mesh);
+}
+
+BOOST_PARAMETER_FUNCTION( ( void ),
+                          h5read,                                       // 2. name of the function template
+                          tag,                                        // 3. namespace of tag types
+                          ( required                                  // 4. one required parameter, and
+                            ( in_out(mesh), * )
+                              ) // required
+                          ( optional                                  // 4. one required parameter, and
+                            ( prefix,  *, Environment::about().appName() )
+                            ( worldcomm, *, Environment::worldComm() )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
+                          ) )
+{
+    typedef typename Feel::detail::partition<Args>::type mesh_type;
+    std::string filename = prefix + "_mesh.h5";
+    PartitionIO<mesh_type> p( filename, worldcomm );
+    p.read(mesh);
+}
 
 #endif /* __PartitionIO_H */
