@@ -224,7 +224,7 @@ public:
     /**
      * return n sub world communicators
      */
-    static std::vector<WorldComm> const&  worldsComm( int n );
+    static std::vector<WorldComm> const&  worldsComm( int n, MPI_Comm = MPI_COMM_WORLD );
 
     static std::vector<WorldComm> const&  worldsCommGroupBySubspace( int n );
 

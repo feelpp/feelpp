@@ -76,20 +76,22 @@ public :
     typedef SubMeshData smd_type;
     typedef boost::shared_ptr<smd_type> smd_ptrtype;
 
-    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range )
+    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range, WorldComm const& wc  )
         :
         M_mesh( inputMesh ),
         M_listRange(),
-        M_smd( new smd_type( inputMesh ) )
+        M_smd( new smd_type( inputMesh ) ),
+        M_worldComm( wc )
         {
             M_listRange.push_back( range );
         }
 
-    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,std::list<IteratorRange> const& range )
+    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,std::list<IteratorRange> const& range, WorldComm const& wc  )
         :
         M_mesh( inputMesh ),
         M_listRange( range ),
-        M_smd( new smd_type( inputMesh ) )
+        M_smd( new smd_type( inputMesh ) ),
+        M_worldComm( wc )
         {}
 
 
@@ -112,7 +114,7 @@ private:
     mesh_ptrtype M_mesh;
     std::list<range_type> M_listRange;
     smd_ptrtype M_smd;
-
+    WorldComm M_worldComm;
 };
 
 template <typename MeshType,typename IteratorRange,int TheTag>
@@ -123,7 +125,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     typedef typename mesh_type::point_type point_type;
     typedef typename mesh_type::face_type face_type;
 
-    mesh_ptrtype newMesh( new mesh_type(M_mesh->worldComm()));
+    mesh_ptrtype newMesh( new mesh_type(M_worldComm));
     //mesh_ptrtype newMesh( new mesh_type );
 
     //-----------------------------------------------------------//
@@ -148,8 +150,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     unsigned int n_new_elem  = 0;
     size_type n_new_faces = 0;
 
-    const int proc_id = Environment::worldComm().localRank();
-    const int nProc = Environment::worldComm().localSize();
+    const int proc_id = M_worldComm.localRank();
+    const int nProc = M_worldComm.localSize();
     std::vector< std::list<boost::tuple<size_type,size_type> > > memory_ghostid( nProc );
     std::vector< std::vector<size_type> > memory_id( nProc );
     std::vector< std::vector<size_type> > vecToSend( nProc );
@@ -357,7 +359,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             VLOG(2) << "  - is ghostcell \n";google::FlushLogFiles(google::GLOG_INFO);
             for (auto it_pid=it->idInOthersPartitions().begin(),en_pid=it->idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
             {
-                VLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<Environment::worldComm().localRank() << "\n";
+                VLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<M_worldComm.localRank() << "\n";
                 const int procToSend=it_pid->first;
                 if (procToSend!=it->pidInPartition())
                 {
@@ -528,7 +530,7 @@ typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_faces_ptrtype
 createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /**/ )
 {
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
-    mesh_faces_ptrtype newMesh( new mesh_faces_type( M_mesh->worldComm()) );
+    mesh_faces_ptrtype newMesh( new mesh_faces_type( M_worldComm) );
 
     //-----------------------------------------------------------//
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] extraction mesh faces" << "\n";
@@ -878,7 +880,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
     M_smd.reset();
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
-    mesh_edges_ptrtype newMesh( new mesh_edges_type( M_mesh->worldComm()) );
+    mesh_edges_ptrtype newMesh( new mesh_edges_type( M_worldComm) );
     //mesh_edges_ptrtype newMesh( new mesh_edges_type );
 
     //-----------------------------------------------------------//
@@ -1014,12 +1016,33 @@ struct submeshrangetype
 }
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 typename createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type/*IteratorRange*/,TheTag>::mesh_build_ptrtype
-createSubmesh( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range, size_type ctx = EXTRACTION_KEEP_MESH_RELATION )
+createSubmesh( boost::shared_ptr<MeshType> inputMesh,
+               IteratorRange const& range,
+               size_type ctx = EXTRACTION_KEEP_MESH_RELATION )
 {
     //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
     //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
 
-    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range );
+    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range,inputMesh->worldComm() );
+    auto m = cSmT.build();
+    Context c( ctx );
+    if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )
+        m->setSubMeshData( cSmT.subMeshData() );
+    return m;
+}
+
+template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
+typename createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type/*IteratorRange*/,TheTag>::mesh_build_ptrtype
+createSubmesh( boost::shared_ptr<MeshType> inputMesh,
+               IteratorRange const& range,
+               WorldComm wc,
+               size_type ctx = EXTRACTION_KEEP_MESH_RELATION )
+
+{
+    //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
+    //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
+
+    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range, wc );
     auto m = cSmT.build();
     Context c( ctx );
     if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )
