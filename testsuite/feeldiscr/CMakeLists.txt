@@ -18,7 +18,7 @@ feelpp_add_test( lowerdim_entity )
 feelpp_add_test( mesh_transfinite CFG test_mesh_transfinite.geocfg GEO test_mesh_transfinite.geo )
 feelpp_add_test( mixed )
 feelpp_add_test( normal3d )
-feelpp_add_test( on_inside )
+feelpp_add_test( on_inside GEO test_on_inside.geo)
 
 feelpp_add_test( operatorlinearfree )
 feelpp_add_test( project )
