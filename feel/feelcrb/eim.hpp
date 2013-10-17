@@ -608,7 +608,7 @@ EIM<ModelType>::offline(  )
         auto resmax = M_model->computeMaximumOfResidual( mu, solution , z );
         t = resmax.template get<1>();
         // store space coordinate where max absolute value occurs
-        M_model->addInterpolationPoint( t );
+        //M_model->addInterpolationPoint( t ); //(t has not to be added in M_ctx before projection of the residual)
         LOG(INFO) << "[offline] store coordinates where max absolute value is attained : \n" << resmax.template get<1>();
 
         //if( ! expression_expansion )
@@ -629,6 +629,8 @@ EIM<ModelType>::offline(  )
             auto q_projected = boost::any_cast<element_type>( any_q );
             //M_q.push_back( q_projected );
         }
+        // Store interpolation point
+        M_model->addInterpolationPoint( t );
 
         M_max_q++;
         M_model->setMax(M_M, M_max_q,  max_z, max_solution);
