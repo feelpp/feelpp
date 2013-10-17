@@ -980,11 +980,11 @@ Environment::setLogs( std::string const& prefix )
 }
 
 std::vector<WorldComm> const&
-Environment::worldsComm( int n )
+Environment::worldsComm( int n, MPI_Comm comm )
 {
     if ( !S_worldcomm )
     {
-        mpi::communicator world;
+        mpi::communicator world( comm, mpi::comm_attach );
         S_worldcomm = worldcomm_type::New( world );
         CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
     }

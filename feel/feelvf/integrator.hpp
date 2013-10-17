@@ -3442,12 +3442,14 @@ BOOST_PARAMETER_FUNCTION(
     double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
+    DLOG(INFO) << "[mean] nelements = " << nelements(range) << "\n";
     DLOG(INFO) << "[mean] measure = " << meas << "\n";
     CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
     auto eint = integrate( _range=range, _expr=expr, _quad=quad, _geomap=geomap,
                            _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
                            _partitioner=partitioner, _verbose=verbose ).evaluate();
-    DLOG(INFO) << "[ein] eint = " << eint << "\n";
+    DLOG(INFO) << "[mean] integral = " << eint << "\n";
+    DLOG(INFO) << "[mean] mean = " << eint/meas << "\n";
     return eint/meas;
 }
 

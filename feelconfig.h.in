@@ -45,6 +45,9 @@
 /* Define to 1 if you have the gperftools library available. */
 #cmakedefine FEELPP_HAS_GPERFTOOLS
 
+/* Define to 1 if you have HDF5 available. */
+#cmakedefine FEELPP_HAS_HDF5
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine FEELPP_HAS_INTTYPES_H
 
