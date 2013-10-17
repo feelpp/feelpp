@@ -102,6 +102,10 @@ public:
     {
         return M_localComm;
     }
+    communicator_type const& selfComm() const
+    {
+        return M_selfComm;
+    }
 
     int globalSize() const
     {
@@ -220,6 +224,7 @@ public:
 
 private :
 
+    communicator_type M_selfComm;
     communicator_type M_localComm;
     communicator_type M_godComm;
 
