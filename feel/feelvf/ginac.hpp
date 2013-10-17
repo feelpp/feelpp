@@ -157,12 +157,25 @@ namespace Feel
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
 
-                // If the so file already exists, no need to re-compile but only link it
+                boost::mpi::communicator world;
+                bool isCompiled = true;
                 std::string filenameWithSuffix = M_filename + ".so";
-                if( !filename.empty() && fs::exists( filenameWithSuffix ) )
-                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                // Check is the source file has already been compiled
+                if(!M_filename.empty())
+                    {
+                        if( world.rank() == 0 && !fs::exists( filenameWithSuffix ) )
+                            isCompiled = false;
+                        boost::mpi::broadcast(world, isCompiled, 0);
+                    }
                 else
+                    isCompiled = false;
+                // If the so file already exists, no need to re-compile but only link it
+                if( !isCompiled )
                     GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+                else
+                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+
+
             }
 
             GinacEx( GinacEx const & fun )
