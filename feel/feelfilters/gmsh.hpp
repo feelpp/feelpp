@@ -464,6 +464,19 @@ public:
             M_h = _h;
         }
 
+    //! set number of subdivison in x-direction
+    virtual void setNx( double _nx )
+        {
+            M_nx = _nx;
+        }
+
+    //! set number of subdivison in y-direction
+    virtual void setNy( double _ny )
+        {
+            M_ny = _ny;
+        }
+
+
     /**
      * if add is true, set M_addmidpoint to true, false otherwise
      */
@@ -668,6 +681,10 @@ protected:
     std::vector<std::pair<double,double> > M_I;
     //! characteristic length
     double M_h;
+    //! number of discretization in X direction
+    double M_nx;
+    //! number of discretization in Y direction
+    double M_ny;
     //! mid point
     bool M_addmidpoint;
     //! add physical names to msh files
@@ -1222,6 +1239,8 @@ BOOST_PARAMETER_FUNCTION(
       ( ymax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ymax").template as<double>() )
       ( zmin,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmin").template as<double>() )
       ( zmax,           *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.zmax").template as<double>() )
+      ( nx,             *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.nx").template as<double>() )
+      ( ny,             *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.domain.ny").template as<double>() )
       ( substructuring, *( boost::is_integral<mpl::_> ), option(_name="gmsh.domain.substructuring").template as<bool>() ) ) )
 {
     gmsh_ptrtype gmsh_ptr = Gmsh::New( shape, 3, 1, convex );
@@ -1237,6 +1256,8 @@ BOOST_PARAMETER_FUNCTION(
     gmsh_ptr->setX( std::make_pair( xmin, xmax ) );
     gmsh_ptr->setY( std::make_pair( ymin, ymax ) );
     gmsh_ptr->setZ( std::make_pair( zmin, zmax ) );
+    gmsh_ptr->setNx( nx );
+    gmsh_ptr->setNy( ny );
     gmsh_ptr->setSubStructuring( substructuring );
     return gmsh_ptr;
 }

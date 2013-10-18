@@ -95,7 +95,8 @@ Gmsh::Gmsh( int nDim, int nOrder, WorldComm const& worldComm )
     M_partition_file( 0 ),
     M_shear( 0 ),
     M_recombine( 0 ),
-    M_structured( false ),
+    //M_structured( false ),
+    M_structured( 2 ),
     M_refine_levels( 0 ),
     M_substructuring( false )
 {
@@ -726,7 +727,16 @@ ostr << "// partitioning data\n"
         }
         //ostr << "Mesh.Optimize=1;\n"
         //<< "Mesh.CharacteristicLengthFromCurvature=1;\n"
-    ostr << "h=" << M_h << ";\n";
+
+    if (this->structuredMesh() == 3)
+    {
+        ostr << "nx=" << M_nx << ";\n"
+             << "ny=" << M_ny << ";\n";
+    }
+    else
+    {
+        ostr << "h=" << M_h << ";\n";
+    }
 
     if ( M_recombine )
     {

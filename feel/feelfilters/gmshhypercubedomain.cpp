@@ -164,8 +164,12 @@ GmshHypercubeDomain::getDescription2D() const
     ostr << "xmin=" << this->M_I[0].first << ";\n"
          << "xmax=" << this->M_I[0].second << ";\n"
          << "ymin=" << this->M_I[1].first << ";\n"
-         << "ymax=" << this->M_I[1].second << ";\n"
-         << "Point(1) = {xmin,ymin,0.0,h};\n"
+         << "ymax=" << this->M_I[1].second << ";\n";
+
+    if ( this->structuredMesh() == 3 )
+        ostr << "h = (xmax-xmin)/nx;\n";
+
+    ostr << "Point(1) = {xmin,ymin,0.0,h};\n"
          << "Point(2) = {xmax,ymin+"<<this->shear()<<",0.0,h};\n"
          << "Point(3) = {xmax+" << this->shear() << ",ymax,0.0,h};\n"
          << "Point(4) = {xmin+" << this->shear() << ",ymax+"<<this->shear()<<",0.0,h};\n"
@@ -203,7 +207,8 @@ GmshHypercubeDomain::getDescription2D() const
 
     if ( this->structuredMesh() || M_use_hypercube )
     {
-        if ( this->structuredMesh() == 1 || M_use_hypercube )
+        //if ( this->structuredMesh() == 1 || M_use_hypercube )
+        if ( this->structuredMesh() == 1 )
             ostr << "nx = (xmax-xmin)/h;\n"
                  << "ny = (ymax-ymin)/h;\n";
         else if ( this->structuredMesh() == 2 )
