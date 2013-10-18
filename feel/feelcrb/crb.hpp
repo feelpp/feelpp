@@ -1332,7 +1332,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
         do
         {
             boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
-            //boost::tie( M, Apr, F) = M_model->update( mu , M_bdf_primal->time() );
 
             if( iteration == 0 )
                 A = Apr;
@@ -1361,14 +1360,17 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
             }
             else
             {
-
                 auto ret = M_backend_primal->solve( _matrix=Apr, _solution=u, _rhs=Rhs ,  _prec=M_preconditioner_primal );
                 if ( !ret.template get<0>() )
                     LOG(INFO)<<"[CRB] WARNING : at time "<<M_bdf_primal->time()<<" we have not converged ( nb_it : "<<ret.template get<1>()<<" and residual : "<<ret.template get<2>() <<" ) \n";
             }
 
             //on each subspace the norme of the increment is computed and then we perform the sum
-            increment_norm = M_model->computeNormL2( u , uold );
+            if( option(_name="crb.use-linear-model").template as<bool>() )
+                increment_norm = 0;
+            else
+                increment_norm = M_model->computeNormL2( u , uold );
+
             iteration++;
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
@@ -1536,6 +1538,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
             else
             {
                 *Rhs = *F[M_output_index];
+                Rhs->close();
                 Rhs->scale( -1 );
             }
 
@@ -1566,7 +1569,11 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
             }
 
             //on each subspace the norme of the increment is computed and then we perform the sum
-            increment_norm = M_model->computeNormL2( udu , uold );
+            if( option(_name="crb.use-linear-model").template as<bool>() )
+                increment_norm = 0;
+            else
+                increment_norm = M_model->computeNormL2( udu , uold );
+
             iteration++;
 
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
@@ -2352,7 +2359,7 @@ CRB<TruthModelType>::offline()
             }
         }
 
-        if ( orthonormalize_dual )
+        if ( orthonormalize_dual && solve_dual_problem )
         {
             double norm = norm_max+1;
             int iter=0;
@@ -3997,6 +4004,9 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
             double residual_norm = (A * uN[time_index] - F).norm() ;
             VLOG(2) << " residual_norm :  "<<residual_norm;
+
+           if( option(_name="crb.use-linear-model").template as<bool>() )
+               previous_uN=uN[time_index];
         }
         while ( (uN[time_index]-previous_uN).norm() > increment_fixedpoint_tol && fi<max_fixedpoint_iterations );
         //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
