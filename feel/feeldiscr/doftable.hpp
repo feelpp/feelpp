@@ -1040,9 +1040,11 @@ public:
                                        std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
     void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
     void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
-                                                                    std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend );
+                                                                    std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend,
+                                                                    std::set<int> & procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDof( mesh_type& mesh,
-                                                 std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend );
+                                                                    std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
+                                                                    std::set<int> const& procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
 
     void buildGhostInterProcessDofMapInit( mesh_type& mesh,
