@@ -777,31 +777,37 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
     auto const enedge = mesh->endEdgeOnBoundary();
     for ( ; itedge!=enedge ; ++itedge )
     {
-        if (itedge->processId()!=myrank || itedge->numberOfElementsGhost()==0 ) continue;
+        if (itedge->processId()!=myrank || itedge->numberOfProcGhost()==0 ) continue;
 
         auto const theedgeid = itedge->id();
 
         std::set<size_type> ghostFaceIdFoundOnBoundary;
 
-        auto iteltghost = itedge->elementsGhost().begin();
-        auto const eneltghost = itedge->elementsGhost().end();
-        for ( ; iteltghost!=eneltghost ; ++iteltghost )
+        auto itprocghost=itedge->elementsGhost().begin();
+        auto const enprocghost=itedge->elementsGhost().end();
+        for ( ; itprocghost!=enprocghost ; ++itprocghost)
         {
-            auto const& eltGhost = mesh->element(iteltghost->template get<1>(),iteltghost->template get<0>());
-            for ( uint16_type f = 0 ; f < mesh_type::element_type::numTopologicalFaces ; ++f )
+            auto iteltghost = itprocghost->second.begin();
+            auto const eneltghost = itprocghost->second.end();
+            for ( ; iteltghost!=eneltghost ; ++iteltghost )
             {
-                auto const& theface = eltGhost.face(f);
-                if ( theface.isOnBoundary() )
+                auto const& eltGhost = mesh->element(*iteltghost,itprocghost->first);
+                for ( uint16_type f = 0 ; f < mesh_type::element_type::numTopologicalFaces ; ++f )
                 {
-                    bool findEdge=false;
-                    for ( uint16_type e = 0; e < mesh_type::face_type::numEdges && !findEdge ; ++e )
+                    auto const& theface = eltGhost.face(f);
+                    if ( theface.isOnBoundary() )
                     {
-                        if ( theface.edge(e).id() == theedgeid) { findEdge=true; ghostFaceIdFoundOnBoundary.insert(theface.id());}
+                        bool findEdge=false;
+                        for ( uint16_type e = 0; e < mesh_type::face_type::numEdges && !findEdge ; ++e )
+                        {
+                            if ( theface.edge(e).id() == theedgeid) { findEdge=true; ghostFaceIdFoundOnBoundary.insert(theface.id());}
+                        }
                     }
                 }
             }
-        }
+        } // for ( ; itprocghost!=enprocghost ; ++itprocghost)
 
+        // if 2 faces are find then the edge must be straigten
         if (ghostFaceIdFoundOnBoundary.size()==2) edgeIdFoundToUpdate.insert(theedgeid);
 
     } // for ( ; itedge!=enedge ; ++itedge )
