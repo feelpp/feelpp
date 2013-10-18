@@ -462,6 +462,19 @@ public:
             M_h = _h;
         }
 
+    //! set number of subdivison in x-direction
+    virtual void setNx( double _nx )
+        {
+            M_nx = _nx;
+        }
+
+    //! set number of subdivison in y-direction
+    virtual void setNy( double _ny )
+        {
+            M_ny = _ny;
+        }
+
+
     /**
      * if add is true, set M_addmidpoint to true, false otherwise
      */
@@ -670,6 +683,10 @@ protected:
     std::vector<std::pair<double,double> > M_I;
     //! characteristic length
     double M_h;
+    //! number of discretization in X direction
+    double M_nx;
+    //! number of discretization in Y direction
+    double M_ny;
     //! mid point
     bool M_addmidpoint;
     //! add physical names to msh files
