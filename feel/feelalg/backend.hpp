@@ -820,7 +820,8 @@ public:
                                      ( optional
                                        //(prec,(sparse_matrix_ptrtype), matrix )
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
-                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this() ) )
+                                                                                          _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
+                                                                                          _worldcomm=this->comm() ) )
                                        ( maxit,( size_type ), M_maxit/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
