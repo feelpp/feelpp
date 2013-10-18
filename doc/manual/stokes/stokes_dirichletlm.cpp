@@ -82,14 +82,22 @@ void runStokesDirichletLM()
     auto submesh = createSubmesh(mesh,markedfaces(mesh,listMarker));
 
     auto Vh1 = THch<OrderGeo>(mesh);
-    //std::cout << "Vh1->nDof() "<<Vh1->nDof() << std::endl;
     auto Vh2 = Pchv<2>(submesh);
+
+    if (Environment::worldComm().isMasterRank())
+    {
+        std::cout << "mesh->numGlobalElements() "<<mesh->numGlobalElements() << std::endl;
+        std::cout << "submesh->numGlobalElements() "<<submesh->numGlobalElements() << std::endl;
+        std::cout << "Vh1->nDof() "<<Vh1->nDof() << std::endl;
+        std::cout << "Vh2->nDof() "<<Vh2->nDof() << std::endl;
+    }
+
     auto U = Vh1->elementPtr();
     auto u = U->element<0>();
     auto p = U->element<1>();
     auto lambda = Vh2->elementPtr();
-
     BlocksBaseGraphCSR myblockGraph(2,2);
+
     myblockGraph(0,0) = stencil( _test=Vh1,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(1,0) = stencil( _test=Vh2,_trial=Vh1, _diag_is_nonzero=false, _close=false)->graph();
     myblockGraph(0,1) = stencil( _test=Vh1,_trial=Vh2, _diag_is_nonzero=false, _close=false)->graph();
@@ -135,34 +143,44 @@ void runStokesDirichletLM()
 
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=UVec );
 
+    double normL1_A = A->l1Norm();
+    double normL2_F = F->l2Norm();
+    double normL2_U = UVec->l2Norm();
+
+    if (Environment::worldComm().isMasterRank())
+        std::cout << " normL1_A " << std::setprecision( 9 ) << normL1_A
+                  << " normL2_F " << std::setprecision( 9 ) << normL2_F
+                  << " normL2_U " << std::setprecision( 9 ) << normL2_U
+                  << std::endl;
+
     myblockVecSol.localize(UVec);
 
     if (OrderGeo==1)
-        {
-            auto e = exporter( _mesh=mesh,_name="export"+configstr );
-            e->add( "u"+configstr, u );
-            e->add( "p"+configstr, p );
-            e->save();
-        }
+    {
+        auto e = exporter( _mesh=mesh,_name="export"+configstr );
+        e->add( "u"+configstr, u );
+        e->add( "p"+configstr, p );
+        e->save();
+    }
     else
-        {
-            auto meshVisu = lagrangeP1(_space=Vh1->template functionSpace<0>())->mesh();
-            auto XhVisuVel = Pchv<1>(meshVisu);
-            auto XhVisuPressure = Pch<1>(meshVisu);
-            auto opIVisuVel = opInterpolation(_domainSpace=Vh1->template functionSpace<0>(),
-                                              _imageSpace=XhVisuVel,
-                                              _type=InterpolationNonConforme(false,true,false) );
-            auto uVisu = opIVisuVel->operator()(u);
-            auto opIVisuPressure = opInterpolation(_domainSpace=Vh1->template functionSpace<1>(),
-                                                   _imageSpace=XhVisuPressure,
-                                                   _type=InterpolationNonConforme(false,true,false) );
-            auto pVisu = opIVisuPressure->operator()(p);
-            auto e = exporter( _mesh=meshVisu,_name="export"+configstr );
-            e->add( "uVisu"+configstr, uVisu );
-            e->add( "pVisu"+configstr, pVisu );
-            e->save();
+    {
+        auto meshVisu = lagrangeP1(_space=Vh1->template functionSpace<0>())->mesh();
+        auto XhVisuVel = Pchv<1>(meshVisu);
+        auto XhVisuPressure = Pch<1>(meshVisu);
+        auto opIVisuVel = opInterpolation(_domainSpace=Vh1->template functionSpace<0>(),
+                                          _imageSpace=XhVisuVel,
+                                          _type=InterpolationNonConforme(false,true,false) );
+        auto uVisu = opIVisuVel->operator()(u);
+        auto opIVisuPressure = opInterpolation(_domainSpace=Vh1->template functionSpace<1>(),
+                                               _imageSpace=XhVisuPressure,
+                                               _type=InterpolationNonConforme(false,true,false) );
+        auto pVisu = opIVisuPressure->operator()(p);
+        auto e = exporter( _mesh=meshVisu,_name="export"+configstr );
+        e->add( "uVisu"+configstr, uVisu );
+        e->add( "pVisu"+configstr, pVisu );
+        e->save();
 
-        }
+    }
 }
 
 } // namespace Feel
