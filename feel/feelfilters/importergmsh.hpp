@@ -395,7 +395,8 @@ private:
     void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<2> );
     void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt );
+    void updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+                              std::vector<int> const& nbMsgToRecv );
 
 
 private:
@@ -955,6 +956,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
     }
 #endif
     std::map<int,boost::tuple<int,int> > mapGhostElt;
+    std::vector<int> nbMsgToRecv( this->worldComm().localSize(),0 );
 
     node_type coords( mesh_type::nRealDim );
 
@@ -1060,6 +1062,13 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 
             mesh->addFaceNeighborSubdomain( it_gmshElt->ghostPartitionId() );
         }
+        else if( it_gmshElt->ghosts.size() > 0 )
+        {
+            auto itg = it_gmshElt->ghosts.begin();
+            auto const eng = it_gmshElt->ghosts.end();
+            for ( ; itg !=eng ; ++itg )
+                nbMsgToRecv[*itg]++;
+        }
 
     } // loop over geometric entities in gmsh file (can be elements or faces)
 
@@ -1109,7 +1118,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 #endif
 
     if ( this->worldComm().localSize()>1 )
-        updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt );
+        updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt, nbMsgToRecv );
 
     mesh->setNumVertices( std::accumulate( M_n_vertices.begin(), M_n_vertices.end(), 0,
                                            []( int lhs, std::pair<int,int> const& rhs )
@@ -1557,23 +1566,21 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt )
+ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+                                             std::vector<int> const& nbMsgToRecv )
 {
     // counter of msg sent for each process
-    std::vector<int> nbMsgToSend( this->worldComm().localSize() );
-    std::fill( nbMsgToSend.begin(),nbMsgToSend.end(),0 );
-
+    std::vector<int> nbMsgToSend( this->worldComm().localSize(),0 );
     // map usefull to get final result
     std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
 
     // iterate over ghost elt
     auto it_map = __mapGhostElt.begin();
-    auto en_map = __mapGhostElt.end();
-
-    for ( int cpt=0; it_map!=en_map; ++it_map,++cpt )
+    auto const en_map = __mapGhostElt.end();
+    for ( ; it_map!=en_map ; ++it_map )
     {
-        auto idGmsh = it_map->first;
-        auto idProc = it_map->second.template get<1>();
+        auto const idGmsh = it_map->first;
+        auto const idProc = it_map->second.template get<1>();
 #if 0
         std::cout << "[updateGhostCellInfo]----1---\n"
                   << "I am the proc " << this->worldComm().globalRank()
@@ -1591,11 +1598,20 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
         nbMsgToSend[idProc]++;
     }
 
-    // counter of msg received for each process
-    std::vector<int> nbMsgToRecv;
+#if !defined( NDEBUG )
+    // check nbMsgToRecv computation
+    std::vector<int> nbMsgToRecv2;
     mpi::all_to_all( this->worldComm().localComm(),
                      nbMsgToSend,
-                     nbMsgToRecv );
+                     nbMsgToRecv2 );
+    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
+    {
+        CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
+                                                       << "myrank " << this->worldComm().localRank() << " proc " << proc
+                                                       << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
+                                                       << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
+    }
+#endif
 
     // get gmsh id asked and re-send the correspond id Feel
     for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
