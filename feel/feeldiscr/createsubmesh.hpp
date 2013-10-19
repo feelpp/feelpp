@@ -530,10 +530,11 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         newElem.setMarker2( oldElem.marker2().value() );
         newElem.setMarker3( oldElem.marker3().value() );
 
+        CHECK( !oldElem.isGhostCell() ) << "only actif elt\n";
         // reset partitioning data
-        newElem.setProcessIdInPartition( oldElem.pidInPartition() );
+        newElem.setProcessIdInPartition( proc_id /*oldElem.pidInPartition()*/ );
         newElem.setNumberOfPartitions( 1 );
-        newElem.setProcessId( oldElem.processId() );
+        newElem.setProcessId( proc_id /*oldElem.processId()*/ );
         newElem.clearIdInOthersPartitions();
         newElem.clearNeighborPartitionIds();
 
@@ -551,7 +552,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                 typename mesh_faces_type::point_type pt( oldPoint );
                 pt.setId( n_new_nodes );
                 pt.clearElementsGhost();
-                pt.setProcessId( oldPoint.processId() );
+                pt.setProcessId( proc_id /*oldPoint.processId()*/ );
 
                 // Add this node to the new mesh
                 newMesh->addPoint( pt );
@@ -643,6 +644,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         mpi::all_to_all( newMesh->worldComm().localComm(),
                          nbMsgToSend,
                          nbMsgToRecv );
+
 
         // recv dof asked and re-send dof in this proc
         for ( int proc=0; proc<theWorldCommSize; ++proc )
