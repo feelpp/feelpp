@@ -46,21 +46,26 @@ int main(int argc, char**argv )
         LOG(INFO) << "Extracting trace mesh from neighbor : " << neighbor_subdomain;
         auto trace = createSubmesh( mesh, interprocessfaces(mesh, neighbor_subdomain ),
                                     Environment::worldComm().subWorldCommSeq() );
-        //WorldComm(mpi::communicator(MPI_COMM_SELF,mpi::comm_attach)) );
+
         LOG(INFO) << "size wc: " << Environment::worldComm().subWorldCommSeq().localRank() << " =- " << Environment::worldComm().subWorldCommSeq().localSize();
         LOG(INFO) << "size wc: " << trace->worldComm().localRank() << " =- " << trace->worldComm().localSize();
         LOG(INFO) << "number of elements in trace mesh " << nelements(elements(trace)) <<      " (" << env.rank() << " vs. " << neighbor_subdomain << ")";
         LOG(INFO) << "number of all elements in trace mesh " << nelements(allelements(trace)) <<      " (" << env.rank() << " vs. " << neighbor_subdomain << ")";
         LOG(INFO) << "number of faces in trace mesh    " << nelements(boundaryfaces(trace)) << " (" << env.rank() << " vs. " << neighbor_subdomain << ")";
-        auto Xh = FunctionSpace<Mesh<Simplex<2>>::trace_mesh_type>::New( _mesh=trace, _worldscomm=Environment::worldsComm(1,MPI_COMM_SELF) );
+
+        auto Xh = FunctionSpace<Mesh<Simplex<2>>::trace_mesh_type>::New( _mesh=trace, _worldscomm=Environment::worldsCommSeq(1) );
         LOG(INFO) << "Xh::nDof: " << Xh->nDof() << " localDof: " << Xh->nLocalDof();
         auto l = Xh->element();
         LOG(INFO) << "l.size: " << l.size() << " localSize:" << l.localSize();
         l = vf::project( Xh, elements(trace), cst( double(1.0) ) );
         l.printMatlab( (boost::format( "l%1%" ) % env.rank()).str() );
-        auto m = mean(_range=elements(trace), _expr=idv(l))(0,0);
-        //LOG(INFO) << "m=" << measure(elements(trace) );
-        CHECK( math::abs( m -  double(1.) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
+        if ( nelements(elements(trace)) > 0 )
+        {
+            auto m = mean(_range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldComm().subWorldCommSeq() )(0,0);
+            //LOG(INFO) << "m=" << measure(elements(trace) );
+            CHECK( math::abs( m -  double(1.) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
+        }
+
         // need to introduce interpolation operator with current subdomaine to
         // interpolate l onto the subdomain and set on the interfaces l
         // accumulate on all interfaces in u and visualize u
