@@ -726,8 +726,8 @@ WorldComm::masterWorld( int n )
 void
 WorldComm::registerSubWorlds( int n )
 {
-    std::vector<WorldComm> subworlds( n, Environment::worldComm() );
-    M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+    std::vector<WorldComm> subworlds( n, *this );
+    M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );
 }
 void
 WorldComm::registerSubWorldsGroupBySubspace( int n )
@@ -767,8 +767,8 @@ WorldComm::registerSubWorldsGroupBySubspace( int n )
     }
     else if ( ( n == 1 ) || ( this->globalSize() == 1 ) )
     {
-        std::vector<WorldComm> subworlds( n, Environment::worldComm() );
-        M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+        std::vector<WorldComm> subworlds( n, *this );
+        M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );
     }
 }
 
