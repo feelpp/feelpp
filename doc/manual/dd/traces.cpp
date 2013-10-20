@@ -28,48 +28,98 @@
  */
 #include <feel/feel.hpp>
 
-int main(int argc, char**argv )
+namespace Feel
 {
-    using namespace Feel;
-	Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
-                     _about=about(_name="doc_traces",
-                                  _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
+template<int Dim>
+class Traces : public Simget
+{
+    typedef Simget super;
+public:
+    /**
+     * Constructor
+     */
+    Traces()
+        :
+        super()
+    {
+    }
 
-    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2>>);
-    //auto Dh = Pdh<1>( mesh );
-    //auto u = Dh->element();
-    //auto e = exporter( _mesh=mesh );
-    BOOST_FOREACH( auto neighbor_subdomain, mesh->faceNeighborSubdomains() )
+    void run();
+}; // Traces
+
+template<int Dim>
+void
+Traces<Dim>::run()
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim>>);
+    // auto Vh = Pch<1>( mesh );
+    // auto u = Vh->element();
+    // auto e = exporter( _mesh=mesh, _name = (boost::format( "%1%-%2%" ) % this->about().appName() % Dim ).str() );
+    auto localMesh = createSubmesh( mesh, elements(mesh), Environment::worldComm().subWorldCommSeq() );
+    saveGMSHMesh( _filename=(boost::format( "local-%1%-%2%.msh" ) % Dim % Environment::worldComm().globalRank()).str(),
+                  _mesh=localMesh );
+
+    const unsigned short nbNeighbors = mesh->faceNeighborSubdomains().size();
+    unsigned int* recv = new unsigned int[2 * nbNeighbors];
+    unsigned int* send = recv + nbNeighbors;
+    MPI_Request* rq = new MPI_Request[2 * nbNeighbors];
+    int i = 0;
+    for( const size_type neighbor_subdomain : mesh->faceNeighborSubdomains() )
     {
         LOG(INFO) << "Extracting trace mesh from neighbor : " << neighbor_subdomain;
         auto trace = createSubmesh( mesh, interprocessfaces(mesh, neighbor_subdomain ),
                                     Environment::worldComm().subWorldCommSeq() );
 
-        LOG(INFO) << "size wc: " << Environment::worldComm().subWorldCommSeq().localRank() << " =- " << Environment::worldComm().subWorldCommSeq().localSize();
-        LOG(INFO) << "size wc: " << trace->worldComm().localRank() << " =- " << trace->worldComm().localSize();
-        LOG(INFO) << "number of elements in trace mesh " << nelements(elements(trace)) <<      " (" << env.rank() << " vs. " << neighbor_subdomain << ")";
-        LOG(INFO) << "number of all elements in trace mesh " << nelements(allelements(trace)) <<      " (" << env.rank() << " vs. " << neighbor_subdomain << ")";
-        LOG(INFO) << "number of faces in trace mesh    " << nelements(boundaryfaces(trace)) << " (" << env.rank() << " vs. " << neighbor_subdomain << ")";
+        LOG(INFO) << "number of elements in trace mesh " << nelements(elements(trace)) <<      " (" << Environment::worldComm().globalRank() << " vs. " << neighbor_subdomain << ")";
+        LOG(INFO) << "number of all elements in trace mesh " << nelements(allelements(trace)) <<      " (" << Environment::worldComm().globalRank() << " vs. " << neighbor_subdomain << ")";
+        LOG(INFO) << "number of faces in trace mesh    " << nelements(boundaryfaces(trace)) << " (" << Environment::worldComm().globalRank() << " vs. " << neighbor_subdomain << ")";
 
-        auto Xh = FunctionSpace<Mesh<Simplex<2>>::trace_mesh_type>::New( _mesh=trace, _worldscomm=Environment::worldsCommSeq(1) );
-        LOG(INFO) << "Xh::nDof: " << Xh->nDof() << " localDof: " << Xh->nLocalDof();
+        auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<2,Scalar>>>::New( _mesh=trace, _worldscomm=Environment::worldsCommSeq(1) );
         auto l = Xh->element();
-        LOG(INFO) << "l.size: " << l.size() << " localSize:" << l.localSize();
+        CHECK( Xh->nDof() == Xh->nLocalDof() && l.size() == l.localSize() ) << "problem : " << Xh->nDof() << " != " << Xh->nLocalDof() << " || " <<  l.size() << " != " << l.localSize();
         l = vf::project( Xh, elements(trace), cst( double(1.0) ) );
-        l.printMatlab( (boost::format( "l%1%" ) % env.rank()).str() );
+        // auto op = opInterpolation( _domainSpace = Xh,
+        //                            _imageSpace = Vh);
+        // auto curr = op->operator()(l);
+        // u += curr;
+        l.printMatlab( (boost::format( "l%1%-%2%" ) % Dim % Environment::worldComm().globalRank()).str() );
         if ( nelements(elements(trace)) > 0 )
         {
+            saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(),
+                          _mesh=trace );
             auto m = mean(_range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldComm().subWorldCommSeq() )(0,0);
-            //LOG(INFO) << "m=" << measure(elements(trace) );
             CHECK( math::abs( m -  double(1.) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
         }
-
-        // need to introduce interpolation operator with current subdomaine to
-        // interpolate l onto the subdomain and set on the interfaces l
-        // accumulate on all interfaces in u and visualize u
+        else
+            LOG(WARNING) << neighbor_subdomain << " is not a true neighbor of " << Environment::worldComm().globalRank();
+        send[i] = nelements(elements(trace));
+        MPI_Isend(send + i, 1, MPI_UNSIGNED, neighbor_subdomain, 0, Environment::worldComm(), rq + i);
+        MPI_Irecv(recv + i, 1, MPI_UNSIGNED, neighbor_subdomain, 0, Environment::worldComm(), rq + nbNeighbors + i);
+        ++i;
     }
-    //e->add( "u", u );
-    //e->save();
+    MPI_Waitall(nbNeighbors * 2, rq, MPI_STATUSES_IGNORE);
+    for (i = 0; i < nbNeighbors; ++i)
+        CHECK( send[i] == recv[i] ) << "problem : " << send[i] << " != " << recv[i];
+    delete [] rq;
+    delete [] recv;
+    // e->add( "u", u );
+    // e->save();
+} // Traces::run
+
+} // Feel
+
+int main(int argc, char** argv) {
+    using namespace Feel;
+    /**
+     * Initialize Feel++ Environment
+     */
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=feel_options(),
+                     _about=about(_name="doc_traces",
+                                  _author="Feel++ Consortium",
+                                  _email="feelpp-devel@feelpp.org"));
+    Application app;
+    app.add(new Traces<2>());
+    app.add(new Traces<3>());
+    app.run();
 }
