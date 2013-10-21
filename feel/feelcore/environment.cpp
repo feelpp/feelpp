@@ -496,6 +496,8 @@ Environment::Environment()
 
     S_worldcomm = worldcomm_type::New( world );
     CHECK( S_worldcomm ) << "Environment : creating worldcomm failed\n";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+
 }
 
 fs::path scratchdir()
@@ -588,6 +590,7 @@ Environment::Environment( int& argc, char**& argv )
 
     S_worldcomm = worldcomm_type::New( world );
     CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 }
 
 void
@@ -674,6 +677,7 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
 
     S_worldcomm = worldcomm_type::New( world );
     CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 
     S_about = about;
     doOptions( argc, envargv, *S_desc, about.appName() );
@@ -982,14 +986,15 @@ Environment::setLogs( std::string const& prefix )
 std::vector<WorldComm> const&
 Environment::worldsComm( int n )
 {
-    if ( !S_worldcomm )
-    {
-        mpi::communicator world;
-        S_worldcomm = worldcomm_type::New( world );
-        CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
-    }
-
+    CHECK( S_worldcomm ) << "Environment: worldcomm not allocated\n";
     return S_worldcomm->subWorlds(n);
+}
+
+std::vector<WorldComm> const&
+Environment::worldsCommSeq( int n )
+{
+    CHECK( S_worldcommSeq ) << "Environment: worldcomm not allocated\n";
+    return S_worldcommSeq->subWorlds(n);
 }
 
 std::vector<WorldComm> const&
@@ -1039,6 +1044,7 @@ std::vector<std::string> Environment::S_to_pass_further;
 boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
+boost::shared_ptr<WorldComm> Environment::S_worldcommSeq;
 
 std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),

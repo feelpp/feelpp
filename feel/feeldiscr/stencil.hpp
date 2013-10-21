@@ -554,8 +554,8 @@ struct compute_stencil_type
 }
 
 class StencilManagerImpl:
-    public std::map<boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
-    boost::shared_ptr<FunctionSpaceBase>,
+    public std::map<boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
+    boost::weak_ptr<FunctionSpaceBase>,
     size_type,
     std::vector<size_type>,
     bool >, boost::shared_ptr<GraphCSR> >,
@@ -563,8 +563,8 @@ public boost::noncopyable
 {
 public:
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
-    typedef boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
-            boost::shared_ptr<FunctionSpaceBase>,
+    typedef boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
+            boost::weak_ptr<FunctionSpaceBase>,
             size_type,
             std::vector<size_type>,
             bool > key_type;
@@ -632,7 +632,8 @@ BOOST_PARAMETER_FUNCTION(
         {
             auto g = git_trans->second->transpose(close);
             //auto g = git_trans->second->transpose();
-            StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = g;
+            stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), g );
+
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g, range ) );
             //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             return s;
@@ -642,7 +643,7 @@ BOOST_PARAMETER_FUNCTION(
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, close, range ) );
-            if ( range.isNullRange() ) StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = s->graph();
+            if ( range.isNullRange() ) stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), s->graph() );
             return s;
         }
     }

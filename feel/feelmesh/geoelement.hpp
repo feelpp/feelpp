@@ -511,6 +511,8 @@ public:
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<SubFace::nDim>, mpl::int_<0> >, mpl::identity<self_type>, mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type element_type;
     typedef self_type point_type;
 
+    typedef typename super::matrix_node_type matrix_node_type;
+
     static const uint16_type numLocalVertices = super::numVertices;
 
     GeoElement0D()
@@ -652,10 +654,19 @@ public:
     /**
      * set the geometrical point associated to the face
      */
-    //void setPoint( uint16_type /*i*/, GeoElement0D<Dim,SubFaceOfNone,T> const& e ) { M_facept = e; }
     void setPoint( uint16_type /*i*/, geo0d_type const& e )
     {
         M_facept = e;
+    }
+
+    matrix_node_type /*const&*/ G() const
+    {
+        return M_facept.G();
+    }
+
+    matrix_node_type /*const&*/ vertices() const
+    {
+        return M_facept.vertices();
     }
 
     /**

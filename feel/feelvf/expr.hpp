@@ -1260,7 +1260,13 @@ public:
     {
         return M_constant;
     }
+
     constexpr value_type evaluate( bool ) const
+    {
+        return M_constant;
+    }
+
+    constexpr value_type evaluate( bool, WorldComm const& ) const
     {
         return M_constant;
     }
