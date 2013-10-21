@@ -1673,6 +1673,8 @@ Mesh<Shape, T, Tag>::createP1mesh() const
     boost::unordered_map<size_type,int> new_vertex;
     std::vector<size_type> new_element_numbers ( this->numElements(), invalid_size_type_value );
 
+    const int nProc = new_mesh->worldComm().localSize();
+
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
     unsigned int n_new_elem  = 0;
@@ -1686,7 +1688,8 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
     // data usefull for parallism
     std::map< int, std::set<boost::tuple<size_type,size_type> > > memoryGhostId;
-    std::set< int > setOfRecvProc;
+    //std::set< int > setOfRecvProc;
+    std::vector<int> nbMsgToRecv( nProc , 0 );
 
     auto it = this->beginElement();
     auto const en = this->endElement();
@@ -1799,14 +1802,20 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 memoryGhostId[procToSend].insert(boost::make_tuple(new_elem.id(),it_pid->second));
             }
         }
-        else if (it->numberOfNeighborPartitions() /*it->numberOfPartitions()*/ >1 )
+        else if (it->numberOfNeighborPartitions() /*it->numberOfPartitions()*/ >0 )
         {
+#if 0
             setOfRecvProc.insert( it->neighborPartitionIds().begin(), it->neighborPartitionIds().end() );
+#else
+            auto itneighbor = it->neighborPartitionIds().begin();
+            auto const enneighbor = it->neighborPartitionIds().end();
+            for ( ; itneighbor!=enneighbor ; ++itneighbor )
+                nbMsgToRecv[*itneighbor]++;
+#endif
         }
     } // end for it
 
-
-    const int nProc = new_mesh->worldComm().localSize();
+#if 0
     if ( nProc > 1 )
     {
         std::map< int, std::vector<size_type> > memoryMpiMsg;
@@ -1863,7 +1872,82 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         }
 
     } // if ( nProc > 1 )
+#else
+    if ( nProc > 1 )
+    {
+        std::map< int, std::vector<size_type> > memoryMpiMsg;
+        std::vector<int> nbMsgToSend( nProc , 0 );
 
+        auto itghostproc = memoryGhostId.begin();
+        auto const enghostproc = memoryGhostId.end();
+        for ( ; itghostproc!=enghostproc ; ++itghostproc )
+        {
+            const int procToSend = itghostproc->first;
+            const int sizeMsgToSend = itghostproc->second.size();
+            memoryMpiMsg[procToSend].resize( sizeMsgToSend );
+
+            auto itghostelt = itghostproc->second.begin();
+            auto const enghostelt = itghostproc->second.end();
+            for ( int k=0 ; itghostelt!=enghostelt ; ++itghostelt,++k )
+            {
+                const size_type idInOtherPart = itghostelt->template get<1>();
+                new_mesh->worldComm().localComm().send(procToSend, nbMsgToSend[procToSend], idInOtherPart);
+                ++nbMsgToSend[procToSend];
+                memoryMpiMsg[procToSend][k] = itghostelt->template get<0>();
+            }
+            //CHECK( nbMsgToSend[procToSend] == sizeMsgToSend ) << "invalid data to send\n";
+        }
+
+#if !defined( NDEBUG )
+        // check nbMsgToRecv computation
+        std::vector<int> nbMsgToRecv2( nProc , 0 );
+        mpi::all_to_all( new_mesh->worldComm().localComm(),
+                         nbMsgToSend,
+                         nbMsgToRecv2 );
+        for ( int proc=0; proc<nProc; ++proc )
+            CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
+                                                           << "myrank " << this->worldComm().localRank() << " proc " << proc
+                                                           << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
+                                                           << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
+#endif
+
+        // recv dof asked and re-send dof in this proc
+        for ( int procToRecv=0; procToRecv<nProc; ++procToRecv )
+        {
+            for ( int cpt=0; cpt<nbMsgToRecv[procToRecv]; ++cpt )
+            {
+                //recv
+                size_type idEltRecv;
+                new_mesh->worldComm().localComm().recv( procToRecv, cpt, idEltRecv );
+
+                const size_type idEltAsked = new_element_numbers[ idEltRecv ];
+                DCHECK( idEltAsked!=invalid_size_type_value ) << "invalid elt id\n";
+
+                new_mesh->worldComm().localComm().send(procToRecv, cpt, idEltAsked);
+            }
+        }
+
+        itghostproc = memoryGhostId.begin();
+        for ( ; itghostproc!=enghostproc ; ++itghostproc )
+        {
+            const int procToRecv = itghostproc->first;
+
+            auto itghostelt = itghostproc->second.begin();
+            auto const enghostelt = itghostproc->second.end();
+            for ( int k=0 ; itghostelt!=enghostelt ; ++itghostelt,++k )
+            {
+                size_type idEltAsked;
+                new_mesh->worldComm().localComm().recv(procToRecv, k, idEltAsked);
+
+                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
+                new_mesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
+            }
+        }
+
+
+
+    }  // if ( nProc > 1 )
+#endif
 
     new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0,
                                                []( size_type lhs, std::pair<size_type,int> const& rhs )
