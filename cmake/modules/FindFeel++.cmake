@@ -715,6 +715,12 @@ endif()
 
 
 #
+# HARTS
+#
+option(FEELPP_ENABLE_HARTS "Enable Harts (Runtime parallelization system)" OFF)
+
+
+#
 # if Feel++ has been installed on the system
 #
 if ( NOT EXISTS ${CMAKE_SOURCE_DIR}/feel OR NOT EXISTS ${CMAKE_SOURCE_DIR}/contrib )
