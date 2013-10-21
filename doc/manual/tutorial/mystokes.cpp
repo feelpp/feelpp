@@ -68,7 +68,7 @@ We multiply the first equation by a test function \f$v\in H^1(\Omega)\f$ and we 
 \int_\Omega \mu \nabla \mathbf u : \nabla \mathbf v
 -\int_{\partial\Omega} \frac{\partial \mathbf u}{\partial \mathbf n} \cdot \mathbf v
 \right)
-+\int_\Omega ( \nabla\cdot(p \mathbf v) - \mathbf v \nabla\cdot p )
++\int_\Omega ( \nabla\cdot(p \mathbf v) - \mathbf p \nabla\cdot v )
 =\int_\Omega \mathbf f \cdot \mathbf v \;.
 \end{aligned}
 \right)
@@ -96,13 +96,23 @@ Finally, we deduce from the equations and after rearranging the integrals the va
 +\int_\Omega \left( \nabla\cdot\mathbf u q - p \nabla\cdot\mathbf v \right)
 +
     \int_{\partial\Omega} \left( p \mathbf n -
-    \underbrace{\frac{\partial \mathbf u}{\partial \mathbf n}}_{=0} \right)
+   \frac{\partial \mathbf u}{\partial \mathbf n} \right)
      \cdot \mathbf v
 =\int_\Omega \mathbf f \cdot \mathbf v
 \end{aligned}
 \right)
 \f$</center><br>
-We have an equation which can be rewritten as find \f$(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega) \f$ such that for all \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$
+Let us assume now that $(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$, the variationnal formulation leads to:
+Find \f$(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega) \f$ such that for all \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$
+<br><center>\f$
+\begin{aligned}
+\int_\Omega \mu \nabla \mathbf u :\nabla \mathbf v
++\int_\Omega \left( \nabla\cdot\mathbf u q - p \nabla\cdot\mathbf v \right)
+=\int_\Omega \mathbf f \cdot \mathbf v
+\end{aligned}
+\right)
+\f$</center><br>
+Or equivalently:
 <br><center>\f$
 \begin{aligned}
   a((\mathbf u,p),(\mathbf v,q)) = l((\mathbf v,q))
