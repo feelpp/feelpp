@@ -567,33 +567,39 @@ public:
         return M_elements.template get<detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), this->worldCommElements().localRank() ) );
     }
 
-    element_iterator beginElementWithProcessId( size_type m )
+    element_iterator beginElementWithProcessId( uint16_type p = invalid_uint16_type_value )
     {
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().lower_bound( boost::make_tuple( part ) );
     }
-    element_const_iterator beginElementWithProcessId( size_type m ) const
+    element_const_iterator beginElementWithProcessId( uint16_type p = invalid_uint16_type_value ) const
     {
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().lower_bound( boost::make_tuple( part ) );
     }
-    element_iterator endElementWithProcessId( size_type m )
+    element_iterator endElementWithProcessId( uint16_type p = invalid_uint16_type_value )
     {
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().upper_bound( boost::make_tuple( part ) );
     }
-    element_const_iterator endElementWithProcessId( size_type m ) const
+    element_const_iterator endElementWithProcessId( uint16_type p = invalid_uint16_type_value ) const
     {
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().upper_bound( boost::make_tuple( part ) );
     }
 
     std::pair<element_const_iterator, element_const_iterator>
-    elementsWithProcessId( size_type m ) const
+    elementsWithProcessId( uint16_type p = invalid_uint16_type_value ) const
     {
-        return M_elements.template get<0>().equal_range( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().equal_range( boost::make_tuple( part ) );
     }
 
     std::pair<element_iterator, element_iterator>
-    elementsWithProcessId( size_type m )
+    elementsWithProcessId( uint16_type p = invalid_uint16_type_value )
     {
-        return M_elements.template get<0>().equal_range( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().equal_range( boost::make_tuple( part ) );
     }
 
     /**
