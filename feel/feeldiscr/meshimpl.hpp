@@ -1293,15 +1293,12 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
 
     VLOG(2) << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start on god rank "<< this->worldComm().godRank() << "\n";
 
-    std::vector<int> nbMsgToSend( this->worldComm().localSize() );
-    std::fill( nbMsgToSend.begin(),nbMsgToSend.end(),0 );
-
+    std::vector<int> nbMsgToSend( this->worldComm().localSize(), 0 );
+    std::vector<int> nbMsgToRecv( this->worldComm().localSize(), 0 );
     std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
-
 
     auto iv = this->beginGhostElement();
     auto en = this->endGhostElement();
-
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;
@@ -1328,11 +1325,34 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     }
 
     //------------------------------------------------------------------------------------------------//
-    // counter of msg received for each process
-    std::vector<int> nbMsgToRecv;
+
+    auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
+    auto const enEltActif = this->endElementWithProcessId( this->worldComm().localRank() );
+    for ( ; itEltActif!=enEltActif ; ++itEltActif )
+    {
+        if (itEltActif->numberOfNeighborPartitions() == 0 ) continue;
+        auto itneighbor = itEltActif->neighborPartitionIds().begin();
+        auto const enneighbor = itEltActif->neighborPartitionIds().end();
+        for ( ; itneighbor!=enneighbor ; ++itneighbor )
+            nbMsgToRecv[*itneighbor]++;
+    }
+
+    //------------------------------------------------------------------------------------------------//
+
+#if !defined( NDEBUG )
+    // check nbMsgToRecv computation
+    std::vector<int> nbMsgToRecv2;
     mpi::all_to_all( this->worldComm().localComm(),
                      nbMsgToSend,
-                     nbMsgToRecv );
+                     nbMsgToRecv2 );
+    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
+    {
+        CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
+                                                       << "myrank " << this->worldComm().localRank() << " proc " << proc
+                                                       << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
+                                                       << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
+    }
+#endif
 
     //------------------------------------------------------------------------------------------------//
     // recv id asked and re-send set of face id
