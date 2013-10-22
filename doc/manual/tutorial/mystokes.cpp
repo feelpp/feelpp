@@ -144,7 +144,7 @@ We call the solver to resolve the problem (\ref Solver).
 \snippet mystokes.cpp marker_main
 
 */
-/// [marker_main]
+//# marker_main #
 int main(int argc, char**argv )
 {
     Environment env( _argc=argc, _argv=argv,
@@ -191,6 +191,7 @@ int main(int argc, char**argv )
 
     // solve a(u,v)=l(v)
     a.solve(_rhs=l,_solution=U);
+    //# endmarker_main #
 
     double mean_p = mean(_range=elements(mesh),_expr=idv(p))(0,0);
     double mean_p_exact = mean(_range=elements(mesh),_expr=expr(p_exact,syms))(0,0);
