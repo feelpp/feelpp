@@ -2271,7 +2271,10 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
             uold = u;
             M_preconditioner->setMatrix( A );
             M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner);
-            norm = this->computeNormL2( uold , u );
+            if( option(_name="crb.use-linear-model").template as<bool>() )
+                norm = 0;
+            else
+                norm = this->computeNormL2( uold , u );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
         mybdf->shiftRight(u);
@@ -2358,6 +2361,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
             else
             {
                 *Rhs = *F[output_index];
+                Rhs->close();
                 Rhs->scale( -1 );
             }
 
@@ -2369,7 +2373,11 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
             uold = udu;
             M_preconditioner->setMatrix( Adu );
             M_backend->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner);
-            norm = this->computeNormL2( uold , udu );
+
+            if( option(_name="crb.use-linear-model").template as<bool>() )
+                norm = 0;
+            else
+                norm = this->computeNormL2( uold , udu );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
         mybdf->shiftRight(udu);
