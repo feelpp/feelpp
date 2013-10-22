@@ -855,14 +855,20 @@ public:
 
     void save()
     {
-        if ( !M_bdf.saveInFile() || M_bdf.worldComm().globalRank()!=M_bdf.worldComm().masterRank() ) return;
+        if ( !M_bdf.saveInFile() ) return;
 
-        fs::ofstream ofs( M_bdf.path() / "metadata" );
+        // only master process write
+        if ( M_bdf.worldComm().isMasterRank() )
+        {
+            fs::ofstream ofs( M_bdf.path() / "metadata" );
 
+            boost::archive::text_oarchive oa( ofs );
+            oa << BOOST_SERIALIZATION_NVP( ( BdfBase const& )M_bdf );
+            DVLOG(2) << "[Bdf::init()] metadata saved\n";
+        }
+        // to be sure that all process can read the metadata file
+        M_bdf.worldComm().barrier();
 
-        boost::archive::text_oarchive oa( ofs );
-        oa << BOOST_SERIALIZATION_NVP( ( BdfBase const& )M_bdf );
-        DVLOG(2) << "[Bdf::init()] metadata saved\n";
     }
 
 private:
