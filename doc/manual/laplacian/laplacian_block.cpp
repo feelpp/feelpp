@@ -44,9 +44,18 @@ void runLaplacianBlockV1()
 
     auto mesh = createMeshLaplacianBlock();
     auto submesh = createSubMeshLaplacianBlock(mesh);
-
-    auto Vh1 = Pch<1>( mesh );
+    auto Vh1 = Pch<2>( mesh );
     auto Vh2 = Pch<1>( submesh );
+    if (Environment::worldComm().isMasterRank())
+    {
+        std::cout << "mesh->numGlobalElements() "<< mesh->numGlobalElements() << std::endl;
+        std::cout << "submesh->numGlobalElements() "<< submesh->numGlobalElements() << std::endl;
+        std::cout << "Vh1->nDof() "<<Vh1->nDof() << std::endl;
+        std::cout << "Vh2->nDof() "<<Vh2->nDof() << std::endl;
+    }
+
+    CHECK( Vh2->nDof() > 0 ) << "not take into account\n";
+
     auto u1 = Vh1->elementPtr();
     auto u2 = Vh2->elementPtr();
 
@@ -96,9 +105,9 @@ void runLaplacianBlockV1()
     double normL2_U = U->l2Norm();
 
     if(Environment::worldComm().globalRank() == 0)
-        std::cout << " normL1_A " << normL1_A
-                  << " normL2_F " << normL2_F
-                  << " normL2_U " << normL2_U << std::endl;
+        std::cout << " normL1_A " << std::setprecision( 9 ) << normL1_A
+                  << " normL2_F " << std::setprecision( 9 ) << normL2_F
+                  << " normL2_U " << std::setprecision( 9 ) << normL2_U << std::endl;
     myblockVecSol.localize(U);
 
     auto e = exporter( _mesh=mesh, _name="exportV1" );
@@ -171,16 +180,15 @@ void runLaplacianBlockV2()
     double normL2_U = U->l2Norm();
 
     if(Environment::worldComm().globalRank() == 0)
-        std::cout << " normL1_A " << normL1_A
-                  << " normL2_F " << normL2_F
-                  << " normL2_U " << normL2_U << std::endl;
+        std::cout << " normL1_A " << std::setprecision( 9 ) << normL1_A
+                  << " normL2_F " << std::setprecision( 9 ) << normL2_F
+                  << " normL2_U " << std::setprecision( 9 ) << normL2_U << std::endl;
     myblockVecSol.localize(U);
 
     auto e = exporter( _mesh=mesh, _name="exportV2" );
     e->add( "u1", *u1 );
     e->save();
 }
-
 
 
 int main(int argc, char**argv )
@@ -193,7 +201,7 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     runLaplacianBlockV1();
-    runLaplacianBlockV2();
+    //runLaplacianBlockV2();
 
     return 0;
 }

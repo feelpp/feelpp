@@ -41,6 +41,7 @@ namespace Feel
 WorldComm::WorldComm()
     :
     super(),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm( super::split( 0, this->globalRank() ) ),
     M_godComm(),
     M_mapColorWorld( this->globalSize() ),
@@ -54,6 +55,7 @@ WorldComm::WorldComm()
 WorldComm::WorldComm( super const& s )
     :
     super(),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm( super::split( 0, this->globalRank() ) ),
     M_godComm(s),
     M_mapColorWorld( this->globalSize() ),
@@ -70,6 +72,7 @@ WorldComm::WorldComm( super const& s )
 WorldComm::WorldComm( int color )
     :
     super(),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm( super::split( color, this->globalRank() ) ),
     M_godComm(),
     M_mapColorWorld( this->globalSize() ),
@@ -84,6 +87,7 @@ WorldComm::WorldComm( int color )
     WorldComm::WorldComm( std::vector<int> const& colorWorld )
     :
     super(),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm( super::split( colorWorld[this->globalRank()] ) ),
     M_godComm(),
     M_mapColorWorld( colorWorld ),
@@ -102,6 +106,7 @@ WorldComm::WorldComm( std::vector<int> const& colorWorld,
                       communicator_type const& _godComm )
     :
     super(_globalComm),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm( super::split( colorWorld[this->globalRank()],_localRank ) ),
     M_godComm(_godComm),
     M_mapColorWorld( colorWorld ),
@@ -147,6 +152,7 @@ WorldComm::init( int color, bool colormap )
 WorldComm::WorldComm( WorldComm const& wc )
     :
     super( wc ),
+    M_selfComm( wc.M_selfComm ),
     M_localComm( wc.M_localComm ),
     M_godComm( wc.M_godComm ),
     M_mapColorWorld( wc.M_mapColorWorld ),
@@ -162,6 +168,7 @@ WorldComm::WorldComm( WorldComm const& wc )
 WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _isActive )
     :
     super( _globalComm ),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach),
     M_localComm( super::split( _color ) ),
     M_godComm(),
     M_mapColorWorld( this->globalSize() ),
@@ -218,6 +225,7 @@ WorldComm::WorldComm( communicator_type const& _globalComm, int _color, bool _is
                           communicator_type const& _godComm, bool _isActive, bool _doInitActiveMap )
     :
     super( _godComm.split( _colorGlobal, globalRank ) ),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm( super::split( _colorLocal, localRank ) ),
     M_godComm(_godComm),
     M_mapColorWorld( this->globalSize() ),
@@ -255,6 +263,7 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
                       std::vector<int> const& isActive )
     :
     super( _globalComm ),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm( _globalComm.split( _color, localRank ) ),
     M_godComm(_godComm ),
     M_mapColorWorld( this->globalSize() ),
@@ -308,6 +317,7 @@ WorldComm::WorldComm( communicator_type const& _globalComm,
                       std::vector<int> const& isActive )
     :
     super( _globalComm ),
+    M_selfComm( MPI_COMM_SELF, mpi::comm_attach ),
     M_localComm(_localComm ),
     M_godComm(_godComm ),
     M_mapColorWorld( this->globalSize() ),
@@ -716,8 +726,8 @@ WorldComm::masterWorld( int n )
 void
 WorldComm::registerSubWorlds( int n )
 {
-    std::vector<WorldComm> subworlds( n, Environment::worldComm() );
-    M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+    std::vector<WorldComm> subworlds( n, *this );
+    M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );
 }
 void
 WorldComm::registerSubWorldsGroupBySubspace( int n )
@@ -757,8 +767,8 @@ WorldComm::registerSubWorldsGroupBySubspace( int n )
     }
     else if ( ( n == 1 ) || ( this->globalSize() == 1 ) )
     {
-        std::vector<WorldComm> subworlds( n, Environment::worldComm() );
-        M_subworlds.insert( std::make_pair( n, std::make_pair( Environment::worldComm(), subworlds ) ) );
+        std::vector<WorldComm> subworlds( n, *this );
+        M_subworlds.insert( std::make_pair( n, std::make_pair( *this, subworlds ) ) );
     }
 }
 
