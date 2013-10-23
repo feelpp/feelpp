@@ -244,29 +244,31 @@ template<typename MeshType>
 void
 FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 {
-    detail::ignore_unused_variable_warning( mesh );
+    Feel::detail::ignore_unused_variable_warning( mesh );
 #if defined(FEELPP_HAS_VTK)
     //  std::cout <<"Start of mesh conversion !" << std::endl;
 
     vtkPolyData * _vtkMesh = this->getVtkMesh();
 
-    uint __n = _vtkMesh->GetNumberOfPoints(); // Number of nodes
+    uint16_type __n = _vtkMesh->GetNumberOfPoints(); // Number of nodes
 
     DVLOG( 2 ) <<"Number of points : "<< __n << "\n";
 
-    uint __nele = _vtkMesh->GetNumberOfPolys(); // Number of elements
+    uint16_type __nele = _vtkMesh->GetNumberOfPolys(); // Number of elements
 
     DVLOG( 2 ) <<"Number of elements : "<< __nele << "\n";
 
     // add the points to the mesh
 
-    for ( uint __i = 0; __i < __n; ++__i )
+    for ( uint16_type __i = 0; __i < __n; ++__i )
     {
         node_type __nd( 2 );
         __nd[0] = _vtkMesh->GetPoint( __i )[0];
         __nd[1] = _vtkMesh->GetPoint( __i )[1];
         point_type __pt( __i,__nd, false );
         __pt.marker() = 0;
+        __pt.setProcessIdInPartition( mesh->worldComm().localRank() );
+        __pt.setProcessId( mesh->worldComm().localRank() );
 
         if ( __nd[0] == -1 || __nd[1] == -1 || __nd[0] + __nd[1] == 0 )
 
@@ -328,7 +330,7 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 #endif
     // add the elements to the mesh
 
-    for ( uint __i = 0; __i < __nele; ++__i )
+    for ( uint16_type __i = 0; __i < __nele; ++__i )
     {
         DVLOG( 2 ) << "[FilterFromVtk] element " << __i << "\n";
         // Here we only have triangular elements of order 1
@@ -337,6 +339,9 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
 
         pf->setId( __i );
         pf->setMarker( 0 );
+        pf->setProcessIdInPartition( mesh->worldComm().localRank() );
+        pf->setProcessId( mesh->worldComm().localRank() );
+        pf->setNumberOfPartitions( 1 );
 
         // Warning : Vtk orientation is not the same as Feel orientation !
 
@@ -355,6 +360,9 @@ FilterFromVtk<MeshType>::visit( mesh_type* mesh, mpl::int_<2> )
     DVLOG( 2 ) <<"[FilterFromVtk] done with element accumulation !\n";
 
     mesh->setNumVertices( __n );
+    mesh->components().reset();
+    mesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    mesh->updateForUse();
 
     DVLOG( 2 ) <<"[FilterFromVtk] Face Update !\n";
 
@@ -371,29 +379,31 @@ template<typename MeshType>
 void
 FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 {
-    detail::ignore_unused_variable_warning( mesh );
+    Feel::detail::ignore_unused_variable_warning( mesh );
 #if defined(FEELPP_HAS_VTK)
     //  std::cout <<"Start of mesh conversion !" << std::endl;
 
     vtkUnstructuredGrid * _vtkMesh = this->getVtkMesh();
 
-    uint __n = _vtkMesh->GetNumberOfPoints(); // Nbre of nodes
+    uint16_type __n = _vtkMesh->GetNumberOfPoints(); // Nbre of nodes
 
     DVLOG( 2 ) <<"Number of points : "<< __n << "\n";
 
-    uint __nele = _vtkMesh->GetNumberOfCells(); // Nbre of elements
+    uint16_type __nele = _vtkMesh->GetNumberOfCells(); // Nbre of elements
 
     DVLOG( 2 ) <<"Number of elements : "<< __nele << "\n";
 
     // add the points to the mesh
 
-    for ( uint __i = 0; __i < __n; ++__i )
+    for ( uint16_type __i = 0; __i < __n; ++__i )
     {
         node_type __nd( 3 );
         __nd[0] = _vtkMesh->GetPoint( __i )[0];
         __nd[1] = _vtkMesh->GetPoint( __i )[1];
         __nd[2] = _vtkMesh->GetPoint( __i )[2];
         point_type __pt( __i,__nd, false );
+        __pt.setProcessIdInPartition( mesh->worldComm().localRank() );
+        __pt.setProcessId( mesh->worldComm().localRank() );
 
         if ( __nd[0] == -1 || __nd[1] == -1 || __nd[2] == -1 || __nd[0] + __nd[1] + __nd[2] == 0 )
 
@@ -476,7 +486,7 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 #endif
     // add the elements to the mesh
 
-    for ( uint __i = 0; __i < __nele; ++__i )
+    for ( uint16_type __i = 0; __i < __nele; ++__i )
     {
         // Here we only have triangular elements of order 1
 
@@ -484,9 +494,11 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
 
         pf->setId( __i );
         pf->setMarker( 0  );
+        pf->setProcessIdInPartition( mesh->worldComm().localRank() );
+        pf->setProcessId( mesh->worldComm().localRank() );
+        pf->setNumberOfPartitions( 1 );
 
         // Warning : Vtk orientation is not the same as Feel orientation !
-
         pf->setPoint( 0, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 0 ) ) );
         pf->setPoint( 1, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 1 ) ) );
         pf->setPoint( 2, mesh->point( _vtkMesh->GetCell( __i )->GetPointId( 2 ) ) );
@@ -502,6 +514,9 @@ FilterFromVtk3D<MeshType>::visit( mesh_type* mesh, mpl::int_<3> )
     DVLOG( 2 ) <<"[FilterFromVtk] done with element accumulation !\n";
 
     mesh->setNumVertices( __n );
+    mesh->components().reset();
+    mesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    mesh->updateForUse();
 
     DVLOG( 2 ) <<"[FilterFromVtk] Face Update !\n";
 
