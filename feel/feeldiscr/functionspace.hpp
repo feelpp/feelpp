@@ -86,6 +86,7 @@
 #include <feel/feeldiscr/parameter.hpp>
 #include <feel/feeldiscr/bases.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
+#include <feel/feeldiscr/mortar.hpp>
 #include <feel/feelfilters/pointsettomesh.hpp>
 
 #include <feel/feeldiscr/region.hpp>
@@ -97,6 +98,7 @@ namespace parameter = boost::parameter;
 
 namespace detail
 {
+
 
 template<typename T>
 struct vector_plus
@@ -1339,19 +1341,12 @@ struct Order
 };
 
 typedef parameter::parameters<
-//    parameter::required<tag::mesh_type, mpl::or_<boost::is_base_and_derived<MeshBase,_> >, mpl::or_<fusion::traits::is_sequence<_>, mpl::is_sequence<_> > >
-parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
-#if 0
-, parameter::optional<parameter::deduced<tag::bases_list>, mpl::or_<boost::is_base_and_derived<detail::bases_base,_>,
-mpl::or_<fusion::traits::is_sequence<_>,
-mpl::is_sequence<_> > > >
-#else
-, parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<detail::bases_base,_> >
-//, parameter::optional<parameter::deduced<tag::bases_list>, fusion::traits::is_sequence<_> >
-#endif
-, parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
-, parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
-> functionspace_signature;
+    parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
+    , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<detail::bases_base,_> >
+    , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
+    , parameter::optional<parameter::deduced<tag::mortar_type>, boost::is_base_and_derived<detail::mortar_base,_> >
+    , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
+    > functionspace_signature;
 
 
 /**
@@ -1381,6 +1376,7 @@ public:
 
     typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
+    typedef typename parameter::binding<args, tag::mortar_type, NoMortar >::type mortar_type;
     typedef typename parameter::binding<args, tag::periodicity_type, Periodicity<NoPeriodicity> >::type periodicity_type;
     typedef typename parameter::binding<args, tag::bases_list, detail::bases<Lagrange<1,Scalar> > >::type bases_list;
 
@@ -1641,7 +1637,7 @@ public:
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<DofComposite>,
-            mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type> > >::type::type dof_type;
+                              mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
 

@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-20
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2009-01-20
  */
-#ifndef __feel_feeldiscr_parameter_H
-#define __feel_feeldiscr_parameter_H 1
+#ifndef FEELPP_feeldiscr_parameter_H
+#define FEELPP_feeldiscr_parameter_H 1
 
 #include <boost/parameter.hpp>
 #include <boost/parameter/keyword.hpp>
@@ -48,7 +48,7 @@ BOOST_PARAMETER_TEMPLATE_KEYWORD( basis_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( domain_value_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( periodicity_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( continuity_type )
+BOOST_PARAMETER_TEMPLATE_KEYWORD( mortar_type )
 
 }
 #endif /* __parameter_H */
-
