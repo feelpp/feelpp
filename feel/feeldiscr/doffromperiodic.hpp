@@ -32,84 +32,143 @@
 namespace Feel
 {
 /**
- * \class DofFromPeriodic
- * \brief brief description
+ * \brief local contribution from periodic dof
  *
- * @author Christophe Prud'homme
+ * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * @see
  */
+template<typename DofTableType, typename FEType>
 class DofFromPeriodic
 {
 public:
 
 
-  /** @name Constants
-*/
- //@{
+    /** @name Constants
+     */
+    //@{
 
 
-//@}
+    //@}
 
-/** @name Typedefs
-*/
- //@{
+    /** @name Typedefs
+     */
+    //@{
+    typedef DofTableType doftable_type;
+    typedef typename doftable_type::mesh_type mesh_type;
+    typedef typename doftable_type::element_type element_type;
+    typedef typename doftable_type::face_type face_type;
+    typedef typename doftable_type::ref_shift_type ref_shift_type;
+    typedef FEType fe_type;
 
+    typedef typename element_type::edge_permutation_type edge_permutation_type;
+    typedef typename element_type::face_permutation_type face_permutation_type;
 
-//@}
-
-/** @name Constructors, destructor
-*/
-//@{
-
-//! default constructor
-DofFromPeriodic();
-  //! copy constructor
-DofFromPeriodic( DofFromPeriodic const & );
-  //! destructor
-~DofFromPeriodic();
-
-//@}
-
-/** @name Operator overloads
-*/
-//@{
-
-//! copy operator
-DofFromPeriodic& operator=( DofFromPeriodic const & o)
-{
- if (this != &o )
- {
- }
- return *this;
-}
-//@}
-
-/** @name Accessors
-*/
-//@{
+    static const uint16_type nOrder = fe_type::nOrder;
+    static const uint16_type nDim = mesh_type::nDim;
+    static const uint16_type nRealDim = mesh_type::nRealDim;
+    static const uint16_type Shape = mesh_type::Shape;
+    static const uint16_type nComponents = fe_type::nComponents;
+    static const uint16_type nComponents1 = fe_type::nComponents1;
+    static const uint16_type nComponents2 = fe_type::nComponents2;
 
 
-//@}
+    static const bool is_continuous = fe_type::isContinuous;
+    static const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
+    static const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
 
-/** @name  Mutators
-*/
-//@{
+    static const bool is_scalar = fe_type::is_scalar;
+    static const bool is_vectorial = fe_type::is_vectorial;
+    static const bool is_tensor2 = fe_type::is_tensor2;
+    static const bool is_modal = fe_type::is_modal;
+    static const bool is_product = fe_type::is_product;
+
+    static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
+
+    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
+
+    typedef boost::tuple<element_type const*, face_type const*> element_face_pair_type;
+    typedef std::list<element_face_pair_type> periodic_element_list_type;
+    typedef typename periodic_element_list_type::iterator periodic_element_list_iterator;
+    typedef typename periodic_element_list_type::const_iterator periodic_element_list_const_iterator;
+    typedef boost::tuple<size_type /*element id*/, uint16_type /*lid*/, uint16_type /*c*/, size_type /*gDof*/, uint16_type /*type*/> periodic_dof_type;
+    typedef std::multimap<size_type /*gid*/, periodic_dof_type> periodic_dof_map_type;
 
 
-//@}
+    //@}
 
-/** @name  Methods
-*/
-//@{
+    /** @name Constructors, destructor
+     */
+    //@{
+
+    DofFromPeriodic( doftable_type* doftable, fe_type const& fe )
+        :
+        M_doftable( doftable ),
+        M_fe( fe )
+        {}
+    //! destructor
+    ~DofFromPeriodic() {}
+
+    //@}
+
+    /** @name Operator overloads
+     */
+    //@{
+
+    //@}
+
+    /** @name Accessors
+     */
+    //@{
 
 
-//@}
+    //@}
+
+    /** @name  Mutators
+     */
+    //@{
+
+
+    //@}
+
+    /** @name  Methods
+     */
+    //@{
+
+    void add( element_type const& __elt,
+              face_type const& __face,
+              size_type& next_free_dof,
+              std::map<size_type,periodic_dof_map_type>& periodic_dof,
+              size_type tag )
+        {
+                        addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
+            addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
+            addFacePeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
+        }
+
+    //@}
 
 
 
 protected:
 
 private:
+    doftable_type* M_doftable;
+    fe_type const& M_fe;
+
+private:
+    //! default constructor
+    DofFromPeriodic();
+    //! copy constructor
+    DofFromPeriodic( DofFromPeriodic const & );
+    //! copy operator
+    DofFromPeriodic& operator=( DofFromPeriodic const & o)
+        {
+            if (this != &o )
+            {
+            }
+            return *this;
+        }
+
     /**
      * Add a new periodic dof to the dof map and to the list of periodic dof \p
      * periodic_dof for a given tag \p tag
@@ -158,9 +217,9 @@ private:
 
 };
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template <typename DofTableType, typename FEType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type const& __elt,
+DofFromPeriodic<DofTableType,FEType>::addVertexPeriodicDof( element_type const& __elt,
         face_type const& __face,
         size_type& next_free_dof,
         std::map<size_type,periodic_dof_map_type>& periodic_dof,
@@ -173,7 +232,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type 
 
     size_type iElAd = __face.ad_first();
     FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[periodic]invalid face/element in face" );
-    Feel::detail::ignore_unused_variable_warning( iElAd );
+    detail::ignore_unused_variable_warning( iElAd );
 
     // local id of the face in its adjacent element
     uint16_type iFaEl = __face.pos_first();
@@ -184,7 +243,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type 
     {
         // local vertex number (in element)
         uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
-        Feel::detail::ignore_unused_variable_warning( iVeEl );
+        detail::ignore_unused_variable_warning( iVeEl );
 
         FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
@@ -198,7 +257,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type 
             VLOG(2) << "add vertex periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
             size_type dof_id = next_free_dof;
             // next_free_dof might be incremented if a new dof is created
-            bool inserted = this->insertDof( __elt.id(), lid, iVeEl, boost::make_tuple( 0, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.point( iVeEl ).marker()  );
+            bool inserted = M_doftable->insertDof( __elt.id(), lid, iVeEl, boost::make_tuple( 0, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.point( iVeEl ).marker()  );
             VLOG(2) << "vertex periodic dof inserted : " << inserted << "\n";
 
             const int ncdof = is_product?nComponents:1;
@@ -207,10 +266,10 @@ DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type 
                 // add the pair (elt, lid) to the map associated
                 // with dof_id, one dof can be shared by several
                 // elements
-                dof_id = localToGlobal( __elt.id(), lid, c1 ).index();
+                dof_id = M_doftable->localToGlobal( __elt.id(), lid, c1 ).index();
                 periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(), lid, c1, gDof, 0 ) ) );
 
-                VLOG(2) << "added vertex periodic dof " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
+                VLOG(2) << "added vertex periodic dof " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
             }
         }
 
@@ -218,9 +277,9 @@ DofTable<MeshType, FEType, PeriodicityType>::addVertexPeriodicDof( element_type 
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template <typename DofTableType, typename FEType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type const& __elt,
+DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __elt,
         face_type const& __face,
         size_type& next_free_dof,
         std::map<size_type,periodic_dof_map_type>& periodic_dof,
@@ -253,7 +312,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
         DVLOG(4) << "add edge periodic dof " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
         size_type dof_id = next_free_dof;
         // next_free_dof might be incremented if a new dof is created
-        bool inserted = this->insertDof( __elt.id(), lid, iFaEl, boost::make_tuple( 1, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( iFaEl ).marker() );
+        bool inserted = M_doftable->insertDof( __elt.id(), lid, iFaEl, boost::make_tuple( 1, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( iFaEl ).marker() );
         DVLOG(4) << "edge periodic dof inserted (1 or 0) : " << inserted << "\n";
 
         const int ncdof = is_product?nComponents:1;
@@ -262,17 +321,17 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
             // add the pair (elt, lid) to the map associated
             // with dof_id, one dof can be shared by several
             // elements
-            dof_id = boost::get<0>( localToGlobal( __elt.id(), lid, c1 ) );
+            dof_id = boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) );
             periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(), lid, c1, gDof, 1 ) ) );
 
-            DVLOG(4) << "added edge periodic dof " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
+            DVLOG(4) << "added edge periodic dof " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
         }
 
     }
 }
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template <typename DofTableType, typename FEType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type const& __elt,
+DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __elt,
         face_type const& __face,
         size_type& next_free_dof,
         std::map<size_type,periodic_dof_map_type>& periodic_dof,
@@ -285,7 +344,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
-    Feel::detail::ignore_unused_variable_warning( iElAd );
+    detail::ignore_unused_variable_warning( iElAd );
     FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
     // local id of the face in its adjacent element
@@ -300,7 +359,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
     {
         // local edge number (in element)
         uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
-        Feel::detail::ignore_unused_variable_warning( iEdEl );
+        detail::ignore_unused_variable_warning( iEdEl );
         FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
         // Loop number of Dof per edge
@@ -324,7 +383,7 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
             DVLOG(4) << "add periodic doc " << next_free_dof << " in element " << __elt.id() << " lid = " << lid << "\n";
             size_type dof_id = next_free_dof;
             // next_free_dof might be incremented if a new dof is created
-            bool inserted = this->insertDof( __elt.id(), lid, l, boost::make_tuple( 1, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( l ).marker() );
+            bool inserted = M_doftable->insertDof( __elt.id(), lid, l, boost::make_tuple( 1, 0, gDof ), 0, next_free_dof, 1, true, 0, __elt.edge( l ).marker() );
             DVLOG(4) << "periodic dof inserted : " << inserted << "\n";
 
             const int ncdof = is_product?nComponents:1;
@@ -333,23 +392,23 @@ DofTable<MeshType, FEType, PeriodicityType>::addEdgePeriodicDof( element_type co
                 // add the pair (elt, lid) to the map associated
                 // with dof_id, one dof can be shared by several
                 // elements
-                dof_id = boost::get<0>( localToGlobal( __elt.id(), lid, c1 ) );
+                dof_id = boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) );
                 periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(),  lid, c1, gDof, 1 ) ) );
 
-                DVLOG(4) << "added " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
+                DVLOG(4) << "added " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
             }
         }
     }
 
 }
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template <typename DofTableType, typename FEType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addFacePeriodicDof( element_type const& __elt,
-        face_type const& __face,
-        size_type& next_free_dof,
-        std::map<size_type,periodic_dof_map_type>& periodic_dof,
-        size_type tag,
-        mpl::bool_<true> )
+DofFromPeriodic<DofTableType,FEType>::addFacePeriodicDof( element_type const& __elt,
+                                                          face_type const& __face,
+                                                          size_type& next_free_dof,
+                                                          std::map<size_type,periodic_dof_map_type>& periodic_dof,
+                                                          size_type tag,
+                                                          mpl::bool_<true> )
 {
 #if 0
     // id of the element adjacent to the face
@@ -367,15 +426,15 @@ DofTable<MeshType, FEType, PeriodicityType>::addFacePeriodicDof( element_type co
     // Loop on number of Dof per face
     for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l )
     {
-        auto temp = this->localToGlobal( iElAd,
-                                         element_type::numVertices*fe_type::nDofPerVertex +
-                                         element_type::numEdges*fe_type::nDofPerEdge +
-                                         iFaEl * fe_type::nDofPerFace + l,
-                                         c );
+        auto temp = M_doftable->localToGlobal( iElAd,
+                                               element_type::numVertices*fe_type::nDofPerVertex +
+                                               element_type::numEdges*fe_type::nDofPerEdge +
+                                               iFaEl * fe_type::nDofPerFace + l,
+                                               c );
         M_face_l2g[ __face_it->id()][ lc++ ] = boost::make_tuple( boost::get<0>( temp ),boost::get<1>( temp ),boost::get<2>( temp ),
-                                                element_type::numVertices*fe_type::nDofPerVertex +
-                                                element_type::numEdges*fe_type::nDofPerEdge +
-                                                iFaEl * fe_type::nDofPerFace + l );
+                                                                  element_type::numVertices*fe_type::nDofPerVertex +
+                                                                  element_type::numEdges*fe_type::nDofPerEdge +
+                                                                  iFaEl * fe_type::nDofPerFace + l );
     }
 
 #endif // 0

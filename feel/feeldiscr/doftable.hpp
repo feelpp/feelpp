@@ -21,8 +21,8 @@
  * \file doftable.hpp
  * \author Christophe Prud'homme
  */
-#ifndef _DOFTABLE_HH
-#define _DOFTABLE_HH
+#ifndef FEELPP_DOFTABLE_HH
+#define FEELPP_DOFTABLE_HH
 
 #include <set>
 #include <map>
@@ -750,149 +750,8 @@ public:
     /**
      * build the dof map
      */
-    void build( mesh_type& M )
-    {
-        M_mesh = boost::addressof( M );
+    void build( mesh_type& M );
 
-        M_elt_done.resize( M.numElements() );
-        std::fill( M_elt_done.begin(), M_elt_done.end(), false );
-
-        VLOG(2) << "[Dof::build] initDofMap\n";
-        this->initDofMap( M );
-
-        VLOG(2) << "[Dof::build] start building dof map\n";
-        size_type start_next_free_dof = 0;
-        VLOG(2) << "[Dof::build] start_next_free_dof = " << start_next_free_dof << "\n";
-
-        if ( is_periodic )
-        {
-            VLOG(2) << "[build] call buildPeriodicDofMap()\n";
-            start_next_free_dof = this->buildPeriodicDofMap( M );
-            VLOG(2) << "[Dof::build] start_next_free_dof(after periodic) = " << start_next_free_dof << "\n";
-        }
-
-        if ( is_discontinuous_locally )
-        {
-            VLOG(2) << "[build] call buildLocallyDiscontinuousDofMap()\n";
-            start_next_free_dof = this->buildLocallyDiscontinuousDofMap( M, start_next_free_dof );
-            VLOG(2) << "[Dof::build] start_next_free_dof(after local discontinuities) = " << start_next_free_dof << "\n";
-        }
-
-        VLOG(2) << "[build] call buildDofMap()\n";
-        this->buildDofMap( M, start_next_free_dof );
-        //std::cout << "[build] callFINISH buildDofMap() with god rank " << this->worldComm().godRank() <<"\n";
-
-#if !defined(NDEBUG)
-        VLOG(2) << "[build] check that all elements dof were assigned()\n";
-        element_const_iterator fit, fen;
-        boost::tie( fit, fen ) = M.elementsRange();
-        std::vector<boost::tuple<size_type,uint16_type,size_type> > em;
-
-        for ( ; fit != fen; ++fit )
-        {
-            const int ncdof = is_product?nComponents:1;
-
-            for ( uint16_type c = 0; c < ncdof; ++c )
-                if ( !this->isElementDone( fit->id(), c ) )
-                {
-                    em.push_back( boost::make_tuple( fit->id(), c, fit->marker().value() ) );
-                }
-        }
-
-        if ( !em.empty() )
-        {
-            VLOG(2) << "[build] some element dof were not assigned\n";
-
-            for ( size_type i = 0; i < em.size(); ++i )
-            {
-                VLOG(3) << " - element " << boost::get<0>( em[i] ) << " c=" << boost::get<1>( em[i] )
-                        << " m=" << boost::get<2>( em[i] ) << "\n";
-            }
-        }
-
-        else
-        {
-            VLOG(2) << "[build] check that all elements dof were assigned: OK\n";
-        }
-
-#endif // NDEBUG
-        VLOG(2) << "[Dof::build] n_dof = " << this->nLocalDofWithGhost() << "\n";
-
-        VLOG(2) << "[build] call buildBoundaryDofMap()\n";
-        this->buildBoundaryDofMap( M );
-
-
-        // multi process
-        if ( this->worldComm().localSize()>1 )
-            {
-                auto it_nlocDof = this->M_n_localWithGhost_df.begin();
-                auto const en_nlocDof = this->M_n_localWithGhost_df.end();
-                bool isP0continuous = true;
-                for ( ; it_nlocDof!=en_nlocDof && isP0continuous ; ++it_nlocDof )
-                    isP0continuous = isP0continuous && (*it_nlocDof==1);
-
-                if ( !isP0continuous )//this->M_n_dofs>1 )
-                    {
-#if defined(FEELPP_ENABLE_MPI_MODE)
-                        VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
-                        this->buildGhostDofMap( M );
-                        VLOG(2) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
-#else
-                        std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
-                        //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
-#endif
-                    }
-                else
-                    {
-                        for ( int proc=0; proc<this->worldComm().globalSize(); ++proc )
-                        {
-                            if (proc==0)
-                            {
-                                this->M_n_localWithoutGhost_df[proc] = 1;
-                                this->M_first_df_globalcluster[proc] = 0;
-                                this->M_last_df_globalcluster[proc] = 0;
-                            }
-                            else
-                            {
-                                this->M_n_localWithoutGhost_df[proc] = 0;
-                                this->M_first_df_globalcluster[proc] = 25;// 0;
-                                this->M_last_df_globalcluster[proc] = 25; //0;
-                            }
-                            this->M_n_localWithGhost_df[proc] = 1;
-                        }
-
-                        if (this->worldComm().globalRank()==0)
-                        {
-                            this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
-                            this->M_mapGlobalClusterToGlobalProcess[0]=0;
-                        }
-                        else
-                        {
-                            this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
-                        }
-
-                        this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
-                        this->M_mapGlobalProcessToGlobalCluster[0]=0;
-                    }
-        }
-
-        else
-        {
-#if defined(FEELPP_ENABLE_MPI_MODE)
-            // in sequential : identity map
-            const size_type s = this->M_n_localWithGhost_df[this->comm().rank()];
-            this->M_mapGlobalProcessToGlobalCluster.resize( s );
-            this->M_mapGlobalClusterToGlobalProcess.resize( s );
-
-            for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalProcessToGlobalCluster[i]=i;
-
-            for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalClusterToGlobalProcess[i]=i;
-
-#endif
-        }
-
-        VLOG(2) << "[Dof::build] done building the map\n";
-    }
 
     /**
      * build dof map associated to the periodic dof, must be called
@@ -1156,7 +1015,9 @@ public:
     std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
     pointIdToDofRelation(std::string fname="") const;
 private:
-
+    template<typename, typename > friend class DofFromElement;
+    template<typename, typename > friend class DofFromBoundary;
+    template<typename, typename > friend class DofFromPeriodic;
 
     void addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof );
     void addSubstructuringDofVertex( mesh_type const& M, size_type next_free_dof );
@@ -1534,6 +1395,152 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     generateFacePermutations( M, mpl::bool_<doperm>() );
 }
 template<typename MeshType, typename FEType, typename PeriodicityType>
+void
+DofTable<MeshType, FEType, PeriodicityType>::build( mesh_type& M )
+{
+    M_mesh = boost::addressof( M );
+
+    M_elt_done.resize( M.numElements() );
+    std::fill( M_elt_done.begin(), M_elt_done.end(), false );
+
+    VLOG(2) << "[Dof::build] initDofMap\n";
+    this->initDofMap( M );
+
+    VLOG(2) << "[Dof::build] start building dof map\n";
+    size_type start_next_free_dof = 0;
+    VLOG(2) << "[Dof::build] start_next_free_dof = " << start_next_free_dof << "\n";
+
+    if ( is_periodic )
+    {
+        VLOG(2) << "[build] call buildPeriodicDofMap()\n";
+        start_next_free_dof = this->buildPeriodicDofMap( M );
+        VLOG(2) << "[Dof::build] start_next_free_dof(after periodic) = " << start_next_free_dof << "\n";
+    }
+
+    if ( is_discontinuous_locally )
+    {
+        VLOG(2) << "[build] call buildLocallyDiscontinuousDofMap()\n";
+        start_next_free_dof = this->buildLocallyDiscontinuousDofMap( M, start_next_free_dof );
+        VLOG(2) << "[Dof::build] start_next_free_dof(after local discontinuities) = " << start_next_free_dof << "\n";
+    }
+
+    VLOG(2) << "[build] call buildDofMap()\n";
+    this->buildDofMap( M, start_next_free_dof );
+    //std::cout << "[build] callFINISH buildDofMap() with god rank " << this->worldComm().godRank() <<"\n";
+
+#if !defined(NDEBUG)
+    VLOG(2) << "[build] check that all elements dof were assigned()\n";
+    element_const_iterator fit, fen;
+    boost::tie( fit, fen ) = M.elementsRange();
+    std::vector<boost::tuple<size_type,uint16_type,size_type> > em;
+
+    for ( ; fit != fen; ++fit )
+    {
+        const int ncdof = is_product?nComponents:1;
+
+        for ( uint16_type c = 0; c < ncdof; ++c )
+            if ( !this->isElementDone( fit->id(), c ) )
+            {
+                em.push_back( boost::make_tuple( fit->id(), c, fit->marker().value() ) );
+            }
+    }
+
+    if ( !em.empty() )
+    {
+        VLOG(2) << "[build] some element dof were not assigned\n";
+
+        for ( size_type i = 0; i < em.size(); ++i )
+        {
+            VLOG(3) << " - element " << boost::get<0>( em[i] ) << " c=" << boost::get<1>( em[i] )
+                    << " m=" << boost::get<2>( em[i] ) << "\n";
+        }
+    }
+
+    else
+    {
+        VLOG(2) << "[build] check that all elements dof were assigned: OK\n";
+    }
+
+#endif // NDEBUG
+    VLOG(2) << "[Dof::build] n_dof = " << this->nLocalDofWithGhost() << "\n";
+
+    VLOG(2) << "[build] call buildBoundaryDofMap()\n";
+    this->buildBoundaryDofMap( M );
+
+
+    // multi process
+    if ( this->worldComm().localSize()>1 )
+    {
+        auto it_nlocDof = this->M_n_localWithGhost_df.begin();
+        auto const en_nlocDof = this->M_n_localWithGhost_df.end();
+        bool isP0continuous = true;
+        for ( ; it_nlocDof!=en_nlocDof && isP0continuous ; ++it_nlocDof )
+            isP0continuous = isP0continuous && (*it_nlocDof==1);
+
+        if ( !isP0continuous )//this->M_n_dofs>1 )
+        {
+#if defined(FEELPP_ENABLE_MPI_MODE)
+            VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
+            this->buildGhostDofMap( M );
+            VLOG(2) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
+#else
+            std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
+            //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
+#endif
+        }
+        else
+        {
+            for ( int proc=0; proc<this->worldComm().globalSize(); ++proc )
+            {
+                if (proc==0)
+                {
+                    this->M_n_localWithoutGhost_df[proc] = 1;
+                    this->M_first_df_globalcluster[proc] = 0;
+                    this->M_last_df_globalcluster[proc] = 0;
+                }
+                else
+                {
+                    this->M_n_localWithoutGhost_df[proc] = 0;
+                    this->M_first_df_globalcluster[proc] = 25;// 0;
+                    this->M_last_df_globalcluster[proc] = 25; //0;
+                }
+                this->M_n_localWithGhost_df[proc] = 1;
+            }
+
+            if (this->worldComm().globalRank()==0)
+            {
+                this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
+                this->M_mapGlobalClusterToGlobalProcess[0]=0;
+            }
+            else
+            {
+                this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
+            }
+
+            this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
+            this->M_mapGlobalProcessToGlobalCluster[0]=0;
+        }
+    }
+
+    else
+    {
+#if defined(FEELPP_ENABLE_MPI_MODE)
+        // in sequential : identity map
+        const size_type s = this->M_n_localWithGhost_df[this->comm().rank()];
+        this->M_mapGlobalProcessToGlobalCluster.resize( s );
+        this->M_mapGlobalClusterToGlobalProcess.resize( s );
+
+        for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalProcessToGlobalCluster[i]=i;
+
+        for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalClusterToGlobalProcess[i]=i;
+
+#endif
+    }
+
+    VLOG(2) << "[Dof::build] done building the map\n";
+}
+
+template<typename MeshType, typename FEType, typename PeriodicityType>
 size_type
 DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 {
@@ -1600,6 +1607,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
     periodic_element_list_iterator en_periodic = periodic_elements.end();
     size_type next_free_dof = 0;
 
+    DofFromPeriodic<self_type,fe_type> dfp( this, *M_fe );
     while ( it_periodic != en_periodic )
     {
         element_type const& __elt = *it_periodic->template get<0>();
@@ -1607,9 +1615,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
         if ( __face.marker().value() == M_periodicity.tag1() )
         {
-            addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
-            addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
-            addFacePeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
+            dfp.add(  __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
         }
 
         ++it_periodic;
@@ -1624,9 +1630,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
 
         if ( __face.marker().value() == M_periodicity.tag2() )
         {
-            addVertexPeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
-            addEdgePeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
-            addFacePeriodicDof( __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
+            dfp.add(  __elt, __face, next_free_dof, periodic_dof, __face.marker().value() );
         }
 
         ++it_periodic;
@@ -1873,7 +1877,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     //    this->M_first_df[processor] =  0;
 
     size_type next_free_dof = start_next_free_dof;
-    DofFromElement<self_type,fe_type> dfe( this, fe_type() );
+    DofFromElement<self_type,fe_type> dfe( this, *M_fe );
     for ( ; it_elt!=en_elt; ++it_elt )
     {
         if ( !this->isElementDone( it_elt->id() ) )
@@ -1978,7 +1982,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 
     DVLOG(2) << "[buildBoundaryDofMap] nb faces : " << nF << "\n";
     DVLOG(2) << "[buildBoundaryDofMap] nb dof faces : " << nDofF*nComponents << "\n";
-    DofFromBoundary<self_type, fe_type> dfb( this, fe_type() );
+    DofFromBoundary<self_type, fe_type> dfb( this, *M_fe );
     for ( size_type nf = 0; __face_it != __face_en; ++__face_it, ++nf )
     {
         LOG_IF(WARNING, !__face_it->isConnectedTo0() )
@@ -2514,4 +2518,4 @@ DofTable<MeshType, FEType, PeriodicityType>::pointIdToDofRelation(std::string fn
 #include <feel/feeldiscr/doftablempi.hpp>
 #endif
 
-#endif //_DOFTABLE_HH
+#endif //FEELPP_DOFTABLE_HH
