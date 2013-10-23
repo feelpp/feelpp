@@ -515,12 +515,11 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
                             ( geo,   *, option(_name="exporter.geometry").template as<int>() )
-                            ( worldcomm, *, Environment::worldComm() )
                             ( path, *( boost::is_convertible<mpl::_,std::string> ), std::string(".") )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
-    auto e =  exporter_type::New(Environment::vm(),name,worldcomm);
+    auto e =  exporter_type::New( Environment::vm(),name,mesh->worldComm() );
     e->setPrefix( name );
     e->setUseSingleTransientFile( fileset );
     e->setMesh( mesh, (ExporterGeometry) geo );

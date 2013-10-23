@@ -673,7 +673,8 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     PetscScalar kr, ki;
 
     int s;
-    VecGetSize( M_mode,&s );
+    ierr = VecGetSize( M_mode,&s );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
     ierr = EPSGetEigenpair( M_eps, i, &kr, &ki, M_mode, PETSC_NULL );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
@@ -685,9 +686,23 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     im = ki;
 #endif
 
-    vector_ptrtype solution( new VectorPetsc<value_type>( s, s ) );
+    //vector_ptrtype solution( new VectorPetsc<value_type>( s, s ) );
+    vector_ptrtype solution;
+    if ( this->mapRow().worldComm().globalSize()>1 )
+        solution = vector_ptrtype( new VectorPetscMPI<value_type>( M_mode,this->mapRowPtr() ) );
+    else
+        solution = vector_ptrtype( new VectorPetsc<value_type>( M_mode,this->mapRowPtr() ) );
+
+#if 0
+    for ( size_type k = 0; k < solution->map().nLocalDofWithGhost(); ++k )
+    {
+        std::cout << "sol(k)"<<solution->operator()(k) << std::endl;
+    }
+#endif
+#if 0
     double* a;
-    VecGetArray( M_mode, &a );
+    ierr = VecGetArray( M_mode, &a );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
 
     for ( int i = 0; i < s; ++i )
     {
@@ -695,7 +710,10 @@ SolverEigenSlepc<T>::eigenPair( unsigned int i )
     }
 
     solution->close();
-    VecRestoreArray( M_mode, &a );
+
+    ierr = VecRestoreArray( M_mode, &a );
+    CHKERRABORT( PETSC_COMM_WORLD,ierr );
+#endif
     return boost::make_tuple( re, im, solution );
 }
 

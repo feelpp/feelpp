@@ -3333,31 +3333,44 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
 
     int start_dual_index = 6;
 
+    if( math::abs(check_C0_pr - C0_pr)>1e-14 )
+    {
+        LOG( INFO )<<std::setprecision( 15 )<<" C0_pr without decomposition : "<<check_C0_pr;
+        LOG( INFO )<<std::setprecision( 15 )<<" C0_pr with decomposition    : "<<C0_pr;
+    }
+    if( math::abs(check_C0_pr - C0_pr)>1e-14 )
+    {
+        LOG( INFO )<<std::setprecision( 15 )<<" Lambda_pr without decomposition : "<<check_Lambda_pr;
+        LOG( INFO )<<std::setprecision( 15 )<<" Lamnda_pr with decomposition    : "<<Lambda_pr;
+    }
+    if( math::abs(check_Gamma_pr - Gamma_pr)>1e-14 )
+    {
+        LOG( INFO )<<std::setprecision( 15 )<<" Gamma_pr without decomposition : "<<check_Gamma_pr;
+        LOG( INFO )<<std::setprecision( 15 )<<" Gamma_pr with decomposition    : "<<Gamma_pr;
+    }
+    if( math::abs(check_C0_du - C0_du)>1e-14 )
+    {
+        LOG( INFO )<<std::setprecision( 15 )<<" C0_du without decomposition : "<<check_C0_du;
+        LOG( INFO )<<std::setprecision( 15 )<<" C0_du with decomposition    : "<<C0_du;
+    }
+    if( math::abs(check_C0_pr - C0_pr)>1e-14 )
+    {
+        LOG( INFO )<<std::setprecision( 15 )<<" Lambda_du without decomposition : "<<check_Lambda_du;
+        LOG( INFO )<<std::setprecision( 15 )<<" Lamnda_du with decomposition    : "<<Lambda_du;
+    }
+    if( math::abs(check_Gamma_pr - Gamma_pr)>1e-14 )
+    {
+        LOG( INFO )<<std::setprecision( 15 )<<" Gamma_du without decomposition : "<<check_Gamma_du;
+        LOG( INFO )<<std::setprecision( 15 )<<" Gamma_du with decomposition    : "<<Gamma_du;
+    }
+
 #if 0
     LOG(INFO)<<"[CRB::checkResidual]";
-    LOG(INFO)<<"====primal coefficients==== ";
-    LOG(INFO)<<"              c0_pr \t\t lambda_pr \t\t gamma_pr";
-    LOG(INFO)<<"computed : ";
-    LOG(INFO)<<std::setprecision( 16 )<<primal_residual_coeffs[time_index][0]<<"\t"<<primal_residual_coeffs[time_index][1]<<"\t"<<primal_residual_coeffs[time_index][2];
+    LOG(INFO)<<std::setprecision( 16 )<<"prima sum ( without decomposition ) = "<<check_C0_pr+check_Lambda_pr+check_Gamma_pr;
+    LOG(INFO)<<std::setprecision( 16 )<<"primal sum with decomposition       = "<<C0_pr+Lambda_pr+Gamma_pr;
+    LOG(INFO)<<std::setprecision( 16 )<<"dual sum ( without decomposition )  = "<<check_C0_du+check_Lambda_du+check_Gamma_du;
+    LOG(INFO)<<std::setprecision( 16 )<<"dual sum with decomposition         = "<<C0_du+Lambda_du+Gamma_du;
 
-    LOG(INFO)<<"\n";
-    LOG(INFO)<<"true     : ";
-    LOG(INFO)<<std::setprecision( 16 )<<check_C0_pr<<"\t"<<check_Lambda_pr<<"\t"<<check_Gamma_pr;
-    LOG(INFO)<<"====dual coefficients==== ";
-    LOG(INFO)<<"              c0_du \t\t lambda_du \t\t gamma_du";
-    LOG(INFO)<<"computed : ";
-
-    LOG(INFO)<<std::setprecision( 16 )<<dual_residual_coeffs[time_index][0]<<"\t"<<dual_residual_coeffs[time_index][1]<<"\t"<<dual_residual_coeffs[time_index][2];
-
-    LOG(INFO)<<"\ntrue     : ";
-    LOG(INFO)<<std::setprecision( 16 )<<check_C0_du<<"\t"<<check_Lambda_du<<"\t"<<check_Gamma_du;
-    LOG(INFO)<<std::setprecision( 16 )<<"primal_true_sum = "<<check_C0_pr+check_Lambda_pr+check_Gamma_pr;
-    LOG(INFO)<<std::setprecision( 16 )<<"dual_true_sum = "<<check_C0_du+check_Lambda_du+check_Gamma_du;
-
-    LOG(INFO)<<std::setprecision( 16 )<<"primal_computed_sum = "<<C0_pr+Lambda_pr+Gamma_pr;
-    LOG(INFO)<<std::setprecision( 16 )<<"dual_computed_sum = "<<C0_du+Lambda_du+Gamma_du;
-
-#endif
     LOG(INFO)<<"errors committed on coefficients ";
     LOG(INFO)<<std::setprecision( 16 )<<"C0_pr : "<<err_C0_pr<<"\tLambda_pr : "<<err_Lambda_pr<<"\tGamma_pr : "<<err_Gamma_pr;
     LOG(INFO)<<std::setprecision( 16 )<<"C0_du : "<<err_C0_du<<"\tLambda_du : "<<err_Lambda_du<<"\tGamma_du : "<<err_Gamma_du;
@@ -3370,6 +3383,8 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     double errGammadu = err_Gamma_pr/check_Gamma_pr;
     LOG(INFO)<<std::setprecision( 16 )<<errC0pr<<"\t"<<errLambdapr<<"\t"<<errGammapr;
     LOG(INFO)<<std::setprecision( 16 )<<errC0du<<"\t"<<errLambdadu<<"\t"<<errGammadu;
+#endif
+
 #if 1
     auto primal_residual = Frhs ;
     primal_residual->add( *Aun );
@@ -3385,10 +3400,10 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     double dual_norm_pr = math::sqrt( math::abs( C0_pr + Lambda_pr + Gamma_pr) );
     double check_dual_norm_du = math::sqrt( M_model->scalarProduct( __e_du,__e_du ) );
     double dual_norm_du = math::sqrt( math::abs(C0_du + Lambda_du + Gamma_du) );
-    LOG( INFO )<< "dual norm of primal residual without affine decomposition : "<<check_dual_norm_pr;
-    LOG( INFO )<< "dual norm of primal residual with affine decomposition    : "<<dual_norm_pr;
-    LOG( INFO )<< "dual norm of dual residual without affine decomposition : "<<check_dual_norm_du;
-    LOG( INFO )<< "dual norm of dual residual with affine decomposition    : "<<dual_norm_du;
+    LOG( INFO )<< "dual norm of primal residual without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_pr;
+    LOG( INFO )<< "dual norm of primal residual with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_pr;
+    LOG( INFO )<< "dual norm of dual residual without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_du;
+    LOG( INFO )<< "dual norm of dual residual with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_du;
 #endif
 #if 0
 
