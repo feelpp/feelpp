@@ -30,8 +30,8 @@
 #ifndef __OperatorLinearComposite_H
 #define __OperatorLinearComposite_H 1
 
-#include <feel/feel.hpp>
 #include <feel/feelcore/pslogger.hpp>
+#include <feel/feeldiscr/operatorlinear.hpp>
 
 namespace Feel
 {
