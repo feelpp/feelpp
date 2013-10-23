@@ -33,7 +33,7 @@ function builddox
 
 base_dir=${1:-$HOME}
 #Where the sources are stored
-feelpp_source=$base_dir/${2:-feelpp}
+feelpp_source=$base_dir/${2:-feelpp_pourDoc}
 #Where the gh-pages copy is
 gh_pages=$base_dir/${3:-gh-pages}
 
@@ -53,7 +53,7 @@ if [ ! -d ${feelpp_source} ];
 then 
   mkdir ${feelpp_source}; 
   cd ${feelpp_source};
-  git clone https://github.com/feelpp/feelpp.git
+  git clone https://github.com/feelpp/feelpp.git $feelpp_source
 else
   cd $feelpp_source
   git pull
@@ -66,7 +66,7 @@ builddox release/v0.95.0 $feelpp_source $gh_pages
 
 #cd $feelpp_source
 #git checkout develop
-#cd ${gh_pages}
-#git push origin gh-pages
+cd ${gh_pages}
+git push origin gh-pages
 
 
