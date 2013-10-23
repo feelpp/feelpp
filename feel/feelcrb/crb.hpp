@@ -277,7 +277,8 @@ public:
         M_WNmu_complement(),
         M_scmA( new scm_type( name+"_a", vm ) ),
         M_scmM( new scm_type( name+"_m", vm ) ),
-        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) )
+        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
+        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
     {
         // this is too early to load the DB, we don't have the model yet and the
         //associated function space for the reduced basis function if
@@ -317,7 +318,8 @@ public:
         M_WNmu_complement(),
         M_scmA( new scm_type( name+"_a", vm , model , false /*not scm for mass mastrix*/ )  ),
         M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
-        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) )
+        exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
+        M_database_contains_variance_info( vm["crb.save-information-for-variance"].template as<bool>())
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
@@ -329,7 +331,6 @@ public:
             LOG(INFO) << "database for basis functions " << M_elements_database.lookForDB() << " available and loaded\n";
             auto basis_functions = M_elements_database.wn();
             M_model->rBFunctionSpace()->setBasis( basis_functions );
-            M_database_contains_variance_info = this->vm()["crb.save-information-for-variance"].template as<bool>();
         }
         else
         {
@@ -6609,6 +6610,7 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
             ar & BOOST_SERIALIZATION_NVP( M_Cma_du );
             ar & BOOST_SERIALIZATION_NVP( M_Cmm_du );
     }
+
     ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
     if( M_database_contains_variance_info )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
@@ -6721,18 +6723,19 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP ( M_database_contains_variance_info );
     if( M_database_contains_variance_info )
         ar & BOOST_SERIALIZATION_NVP( M_variance_matrix_phi );
-        ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
-        ar & BOOST_SERIALIZATION_NVP( M_InitialGuessV_pr );
 
-        ar & BOOST_SERIALIZATION_NVP( M_current_mu );
-        ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
+    ar & BOOST_SERIALIZATION_NVP( M_Fqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_InitialGuessV_pr );
 
-        ar & BOOST_SERIALIZATION_NVP( M_maxerror );
-        ar & BOOST_SERIALIZATION_NVP( M_use_newton );
-        ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
-        ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_current_mu );
+    ar & BOOST_SERIALIZATION_NVP( M_no_residual_index );
 
-        if( this->vm()["crb.use-newton"].template as<bool>() != M_use_newton  )
+    ar & BOOST_SERIALIZATION_NVP( M_maxerror );
+    ar & BOOST_SERIALIZATION_NVP( M_use_newton );
+    ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
+    ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
+
+    if( this->vm()["crb.use-newton"].template as<bool>() != M_use_newton  )
         {
             if( M_use_newton )
                 throw std::logic_error( "[CRB::loadDB] ERROR in the database used the option use-newton=true and it's not the case in your option" );
