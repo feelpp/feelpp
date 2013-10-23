@@ -56,7 +56,7 @@ to get the following equation,
 \int_\Omega \mu \nabla \mathbf u : \nabla \mathbf v
 -\int_{\partial\Omega} \frac{\partial \mathbf u}{\partial \mathbf n} \cdot \mathbf v
 \right)
-+\int_\Omega ( \div(p \mathbf v) - \mathbf v \div(p) )
++\int_\Omega ( \div(p \mathbf v) - p\div(\mathbf v ) )
 =\int_\Omega \mathbf f \cdot \mathbf v \;.
 \label{eq:tuto-stk-1}
 \end{equation}
@@ -87,19 +87,23 @@ and after rearranging the integrals (\ref{eq:tuto-stk-1}) the variationnal formu
 +\int_\Omega \left( \div(\mathbf u) q - p \div(\mathbf v) \right)
 +
     \int_{\partial\Omega} \left( p \mathbf n - 
-    \underbrace{\frac{\partial \mathbf u}{\partial \mathbf n}}_{=0} \right)
+ \frac{\partial \mathbf u}{\partial \mathbf n}\right)
      \cdot \mathbf v
 =\int_\Omega \mathbf f \cdot \mathbf v 
 \label{eq:tuto-stk-varform}
 \end{equation}
 %
-We have an equation which can be rewritten as find $(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega)$
-such that for all $(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)$
+Let us suppose now that $(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)$, the variationnal formulation leads to:
+Find $(\mathbf{u},p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega)$ such that for all $(\mathbf{v},q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)$
 \begin{equation}
-    a((\mathbf u,p),(\mathbf v,q)) = l((\mathbf v,q))
-\label{eq:tuto-stk-2}
+\int_\Omega \mu \nabla \mathbf{u} :\nabla \mathbf{v}
++\int_\Omega \left( \nabla\cdot\mathbf{u} q - p \nabla\cdot\mathbf{v} \right)
+=\int_\Omega \mathbf{f} \cdot \mathbf{v}
 \end{equation}
-%
+Or equivalently:
+\begin{equation}
+  a((\mathbf{u},p),(\mathbf{v},q)) = l((\mathbf{v},q))
+\end{equation}
 where $a$ is a bilinear form, continuous, coercive and where $l$ is a linear form.
 Let's see the \feel code corresponding to this mathematical statement.
 (source \textcolor{magenta}{"doc/manual/tutorial/mystokes.cpp"}).
