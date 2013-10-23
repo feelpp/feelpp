@@ -86,7 +86,6 @@
 #include <feel/feeldiscr/parameter.hpp>
 #include <feel/feeldiscr/bases.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
-#include <feel/feelfilters/pointsettomesh.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 
@@ -2285,7 +2284,7 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto elt_it = P0h->mesh()->beginElement(); elt_it != P0h->mesh()->endElement(); ++elt_it )
+            for ( auto elt_it = P0h->mesh()->beginElementWithProcessId(); elt_it != P0h->mesh()->endElementWithProcessId(); ++elt_it )
             {
                 size_type eid = elt_it->id();
 
@@ -6625,7 +6624,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>>>
 Pch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
+                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6639,7 +6639,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>>
 Pdh( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
+                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6653,7 +6654,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>>
 Odh( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( _mesh=mesh,
+                                                                                       _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6667,7 +6669,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>>
 Pchv( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( _mesh=mesh,
+                                                                          _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6679,7 +6682,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>>
 THch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( _mesh=mesh,
+                                                                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ) );
 }
 
 

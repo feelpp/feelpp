@@ -122,7 +122,7 @@ public:
         :
         super1(),
         super2(),
-        M_mesh( new mesh_type( Environment::worldComm().subWorldCommSeq() ) ),
+        M_mesh( new mesh_type( Environment::worldCommSeq() ) ),
         M_vertices()
     {}
     PointSetToMesh( PointSetToMesh const & p )

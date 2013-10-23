@@ -2116,6 +2116,8 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     typename self_type::element_iterator el_it;
     typename self_type::element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *M_mesh );
+    const size_type nActifElt = std::distance( el_it, el_en );
+    if ( nActifElt==0 ) return;
 
     typedef typename self_type::element_type element_type;
     typedef typename gm_type::template Context<vm::JACOBIAN|vm::KB|vm::POINT, element_type> gmc_type;
@@ -2131,7 +2133,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     M_ref_coords.clear();
     M_cvx_pts.clear();
     M_pts_cvx.clear();
-    M_pts_cvx.resize( M_mesh->numElements() );
+    M_pts_cvx.resize( nActifElt );
 
     KDTree::points_type boxpts;
     gmc_ptrtype __c( new gmc_type( M_mesh->gm(),
