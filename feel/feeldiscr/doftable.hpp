@@ -68,7 +68,7 @@ namespace bimaps = boost::bimaps;
  * \author Christophe Prud'homme
  * \author Goncalo Pena
  */
-template<typename MeshType,  typename FEType, typename PeriodicityType>
+template<typename MeshType,  typename FEType, typename PeriodicityType, typename MortarType>
 class DofTable : public DataMap
 {
     typedef DataMap super;
@@ -80,7 +80,8 @@ public:
     typedef MeshType mesh_type;
     typedef FEType fe_type;
     typedef boost::shared_ptr<FEType> fe_ptrtype;
-
+    typedef MortarType mortar_type;
+    static const bool is_mortar = mortar_type::is_mortar;
 
     typedef typename mesh_type::pid_element_const_iterator pid_element_const_iterator;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
@@ -128,7 +129,7 @@ public:
     //typedef ContinuityType continuity_type;
     typedef typename fe_type::continuity_type continuity_type;
 
-    typedef DofTable<MeshType, FEType, PeriodicityType> self_type;
+    typedef DofTable<MeshType, FEType, PeriodicityType, MortarType> self_type;
 
 
     /**
@@ -1224,11 +1225,11 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
-const uint16_type DofTable<MeshType, FEType, PeriodicityType>::nComponents;
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+const uint16_type DofTable<MeshType, FEType, PeriodicityType, MortarType>::nComponents;
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
-DofTable<MeshType, FEType, PeriodicityType>::DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm )
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& mesh, fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm )
     :
     super( _worldComm ),
     M_fe( _fe ),
@@ -1253,8 +1254,8 @@ DofTable<MeshType, FEType, PeriodicityType>::DofTable( mesh_type& mesh, fe_ptrty
     buildBoundaryDofMap( mesh );
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
-DofTable<MeshType, FEType, PeriodicityType>::DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm )
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype const& _fe, periodicity_type const& periodicity, WorldComm const& _worldComm )
     :
     super( _worldComm ),
     M_fe( _fe ),
@@ -1271,8 +1272,8 @@ DofTable<MeshType, FEType, PeriodicityType>::DofTable( fe_ptrtype const& _fe, pe
 {
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
-DofTable<MeshType, FEType, PeriodicityType>::DofTable( const DofTable<MeshType, FEType, PeriodicityType> & dof2 )
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_type & dof2 )
     :
     super( dof2 ),
     M_fe( dof2.M_fe ),
@@ -1289,9 +1290,9 @@ DofTable<MeshType, FEType, PeriodicityType>::DofTable( const DofTable<MeshType, 
 {
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::showMe() const
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::showMe() const
 {
     LOG(INFO)  << " Degree of Freedom (DofTable) Object" << "\n";
     //if ( verbose )
@@ -1346,9 +1347,9 @@ DofTable<MeshType, FEType, PeriodicityType>::showMe() const
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& M )
 {
     M_n_el = M.numElements();
 
@@ -1394,9 +1395,9 @@ DofTable<MeshType, FEType, PeriodicityType>::initDofMap( mesh_type& M )
     DVLOG(2) << "generateFacePermutations: " << doperm << "\n";
     generateFacePermutations( M, mpl::bool_<doperm>() );
 }
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::build( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 {
     M_mesh = boost::addressof( M );
 
@@ -1540,9 +1541,9 @@ DofTable<MeshType, FEType, PeriodicityType>::build( mesh_type& M )
     VLOG(2) << "[Dof::build] done building the map\n";
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 size_type
-DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( mesh_type& M )
 {
     size_type nldof =
         fe_type::nDofPerVolume * element_type::numVolumes +
@@ -1829,16 +1830,16 @@ DofTable<MeshType, FEType, PeriodicityType>::buildPeriodicDofMap( mesh_type& M )
     return max_gid+1;
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 size_type
-DofTable<MeshType, FEType, PeriodicityType>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
 {
     typedef typename continuity_type::template apply<MeshType, self_type> builder;
     return fusion::accumulate( typename continuity_type::discontinuity_markers_type(), start_next_free_dof,  builder( M, *this ) );
 }
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
 {
     if ( !M_dof_indices.empty() )
     {
@@ -1958,9 +1959,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( mesh_type& M )
 {
     size_type nDofF = nLocalDofOnFace(true);
     M_n_dof_per_face_on_bdy = nDofF;
@@ -2016,9 +2017,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildBoundaryDofMap( mesh_type& M )
 #endif
 }    // updateBoundaryDof
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M )
 {
     if ( !M_dof_points.empty() )
         return;
@@ -2106,9 +2107,9 @@ DofTable<MeshType, FEType, PeriodicityType>::generateDofPoints(  mesh_type& M )
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_type& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoints(  mesh_type& M,
         periodic_element_list_type const& periodic_elements,
         dof_points_type& periodic_dof_points )
 {
@@ -2245,18 +2246,18 @@ DofTable<MeshType, FEType, PeriodicityType>::generatePeriodicDofPoints(  mesh_ty
 }
 
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof )
 {
     addSubstructuringDofVertex( M, next_free_dof );
     addSubstructuringDofEdge( M, next_free_dof, mpl::int_<nDim>() );
     addSubstructuringDofFace( M, next_free_dof, mpl::int_<nDim>() );
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofVertex(mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofVertex(mesh_type const& M,
                                                                         size_type next_free_dof )
 {
         std::cout << "found CrossPoints and WireBasket\n";
@@ -2290,23 +2291,23 @@ DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofVertex(mesh_typ
         }
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
                                                                        size_type next_free_dof,
                                                                        mpl::int_<1> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
                                                                        size_type next_free_dof,
                                                                        mpl::int_<2> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
                                                                        size_type next_free_dof,
                                                                        mpl::int_<3> )
 {
@@ -2357,23 +2358,23 @@ DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofEdge( mesh_type
 
     }
 }
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
                                                                        size_type next_free_dof,
                                                                        mpl::int_<1> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
                                                                        size_type next_free_dof,
                                                                        mpl::int_<2> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
                                                                        size_type next_free_dof,
                                                                        mpl::int_<3> )
 {
@@ -2458,9 +2459,9 @@ DofTable<MeshType, FEType, PeriodicityType>::addSubstructuringDofFace( mesh_type
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 std::pair<std::map<size_type,size_type>,std::map<size_type,size_type> >
-DofTable<MeshType, FEType, PeriodicityType>::pointIdToDofRelation(std::string fname) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::pointIdToDofRelation(std::string fname) const
 {
     std::map<size_type,size_type> pidtodof,doftopid;
     element_const_iterator it_elt = M_mesh->beginElementWithProcessId( M_mesh->worldComm().localRank() );
