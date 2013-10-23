@@ -73,6 +73,9 @@ public:
     typedef boost::tuple<real_type, real_type, vector_ptrtype> eigenpair_type;
     typedef std::map<real_type, eigenpair_type> eigenmodes_type;
 
+    typedef DataMap datamap_type;
+    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -295,6 +298,32 @@ public:
         M_ncv = ncv;
     }
 
+    datamap_type const& mapRow() const
+    {
+        return *M_mapRow;
+    }
+    datamap_type const& mapCol() const
+    {
+        return *M_mapCol;
+    }
+    datamap_ptrtype const& mapRowPtr() const
+    {
+        return M_mapRow;
+    }
+    datamap_ptrtype const& mapColPtr() const
+    {
+        return M_mapCol;
+    }
+
+    void setMapRow( datamap_ptrtype const& d )
+    {
+        M_mapRow=d;
+    }
+    void setMapCol( datamap_ptrtype const& d )
+    {
+        M_mapCol=d;
+    }
+
     //@}
 
     /** @name  Methods
@@ -439,6 +468,10 @@ protected:
 
     //! tolerance
     value_type M_tolerance;
+
+    // datamap
+    datamap_ptrtype M_mapRow,M_mapCol;
+
 };
 
 /**
@@ -490,6 +523,8 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
     eigen->setMaxIterations( maxit );
     eigen->setSpectralTransform( transform );
     eigen->setTolerance( tolerance );
+    eigen->setMapRow( matrixA->mapRowPtr() );
+    eigen->setMapCol( matrixA->mapColPtr() );
 
     LOG(INFO) << "number of eigen values = " << nev << "\n";
     LOG(INFO) << "number of eigen values converged = " << ncv << "\n";
