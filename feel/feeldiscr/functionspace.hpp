@@ -2093,7 +2093,7 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto elt_it = P0h->mesh()->beginElement(); elt_it != P0h->mesh()->endElement(); ++elt_it )
+            for ( auto elt_it = P0h->mesh()->beginElementWithProcessId(); elt_it != P0h->mesh()->endElementWithProcessId(); ++elt_it )
             {
                 size_type eid = elt_it->id();
 
