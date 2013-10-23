@@ -37,7 +37,7 @@ namespace Feel
  * @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  * @see DofTable, Dof
  */
-template <typename FEType, typename DofTableType>
+template <typename DofTableType, typename FEType>
 class DofFromElement
 {
 public:
@@ -54,7 +54,37 @@ public:
      */
     //@{
     typedef DofTableType doftable_type;
+    typedef typename doftable_type::mesh_type mesh_type;
+    typedef typename doftable_type::element_type element_type;
+    typedef typename doftable_type::face_type face_type;
+    typedef typename doftable_type::ref_shift_type ref_shift_type;
     typedef FEType fe_type;
+    typedef typename doftable_type::dof_relation dof_relation;
+    typedef typename element_type::edge_permutation_type edge_permutation_type;
+    typedef typename element_type::face_permutation_type face_permutation_type;
+
+    static const uint16_type nOrder = fe_type::nOrder;
+    static const uint16_type nDim = mesh_type::nDim;
+    static const uint16_type nRealDim = mesh_type::nRealDim;
+    static const uint16_type Shape = mesh_type::Shape;
+    static const uint16_type nComponents = fe_type::nComponents;
+    static const uint16_type nComponents1 = fe_type::nComponents1;
+    static const uint16_type nComponents2 = fe_type::nComponents2;
+
+
+    static const bool is_continuous = fe_type::isContinuous;
+    static const bool is_discontinuous_locally = fe_type::continuity_type::is_discontinuous_locally;
+    static const bool is_discontinuous_totally = fe_type::continuity_type::is_discontinuous_totally;
+
+    static const bool is_scalar = fe_type::is_scalar;
+    static const bool is_vectorial = fe_type::is_vectorial;
+    static const bool is_tensor2 = fe_type::is_tensor2;
+    static const bool is_modal = fe_type::is_modal;
+    static const bool is_product = fe_type::is_product;
+
+    static const bool is_p0_continuous = ( ( nOrder == 0 ) && is_continuous );
+
+    static const uint16_type nDofPerElement = mpl::if_<mpl::bool_<is_product>, mpl::int_<fe_type::nLocalDof*nComponents1>, mpl::int_<fe_type::nLocalDof> >::type::value;
 
     //@}
 
@@ -62,7 +92,7 @@ public:
      */
     //@{
 
-    DofFromElement( doftable_type* doftable, fe_type const& fe );
+    DofFromElement( doftable_type* doftable, fe_type const& fe ): M_doftable(doftable), M_fe( fe ) {}
 
     //! destructor
     ~DofFromElement() {}
@@ -105,6 +135,9 @@ public:
 protected:
 
 private:
+    doftable_type* M_doftable;
+    fe_type const& M_fe;
+private:
     //! default constructor
     DofFromElement();
     //! copy constructor
@@ -144,7 +177,7 @@ private:
             {
                 //const size_type gDof = global_shift + ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
                 const size_type gDof = ( __elt.point( i ).id() ) * fe_type::nDofPerVertex + l;
-                this->insertDof( ie, lc, i, boost::make_tuple( 0, 0, gDof ),
+                M_doftable->insertDof( ie, lc, i, boost::make_tuple( 0, 0, gDof ),
                                  processor, next_free_dof, 1, false, global_shift, __elt.point( i ).marker() );
             }
         }
@@ -184,7 +217,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerEdge + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -238,7 +271,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
             }
         }
 
@@ -293,7 +326,7 @@ private:
                 else
                     FEELPP_ASSERT( 0 ).error ( "invalid edge permutation" );
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, boost::make_tuple( 1, 0, gDof ), processor, next_free_dof, sign, false, global_shift, __elt.edge( i ).marker() );
             }
         }
 
@@ -329,7 +362,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerFace; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerFace + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -391,7 +424,7 @@ private:
                         gDof += l;
 
                     else
-                        gDof += vector_permutation[permutation][l];
+                        gDof += M_doftable->vector_permutation[permutation][l];
                 }
 
                 else
@@ -409,7 +442,7 @@ private:
                     }
                 }
 
-                this->insertDof( ie, lc, i, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
+                M_doftable->insertDof( ie, lc, i, boost::make_tuple( 2, 0, gDof ), processor, next_free_dof, sign, false, global_shift,__elt.face( i ).marker() );
 
             }
         }
@@ -442,7 +475,7 @@ private:
         for ( uint16_type l = 0; l < fe_type::nDofPerVolume; ++l, ++lc )
         {
             const size_type gDof = is_p0_continuous? l:ie * fe_type::nDofPerVolume + l;
-            this->insertDof( ie, lc, l, boost::make_tuple( 3, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
+            M_doftable->insertDof( ie, lc, l, boost::make_tuple( 3, 0, gDof ), processor, next_free_dof, 1, false, global_shift, __elt.marker() );
         }
 
         // update shifts
@@ -454,20 +487,20 @@ private:
 
 };
 
-template <typename FEType, typename DofTableType>
+template <typename DofTableType,typename FEType>
 void
-DofFromElement::add( element_type const& __elt,
-                     size_type& next_free_dof,
-                     size_type processor,
-                     size_type shift )
+DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
+                                          size_type& next_free_dof,
+                                          size_type processor,
+                                          size_type shift )
 {
 
-    size_type nldof = this->nLocalDof( true );
+    size_type nldof = M_doftable->nLocalDof( true );
 
     DVLOG(3) << "adding dof from element " << __elt.id() << "\n";
     size_type gdofcount = shift;
     DVLOG(3) << "next_free_dof " << next_free_dof  << "\n";
-    DVLOG(3) << "current dof " << dofIndex( next_free_dof ) << "\n";
+    DVLOG(3) << "current dof " << M_doftable->dofIndex( next_free_dof ) << "\n";
 
 
     /*
@@ -508,8 +541,8 @@ DofFromElement::add( element_type const& __elt,
         {
             for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
             {
-                M_el_l2g.insert( dof_relation( LocalDof( ie, fe_type::nLocalDof*c + l ),
-                                               Dof( ( dofIndex( next_free_dof ) ) , 1, false ) ) );
+                M_doftable->M_el_l2g.insert( dof_relation( LocalDof( ie, fe_type::nLocalDof*c + l ),
+                                                           Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
             }
         }
     }
