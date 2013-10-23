@@ -6353,7 +6353,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>>>
 Pch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
+                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6367,7 +6368,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>>
 Pdh( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
+                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6381,7 +6383,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>>
 Odh( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( _mesh=mesh,
+                                                                                       _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6395,7 +6398,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>>
 Pchv( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( _mesh=mesh,
+                                                                          _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6407,7 +6411,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>>
 THch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( _mesh=mesh,
+                                                                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ) );
 }
 
 
