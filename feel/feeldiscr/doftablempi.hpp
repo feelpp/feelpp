@@ -27,9 +27,9 @@
 namespace Feel
 {
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostDofMap( mesh_type& mesh )
 {
 #if 0 //old
 
@@ -100,9 +100,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh )
 {
     //------------------------------------------------------------------------------//
     size_type nbFaceDof = invalid_size_type_value;
@@ -294,9 +294,9 @@ updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& thef
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
                                                                                                         std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend,
                                                                                                         std::set<int> & procRecvData )
 {
@@ -464,9 +464,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDofMapContinuousGhostDof( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMapContinuousGhostDof( mesh_type& mesh,
                                                                                                         std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
                                                                                                         std::set<int> const& procRecvData )
 {
@@ -695,9 +695,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDofMapDiscontinuous()
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMapDiscontinuous()
 {
     const int myRank = this->worldComm().rank();
     //------------------------------------------------------------------------------//
@@ -757,9 +757,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostInterProcessDofMap( mesh_type& mesh,
         std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof )
 {
     //------------------------------------------------------------------------------//
@@ -802,9 +802,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMap( mesh_
 //--------------------------------------------------------------------------------------------------------//
 
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapInit( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostInterProcessDofMapInit( mesh_type& mesh,
                                                                                std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend )
 {
 
@@ -1055,9 +1055,9 @@ searchPartitionAroundEdge( const int myRank,
 
 } // namespace detail
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 boost::tuple<bool, std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > >
-DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostInterProcessDofMapRecursive( mesh_type& mesh,
                                                                                     std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
                                                                                     std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof,
                                                                                     std::vector< std::set<size_type > > & memoryFace )
@@ -1325,9 +1325,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapRecursi
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildDofNotPresent( std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofNotPresent( std::map<size_type,boost::tuple<size_type,size_type> > const & mapInterProcessDof,
                                                                  std::map<size_type,boost::tuple<size_type,size_type> > & setInterProcessDofNotPresent )
 
 {
@@ -1347,9 +1347,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofNotPresent( std::map<size_t
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDofMap( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGlobalProcessToGlobalClusterDofMap( mesh_type& mesh,
         std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent )
 {
     const int myRank = this->worldComm().rank();
@@ -1413,9 +1413,9 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent )
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent )
 {
     std::vector<int> nbMsgToSend2( this->worldComm().size(), 0 );
     std::vector< std::map<int,size_type> > mapMsg2( this->worldComm().size() );
