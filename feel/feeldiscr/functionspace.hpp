@@ -86,7 +86,6 @@
 #include <feel/feeldiscr/parameter.hpp>
 #include <feel/feeldiscr/bases.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
-#include <feel/feelfilters/pointsettomesh.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 
