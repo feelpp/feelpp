@@ -620,11 +620,13 @@ VectorUblas<T,Storage>::checkInvariant() const
     ( this->size() )( this->localSize() ).error( "vector invalid size" );
     FEELPP_ASSERT ( M_vec.size() == this->localSize() )
     ( M_vec.size() )( this->localSize() ).error( "vector invalid size" );
-    FEELPP_ASSERT ( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() )
-    ( this->size() )
-    ( this->lastLocalIndex() )
-    ( this->firstLocalIndex() )
-    ( this->localSize() ).error( "vector invalid size" );
+    DCHECK( ( this->lastLocalIndex() - this->firstLocalIndex() ) == this->localSize() ||
+            (this->localSize()==0 && this->comm().globalSize()>1 ) )
+        << "vector invalid size"
+        << " this->size()="<< this->size()
+        << " this->lastLocalIndex()=" << this->lastLocalIndex()
+        << " this->firstLocalIndex()=" << this->firstLocalIndex()
+        << " this->localSize()=" << this->localSize() << "\n";
 }
 
 namespace detail
