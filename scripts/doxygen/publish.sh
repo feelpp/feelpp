@@ -33,7 +33,7 @@ function builddox
 
 base_dir=${1:-$HOME}
 #Where the sources are stored
-feelpp_source=$base_dir/${2:-feelpp_pourDoc}
+feelpp_source=$base_dir/${2:-feelpp_GenereDoc}
 #Where the gh-pages copy is
 gh_pages=$base_dir/${3:-gh-pages}
 
