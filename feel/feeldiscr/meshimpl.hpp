@@ -2448,6 +2448,8 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
     FEELPP_ASSERT( IsInit == true )
     ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
+    //need to call init else points in function space context are never found
+    if ( !IsInit ) init();
 
     bool find_x;
     size_type cv_id=eltHypothetical;

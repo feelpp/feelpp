@@ -57,6 +57,7 @@
 #include <Eigen/Dense>
 
 #include <feel/feelcore/pslogger.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 
 
@@ -122,7 +123,8 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
+class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >,
+                   public boost::enable_shared_from_this< HeatShield >
 {
 public:
 
@@ -178,6 +180,10 @@ public:
     typedef space_ptrtype functionspace_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -316,6 +322,14 @@ public:
     space_ptrtype functionSpace()
     {
         return Xh;
+    }
+
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
     }
 
     //! return the parameter space
@@ -580,6 +594,7 @@ private:
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
     space_ptrtype Xh;
+    rbfunctionspace_ptrtype RbXh;
 
     sparse_matrix_ptrtype D,M,Mpod,InnerMassMatrix;
     vector_ptrtype F;
@@ -733,6 +748,8 @@ void HeatShield::initModel()
     Xh = space_type::New( mesh );
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
+
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
 
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
