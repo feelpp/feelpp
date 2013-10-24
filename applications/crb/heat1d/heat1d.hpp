@@ -38,6 +38,7 @@
 #include <feel/feelalg/backend.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelpoly/im.hpp>
 
@@ -148,7 +149,8 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class Heat1D : public ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition>
+class Heat1D : public ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition> ,
+               public boost::enable_shared_from_this< Heat1D >
 {
 public:
 
@@ -198,6 +200,10 @@ public:
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -324,6 +330,15 @@ public:
     {
         return Xh;
     }
+
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
+    }
+
 
     //! return the parameter space
     parameterspace_ptrtype parameterSpace() const
@@ -541,6 +556,7 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
+    rbfunctionspace_ptrtype RbXh;
     sparse_matrix_ptrtype D,M;
     vector_ptrtype F;
     element_ptrtype pT;
@@ -598,6 +614,8 @@ Heat1D::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+    LOG( INFO ) << "size of RB : "<<RbXh->size();
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
@@ -906,6 +924,12 @@ Heat1D::run( const double * X, unsigned long N, double * Y, unsigned long P )
 double
 Heat1D::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve )
 {
+
+    LOG( INFO ) << "size of Rb : "<<RbXh->size();
+    for(int i=0;i<RbXh->size();i++)
+        LOG( INFO )<<"name of basis : "<<RbXh->primalBasisElement( i ).name();
+    for(int i=0;i<RbXh->size();i++)
+        LOG( INFO )<<"norm of basis : "<<RbXh->primalBasisElement( i ).l2Norm();
     using namespace vf;
     if( need_to_solve )
         this->solve( mu, pT );
