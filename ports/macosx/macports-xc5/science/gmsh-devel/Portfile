@@ -33,11 +33,12 @@ conflicts           gmsh
 #compiler.blacklist  clang
 #configure.compiler macports-gcc-4.8
 
-configure.cxxflags-append "-stdlib=libc++"
-configure.ldflags-append "-stdlib=libc++"
+# configure.cxxflags-append "-stdlib=libc++"
+# configure.ldflags-append "-stdlib=libc++"
 
-worksrcdir	build
-configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../trunk" }
+# worksrcdir	build
+configure.cmd       cmake
+configure	{ system "mkdir -p ${worksrcpath} && cd ${worksrcpath} && ${configure.cmd} ${worksrcpath} ${configure.args}" }
 
 #configure.pre_args
 configure.args-append \
@@ -47,23 +48,25 @@ configure.args-append \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
-    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
     -DENABLE_OS_SPECIFIC_INSTALL=OFF\
-    -DENABLE_BUILD_LIB=ON\
     -DENABLE_BUILD_SHARED=ON\
     -DENABLE_BUILD_DYNAMIC=ON\
     -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
     -DENABLE_OCC:BOOL=OFF \
-    -DENABLE_FLTK:BOOL=ON\
+    -DENABLE_FLTK:BOOL=OFF\
     -DENABLE_GRAPHICS:BOOL=ON\
     -DENABLE_METIS=ON \
     -DENABLE_TAUCS=OFF
+#    -DENABLE_BUILD_LIB=ON\
 #    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8\
 #    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8\
 
-build.target all shared
+set configure.args "${configure.args} -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\""
+
+# build.target all shared
 
 depends_lib  \
+    port:readline \
     port:mesa \
     port:cmake \
     port:libpng \
@@ -76,6 +79,29 @@ depends_lib  \
     port:jpeg \
     port:zlib \
     port:texinfo
+
+pre-configure {
+    # Append stdlib specification
+    # if {[info exists configure.cxx_stdlib] &&
+    #    ${configure.cxx_stdlib} ne {} &&
+    #    [string match *clang* ${configure.cxx}]} { }
+    if {[info exists configure.cxx_stdlib] &&
+        ${configure.cxx_stdlib} ne {}} {
+	configure.cxxflags-append "-stdlib=${configure.cxx_stdlib}"
+	configure.ldflags-append "-stdlib=${configure.cxx_stdlib}"
+	puts ${configure.ldflags}
+        #return -code error "Defined"
+    } else {
+        #return -code error "Not defined"
+    } 
+
+    set configure.args "${configure.args} -DCMAKE_MODULE_LINKER_FLAGS=\"${configure.ldflags}\" -DCMAKE_SHARED_LINKER_FLAGS=\"${configure.ldflags}\" -DCMAKE_C_FLAGS=\"${configure.cflags}\" -DCMAKE_CXX_FLAGS=\"${configure.cxxflags}\""
+
+    set configure.args [regsub -all ({}\ )+ ${configure.args} ""]
+
+    #puts ${configure.args}
+#return -code error "test"
+}
 
 variant slepc description {compile with PETSC/SLEPC support} {
     depends_lib-append      port:slepc

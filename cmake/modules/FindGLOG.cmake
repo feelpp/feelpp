@@ -38,7 +38,7 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
 # try to find glog headers, if not found then install glog from contrib into
 # build directory and set GLOG_INCLUDE_DIR and GLOG_LIBRARIES
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
-  ${CMAKE_BINARY_DIR}/contrib/glog/include
+  ${CMAKE_BINARY_DIR}/contrib/glog-svn/include
   $ENV{FEELPP_DIR}/include
   $ENV{FEELPP_DIR}/include/feel
   NO_DEFAULT_PATH
@@ -66,11 +66,21 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog/ )
   if ( (${CMAKE_SOURCE_DIR}/contrib/glog/src/glog/logging.h.in IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h) OR
       ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
     message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
-    execute_process(
-      COMMAND make -k -j${NProcs2} install
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
-      OUTPUT_QUIET
-      )
+    if ( APPLE )
+      execute_process(
+	# the current version packaged in contrib is not compiling with libc++ 
+        #COMMAND make -k -j${NProcs2} install CXXFLAGS="-stdlib=libc++"
+        COMMAND make -k -j${NProcs2} install
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+        OUTPUT_QUIET
+        )
+    else()
+      execute_process(
+        COMMAND make -k -j${NProcs2} install
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+        OUTPUT_QUIET
+        )
+    endif()
   endif()
 endif()
 
