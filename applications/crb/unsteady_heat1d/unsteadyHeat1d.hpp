@@ -56,6 +56,7 @@
 #include <Eigen/Dense>
 
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 namespace Feel
 {
@@ -156,7 +157,8 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class UnsteadyHeat1D : public ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition>
+class UnsteadyHeat1D : public ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition>,
+                       public boost::enable_shared_from_this< UnsteadyHeat1D >
 {
 public:
 
@@ -215,6 +217,10 @@ public:
     typedef space_ptrtype functionspace_ptrtype;
     typedef space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -367,6 +373,13 @@ public:
     space_ptrtype functionSpace()
     {
         return Xh;
+    }
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
     }
 
     //! return the parameter space
@@ -598,6 +611,7 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
+    rbfunctionspace_ptrtype RbXh;
     sparse_matrix_ptrtype D,M,Mpod;
     vector_ptrtype F;
     element_ptrtype pT;
@@ -660,6 +674,8 @@ UnsteadyHeat1D::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 

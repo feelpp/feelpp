@@ -333,7 +333,6 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
                                    ( matrix,( d_sparse_matrix_ptrtype ),d_sparse_matrix_ptrtype() )
 
                                    ( pcfactormatsolverpackage,( MatSolverPackageType ), MATSOLVER_DEFAULT )
-                                   ( worldcomm,      *, Environment::worldComm() )
                                    ( rebuild,      (bool), false )
                                      )
     )
@@ -361,7 +360,7 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( boost::shared_ptr<Preconditioner<double> > ),
     else
     {
 
-        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend->type(), worldcomm );
+        preconditioner_ptrtype p = Preconditioner<double>::build( prefix, backend->type(), backend->comm() );
         p->setType( pc );
         p->setMatSolverPackageType( pcfactormatsolverpackage );
 
