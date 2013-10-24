@@ -3327,10 +3327,34 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     double dual_norm_pr = math::sqrt( math::abs( C0_pr + Lambda_pr + Gamma_pr) );
     double check_dual_norm_du = math::sqrt( M_model->scalarProduct( __e_du,__e_du ) );
     double dual_norm_du = math::sqrt( math::abs(C0_du + Lambda_du + Gamma_du) );
-    LOG( INFO )<< "dual norm of primal residual without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_pr;
-    LOG( INFO )<< "dual norm of primal residual with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_pr;
+
+    double sum_pr =   C0_pr + Lambda_pr + Gamma_pr ;
+    double sum_du =   C0_du + Lambda_du + Gamma_du  ;
+    double check_sum_pr =   check_C0_pr + check_Lambda_pr + check_Gamma_pr ;
+    double check_sum_du =   check_C0_du + check_Lambda_du + check_Gamma_du ;
+
+    double alpha=1;
+    double t;
+    if ( M_error_type == CRB_RESIDUAL_SCM )
+    {
+        M_scmA->setScmForMassMatrix( false );
+        boost::tie( alpha, t ) = M_scmA->lb( mu );
+    }
+    LOG( INFO )<< "primal sum without affine decomposition       : "<<std::setprecision( 15 )<<check_sum_pr;
+    LOG( INFO )<< "primal sum with affine decomposition          : "<<std::setprecision( 15 )<<sum_pr;
+    LOG( INFO )<< "dual sum without affine decomposition       : "<<std::setprecision( 15 )<<check_sum_du;
+    LOG( INFO )<< "dual sum with affine decomposition          : "<<std::setprecision( 15 )<<sum_du;
+    LOG( INFO )<< "dual norm of primal residual without affine decomposition       : "<<std::setprecision( 15 )<<check_dual_norm_pr;
+    LOG( INFO )<< "dual norm of primal residual with affine decomposition          : "<<std::setprecision( 15 )<<dual_norm_pr;
     LOG( INFO )<< "dual norm of dual residual without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_du;
     LOG( INFO )<< "dual norm of dual residual with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_du;
+    LOG( INFO )<< "Primal Error Estimator without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_pr/alpha;
+    LOG( INFO )<< "Primal Error Estimator with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_pr/alpha;
+    LOG( INFO )<< "Dual Error Estimator without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_du/alpha;
+    LOG( INFO )<< "Dual Error Estimator with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_du/alpha;
+    double epsilon =2.22e-16; //machine precision
+    LOG( INFO )<<"Precision bound for primal error estimator : "<< C0_pr/alpha*math::sqrt( epsilon);
+    LOG( INFO )<<"Precision bound for dual error estimator : "<< C0_du/alpha*math::sqrt( epsilon);
 #endif
 #if 0
 
