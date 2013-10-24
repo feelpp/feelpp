@@ -49,6 +49,7 @@
 #include <feel/feelcrb/parameterspace.hpp>
 
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 namespace Feel
 {
@@ -103,13 +104,28 @@ public:
     typedef Simplex<Dim> entity_type;
     typedef Mesh<entity_type> mesh_type;
 
-    typedef bases<Lagrange<Order, Scalar>,Lagrange<0, Scalar> > basis_type;
+    typedef Lagrange<Order,Scalar> basis_type;
+    typedef Lagrange<0,Scalar> basis_0_type;
+    typedef bases< basis_type, basis_0_type > prod_basis_type;
 
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
-    typedef functionspace_type space_type;
+    typedef FunctionSpace<mesh_type, prod_basis_type, value_type> space_type;
+    typedef FunctionSpace<mesh_type, bases< basis_type >, value_type> space_type1;
+
 };
 
+//for compilation
+template <typename ParameterDefinition, typename FunctionSpaceDefinition >
+class EimDefinition
+{
+public :
+    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
+    typedef typename FunctionSpaceDefinition::space_type1 space_type1;
+    typedef typename FunctionSpaceDefinition::space_type space_type;
+
+    typedef EIMFunctionBase<space_type1, space_type , parameterspace_type> fun_type;
+    typedef EIMFunctionBase<space_type1, space_type , parameterspace_type> fund_type;
+};
 
 /**
  * \class EEG
@@ -118,12 +134,13 @@ public:
  * @author Sylvain Vallaghé
  * @see
  */
-class EEG : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition >
+class EEG : public ModelCrbBase< ParameterDefinition , FunctionSpaceDefinition ,EimDefinition<ParameterDefinition,FunctionSpaceDefinition> >,
+            public boost::enable_shared_from_this< EEG >
 {
 public:
 
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition, EimDefinition< ParameterDefinition , FunctionSpaceDefinition> > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -165,13 +182,18 @@ public:
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef bases<Lagrange<Order, Scalar>,Lagrange<0, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar>,Lagrange<0, Scalar> > prod_basis_type;
 
     /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> functionspace_type;
+    typedef FunctionSpace<mesh_type, prod_basis_type, value_type> functionspace_type;
     typedef functionspace_type space_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef functionspace_ptrtype space_ptrtype;
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<EEG, mesh_type, prod_basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     typedef typename functionspace_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
@@ -288,6 +310,14 @@ public:
     space_ptrtype functionSpace()
     {
         return Xh;
+    }
+
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
     }
 
     //! return the parameter space
@@ -456,6 +486,8 @@ private:
 
     mesh_ptrtype mesh;
     space_ptrtype Xh;
+    rbfunctionspace_ptrtype RbXh;
+
     sparse_matrix_ptrtype D,M;
     vector_ptrtype F;
     element_ptrtype pT;
@@ -569,6 +601,8 @@ EEG::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
     ginf = element_ptrtype( new element_type( Xh ) );
