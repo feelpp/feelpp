@@ -43,6 +43,7 @@ namespace detail
 {
 struct bases_base {};
 struct meshes_base {};
+struct mortars_base {};
 struct periodic_base {};
 /**
  *
@@ -113,6 +114,18 @@ struct meshes
     typedef meshes<Args...> this_type;
 	static const int s = sizeof...(Args);
     meshes( super const& m) : super( m ) {}
+};
+
+template<typename... Args>
+struct mortars
+    :
+    public detail::mortars_base,
+    public boost::fusion::vector<Args...>
+{
+    typedef boost::fusion::vector<Args...> super;
+    typedef mortars<Args...> this_type;
+	static const int s = sizeof...(Args);
+    mortars( super const& m) : super( m ) {}
 };
 
 template<typename... Args>

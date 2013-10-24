@@ -1376,7 +1376,7 @@ public:
 
     typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
-    typedef typename parameter::binding<args, tag::mortar_type, NoMortar >::type mortar_type;
+    typedef typename parameter::binding<args, tag::mortar_type, detail::mortars<NoMortar> >::type mortar_list;
     typedef typename parameter::binding<args, tag::periodicity_type, Periodicity<NoPeriodicity> >::type periodicity_type;
     typedef typename parameter::binding<args, tag::bases_list, detail::bases<Lagrange<1,Scalar> > >::type bases_list;
 
@@ -1399,6 +1399,15 @@ public:
 
 #endif
     };
+    template<typename TheMortarType, int pos>
+    struct GetMortar
+    {
+        typedef typename mpl::if_<mpl::equal_to<fusion::result_of::size<TheMortarType>,mpl::int_<1> >,
+                                  mpl::identity<fusion::result_of::at_c<TheMortarType,0> >,
+                                  mpl::identity<fusion::result_of::at_c<TheMortarType,pos> > >::type::type::type _type;
+        typedef typename boost::remove_reference<_type>::type type;
+    };
+
     template<typename BasisType>
     struct ChangeMesh
     {
@@ -1410,7 +1419,8 @@ public:
 
         typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
                               detail::bases<BasisType>,value_type,
-                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type > > _type;
+                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
+                              mortar_list> _type;
         typedef boost::shared_ptr<_type> type;
 
 
@@ -1424,7 +1434,7 @@ public:
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
 
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type> > > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value> > > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
 //mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
@@ -1437,7 +1447,7 @@ public:
         typedef typename BasisType::component_basis_type component_basis_type;
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type> > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
                                   mpl::identity<ChangeMesh<component_basis_type> > >::type::type::type type;
     };
 
@@ -1492,6 +1502,7 @@ public:
             mpl::identity<typename mesh_type::element_type>,
             mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;
 
+
     template<typename BasisType>
     struct GetNComponents
     {
@@ -1537,6 +1548,9 @@ public:
     typedef typename GetPeriodicity<periodicity_type,0>::type periodicity_0_type;
     static const bool is_periodic = periodicity_0_type::is_periodic;
 
+    typedef typename GetMortar<mortar_list,0>::type mortar_0_type;
+    static const bool is_mortar = mortar_0_type::is_mortar;
+
     //@}
 
     /** @name Typedefs
@@ -1551,7 +1565,7 @@ public:
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef boost::shared_ptr<functionspace_type> pointer_type;
 
-    typedef FunctionSpace<meshes_list, component_basis_vector_type, value_type, periodicity_type> component_functionspace_type;
+    typedef FunctionSpace<meshes_list, component_basis_vector_type, value_type, periodicity_type, mortar_list> component_functionspace_type;
     typedef boost::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
 
 
