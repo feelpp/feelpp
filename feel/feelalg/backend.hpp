@@ -31,6 +31,7 @@
 
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <boost/fusion/include/fold.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
@@ -1135,12 +1136,12 @@ typedef boost::shared_ptr<backend_type> backend_ptrtype;
 namespace detail
 {
 class BackendManagerImpl:
-    public std::map<std::pair<BackendType,std::string>, backend_ptrtype >,
+    public std::map<boost::tuple<BackendType,std::string,int>, backend_ptrtype >,
     public boost::noncopyable
 {
 public:
     typedef backend_ptrtype value_type;
-    typedef std::pair<BackendType,std::string> key_type;
+    typedef boost::tuple<BackendType,std::string,int> key_type;
     typedef std::map<key_type, value_type> backend_manager_type;
 
 };
@@ -1168,6 +1169,7 @@ BOOST_PARAMETER_FUNCTION(
       ( name,           ( std::string ), "" )
       ( kind,           ( BackendType ), BACKEND_PETSC )
       ( rebuild,        ( bool ), false )
+      ( worldcomm,      (WorldComm), Environment::worldComm() )
     ) )
 {
     // register the BackendManager into Feel::Environment so that it gets the
@@ -1182,11 +1184,11 @@ BOOST_PARAMETER_FUNCTION(
 
     Feel::detail::ignore_unused_variable_warning( args );
 
-    auto git = detail::BackendManager::instance().find( std::make_pair( kind, name ) );
+    auto git = detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
 
     if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
-        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
         return git->second;
     }
 
@@ -1195,17 +1197,17 @@ BOOST_PARAMETER_FUNCTION(
         if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
-        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
 
         backend_ptrtype b;
         if ( vm.empty() )
         {
-            b = Feel::backend_type::build( kind );
+            b = Feel::backend_type::build( kind, worldcomm );
         }
         else
-            b = Feel::backend_type::build( vm, name );
+            b = Feel::backend_type::build( vm, name, worldcomm );
         VLOG(2) << "storing backend in singleton" << "\n";
-        detail::BackendManager::instance().operator[]( std::make_pair( kind, name ) ) = b;
+        detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
 

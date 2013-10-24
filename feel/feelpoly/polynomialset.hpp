@@ -73,7 +73,10 @@ namespace Feel
  */
 template<typename Poly, template<uint16_type> class PolySetType = Scalar >
 class PolynomialSet
+    :
+        public boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > >
 {
+    typedef boost::enable_shared_from_this<PolynomialSet<Poly, PolySetType > > super_enable_shared_from_this;
 public:
 
     /** @name Constants
@@ -999,6 +1002,12 @@ public:
         return precompute_ptrtype( new PreCompute( p, P ) );
     }
 
+    precompute_ptrtype
+    preCompute( points_type const& P )
+    {
+        return precompute_ptrtype( new PreCompute( super_enable_shared_from_this::shared_from_this(), P ) );
+    }
+
     typedef std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> > faces_precompute_type;
 
     std::vector<std::map<typename convex_type::permutation_type, precompute_ptrtype> >
@@ -1345,7 +1354,7 @@ public:
 
             update( __gmc );
         }
-
+	virtual ~Context() {}
         /**
          * if isTransformationEquivalent is set to true in basis then no
          * transformation is required
@@ -2162,7 +2171,7 @@ public:
         boost::multi_array<hess_type,2> M_hessian;
     };
 
-    template<size_type context_v, size_type context_g, typename BasisType, typename GeoType, typename ElementType>
+    template<size_type context_v, typename BasisType, typename GeoType, typename ElementType>
     boost::shared_ptr<Context<context_v,BasisType, GeoType, ElementType> >
     context( boost::shared_ptr<BasisType> b, boost::shared_ptr<GeoType> gm, precompute_ptrtype& pc )
     {
