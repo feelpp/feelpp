@@ -3874,13 +3874,13 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
             for(int m=0; m < M_model->mMaxA(q); m++)
                 Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
         }
-        LOG( INFO ) << "Adu : \n"<<Adu;
+        //LOG( INFO ) << "Adu : \n"<<Adu;
         for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
         {
             for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
                 Ldu += betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
         }
-        LOG( INFO ) << "Ldu : \n"<<Ldu;
+        //LOG( INFO ) << "Ldu : \n"<<Ldu;
         uNdu[0] = Adu.lu().solve( -Ldu );
     }
 
