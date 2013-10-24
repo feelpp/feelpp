@@ -269,7 +269,7 @@ void MatrixPetsc<T>::init ( const size_type m,
                             const size_type n_l,
                             graph_ptrtype const& graph )
 {
-    //std::cout << "\n SEQUENTIAL : init with graph"<<std::endl;
+    VLOG(1) << "MatrixPetsc init with graph";
     this->setGraph( graph );
 
     {
@@ -1675,7 +1675,7 @@ void MatrixPetscMPI<T>::init( const size_type m,
                               graph_ptrtype const& graph )
 {
     //this->comm().globalComm().barrier();
-    //std::cout << "MatrixPetscMPI<T>::init with graph start on proc"<< this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
+    VLOG(1) << "MatrixPetscMPI<T>::init with graph start on proc"<< this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
 
     this->setGraph( graph );
     this->graph()->close();
