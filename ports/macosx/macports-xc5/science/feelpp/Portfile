@@ -2,6 +2,8 @@
 
 # $Id$
 
+source ${portpath}/../../tcl/fixLibsAndExecutables.tcl
+
 PortSystem  1.0
 # Portgroup is not an option until we find a way to get rid of the -arch option
 #PortGroup   cmake 1.0
@@ -11,7 +13,7 @@ name                 feel++
 
 fetch.type           git
 git.url              https://github.com/feelpp/feelpp.git
-git.branch           develop
+git.branch           feature/port-macosx-xc5
 
 version              dev
 categories           science
@@ -51,36 +53,45 @@ long_description    \
 homepage            http://www.feelpp.org
 
 #default_variants    +gcc46
-depends_lib-append  port:gcc47
+depends_lib-append  port:gcc48
 #configure.compiler  macports-gcc-4.6
 
-#require_active_variants gcc47 fortran openmpi
+# require_active_variants gcc48 fortran openmpi
+# require_active_variants boost openmpi
 
 # Append dependency on readline
 # Apparently MacOs X packs an old gcc version that causes a cast error
 # between incompatible 'const char *' to 'char *'
 # Old topic: http://www.ginac.de/pipermail/ginac-list/2007-January/001045.html
 depends_lib    \
+    port:petsc\
     port:cmake\
     port:openmpi\
     port:boost \
-    port:petsc\
     port:gmsh-devel\
     port:libANN \
     port:glpk \
     port:readline \
     port:bison \
-    port:flex
+    port:flex \
+    port:autoconf \
+    port:automake
 
 #    port:slepc\
-
-require_active_variants boost openmpi
 
 
 #worksrcdir	feelpp-${version}
 configure	{
     file mkdir ${worksrcpath}/build
     system "cd ${worksrcpath}/build && ${configure.cmd} .. ${configure.args} "
+}
+
+build {
+    if {${build.jobs} ne {} } {
+        system "cd ${worksrcpath}/build && ${build.cmd} ${build.target} -j ${build.jobs} "
+    } else {
+        system "cd ${worksrcpath}/build && ${build.cmd} ${build.target}"
+    }
 }
 
 configure.env-append  PETSC_DIR=${prefix}/lib/petsc
@@ -98,7 +109,7 @@ configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
                     -DCMAKE_BUILD_TYPE=Release \
                     -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
                     -DCMAKE_CC_COMPILER=/usr/bin/clang \
-                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.7 \
+                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.8 \
                     -DMPI_Fortran_COMPILER=${prefix}/bin/openmpif90 \
                     -Wno-dev
 #                    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
@@ -120,11 +131,20 @@ configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
 configure.args-append -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++
 
 
-destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
+# let the default destdir
+# destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
 
 #post-build {
 #   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
 #}
+
+destroot {
+   system "cd ${worksrcpath}/build && ${destroot.cmd} ${destroot.target} ${destroot.destdir}"
+}
+
+post-destroot {
+    fixLibsAndExecutables ${worksrcpath} ${destroot}
+}
 
 
 variant octave description {Add octave bindings} {

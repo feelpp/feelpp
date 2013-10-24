@@ -1,5 +1,7 @@
 # $Id: Portfile 111272 2013-09-18 03:35:57Z eborisch@macports.org $
 
+source ${portpath}/../../tcl/fixLibsAndExecutables.tcl
+
 PortSystem	1.0
 PortGroup   conflicts_build 1.0
 PortGroup   active_variants 1.1
@@ -37,13 +39,14 @@ checksums           rmd160  42926cb5278844694d6a032d9d814049a290cec0 \
 patchfiles	patch-conf-rules.diff
 
 depends_build-append  port:cmake
-depends_lib-append  port:libyaml
-#depends_lib-append  port:hdf5-18 \
-#                    port:libyaml
+# depends_lib-append  port:libyaml
+depends_lib-append  port:hdf5-18 \
+                    port:libyaml \
+		    port:openmpi
 
-require_active_variants hdf5-18 fortran gcc47
+#require_active_variants hdf5-18 fortran gcc47
 
-configure.cxxflags-append "-stdlib=libc++"
+# configure.cxxflags-append "-stdlib=libc++"
 # configure.ldflags-append "-stdlib=libc++"
 
 configure.args      --prefix=${prefix}/lib/petsc \
@@ -58,14 +61,23 @@ configure.args      --prefix=${prefix}/lib/petsc \
                     --download-scalapack \
                     --download-mumps \
                     --download-ptscotch \
+                    --with-hdf5-dir=${prefix} \
                     --with-yaml-dir=${prefix}
-
-#                    --with-hdf5-dir=${prefix} \
 
 pre-configure {
 #    if {![file exists ${prefix}/lib/libhdf5_fortran.a]} {
 #        return -code error "Please install hdf5-18 with the +fortran variant enabled first."
 #    }
+
+    # Append stdlib specification
+    if {[info exists configure.cxx_stdlib] &&
+        ${configure.cxx_stdlib} ne {} &&
+        [string match *clang* ${configure.cxx}]} {
+	configure.cxxflags-append "-stdlib=${configure.cxx_stdlib}"
+	# doesn't compile: fortran compiler doesn't recognize this option
+	#configure.ldflags-append "-stdlib=${configure.cxx_stdlib}"
+    } 
+
     configure.args-append \
         --COPTFLAGS="${configure.optflags}" \
         --CXXOPTFLAGS="${configure.optflags}" \
@@ -73,6 +85,17 @@ pre-configure {
         --LDFLAGS="${configure.ldflags}" \
         --CFLAGS="${configure.cflags}" \
         --CXXFLAGS="${configure.cxxflags}"
+}
+
+# To remove when petsc implementation works normally:
+# by default the automake process doesn't seem to change the path to the libraries (check with ottol -L lib)
+# we force this change by using install_name_tool
+# bug: https://groups.google.com/forum/#!topic/hashdist/x5drC4v11OE
+post-destroot {
+    fixLibsAndExecutables ${worksrcpath} ${destroot}
+    #system "install_name_tool -change ${worksrcpath}/arch-darwin-cxx-debug/lib/libparmetis.dylib ${prefix}/lib/petsc/lib/libparmetis.dylib ${prefix}/lib/petsc/lib/libpetsc.dylib"
+    #system "install_name_tool -change ${worksrcpath}/arch-darwin-cxx-debug/lib/libmetis.dylib ${prefix}/lib/petsc/lib/libmetis.dylib ${prefix}/lib/petsc/lib/libpetsc.dylib"
+    #system "install_name_tool -change ${worksrcpath}/arch-darwin-cxx-debug/lib/libmetis.dylib ${prefix}/lib/petsc/lib/libmetis.dylib ${prefix}/lib/petsc/lib/libparmetis.dylib"
 }
 
 conflicts_build     petsc
