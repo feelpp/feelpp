@@ -99,12 +99,14 @@ template<uint16_type Dim,
          template<class, uint16_type, class> class Pts, uint16_type > class PP = Lagrange>
 class GeoMap
     :
-    public PP<Order,Scalar, Continuous,PointSetEquiSpaced, 0>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type,
-       public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
+    public PP<Order,Scalar, Continuous,PointSetEquiSpaced, 0>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type//,
+//public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
        //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
        {
            //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
            typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type super;
+
+           //typedef boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
 
            static const uint16_type nRealDimCheck2d = mpl::if_< mpl::less_equal<mpl::int_<2>,mpl::int_<RealDim> >,
            mpl::int_<RealDim>,
@@ -1970,6 +1972,8 @@ permutation_type M_perm;
 }; // Context
 
 
+
+
 template<size_type context_v, typename ElementType>
 boost::shared_ptr<Context<context_v,ElementType> >
 context( geometric_mapping_ptrtype gm, ElementType const& e, precompute_ptrtype const& pc )
@@ -1985,9 +1989,12 @@ boost::shared_ptr<Context<context_v,ElementType> >
 context( ElementType const& e, precompute_ptrtype const& pc )
 {
     return boost::shared_ptr<Context<context_v,ElementType> >(
-               new Context<context_v, ElementType>( this->shared_from_this(),
-                       e,
-                       pc ) );
+                new Context<context_v, ElementType>
+                (
+                 //super_enable_this::shared_from_this(),
+                 boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
+                e,
+                pc ) );
 }
 
 template<size_type context_v, typename ElementType>
@@ -2010,10 +2017,13 @@ context( ElementType const& e,
          uint16_type f )
 {
     return boost::shared_ptr<Context<context_v,ElementType> >(
-               new Context<context_v, ElementType>( this->shared_from_this(),
-                       e,
-                       pc,
-                       f ) );
+               new Context<context_v, ElementType>
+               (
+                //super_enable_this::shared_from_this(),
+                boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
+               e,
+               pc,
+               f ) );
 }
 
 
