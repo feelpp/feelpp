@@ -251,8 +251,6 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->elements().modify( iv,
                                      [=,&pc,&pcf]( element_type& e )
                                      {
-                                         for ( int i = 0; i < e.numPoints; ++i )
-                                             e.point( i ).addElement( e.id() );
                                          e.setMeshAndGm( this, M_gm, M_gm1 );
                                          e.updateWithPc(pc, boost::ref( pcf) );
                                      } );
@@ -266,7 +264,10 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                    lambda::_1, pc, boost::ref( pcf ) ) );
 #endif
 
-            M_meas += iv->measure();
+            // only compute meas for active element (no ghost)
+            if ( !iv->isGhostCell() )
+                M_meas += iv->measure();
+
             auto _faces = iv->faces();
 
             if ( nDim == 1 )
@@ -281,15 +282,19 @@ Mesh<Shape, T, Tag>::updateForUse()
         // data such as the measure of point element neighbors
         boost::tie( iv, en ) = this->elementsRange();
 
-        for ( ; iv != en; ++iv )
+        if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
-            value_type meas = 0;
-            for( auto _elt: iv->pointElementNeighborIds() )
+            for ( ; iv != en; ++iv )
             {
-                if ( this->hasElement( _elt ) )
-                    meas += this->element( _elt ).measure();
+                value_type meas = 0;
+                for( auto _elt: iv->pointElementNeighborIds() )
+                {
+                    // warning : only compute meas for active element (no ghost)
+                    if ( this->hasElement( _elt ) )
+                        meas += this->element( _elt ).measure();
+                }
+                this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
             }
-            this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
         }
 
         for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
@@ -2116,6 +2121,8 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     typename self_type::element_iterator el_it;
     typename self_type::element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *M_mesh );
+    const size_type nActifElt = std::distance( el_it, el_en );
+    if ( nActifElt==0 ) return;
 
     typedef typename self_type::element_type element_type;
     typedef typename gm_type::template Context<vm::JACOBIAN|vm::KB|vm::POINT, element_type> gmc_type;
@@ -2131,7 +2138,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     M_ref_coords.clear();
     M_cvx_pts.clear();
     M_pts_cvx.clear();
-    M_pts_cvx.resize( M_mesh->numElements() );
+    M_pts_cvx.resize( nActifElt );
 
     KDTree::points_type boxpts;
     gmc_ptrtype __c( new gmc_type( M_mesh->gm(),
@@ -2446,6 +2453,8 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
     FEELPP_ASSERT( IsInit == true )
     ( IsInit ).warn( "You don't have initialized the tool of localization" );
 #endif
+    //need to call init else points in function space context are never found
+    if ( !IsInit ) init();
 
     bool find_x;
     size_type cv_id=eltHypothetical;
