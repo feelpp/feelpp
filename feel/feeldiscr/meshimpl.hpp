@@ -266,7 +266,10 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                    lambda::_1, pc, boost::ref( pcf ) ) );
 #endif
 
-            M_meas += iv->measure();
+            // only compute meas for active element (no ghost)
+            if ( !iv->isGhostCell() )
+                M_meas += iv->measure();
+
             auto _faces = iv->faces();
 
             if ( nDim == 1 )
@@ -286,6 +289,7 @@ Mesh<Shape, T, Tag>::updateForUse()
             value_type meas = 0;
             for( auto _elt: iv->pointElementNeighborIds() )
             {
+                // warning : only compute meas for active element (no ghost)
                 if ( this->hasElement( _elt ) )
                     meas += this->element( _elt ).measure();
             }
