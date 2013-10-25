@@ -479,6 +479,10 @@ public:
     std::vector<PetscInt> ja() { return M_ja; }
 
 
+    bool isSymmetric () const;
+
+    bool isTransposeOf ( MatrixSparse<T> &Trans ) const;
+
     //@}
 
     /*

@@ -337,6 +337,18 @@ public:
     {
         return M_mprop.test( DENSE );
     }
+
+    /**
+     * \return true if matrix is symmetric, false otherwise
+     */
+    virtual bool isSymmetric() const;
+
+    /**
+     * \return true if \p this is the transpose of Trans, false otherwise
+     */
+    virtual bool isTransposeOf ( MatrixSparse<value_type> &Trans ) const;
+
+
     void checkProperties() const
     {
         if ( !haveConsistentProperties() )
@@ -931,6 +943,25 @@ void MatrixSparse<T>::matInverse ( MatrixSparse<value_type> &Inv )
     FEELPP_ASSERT( 0 ).error( "invalid call" );
 }
 
+template <typename T>
+bool MatrixSparse<T>::isSymmetric () const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+
+    return 0;
+}
+
+template <typename T>
+bool MatrixSparse<T>::isTransposeOf ( MatrixSparse<value_type> &Trans ) const
+{
+    std::cerr << "Error! This function is not yet implemented in the base class!"
+              << std::endl;
+    FEELPP_ASSERT( 0 ).error( "invalid call" );
+
+    return 0;
+}
 
 } // Feel
 

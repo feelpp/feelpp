@@ -1612,6 +1612,43 @@ MatrixPetsc<T>::updateBlockMat( boost::shared_ptr<MatrixSparse<T> > m, std::vect
 
 }
 
+template<typename T>
+bool
+MatrixPetsc<T>::isSymmetric() const
+{
+    PetscBool b;
+    MatIsSymmetric( M_mat, 1e-13, &b );
+    return b;
+}
+
+template<typename T>
+bool
+MatrixPetsc<T>::isTransposeOf ( MatrixSparse<T> &Trans ) const
+{
+    FEELPP_ASSERT( this->size2() == Trans.size1() )( this->size2() )( Trans.size1() ).error( "incompatible dimension" );
+
+    MatrixPetsc<T>* In = dynamic_cast<MatrixPetsc<T>*> ( &Trans );
+
+    Mat Atrans;
+    PetscTruth isSymmetric;
+    int ierr = 0;
+
+#if (PETSC_VERSION_MAJOR >= 3)
+    ierr = MatTranspose( M_mat, MAT_INITIAL_MATRIX, &Atrans );
+#else
+    ierr = MatTranspose( M_mat, &Atrans );
+#endif
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = MatEqual( In->M_mat, Atrans, &isSymmetric );
+    CHKERRABORT( this->comm(),ierr );
+
+    ierr = PETSc::MatDestroy ( Atrans );
+    CHKERRABORT( this->comm(),ierr );
+
+    return isSymmetric;
+}
+
 template <typename T>
 inline
 void MatrixPetsc<T>::zeroEntriesDiagonal()

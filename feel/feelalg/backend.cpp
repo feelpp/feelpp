@@ -212,15 +212,15 @@ typename Backend<T>::backend_ptrtype
 Backend<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
 {
 
-    std::string n= option( _name="backend" ).template as<std::string>();
+    std::string n = option( _name="backend" ).template as<std::string>();
     LOG(INFO) << "Loading backend " << n;
     BackendType bt;
 
-    if ( n == "eigen" )
-        bt = BACKEND_EIGEN;
-
-    else if ( n == "eigen_dense" )
+    if ( ( n == "eigen_dense" ) || ( prefix.find("dd") != std::string::npos ) )
         bt = BACKEND_EIGEN_DENSE;
+
+    else if ( n == "eigen" )
+        bt = BACKEND_EIGEN;
 
     else if ( n == "petsc" )
         bt = BACKEND_PETSC;
