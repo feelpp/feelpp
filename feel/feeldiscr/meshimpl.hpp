@@ -251,8 +251,6 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->elements().modify( iv,
                                      [=,&pc,&pcf]( element_type& e )
                                      {
-                                         for ( int i = 0; i < e.numPoints; ++i )
-                                             e.point( i ).addElement( e.id() );
                                          e.setMeshAndGm( this, M_gm, M_gm1 );
                                          e.updateWithPc(pc, boost::ref( pcf) );
                                      } );
@@ -284,16 +282,19 @@ Mesh<Shape, T, Tag>::updateForUse()
         // data such as the measure of point element neighbors
         boost::tie( iv, en ) = this->elementsRange();
 
-        for ( ; iv != en; ++iv )
+        if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
-            value_type meas = 0;
-            for( auto _elt: iv->pointElementNeighborIds() )
+            for ( ; iv != en; ++iv )
             {
-                // warning : only compute meas for active element (no ghost)
-                if ( this->hasElement( _elt ) )
-                    meas += this->element( _elt ).measure();
+                value_type meas = 0;
+                for( auto _elt: iv->pointElementNeighborIds() )
+                {
+                    // warning : only compute meas for active element (no ghost)
+                    if ( this->hasElement( _elt ) )
+                        meas += this->element( _elt ).measure();
+                }
+                this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
             }
-            this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
         }
 
         for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
