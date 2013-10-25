@@ -281,7 +281,12 @@ public:
         void operator()( element_type& e )
         {
             for ( int i = 0; i < e.numPoints; ++i )
+            {
                 e.point( i ).addElementGhost( e.processId(),e.id() );
+                // only if point is on interprocess
+                if ( e.point( i ).processId()!=invalid_uint16_type_value )
+                    e.point( i ).addNeighborPartitionId( e.processId() );
+            }
         }
     };
 
