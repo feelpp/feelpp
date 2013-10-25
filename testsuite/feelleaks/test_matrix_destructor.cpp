@@ -106,7 +106,6 @@ template<int Dim, int Order>
 void
 testMatrixDestructor()
 {
-    auto backend = backend_type::build( BACKEND_PETSC );
     auto mesh=unitHypercube<Dim>();
     //auto mesh=unitSquare();
     auto Xh = Pch<Order>( mesh );
@@ -115,7 +114,7 @@ testMatrixDestructor()
     std::string str = ( boost::format("pslog-%1%D-P%2%") %Dim %Order ).str();
     PsLogger ps (str);
     ps.log(format("before matrix creation", Dim, Order) );
-    auto matrix = backend->newMatrix( Xh , Xh);
+    auto matrix = backend()->newMatrix( Xh , Xh);
     ps.log(format("matrix created",Dim,Order));
 
     //call destructor
@@ -149,25 +148,25 @@ BOOST_AUTO_TEST_CASE( test_1d_Order9 )
 #endif /* FEELPP_HAS_GPERFTOOLS */
 }
 
-BOOST_AUTO_TEST_CASE( test_2d_Order9 )
+BOOST_AUTO_TEST_CASE( test_2d_Order6 )
 {
 #if defined(FEELPP_HAS_GPERFTOOLS)
     HeapLeakChecker checker("checker for petsc matrix leaks");
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
-    testMatrixDestructor<2,9>();
+    testMatrixDestructor<2,6>();
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
     CHECK(checker.NoLeaks()) << "There are leaks";
 #endif /* FEELPP_HAS_GPERFTOOLS */
 }
-BOOST_AUTO_TEST_CASE( test_3d_Order9 )
+BOOST_AUTO_TEST_CASE( test_3d_Order3 )
 {
 #if defined(FEELPP_HAS_GPERFTOOLS)
     HeapLeakChecker checker("checker for petsc matrix leaks");
 #endif /* FEELPP_HAS_GPERFTOOLS */
 
-    testMatrixDestructor<3,9>();
+    testMatrixDestructor<3,3>();
 
 #if defined(FEELPP_HAS_GPERFTOOLS)
     CHECK(checker.NoLeaks()) << "There are leaks";
