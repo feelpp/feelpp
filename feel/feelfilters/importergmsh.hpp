@@ -1238,6 +1238,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
         int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
+            if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             e.setPoint( jj, mesh->point( __e.indices[jj] ) );
             //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
