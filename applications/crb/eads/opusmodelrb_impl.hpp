@@ -200,6 +200,9 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     //                                     _periodicity=Periodic<1,2,value_type>( period ) );
     M_Th = temp_functionspace_type::New( _mesh=M_mesh,
                                          _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
+    M_RbTh = temp_rbfunctionspace_type::New(_model=this->shared_from_this(),
+                                            _mesh=M_mesh,
+                                            _periodicity=periodicity(Periodic<>( 1, 2 , period ) ) );
     LOG(INFO) << "   - Th built\n";
     //M_grad_Th = grad_temp_functionspace_type::New( _mesh=M_mesh );
     //LOG(INFO) << "grad Th built\n";
@@ -286,7 +289,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
 
     for ( int q = 1; q < Qa(); ++q )
     {
-        M_Aqm[q][0] = backend->newMatrix( M_Th, M_Th , _pattern=pattern );
+        M_Aqm[q][0] = backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
     }
 
     // mass matrix
@@ -295,7 +298,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     for ( int q = 0; q < Qm(); ++q )
     {
         M_Mqm[q].resize( 1 );
-        M_Mqm[q][0] = backend->newMatrix( M_Th, M_Th , _pattern=pattern );
+        M_Mqm[q][0] = backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
     }
 
     // outputs
@@ -313,7 +316,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
     }
 
 
-    D = backend->newMatrix( M_Th, M_Th , _pattern=pattern );
+    D = backend->newMatrix( _test=M_Th, _trial=M_Th , _pattern=pattern );
     L.resize( Nl() );
 
     for ( int l = 0; l < Nl(); ++l )
@@ -454,6 +457,7 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                    idv( *k )*( -gradt( u )*N()*id( w )
                                -grad( w )*N()*idt( u )
                                +this->data()->gammaBc()*idt( u )*id( w )/hFace() ) );
+
     form2( M_Th, M_Th, M_Aqm[AqIndex][0] ) +=
         integrate( markedfaces( M_mesh,"Gamma_4_PCB" ),
                    idv( *k )*( -gradt( u )*N()*id( w )
@@ -461,7 +465,6 @@ OpusModelRB<OrderU,OrderP,OrderT>::initModel()
                                +this->data()->gammaBc()*idt( u )*id( w )/hFace() ) );
     LOG(INFO) << "   - Aq[" << AqIndex << "]  done\n";
     M_Aqm[AqIndex++][0]->close();
-
 
     // boundary condition for AIR4 (depends on ea and D)
     // x normal derivative term
@@ -1250,12 +1253,13 @@ template<int OrderU, int OrderP, int OrderT>
 double
 OpusModelRB<OrderU,OrderP,OrderT>::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
+    need_to_solve=true;
     if( need_to_solve )
         this->solve( mu, pT );
     else
     {
         if ( M_is_steady )
-        M_temp_bdf->setSteady();
+            M_temp_bdf->setSteady();
         this->computeBetaQm( mu , M_temp_bdf->timeFinal() );
         this->update( mu , M_temp_bdf->timeFinal() );
         *pT = u;

@@ -661,10 +661,30 @@ public:
 
     matrix_node_type /*const&*/ G() const
     {
+        return this->G( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone>::value>() );
+    }
+
+    matrix_node_type /*const&*/ G( mpl::bool_<true> /**/ ) const
+    {
+        return super::G();
+    }
+
+    matrix_node_type /*const&*/ G( mpl::bool_<false> /**/ ) const
+    {
         return M_facept.G();
     }
 
     matrix_node_type /*const&*/ vertices() const
+    {
+        return this->vertices( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone>::value>() );
+    }
+
+    matrix_node_type /*const&*/ vertices( mpl::bool_<true> /**/ ) const
+    {
+        return super::vertices();
+    }
+
+    matrix_node_type /*const&*/ vertices( mpl::bool_<false> /**/ ) const
     {
         return M_facept.vertices();
     }
@@ -728,6 +748,10 @@ private:
 
 };
 
+template<uint16_type Dim,
+         typename SubFace,
+         typename T>
+const uint16_type GeoElement0D<Dim,SubFace,T>::numLocalVertices;
 
 
 

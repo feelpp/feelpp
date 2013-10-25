@@ -985,7 +985,7 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
                 coords[j] = gmshpt.x[j];
 
             point_type pt( ptid, coords, gmshpt.onbdy );
-
+            pt.setProcessIdInPartition( this->worldComm().localRank() );
             if ( gmshpt.parametric )
             {
                 pt.setGDim( gmshpt.gdim );
