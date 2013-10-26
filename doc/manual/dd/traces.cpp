@@ -89,12 +89,13 @@ Traces<Dim>::run()
         CHECK( Xh->nDof() == Xh->nLocalDof() && l.size() == l.localSize() )
             << "problem : " << Xh->nDof() << " != " << Xh->nLocalDof() << " || "
             <<  l.size() << " != " << l.localSize();
-        l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+1 )*Px() );
+        l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
 
-        auto op = opInterpolation( _domainSpace = Xh,
-                                   _imageSpace = Vh,
-                                   _backend= backend(_worldcomm=Environment::worldCommSeq()) );
-        u+= op->operator()(l);
+        auto op = opInterpolation( _domainSpace =Vh,
+                                   _imageSpace = Xh,
+                                   _backend= backend(_worldcomm=Environment::worldCommSeq()), _ddmethod=true );
+        auto opT = op->adjoint();
+        u+= opT->operator()(l);
         if ( Dim == 2 )
         {
             l.printMatlab( (boost::format( "l-%1%-%2%" ) % Dim % Environment::worldComm().globalRank()).str() );
