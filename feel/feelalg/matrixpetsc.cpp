@@ -284,16 +284,17 @@ void MatrixPetsc<T>::init ( const size_type m,
 
     MPI_Comm_rank ( this->comm(), &proc_id );
 
-    DVLOG(2) << "[MatrixPETSc::init()] m   = " << m << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] n   = " << n << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] m_l = " << m_l << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] proc_id   = " << proc_id << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] m   = " << m << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] n   = " << n << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] m_l = " << m_l << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
 
     // Make sure the sparsity pattern isn't empty
     //FEELPP_ASSERT ( this->graph()->size() == n_l )( this->graph()->size() )( n_l ).warn( "incompatible diagonal non zero pattern" );
-    DVLOG(2) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
 
     if ( m==0 )
         return;
@@ -677,7 +678,7 @@ void MatrixPetsc<T>::close () const
     //     return;
 
     int ierr=0;
-
+    CHECK( M_mat ) << "invalid matrix";
     ierr = MatAssemblyBegin ( M_mat, MAT_FINAL_ASSEMBLY );
     CHKERRABORT( this->comm(),ierr );
     ierr = MatAssemblyEnd   ( M_mat, MAT_FINAL_ASSEMBLY );
