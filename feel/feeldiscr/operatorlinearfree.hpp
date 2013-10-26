@@ -30,7 +30,6 @@
 #ifndef __OperatorLinearFree_H
 #define __OperatorLinearFree_H 1
 
-#include <feel/feel.hpp>
 #include <boost/ref.hpp>
 #include <boost/next_prior.hpp>
 #include <boost/type_traits.hpp>
@@ -38,6 +37,7 @@
 #if BOOST_VERSION >= 104700
 #include <boost/math/special_functions/nonfinite_num_facets.hpp>
 #endif
+#include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
 namespace Feel
 {

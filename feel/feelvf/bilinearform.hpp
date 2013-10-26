@@ -1299,8 +1299,9 @@ public:
                                        ( rebuild,        ( bool ), false )
                                          ) )
         {
-            return backend( _name=name, _kind=kind, _rebuild=rebuild )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
-                                                                               _solution=solution);
+            return backend( _name=name, _kind=kind, _rebuild=rebuild,
+                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
+                                                                         _solution=solution);
         }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
