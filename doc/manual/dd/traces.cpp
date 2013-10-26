@@ -53,6 +53,7 @@ Traces<Dim>::run()
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim>>);
     auto localMesh = createSubmesh( mesh, elements(mesh), Environment::worldCommSeq() );
+    CHECK( localMesh->isSubMesh() ) << "Invalid sub mesh";
     LOG(INFO) << "num elements : " << localMesh->numElements();
     saveGMSHMesh( _filename=(boost::format( "local-%1%-%2%.msh" ) % Dim % Environment::worldComm().globalRank()).str(),
                   _mesh=localMesh );
