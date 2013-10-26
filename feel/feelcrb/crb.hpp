@@ -264,8 +264,8 @@ public:
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend_type::build( vm ) ),
-        M_backend_primal( backend_type::build( vm ) ),
-        M_backend_dual( backend_type::build( vm ) ),
+        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
+        M_backend_dual( backend_type::build( vm , "backend-dual") ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
         M_tolerance( vm["crb.error-max"].template as<double>() ),
         M_iter_max( vm["crb.dimension-max"].template as<int>() ),
@@ -305,8 +305,8 @@ public:
         M_nlsolver( SolverNonLinear<double>::build( SOLVERS_PETSC, Environment::worldComm() ) ),
         M_model(),
         M_backend( backend_type::build( vm ) ),
-        M_backend_primal( backend_type::build( vm ) ),
-        M_backend_dual( backend_type::build( vm ) ),
+        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
+        M_backend_dual( backend_type::build( vm , "backend-dual") ),
         M_output_index( vm["crb.output-index"].template as<int>() ),
         M_tolerance( vm["crb.error-max"].template as<double>() ),
         M_iter_max( vm["crb.dimension-max"].template as<int>() ),
@@ -1275,7 +1275,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
     for(int l=0; l<nl; l++)
         F[l]=M_model->newVector();
 
-    M_backend_primal = backend_type::build( BACKEND_PETSC );
+    //M_backend_primal = backend_type::build( BACKEND_PETSC );
     bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
 
     M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal" );
@@ -1446,7 +1446,7 @@ typename CRB<TruthModelType>::element_type
 CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptrtype & dual_initial_field, const sparse_matrix_ptrtype & A, const element_type & u, bool zero_iteration )
 {
 
-    M_backend_dual = backend_type::build( BACKEND_PETSC );
+    //M_backend_dual = backend_type::build( BACKEND_PETSC );
     bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
 
     auto udu = M_model->functionSpace()->element();
