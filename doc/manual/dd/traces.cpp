@@ -30,7 +30,7 @@
 
 namespace Feel
 {
-template<int Dim>
+template<int Dim, int Order>
 class Traces : public Simget
 {
     typedef Simget super;
@@ -47,10 +47,16 @@ public:
     void run();
 }; // Traces
 
-template<int Dim>
+template<int Dim,int Order>
 void
-Traces<Dim>::run()
+Traces<Dim,Order>::run()
 {
+    Environment::changeRepository( boost::format( "%1%/%2%/P%3%/h_%4%/" )
+                                   % this->about().appName()
+                                   % Dim
+                                   % Order
+                                   % option(_name="gmsh.hsize").template as<double>() );
+
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim>>);
     auto localMesh = createSubmesh( mesh, elements(mesh), Environment::worldCommSeq() );
     CHECK( localMesh->isSubMesh() ) << "Invalid sub mesh";
@@ -59,7 +65,7 @@ Traces<Dim>::run()
                   _mesh=localMesh );
 
     //auto Vh = Pch<1>( mesh );
-    auto Vh  = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<1,Scalar>>>::New( _mesh=localMesh,
+    auto Vh  = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order,Scalar>>>::New( _mesh=localMesh,
                                                                                   _worldscomm=Environment::worldsCommSeq(1) );
     LOG(INFO) << "Vh" << *Vh;
     auto u = Vh->element();
@@ -84,7 +90,7 @@ Traces<Dim>::run()
         LOG(INFO) << "number of faces in trace mesh    " << nelements(boundaryfaces(trace)) << " ("
                   << Environment::worldComm().globalRank() << " vs. " << neighbor_subdomain << ")";
 
-        auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<1,Scalar>>>::New( _mesh=trace, _worldscomm=Environment::worldsCommSeq(1) );
+        auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<Order,Scalar>>>::New( _mesh=trace, _worldscomm=Environment::worldsCommSeq(1) );
         auto l = Xh->element();
         CHECK( Xh->nDof() == Xh->nLocalDof() && l.size() == l.localSize() )
             << "problem : " << Xh->nDof() << " != " << Xh->nLocalDof() << " || "
@@ -139,7 +145,7 @@ int main(int argc, char** argv) {
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
     Application app;
-    app.add(new Traces<2>());
-    //app.add(new Traces<3>());
+    app.add(new Traces<2,2>());
+    app.add(new Traces<3,1>());
     app.run();
 }
