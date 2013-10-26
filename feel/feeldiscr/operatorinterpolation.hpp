@@ -276,7 +276,6 @@ public:
      */
     //@{
 
-
     //@}
 
 
@@ -665,13 +664,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                 {
                                     //------------------------
                                     // get the graph row
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                                    const auto ig1 = gdof;
-                                    const auto theproc = imagedof->worldComm().localRank();
-#else // WITH MPI
                                     const auto ig1 = imagedof->mapGlobalProcessToGlobalCluster()[gdof];
                                     const auto theproc = imagedof->procOnGlobalCluster( ig1 );
-#endif
                                     auto& row = sparsity_graph->row(ig1);
                                     row.template get<0>() = theproc;
                                     row.template get<1>() = gdof;
@@ -701,11 +695,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                              + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
                                                                              + comp,
                                                                              0 );
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                                                    row.template get<2>().insert( j );
-#else // WITH MPI
                                                     row.template get<2>().insert( domaindof->mapGlobalProcessToGlobalCluster()[j] );
-#endif
                                                     memory_valueInMatrix[gdof].push_back( std::make_pair( j,v ) );
                                                 }
                                         }
