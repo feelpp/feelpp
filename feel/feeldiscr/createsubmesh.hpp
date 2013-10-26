@@ -177,9 +177,18 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         element_type newElem = oldElem;
 
         // reset partitioning data
-        newElem.setProcessIdInPartition( oldElem.pidInPartition() );
+
         newElem.setNumberOfPartitions( 1 );
-        newElem.setProcessId( oldElem.processId() );
+        if ( M_worldComm.globalSize() == 1 )
+        {
+            newElem.setProcessIdInPartition( 0 );
+            newElem.setProcessId( 0 );
+        }
+        else
+        {
+            newElem.setProcessIdInPartition( oldElem.pidInPartition() );
+            newElem.setProcessId( oldElem.processId() );
+        }
         newElem.clearIdInOthersPartitions();
         newElem.clearNeighborPartitionIds();
 
@@ -198,7 +207,14 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 point_type pt( old_point );
                 pt.setId( n_new_nodes );
                 pt.clearElementsGhost();
-                pt.setProcessId(old_point.processId());
+                if ( M_worldComm.globalSize() == 1 )
+                {
+                    pt.setProcessId(0);
+                }
+                else
+                {
+                    pt.setProcessId(old_point.processId());
+                }
 
                 // Add this node to the new mesh
                 newMesh->addPoint ( pt );
@@ -214,7 +230,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                     new_vertex[old_point.id()]=1;
                 }
 
-                if (old_point.numberOfProcGhost()>0)
+                if (old_point.numberOfProcGhost()>0 && M_worldComm.globalSize() > 1 )
                 {
                     auto itprocghost=old_point.elementsGhost().begin();
                     auto const enprocghost=old_point.elementsGhost().end();
@@ -289,9 +305,17 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 new_face.setId( n_new_faces++ );
 
                 // reset partitioning data
-                new_face.setProcessIdInPartition( old_face.pidInPartition() );
                 new_face.setNumberOfPartitions( 1 );
-                new_face.setProcessId( old_face.processId() );
+                if ( M_worldComm.globalSize() == 1 )
+                {
+                    new_face.setProcessIdInPartition( 0 );
+                    new_face.setProcessId( 0 );
+                }
+                else
+                {
+                    new_face.setProcessIdInPartition( old_face.pidInPartition() );
+                    new_face.setProcessId( old_face.processId() );
+                }
                 new_face.clearIdInOthersPartitions();
                 new_face.clearNeighborPartitionIds();
 
@@ -306,6 +330,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
     if ( nProc > 1 )
     {
+        DVLOG(1) << "build parallel submesh...";
         auto const theWorldCommSize = newMesh->worldComm().localComm().size();
         std::vector<int> nbMsgToSend( theWorldCommSize , 0 );
         std::vector< std::map<int,size_type> > mapMsg( theWorldCommSize );

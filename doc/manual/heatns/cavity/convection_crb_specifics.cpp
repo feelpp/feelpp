@@ -62,6 +62,8 @@ void ConvectionCrb::initModel()
     }
 
     Xh = space_type::New( mesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+
     LOG(INFO)<<"number of dofs : "<<Xh->nLocalDof()<<"\n";
     pT = element_ptrtype( new element_type( Xh ) );
 
