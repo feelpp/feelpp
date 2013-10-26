@@ -449,6 +449,7 @@ private:
             std::set<size_type> idsFind;
             const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
             const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
+            const bool trial_sibling_of_test = _M_X2->mesh()->isSiblingOf( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
                 const size_type domain_eid = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid )).element0().id();
@@ -464,6 +465,19 @@ private:
                         if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
                     }
                 DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
+            }
+            else if ( trial_sibling_of_test )
+            {
+                DVLOG(1) << "test_eid = " << test_eid;
+                size_type id_in_sibling = _M_X2->mesh()->meshToSubMesh( _M_X1->mesh(), test_eid );
+                DVLOG(1) << "id_in_sibling = " << id_in_sibling;
+                size_type domain_eid = invalid_size_type_value;
+                if ( id_in_sibling!=invalid_size_type_value)
+                {
+                    domain_eid = _M_X2->mesh()->face(id_in_sibling).element0().id();
+                    DVLOG(1) << "[test_sibling_of_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                    idsFind.insert( domain_eid );
+                }
             }
             else
             {

@@ -89,7 +89,7 @@ Traces<Dim>::run()
         CHECK( Xh->nDof() == Xh->nLocalDof() && l.size() == l.localSize() )
             << "problem : " << Xh->nDof() << " != " << Xh->nLocalDof() << " || "
             <<  l.size() << " != " << l.localSize();
-        l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
+        l = vf::project( Xh, elements(trace), cst( 1.+neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
 
         auto op = opInterpolation( _domainSpace =Vh,
                                    _imageSpace = Xh,

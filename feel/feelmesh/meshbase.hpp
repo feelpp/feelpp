@@ -379,6 +379,7 @@ public:
             bool is_sibling_of = isSiblingOf( m );
             DVLOG(4) << "is_sibling_of: " << is_sibling_of << "\n";
             return same_mesh || is_submesh_from || is_parentmesh_of || is_sibling_of;
+            //return same_mesh || is_submesh_from || is_parentmesh_of;
         }
 
     //! \return id in parent mesh given the id in the sub mesh
