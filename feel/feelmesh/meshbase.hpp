@@ -310,7 +310,12 @@ public:
         }
 
     //! true if is a sub mesh
-    bool isSubMesh() const { return M_smd; }
+    bool isSubMesh() const {
+        bool b=true;
+        if( !M_smd )
+            b=false;
+        return b ;
+    }
 
     //! \return true if the mesh is related to the mesh \p m
     bool isSubMeshFrom( MeshBase const* m ) const
