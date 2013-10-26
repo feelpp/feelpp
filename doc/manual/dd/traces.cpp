@@ -52,14 +52,18 @@ void
 Traces<Dim>::run()
 {
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim>>);
-    //auto Vh = Pch<1>( mesh );
-    auto Vh  = FunctionSpace<typename Mesh<Simplex<Dim>>, bases<Lagrange<2,Scalar>>>::New( _mesh=mesh,
-                                                                                           _worldscomm=Environment::worldsCommSeq(1) );
-    auto u = Vh->element();
-    auto e = exporter( _mesh=mesh, _name = (boost::format( "%1%-%2%-%3%" ) % this->about().appName() % Dim %  Environment::worldComm().globalRank()  ).str() );
     auto localMesh = createSubmesh( mesh, elements(mesh), Environment::worldCommSeq() );
+    LOG(INFO) << "num elements : " << localMesh->numElements();
     saveGMSHMesh( _filename=(boost::format( "local-%1%-%2%.msh" ) % Dim % Environment::worldComm().globalRank()).str(),
                   _mesh=localMesh );
+
+    //auto Vh = Pch<1>( mesh );
+    auto Vh  = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<1,Scalar>>>::New( _mesh=localMesh,
+                                                                                  _worldscomm=Environment::worldsCommSeq(1) );
+    LOG(INFO) << "Vh" << *Vh;
+    auto u = Vh->element();
+    auto e = exporter( _mesh=localMesh,
+                       _name = (boost::format( "%1%-%2%-%3%" ) % this->about().appName() % Dim %  Environment::worldComm().globalRank()  ).str() );
 
     const unsigned short nbNeighbors = mesh->faceNeighborSubdomains().size();
     unsigned int* recv = new unsigned int[2 * nbNeighbors];
@@ -79,24 +83,30 @@ Traces<Dim>::run()
         LOG(INFO) << "number of faces in trace mesh    " << nelements(boundaryfaces(trace)) << " ("
                   << Environment::worldComm().globalRank() << " vs. " << neighbor_subdomain << ")";
 
-        auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<2,Scalar>>>::New( _mesh=trace, _worldscomm=Environment::worldsCommSeq(1) );
+        auto Xh = FunctionSpace<typename Mesh<Simplex<Dim>>::trace_mesh_type, bases<Lagrange<1,Scalar>>>::New( _mesh=trace, _worldscomm=Environment::worldsCommSeq(1) );
         auto l = Xh->element();
         CHECK( Xh->nDof() == Xh->nLocalDof() && l.size() == l.localSize() )
             << "problem : " << Xh->nDof() << " != " << Xh->nLocalDof() << " || "
             <<  l.size() << " != " << l.localSize();
-        l = vf::project( Xh, elements(trace), cst( double(1.0) ) );
+        l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+1 )*Px() );
+
         auto op = opInterpolation( _domainSpace = Xh,
                                    _imageSpace = Vh,
-                                   _backend= backend(_worldcomm=Environment::worldCommSeq()),
-                                   _ddmethod=1);
+                                   _backend= backend(_worldcomm=Environment::worldCommSeq()) );
         u+= op->operator()(l);
-        l.printMatlab( (boost::format( "l%1%-%2%" ) % Dim % Environment::worldComm().globalRank()).str() );
+        if ( Dim == 2 )
+        {
+            l.printMatlab( (boost::format( "l-%1%-%2%" ) % Dim % Environment::worldComm().globalRank()).str() );
+            u.printMatlab( (boost::format( "u-%1%-%2%" ) % Dim % Environment::worldComm().globalRank()).str() );
+        }
+
+
         if ( nelements(elements(trace)) > 0 )
         {
-            saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(),
-                          _mesh=trace );
+            //saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(),
+            //_mesh=trace );
             auto m = mean(_range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeq() )(0,0);
-            CHECK( math::abs( m -  double(1.) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
+            //CHECK( math::abs( m -  double(neighbor_subdomain+1) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
         }
         else
             LOG(WARNING) << neighbor_subdomain << " is not a true neighbor of " << Environment::worldComm().globalRank();
@@ -128,6 +138,6 @@ int main(int argc, char** argv) {
                                   _email="feelpp-devel@feelpp.org"));
     Application app;
     app.add(new Traces<2>());
-    app.add(new Traces<3>());
+    //app.add(new Traces<3>());
     app.run();
 }
