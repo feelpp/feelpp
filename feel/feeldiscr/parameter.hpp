@@ -40,7 +40,7 @@ namespace Feel
 
 namespace parameter = boost::parameter;
 
-
+BOOST_PARAMETER_TEMPLATE_KEYWORD( model_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( mesh_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( expansion_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( bases_list )

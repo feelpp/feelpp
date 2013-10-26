@@ -146,14 +146,14 @@ public:
 
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
-        super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -935,6 +935,8 @@ public:
 
                                         double solution_error=0;
                                         double dual_solution_error=0;
+                                        double square_solution_error=0;
+                                        double square_dual_solution_error=0;
                                         double ref_primal=0;
                                         double ref_dual=0;
                                         if( model->isSteady() )
@@ -960,10 +962,11 @@ public:
                                                         ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
                                                     }
                                                 }
+                                                square_dual_solution_error = dual_solution_error;
                                                 dual_solution_error = math::sqrt( dual_solution_error );
                                                 ref_dual = math::sqrt( ref_dual );
                                             }
-
+                                            square_solution_error = solution_error;
                                             solution_error = math::sqrt( solution_error );
                                             ref_primal = math::sqrt( ref_primal );
                                             //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
@@ -996,6 +999,7 @@ public:
                                                     }
                                                 }
                                             }
+                                            square_solution_error = solution_error;
                                             solution_error = math::sqrt( solution_error );
                                             ref_primal = math::sqrt( ref_primal );
 
@@ -1026,7 +1030,7 @@ public:
                                                         }
                                                     }
                                                 }
-
+                                                square_dual_solution_error = dual_solution_error;
                                                 dual_solution_error = math::sqrt( dual_solution_error );
                                                 ref_dual = math::sqrt( ref_dual );
 
@@ -1103,6 +1107,7 @@ public:
                                             LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_error : "<<relative_primal_solution_error;
                                             LOG( INFO ) << std::setprecision(15)<<"primal_solution_estimated_error : "<<solution_estimated_error;
                                             LOG( INFO ) << std::setprecision(15)<<"primal_solution_error : "<<solution_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_solution_error;
                                             //LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
                                             LOG( INFO ) << std::setprecision(15)<<"primal solution norme  : "<<uN.l2Norm();
                                         }
@@ -1114,6 +1119,7 @@ public:
                                             LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_error : "<<relative_dual_solution_error;
                                             LOG( INFO ) <<std::setprecision(15)<<"dual_solution_estimated_error : "<<dual_solution_estimated_error;
                                             LOG( INFO ) <<std::setprecision(15)<<"dual_solution_error : "<<dual_solution_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_dual_solution_error;
                                             //LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
                                             LOG( INFO ) << std::setprecision(15)<<"dual solution norme  : "<<uNdu.l2Norm();
                                         }

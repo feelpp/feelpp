@@ -57,6 +57,7 @@
 #include <Eigen/Dense>
 
 #include <feel/feelcore/pslogger.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 
 
@@ -74,7 +75,7 @@ makeHeatShieldOptions()
     ( "mshfile", Feel::po::value<std::string>()->default_value( "" ), "name of the gmsh file input")
     ( "do-export", Feel::po::value<bool>()->default_value( false ), "export results if true" )
     ;
-    return heatshieldoptions.add( Feel::feel_options() ).add( bdf_options( "heatshield" ) );
+    return heatshieldoptions.add( Feel::feel_options() ).add( bdf_options( "heatshield" ) ).add( backend_options("backendl2") );
 }
 AboutData
 makeHeatShieldAbout( std::string const& str = "heatShield" )
@@ -91,16 +92,19 @@ makeHeatShieldAbout( std::string const& str = "heatShield" )
     return about;
 }
 
+
 class ParameterDefinition
 {
 public :
     static const uint16_type ParameterSpaceDimension = 2;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
+
+template<int Order>
 class FunctionSpaceDefinition
 {
 public :
-    static const uint16_type Order = 1;
+    //static const uint16_type Order = 1;
     typedef double value_type;
 
     /*mesh*/
@@ -122,11 +126,13 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
+template<int Order>
+class HeatShield : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition<Order> >,
+                   public boost::enable_shared_from_this< HeatShield<Order> >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterDefinition, FunctionSpaceDefinition<Order> > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -135,7 +141,7 @@ public:
      */
     //@{
 
-    static const uint16_type Order = 1;
+    //static const uint16_type Order = 1;
     static const uint16_type ParameterSpaceDimension = 2;
     static const bool is_time_dependent = true;
 
@@ -179,6 +185,10 @@ public:
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
 
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
+
     /* export */
     typedef Exporter<mesh_type> export_type;
     typedef boost::shared_ptr<export_type> export_ptrtype;
@@ -187,10 +197,10 @@ public:
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
-    typedef parameterspace_type::element_type parameter_type;
-    typedef parameterspace_type::element_ptrtype parameter_ptrtype;
-    typedef parameterspace_type::sampling_type sampling_type;
-    typedef parameterspace_type::sampling_ptrtype sampling_ptrtype;
+    typedef typename parameterspace_type::element_type parameter_type;
+    typedef typename parameterspace_type::element_ptrtype parameter_ptrtype;
+    typedef typename parameterspace_type::sampling_type sampling_type;
+    typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
     /* time discretization */
     typedef Bdf<space_type>  bdf_type;
@@ -316,6 +326,14 @@ public:
     space_ptrtype functionSpace()
     {
         return Xh;
+    }
+
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
     }
 
     //! return the parameter space
@@ -580,6 +598,7 @@ private:
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
     space_ptrtype Xh;
+    rbfunctionspace_ptrtype RbXh;
 
     sparse_matrix_ptrtype D,M,Mpod,InnerMassMatrix;
     vector_ptrtype F;
@@ -606,7 +625,9 @@ private:
 
     element_type u,v;
 };
-HeatShield::HeatShield()
+
+template<int Order>
+HeatShield<Order>::HeatShield()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
     backendl2( backend_type::build( BACKEND_PETSC ) ),
@@ -617,11 +638,12 @@ HeatShield::HeatShield()
     M_Dmu( new parameterspace_type )
 { }
 
-HeatShield::HeatShield( po::variables_map const& vm )
+template<int Order>
+HeatShield<Order>::HeatShield( po::variables_map const& vm )
     :
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
-    backendl2( backend_type::build( vm ) ),
+    backendl2( backend_type::build( vm , "backendl2" ) ),
     M_is_steady( vm["steady"].as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     export_number( 0 ),
@@ -632,9 +654,9 @@ HeatShield::HeatShield( po::variables_map const& vm )
 
 
 
-
+template<int Order>
 gmsh_ptrtype
-HeatShield::createGeo( double hsize )
+HeatShield<Order>::createGeo( double hsize )
 {
     gmsh_ptrtype gmshp( new Gmsh );
     std::ostringstream ostr;
@@ -695,13 +717,14 @@ HeatShield::createGeo( double hsize )
 
 
 
-
-void HeatShield::initializationField( element_ptrtype& initial_field , parameter_type const& mu )
+template<int Order>
+void HeatShield<Order>::initializationField( element_ptrtype& initial_field , parameter_type const& mu )
 {
     initial_field->setZero();
 }
 
-void HeatShield::initModel()
+template<int Order>
+void HeatShield<Order>::initModel()
 {
 
 
@@ -734,6 +757,8 @@ void HeatShield::initModel()
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+
     // allocate an element of Xh
     pT = element_ptrtype( new element_type( Xh ) );
 
@@ -761,10 +786,10 @@ void HeatShield::initModel()
         }
     }
 
-    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
+    typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;
     M_Dmu->setMin( mu_min );
-    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
+    typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_max( M_Dmu );
     mu_max << /* Bi_out*/0.5   ,  /*Bi_in*/0.1;
     M_Dmu->setMax( mu_max );
 
@@ -780,8 +805,8 @@ void HeatShield::initModel()
 } // HeatShield::init
 
 
-
-void HeatShield::assemble()
+template<int Order>
+void HeatShield<Order>::assemble()
 {
 
     using namespace Feel::vf;
@@ -859,29 +884,30 @@ void HeatShield::assemble()
 
 }
 
-
-typename HeatShield::sparse_matrix_ptrtype
-HeatShield::newMatrix() const
+template<int Order>
+typename HeatShield<Order>::sparse_matrix_ptrtype
+HeatShield<Order>::newMatrix() const
 {
     return backend->newMatrix( Xh, Xh );
 }
 
-typename HeatShield::vector_ptrtype
-HeatShield::newVector() const
+template<int Order>
+typename HeatShield<Order>::vector_ptrtype
+HeatShield<Order>::newVector() const
 {
     return backend->newVector( Xh );
 }
 
-
-typename HeatShield::affine_decomposition_type
-HeatShield::computeAffineDecomposition()
+template<int Order>
+typename HeatShield<Order>::affine_decomposition_type
+HeatShield<Order>::computeAffineDecomposition()
 {
     return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
 }
 
 
-
-void HeatShield::solve( sparse_matrix_ptrtype& D,
+template<int Order>
+void HeatShield<Order>::solve( sparse_matrix_ptrtype& D,
                         element_type& u,
                         vector_ptrtype& F )
 {
@@ -891,8 +917,8 @@ void HeatShield::solve( sparse_matrix_ptrtype& D,
     u = *U;
 }
 
-
-void HeatShield::exportResults( double time, element_type& T, parameter_type const& mu )
+template<int Order>
+void HeatShield<Order>::exportResults( double time, element_type& T, parameter_type const& mu )
 {
     LOG(INFO) << "exportResults starts\n";
     std::string exp_name = "Model_T" + ( boost::format( "_%1%" ) %time ).str();
@@ -911,9 +937,9 @@ void HeatShield::exportResults( double time, element_type& T, parameter_type con
     exporter->save();
 }
 
-
+template<int Order>
 void
-HeatShield::stockAffineDecomposition()
+HeatShield<Order>::stockAffineDecomposition()
 {
     auto compositeM = operatorCompositeM();
     int q_max = this->Qm();
@@ -975,7 +1001,8 @@ HeatShield::stockAffineDecomposition()
 
 }
 
-void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index )
+template<int Order>
+void HeatShield<Order>::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index )
 {
 
     if (option(_name="crb.stock-matrices"). as<bool>() )
@@ -1053,17 +1080,17 @@ void HeatShield::update( parameter_type const& mu,double bdf_coeff, element_type
 
 
 
-
-typename HeatShield::element_type
-HeatShield::solve( parameter_type const& mu )
+template<int Order>
+typename HeatShield<Order>::element_type
+HeatShield<Order>::solve( parameter_type const& mu )
 {
     element_ptrtype T( new element_type( Xh ) );
     this->solve( mu, T );
     return *T;
 }
 
-
-void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output_index )
+template<int Order>
+void HeatShield<Order>::solve( parameter_type const& mu, element_ptrtype& T, int output_index )
 {
 
     using namespace Feel::vf;
@@ -1100,57 +1127,62 @@ void HeatShield::solve( parameter_type const& mu, element_ptrtype& T, int output
 
 }
 
-
+template<int Order>
 int
-HeatShield::computeNumberOfSnapshots()
+HeatShield<Order>::computeNumberOfSnapshots()
 {
     return M_bdf->timeFinal()/M_bdf->timeStep();
 }
 
-
-void HeatShield::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
+template<int Order>
+void HeatShield<Order>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
     backendl2->solve( _matrix=M,  _solution=u, _rhs=f );
     //std::cout << "l2solve(u,f) done\n";
 }
 
-
-double HeatShield::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
+template<int Order>
+double HeatShield<Order>::scalarProduct( vector_ptrtype const& x, vector_ptrtype const& y )
 {
     return M->energy( x, y );
 }
 
-double HeatShield::scalarProduct( vector_type const& x, vector_type const& y )
+template<int Order>
+double HeatShield<Order>::scalarProduct( vector_type const& x, vector_type const& y )
 {
     return M->energy( x, y );
 }
 
-double HeatShield::scalarProductForMassMatrix( vector_ptrtype const& x, vector_ptrtype const& y )
+template<int Order>
+double HeatShield<Order>::scalarProductForMassMatrix( vector_ptrtype const& x, vector_ptrtype const& y )
 {
     return InnerMassMatrix->energy( x, y );
 }
 
-double HeatShield::scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
+template<int Order>
+double HeatShield<Order>::scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
 {
     return InnerMassMatrix->energy( x, y );
 }
 
-double HeatShield::scalarProductForPod( vector_ptrtype const& x, vector_ptrtype const& y )
+template<int Order>
+double HeatShield<Order>::scalarProductForPod( vector_ptrtype const& x, vector_ptrtype const& y )
 {
     return Mpod->energy( x, y );
 }
 
-double HeatShield::scalarProductForPod( vector_type const& x, vector_type const& y )
+template<int Order>
+double HeatShield<Order>::scalarProductForPod( vector_type const& x, vector_type const& y )
 {
     return Mpod->energy( x, y );
 }
 
-
-void HeatShield::run( const double * X, unsigned long N, double * Y, unsigned long P )
+template<int Order>
+void HeatShield<Order>::run( const double * X, unsigned long N, double * Y, unsigned long P )
 {
     using namespace vf;
-    Feel::ParameterSpace<ParameterSpaceDimension>::Element mu( M_Dmu );
+    typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu( M_Dmu );
     mu << X[0], X[1], X[2];
     static int do_init = true;
 
@@ -1167,8 +1199,8 @@ void HeatShield::run( const double * X, unsigned long N, double * Y, unsigned lo
 }
 
 
-
-double HeatShield::output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve , bool export_outputs )
+template<int Order>
+double HeatShield<Order>::output( int output_index, parameter_type const& mu, element_type &T, bool need_to_solve , bool export_outputs )
 {
     using namespace vf;
 
