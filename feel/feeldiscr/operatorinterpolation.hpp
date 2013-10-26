@@ -407,27 +407,23 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // order, different basis) or if the image of domain mesh are related to
     // each other through an extraction (one of them is the sub mesh of the
     // other)
+    VLOG(1) << "OperatorInterpolation: is image related to domain : " << this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) ;
     if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) &&
-         boost::is_same<domain_mesh_type,image_mesh_type>::type::value // warning TODO in this case
-         )
+         boost::is_same<domain_mesh_type,image_mesh_type>::type::value )
     {
-        VLOG(2) << "OperatorInterpolation: use same mesh\n";
-        VLOG(2) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
-        VLOG(2) << "isImageMeshRelatedToDomainMesh: "  << isImageMeshRelatedToDomainMesh() << "\n";
+        VLOG(1) << "OperatorInterpolation: use same mesh\n";
+        VLOG(1) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
+        VLOG(1) << "isImageMeshRelatedToDomainMesh: "  << isImageMeshRelatedToDomainMesh() << "\n";
         this->updateSameMesh();
     }
     else // no relation between meshes
     {
-#if defined(FEELPP_ENABLE_MPI_MODE)
         if ( this->dualImageSpace()->worldComm().localSize() > 1 ||
              this->domainSpace()->worldComm().localSize() > 1 )
             this->updateNoRelationMeshMPI();
 
         else
             this->updateNoRelationMesh();
-#else
-        this->updateNoRelationMesh();
-#endif
     }
 
     // close matrix after build
@@ -489,6 +485,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     const bool image_related_to_domain = this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() );
     const bool domain_related_to_image = this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() );
+    const bool domain_sibling_of_image = this->domainSpace()->mesh()->isSiblingOf( this->dualImageSpace()->mesh() );
 
     auto itListRange = M_listRange.begin();
     auto const enListRange = M_listRange.end();
@@ -509,6 +506,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
         {
             domain_eid = this->domainSpace()->mesh()->meshToSubMesh( idElem );
             DVLOG(2) << "[domain_related_to_image] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
+        }
+        if( domain_sibling_of_image )
+        {
+            domain_eid = this->domainSpace()->mesh()->meshToSubMesh( this->dualImageSpace()->mesh(), idElem );
+            DVLOG(1) << "[domain_sibling_of_image] image element id: "  << idElem << " domain element id : " << domain_eid << "\n";
         }
 
         if ( domain_eid == invalid_size_type_value )
@@ -569,6 +571,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     sparsity_graph->close();
     //-----------------------------------------
     // create matrix
+    VLOG(1) << "Building interpolation matrix ( " << this->domainSpace()->dofOnOff()->nDof() << "," << this->domainSpace()->dofOnOff()->nLocalDof()
+            << "," << this->dualImageSpace()->dofOn()->nDof() << ", " << this->dualImageSpace()->dofOn()->nLocalDof() << ")";
+    google::FlushLogFiles(google::INFO);
     this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
                                                  this->dualImageSpace()->dofOn(),
                                                  sparsity_graph  );
