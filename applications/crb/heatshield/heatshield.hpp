@@ -798,7 +798,7 @@ void HeatShield<Order>::initModel()
     assemble();
     PsLogger ps("ps-Model");
     ps.log("after assemble");
-    if (option(_name="crb.stock-matrices"). as<bool>() )
+    if (option(_name="crb.stock-matrices").template as<bool>() )
         stockAffineDecomposition();
     ps.log("after stocking matrices");
 
@@ -1005,7 +1005,7 @@ template<int Order>
 void HeatShield<Order>::update( parameter_type const& mu,double bdf_coeff, element_type const& bdf_poly, int output_index )
 {
 
-    if (option(_name="crb.stock-matrices"). as<bool>() )
+    if (option(_name="crb.stock-matrices").template as<bool>() )
     {
         D->close();
         D->zero();
