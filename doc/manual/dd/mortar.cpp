@@ -336,12 +336,14 @@ MortarProd<Dim, Order1, Order2>::run()
     tic();
     form2( _trial=Xh, _test=Xh, _matrix=A, _init=true );
 
+    LOG(INFO) << "A...";
     form2( _trial=Xh, _test=Xh, _matrix=A ) +=
         integrate( elements(Xh->template mesh<0>()), coeff*gradt(u1)*trans(grad(v1)) );
 
     form2( _trial=Xh, _test=Xh, _matrix=A ) +=
         integrate( elements(Xh->template mesh<1>()), coeff*gradt(u2)*trans(grad(v2)) );
 
+    LOG(INFO) << "outside1...";
     for( int marker : outside1 )
     {
         form2( _trial=Xh, _test=Xh, _matrix=A ) +=
@@ -351,6 +353,7 @@ MortarProd<Dim, Order1, Order2>::run()
                        +penaldir*id(v1)*idt(u1)/hFace());
     }
 
+    LOG(INFO) << "outside2...";
     for( int marker : outside2 )
     {
         form2( _trial=Xh, _test=Xh, _matrix=A ) +=
@@ -359,7 +362,7 @@ MortarProd<Dim, Order1, Order2>::run()
                        -(grad(v2)*vf::N())*idt(u2)
                        +penaldir*id(v2)*idt(u2)/hFace());
     }
-
+    LOG(INFO) << "B, B^T..." ;
     form2( _trial=Xh, _test=Xh, _matrix=A ) +=
         integrate( markedfaces(mesh1,gamma1), idt(u1)*id(nu) + idt(mu)*id(v1)
                                               -idt(u2)*id(nu)-idt(mu)*id(v2) );
@@ -371,7 +374,7 @@ MortarProd<Dim, Order1, Order2>::run()
 
     std::cout<<"solve starts\n";
     tic();
-    M_backend->solve(_matrix=A, _solution=u, _rhs=F, _pcfactormatsolverpackage="umfpack");
+    M_backend->solve(_matrix=A, _solution=u, _rhs=F, _pcfactormatsolverpackage="mumps");
     std::cout<<"solve done in " << toc() <<"s\n";
 
     std::cout<<"exportResults starts\n";
@@ -406,6 +409,6 @@ main( int argc, char** argv )
         return 0;
     }
 
-    app.add( new MortarProd<2,6,7>() );
+    app.add( new MortarProd<2,1,1>() );
     app.run();
 }
