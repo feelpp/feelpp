@@ -29,6 +29,7 @@
    \date 2012-04-25
  */
 #include <feel/feel.hpp>
+#include <feel/feeltiming/tic.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
