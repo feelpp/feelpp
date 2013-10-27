@@ -340,7 +340,7 @@ public:
     bool isSiblingOf( boost::shared_ptr<MeshBase> m ) const
         {
             DVLOG(4) << "isSibling<mesh_ptrtype> called\n";
-            if ( !m->isSubMesh() ) return false;
+            if ( !M_smd && !m->hasSubMeshData() ) return false;
             bool res = M_smd->mesh.get() == m->M_smd->mesh.get();
             if ( res == false ) return res;
             DVLOG(4) << "this isSibling m: " << res << "\n";
