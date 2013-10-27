@@ -343,6 +343,13 @@ public:
         typedef Lagrange<N-1, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
+    struct SSpace
+    {
+        typedef typename mpl::if_<mpl::equal_to<mpl::int_<O>, mpl::int_<1> >,
+                                  mpl::identity<Lagrange<N, RealDim, O-1, PolySetType, Discontinuous, T, Convex,  Pts, TheTAG> >,
+                                  mpl::identity<Lagrange<N, RealDim, O-1, PolySetType, Continuous, T, Convex,  Pts, TheTAG> > >::type::type type;
+
+    };
     //@}
 
     /** @name Constructors, destructor
