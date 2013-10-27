@@ -1879,10 +1879,29 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
 
     size_type next_free_dof = start_next_free_dof;
     DofFromElement<self_type,fe_type> dfe( this, *M_fe );
+    typedef typename fe_type::SSpace::type mortar_fe_type;
+    mortar_fe_type mfe;
+    DofFromElement<self_type,mortar_fe_type> dfe_mortar( this, mfe );
     for ( ; it_elt!=en_elt; ++it_elt )
     {
         if ( !this->isElementDone( it_elt->id() ) )
-            dfe.add( *it_elt, next_free_dof, M.worldComm().localRank() );
+        {
+            if ( is_mortar )
+            {
+                if ( !it_elt->isOnBoundary() )
+                {
+                    dfe.add( *it_elt, next_free_dof, M.worldComm().localRank() );
+                }
+                else
+                {
+                    dfe_mortar.add( *it_elt, next_free_dof, M.worldComm().localRank() );
+                }
+            }
+            else
+            {
+                dfe.add( *it_elt, next_free_dof, M.worldComm().localRank() );
+            }
+        }
     } // elements loop
 
 #if 0
