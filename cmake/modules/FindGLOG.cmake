@@ -68,9 +68,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog/ )
     message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
     if ( APPLE )
       execute_process(
-	# the current version packaged in contrib is not compiling with libc++ 
-        #COMMAND make -k -j${NProcs2} install CXXFLAGS="-stdlib=libc++"
-        COMMAND make -k -j${NProcs2} install
+        COMMAND make -k -j${NProcs2} install CXXFLAGS="-stdlib=libc++"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
         OUTPUT_QUIET
         )
