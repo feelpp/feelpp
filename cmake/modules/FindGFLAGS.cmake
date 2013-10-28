@@ -69,7 +69,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/gflags/ )
     message(STATUS "Installing gflags in ${CMAKE_BINARY_DIR}/contrib/gflags...")
     if ( APPLE )
       execute_process(
-        COMMAND make -k -j${NProcs2} install CXXFLAGS="-stdlibs=libc++"
+        COMMAND make -k -j${NProcs2} install CXXFLAGS="-stdlib=libc++"
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
         #  OUTPUT_QUIET
         OUTPUT_FILE "gflags-install"
