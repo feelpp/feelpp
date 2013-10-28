@@ -2993,8 +2993,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
 #else // MPI_MODE
     // compute the number of dof on current processor
-    auto it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
-    auto en_elt = M.endElementWithProcessId( M.worldComm().localRank() );
+    auto it_elt = M.beginElementWithProcessId();
+    auto en_elt = M.endElementWithProcessId();
     bool hasNoElt = ( it_elt == en_elt );
 
     //size_type n_elts = std::distance( it_elt, en_elt);
@@ -3005,8 +3005,8 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     if ( is_periodic || is_discontinuous_locally )
         theFirstDf = 0;
 
-    mpi::all_gather( M.worldComm().localComm(),
-                     theFirstDf,//start_next_free_dof,
+    mpi::all_gather( this->worldComm().localComm(),
+                     theFirstDf,
                      this->M_first_df );
 
     //if ( is_periodic || is_discontinuous_locally )
@@ -3016,7 +3016,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 
     for ( ; it_elt!=en_elt; ++it_elt )
     {
-        this->addDofFromElement( *it_elt, next_free_dof, M.worldComm().localRank() );
+        this->addDofFromElement( *it_elt, next_free_dof, this->worldComm().localRank() );
     } // elements loop
 
 #if 0
@@ -3042,17 +3042,17 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 #endif
     const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
 
-    mpi::all_gather( M.worldComm().localComm(),
-                     thelastDof,//next_free_dof-1,
+    mpi::all_gather( this->worldComm().localComm(),
+                     thelastDof,
                      this->M_last_df );
 
     // access to M_n_localWithGhost_df for each process
     size_type mynDofWithGhost = ( !hasNoElt )?
-        this->M_last_df[M.worldComm().localRank()] - this->M_first_df[M.worldComm().localRank()] + 1 :
-        this->M_first_df[M.worldComm().localRank()];
+        this->M_last_df[this->worldComm().localRank()] - this->M_first_df[this->worldComm().localRank()] + 1 :
+        this->M_first_df[this->worldComm().localRank()];
 
     // update info with all_gather
-    mpi::all_gather( M.worldComm().localComm(),
+    mpi::all_gather( this->worldComm().localComm(),
                      mynDofWithGhost,
                      this->M_n_localWithGhost_df );
 #if 0
@@ -3068,7 +3068,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     this->M_last_df_globalcluster[this->worldComm().localRank()]=this->M_last_df[this->worldComm().localRank()];
     this->M_n_dofs = next_free_dof;
 
-    it_elt = M.beginElementWithProcessId( M.worldComm().localRank() );
+    it_elt = M.beginElementWithProcessId();
 
     for ( ; it_elt != en_elt; ++it_elt )
     {
