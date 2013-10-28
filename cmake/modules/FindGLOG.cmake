@@ -38,7 +38,7 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
 # try to find glog headers, if not found then install glog from contrib into
 # build directory and set GLOG_INCLUDE_DIR and GLOG_LIBRARIES
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
-  ${CMAKE_BINARY_DIR}/contrib/glog-svn/include
+  ${CMAKE_BINARY_DIR}/contrib/glog/include
   $ENV{FEELPP_DIR}/include
   $ENV{FEELPP_DIR}/include/feel
   NO_DEFAULT_PATH
