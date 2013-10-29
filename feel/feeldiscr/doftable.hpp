@@ -79,9 +79,12 @@ public:
      */
     typedef MeshType mesh_type;
     typedef FEType fe_type;
+
     typedef boost::shared_ptr<FEType> fe_ptrtype;
     typedef MortarType mortar_type;
     static const bool is_mortar = mortar_type::is_mortar;
+    typedef typename fe_type::SSpace::type mortar_fe_type;
+
 
     typedef typename mesh_type::pid_element_const_iterator pid_element_const_iterator;
     typedef typename mesh_type::element_const_iterator element_const_iterator;
@@ -1879,7 +1882,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
 
     size_type next_free_dof = start_next_free_dof;
     DofFromElement<self_type,fe_type> dfe( this, *M_fe );
-    typedef typename fe_type::SSpace::type mortar_fe_type;
     mortar_fe_type mfe;
     DofFromElement<self_type,mortar_fe_type> dfe_mortar( this, mfe );
     for ( ; it_elt!=en_elt; ++it_elt )

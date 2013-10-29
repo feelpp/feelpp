@@ -33,6 +33,7 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/fusion/support/is_sequence.hpp>
 #include <boost/fusion/sequence.hpp>
+#include <feel/feeldiscr/mortar.hpp>
 
 namespace Feel
 {
@@ -120,6 +121,7 @@ template<typename... Args>
 struct mortars
     :
     public detail::mortars_base,
+    public detail::mortar_base,
     public boost::fusion::vector<Args...>
 {
     typedef boost::fusion::vector<Args...> super;
