@@ -3968,6 +3968,9 @@ public:
         return M_dofOnOff;
     }
 
+    //! \return true if mortar, false otherwise
+    constexpr bool isMortar() const { return is_mortar; }
+
     /**
      * get the \c FunctionSpace vector
      */
@@ -6635,6 +6638,19 @@ boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>
 Pch( boost::shared_ptr<MeshType> mesh )
 {
     return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
+                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
+}
+
+/**
+ * build a function space of continuous function which are piecewise polynomial
+ * of degree (total or in each variable) less than k.
+ */
+template<int Order,typename MeshType>
+inline
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>, mortars<Mortar>>>
+Moch( boost::shared_ptr<MeshType> mesh )
+{
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>, mortars<Mortar>>::New( _mesh=mesh,
                                                                                                                _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
