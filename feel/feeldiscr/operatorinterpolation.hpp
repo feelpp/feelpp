@@ -402,13 +402,13 @@ template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRang
 void
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::update()
 {
-    if ( this->dualImageSpace()->mesh()->numGlobalElements() == 0 )
-        {
-            //std::cout << "OperatorInterpolation : update nothing!" << std::endl;
-            this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->dofOnOff(),
-                                                             this->dualImageSpace()->dofOn() );
-            return;
-        }
+    if ( this->dualImageSpace()->mesh()->numGlobalElements() == 0 || this->domainSpace()->mesh()->numGlobalElements() == 0 )
+    {
+        //std::cout << "OperatorInterpolation : update nothing!" << std::endl;
+        //this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->dofOnOff(),
+        //                                                this->dualImageSpace()->dofOn() );
+        return;
+    }
 
     // if same mesh but not same function space (e.g. different polynomial
     // order, different basis) or if the image of domain mesh are related to
