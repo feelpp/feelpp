@@ -1059,8 +1059,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         if ( it_gmshElt->isGhost() )
         {
             mapGhostElt.insert( std::make_pair( it_gmshElt->num,boost::make_tuple( __idGmshToFeel[it_gmshElt->num], it_gmshElt->ghostPartitionId() ) ) );
-
-            mesh->addFaceNeighborSubdomain( it_gmshElt->ghostPartitionId() );
         }
         else if( it_gmshElt->ghosts.size() > 0 )
         {
