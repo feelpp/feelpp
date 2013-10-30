@@ -574,12 +574,14 @@ public:
     }
 
     adjoint_ptrtype adjoint() const
-        {
-            auto opT = adjoint_ptrtype( new adjoint_type( this->dualImageSpace(), this->domainSpace(), M_backend, false ) );
-            opT->matPtr() = M_backend->newMatrix(_test=this->domainSpace(), _trial=this->dualImageSpace());
-            M_matrix->transpose(opT->matPtr());
-            return opT;
-        }
+    {
+        auto opT = adjoint_ptrtype( new adjoint_type( this->dualImageSpace(), this->domainSpace(), M_backend, false ) );
+        //opT->matPtr() = M_backend->newMatrix(_test=this->domainSpace(), _trial=this->dualImageSpace());
+        opT->matPtr() = M_backend->newMatrix( this->dualImageSpace()->dofOnOff(),
+                                              this->domainSpace()->dofOn(), (size_type) NON_HERMITIAN,false);
+        M_matrix->transpose(opT->matPtr());
+        return opT;
+    }
 
 private:
 
