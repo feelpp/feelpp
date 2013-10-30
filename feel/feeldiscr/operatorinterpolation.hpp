@@ -547,6 +547,15 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
 
 template <typename DomainMeshType, typename ImageMeshType>
 std::set<size_type>
+domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, boost::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId, mpl::int_<2> /**/ )
+{
+    CHECK(false) << "not implemented\n";
+    std::set<size_type> idsFind;
+    return idsFind;
+}
+
+template <typename DomainMeshType, typename ImageMeshType>
+std::set<size_type>
 domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, boost::shared_ptr<ImageMeshType> const& imageMesh, size_type imageEltId )
 {
     static const uint16_type nDimDomain = DomainMeshType::nDim;
