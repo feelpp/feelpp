@@ -897,13 +897,12 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
 
 }
 
-
 template<typename MeshType, int N>
-template<typename ConvexType>
+template<typename ConvexRefType, typename ConvexPtSetType>
 void
 ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
-                                                    typename mesh_type::element_type::super::reference_convex_type const& elt,
-                                                    PointSet<ConvexType,typename MeshType::value_type> const& ptset ) const
+                                                    Reference<ConvexRefType,ConvexRefType::nDim,ConvexRefType::nOrder,ConvexRefType::nRealDim >  const& elt,
+                                                    PointSet<ConvexPtSetType,typename MeshType::value_type> const& ptset ) const
 {
     std::ofstream out( filename.c_str(), std::ios::out );
     gmshSaveFormat( out );
