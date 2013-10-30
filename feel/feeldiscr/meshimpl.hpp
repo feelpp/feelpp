@@ -307,6 +307,10 @@ Mesh<Shape, T, Tag>::updateForUse()
     if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
     {
         this->updateEntitiesCoDimensionOneGhostCell();
+
+        auto ipfRange = this->interProcessFaces();
+        for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
+            this->addFaceNeighborSubdomain( itf->partition2() );
     }
 #endif
 
