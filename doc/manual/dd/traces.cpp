@@ -64,8 +64,12 @@ Traces<Dim,Order>::run()
 
     LOG(INFO) << "Vh" << *Vh;
     auto u = Vh->element();
+    u = vf::project( Vh, elements(mesh), cst( Environment::worldComm().globalRank() ) );
     auto e = exporter( _mesh=mesh,
-                       _name = (boost::format( "%1%-%2%-%3%" ) % this->about().appName() % Dim %  Environment::worldComm().globalRank()  ).str() );
+                       _name = (boost::format( "%1%-%2%-%3%" ) % this->about().appName() % Dim %  Environment::worldComm().globalRank() ).str() );
+
+    auto eSpurious = exporter( _mesh=mesh,
+                       _name = (boost::format( "%1%-spurious-%2%" ) % this->about().appName() % Dim ).str() );
 
     const unsigned short nbNeighbors = mesh->faceNeighborSubdomains().size();
     unsigned int* recv = new unsigned int[2 * nbNeighbors];
@@ -77,7 +81,7 @@ Traces<Dim,Order>::run()
         LOG(INFO) << "Extracting trace mesh from neighbor : " << neighbor_subdomain;
         auto trace = createSubmesh( mesh, interprocessfaces(mesh, neighbor_subdomain ),
                                     Environment::worldCommSeq() );
-        CHECK( nelements(elements(trace)) > 0 ) << "is not a true neighbor\n";
+        CHECK( nelements(elements(trace)) > 0 ) << "is not a true neighbor";
 
 
         LOG(INFO) << "number of elements in trace mesh " << nelements(elements(trace)) <<      " ("
@@ -92,13 +96,13 @@ Traces<Dim,Order>::run()
         CHECK( Xh->nDof() == Xh->nLocalDof() && l.size() == l.localSize() )
             << "problem : " << Xh->nDof() << " != " << Xh->nLocalDof() << " || "
             <<  l.size() << " != " << l.localSize();
-        l = vf::project( Xh, elements(trace), cst( 1.+neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
+        l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
 
         auto op = opInterpolation( _domainSpace =Vh,
                                    _imageSpace = Xh,
                                    _backend= backend(_worldcomm=Environment::worldCommSeq()), _ddmethod=true );
         auto opT = op->adjoint();
-        u+= opT->operator()(l);
+        u += opT->operator()(l);
 
         if ( Dim == 2 )
         {
@@ -107,16 +111,14 @@ Traces<Dim,Order>::run()
         }
 
 
-        //saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(),
-        //_mesh=trace );
-        auto m = mean(_range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeq() )(0,0);
+        //saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(), _mesh=trace );
+        auto m = mean( _range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeq() )(0,0);
         //CHECK( math::abs( m -  double(neighbor_subdomain+1) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
 
         send[i] = nelements(elements(trace));
         MPI_Isend(send + i, 1, MPI_UNSIGNED, neighbor_subdomain, 0, Environment::worldComm(), rq + i);
         MPI_Irecv(recv + i, 1, MPI_UNSIGNED, neighbor_subdomain, 0, Environment::worldComm(), rq + nbNeighbors + i);
         ++i;
-
     }
 
     MPI_Waitall(nbNeighbors * 2, rq, MPI_STATUSES_IGNORE);
@@ -126,6 +128,8 @@ Traces<Dim,Order>::run()
     delete [] recv;
     e->add( "u", u );
     e->save();
+    eSpurious->add( "u", u );
+    eSpurious->save();
 
 } // Traces::run
 
@@ -140,7 +144,7 @@ int main(int argc, char** argv) {
                      _desc=feel_options(),
                      _about=about(_name="doc_traces",
                                   _author="Feel++ Consortium",
-                                  _email="feelpp-devel@feelpp.org"));
+                                  _email="feelpp-devel@feelpp.org") );
     Application app;
     app.add(new Traces<2,2>());
     app.add(new Traces<3,1>());
