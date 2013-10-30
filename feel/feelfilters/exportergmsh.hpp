@@ -172,12 +172,10 @@ public:
                                    //=PointSet<ConvexType/*typename mesh_type::shape_type*/,typename MeshType::value_type>()
                                    ) const;
 
-    template<typename ConvexType=typename mesh_type::shape_type>
+    template<typename ConvexRefType, typename ConvexPtSetType>
     void gmshSaveOneElementAsMesh( std::string const& filename,
-                                   typename mesh_type::element_type::super::reference_convex_type const& elt,
-                                   PointSet<ConvexType,typename MeshType::value_type> const& ptset
-                                   //=PointSet<ConvexType/*typename mesh_type::shape_type*/,typename MeshType::value_type>()
-                                   ) const;
+                                   Reference<ConvexRefType,ConvexRefType::nDim,ConvexRefType::nOrder,ConvexRefType::nRealDim >  const& elt,
+                                   PointSet<ConvexPtSetType,typename MeshType::value_type> const& ptset ) const;
 
     //@}
 
