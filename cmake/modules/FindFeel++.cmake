@@ -717,7 +717,16 @@ endif()
 #
 # HARTS
 #
-option(FEELPP_ENABLE_HARTS "Enable Harts (Runtime parallelization system)" OFF)
+OPTION( FEELPP_ENABLE_HARTS "Enable Harts (Runtime parallelization system)" OFF )
+if ( FEELPP_ENABLE_HARTS )
+    FIND_PACKAGE( HARTS )
+    if( HARTS_FOUND )
+        SET(CMAKE_REQUIRED_INCLUDES "${HARTS_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+        INCLUDE_DIRECTORIES( ${HARTS_INCLUDE_DIR} )
+        SET(FEELPP_LIBRARIES ${HARTS_LIBRARIES} ${FEELPP_LIBRARIES})
+        SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HARTS" )
+    endif()
+endif()
 
 
 #
