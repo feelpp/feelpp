@@ -64,12 +64,10 @@ Traces<Dim,Order>::run()
 
     LOG(INFO) << "Vh" << *Vh;
     auto u = Vh->element();
-    u = vf::project( Vh, elements(mesh), cst( Environment::worldComm().globalRank() ) );
-    auto e = exporter( _mesh=mesh,
-                       _name = (boost::format( "%1%-%2%-%3%" ) % this->about().appName() % Dim %  Environment::worldComm().globalRank() ).str() );
+    //u = vf::project( Vh, elements(mesh), cst( Environment::worldComm().globalRank() ) );
 
-    auto eSpurious = exporter( _mesh=mesh,
-                       _name = (boost::format( "%1%-spurious-%2%" ) % this->about().appName() % Dim ).str() );
+    auto e = exporter( _mesh=mesh,
+                       _name = (boost::format( "%1%-%2%" ) % this->about().appName() % Dim  ).str() );
 
     const unsigned short nbNeighbors = mesh->faceNeighborSubdomains().size();
     unsigned int* recv = new unsigned int[2 * nbNeighbors];
@@ -96,7 +94,10 @@ Traces<Dim,Order>::run()
         CHECK( Xh->nDof() == Xh->nLocalDof() && l.size() == l.localSize() )
             << "problem : " << Xh->nDof() << " != " << Xh->nLocalDof() << " || "
             <<  l.size() << " != " << l.localSize();
-        l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
+
+        // strange the line below doesn t work correctly, it's necesseray to have a double in cst -> a bug is found
+        //l = vf::project( Xh, elements(trace), cst( neighbor_subdomain+Environment::worldComm().globalRank() )/2. );
+        l = vf::project( Xh, elements(trace), cst( (neighbor_subdomain+Environment::worldComm().globalRank())/2. ) );
 
         auto op = opInterpolation( _domainSpace =Vh,
                                    _imageSpace = Xh,
@@ -126,10 +127,11 @@ Traces<Dim,Order>::run()
         CHECK( send[i] == recv[i] ) << "problem : " << send[i] << " != " << recv[i];
     delete [] rq;
     delete [] recv;
-    e->add( "u", u );
+
+    auto VhVisu  = Pch<Order>( mesh );
+    auto uVisu = vf::project( _space=VhVisu,_expr=idv(u) );
+    e->add( "uVisu", uVisu );
     e->save();
-    eSpurious->add( "u", u );
-    eSpurious->save();
 
 } // Traces::run
 
