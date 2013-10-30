@@ -106,6 +106,34 @@ public:
         M_points_face( Convex::numTopologicalFaces )
     {}
 
+    PointSet( std::vector<std::map<uint16_type,nodes_type> > const& SomePoints, uint16_type perm=1)
+        :
+        super(),
+        M_npoints( 0 ),
+        M_points(),
+        M_points_face( Convex::numTopologicalFaces )
+    {
+        if (SomePoints.size()==0) return;
+
+        auto it=SomePoints.begin();
+        auto const en=SomePoints.end();
+        uint32_type size1=it->find( perm )->second.size1(), size2=0;
+        for ( ; it!=en ; ++it)
+            size2+=it->find( perm )->second.size2();
+        M_npoints = size2;
+        M_points.resize(size1,size2);
+
+        it=SomePoints.begin();
+        uint32_type start=0;
+        for ( ; it!=en ; ++it)
+        {
+            auto const& thenodes = it->find( perm )->second;
+            for ( uint32_type i=0 ; i< thenodes.size2();++i )
+                ublas::column( M_points, start + i ) = ublas::column( thenodes, i );
+            start+=thenodes.size2();
+        }
+    }
+
     virtual ~PointSet()
     {}
 
