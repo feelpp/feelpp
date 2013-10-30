@@ -58,18 +58,13 @@ Traces<Dim,Order>::run()
                                    % option(_name="gmsh.hsize").template as<double>() );
 
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<Dim>>);
-    auto localMesh = createSubmesh( mesh, elements(mesh), Environment::worldCommSeq() );
-    CHECK( localMesh->isSubMesh() ) << "Invalid sub mesh";
-    LOG(INFO) << "num elements : " << localMesh->numElements();
-    saveGMSHMesh( _filename=(boost::format( "local-%1%-%2%.msh" ) % Dim % Environment::worldComm().globalRank()).str(),
-                  _mesh=localMesh );
 
-    //auto Vh = Pch<1>( mesh );
-    auto Vh  = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order,Scalar>>>::New( _mesh=localMesh,
-                                                                                  _worldscomm=Environment::worldsCommSeq(1) );
+    auto Vh  = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order,Scalar>>>::New( _mesh=mesh,
+                                                                                      _worldscomm=Environment::worldsCommSeq(1) );
+
     LOG(INFO) << "Vh" << *Vh;
     auto u = Vh->element();
-    auto e = exporter( _mesh=localMesh,
+    auto e = exporter( _mesh=mesh,
                        _name = (boost::format( "%1%-%2%-%3%" ) % this->about().appName() % Dim %  Environment::worldComm().globalRank()  ).str() );
 
     const unsigned short nbNeighbors = mesh->faceNeighborSubdomains().size();
@@ -82,6 +77,8 @@ Traces<Dim,Order>::run()
         LOG(INFO) << "Extracting trace mesh from neighbor : " << neighbor_subdomain;
         auto trace = createSubmesh( mesh, interprocessfaces(mesh, neighbor_subdomain ),
                                     Environment::worldCommSeq() );
+        CHECK( nelements(elements(trace)) > 0 ) << "is not a true neighbor\n";
+
 
         LOG(INFO) << "number of elements in trace mesh " << nelements(elements(trace)) <<      " ("
                   << Environment::worldComm().globalRank() << " vs. " << neighbor_subdomain << ")";
@@ -102,6 +99,7 @@ Traces<Dim,Order>::run()
                                    _backend= backend(_worldcomm=Environment::worldCommSeq()), _ddmethod=true );
         auto opT = op->adjoint();
         u+= opT->operator()(l);
+
         if ( Dim == 2 )
         {
             l.printMatlab( (boost::format( "l-%1%-%2%" ) % Dim % Environment::worldComm().globalRank()).str() );
@@ -109,20 +107,18 @@ Traces<Dim,Order>::run()
         }
 
 
-        if ( nelements(elements(trace)) > 0 )
-        {
-            //saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(),
-            //_mesh=trace );
-            auto m = mean(_range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeq() )(0,0);
-            //CHECK( math::abs( m -  double(neighbor_subdomain+1) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
-        }
-        else
-            LOG(WARNING) << neighbor_subdomain << " is not a true neighbor of " << Environment::worldComm().globalRank();
+        //saveGMSHMesh( _filename=(boost::format( "trace-%1%-%2%-%3%.msh" ) % Dim % Environment::worldComm().globalRank() % neighbor_subdomain).str(),
+        //_mesh=trace );
+        auto m = mean(_range=elements(trace), _expr=idv(l),_worldcomm=Environment::worldCommSeq() )(0,0);
+        //CHECK( math::abs( m -  double(neighbor_subdomain+1) ) < 1e-14 ) << "problem : " << m << " != " << neighbor_subdomain;
+
         send[i] = nelements(elements(trace));
         MPI_Isend(send + i, 1, MPI_UNSIGNED, neighbor_subdomain, 0, Environment::worldComm(), rq + i);
         MPI_Irecv(recv + i, 1, MPI_UNSIGNED, neighbor_subdomain, 0, Environment::worldComm(), rq + nbNeighbors + i);
         ++i;
+
     }
+
     MPI_Waitall(nbNeighbors * 2, rq, MPI_STATUSES_IGNORE);
     for (i = 0; i < nbNeighbors; ++i)
         CHECK( send[i] == recv[i] ) << "problem : " << send[i] << " != " << recv[i];
@@ -130,6 +126,7 @@ Traces<Dim,Order>::run()
     delete [] recv;
     e->add( "u", u );
     e->save();
+
 } // Traces::run
 
 } // Feel
