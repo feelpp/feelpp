@@ -1711,13 +1711,14 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
         const int idGmsh = it_map->first;
         const int idFeel = it_map->second.template get<0>();
         const int idProc = it_map->second.template get<1>();
-        // save request
-        memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = idFeel;
-        //dataToSend[idProc].push_back( idGmsh );
-        dataToSend[idProc][nDataInVecToSendBis[idProc]] = idGmsh;
-        // update counter
+
         if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
             nDataInVecToSendBis[idProc]=0;
+        // save request
+        memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = idFeel;
+        // update container
+        dataToSend[idProc][nDataInVecToSendBis[idProc]] = idGmsh;
+        // update counter
         nDataInVecToSendBis[idProc]++;
     }
     //-----------------------------------------------------------//
