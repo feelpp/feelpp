@@ -1686,6 +1686,8 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
     for ( ; it_map!=en_map ; ++it_map )
     {
         const int idProc = it_map->second.template get<1>();
+        if ( nDataInVecToSend.find(idProc) == nDataInVecToSend.end() )
+            nDataInVecToSend[idProc]=0;
         nDataInVecToSend[idProc]++;
     }
     //-----------------------------------------------------------//
