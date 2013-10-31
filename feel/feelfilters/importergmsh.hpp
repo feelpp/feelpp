@@ -1716,6 +1716,8 @@ ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* me
         //dataToSend[idProc].push_back( idGmsh );
         dataToSend[idProc][nDataInVecToSendBis[idProc]] = idGmsh;
         // update counter
+        if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
+            nDataInVecToSendBis[idProc]=0;
         nDataInVecToSendBis[idProc]++;
     }
     //-----------------------------------------------------------//
