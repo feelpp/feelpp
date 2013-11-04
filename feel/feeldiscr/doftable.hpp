@@ -1040,11 +1040,14 @@ public:
                                        std::map<size_type,boost::tuple<size_type,size_type> > & mapInterProcessDof );
     void buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh );
     void buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
-                                                                    std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > & listToSend,
+                                                                    std::vector< std::map<size_type,std::set<std::vector<size_type> > > > & listToSend,
                                                                     std::set<int> & procRecvData );
-    void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDof( mesh_type& mesh,
-                                                                    std::vector< std::map<size_type,std::set<boost::tuple<size_type,uint16_type> > > > const& listToSend,
-                                                                    std::set<int> const& procRecvData );
+    void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type& mesh,
+                                                                                std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
+                                                                                std::set<int> const& procRecvData );
+    void buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
+                                                                                   std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
+        std::set<int> const& procRecvData );
     void buildGlobalProcessToGlobalClusterDofMapDiscontinuous();
 
     void buildGhostInterProcessDofMapInit( mesh_type& mesh,
@@ -3005,10 +3008,6 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
     if ( is_periodic || is_discontinuous_locally )
         theFirstDf = 0;
 
-    mpi::all_gather( this->worldComm().localComm(),
-                     theFirstDf,
-                     this->M_first_df );
-
     //if ( is_periodic || is_discontinuous_locally )
     //    this->M_first_df[processor] =  0;
 
@@ -3042,19 +3041,24 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
 #endif
     const size_type thelastDof = ( !hasNoElt )?next_free_dof-1:0;
 
+    std::vector<boost::tuple<bool,size_type,size_type> > dataRecvFromGather;
+    auto dataSendToGather = boost::make_tuple(hasNoElt,theFirstDf,thelastDof);
     mpi::all_gather( this->worldComm().localComm(),
-                     thelastDof,
-                     this->M_last_df );
+                     dataSendToGather,
+                     dataRecvFromGather );
 
-    // access to M_n_localWithGhost_df for each process
-    size_type mynDofWithGhost = ( !hasNoElt )?
-        this->M_last_df[this->worldComm().localRank()] - this->M_first_df[this->worldComm().localRank()] + 1 :
-        this->M_first_df[this->worldComm().localRank()];
+    for (int p=0;p<this->worldComm().localSize();++p)
+    {
+        bool procHasNoElt = dataRecvFromGather[p].template get<0>();
+        this->M_first_df[p] = dataRecvFromGather[p].template get<1>();
+        this->M_last_df[p] = dataRecvFromGather[p].template get<2>();
 
-    // update info with all_gather
-    mpi::all_gather( this->worldComm().localComm(),
-                     mynDofWithGhost,
-                     this->M_n_localWithGhost_df );
+        size_type mynDofWithGhost = ( !procHasNoElt )?
+            this->M_last_df[p] - this->M_first_df[p] + 1 :
+            this->M_first_df[p];
+        this->M_n_localWithGhost_df[p] = mynDofWithGhost;
+    }
+
 #if 0
     std::cout << "\n build Dof Map --2---with god rank " << this->worldComm().godRank()
               << " local rank DofT " << this->worldComm().localRank()
