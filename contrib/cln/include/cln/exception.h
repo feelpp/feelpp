@@ -11,7 +11,7 @@ namespace cln {
 class runtime_exception : public std::runtime_error {
 public:
 	runtime_exception ()
-		: std::runtime_error(std::string()) {}
+		: std::runtime_error("runtime error") {}
 	explicit runtime_exception (const std::string & what)
 		: std::runtime_error(what) {}
 };
