@@ -28,8 +28,8 @@ function builddox
   fi
   cd $gh_pages
   rsync -avz $doxygen_dir/doc/api/html/ $branch/
-  git add $branch/*
-  git commit -m "update Feel++ online documentation of branch $branch" -a
+  git add -A $branch
+  git commit -m "update Feel++ online documentation of branch $branch"
 }
 
 base_dir=${1:-$HOME}
@@ -49,16 +49,16 @@ else
   git pull
 fi
 
-# #Create and/or update the feelpp's copy
-# if [ ! -d ${feelpp_source} ]; 
-# then 
-#   mkdir ${feelpp_source}; 
-#   cd ${feelpp_source};
-#   git clone https://github.com/feelpp/feelpp.git $feelpp_source
-# else
-#   cd $feelpp_source
-#   git pull
-# fi
+#Create and/or update the feelpp's copy
+if [ ! -d ${feelpp_source} ]; 
+then 
+  mkdir ${feelpp_source}; 
+  cd ${feelpp_source};
+  git clone https://github.com/feelpp/feelpp.git $feelpp_source
+else
+  cd $feelpp_source
+  git pull
+fi
 
 #Create in ${gh_pages}/feelpp the associated doc of the ${branch}
 builddox develop $feelpp_source $gh_pages
