@@ -1,0 +1,52 @@
+--- conf/rules.orig	2013-10-09 17:57:05.000000000 +0200
++++ conf/rules	2013-10-09 17:58:23.000000000 +0200
+@@ -16,27 +16,28 @@
+ 	-@PETSC_DIR=${PETSC_DIR} ${PYTHON} ${PETSC_DIR}/bin/petscnagupgrade.py
+ 
+ chk_makej:
+-	@parallel=false;\
+-        mflags=`echo _${MFLAGS}_ | sed "s+ +_+g"`;\
+-        mflags_j=`echo $${mflags} | sed "s+_-j_+DUMMY+g"`;\
+-        mflags_j1=`echo $${mflags} | sed "s+_-j_1_+DUMMY+g"`;\
+-        if [ "$${mflags_j}" != "$${mflags}" -a "$${mflags_j1}" = "$${mflags}" ]; then parallel=true; fi;\
+-        makeflags=`echo ${MAKEFLAGS} | sed "s+ +_+g"`;\
+-        makeflags_j=`echo $${makeflags} | sed "s+--jobserver-fds+DUMMY+g"`;\
+-        if [ "$${makeflags_j}" != "$${makeflags}" ]; then parallel=true; fi;\
+-        if [ "$${parallel}" = "true" ]; then \
+-          printf ${PETSC_TEXT_HILIGHT}"********************* ERROR **********************\n" ; \
+-          if [ "${PETSC_BUILD_USING_CMAKE}" != "" ]; then \
+-             echo "PETSc compiles are automatically parallel, do not ";\
+-             echo "provide the -j option to make                     ";\
+-          else \
+-             echo "Parallel build with 'make -j' is not supported    ";\
+-             echo "for PETSc legacy builds. Run without -j <np>      ";\
+-             echo "or ./configure PETSc with --download-cmake        ";\
+-             echo "to enable parallel builds with PETSc              ";\
+-          fi;\
+-          printf "**************************************************"${PETSC_TEXT_NORMAL}"\n" ;\
+-          exit 1; fi;
++	
++#	@parallel=false;\
++#        mflags=`echo _${MFLAGS}_ | sed "s+ +_+g"`;\
++#        mflags_j=`echo $${mflags} | sed "s+_-j_+DUMMY+g"`;\
++#        mflags_j1=`echo $${mflags} | sed "s+_-j_1_+DUMMY+g"`;\
++#        if [ "$${mflags_j}" != "$${mflags}" -a "$${mflags_j1}" = "$${mflags}" ]; then parallel=true; fi;\
++#        makeflags=`echo ${MAKEFLAGS} | sed "s+ +_+g"`;\
++#        makeflags_j=`echo $${makeflags} | sed "s+--jobserver-fds+DUMMY+g"`;\
++#        if [ "$${makeflags_j}" != "$${makeflags}" ]; then parallel=true; fi;\
++#        if [ "$${parallel}" = "true" ]; then \
++#          printf ${PETSC_TEXT_HILIGHT}"********************* ERROR **********************\n" ; \
++#          if [ "${PETSC_BUILD_USING_CMAKE}" != "" ]; then \
++#             echo "PETSc compiles are automatically parallel, do not ";\
++#             echo "provide the -j option to make                     ";\
++#          else \
++#             echo "Parallel build with 'make -j' is not supported    ";\
++#             echo "for PETSc legacy builds. Run without -j <np>      ";\
++#             echo "or ./configure PETSc with --download-cmake        ";\
++#             echo "to enable parallel builds with PETSc              ";\
++#          fi;\
++#          printf "**************************************************"${PETSC_TEXT_NORMAL}"\n" ;\
++#          exit 1; fi;
+ 
+ chk_loc:
+ 	@if [ ${LOC}foo = foo ] ; then \

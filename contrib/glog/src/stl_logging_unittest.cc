@@ -39,7 +39,7 @@
 #include <string>
 #include <vector>
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
 # include <ext/hash_map>
 # include <ext/hash_set>
 #endif
@@ -48,7 +48,7 @@
 #include "googletest.h"
 
 using namespace std;
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
 using namespace __gnu_cxx;
 #endif
 
@@ -83,7 +83,7 @@ void TestSTLLogging() {
     CHECK_EQ(m, copied_m);  // This must compile.
   }
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
   {
     // Test a hashed simple associative container.
     hash_set<int> hs;
@@ -98,7 +98,7 @@ void TestSTLLogging() {
   }
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
   {
     // Test a hashed pair associative container.
     hash_map<int, string> hm;
@@ -145,7 +145,7 @@ void TestSTLLogging() {
     CHECK_EQ(m, copied_m);  // This must compile.
   }
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
   {
     // Test a hashed simple associative container.
     // Use a user defined hash function.
