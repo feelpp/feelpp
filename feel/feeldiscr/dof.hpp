@@ -267,6 +267,10 @@ public:
         :
         super( std::make_pair( 0, 0 ) )
         {}
+    LocalDof( size_type e )
+        :
+        super( std::make_pair( e, 0 ) )
+        {}
     LocalDof( size_type e, uint16_type l )
         :
         super( std::make_pair( e, l ) )
