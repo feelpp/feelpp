@@ -1,4 +1,4 @@
-#! /opt/local/bin/bash
+#!/bin/bash
 
 function builddox
 {
