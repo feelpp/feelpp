@@ -345,9 +345,10 @@ public:
 
     struct SSpace
     {
-        typedef typename mpl::if_<mpl::equal_to<mpl::int_<O>, mpl::int_<1> >,
-                                  mpl::identity<Lagrange<N, RealDim, O-1, PolySetType, Discontinuous, T, Convex,  Pts, TheTAG> >,
-                                  mpl::identity<Lagrange<N, RealDim, O-1, PolySetType, Continuous, T, Convex,  Pts, TheTAG> > >::type::type type;
+        static constexpr uint16_type TheOrder = (O > 1)?O-1:0;
+        typedef typename mpl::if_<mpl::less_equal<mpl::int_<O>, mpl::int_<1> >,
+                                  mpl::identity<Lagrange<N, RealDim, 0, PolySetType, Discontinuous, T, Convex,  Pts, TheTAG> >,
+                                  mpl::identity<Lagrange<N, RealDim, TheOrder, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type type;
 
     };
     //@}
