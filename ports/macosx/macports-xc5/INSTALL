@@ -1,0 +1,94 @@
+# -*- mode: org -*-
+
+
+* Installing Feel++ using MacPorts
+
+In order to install Feel++ on darwin or macosx systems, you can use [[http://www.macports.org][macports]].
+
+** installing MacPorts
+
+Follow the instructions on the following page
+ - http://www.macports.org/install.php
+
+From now on we will suppose that macports has been installed in =/opt/local=
+
+** setting local source file for Feel++
+
+Feel++ provides some mandatory Portfiles for its compilation which are either
+not available in MacPorts or are buggy. These Portfiles are installed in =ports/macosx/macports=
+
+add the following line in =/opt/local/etc/macports/source.conf=
+at the top of the file before any other sources
+
+#+BEGIN_EXAMPLE
+file:///<path to feel++ top directory>/ports/macosx/macports
+#+END_EXAMPLE
+
+then type
+
+#+BEGIN_EXAMPLE
+cd <path to feel++ top directory>/ports/macosx/macports
+portindex
+#+END_EXAMPLE
+
+you should have an output like this
+
+#+BEGIN_EXAMPLE
+reating port index in /Users/prudhomm/Devel/FEEL/feel/ports/macosx/macports
+Adding port science/feel++
+Adding port science/gmsh
+
+Total number of ports parsed:   2
+Ports successfully parsed:      2
+Ports failed:                   0
+Up-to-date ports skipped:       0
+#+END_EXAMPLE
+
+then type
+
+#+BEGIN_EXAMPLE
+sudo port install feel++
+#+END_EXAMPLE
+
+it might take some time (possibly an entire day) to compile all the requirements for Feel++
+to compile properly. If you have several cores on you macbookpro, imac or macpro
+I suggest that you configure macports to use all or some of them.
+To do that uncomment the following line in =/opt/local/etc/macports/macports.conf=
+
+#+BEGIN_EXAMPLE
+# Number of simultaneous make jobs (commands) to use when building ports. This
+# value may be set to 0 so the number of simultaneous make jobs will be set to
+# the number of CPU cores that are automatically detected, or the number of GB
+# of physical memory plus one, whichever is less.
+buildmakejobs	0 # all the cores
+# buildmakejobs 4 # use 4 cores
+#+END_EXAMPLE
+
+** Note on boost
+
+Feel++ uses Boost.mpi and it is strongly suggestly to compile Boost with the
+following options
+#+BEGIN_EXAMPLE
+sudo port install boost +openmpi +debug
+#+END_EXAMPLE
+this will compile boost with openmpi support (the version shipped with macports)
+as well as the debug version of the Boost libraries.
+
+
+** locale port files
+
+Feel++ provides some Portfiles which are already available in MacPort such as
+gmsh or petsc. They usually provide either some fixes to ensure Feel++ works
+properly or new version not yet available in MacPort.
+
+*** PETSc Portfile
+
+ - fixes port compilation
+
+*** GMSH Portfile
+
+ - provide up-to-date version of the Portfile
+
+*** OpenTURNS Portfile
+
+ - provide OpenTURNS which is required for the framework Feel++-OPUS

@@ -730,7 +730,7 @@ public:
     }
 
     // Support for c++11
-#if (__cplusplus >= 201103L)
+#if (__cplusplus >= 201103L) && !defined(_LIBCPP_VERSION)
     template<typename... Args>
     void  construct(pointer p, Args&&... args)
     {
