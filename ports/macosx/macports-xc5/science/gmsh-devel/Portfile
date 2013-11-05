@@ -1,0 +1,116 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+#PortGroup           cmake 1.0
+
+fetch.type          svn
+fetch.user          gmsh
+fetch.password      gmsh
+svn.url             https://geuz.org/svn/gmsh/trunk
+svn.revision        16477
+svn.method          export
+svn.post_args       --username ${fetch.user} --password ${fetch.password}
+
+name                gmsh-devel
+version             2.8.3-svn-${svn.revision}
+categories          science
+platforms           darwin
+maintainers         feelpp.org:christophe.prudhomme
+description         Finite element mesh generator in 1D, 2D and 3D
+long_description    \
+        Gmsh is an automatic 3D finite element mesh generator (primarily   \
+        Delaunay) with build-in CAD and post-processing facilities. Its     \
+        design goal is to provide a simple meshing tool for academic test   \
+        cases with parametric input and up to date visualization            \
+        capabilities.
+
+homepage            http://www.geuz.org/gmsh/
+worksrcdir          trunk
+conflicts           gmsh
+
+# https://trac.macports.org/ticket/33925
+#compiler.blacklist  clang
+#configure.compiler macports-gcc-4.8
+
+# configure.cxxflags-append "-stdlib=libc++"
+# configure.ldflags-append "-stdlib=libc++"
+
+# worksrcdir	build
+configure.cmd       cmake
+configure	{ system "mkdir -p ${worksrcpath} && cd ${worksrcpath} && ${configure.cmd} ${worksrcpath} ${configure.args}" }
+
+#configure.pre_args
+configure.args-append \
+    -DCMAKE_INSTALL_PREFIX=${prefix}\
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    -DCMAKE_COLOR_MAKEFILE=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+    -DENABLE_OS_SPECIFIC_INSTALL=OFF\
+    -DENABLE_BUILD_SHARED=ON\
+    -DENABLE_BUILD_DYNAMIC=ON\
+    -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF\
+    -DENABLE_OCC:BOOL=OFF \
+    -DENABLE_FLTK:BOOL=OFF\
+    -DENABLE_GRAPHICS:BOOL=ON\
+    -DENABLE_METIS=ON \
+    -DENABLE_TAUCS=OFF
+#    -DENABLE_BUILD_LIB=ON\
+#    -DCMAKE_C_COMPILER=/opt/local/bin/gcc-mp-4.8\
+#    -DCMAKE_CXX_COMPILER=/opt/local/bin/g++-mp-4.8\
+
+set configure.args "${configure.args} -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\""
+
+# build.target all shared
+
+depends_lib  \
+    port:readline \
+    port:mesa \
+    port:cmake \
+    port:libpng \
+    port:python27 \
+    port:petsc \
+    path:lib/libpoppler.dylib:poppler \
+    port:swig \
+    port:swig-python \
+    path:lib/libfltk.dylib:fltk \
+    port:jpeg \
+    port:zlib \
+    port:texinfo
+
+pre-configure {
+    # Append stdlib specification
+    # if {[info exists configure.cxx_stdlib] &&
+    #    ${configure.cxx_stdlib} ne {} &&
+    #    [string match *clang* ${configure.cxx}]} { }
+    if {[info exists configure.cxx_stdlib] &&
+        ${configure.cxx_stdlib} ne {}} {
+	configure.cxxflags-append "-stdlib=${configure.cxx_stdlib}"
+	configure.ldflags-append "-stdlib=${configure.cxx_stdlib}"
+	puts ${configure.ldflags}
+        #return -code error "Defined"
+    } else {
+        #return -code error "Not defined"
+    } 
+
+    set configure.args "${configure.args} -DCMAKE_MODULE_LINKER_FLAGS=\"${configure.ldflags}\" -DCMAKE_SHARED_LINKER_FLAGS=\"${configure.ldflags}\" -DCMAKE_C_FLAGS=\"${configure.cflags}\" -DCMAKE_CXX_FLAGS=\"${configure.cxxflags}\""
+
+    set configure.args [regsub -all ({}\ )+ ${configure.args} ""]
+
+    #puts ${configure.args}
+#return -code error "test"
+}
+
+variant slepc description {compile with PETSC/SLEPC support} {
+    depends_lib-append      port:slepc
+    configure.args-append \
+        -DENABLE_MPI=ON \
+        -DENABLE_PETSC=ON \
+        -DPETSC_INC=${prefix}/lib/petsc/include \
+        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.a \
+        -DENABLE_SLEPC=ON \
+        -DSLEPC_INC=${prefix}/lib/petsc/include \
+        -DSLEPC_LIB=${prefix}/lib/petsc/lib/libslepc.a
+}

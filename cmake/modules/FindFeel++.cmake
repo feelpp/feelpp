@@ -7,7 +7,11 @@
 #should check the version of gcc for -std=c++0x ou -std=c++11
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+IF(APPLE)
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++ -ftemplate-depth=1024" )
+ELSE()
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+ENDIF()
 ENDIF()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
@@ -193,9 +197,11 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 # BOOST_SCOPED_ENUM macros whose behavior differs in both case and would
 # generate different c++ codes and undefined references at link time.
 # in a short future, this should not be necessary anymore
-ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
-IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
-  ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+IF(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR NOT APPLE)
+    ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
+    IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
+      ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+    endif()
 endif()
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
@@ -460,6 +466,8 @@ FIND_LIBRARY(ML_LIBRARY
   ml
   PATHS
   $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  /opt/local/lib/petsc/lib
   )
 message(STATUS "ML: ${ML_LIBRARY}" )
 IF ( ML_LIBRARY )
