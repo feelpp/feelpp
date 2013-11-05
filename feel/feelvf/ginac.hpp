@@ -88,6 +88,30 @@ namespace Feel
         return s;
     }
 
+    class GinacExprManagerImpl :
+        public std::map<std::string, boost::shared_ptr<GiNaC::FUNCP_CUBA> > ,
+        public boost::noncopyable
+    {
+    public:
+        typedef boost::shared_ptr<GiNaC::FUNCP_CUBA> value_type;
+        typedef std::string key_type;
+        typedef std::map<key_type,value_type> ginac_expr_manager_type;
+    };
+
+    typedef Feel::Singleton<GinacExprManagerImpl> GinacExprManager;
+
+    struct GinacExprManagerDeleterImpl
+    {
+        void operator()() const
+        {
+            VLOG(2) << "[BackendManagerDeleter] clear GinacExprManager Singleton: " << GinacExprManager::instance().size() << "\n";
+            GinacExprManager::instance().clear();
+            VLOG(2) << "[BackendManagerDeleter] clear GinacExprManager done\n";
+        }
+    };
+    typedef Feel::Singleton<GinacExprManagerDeleterImpl> GinacExprManagerDeleter;
+
+
     namespace vf
     {
 
@@ -145,11 +169,12 @@ namespace Feel
              */
             //@{
 
-            explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="")
+            explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="",
+                              WorldComm const& world=Environment::worldComm() )
                 :
                 M_fun( fun ),
                 M_syms( syms),
-                M_cfun(),
+                M_cfun( new GiNaC::FUNCP_CUBA() ),
                 M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 DVLOG(2) << "Ginac constructor with expression_type \n";
@@ -157,32 +182,51 @@ namespace Feel
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
 
-                boost::mpi::communicator world;
-                bool isCompiled = true;
                 std::string filenameWithSuffix = M_filename + ".so";
-                // Check is the source file has already been compiled
-                if(!M_filename.empty())
+
+                // register the PreconditionerManager into Feel::Environment so that it gets the
+                // PreconditionerManager is cleared up when the Environment is deleted
+                static bool observed=false;
+                if ( !observed )
                     {
-                        if( world.rank() == 0 && !fs::exists( filenameWithSuffix ) )
-                            isCompiled = false;
-                        boost::mpi::broadcast(world, isCompiled, 0);
+                        Environment::addDeleteObserver( GinacExprManagerDeleter::instance() );
+                        observed = true;
                     }
-                else
-                    isCompiled = false;
-                // If the so file already exists, no need to re-compile but only link it
-                if( !isCompiled )
-                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
-                else
-                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
 
-
+                bool hasLinked = ( GinacExprManager::instance().find( filename ) != GinacExprManager::instance().end() )? true : false;
+                if ( hasLinked )
+                {
+                    M_cfun = GinacExprManager::instance().find( filename )->second;
+                }
+                else
+                {
+                    // master rank check if the lib exist and compile this one if not done
+                    if ( ( world.isMasterRank() && !fs::exists( filenameWithSuffix ) ) || M_filename.empty() )
+                    {
+                        DVLOG(2) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                        GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
+                        hasLinked=true;
+                        if ( !M_filename.empty() )
+                            GinacExprManager::instance().operator[]( filename ) = M_cfun;
+                    }
+                    // wait the lib compilation
+                    if ( !M_filename.empty() ) world.barrier();
+                    // link with other process
+                    if ( !hasLinked )
+                    {
+                        DVLOG(2) << "GiNaC::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                        GiNaC::link_ex(filenameWithSuffix, *M_cfun);
+                        if ( !M_filename.empty() )
+                            GinacExprManager::instance().operator[]( filename ) = M_cfun;
+                    }
+                }
             }
 
             GinacEx( GinacEx const & fun )
             :
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
-            M_cfun(),
+            M_cfun( fun.M_cfun ),
             M_filename( fun.M_filename )
             {
                 if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
@@ -191,16 +235,19 @@ namespace Feel
                     GiNaC::lst exprs(M_fun);
                     GiNaC::lst syml;
                     std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+                    GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
+
                 }
                 else
                 {
+#if 0
                     DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
                     boost::mpi::communicator world;
                     // std::string pid = boost::lexical_cast<std::string>(world.rank());
                     // std::string filenameWithSuffix = M_filename + pid + ".so";
                     std::string filenameWithSuffix = M_filename + ".so";
-                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                    GiNaC::link_ex(filenameWithSuffix, *M_cfun);
+#endif
                 }
             }
 
@@ -233,7 +280,7 @@ namespace Feel
 
             const GiNaC::FUNCP_CUBA& fun() const
             {
-                return M_cfun;
+                return *M_cfun;
             }
 
             std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
@@ -389,7 +436,7 @@ namespace Feel
         private:
             mutable expression_type  M_fun;
             std::vector<GiNaC::symbol> M_syms;
-            GiNaC::FUNCP_CUBA M_cfun;
+            boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
             std::string M_filename;
         };
 

@@ -70,7 +70,7 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog/ )
   if ( (${CMAKE_SOURCE_DIR}/contrib/glog/src/glog/logging.h.in IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h) OR
       ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
     message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
-    IF ( ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") AND APPLE )
+    if ( APPLE AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" )
       execute_process(
         COMMAND make -k -j${NProcs2} install CXXFLAGS=-stdlib=libc++
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
