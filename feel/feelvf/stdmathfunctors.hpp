@@ -278,7 +278,12 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
             {                                                           \
                 M_expr.update( geom, face );                           \
             }                                                           \
-                              \
+            template<typename CTX>                                      \
+                void updateContext( CTX const& ctx )                    \
+            {                                                           \
+                M_expr.updateContext( ctx );                           \
+            }                                                           \
+                                                                        \
                 value_type                                              \
                 evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const \
             {                                                           \

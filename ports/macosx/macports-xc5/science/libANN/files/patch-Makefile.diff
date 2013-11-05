@@ -1,0 +1,18 @@
+--- Makefile.orig	2013-10-21 11:28:32.000000000 +0200
++++ Makefile	2013-10-21 11:29:03.000000000 +0200
+@@ -56,11 +56,11 @@
+ #-----------------------------------------------------------------------------
+ # main make entry point
+ #-----------------------------------------------------------------------------
+-alpha-g++ macosx-g++ linux-g++ sgi sunos4 sunos4-g++ sunos5 sunos5-g++ sunos5-g++-sl authors-debug authors-perf:
++alpha-g++ macosx-g++ macosx-clang++ linux-g++ sgi sunos4 sunos4-g++ sunos5 sunos5-g++ sunos5-g++-sl authors-debug authors-perf:
+ 	cd src ; $(MAKE) $@
+-	cd test ; $(MAKE) $@
+-	cd sample ; $(MAKE) $@
+-	cd ann2fig ; $(MAKE) $@
++#	cd test ; $(MAKE) $@
++#	cd sample ; $(MAKE) $@
++#	cd ann2fig ; $(MAKE) $@
+ 
+ #-----------------------------------------------------------------------------
+ # Remove .o files and core files

@@ -154,7 +154,8 @@ public:
      */
     size_type nDofOnProcessor( const size_type proc ) const
     {
-        FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
+                                           <<  proc << ", first dof : " <<  M_first_df.size();
         return M_n_localWithoutGhost_df[proc];
         //return ( M_last_df[proc] - M_first_df[proc]+1);
     }
@@ -170,7 +171,8 @@ public:
     size_type firstDof() const
     {
         size_type proc = M_worldComm.rank();
-        FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
+                                           <<  proc << ", first dof : " <<  M_first_df.size();
         return M_first_df[proc];
     }
     /**
@@ -178,20 +180,23 @@ public:
      */
     size_type firstDof( const size_type proc ) const
     {
-        FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_first_df.size() ) << "invalid proc id or dof table , proc: "
+                                           <<  proc << ", first dof : " <<  M_first_df.size();
         return M_first_df[proc];
     }
 
     size_type firstDofGlobalCluster() const
     {
         size_type proc = M_worldComm.rank();
-        FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_first_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
+                                                         <<  proc << ", first dof global cluster : " <<  M_first_df_globalcluster.size();
         return M_first_df_globalcluster[proc];
     }
 
     size_type firstDofGlobalCluster( uint16_type proc ) const
     {
-        FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_first_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
+                                                         <<  proc << ", first dof global cluster : " <<  M_first_df_globalcluster.size();
         return M_first_df_globalcluster[proc];
     }
 
@@ -206,7 +211,8 @@ public:
     size_type lastDof() const
     {
         size_type proc = M_worldComm.rank();
-        FEELPP_ASSERT( proc < M_last_df.size() )( proc )( M_last_df.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_last_df.size() ) << "invalid proc id or dof table , proc: "
+                                          <<  proc << ", last dof : " <<  M_last_df.size();
         return M_last_df[proc];
     }
     /**
@@ -214,7 +220,8 @@ public:
      */
     size_type lastDof( const unsigned int proc ) const
     {
-        FEELPP_ASSERT( proc < M_last_df.size() )( proc )( M_last_df.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_last_df.size() ) << "invalid proc id or dof table , proc: "
+                                          <<  proc << ", last dof : " <<  M_last_df.size();
         return M_last_df[proc];
     }
 
@@ -224,13 +231,15 @@ public:
     size_type lastDofGlobalCluster() const
     {
         size_type proc = M_worldComm.rank();
-        FEELPP_ASSERT( proc < M_last_df_globalcluster.size() )( proc )( M_last_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_last_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
+                                                         <<  proc << ", last dof global cluster : " <<  M_last_df_globalcluster.size();
         return M_last_df_globalcluster[proc];
     }
 
     size_type lastDofGlobalCluster( uint16_type proc ) const
     {
-        FEELPP_ASSERT( proc < M_last_df_globalcluster.size() )( proc )( M_last_df_globalcluster.size() ).error( "invalid proc id or dof table" );
+        DCHECK( proc < M_last_df_globalcluster.size() ) << "invalid proc id or dof table , proc: "
+                                                         <<  proc << ", last dof global cluster : " <<  M_last_df_globalcluster.size();
         return M_last_df_globalcluster[proc];
     }
 
@@ -387,7 +396,7 @@ public:
         return M_closed;
     }
 
-    void showMeMapGlobalProcessToGlobalCluster( std::ostream& __out = std::cout ) const;
+    void showMeMapGlobalProcessToGlobalCluster( bool showAll=false, std::ostream& __out = std::cout ) const;
 
     /**
      * \return the communicator

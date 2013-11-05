@@ -53,15 +53,16 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 BOOST_AUTO_TEST_SUITE( projectsuite )
 
 typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
-//typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<1> > dim_types;
+
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check 1 vf::sum and vf::project for dim = " << T::value << "\n" );
-    typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+    if ( T::value==1 && Environment::worldComm().size()>1) return;
 
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
+    typedef Mesh<Simplex<T::value,1> > mesh_type;
+
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                         _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
                                                 _usenames=true,
                                                 _addmidpoint=false,
@@ -69,44 +70,47 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project1, T, dim_types )
                                                 _h=2. ),
                                         _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_ADD_ELEMENTS_INFO);
 
-    typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
 
-    space_ptrtype P1h = space_type::New( mesh );
+    auto P1h = Pch<1>( mesh );
     auto p1meas = vf::sum( P1h, elements( mesh ),  vf::meas() );
-
+    double p1measSum = p1meas.sum();
     double measure = 0.;
     for ( int i = 0; i < P1h->nLocalDof(); ++i )
     {
-        BOOST_CHECK_CLOSE( p1meas( i ), mesh->beginElement()->measure(), 1e-13 );
-        measure += mesh->beginElement()->measure();
+        BOOST_CHECK_CLOSE( p1meas( i ), mesh->beginElement/*WithProcessId*/()->measure(), 1e-13 );
+        measure += mesh->beginElement/*WithProcessId*/()->measure();
     }
 
-    BOOST_CHECK_CLOSE( p1meas.sum(), measure, 1e-13 );
-    BOOST_CHECK_EQUAL( mesh->beginElement()->numberOfPointElementNeighbors(), 1 );
-    BOOST_CHECK_CLOSE( mesh->beginElement()->measurePointElementNeighbors(), mesh->beginElement()->measure(), 1e-13 );
+
+    if ( mesh->numElements()>0 )
+    {
+        BOOST_CHECK_CLOSE( p1measSum, measure, 1e-13 );
+        BOOST_CHECK_EQUAL( mesh->beginElement()->numberOfPointElementNeighbors(), 1 );
+        BOOST_CHECK_CLOSE( mesh->beginElement()->measurePointElementNeighbors(), mesh->beginElement()->measure(), 1e-13 );
+    }
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
 {
     BOOST_TEST_MESSAGE( "check 2 vf::sum and vf::project for dim = " << T::value << "\n" );
+    if ( T::value==1 && Environment::worldComm().size()>1) return;
+
     typedef Mesh<Simplex<T::value,1> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    mesh_ptrtype mesh = createGMSHMesh( _mesh=new mesh_type,
-                                        _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
-                                                _usenames=true,
-                                                _addmidpoint=false,
-                                                _shape="simplex",
-                                                _dim=T::value,
-                                                _h=( T::value==1 )?0.49:0.5 ),
-                                        _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_ADD_ELEMENTS_INFO );
+    auto mesh = createGMSHMesh( _mesh=new mesh_type,
+                                _desc=domain( _name=( boost::format( "simplex-%1%" )  % T::value ).str() ,
+                                              _usenames=true,
+                                              _addmidpoint=false,
+                                              _shape="simplex",
+                                              _dim=T::value,
+                                              _h=( T::value==1 )?0.49:( T::value==2 )?0.5:0.8 ),
+                                _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_ADD_ELEMENTS_INFO );
 
-    typedef FunctionSpace<mesh_type,bases<Lagrange<1, Scalar> > > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    space_ptrtype P1h = space_type::New( mesh );
+    auto P1h = Pch<1>( mesh );
     auto elit = mesh->beginElement();
     auto elen = mesh->endElement();
+    const size_type nEltOnMesh = std::distance( mesh->beginElement(),mesh->endElement() );
+    //bool findEltConnectToAll=false;
 
     for ( ; elit != elen; ++elit )
     {
@@ -119,20 +123,30 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( project2, T, dim_types )
         switch ( T::value )
         {
         case 1:
-            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 2 );
+            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), elit->isInternal()?3:2 );
+
             break;
 
         case 2:
-            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 2 );
+            BOOST_CHECK_GE( elit->numberOfPointElementNeighbors(), 2 );
+            BOOST_CHECK_LE( elit->numberOfPointElementNeighbors(), nEltOnMesh );
+
             break;
 
         case 3:
-            BOOST_CHECK_EQUAL( elit->numberOfPointElementNeighbors(), 4 );
+            BOOST_CHECK_GE( elit->numberOfPointElementNeighbors(), 2 );
+            BOOST_CHECK_LE( elit->numberOfPointElementNeighbors(), nEltOnMesh );
             break;
         }
 
-        BOOST_CHECK_CLOSE( elit->measurePointElementNeighbors(), mesh->measure(), 1e-13 );
+        if ( elit->numberOfPointElementNeighbors() == nEltOnMesh )
+        {
+            BOOST_CHECK_CLOSE( elit->measurePointElementNeighbors(), mesh->measure(), 1e-13 );
+            //findEltConnectToAll=true;
+        }
+
     }
+    //BOOST_CHECK( findEltConnectToAll );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
