@@ -177,20 +177,19 @@ void Navier_Stokes::init()
         std::cout << this->optionsDescription() << "\n";
         return;
     }
-
-    /* mesh = createGMSHMesh( _mesh=new mesh_type,
+     mesh = createGMSHMesh( _mesh=new mesh_type,
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                             _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
                                           _shape="hypercube",
                                           _dim=convex_type().dimension(),
-                                          _h=meshSize ) );*/
-    mesh = unitSquare();
+                                          _h=meshSize ) );
+     //mesh = unitSquare();
     mesh->addMarkerName( "inlet", 1, 1 );
     mesh->addMarkerName( "outlet", 3, 1 );
     mesh->addMarkerName( "wall1", 2, 1 );
     mesh->addMarkerName( "wall2", 4, 1 );
     std::cout << "number of elements of 2D: " << mesh->numElements() << "\n";
-    
+
     Vh = space_type::New( mesh );
 }
 
@@ -209,8 +208,6 @@ void Navier_Stokes::run()
     auto nu = V.template element<2>();
     //#endif
 
-    
-
 
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
@@ -223,35 +220,49 @@ void Navier_Stokes::run()
             //#if defined( FEELPP_USE_LM )
             auto lambda = U.template element<2>();
             auto nu = V.template element<2>();
+            auto mu=1;
             //#endif
+           
             if (!J) J = backend()->newMatrix( Vh, Vh );
             std::cout << "coucou1 " << "\n";
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-            a += integrate( elements( mesh ), inner(gradt( u ),grad( v )) );
+            a += integrate( elements( mesh ), mu*inner(gradt( u ),grad( v )) );
             std::cout << "coucou2 " << "\n";
-            a += integrate( elements( mesh ), id(p)*divt(u) -idt(p)*div(v) );
+            a += integrate( elements( mesh ), id(q)*divt(u) -idt(p)*div(v) );
             std::cout << "coucou3 " << "\n";
-            a += integrate( elements( mesh ), trans(id(v))*gradv(u)*idt(u));
-            std::cout << "coucou4 " << "\n";
-            a += integrate( elements( mesh ), trans(id(v))*gradt(u)*idv(u));
+            // Convective terms
+            //a += integrate( elements( mesh ), trans(id(v))*gradv(u)*idt(u));
+            //a += integrate( elements( mesh ), trans(id(v))*gradt(u)*idv(u));
             std::cout << "coucou5 " << "\n";
 
-            a += integrate( boundaryfaces( mesh ),-trans( -idt(p)*N()+gradt(u)*N() )*id( v ));//
-            a += integrate( boundaryfaces( mesh ),-trans( -id(p)*N()+grad(u)*N() )*idt( u ));//
-            a += integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
             //#if defined( FEELPP_USE_LM )
             a += integrate(elements(mesh), id(q)*idt(lambda)+idt(p)*id(nu));
             //#elif
-            //a += integrate(elements(mesh), idt(lambda)*id(nu));
+            //a += integrate(elements(mesh), idt(p)*id(nu));
+
+            //Weak Dirichlet conditions
+            a += integrate( boundaryfaces( mesh ),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));//
+            a += integrate( boundaryfaces( mesh ),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));//
+            a += integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+
+            //Strong Dirichlet conditions
+            /*
+            auto l = form1( _test=Vh );
+            l = integrate(_range=elements(mesh), _expr=-inner( f,id( v ) ));
+
+            a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
+            _expr=u_exact);*/
+
 
         };
 
-        auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
+    auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
             std::cout << "coucou6 " << "\n";
             auto U = Vh->element( "(u,p)" );
             auto V = Vh->element( "(v,q)" );
             auto u = U.template element<0>( "u" );
+            //auto u_exact = U.template element<0>( "u_exact" );
             auto v = V.template element<0>( "u" );
             auto p = U.template element<1>( "p" );
             auto q = V.template element<1>( "p" );
@@ -259,59 +270,96 @@ void Navier_Stokes::run()
             auto lambda = U.template element<2>();
             auto nu = V.template element<2>();
             //#endif
+            auto mu=1;
             std::cout << "coucou7 " << "\n";
-            // auto u = Vh->element();
+
+            //Solution Ethier-Steinmann
+            /*auto u_exact_x= -(pi/4)*(exp((pi/4)*Px())*sin((pi/4)*Py()+(pi/2)*Pz())+exp((pi/4)*Pz())*cos((pi/4)*Px()+(pi/2)*Py()));
+            auto u_exact_y= -(pi/4)*(exp((pi/4)*Py())*sin((pi/4)*Pz()+(pi/2)*Px())+exp((pi/4)*Px())*cos((pi/4)*Py()+(pi/2)*Pz()));
+            auto u_exact_z= -(pi/4)*(exp((pi/4)*Pz())*sin((pi/4)*Px()+(pi/2)*Py())+exp((pi/4)*Py())*cos((pi/4)*Pz()+(pi/2)*Px()));
+            auto u_exact=vec(u_exact_x,u_exact_y,u_exact_z);
+
+            auto p_exact =- (pi/4)*(pi/4)*0.5*(exp(2*(pi/4)*Px())+exp(2*(pi/4)*Py())+exp(2*(pi/4)*Pz())+2*sin((pi/4)*Px()+(pi/2)*Py())*cos((pi/4)*Pz()+(pi/2)*Px())*exp((pi/4)*(Py()+Pz()))
+                                                                                                       +2*sin((pi/4)*Py()+(pi/2)*Pz())*cos((pi/4)*Px()+(pi/2)*Py())*exp((pi/4)*(Pz()+Px()))$
+                                                                                                       +2*sin((pi/4)*Pz()+(pi/2)*Px())*cos((pi/4)*Py()+(pi/2)*Pz())*exp((pi/4)*(Px()+Py())));*/
+            //Solution Poiseuille
+            auto rayon=1;
+            auto P_inlet = 1.;
+            auto P_outlet = 0.;
+            auto L=1;
+
+            auto u_exact=vec(Py()*(1-(Py())),cst(0.) );
+            auto p_exact=(P_outlet-P_inlet)*Px() + P_inlet;
+            auto f=vec(cst(0.) , cst(0.) );
+
+            // auto uex=vec(cst(1.) , cst(1.) );
+            //u_exact=vf::project(Vh->functionSpace<0>(), markedfaces(mesh, 4), uex );
+
+
             U=*X;
             std::cout << "coucou8 " << "\n";
             auto r = form1( _test=Vh, _vector=R );
             std::cout << "coucou9 " << "\n";
             //r += integrate( elements( mesh ),-inner( f,id( v ) ) );
             std::cout << "coucou10 " << "\n";
-            r += integrate( elements( mesh ), trans(gradv( u )*idv(u))*id(v));
+            //r += integrate( elements( mesh ), trans(gradv( u )*idv(u))*id(v));
             std::cout << "coucou11 " << "\n";
-            r += integrate( elements( mesh ), inner(gradv( u ),grad( v )) );
+            r += integrate( elements( mesh ), inner(mu*gradv( u ),grad( v )) );
             std::cout << "coucou12 " << "\n";
             r +=  integrate( elements( mesh ),-idv(p)*div(v) + id(q)*divv(u));
             std::cout << "coucou13 " << "\n";
 
-            auto rayon=1.;
-            auto P_inlet = 1.;
-            auto P_outlet = 0.;
-            auto L=1;
-
-            auto u_exact=vec((1-(Py()*Py())/(rayon*rayon))*(P_inlet-P_outlet)/(2*L),cst(0.) );
-            auto p_exact=(P_outlet-P_inlet)*Px()/L + P_inlet;
-            auto f=vec(cst(0.) , cst(0.) );
-
-            auto SigmaNv = ( -idv( p )*N() + gradv( u )*N() );
-            auto SigmaN = ( -id( q )*N() + grad( v )*N() );
-            r +=integrate ( boundaryfaces(mesh),
-                             // u = U0
-                            - trans( SigmaNv )*id( v )
-                            - trans( SigmaN )*( idv( u ) - u_exact )
-                            + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
-
-
-            // -- Lagrange Multiplier -- //
+            double measure = integrate( elements( u.mesh() ), cst( 1.0 )).evaluate()( 0, 0 );
+            double mean_p_exact = integrate( elements(mesh), p_exact ).evaluate()( 0, 0 )/measure;
             //#if defined( FEELPP_USE_LM )
-            r += integrate ( elements( mesh ), +id( q )*idv( lambda )+idv( p )*id( nu ) );
-            //#else
-            //r += integrate ( elements( mesh ),+ idv( lambda )*id( nu ) );
+            r += integrate ( elements( mesh ), +id( q )*idv( lambda )+(idv( p )-p_exact)*id( nu ) );
             //#endif
 
-        };
-        std::cout << "coucou14 " << "\n";
-        u=vf::project(Vh->functionSpace<0>(), elements(mesh), zero<2,1>());
-        std::cout << "coucou15 " << "\n";
-        p=vf::project(Vh->functionSpace<1>(), elements(mesh), constant(0.0));
-        std::cout << "coucou16 " << "\n";
 
-        backend()->nlSolver()->residual = Residual;
-        std::cout << "coucou17 " << "\n";
-        backend()->nlSolver()->jacobian = Jacobian;
-        std::cout << "coucou18 " << "\n";
-        backend()->nlSolve( _solution=U );
-        std::cout << "coucou19 " << "\n";
+            //Weak Dirichlet
+            auto SigmaNv = ( -idv( p )*N() + mu*gradv( u )*N() );
+            auto SigmaN = ( -id( q )*N() + mu*grad( v )*N() );
+            r +=integrate ( boundaryfaces(mesh), - trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
+
+
+        };
+    std::cout << "coucou14 " << "\n";
+    u=vf::project(Vh->functionSpace<0>(), elements(mesh), zero<2,1>());
+    //std::cout << "coucou15 " << "\n";
+    p=vf::project(Vh->functionSpace<1>(), elements(mesh), constant(0.0));
+    //std::cout << "coucou16 " << "\n";
+
+    backend()->nlSolver()->residual = Residual;
+    //std::cout << "coucou17 " << "\n";
+    backend()->nlSolver()->jacobian = Jacobian;
+    //std::cout << "coucou18 " << "\n";
+    backend()->nlSolve( _solution=U );
+    //std::cout << "coucou19 " << "\n";
+
+        auto rayon=1;
+        auto P_inlet = 1.;
+        auto P_outlet = 0.;
+        auto L=1;
+        auto u_exact=vec(Py()*(1-(Py())),cst(0.) );
+        auto p_exact=(P_outlet-P_inlet)*Px() + P_inlet;
+        auto f=vec(cst(0.) , cst(0.) );
+       
+        auto u_exact_proj=vf::project(Vh->functionSpace<0>(),elements(mesh),u_exact);
+
+        double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
+        std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
+        LOG(INFO) <<"||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
+
+        double meas = integrate( elements( u.mesh() ), cst( 1.0 )).evaluate()( 0, 0 );
+        LOG(INFO) << "[stokes] measure(Omega)=" << meas << " (should be equal to  1)\n";
+
+        double mean_p = integrate( elements( u.mesh() ), idv( p ) ).evaluate()( 0, 0 )/meas;
+        LOG(INFO) << "[stokes] mean(p)=" << mean_p << "\n";
+
+        double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact )).evaluate()( 0, 0 );
+        std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
+        LOG(INFO) <<"||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
+
 
         if ( exporter->doExport() )
             {
@@ -320,17 +368,13 @@ void Navier_Stokes::run()
                 auto v = U.functionSpace()->template functionSpace<0> ()->element();
                 v = U.template element<0>();
                 exporter->step( 0 )->add( "u", U.template element<0>() );
-                //exporter->step( 0 )->add( "ux", v.comp( X ) );
-                //exporter->step( 0 )->add( "uy", v.comp( Y ) );
-                exporter->step( 0 )->add( "u", U.template element<0>() );
+                
                 exporter->step( 0 )->add( "p", U.template element<1>() );
                 exporter->save();
             }
         //this->exportResults( U, V );
+};
 }
-}
-
-
 
 
 int main( int argc, char** argv )
