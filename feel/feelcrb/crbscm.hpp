@@ -159,7 +159,7 @@ public:
         M_use_scm( vm["crb.scm.use-scm"].template as<bool>() )
     {
         if ( this->loadDB() )
-            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+            LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
     }
 
 
@@ -189,7 +189,7 @@ public:
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
-            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+            LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
     }
 
     //! constructor from command line options
@@ -219,7 +219,7 @@ public:
     {
         this->setTruthModel( model );
         if ( this->loadDB() )
-            std::cout << "Database " << this->lookForDB() << " available and loaded\n";
+            LOG( INFO ) << "Database " << this->lookForDB() << " available and loaded";
     }
 
     //! copy constructor
@@ -618,9 +618,15 @@ CRBSCM<TruthModelType>::offlineNoSCM()
               _maxit=M_vm["crb.scm.solvereigen-maxiter"].template as<int>()
               );
     double eigen_value = modes.begin()->second.template get<0>();
-    //std::cout<<"-------------------------------------------"<<std::endl;
-    //std::cout<<"eigenvalue ( min ) for mu_ref : "<<eigen_value<<std::endl;
-    //std::cout<<"-------------------------------------------"<<std::endl;
+#if 0
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+    {
+        std::cout<<"-------------------------------------------"<<std::endl;
+        std::cout<<"eigenvalue ( min ) for mu_ref : "<<eigen_value<<std::endl;
+        std::cout<<"-------------------------------------------"<<std::endl;
+    }
+#endif
+    LOG( INFO )<<"eigenvalue ( min ) for mu_ref : "<<eigen_value;
 
     //store the eigen value in M_C_eigenvalues
     M_C_eigenvalues[0] = modes.begin()->second.template get<0>();
@@ -1820,14 +1826,14 @@ CRBSCM<TruthModelType>::loadDB()
     if ( !fs::exists( db ) )
         return false;
 
-    std::cout << "Loading " << db << "...\n";
+    LOG( INFO ) << "Loading " << db << "...";
     fs::ifstream ifs( db );
     if ( ifs )
     {
         boost::archive::text_iarchive ia( ifs );
         // write class instance to archive
         ia >> *this;
-        std::cout << "Loading " << db << " done...\n";
+        LOG( INFO ) << "Loading " << db << " done...";
         this->setIsLoaded( true );
         // archive and stream closed when destructors are called
         return true;

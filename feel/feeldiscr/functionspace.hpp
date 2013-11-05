@@ -6686,7 +6686,13 @@ THch( boost::shared_ptr<MeshType> mesh )
                                                                                                    _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ) );
 }
 
-
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+std::ostream&
+operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
+{
+    os << "Number of Dof: Global=" << Xh.nDof() << " , Local=" << Xh.nLocalDof();
+    return os;
+}
 } // Feel
 
 

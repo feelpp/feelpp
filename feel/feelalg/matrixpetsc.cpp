@@ -269,7 +269,7 @@ void MatrixPetsc<T>::init ( const size_type m,
                             const size_type n_l,
                             graph_ptrtype const& graph )
 {
-    //std::cout << "\n SEQUENTIAL : init with graph"<<std::endl;
+    VLOG(1) << "MatrixPetsc init with graph";
     this->setGraph( graph );
 
     {
@@ -284,16 +284,17 @@ void MatrixPetsc<T>::init ( const size_type m,
 
     MPI_Comm_rank ( this->comm(), &proc_id );
 
-    DVLOG(2) << "[MatrixPETSc::init()] m   = " << m << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] n   = " << n << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] m_l = " << m_l << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] proc_id   = " << proc_id << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] m   = " << m << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] n   = " << n << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] m_l = " << m_l << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] n_l = " << n_l << "\n";
 
     // Make sure the sparsity pattern isn't empty
     //FEELPP_ASSERT ( this->graph()->size() == n_l )( this->graph()->size() )( n_l ).warn( "incompatible diagonal non zero pattern" );
-    DVLOG(2) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
-    DVLOG(2) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] graph size   = " << this->graph()->size() << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] graph first row entry on proc   = " << this->graph()->firstRowEntryOnProc() << "\n";
+    DVLOG(1) << "[MatrixPETSc::init()] graph last row entry on proc   = " << this->graph()->lastRowEntryOnProc() << "\n";
 
     if ( m==0 )
         return;
@@ -677,7 +678,7 @@ void MatrixPetsc<T>::close () const
     //     return;
 
     int ierr=0;
-
+    CHECK( M_mat ) << "invalid matrix";
     ierr = MatAssemblyBegin ( M_mat, MAT_FINAL_ASSEMBLY );
     CHKERRABORT( this->comm(),ierr );
     ierr = MatAssemblyEnd   ( M_mat, MAT_FINAL_ASSEMBLY );
@@ -1312,10 +1313,22 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 {
     this->close();
 
-    MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> ( &Mt );
+    MatrixPetsc<T>* Atrans;
+    if ( this->comm().size()>1 )
+    {
+        Atrans = dynamic_cast<MatrixPetscMPI<T>*> ( &Mt );
+    }
+    else
+    {
+        Atrans = dynamic_cast<MatrixPetsc<T>*> ( &Mt );
+    }
 
-    int ierr = PETSc::MatDestroy( Atrans->M_mat );
-    CHKERRABORT( this->comm(),ierr );
+    int ierr = 0;
+    if ( Atrans->isInitialized() )
+    {
+        ierr = PETSc::MatDestroy( Atrans->M_mat );
+        CHKERRABORT( this->comm(),ierr );
+    }
 
 #if (PETSC_VERSION_MAJOR >= 3)
     ierr = MatTranspose( M_mat, MAT_INITIAL_MATRIX,&Atrans->M_mat );
@@ -1346,6 +1359,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
     }
 
     Mt.setGraph( this->graph()->transpose() );
+    Mt.setInitialized( true );
 
 }
 
@@ -1675,7 +1689,7 @@ void MatrixPetscMPI<T>::init( const size_type m,
                               graph_ptrtype const& graph )
 {
     //this->comm().globalComm().barrier();
-    //std::cout << "MatrixPetscMPI<T>::init with graph start on proc"<< this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
+    VLOG(1) << "MatrixPetscMPI<T>::init with graph start on proc"<< this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
 
     this->setGraph( graph );
     this->graph()->close();

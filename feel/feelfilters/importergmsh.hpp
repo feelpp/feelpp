@@ -395,8 +395,11 @@ private:
     void addVolume( mesh_type* /*mesh*/, Feel::detail::GMSHElement const& /*__e*/, int & /*__idGmshToFeel*/ , mpl::int_<2> );
     void addVolume( mesh_type* mesh, Feel::detail::GMSHElement const& __e, int & /*__idGmshToFeel*/, mpl::int_<3> );
 
-    void updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
-                              std::vector<int> const& nbMsgToRecv );
+    void updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+                                                 std::vector<int> const& nbMsgToRecv );
+
+    void updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+                                                    std::vector<int> const& nbMsgToRecv );
 
 
 private:
@@ -1059,8 +1062,6 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
         if ( it_gmshElt->isGhost() )
         {
             mapGhostElt.insert( std::make_pair( it_gmshElt->num,boost::make_tuple( __idGmshToFeel[it_gmshElt->num], it_gmshElt->ghostPartitionId() ) ) );
-
-            mesh->addFaceNeighborSubdomain( it_gmshElt->ghostPartitionId() );
         }
         else if( it_gmshElt->ghosts.size() > 0 )
         {
@@ -1118,7 +1119,12 @@ ImporterGmsh<MeshType>::visit( mesh_type* mesh )
 #endif
 
     if ( this->worldComm().localSize()>1 )
-        updateGhostCellInfo( mesh, __idGmshToFeel,  mapGhostElt, nbMsgToRecv );
+    {
+        if ( false )
+            updateGhostCellInfoByUsingBlockingComm( mesh, __idGmshToFeel,  mapGhostElt, nbMsgToRecv );
+        else
+            updateGhostCellInfoByUsingNonBlockingComm( mesh, __idGmshToFeel,  mapGhostElt, nbMsgToRecv );
+    }
 
     mesh->setNumVertices( std::accumulate( M_n_vertices.begin(), M_n_vertices.end(), 0,
                                            []( int lhs, std::pair<int,int> const& rhs )
@@ -1238,6 +1244,7 @@ ImporterGmsh<MeshType>::addEdge( mesh_type*mesh, Feel::detail::GMSHElement const
         int count_pt_on_boundary = 0;
         for ( uint16_type jj = 0; jj < npoints_per_element; ++jj )
         {
+            if (!e.isGhostCell()) mesh->points().modify( mesh->pointIterator( __e.indices[jj] ), Feel::detail::UpdateProcessId(e.processId()) );
             e.setPoint( jj, mesh->point( __e.indices[jj] ) );
             //ptseen[mesh->point( __e.indices[jj] ).id()]=1;
             if ( mesh->point( __e.indices[jj] ).isOnBoundary() )
@@ -1566,8 +1573,8 @@ ImporterGmsh<MeshType>::addVolume( mesh_type* mesh, Feel::detail::GMSHElement co
 
 template<typename MeshType>
 void
-ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
-                                             std::vector<int> const& nbMsgToRecv )
+ImporterGmsh<MeshType>::updateGhostCellInfoByUsingBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+                                                                std::vector<int> const& nbMsgToRecv )
 {
     // counter of msg sent for each process
     std::vector<int> nbMsgToSend( this->worldComm().localSize(),0 );
@@ -1660,6 +1667,154 @@ ImporterGmsh<MeshType>::updateGhostCellInfo( mesh_type* mesh, std::map<int,int> 
     }
 
 }
+
+template<typename MeshType>
+void
+ImporterGmsh<MeshType>::updateGhostCellInfoByUsingNonBlockingComm( mesh_type* mesh, std::map<int,int> const& __idGmshToFeel, std::map<int,boost::tuple<int,int> > const& __mapGhostElt,
+                                                                   std::vector<int> const& nbMsgToRecv )
+{
+
+    DVLOG(1) << "updateGhostCellInfoNonBlockingComm : start on rank "<< this->worldComm().localRank() << "\n";
+
+    const int nProc = this->worldComm().localSize();
+
+    //-----------------------------------------------------------//
+    // compute size of container to send
+    std::map< int, int > nDataInVecToSend;
+    auto it_map = __mapGhostElt.begin();
+    auto const en_map = __mapGhostElt.end();
+    for ( ; it_map!=en_map ; ++it_map )
+    {
+        const int idProc = it_map->second.template get<1>();
+        if ( nDataInVecToSend.find(idProc) == nDataInVecToSend.end() )
+            nDataInVecToSend[idProc]=0;
+        nDataInVecToSend[idProc]++;
+    }
+    //-----------------------------------------------------------//
+    // init and resize the container to send
+    std::map< int, std::vector<int> > dataToSend;
+    auto itNDataInVecToSend = nDataInVecToSend.begin();
+    auto const enNDataInVecToSend = nDataInVecToSend.end();
+    for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
+    {
+        const int idProc = itNDataInVecToSend->first;
+        const int nData = itNDataInVecToSend->second;
+        dataToSend[idProc].resize( nData );
+    }
+    //-----------------------------------------------------------//
+    // prepare container to send
+    std::map< int, std::map<int,int> > memoryMsgToSend;
+    std::map< int, int > nDataInVecToSendBis;
+    it_map = __mapGhostElt.begin();
+    for ( ; it_map!=en_map ; ++it_map )
+    {
+        const int idGmsh = it_map->first;
+        const int idFeel = it_map->second.template get<0>();
+        const int idProc = it_map->second.template get<1>();
+
+        if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
+            nDataInVecToSendBis[idProc]=0;
+        // save request
+        memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = idFeel;
+        // update container
+        dataToSend[idProc][nDataInVecToSendBis[idProc]] = idGmsh;
+        // update counter
+        nDataInVecToSendBis[idProc]++;
+    }
+    //-----------------------------------------------------------//
+    // counter of request
+    int nbRequest=0;
+    for ( int proc=0; proc<nProc; ++proc )
+    {
+        if ( dataToSend.find(proc) != dataToSend.end() )
+            ++nbRequest;
+        if ( nbMsgToRecv[proc] > 0 )
+            ++nbRequest;
+    }
+    if ( nbRequest ==0 ) return;
+
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
+    //-----------------------------------------------------------//
+    // first send
+    auto itDataToSend = dataToSend.begin();
+    auto const enDataToSend = dataToSend.end();
+    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    {
+        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
+        ++cptRequest;
+    }
+    //-----------------------------------------------------------//
+    // first recv
+    std::map<int,std::vector<int> > dataToRecv;
+    for ( int proc=0; proc<nProc; ++proc )
+    {
+        if ( nbMsgToRecv[proc] > 0 )
+        {
+            reqs[cptRequest] = this->worldComm().localComm().irecv( proc , 0, dataToRecv[proc] );
+            ++cptRequest;
+        }
+    }
+    //-----------------------------------------------------------//
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    //-----------------------------------------------------------//
+    // build the container to ReSend
+    std::map<int, std::vector<int> > dataToReSend;
+    auto itDataRecv = dataToRecv.begin();
+    auto const enDataRecv = dataToRecv.end();
+    for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
+    {
+        const int idProc = itDataRecv->first;
+        const int nDataRecv = itDataRecv->second.size();
+        dataToReSend[idProc].resize( nDataRecv );
+        //store the idFeel corresponding
+        for ( int k=0; k<nDataRecv; ++k )
+            dataToReSend[idProc][k] = __idGmshToFeel.find( itDataRecv->second[k] )->second;
+    }
+    //-----------------------------------------------------------//
+    // send respond to the request
+    cptRequest=0;
+    auto itDataToReSend = dataToReSend.begin();
+    auto const enDataToReSend = dataToReSend.end();
+    for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
+    {
+        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
+        ++cptRequest;
+    }
+    //-----------------------------------------------------------//
+    // recv the initial request
+    std::map<int, std::vector<int> > finalDataToRecv;
+    itDataToSend = dataToSend.begin();
+    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    {
+        const int idProc = itDataToSend->first;
+        reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
+        ++cptRequest;
+    }
+    //-----------------------------------------------------------//
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    // delete reqs because finish comm
+    delete [] reqs;
+    //-----------------------------------------------------------//
+    // update mesh : id in other partitions for the ghost cells
+    auto itFinalDataToRecv = finalDataToRecv.begin();
+    auto const enFinalDataToRecv = finalDataToRecv.end();
+    for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
+    {
+        const int idProc = itFinalDataToRecv->first;
+        const int nDataRecv = itFinalDataToRecv->second.size();
+        for ( int k=0; k<nDataRecv; ++k )
+        {
+            auto eltToUpdate = mesh->elementIterator( memoryMsgToSend[idProc][k],idProc );
+            mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( idProc, itFinalDataToRecv->second[k] ) );
+        }
+    }
+    //-----------------------------------------------------------//
+    DVLOG(1) << "updateGhostCellInfoNonBlockingComm : finish on rank "<< this->worldComm().localRank() << "\n";
+}
+
 
 } // Feel
 

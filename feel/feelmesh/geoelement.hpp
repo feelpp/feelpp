@@ -518,8 +518,8 @@ public:
     GeoElement0D()
         :
         super(),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
 
@@ -527,15 +527,15 @@ public:
     GeoElement0D( size_type id, bool boundary = false )
         :
         super( id, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     //! Declares item id and if it is on boundary, and provides coordinate
@@ -543,8 +543,8 @@ public:
     GeoElement0D( size_type id, Real x, Real y, Real z, bool boundary = false )
         :
         super( id, x, y, z, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     template<typename SF>
@@ -648,7 +648,8 @@ public:
      */
     geo0d_type const& point( uint16_type /*i*/ ) const
     {
-        return M_facept;
+        return *( static_cast<geo0d_type *>( M_facept ) );
+        //return M_facept;
     }
 
     /**
@@ -656,7 +657,8 @@ public:
      */
     void setPoint( uint16_type /*i*/, geo0d_type const& e )
     {
-        M_facept = e;
+        //M_facept = e;
+        M_facept= const_cast<geo0d_type *>( &e );
     }
 
     matrix_node_type /*const&*/ G() const
@@ -671,7 +673,7 @@ public:
 
     matrix_node_type /*const&*/ G( mpl::bool_<false> /**/ ) const
     {
-        return M_facept.G();
+        return M_facept->G();
     }
 
     matrix_node_type /*const&*/ vertices() const
@@ -686,7 +688,7 @@ public:
 
     matrix_node_type /*const&*/ vertices( mpl::bool_<false> /**/ ) const
     {
-        return M_facept.vertices();
+        return M_facept->vertices();
     }
 
     /**
@@ -733,7 +735,7 @@ public:
     }
 
 //private:
-    geo0d_type M_facept;
+    geo0d_type* M_facept;
 
 private:
 
