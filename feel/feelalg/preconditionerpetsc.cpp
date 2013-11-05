@@ -695,8 +695,13 @@ PreconditionerPetsc<T>::setPetscMGLevelsPreconditionerType( PC& pc,
         ierr = KSPSetNormType( levelksp, KSP_NORM_PRECONDITIONED );
         CHKERRABORT( worldComm.globalComm(),ierr );
         void *cctx;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,4)
+        ierr = KSPConvergedDefaultCreate(&cctx);
+        ierr = KSPSetConvergenceTest( levelksp, KSPConvergedDefault, cctx, PETSC_NULL );
+#else
         ierr = KSPDefaultConvergedCreate(&cctx);
         ierr = KSPSetConvergenceTest( levelksp, KSPDefaultConverged, cctx, PETSC_NULL );
+#endif
         CHKERRABORT( worldComm.globalComm(),ierr );
 
         // set ksp tolerance

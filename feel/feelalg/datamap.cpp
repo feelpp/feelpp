@@ -370,7 +370,7 @@ DataMap::searchGlobalProcessDof( size_type gpdof ) const
 }
 
 void
-DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out2  ) const
+DataMap::showMeMapGlobalProcessToGlobalCluster( bool showAll, std::ostream& __out2 ) const
 {
     //__out << std::endl;
     this->comm().globalComm().barrier();
@@ -396,24 +396,28 @@ DataMap::showMeMapGlobalProcessToGlobalCluster( std::ostream& __out2  ) const
                   << "nLocalDofWithGhost : " << this->nLocalDofWithGhost() << "\n"
                   << "mapGlobalProcessToGlobalCluster().size() " << this->mapGlobalProcessToGlobalCluster().size() << "\n"
                   << "-----------------------------------------------------------------------\n";
-#if 1
-            __out << "mapGlobalProcessToGlobalCluster : \n";
-            for ( size_type i=0 ; i<this->mapGlobalProcessToGlobalCluster().size() ; ++i )
+
+            if (showAll)
             {
-                __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
-                      << " real proc " << procOnGlobalCluster( /*this->*/mapGlobalProcessToGlobalCluster()[i] ) <<"\n";
-            }
-            __out << "-----------------------------------------------------------------------\n";
+#if 1
+                __out << "mapGlobalProcessToGlobalCluster : \n";
+                for ( size_type i=0 ; i<this->mapGlobalProcessToGlobalCluster().size() ; ++i )
+                {
+                    __out << i << " " << this->mapGlobalProcessToGlobalCluster()[i]
+                          << " real proc " << procOnGlobalCluster( /*this->*/mapGlobalProcessToGlobalCluster()[i] ) <<"\n";
+                }
+                __out << "-----------------------------------------------------------------------\n";
 #endif
 #if 0
-            __out << "mapGlobalClusterToGlobalProcess : \n";
-            for ( size_type i=0 ; i<this->mapGlobalClusterToGlobalProcess().size() ; ++i )
-            {
-                __out << i << " " << this->mapGlobalClusterToGlobalProcess()[i]
-                      <<"\n";
-            }
-            __out << "-----------------------------------------------------------------------\n";
+                __out << "mapGlobalClusterToGlobalProcess : \n";
+                for ( size_type i=0 ; i<this->mapGlobalClusterToGlobalProcess().size() ; ++i )
+                {
+                    __out << i << " " << this->mapGlobalClusterToGlobalProcess()[i]
+                          <<"\n";
+                }
+                __out << "-----------------------------------------------------------------------\n";
 #endif
+            }
 #if 1
             __out << " M_first_df : ";
 

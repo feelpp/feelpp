@@ -156,6 +156,7 @@ public:
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
         M_marker3(),
@@ -186,6 +187,7 @@ public:
         M_normals( nRealDim, numTopologicalFaces ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_meas_pneighbors( 0 ),
         M_marker1(),
         M_marker2(),
         M_marker3(),
@@ -210,6 +212,7 @@ public:
         M_normals( e.M_normals ),
         M_has_points( false ),
         M_neighbors( numNeighbors, std::make_pair( invalid_size_type_value, 0 ) ),
+        M_meas_pneighbors( e.M_meas_pneighbors ),
         M_marker1( e.M_marker1 ),
         M_marker2( e.M_marker2 ),
         M_marker3( e.M_marker3 ),
@@ -921,7 +924,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::showMe( bool verbose, std::ostream & out ) co
     for ( int i = 0; i < numVertices; i++ )
     {
         out << "POINT id = " << i << std::endl;
-        out << point( i ).showMe( verbose, out );
+        point( i ).showMe( verbose, out );
     }
 
     out << "----- END OF GeoND data ---" << std::endl << std::endl;

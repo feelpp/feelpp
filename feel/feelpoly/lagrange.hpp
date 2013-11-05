@@ -343,6 +343,13 @@ public:
         typedef Lagrange<N-1, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
+    template<uint16_type NewDim>
+    struct ChangeDim
+    {
+        typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
+    };
+
+
     //@}
 
     /** @name Constructors, destructor

@@ -60,7 +60,7 @@ typedef PetscTruth  PetscBool;
 
 #define PETSC_VERSION_GREATER_OR_EQUAL_THAN(major,minor,subminor)       \
     ((PETSC_VERSION_MAJOR > (major) ||                                  \
-      (PETSC_VERSION_MAJOR == (major) && (PETSC_VERSION_MINOR >= (minor) || \
+      (PETSC_VERSION_MAJOR == (major) && (PETSC_VERSION_MINOR > (minor) || \
                                           (PETSC_VERSION_MINOR == (minor) && \
                                            PETSC_VERSION_SUBMINOR >= (subminor))))) ? 1 : 0)
 
