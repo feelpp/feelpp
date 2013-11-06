@@ -68,5 +68,5 @@ builddox develop $feelpp_source $gh_pages
 #cd $feelpp_source
 #git checkout develop
 cd ${gh_pages}
-#git push origin gh-pages
+git push origin gh-pages
 
