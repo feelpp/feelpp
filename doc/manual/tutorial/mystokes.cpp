@@ -73,7 +73,7 @@ We multiply the first equation by a test function \f$v\in H^1(\Omega)\f$ and we 
 \end{aligned}
 \right)
 \f$</center><br>
-where $n$ denotes a normal vector on the boundary.<br>
+where \f$n\f$ denotes a normal vector on the boundary.<br>
 The divergence theorem (or Gauss's theorem) gives,
 <br><center>\f$
 \begin{aligned}
@@ -102,7 +102,7 @@ Finally, we deduce from the equations and after rearranging the integrals the va
 \end{aligned}
 \right)
 \f$</center><br>
-Let us assume now that $(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$, the variationnal formulation leads to:
+Let us assume now that \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$, the variationnal formulation leads to:
 Find \f$(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega) \f$ such that for all \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$
 <br><center>\f$
 \begin{aligned}
