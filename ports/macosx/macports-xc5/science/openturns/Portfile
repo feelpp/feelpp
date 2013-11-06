@@ -1,0 +1,65 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+#PortGroup           cmake 1.0
+
+name                openturns
+version             1.0
+categories          science math
+platforms           darwin
+maintainers         ujf-grenoble.fr:Christophe.Prudhomme
+description
+long_description    \
+ OpenTURNS is a powerful and generic tool to treat and quantify        \
+ uncertainties in numerical simulations in design, optimization and    \
+ control. It allows both sensitivity and reliability analysis studies.
+
+homepage            http://trac.openturns.org/
+master_sites        sourceforge
+distname            openturns-${version}
+extract.suffix      .tar.gz
+
+checksums           \
+  md5 6c8feaf4c8f5be47b57bf56d2ce28158\
+  sha1 5a2215d1b2adcb43326212240849ea1e635e08d5\
+  rmd160  9425d7076284899cde7455faea95c409b3ff6ab6
+
+# make sure to keep below in sync with cmake Portgroup except
+# for the configure.args option that mess up openturns
+# standard place to install extra CMake modules
+set cmake_share_module_dir ${prefix}/share/cmake/modules
+configure.cmd       cmake
+configure.pre_args  -DCMAKE_INSTALL_PREFIX=${prefix}
+configure.args      -DCMAKE_VERBOSE_MAKEFILE=ON \
+                    -DCMAKE_COLOR_MAKEFILE=ON \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+                    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+                    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
+                    -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
+                    -DUSE_TBB=OFF \
+                    -DREGEX_INCLUDE_DIR=/opt/local/include \
+                    -DREGEX_LIBRARIES=/opt/local/lib/libgnuregex.dylib \
+                    -Wno-dev
+
+configure.cxx ${prefix}/bin/g++-mp-4.6
+configure.cc  ${prefix}/bin/gcc-mp-4.6
+configure.args-append -DOPENTURNS_SYSTEM_INSTALL=ON
+
+post-build {
+}
+
+depends_build port:cmake
+
+depends_lib  \
+    port:gnuregex \
+    port:libxml2 \
+    port:R \
+    port:py27-rpy2 \
+    port:doxygen \
+    port:swig
+
+#    port:py26-rpy2 \
+
+

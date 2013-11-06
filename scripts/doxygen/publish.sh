@@ -14,7 +14,7 @@ function builddox
   then 
     mkdir $doxygen_dir;
   fi
- echo $doxygen_dir 
+  echo $doxygen_dir 
   cd $doxygen_dir
   pwd
 
@@ -28,7 +28,8 @@ function builddox
   fi
   cd $gh_pages
   rsync -avz $doxygen_dir/doc/api/html/ $branch/
-  git commit -m "update Feel++ online documentation of branch $branch" -a
+  git add -A $branch
+  git commit -m "update Feel++ online documentation of branch $branch"
 }
 
 base_dir=${1:-$HOME}
@@ -61,12 +62,11 @@ fi
 
 #Create in ${gh_pages}/feelpp the associated doc of the ${branch}
 builddox develop $feelpp_source $gh_pages
-builddox release/version-0.92 $feelpp_source $gh_pages
-builddox release/v0.95.0 $feelpp_source $gh_pages
+#builddox release/version-0.92 $feelpp_source $gh_pages
+#builddox release/v0.95.0 $feelpp_source $gh_pages
 
 #cd $feelpp_source
 #git checkout develop
 cd ${gh_pages}
 #git push origin gh-pages
-
 

@@ -396,7 +396,7 @@ public:
         return M_closed;
     }
 
-    void showMeMapGlobalProcessToGlobalCluster( std::ostream& __out = std::cout ) const;
+    void showMeMapGlobalProcessToGlobalCluster( bool showAll=false, std::ostream& __out = std::cout ) const;
 
     /**
      * \return the communicator
