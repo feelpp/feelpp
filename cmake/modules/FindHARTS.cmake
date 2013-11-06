@@ -22,6 +22,10 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+# Set harts to not found by default
+SET(HARTS_FOUND FALSE)
+
+# Try to find harts installation in the system
 FIND_PATH(HARTS_INCLUDE_DIR RunTimeSystem/Model/RunTimeSysEnv.h PATH_SUFFIXES HARTS)
 
 FOREACH(_lib HARTSRuntimeSys HARTSUtils)
@@ -30,18 +34,60 @@ FOREACH(_lib HARTSRuntimeSys HARTSUtils)
     if(LIB_SUB_${_lib})
         set(HARTS_LIBRARY ${HARTS_LIBRARY} ${LIB_SUB_${_lib}})
     else()
-        message(WARNING "A component of the HARTS library was not found (${_lib})")
+        #message(WARNING "A component of the HARTS library was not found in the system (${_lib})")
         set(HARTS_LIBRARY "")
+        unset(HARTS_LIBRARY CACHE)
         break()
     endif()
 endforeach()
 
-MESSAGE(STATUS "HARTS: ${HARTS_LIBRARY}")
-
 IF (HARTS_INCLUDE_DIR AND HARTS_LIBRARY)
     SET(HARTS_FOUND TRUE)
-ENDIF (HARTS_INCLUDE_DIR AND HARTS_LIBRARY)
+ELSE()
+    # Try to find a harts git checkout in contrib
+    FIND_PATH(HARTS_SOURCE_DIR CMakeLists.txt
+        PATH_SUFFIXES harts HARTS
+        HINTS ${CMAKE_SOURCE_DIR}/contrib)
 
+    # if we found harts in the contrib, we compile it
+    IF(HARTS_SOURCE_DIR)
+        message(STATUS "Building harts in ${CMAKE_BINARY_DIR}/contrib/harts-compile...")
+        execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/harts-compile)
+        execute_process(
+            COMMAND cmake ${HARTS_SOURCE_DIR} -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/contrib/harts
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/harts-compile
+            #      OUTPUT_QUIET
+            )
+        execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/harts)
+        execute_process(
+            COMMAND make -k -j${NProcs2} install
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/harts-compile
+            #      OUTPUT_QUIET
+            )
+
+        FIND_PATH(HARTS_INCLUDE_DIR RunTimeSystem/Model/RunTimeSysEnv.h 
+            HINTS ${CMAKE_BINARY_DIR}/contrib/harts/include/HARTS)
+
+        FOREACH(_lib HARTSRuntimeSys HARTSUtils)
+            FIND_LIBRARY(LIB_SUB_${_lib} ${_lib}
+                  HINTS ${CMAKE_BINARY_DIR}/contrib/harts/lib)
+
+            if(LIB_SUB_${_lib})
+                set(HARTS_LIBRARY ${HARTS_LIBRARY} ${LIB_SUB_${_lib}})
+            else()
+                #message(WARNING "A component of the HARTS library was not found (${_lib})")
+                set(HARTS_LIBRARY "")
+                break()
+            endif()
+        endforeach()
+
+        IF (HARTS_INCLUDE_DIR AND HARTS_LIBRARY)
+            SET(HARTS_FOUND TRUE)
+        ENDIF()
+    ENDIF()
+ENDIF()
+
+# If we found harts, we create the variables holding the libraries and includes
 IF (HARTS_FOUND)
     IF (NOT HARTS_FIND_QUIETLY)
         MESSAGE(STATUS "Found HARTS: ${HARTS_LIBRARY}")
@@ -49,11 +95,9 @@ IF (HARTS_FOUND)
     set(FEELPP_HAS_HARTS 1)
     set(HARTS_INCLUDES ${HARTS_INCLUDE_DIR} CACHE STRING "HARTS include path")
     set(HARTS_LIBRARIES ${HARTS_LIBRARY} CACHE STRING "HARTS libraries")
-ELSE (HARTS_FOUND)
-    IF (HARTS_FIND_REQUIRED)
-        MESSAGE(FATAL_ERROR "Could not find HARTS")
-    ENDIF (HARTS_FIND_REQUIRED)
-ENDIF (HARTS_FOUND)
+ELSE ()
+    MESSAGE(FATAL_ERROR "Could not find HARTS")
+ENDIF ()
 
 # Variables clean up
 FOREACH(_lib HARTSRuntimeSys HARTSUtils)
