@@ -51,7 +51,7 @@ public :
     typedef Mesh<entity_type > mesh_type ;
 
     /*basis*/
-    typedef Lagrange<1,Scalar> basis_type ;
+    typedef bases< Lagrange<1,Scalar> > basis_type ;
 
     /*space*/
     typedef FunctionSpace<mesh_type , basis_type > space_type ;
