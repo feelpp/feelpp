@@ -163,6 +163,8 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
 
     element_iterator it_elt = imesh->beginElementWithProcessId( imesh->worldComm().localRank() );
     element_iterator en_elt = imesh->endElementWithProcessId( imesh->worldComm().localRank() );
+    if ( std::distance(it_elt,en_elt)==0 ) return;
+
     typedef typename DisplType::pc_type pc_type;
     typedef boost::shared_ptr<pc_type> pc_ptrtype;
     pc_ptrtype __pc( new pc_type( u.functionSpace()->fe(), gm->points() ) );
