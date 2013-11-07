@@ -62,7 +62,7 @@ public:
     /**
      *  Dummy-Constructor. Dimension=0
      */
-    Vector ();
+    Vector ( WorldComm const& _worldComm = Environment::worldComm() );
 
     Vector ( datamap_ptrtype const& n );
 
