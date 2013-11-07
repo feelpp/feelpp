@@ -33,10 +33,10 @@
 namespace Feel
 {
 template <typename T>
-Vector<T>::Vector () :
+Vector<T>::Vector( WorldComm const& _worldComm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map ( new datamap_type( Environment::worldComm() ) )
+    M_map ( new datamap_type( _worldComm ) )
 {}
 
 
