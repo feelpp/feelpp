@@ -41,6 +41,19 @@ FOREACH(_lib HARTSRuntimeSys HARTSUtils)
     endif()
 endforeach()
 
+## Variables clean up
+FOREACH(_lib HARTSRuntimeSys HARTSUtils)
+    if(LIB_SUB_${_lib})
+        unset(LIB_SUB_${_lib} CACHE)
+    endif()
+endforeach()
+#if(HARTS_LIBRARY)
+    #unset(HARTS_LIBRARY CACHE)
+#endif()
+#if(HARTS_INCLUDE_DIR)
+    #unset(HARTS_INCLUDE_DIR CACHE)
+#endif()
+
 IF (HARTS_INCLUDE_DIR AND HARTS_LIBRARY)
     SET(HARTS_FOUND TRUE)
 ELSE()
@@ -51,65 +64,10 @@ ELSE()
 
     # if we found harts in the contrib, we compile it
     IF(HARTS_SOURCE_DIR)
-        message(STATUS "Building harts in ${CMAKE_BINARY_DIR}/contrib/harts-compile...")
-        execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/harts-compile)
-        execute_process(
-            COMMAND cmake ${HARTS_SOURCE_DIR} -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/contrib/harts
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/harts-compile
-            #      OUTPUT_QUIET
-            )
-        execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/harts)
-        execute_process(
-            COMMAND make -k -j${NProcs2} install
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/harts-compile
-            #      OUTPUT_QUIET
-            )
-
-        FIND_PATH(HARTS_INCLUDE_DIR RunTimeSystem/Model/RunTimeSysEnv.h 
-            HINTS ${CMAKE_BINARY_DIR}/contrib/harts/include/HARTS)
-
-        FOREACH(_lib HARTSRuntimeSys HARTSUtils)
-            FIND_LIBRARY(LIB_SUB_${_lib} ${_lib}
-                  HINTS ${CMAKE_BINARY_DIR}/contrib/harts/lib)
-
-            if(LIB_SUB_${_lib})
-                set(HARTS_LIBRARY ${HARTS_LIBRARY} ${LIB_SUB_${_lib}})
-            else()
-                #message(WARNING "A component of the HARTS library was not found (${_lib})")
-                set(HARTS_LIBRARY "")
-                break()
-            endif()
-        endforeach()
-
-        IF (HARTS_INCLUDE_DIR AND HARTS_LIBRARY)
-            SET(HARTS_FOUND TRUE)
-        ENDIF()
+        add_subdirectory(${HARTS_SOURCE_DIR})
+        SET(HARTS_FOUND TRUE)
+    ELSE()
+        MESSAGE(FATAL_ERROR "Could not find HARTS")
     ENDIF()
 ENDIF()
 
-# If we found harts, we create the variables holding the libraries and includes
-IF (HARTS_FOUND)
-    IF (NOT HARTS_FIND_QUIETLY)
-        MESSAGE(STATUS "Found HARTS: ${HARTS_LIBRARY}")
-    ENDIF (NOT HARTS_FIND_QUIETLY)
-    set(FEELPP_HAS_HARTS 1)
-    set(HARTS_INCLUDES ${HARTS_INCLUDE_DIR} CACHE STRING "HARTS include path")
-    set(HARTS_LIBRARIES ${HARTS_LIBRARY} CACHE STRING "HARTS libraries")
-ELSE ()
-    MESSAGE(FATAL_ERROR "Could not find HARTS")
-ENDIF ()
-
-# Variables clean up
-FOREACH(_lib HARTSRuntimeSys HARTSUtils)
-    if(LIB_SUB_${_lib})
-        unset(LIB_SUB_${_lib} CACHE)
-    endif()
-endforeach()
-if(HARTS_LIBRARY)
-    unset(HARTS_LIBRARY CACHE)
-endif()
-if(HARTS_INCLUDE_DIR)
-    unset(HARTS_INCLUDE_DIR CACHE)
-endif()
-
-MARK_AS_ADVANCED( HARTS_INCLUDES HARTS_LIBRARIES )
