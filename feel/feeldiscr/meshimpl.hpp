@@ -1858,6 +1858,7 @@ Mesh<Shape, T, Tag>::check() const
     VLOG(2) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
     element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
     element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    size_type nEltInMesh = std::distance( iv,en );
 
     //boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
@@ -1882,7 +1883,7 @@ Mesh<Shape, T, Tag>::check() const
         }
 
         VLOG(2) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
-        FEELPP_ASSERT( counter >= 1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+        FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
 #if 0
 
         for ( size_type j = 0; j < ( size_type )element_type::numEdges; ++j )
