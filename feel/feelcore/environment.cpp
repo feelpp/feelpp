@@ -475,7 +475,10 @@ Environment::Environment()
 
     //tbb::task_scheduler_init init(1);
 
-    mpi::communicator world;
+    S_worldcomm = worldcomm_type::New();
+    CHECK( S_worldcomm ) << "Environment : creating worldcomm failed\n";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
@@ -486,7 +489,7 @@ Environment::Environment()
         int ierr = PetscInitializeNoArguments();
 
         boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( world,ierr );
+        CHKERRABORT( *S_worldcomm,ierr );
     }
 
     // make sure that petsc do not catch signals and hence do not print long
@@ -494,9 +497,6 @@ Environment::Environment()
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-    S_worldcomm = worldcomm_type::New( world );
-    CHECK( S_worldcomm ) << "Environment : creating worldcomm failed\n";
-    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 
 }
 
@@ -566,7 +566,10 @@ Environment::Environment( int& argc, char**& argv )
     //tbb::task_scheduler_init init(2);
 #endif
 
-    mpi::communicator world;
+    S_worldcomm = worldcomm_type::New();
+    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+
 #if defined ( FEELPP_HAS_PETSC_H )
     PetscTruth is_petsc_initialized;
     PetscInitialized( &is_petsc_initialized );
@@ -580,7 +583,7 @@ Environment::Environment( int& argc, char**& argv )
         int ierr = PetscInitialize( &argc, &argv, PETSC_NULL, PETSC_NULL );
 #endif
         boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( world,ierr );
+        CHKERRABORT( *S_worldcomm,ierr );
     }
 
     // make sure that petsc do not catch signals and hence do not print long
@@ -588,29 +591,29 @@ Environment::Environment( int& argc, char**& argv )
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-    S_worldcomm = worldcomm_type::New( world );
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
-    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 }
 
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
-    mpi::communicator world;
+    S_worldcomm = worldcomm_type::New();
+    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
+    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
+
     S_scratchdir = scratchdir();
     fs::path a0 = std::string(argv[0]);
     const int Nproc = 200;
-    if ( world.size() > Nproc )
+    if ( S_worldcomm->size() > Nproc )
     {
-        std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor(world.rank()/Nproc) );
-        std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil(double(world.rank()+1)/Nproc)-1 );
+        std::string smin = boost::lexical_cast<std::string>( Nproc*std::floor(S_worldcomm->rank()/Nproc) );
+        std::string smax = boost::lexical_cast<std::string>( Nproc*std::ceil(double(S_worldcomm->rank()+1)/Nproc)-1 );
         std::string replog = smin + "-" + smax;
         S_scratchdir/= a0.filename()/replog;
     }
     else
         S_scratchdir/= a0.filename();
     // only one processor every Nproc creates the corresponding log directory
-    if ( world.rank() % Nproc == 0 )
+    if ( S_worldcomm->rank() % Nproc == 0 )
     {
         if ( !fs::exists( S_scratchdir ) )
             fs::create_directories( S_scratchdir );
@@ -636,7 +639,7 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     {
         if ( FLAGS_no_log )
         {
-            if ( world.rank() == 0 && FLAGS_no_log == 1 )
+            if ( S_worldcomm->rank() == 0 && FLAGS_no_log == 1 )
                 FLAGS_no_log = 0;
             google::InitGoogleLogging(argv[0]);
         }
@@ -667,7 +670,7 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
         int ierr = PetscInitialize( &argc, &envargv, PETSC_NULL, PETSC_NULL );
 #endif
         boost::ignore_unused_variable_warning( ierr );
-        CHKERRABORT( world,ierr );
+        CHKERRABORT( *S_worldcomm,ierr );
     }
 
     // make sure that petsc do not catch signals and hence do not print long
@@ -675,9 +678,6 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     PetscPopSignalHandler();
 #endif // FEELPP_HAS_PETSC_H
 
-    S_worldcomm = worldcomm_type::New( world );
-    CHECK( S_worldcomm ) << "Feel++ Environment: creang worldcomm failed!";
-    S_worldcommSeq.reset( new WorldComm(S_worldcomm->subWorldCommSeq()) );
 
     S_about = about;
     doOptions( argc, envargv, *S_desc, about.appName() );
