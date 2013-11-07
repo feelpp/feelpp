@@ -299,6 +299,9 @@ public:
         {
             Environment::logMemoryUsage( "backend::newMatrix begin" );
         }
+
+        if ( !this->comm().isActive() ) return sparse_matrix_ptrtype();
+
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
         auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
 
@@ -462,6 +465,8 @@ public:
                                      )
                                    )
     {
+        if ( !this->comm().isActive() ) return vector_ptrtype();
+
         return this->newVector( test->dof() );
     }
 
