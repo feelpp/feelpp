@@ -108,11 +108,11 @@ public :
     typedef double value_type;
 
     /*mesh*/
-    typedef Simplex<2,Order> entity_type;
+    typedef Simplex<2,1> entity_type; /*dim,order*/
     typedef Mesh<entity_type> mesh_type;
 
     /*basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -167,15 +167,15 @@ public:
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     /*mesh*/
-    typedef Simplex<2,Order> entity_type;
+    typedef Simplex<2,1> entity_type; /*dim,order*/
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -849,7 +849,6 @@ void HeatShield<Order>::assemble()
         integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
         ;
-    M->close();
 
     //scalar product used for mass matrix
     InnerMassMatrix = backend->newMatrix( _test=Xh, _trial=Xh );
@@ -863,7 +862,6 @@ void HeatShield<Order>::assemble()
         integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
         ;
-    Mpod->close();
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
