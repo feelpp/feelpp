@@ -4090,6 +4090,13 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             // solve for new fix point iteration
             uN[time_index] = A.lu().solve( F );
 
+
+            //vectorN_type full_lu; full_lu.resize(2);
+            //full_lu=A.fullPivLu().solve( F );
+            //LOG( INFO ) << " oooooooooooooooooooooooooo mu = \n"<<mu;
+            //LOG( INFO )<<std::setprecision(14)<<" norm of full LU : "<<full_lu.norm();
+            //LOG( INFO )<<std::setprecision(14)<<" norm of  LU     : "<<uN[time_index].norm();
+
             if ( time_index<number_of_time_step-1 )
                 uNold[time_index+1] = uN[time_index];
 
