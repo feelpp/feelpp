@@ -50,7 +50,7 @@
 #include <utility>
 #include <vector>
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
 # include <ext/hash_set>
 # include <ext/hash_map>
 # include <ext/slist>
@@ -80,7 +80,7 @@ inline std::ostream& operator<<(std::ostream& out, \
 OUTPUT_TWO_ARG_CONTAINER(std::vector)
 OUTPUT_TWO_ARG_CONTAINER(std::deque)
 OUTPUT_TWO_ARG_CONTAINER(std::list)
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
 OUTPUT_TWO_ARG_CONTAINER(__gnu_cxx::slist)
 #endif
 
@@ -109,7 +109,7 @@ inline std::ostream& operator<<(std::ostream& out, \
 
 OUTPUT_FOUR_ARG_CONTAINER(std::map)
 OUTPUT_FOUR_ARG_CONTAINER(std::multimap)
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
 OUTPUT_FOUR_ARG_CONTAINER(__gnu_cxx::hash_set)
 OUTPUT_FOUR_ARG_CONTAINER(__gnu_cxx::hash_multiset)
 #endif
@@ -124,7 +124,7 @@ inline std::ostream& operator<<(std::ostream& out, \
   return out; \
 }
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
 OUTPUT_FIVE_ARG_CONTAINER(__gnu_cxx::hash_map)
 OUTPUT_FIVE_ARG_CONTAINER(__gnu_cxx::hash_multimap)
 #endif

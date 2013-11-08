@@ -1386,6 +1386,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     boost::timer tim;
     DVLOG(2) << "begin constructor with default listblock\n";
 
+    if ( !this->M_X1->worldComm().isActive() ) return;
+
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
     M_lb.push_back( Block ( 0, 0, 0, 0 ) );
 
@@ -1415,6 +1417,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
+    if ( !this->M_X1->worldComm().isActive() ) return;
+
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
 }
 
