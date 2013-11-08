@@ -46,8 +46,9 @@ namespace Feel
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc()
+MatrixPetsc<T>::MatrixPetsc( WorldComm const& worldComm )
     :
+    super( worldComm ),
     M_destroy_mat_on_exit( true )
 {}
 
@@ -1313,10 +1314,22 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
 {
     this->close();
 
-    MatrixPetsc<T>* Atrans = dynamic_cast<MatrixPetsc<T>*> ( &Mt );
+    MatrixPetsc<T>* Atrans;
+    if ( this->comm().size()>1 )
+    {
+        Atrans = dynamic_cast<MatrixPetscMPI<T>*> ( &Mt );
+    }
+    else
+    {
+        Atrans = dynamic_cast<MatrixPetsc<T>*> ( &Mt );
+    }
 
-    int ierr = PETSc::MatDestroy( Atrans->M_mat );
-    CHKERRABORT( this->comm(),ierr );
+    int ierr = 0;
+    if ( Atrans->isInitialized() )
+    {
+        ierr = PETSc::MatDestroy( Atrans->M_mat );
+        CHKERRABORT( this->comm(),ierr );
+    }
 
 #if (PETSC_VERSION_MAJOR >= 3)
     ierr = MatTranspose( M_mat, MAT_INITIAL_MATRIX,&Atrans->M_mat );
@@ -1347,6 +1360,7 @@ MatrixPetsc<T>::transpose( MatrixSparse<value_type>& Mt ) const
     }
 
     Mt.setGraph( this->graph()->transpose() );
+    Mt.setInitialized( true );
 
 }
 
@@ -1632,9 +1646,9 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI()
+MatrixPetscMPI<T>::MatrixPetscMPI( WorldComm const& worldComm )
     :
-    super()
+    super( worldComm )
 {}
 
 //----------------------------------------------------------------------------------------------------//
