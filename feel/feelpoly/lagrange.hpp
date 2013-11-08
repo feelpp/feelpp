@@ -351,6 +351,13 @@ public:
                                   mpl::identity<Lagrange<N, RealDim, TheOrder, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type type;
 
     };
+
+    template<uint16_type NewDim>
+    struct ChangeDim
+    {
+        typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
+    };
+
     //@}
 
     /** @name Constructors, destructor

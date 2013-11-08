@@ -452,7 +452,15 @@ private:
             const bool trial_sibling_of_test = _M_X2->mesh()->isSiblingOf( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                const size_type domain_eid = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid )).element0().id();
+                auto const& theface = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid ));
+                size_type domain_eid = invalid_size_type_value;
+                if ( !theface.element0().isGhostCell() )
+                    domain_eid = theface.element0().id();
+                else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+                    domain_eid = theface.element1().id();
+                else
+                    CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+
                 DVLOG(2) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                 if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }

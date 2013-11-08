@@ -924,7 +924,7 @@ GeoND<Dim,GEOSHAPE, T, POINTTYPE>::showMe( bool verbose, std::ostream & out ) co
     for ( int i = 0; i < numVertices; i++ )
     {
         out << "POINT id = " << i << std::endl;
-        out << point( i ).showMe( verbose, out );
+        point( i ).showMe( verbose, out );
     }
 
     out << "----- END OF GeoND data ---" << std::endl << std::endl;

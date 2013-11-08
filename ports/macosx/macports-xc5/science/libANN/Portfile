@@ -1,0 +1,46 @@
+# -*- coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:et:sw=4:ts=4:sts=4
+# $Id: Portfile 63313 2010-02-01 17:05:45Z mnick@macports.org $
+
+PortSystem          1.0
+
+name                libANN
+version             1.1.2
+maintainers         mnick
+
+categories          science devel
+description         A Library for Approximate Nearest Neighbor Searching
+long_description    ANN is a library written in C++, which supports data structures and \
+                    algorithms for both exact and approximate nearest neighbor searching \
+                    in arbitrarily high dimensions.
+
+platforms           darwin
+license             LGPL
+
+homepage            http://www.cs.umd.edu/~mount/ANN/
+master_sites        ${homepage}/Files/${version}/
+distname            ann_${version}
+
+checksums           md5     7ffaacc7ea79ca39d4958a6378071365 \
+                    sha1    27ec04d55e244380ade3706a9b71c3d631e2ff1a \
+                    rmd160  1b76b2f5c25c83c6d52a1a1e19e5b058ccf929d0
+
+use_configure       no
+build.target        macosx-clang++
+
+# creating a clang entry and
+# removing binaries that doesn't compile with libc++
+patchfiles	patch-Make-config.diff \
+		patch-Makefile.diff
+
+destroot {
+    file copy ${worksrcpath}/include/ANN ${destroot}${prefix}/include
+    file copy ${worksrcpath}/lib/libANN.a ${destroot}${prefix}/lib
+# removing binaries that doesn't compile with libc++
+#    eval file copy [glob ${worksrcpath}/bin/*] ${destroot}${prefix}/bin
+#    file mkdir ${destroot}${prefix}/share/doc
+#    file copy ${worksrcpath}/doc ${destroot}${prefix}/share/doc/libANN
+}
+
+livecheck.type      regex
+livecheck.url       ${homepage}
+livecheck.regex     <b>Version (.*)</b>
