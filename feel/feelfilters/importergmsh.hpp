@@ -123,7 +123,7 @@ struct GMSHElement
         physical( p ),
         elementary( e ),
         numPartitions( _numPartitions ),
-        partition( _partition ),
+        partition( _partition % worldcommsize ),
         ghosts( _ghosts ),
         is_on_processor( false ),
         is_ghost( false ),
@@ -133,6 +133,10 @@ struct GMSHElement
         numVertices( _numVertices ),
         indices( _indices )
         {
+            // maybe proc id not start to 0
+            for ( auto _itghost=ghosts.begin(),_enghost=ghosts.end() ; _itghost!=_enghost ; ++_itghost )
+                *_itghost = ( (*_itghost) % worldcommsize);
+
             if ( worldcommsize == 1 )
             {
                 is_on_processor = true;
