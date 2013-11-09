@@ -3823,10 +3823,13 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     int number_of_time_step=1;
     size_type Qm;
 
+    int time_index = number_of_time_step-1;
+
     if ( M_model->isSteady() )
     {
         time_step = 1e30;
         time_for_output = 1e30;
+        time_index=0;
         Qm = 0;
         //number_of_time_step=1;
     }
@@ -3860,33 +3863,92 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     matrixN_type Aprdu( ( int )N, ( int )N );
     matrixN_type Mprdu( ( int )N, ( int )N );
 
-    double time;
-    if ( M_model->isSteady() )
+    double time = time_for_output;
+
+    if ( ! M_model->isSteady() )
     {
-        time = 1e30;
-
-        boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
-        Adu.setZero( N,N );
-        Ldu.setZero( N );
-
-        for ( size_type q = 0; q < M_model->Qa(); ++q )
-        {
-            for(int m=0; m < M_model->mMaxA(q); m++)
-                Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
-        }
-        //LOG( INFO ) << "Adu : \n"<<Adu;
-        for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
-        {
-            for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
-                Ldu += betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
-        }
-        //LOG( INFO ) << "Ldu : \n"<<Ldu;
-        uNdu[0] = Adu.lu().solve( -Ldu );
+        for ( size_type n=0; n<N; n++ )
+            uNduold[time_index]( n ) = M_coeff_du_ini_online[n];
     }
 
-    else
+    int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
+    double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
+    double output_fixedpoint_tol  = option(_name="crb.output-fixedpoint-tol").template as<double>();
+    bool fixedpoint_verbose  = option(_name="crb.fixedpoint-verbose").template as<bool>();
+    double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
+    double increment = increment_fixedpoint_tol;
+    //uNdu[0] = Adu.lu().solve( -Ldu );
+
+    for ( time=time_for_output; time>=time_step; time-=time_step )
     {
-        int time_index = number_of_time_step-1;
+
+        int fi=0;
+        vectorN_type next_uNdu( M_N );
+
+        do
+        {
+            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
+            Adu.setZero( N,N );
+            Ldu.setZero( N );
+
+            for ( size_type q = 0; q < M_model->Qa(); ++q )
+            {
+                for(int m=0; m < M_model->mMaxA(q); m++)
+                    Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
+            }
+            for ( size_type q = 0; q < M_model->Ql( M_output_index ); ++q )
+            {
+                for(int m=0; m < M_model->mMaxF(M_output_index,q); m++)
+                    Ldu += betaFqm[M_output_index][q][m]*M_Lqm_du[q][m].head( N );
+            }
+
+            //No Rhs for adjoint problem except mass contribution
+            Fdu.setZero( N );
+
+            for ( size_type q = 0; q < Qm; ++q )
+            {
+                for(int m=0; m < M_model->mMaxM(q); m++)
+                {
+                    Adu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )/time_step;
+                    Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
+                }
+            }
+
+            // backup uNdu
+            next_uNdu = uNdu[time_index];
+
+            if ( M_model->isSteady() )
+                Fdu = -Ldu;
+            uNdu[time_index] = Adu.lu().solve( Fdu );
+
+            if ( time_index>0 )
+                uNduold[time_index-1] = uNdu[time_index];
+
+            fi++;
+
+           if( option(_name="crb.use-linear-model").template as<bool>() )
+               next_uNdu=uNdu[time_index];
+
+            increment = (uNdu[time_index]-next_uNdu).norm();
+
+            if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
+                VLOG(2)<<"[CRB::fixedPointDual] fixedpoint iteration " << fi << " increment error: " << increment;
+
+        }while ( increment > increment_fixedpoint_tol && fi<max_fixedpoint_iterations );
+
+        if( increment > increment_fixedpoint_tol )
+            DVLOG(2)<<"[CRB::fixedPointDual] fixed point dual, proc "<<this->worldComm().globalRank()
+                    <<" fixed point has no converged : norm of increment = "<<increment
+                    <<" and tolerance : "<<increment_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done";
+
+        if( increment > fixedpoint_critical_value )
+            throw std::logic_error( "[CRB::fixedPointDual] fixed point ERROR : increment > critical value " );
+
+        if( time_index > 0 )
+            time_index--;
+
+    }//end of non steady case
+
 
 #if 0
         double initial_dual_time = time_for_output+time_step;
@@ -3920,50 +3982,7 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
         vectorN_type diff2 = uNduold[time_index] - coeff;
         std::cout<<"et maintenant le deuxieme diff = \n"<<diff2<<"\n";
         */
-#else
-
-        for ( size_type n=0; n<N; n++ )
-        {
-            uNduold[time_index]( n ) = M_coeff_du_ini_online[n];
-        }
-
 #endif
-
-        for ( time=time_for_output; time>=time_step; time-=time_step )
-        {
-
-            boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( mu ,time );
-            Adu.setZero( N,N );
-
-            for ( size_type q = 0; q < M_model->Qa(); ++q )
-            {
-                for(int m=0; m < M_model->mMaxA(q); m++)
-                    Adu += betaAqm[q][m]*M_Aqm_du[q][m].block( 0,0,N,N );
-            }
-
-            //No Rhs for adjoint problem except mass contribution
-            Fdu.setZero( N );
-
-            for ( size_type q = 0; q < Qm; ++q )
-            {
-                for(int m=0; m < M_model->mMaxM(q); m++)
-                {
-                    Adu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )/time_step;
-                    Fdu += betaMqm[q][m]*M_Mqm_du[q][m].block( 0,0,N,N )*uNduold[time_index]/time_step;
-                }
-            }
-
-            uNdu[time_index] = Adu.lu().solve( Fdu );
-
-            if ( time_index>0 )
-            {
-                uNduold[time_index-1] = uNdu[time_index];
-            }
-
-            time_index--;
-        }
-
-    }//end of non steady case
 
 }
 
@@ -4022,16 +4041,19 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     }
 
 
-    int max_fixedpoint_iterations  = option("crb.max-fixedpoint-iterations").template as<int>();
-    double increment_fixedpoint_tol  = option("crb.increment-fixedpoint-tol").template as<double>();
-    double output_fixedpoint_tol  = option("crb.output-fixedpoint-tol").template as<double>();
-    bool fixedpoint_verbose  = option("crb.fixedpoint-verbose").template as<bool>();
+    int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
+    double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
+    double output_fixedpoint_tol  = option(_name="crb.output-fixedpoint-tol").template as<double>();
+    bool fixedpoint_verbose  = option(_name="crb.fixedpoint-verbose").template as<bool>();
     double fixedpoint_critical_value  = option(_name="crb.fixedpoint-critical-value").template as<double>();
+    double increment = increment_fixedpoint_tol;
+
+    computeProjectionInitialGuess( mu , N , uN[0] );
 
     for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     {
 
-        computeProjectionInitialGuess( mu , N , uN[time_index] );
+        //computeProjectionInitialGuess( mu , N , uN[time_index] );
 
         //vectorN_type error;
         //const element_type expansion_uN = this->expansion( uN[time_index] , N , M_WN);
@@ -4111,30 +4133,33 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
             old_output = output;
             output = L.dot( uN[time_index] );
 
+           if( option(_name="crb.use-linear-model").template as<bool>() )
+               previous_uN=uN[time_index];
+
+            increment = (uN[time_index]-previous_uN).norm();
+
             //output_vector.push_back( output );
             output_vector[time_index] = output;
-            DVLOG(2) << "iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm() << "\n";
+            DVLOG(2) << "iteration " << fi << " increment error: " << increment << "\n";
             fi++;
 
             if( fixedpoint_verbose  && this->worldComm().globalRank()==this->worldComm().masterRank() )
-                VLOG(2)<<"[CRB::lb] fixedpoint iteration " << fi << " increment error: " << (uN[time_index]-previous_uN).norm()<<std::endl;
+                VLOG(2)<<"[CRB::fixedPointPrimal] fixedpoint iteration " << fi << " increment : " << increment <<std::endl;
 
             double residual_norm = (A * uN[time_index] - F).norm() ;
             VLOG(2) << " residual_norm :  "<<residual_norm;
 
-           if( option(_name="crb.use-linear-model").template as<bool>() )
-               previous_uN=uN[time_index];
         }
-        while ( (uN[time_index]-previous_uN).norm() > increment_fixedpoint_tol && fi<max_fixedpoint_iterations );
+        while ( increment > increment_fixedpoint_tol && fi<max_fixedpoint_iterations );
         //while ( math::abs(output - old_output) >  output_fixedpoint_tol && fi < max_fixedpoint_iterations );
 
-        if( (uN[time_index]-previous_uN).norm() > increment_fixedpoint_tol )
-            DVLOG(2)<<"[CRB::lb] fixed point, proc "<<this->worldComm().globalRank()
-                    <<" fixed point has no converged : norm(uN-uNold) = "<<(uN[time_index]-previous_uN).norm()
+        if( increment > increment_fixedpoint_tol )
+            DVLOG(2)<<"[CRB::fixedPointPrimal] fixed point, proc "<<this->worldComm().globalRank()
+                    <<" fixed point has no converged : increment = "<<increment
                     <<" and tolerance : "<<increment_fixedpoint_tol<<" so "<<max_fixedpoint_iterations<<" iterations were done"<<std::endl;
 
-        if( (uN[time_index]-previous_uN).norm() > fixedpoint_critical_value )
-            throw std::logic_error( "[CRB::lb] fixed point ERROR : norm(uN-uNold) > critical value " );
+        if( increment > fixedpoint_critical_value )
+            throw std::logic_error( "[CRB::fixedPointPrimal] fixed point ERROR : increment > critical value " );
 
         if ( time_index<number_of_time_step-1 )
             time_index++;
