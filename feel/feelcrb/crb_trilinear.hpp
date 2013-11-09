@@ -144,7 +144,9 @@ public:
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
 
-    typedef boost::tuple< vectorN_type , vectorN_type > solutions_tuple;
+    typedef boost::tuple< std::vector<vectorN_type> , std::vector<vectorN_type> , std::vector<vectorN_type>, std::vector<vectorN_type> > solutions_tuple;
+    typedef boost::tuple< double,double,double , std::vector< std::vector< double > > , std::vector< std::vector< double > > > upper_bounds_tuple;
+    typedef boost::tuple< double,double > matrix_info_tuple; //conditioning, determinant
 
     // ! export
     typedef Exporter<mesh_type> export_type;
@@ -311,6 +313,26 @@ public:
     void displayMatrix(const matrixN_type& M ) const ;
     // -------- from crb
 
+    void checkResidual( parameter_type const& mu, std::vector< std::vector<double> > const& primal_residual_coeffs,
+                        std::vector< std::vector<double> > const& dual_residual_coeffs , element_type & u, element_type & udu ) const
+    {
+        LOG( INFO ) << "CRBTrilinear::checkResidual do nothing";
+    }
+    void compareResidualsForTransientProblems(int N, parameter_type const& mu, std::vector<element_type> const & Un,
+                                              std::vector<element_type> const & Unold, std::vector<element_type> const& Undu,
+                                              std::vector<element_type> const & Unduold,
+                                              std::vector< std::vector<double> > const& primal_residual_coeffs,
+                                              std::vector< std::vector<double> > const& dual_residual_coeffs  ) const
+    {
+        LOG( INFO ) << "CRBTrilinear::compareResidualsForTransientProblems do nothing";
+    }
+
+
+    void loadSCMDB()
+    {
+        LOG( INFO ) << "CRBTrilinear::loadSCMDB do nothing";
+    }
+
     void orthonormalize( size_type N, wn_type& wn, int Nm = 1 );
     void checkOrthonormality( int N, const wn_type& wn ) const;
 
@@ -383,7 +405,7 @@ public:
      */
     void exportBasisFunctions( const export_vector_wn_type& wn )const ;
 
-    boost::tuple<double,double, solutions_tuple, double, double, double, boost::tuple<double,double,double> > run( parameter_type const& mu, double eps = 1e-6, int N = -1 );
+    boost::tuple<double,double, solutions_tuple, matrix_info_tuple, double, double, upper_bounds_tuple > run( parameter_type const& mu, double eps = 1e-6, int N = -1, bool print_rb_matrix=false );
 
     void run( const double * X, unsigned long N, double * Y, unsigned long P ){};
 
@@ -1338,8 +1360,9 @@ CRBTrilinear<TruthModelType>::printMuSelection( void )
 }
 
 template<typename TruthModelType>
-boost::tuple<double,double, typename CRBTrilinear<TruthModelType>::solutions_tuple, double, double, double, boost::tuple<double,double,double> >
-CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
+typename boost::tuple<double,double, typename CRBTrilinear<TruthModelType>::solutions_tuple, typename CRBTrilinear<TruthModelType>::matrix_info_tuple,
+                      double, double, typename CRBTrilinear<TruthModelType>::upper_bounds_tuple >
+CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool print_rb_matrix )
 {
 
     //int Nwn = M_N;
@@ -1362,10 +1385,14 @@ CRBTrilinear<TruthModelType>::run( parameter_type const& mu, double eps , int N)
     auto o = lb( Nwn, mu, uN );
     double output = o.template get<0>();
 
-    double condition_number = o.template get<1>();
-    auto upper_bounds = boost::make_tuple(1 , 1, 1 );
-    auto solutions = boost::make_tuple( uN , uN );
-    return boost::make_tuple( output , Nwn , solutions, condition_number,  1, 1, upper_bounds);
+    std::vector< std::vector<double> > coefficients;
+    auto upper_bounds = boost::make_tuple(-1 , -1 , -1 , coefficients , coefficients );
+    std::vector< vectorN_type > vector_uN( 1 );
+    vector_uN[0] = uN ;
+    auto solutions = boost::make_tuple( vector_uN, vector_uN, vector_uN, vector_uN );
+    auto matrix_info = boost::make_tuple(-1,-1);
+    return boost::make_tuple( output , Nwn , solutions, matrix_info , -1 , -1 , upper_bounds );
+
 }
 
 
@@ -1443,7 +1470,7 @@ CRBTrilinear<TruthModelType>::computationalTimeStatistics(std::string appname)
         conv.open(file_name, std::ios::app);
         conv << "NbBasis" << "\t" << "min" <<"\t"<< "max" <<"\t"<< "mean"<<"\t"<<"standard_deviation" << "\n";
     }
-
+    bool print_rb_matrix=false;
     //loop over basis functions (if cvg option)
     for(; N<=dimension; N++)
     {
@@ -1452,7 +1479,7 @@ CRBTrilinear<TruthModelType>::computationalTimeStatistics(std::string appname)
         BOOST_FOREACH( auto mu, *Sampling )
         {
             boost::mpi::timer tcrb;
-            auto o = this->run( mu, tol , N);
+            auto o = this->run( mu, tol , N, print_rb_matrix);
             time_crb( mu_number ) = tcrb.elapsed() ;
             mu_number++;
         }
