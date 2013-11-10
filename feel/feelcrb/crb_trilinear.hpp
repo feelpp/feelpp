@@ -744,6 +744,7 @@ CRBTrilinear<TruthModelType>::offline()
             __mu(0)=5.124e2 ; __mu(1)= 1  ; V.push_back( __mu );
             M_WNmu->setElements( V );
             M_iter_max = M_WNmu->size();
+            M_WNmu->writeOnFile(file_name);
         }
         else
         {
