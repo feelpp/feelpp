@@ -249,6 +249,7 @@ public:
     }
 
     //! constructor from command line options
+#if 0
     CRB( std::string  name,
          po::variables_map const& vm )
         :
@@ -286,7 +287,7 @@ public:
         //this->loadDB() )
 
     }
-
+#endif
     //! constructor from command line options
     CRB( std::string  name,
          po::variables_map const& vm,
@@ -3258,6 +3259,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     //LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s\n";
     timer2.restart();
     *Rhs = *F[M_output_index];
+    Rhs->close();
     Rhs->scale( -1 );
     //backendAt->solve( _matrix=At,  _solution=udu, _rhs=Rhs );
     //LOG(INFO) << "  -- dual problem solved in " << timer2.elapsed() << "s\n";
@@ -3273,6 +3275,8 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     *Undu = udu;
     A->multVector( Un, Aun );
     At->multVector( Undu, Atun );
+    Aun->close();
+    Atun->close();
     Aun->scale( -1 );
     Atun->scale( -1 );
     *Frhs = *F[0];
@@ -3289,6 +3293,7 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     LOG(INFO) << "[CRB::checkResidual] residual (At,At) " << M_N-1 << ":=" << M_model->scalarProduct( Atun, Atun ) << "\n";
 #endif
 
+    Lrhs->close();
     Lrhs->scale( -1 );
 
     vector_ptrtype __ef_pr(  M_backend->newVector( M_model->functionSpace() ) );
@@ -3413,18 +3418,23 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
         M_scmA->setScmForMassMatrix( false );
         boost::tie( alpha, t ) = M_scmA->lb( mu );
     }
-    LOG( INFO )<< "primal sum without affine decomposition       : "<<std::setprecision( 15 )<<check_sum_pr;
-    LOG( INFO )<< "primal sum with affine decomposition          : "<<std::setprecision( 15 )<<sum_pr;
-    LOG( INFO )<< "dual sum without affine decomposition       : "<<std::setprecision( 15 )<<check_sum_du;
-    LOG( INFO )<< "dual sum with affine decomposition          : "<<std::setprecision( 15 )<<sum_du;
-    LOG( INFO )<< "dual norm of primal residual without affine decomposition       : "<<std::setprecision( 15 )<<check_dual_norm_pr;
-    LOG( INFO )<< "dual norm of primal residual with affine decomposition          : "<<std::setprecision( 15 )<<dual_norm_pr;
-    LOG( INFO )<< "dual norm of dual residual without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_du;
-    LOG( INFO )<< "dual norm of dual residual with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_du;
-    LOG( INFO )<< "Primal Error Estimator without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_pr/alpha;
-    LOG( INFO )<< "Primal Error Estimator with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_pr/alpha;
-    LOG( INFO )<< "Dual Error Estimator without affine decomposition : "<<std::setprecision( 15 )<<check_dual_norm_du/alpha;
-    LOG( INFO )<< "Dual Error Estimator with affine decomposition    : "<<std::setprecision( 15 )<<dual_norm_du/alpha;
+    LOG( INFO )<< "primal sum without affine decomposition (using ef_pr and ea_pr) : "<<std::setprecision( 15 )<<check_sum_pr;
+    LOG( INFO )<< "primal sum with affine decomposition  (from CRB code)           : "<<std::setprecision( 15 )<<sum_pr;
+    LOG( INFO )<< "dual sum without affine decomposition (using ef_du and ea_du)   : "<<std::setprecision( 15 )<<check_sum_du;
+    LOG( INFO )<< "dual sum with affine decomposition  (from CRB code)             : "<<std::setprecision( 15 )<<sum_du;
+    LOG( INFO )<< " ----------------------- ";
+    LOG( INFO )<< "dual norm of primal residual without affine decomposition (e_pr)            : "<<std::setprecision( 15 )<<check_dual_norm_pr;
+    LOG( INFO )<< "dual norm of primal residual without affine decomposition (ef_pr and ea_pr) : "<<std::setprecision( 15 )<<math::sqrt(check_sum_pr);
+    LOG( INFO )<< "dual norm of primal residual with affine decomposition                      : "<<std::setprecision( 15 )<<dual_norm_pr;
+    LOG( INFO )<< "dual norm of dual residual without affine decomposition (e_du)            : "<<std::setprecision( 15 )<<check_dual_norm_du;
+    LOG( INFO )<< "dual norm of dual residual without affine decomposition (ef_du and ea_du) : "<<std::setprecision( 15 )<<math::sqrt(check_sum_du);
+    LOG( INFO )<< "dual norm of dual residual with affine decomposition                      : "<<std::setprecision( 15 )<<dual_norm_du;
+    LOG( INFO )<< "Primal Error Estimator without affine decomposition (e_pr)            : "<<std::setprecision( 15 )<<check_dual_norm_pr/alpha;
+    LOG( INFO )<< "Primal Error Estimator without affine decomposition (ef_pr and ea_pr) : "<<std::setprecision( 15 )<<math::sqrt(check_sum_pr)/alpha;
+    LOG( INFO )<< "Primal Error Estimator with affine decomposition                      : "<<std::setprecision( 15 )<<dual_norm_pr/alpha;
+    LOG( INFO )<< "Dual Error Estimator without affine decomposition (e_du)            : "<<std::setprecision( 15 )<<check_dual_norm_du/alpha;
+    LOG( INFO )<< "Dual Error Estimator without affine decomposition (ef_du and ea_du) : "<<std::setprecision( 15 )<<math::sqrt(check_sum_du)/alpha;
+    LOG( INFO )<< "Dual Error Estimator with affine decomposition                      : "<<std::setprecision( 15 )<<dual_norm_du/alpha;
     double epsilon =2.22e-16; //machine precision
     LOG( INFO )<<"Precision bound for primal error estimator : "<< C0_pr/alpha*math::sqrt( epsilon);
     LOG( INFO )<<"Precision bound for dual error estimator : "<< C0_du/alpha*math::sqrt( epsilon);
