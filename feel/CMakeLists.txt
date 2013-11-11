@@ -43,7 +43,7 @@ add_subdirectory (feelvf )
 add_subdirectory (feelpde)
 
 
-if( NOT cmake_build_type_tolower STREQUAL "debug" AND NOT FEELPP_ENABLE_BUILD_STATIC )
+if( NOT FEELPP_ENABLE_BUILD_STATIC )
   add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
   set_target_properties( feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
   set_property(TARGET feelpp PROPERTY LABELS feel++)
@@ -55,7 +55,10 @@ if( NOT cmake_build_type_tolower STREQUAL "debug" AND NOT FEELPP_ENABLE_BUILD_ST
   # Install feelpp
   INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Bin)
 else()
+  cmake_policy(PUSH)
+  cmake_policy(SET CMP0022)
   add_library(feelpp options.cpp ${FEELPP_SRCS})
   set_property(TARGET feelpp PROPERTY LABELS feel++)
   target_link_libraries (feelpp ${FEELPP_LIBRARIES})
+  cmake_policy(PUSH)
 endif()
