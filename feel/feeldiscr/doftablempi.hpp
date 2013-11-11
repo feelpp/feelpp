@@ -300,7 +300,7 @@ updateDofOnEdges( MeshType const& mesh, typename MeshType::face_type const& thef
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
                                                                                                         std::vector< std::map<size_type,std::set<std::vector<size_type> > > > & listToSend,
                                                                                                         std::set<int> & procRecvData )
 {
@@ -472,9 +472,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type& mesh,
-                                                                                                        std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
-                                                                                                        std::set<int> const& procRecvData )
+DofTable<MeshType, FEType, PeriodicityType,MortarType>::
+buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type& mesh,
+                                                                       std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
+                                                                       std::set<int> const& procRecvData )
 {
     const int myRank = this->worldComm().rank();
     //--------------------------------------------------------------------------------------------------------//
@@ -706,10 +707,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType>
+template<typename MeshType, typename FEType, typename PeriodicityType,typename MortarType>
 void
-DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
-                                                                                                        std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
+DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
+                                                                            std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
                                                                                                         std::set<int> const& procRecvData )
 {
     typedef std::vector< boost::tuple<uint16_type, ublas::vector<double> > > dofs_in_face_subcontainer_type;
