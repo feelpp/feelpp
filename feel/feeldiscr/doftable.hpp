@@ -53,6 +53,7 @@
 #include <feel/feeldiscr/dof.hpp>
 
 #include <feel/feeldiscr/doffromelement.hpp>
+#include <feel/feeldiscr/doffromMortar.hpp>
 #include <feel/feeldiscr/doffromboundary.hpp>
 #include <feel/feeldiscr/doffromperiodic.hpp>
 namespace Feel
@@ -1054,6 +1055,7 @@ public:
     pointIdToDofRelation(std::string fname="") const;
 private:
     template<typename, typename > friend class DofFromElement;
+    template<typename, typename > friend class DofFromMortar;
     template<typename, typename > friend class DofFromBoundary;
     template<typename, typename > friend class DofFromPeriodic;
 
@@ -1922,7 +1924,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                                                     << " mortar : " << mfe.nLocalDof
                                                     << " fe : " << M_fe->nLocalDof;
 
-    DofFromElement<self_type,mortar_fe_type> dfe_mortar( this, mfe );
+    DofFromMortar<self_type,mortar_fe_type> dfe_mortar( this, mfe );
     for ( ; it_elt!=en_elt; ++it_elt )
     {
         if ( !this->isElementDone( it_elt->id() ) )
@@ -2010,8 +2012,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
         if ( is_mortar && it_elt->isOnBoundary() )
         {
             VLOG(1) << "resizing indices and signs for mortar...";
-            M_locglob_indices[elid].resize( FEType::nLocalDof-1 );
-            M_locglob_signs[elid].resize( FEType::nLocalDof-1 );
+            auto const& ldof = this->localDof( elid );
+            size_type ne = std::distance( ldof.first, ldof.second );
+            VLOG(1) << "resizing indices and signs for mortar:  " << ne;
+            M_locglob_indices[elid].resize( ne );
+            M_locglob_signs[elid].resize( ne );
             for( auto const& dof: this->localDof( elid ) )
             {
                 M_locglob_indices[elid][dof.first.localDof()] = dof.second.index();
