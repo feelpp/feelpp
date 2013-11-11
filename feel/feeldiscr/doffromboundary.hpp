@@ -58,6 +58,7 @@ public:
     typedef typename doftable_type::element_type element_type;
     typedef typename doftable_type::face_type face_type;
     typedef typename doftable_type::ref_shift_type ref_shift_type;
+    typedef typename doftable_type::localdof_type localdof_type;
     typedef FEType fe_type;
 
     typedef typename element_type::edge_permutation_type edge_permutation_type;

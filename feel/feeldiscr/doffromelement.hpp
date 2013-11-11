@@ -58,10 +58,12 @@ public:
     typedef typename doftable_type::element_type element_type;
     typedef typename doftable_type::face_type face_type;
     typedef typename doftable_type::ref_shift_type ref_shift_type;
+    typedef typename doftable_type::localdof_type localdof_type;
     typedef FEType fe_type;
     typedef typename doftable_type::dof_relation dof_relation;
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
+
 
     static const uint16_type nOrder = fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
@@ -541,7 +543,7 @@ DofFromElement<DofTableType,FEType>::add( element_type const& __elt,
         {
             for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
             {
-                M_doftable->M_el_l2g.insert( dof_relation( LocalDof( ie, fe_type::nLocalDof*c + l ),
+                M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof*c + l ),
                                                            Dof( ( M_doftable->dofIndex( next_free_dof ) ) , 1, false ) ) );
             }
         }

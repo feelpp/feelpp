@@ -259,10 +259,14 @@ Marker1,
 > > dof_container_type;
 #endif
 
+template<int NC = 1>
 class LocalDof: public std::pair<size_type,uint16_type>
 {
 public:
     typedef std::pair<size_type,uint16_type> super;
+
+    static constexpr uint16_type nComponents() { return NC; }
+
     LocalDof()
         :
         super( std::make_pair( 0, 0 ) )
@@ -280,13 +284,19 @@ public:
         super( p )
         {}
     size_type elementId() const { return this->first; }
-    size_type localDof() const { return this->second; }
+    uint16_type localDof() const { return this->second; }
+    uint16_type localDofPerComponent() const { return this->second/nComponents(); }
+    // returns the local dof component given the number of local dof per component @arg nLocalDofPerComponent
+    uint16_type component( uint16_type nLocalDofPerComponent ) const { return this->second/nLocalDofPerComponent; }
 };
 
-class LocalDofSet : public std::vector<LocalDof>
+template<int NC = 1>
+class LocalDofSet : public std::vector<LocalDof<NC>>
 {
 public:
-    typedef std::vector<LocalDof> super;
+    typedef std::vector<LocalDof<NC>> super;
+    typedef LocalDof<NC> localdof_type;
+    static constexpr uint16_type nComponents() { return NC; }
     LocalDofSet()
         :
         super()
@@ -298,13 +308,13 @@ public:
         {
             for(uint16_type i = 0; i < nLocalDof; ++i )
             {
-                this->at( i ) = LocalDof( eid, i );
+                this->at( i ) = localdof_type( eid, i );
             }
         }
     LocalDofSet const& update( size_type eid )
         {
             DCHECK( !this->empty() ) << "Invalid Local Dof Set";
-            std::for_each( this->begin(), this->end(), [eid]( LocalDof& d ) { d.first = eid; } );
+            std::for_each( this->begin(), this->end(), [eid]( localdof_type& d ) { d.first = eid; } );
             return *this;
         }
 };
