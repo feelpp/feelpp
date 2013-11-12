@@ -3419,8 +3419,10 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
         boost::tie( alpha, t ) = M_scmA->lb( mu );
     }
     LOG( INFO )<< "primal sum without affine decomposition (using ef_pr and ea_pr) : "<<std::setprecision( 15 )<<check_sum_pr;
+    LOG( INFO )<< "primal sum without affine decomposition (using only e_pr)       : "<<std::setprecision( 15 )<<M_model->scalarProduct( __e_pr,__e_pr );
     LOG( INFO )<< "primal sum with affine decomposition  (from CRB code)           : "<<std::setprecision( 15 )<<sum_pr;
     LOG( INFO )<< "dual sum without affine decomposition (using ef_du and ea_du)   : "<<std::setprecision( 15 )<<check_sum_du;
+    LOG( INFO )<< "dual sum without affine decomposition (using only e_du)         : "<<std::setprecision( 15 )<<M_model->scalarProduct( __e_du,__e_du );
     LOG( INFO )<< "dual sum with affine decomposition  (from CRB code)             : "<<std::setprecision( 15 )<<sum_du;
     LOG( INFO )<< " ----------------------- ";
     LOG( INFO )<< "dual norm of primal residual without affine decomposition (e_pr)            : "<<std::setprecision( 15 )<<check_dual_norm_pr;
