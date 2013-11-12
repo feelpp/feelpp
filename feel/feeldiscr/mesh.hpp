@@ -1052,9 +1052,11 @@ public:
         Localization() :
             M_mesh (),
             M_kd_tree( new kdtree_type() ),
-            IsInit( false ),
-            IsInitBoundaryFaces( false ),
-            M_doExtrapolation( true )
+            M_isInit( false ),
+            M_isInitBoundaryFaces( false ),
+            M_doExtrapolation( true ),
+            M_barycenter(),
+            M_barycentersWorld()
         {
             DVLOG(2) << "[Mesh::Localization] create Localization tool\n";
             M_kd_tree->nbNearNeighbor( 15 );
@@ -1064,12 +1066,14 @@ public:
 
         Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
             M_mesh ( m ),
-            IsInit( init_b ),
-            IsInitBoundaryFaces( false ),
-            M_doExtrapolation( true )
+            M_isInit( init_b ),
+            M_isInitBoundaryFaces( false ),
+            M_doExtrapolation( true ),
+            M_barycenter(),
+            M_barycentersWorld()
         {
-            if ( IsInit )
-                init();
+            if ( this->isInit() )
+                this->init();
 
             M_kd_tree->nbNearNeighbor( 15 );
             M_resultAnalysis.clear();
@@ -1079,10 +1083,12 @@ public:
             M_mesh( L.M_mesh ),
             M_kd_tree( new kdtree_type( *( L.M_kd_tree ) ) ),
             M_geoGlob_Elts( L.M_geoGlob_Elts ),
-            IsInit( L.IsInit ),
-            IsInitBoundaryFaces( L.IsInitBoundaryFaces ),
+            M_isInit( L.M_isInit ),
+            M_isInitBoundaryFaces( L.M_isInitBoundaryFaces ),
             M_resultAnalysis( L.M_resultAnalysis ),
-            M_doExtrapolation( L.M_doExtrapolation )
+            M_doExtrapolation( L.M_doExtrapolation ),
+            M_barycenter( L.M_barycenter ),
+            M_barycentersWorld( L.M_barycentersWorld )
         {}
 
         /*--------------------------------------------------------------
@@ -1094,9 +1100,9 @@ public:
             M_mesh=m;
 
             if ( b )
-                init();
+                this->init();
 
-            else IsInit=b;
+            else M_isInit=b;
 
             M_resultAnalysis.clear();
         }
@@ -1115,8 +1121,8 @@ public:
          */
         void updateForUse()
         {
-            if ( IsInit==false )
-                init();
+            if ( !this->isInit() )
+                this->init();
         }
 
         /*--------------------------------------------------------------
@@ -1124,8 +1130,8 @@ public:
          */
         void updateForUseBoundaryFaces()
         {
-            if ( IsInitBoundaryFaces==false )
-                initBoundaryFaces();
+            if ( !this->isInitBoundaryFaces() )
+                this->initBoundaryFaces();
         }
 
         /*--------------------------------------------------------------
@@ -1133,12 +1139,12 @@ public:
          */
         bool isInit() const
         {
-            return IsInit;
+            return M_isInit;
         }
 
         bool isInitBoundaryFaces() const
         {
-            return IsInitBoundaryFaces;
+            return M_isInitBoundaryFaces;
         }
 
         bool doExtrapolation() const
@@ -1165,10 +1171,23 @@ public:
             return M_kd_tree;
         }
 
-        node_type barycenter() const;
-        node_type barycenter(mpl::int_<1> /**/) const;
-        node_type barycenter(mpl::int_<2> /**/) const;
-        node_type barycenter(mpl::int_<3> /**/) const;
+        node_type const& barycenter() const
+        {
+            CHECK( this->isInit() || this->isInitBoundaryFaces()  ) << " localization tool not init \n";
+            return M_barycenter;
+        }
+
+        void computeBarycenter();
+
+        bool hasComputedBarycentersWorld() { return M_barycentersWorld; }
+
+        std::vector<node_type> const& barycentersWorld() const
+        {
+            CHECK( M_barycentersWorld ) << " you must call computeBarycentersWorld() before barycentersWorld() \n";
+            return M_barycentersWorld.get();
+        }
+
+        void computeBarycentersWorld();
 
         container_search_type const & result_analysis() const { return M_resultAnalysis;}
 
@@ -1247,14 +1266,16 @@ public:
          */
         void reset()
         {
-            IsInit=false;
-            init();
+            M_isInit=false;
+            M_isInitBoundaryFaces=false;
+            this->init();
         }
 
         void resetBoundaryFaces()
         {
-            IsInitBoundaryFaces=false;
-            initBoundaryFaces();
+            M_isInit=false;
+            M_isInitBoundaryFaces=false;
+            this->initBoundaryFaces();
         }
 
     private :
@@ -1275,19 +1296,29 @@ public:
         void searchInKdTree( const node_type & p,
                              std::list< std::pair<size_type, uint> > & listTri );
 
+        /*---------------------------------------------------------------
+         * computed barycenter
+         */
+        node_type computeBarycenter(mpl::int_<1> /**/) const;
+        node_type computeBarycenter(mpl::int_<2> /**/) const;
+        node_type computeBarycenter(mpl::int_<3> /**/) const;
+
     private:
 
         mesh_ptrtype M_mesh;
-        //KDTree M_kd_tree;
         kdtree_ptrtype M_kd_tree;
         //map between node and list elements
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
-        bool IsInit,IsInitBoundaryFaces;
+        bool M_isInit,M_isInitBoundaryFaces;
         container_search_type M_resultAnalysis;
         bool M_doExtrapolation;
 
         ref_convex_type M_refelem;
         ref_convex1_type M_refelem1;
+
+        node_type M_barycenter;
+        boost::optional<std::vector<node_type> > M_barycentersWorld;
+
     };
 
 
