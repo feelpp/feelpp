@@ -248,8 +248,8 @@ public:
         M_mode( mode ),
         M_model( model ),
         M_backend( backend_type::build( Environment::vm() ) ),
-        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
-        M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
+        M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
+        M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
         M_B()
     {
         this->init();
