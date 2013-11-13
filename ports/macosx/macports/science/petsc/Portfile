@@ -37,6 +37,8 @@ depends_lib-append  port:hdf5-18 \
 
 require_active_variants hdf5-18 fortran
 
+use_parallel_build  no
+
 configure.args      --prefix=${prefix}/lib/petsc \
                     --with-mpi=1 \
    		--with-c-support=1 --with-c++-support=1 --with-pic=fPIC \
