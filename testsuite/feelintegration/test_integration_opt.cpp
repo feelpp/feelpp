@@ -84,7 +84,7 @@ typedef boost::mpl::list<boost::mpl::pair<mpl::int_<2>,mpl::int_<2> >,
         boost::mpl::pair<mpl::int_<2>,mpl::int_<3> >,
         boost::mpl::pair<mpl::int_<2>,mpl::int_<4> >,
         boost::mpl::pair<mpl::int_<3>,mpl::int_<2> >,
-        boost::mpl::pair<mpl::int_<3>,mpl::int_<4> >
+        boost::mpl::pair<mpl::int_<3>,mpl::int_<3> >
         > dim_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 {
