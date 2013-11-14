@@ -3,6 +3,7 @@ namespace Feel {
     /** \page Building Building Feel++
 \author Christophe Prud'homme
 \author Baptiste Morin
+\author Alexandre Ancel
 
 \tableofcontents
 
@@ -109,21 +110,66 @@ order to know what is going on with \feel on Ubuntu
 \feel is also working on Mac operating systems. The way to make it work is quite different.
 
 \subsection Compilers Compilers
-In order to \feel and <tt>cmake</tt> work properly, you have to install differents compilers :
-\li Gcc <br>
-  The first step is to install the latest version of Xcode. If your computer is
-  recent, you can install it with your DVD that came with your machine (not the
-  OS DVD, but the applications one). You don't have to install the complete
-  Xcode (you can uncheck iOS SDK for example, it's not necessary here and
-  requiers a lot of memory). Xcode will provide your computer all basic tools to
-  compile such as gcc 4.2. It's the first step, you'll see later how to easily
-  install gcc 4.5 or later using MacPorts.
-\li Fortran <br>
-  To build the Makefiles, <tt>cmake</tt> will need a Fortran compiler. To make it works, please go to <a href="http://hpc.sourceforge.net/">SourceForge.net</a> and download <tt>gfortran-snwleo-intel-bin.tar.gz</tt> which is the fortran compiler only (from now, don't download the complete install with gcc 4.6 because Feel needs gcc 4.5 or later). To install it, go to the directory where you have downloaded the file and type in a command-line
+In order to make \feel and <tt>cmake</tt> work properly, you first have to install \lia Xcode for Gcc/clang. <br />
+If your computer is recent, you can install it with your DVD that came with your machine (not the
+OS DVD, but the applications one). You don't have to install the complete Xcode (you can uncheck iOS SDK for example, 
+it's not necessary here and requires a lot of memory). You can also install Xcode through the App Store. 
+Xcode will provide your computer all the basic tools to compile, such as gcc and clang. 
+It's the first step, you'll see later how to easily install the necessary tools to build \feel.
+
+\subsection PMS Package management systems
+Currently, building \feel is only available through <a href="http://brew.sh">Homebrew</a>. A <a href="http://www.macports.org/install.php">MacPorts</a> version is present in the source tree of \feel, but support is currently experimental.
+
+\subsection Homebrew Homebrew
+<b>Introduction</b> : Homebrew is a free/open source software introduced to simplify the installation of other free/open source softwares on the MacOS X ecosystem. It is distributed under the <a href="https://github.com/mxcl/homebrew/blob/master/Library/Homebrew/LICENSE">BSD 2 Clause (NetBSD) license</a>. For more information, visit their <a href="http://brew.sh">website</a>.
+
+<b>Installation</b> : To install the latest version of Homebrew, simply visit their <a href="http://brew.sh">website</a> and follow the instructions. Each new package Homebrew installs is built into an intermediate place called the Cellar (usually /usr/local/Cellar) and then the packages are symlinked into /usr/local (default).
+
+<b>Key commands</b> : Homebrew base command is <tt>brew</tt>. Here is a list of useful commands to use Homebrew:
+\li <tt>brew doctor</tt>: Check if the system has any problem with the current installation of brew,
+\li <tt>brew install mypackage</tt>: This action installs the package mypackage,
+\li <tt>brew install [--devel|--HEAD] mypackage</tt>: These action respectively installs either the development version or the HEAD version of the package mypackage, if such versions are specified in the Formula file,
+\li <tt>brew uninstall mypackage</tt>: This action uninstalls the package mypackage.
+
+<b>Formula</b> : A Formula is a <a href="https://www.ruby-lang.org">Ruby</a> script describing to Homebrew how to install a package. \feel uses specific Formulae that you can get in the \feel github repository: <a href="https://github.com/feelpp/homebrew-science">feelpp/homebrew-science</a>.
+
+\subsection HomebrewFeel Homebrew and Feel++
+In order to build \feel from Homebrew, you have to do the following steps:
 \verbatim
-  sudo tar -xvf gfortran-snwleo-intel-bin.tar -C /
+# Install Homebrew: 
+ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go)"
+# Check that everything is ok or fix warnings/errors if necessary: 
+brew doctor
+# Get the Formulae specific to Feel++ on the github of feelpp: 
+brew tap feelpp/science
+# Install Feel++: 
+brew install feelpp
 \endverbatim
 
+or in a more detailed way:
+\verbatim
+# Install Homebrew: 
+ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go)"
+# Check that everything is ok or fix warnings/errors if necessary: 
+brew doctor
+# Get the Formulae specific to Feel++ on the github of feelpp: 
+brew tap feelpp/science
+# Install openmpi with c++11 support: 
+brew install open-mpi --c++11
+# Install boost: 
+brew install boost --without-python --without-single --without-static --with-mpi --c++11
+# Install Ann, Petsc, Gmsh and HDF5: 
+brew install ann && brew install petsc && brew install gmsh && brew install hdf5
+# Install Feel++: 
+brew install feelpp
+\endverbatim
+
+And you should be set to use \feel on MacOS X.
+
+<a href="#" class="top">top</a>
+<hr>
+
+<!--
 \subsection MacPorts MacPorts
 <b>Introduction</b> : MacPorts is an open-source community projet which aims to design an easy-to-use system for compiling, installing and upgrading open-source softwares on Mac OS X operating system. It is distributed under <a href="http://opensource.org/licenses/bsd-license.php">BSD License</a> and facilitate the access to thousands of ports (softwares) without installing or compiling open-source softwares.  MacPorts provides a single software tree which includes the latest stable releases of approximately 8050 ports targeting the current Mac OS X release (10.6 or 10.5). If you want more information, please visite their <a href="http://www.macports.org/">website</a>.
 
@@ -223,6 +269,7 @@ with MacPorts, <tt>cmake</tt> will find them by itself once they have been insta
 
 <a href="#" class="top">top</a>
 <hr>
+-->
 \section Compiling Compiling Feel++
 Feel build system uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using gcc4.5 (or a higher version) or clang++ as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.5</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
 <tt>/opt/local/bin</tt> but you can also change it with the command <tt>ccmake</tt>
