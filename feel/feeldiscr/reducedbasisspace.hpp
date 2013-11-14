@@ -32,6 +32,7 @@
 #define __ReducedBasisSpace_H 1
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 #include <feel/feel.hpp>
 #include <feel/feelcrb/crb.hpp>
@@ -85,6 +86,9 @@ public :
 
     typedef MeshType mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef super fespace_type;
+    typedef super_ptrtype fespace_ptrtype;
 
     //typedef typename super::element_type space_element_type;
     typedef typename model_type::element_type space_element_type;
@@ -368,8 +372,7 @@ public :
     }
 
     /*
-     * class Context
-     * stock the evaluation of basis functions in given points
+     * store the evaluation of basis functions in given points
      */
     class ContextRBSet : public FunctionSpace<MeshType,A1,A2,A3,A4>::Context
     {
@@ -686,13 +689,18 @@ public :
         return evaluation;
     }
 
-    struct ContextRB : public ContextRBSet::mapped_type
+    struct ContextRB
+        :
+        public fespace_type::basis_context_type
+        //public ContextRBSet::mapped_type
     {
-        typedef typename ContextRBSet::mapped_type super;
+        //typedef typename ContextRBSet::mapped_type super;
+        typedef typename fespace_type::basis_context_type  super;
         typedef std::pair<int,super> ctx_type;
-        ContextRB( ctx_type const& ctx, ContextRBSet const& rb )
+        typedef std::pair<int,boost::shared_ptr<super>> ctx_ptrtype;
+        ContextRB( ctx_ptrtype const& ctx, ContextRBSet const& rb )
             :
-            super( ctx.second ),
+            super( *ctx.second ),
             M_index( ctx.first ),
             M_rbctx( rb )
         {
@@ -700,17 +708,17 @@ public :
         }
 
         //return the evaluation of an element (of RB space) at the node indexed by node_index
-        eigen_vector_type id( eigen_vector_type coeffs, bool need_to_update=true) const
+        eigen_vector_type idRB( eigen_vector_type coeffs, bool need_to_update=true) const
         {
             return M_rbctx.id( coeffs, M_index, need_to_update);
         }
 
-        eigen_vector_type grad( eigen_vector_type coeffs) const
+        eigen_vector_type gradRB( eigen_vector_type coeffs) const
         {
             return M_rbctx.grad( coeffs, M_index);
         }
 
-        eigen_vector_type d(int N, eigen_vector_type coeffs) const
+        eigen_vector_type dRB(int N, eigen_vector_type coeffs) const
         {
             return M_rbctx.d(N, coeffs, M_index);
         }
@@ -721,7 +729,16 @@ public :
         ContextRBSet const& M_rbctx;
     };
 
-    ContextRB contextBasis( typename ContextRB::ctx_type const& p, ContextRBSet const& c ) { LOG(INFO)<<"constructor ContextRB== ";return ContextRB( p, c ); }
+    typedef ContextRBSet ctxrbset_type;
+    typedef boost::shared_ptr<ctxrbset_type> ctxrbset_ptrtype;
+    typedef ContextRB ctxrb_type;
+    typedef boost::shared_ptr<ctxrb_type> ctxrb_ptrtype;
+
+    ctxrb_ptrtype contextBasis( typename ContextRB::ctx_ptrtype const& p, ContextRBSet const& c )
+        {
+            LOG(INFO)<<"constructor ContextRB== ";
+            return boost::make_shared<ctxrb_type>( p, c );
+        }
 
     /*
      *  contains coefficients in the RB expression
@@ -750,6 +767,7 @@ public :
         //RB context
         typedef rbspace_type::ContextRBSet ctxrbset_type;
         typedef rbspace_type::ContextRB ctxrb_type;
+        typedef boost::shared_ptr<rbspace_type::ContextRB> ctxrb_ptrtype;
 
         typedef T value_type;
 
@@ -1153,6 +1171,8 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
+    std::cout << "is basis context ? " << boost::is_same<Context_t,typename fespace_type::basis_context_type>::value << "\n";
+    std::cout << "is ctxrb  ? " << boost::is_same<Context_t,ctxrb_type>::value << "\n";
     //LOG( INFO ) << "function if of RBSpace is called with a context of type \n"<< typeid( Context_t ).name();
     ctxrb_type const* rb_context = dynamic_cast< ctxrb_type const* >( &context );
     if( rb_context == 0 )
@@ -1231,7 +1251,7 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
     LOG( INFO ) << " id_ with a RB context";
 
     //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.id( *this );
+    auto evaluation_at_all_points = rb_context.idRB( *this );
 
     //loop over points in the context
     for(int t=0; t<rb_context.nPoints(); t++)
@@ -1253,7 +1273,7 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context
     LOG( INFO ) << " grad_ with a RB context";
 
     //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.grad( *this );
+    auto evaluation_at_all_points = rb_context.gradRB( *this );
 
     //loop over points in the context
     for(int t=0; t<rb_context.nPoints(); t++)
@@ -1278,7 +1298,7 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Con
     LOG( INFO ) << " d_ with a RB context";
 
     //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.d(N, *this );
+    auto evaluation_at_all_points = rb_context.dRB(N, *this );
 
     //loop over points in the context
     for(int t=0; t<rb_context.nPoints(); t++)
