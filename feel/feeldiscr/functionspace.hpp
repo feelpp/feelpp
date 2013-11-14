@@ -1690,7 +1690,7 @@ public:
         typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
         Context( functionspace_ptrtype Xh ) : M_Xh( Xh ) {}
-        ~Context() {}
+        virtual ~Context() {}
 
         void add( node_type t )
         {
