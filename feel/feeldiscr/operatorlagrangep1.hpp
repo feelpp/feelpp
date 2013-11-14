@@ -415,7 +415,10 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
     // use the geometric transformation to transform
     // the local equispace mesh to a submesh of the
     // current element
-    gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
+    gmc_ptrtype gmc;
+    if ( it!=en )
+        gmc = gmc_ptrtype( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
+    //gmc_ptrtype gmc( new gmc_type( this->domainSpace()->mesh()->gm(), *it, M_gmpc ) );
 
     for ( size_type elid = 0, pt_image_id = 0; it != en; ++it )
     {
@@ -496,6 +499,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
 
                         point_type __pt( n_new_nodes, boost::get<0>( this->domainSpace()->dof()->dofPoint( ptid ) )  );
                         __pt.setProcessId( it->processId() );
+                        __pt.setProcessIdInPartition( it->pidInPartition() );
 
 
                         DVLOG(2) << "[OperatorLagrangeP1] element id "
@@ -808,6 +812,7 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild )
                                 CHECK( thenewptid!=invalid_size_type_value ) << "--3---invalid point id\n";
                                 point_type __pt( n_new_nodes, mapLocalToGlobalPointId[(int)*itpt].template get<1>() );
                                 __pt.setProcessId( invalid_uint16_type_value );
+                                __pt.setProcessIdInPartition( myGhostEltBase.pidInPartition() );
                                 M_mesh->addPoint( __pt );
                                 n_new_nodes++;
                             }

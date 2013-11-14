@@ -2520,7 +2520,7 @@ Mesh<Shape, T, Tag>::Localization::init()
     auto mesh = M_mesh.lock();
     if ( !mesh ) return;
 
-    DLOG_IF( WARNING, IsInit == false ) << "You have already initialized the tool of localization\n";
+    DLOG_IF( WARNING, this->isInit() == false ) << "You have already initialized the tool of localization\n";
 
 
     //clear data
@@ -2545,8 +2545,10 @@ Mesh<Shape, T, Tag>::Localization::init()
         }
     }
 
-    IsInit=true;
-    IsInitBoundaryFaces=false;
+    this->computeBarycenter();
+
+    M_isInit=true;
+    M_isInitBoundaryFaces=false;
 
 }
 
@@ -2557,11 +2559,7 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
     auto mesh = M_mesh.lock();
     if ( !mesh ) return;
 
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInitBoundaryFaces == false )
-    ( IsInitBoundaryFaces ).warn( "You have already initialized the tool of localization" );
-#endif
-
+    DLOG_IF( WARNING, this->isInitBoundaryFaces() == false ) << "You have already initialized the tool of localization\n";
 
     //clear data
     M_geoGlob_Elts.clear();
@@ -2587,8 +2585,10 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
         }
     }
 
-    IsInitBoundaryFaces=true;
-    IsInit=false;
+    this->computeBarycenter();
+
+    M_isInitBoundaryFaces=true;
+    M_isInit=false;
 
 }
 
@@ -2685,10 +2685,8 @@ boost::tuple<bool, size_type, typename Mesh<Shape, T, Tag>::node_type>
 Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
 {
 
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+    DCHECK( this->isInit() || this->isInitBoundaryFaces() ) << "You don't have initialized the tool of localization\n";
+
     auto mesh = M_mesh.lock();
     bool isin=false;double dmin=0;
     node_type x_ref;
@@ -2701,10 +2699,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
     auto itLT=ListTri.begin();
     auto itLT_end=ListTri.end();
 
-#if !defined( NDEBUG )
-    //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
-    FEELPP_ASSERT( std::distance( itLT,itLT_end )>0 ).error( " problem in list localization : is empty" );
-#endif
+    DCHECK( std::distance( itLT,itLT_end )>0 ) << "problem in localization : listTri is empty\n";
 
     while ( itLT != itLT_end && !isin  )
     {
@@ -2748,13 +2743,9 @@ boost::tuple<std::vector<bool>, size_type>
 Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                                             const size_type & eltHypothetical )
 {
-
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
-    //need to call init else points in function space context are never found
-    if ( !IsInit ) init();
+    // if no init then init with all geo point
+    if ( !( this->isInit() || this->isInitBoundaryFaces() ) )
+        this->init();
 
     bool find_x;
     size_type cv_id=eltHypothetical;
@@ -2850,10 +2841,7 @@ boost::tuple<bool, std::list<boost::tuple<size_type, typename Mesh<Shape, T, Tag
 Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
 {
 
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+    DCHECK( this->isInit() || this->isInitBoundaryFaces() ) << "You don't have initialized the tool of localization\n";
 
     //this->kdtree()->nbNearNeighbor(this->mesh()->numElements());
 
@@ -3163,10 +3151,8 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
         const matrix_node_type & setPoints,
         mpl::int_<1> /**/ )
 {
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+
+    DCHECK( this->isInit() || this->isInitBoundaryFaces() ) << "You don't have initialized the tool of localization\n";
 
     bool find_x=false;
     size_type cv_id=eltHypothetical;
@@ -3210,18 +3196,19 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
 
 
 template<typename Shape, typename T, int Tag>
-typename Mesh<Shape, T, Tag>::node_type
-Mesh<Shape, T, Tag>::Localization::barycenter() const
+void
+Mesh<Shape, T, Tag>::Localization::computeBarycenter()
 {
-    return this->barycenter(mpl::int_<nRealDim>());
+    M_barycenter = this->computeBarycenter(mpl::int_<nRealDim>());
 }
 
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::node_type
-Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<1> /**/) const
+Mesh<Shape, T, Tag>::Localization::computeBarycenter(mpl::int_<1> /**/) const
 {
     node_type res(1);
     res(0)=0;
+    if ( this->kdtree()->nPoints()==0 ) return res;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
             auto const& pt = this->kdtree()->points()[i].template get<0>();
@@ -3232,10 +3219,12 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<1> /**/) const
 }
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::node_type
-Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<2> /**/) const
+Mesh<Shape, T, Tag>::Localization::computeBarycenter(mpl::int_<2> /**/) const
 {
     node_type res(2);
     res(0)=0;res(1)=0;
+    if ( this->kdtree()->nPoints()==0 )
+        return res;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
             auto const& pt = this->kdtree()->points()[i].template get<0>();
@@ -3246,10 +3235,12 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<2> /**/) const
 }
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::node_type
-Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<3> /**/) const
+Mesh<Shape, T, Tag>::Localization::computeBarycenter(mpl::int_<3> /**/) const
 {
     node_type res(3);
     res(0)=0;res(1)=0;res(2)=0;
+    if ( this->kdtree()->nPoints()==0 )
+        return res;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
             auto const& pt = this->kdtree()->points()[i].template get<0>();
@@ -3260,6 +3251,17 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<3> /**/) const
 }
 
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::Localization::computeBarycentersWorld()
+{
+    LOG(INFO) << "computeBarycentersWorld : run mpi::all_gather\n";
+    auto mesh = M_mesh.lock();
+    M_barycentersWorld = std::vector<node_type>( mesh->worldComm().localSize() );
+    mpi::all_gather( mesh->worldComm().localComm(),
+                     this->barycenter(),
+                     *M_barycentersWorld );
+}
 
 
 
