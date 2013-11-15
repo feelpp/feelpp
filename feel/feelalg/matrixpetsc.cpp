@@ -46,8 +46,9 @@ namespace Feel
 
 template <typename T>
 inline
-MatrixPetsc<T>::MatrixPetsc()
+MatrixPetsc<T>::MatrixPetsc( WorldComm const& worldComm )
     :
+    super( worldComm ),
     M_destroy_mat_on_exit( true )
 {}
 
@@ -1645,9 +1646,9 @@ void MatrixPetsc<T>::zeroEntriesDiagonal()
 
 template <typename T>
 inline
-MatrixPetscMPI<T>::MatrixPetscMPI()
+MatrixPetscMPI<T>::MatrixPetscMPI( WorldComm const& worldComm )
     :
-    super()
+    super( worldComm )
 {}
 
 //----------------------------------------------------------------------------------------------------//

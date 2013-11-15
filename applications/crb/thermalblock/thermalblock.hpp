@@ -106,8 +106,8 @@ using namespace vf;
 class ParameterDefinition
 {
 public :
-    static const uint16_type nx = 2;
-    static const uint16_type ny = 2;
+    static const uint16_type nx = 3;
+    static const uint16_type ny = 3;
     static const uint16_type ParameterSpaceDimension = nx*ny;
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
 };
@@ -144,8 +144,8 @@ class ThermalBlock : public ModelCrbBase< ParameterDefinition , FunctionSpaceDef
                      public boost::enable_shared_from_this< ThermalBlock >
 {
 
-    static const uint16_type nx = 2;
-    static const uint16_type ny = 2;
+    static const uint16_type nx = 3;
+    static const uint16_type ny = 3;
 
 
 public:
@@ -724,14 +724,18 @@ ThermalBlock::initModel()
     element_type u( Xh, "u" );
     element_type v( Xh, "v" );
 
-    form2( Xh, Xh, D,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
-    D->close();
+    M = M_backend->newMatrix( Xh, Xh );
 
-    LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
+    form2( Xh, Xh, D,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
+    form2( Xh, Xh, M,_init=true )=integrate( elements( mmesh ),0*idt( v )*id( v ), _Q<0>() );
+
+    LOG( INFO ) << "Number of local dof " << Xh->nLocalDof() << "\n";
+    LOG( INFO ) << "Number of dof " << Xh->nDof() << "\n";
 
     int index=0;//index for M_Fqm or M_Aqm
     int subdomain_index; //index for subdomains along a boundary
 
+    double mu_min_coeff=0.1;
     // right hand side
     form1( Xh, M_Fqm[0][0][0], _init=true ) ;
     BOOST_FOREACH( auto marker, southMarkers )
@@ -749,6 +753,8 @@ ThermalBlock::initModel()
         LOG(INFO) <<"[ThermalBlock::init] domain " << domain << "\n";
         form2( Xh, Xh, M_Aqm[index][0],_init=true ) =
             integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) );
+        form2( Xh, Xh, M ) +=
+            integrate( markedelements( mmesh, domain ), gradt( u )*trans( grad( v ) ) * mu_min_coeff );
         M_Aqm[index][0]->close();
         LOG(INFO) <<"[ThermalBlock::init] done with Aqm[" << index << "]\n";
         index++;
@@ -761,13 +767,18 @@ ThermalBlock::initModel()
     {
         std::string sid = subdomainFromBoundary( marker );
         form2( Xh, Xh, M_Aqm[index][0], _init=true ) =  integrate( markedfaces( mmesh, marker ),
-                -gradt( u )*vf::N()*id( v )
-                -grad( u )*vf::N()*idt( v )
-                                                             );
+                                                                   -gradt( u )*vf::N()*id( v )
+                                                                   -grad( u )*vf::N()*idt( v )
+                                                                   );
+        form2( Xh, Xh, M ) +=  integrate( markedfaces( mmesh, marker ),
+                                          -gradt( u )*vf::N()*id( v ) * mu_min_coeff
+                                          -grad( u )*vf::N()*idt( v ) * mu_min_coeff
+                                          );
         M_Aqm[index][0]->close();
         index++;
 
         form2( Xh, Xh, M_Aqm[last_index_Aqm][0] ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
+        form2( Xh, Xh, M ) += integrate( markedfaces( mmesh, marker ),gamma_dir*idt( u )*id( v )/h() );
 
         subdomain_index = subdomainId( marker );
         north_subdomain_index.push_back( subdomain_index );
@@ -775,11 +786,8 @@ ThermalBlock::initModel()
     M_Aqm[last_index_Aqm][0]->close();
     LOG(INFO) <<"[ThermalBlock::init] done with boundaryMarkers\n";
 
-    M = M_backend->newMatrix( Xh, Xh );
-    form2( Xh, Xh, M, _init=true ) =
-        integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
-    M->close();
-
+    //form2( Xh, Xh, M, _init=true ) =
+    //    integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
 
 }//initModel()
 

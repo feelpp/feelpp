@@ -1354,7 +1354,26 @@ public:
 
             update( __gmc );
         }
-	virtual ~Context() {}
+        Context( Context const& c )
+            :
+            M_pc( c.M_pc ),
+            M_npoints( c.M_npoints ),
+
+            M_ipt( c.M_ipt ),
+            M_ref_ele( c.M_ref_ele ),
+
+            M_gmc( c.M_gmc ),
+            M_phi( c.M_phi ),
+            M_gradphi( c.M_gradphi ),
+            M_dn( c.M_dn ),
+            M_grad( c.M_grad ),
+            M_dx( c.M_dx ),
+            M_dy( c.M_dy ),
+            M_dz( c.M_dz )
+            {
+
+            }
+        virtual ~Context() {}
         /**
          * if isTransformationEquivalent is set to true in basis then no
          * transformation is required
@@ -2146,7 +2165,7 @@ public:
 
         //    private:
         Context() {}
-        Context( Context const& ) {}
+
     private:
 
         boost::optional<precompute_ptrtype> M_pc;

@@ -18,26 +18,26 @@ export FEELPP_SCRATCHDIR=/tmp/feel-logs/
 rm -rf $FEELPP_SCRATCHDIR
 if [ ! -z "$do_gcc46" -a -x /usr/bin/g++-4.6 ]; then
     export FEELPP_WORKDIR=/tmp/feel-gcc46/
-    rm -rf /tmp/feel-gcc46
+    rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=gcc-4.6,FEELPP_CXX=/usr/bin/g++-4.6 #,FEELPP_EXPLICIT_VECTORIZATION=SSE2
-    rm -rf /tmp/feel-gcc46
+    rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_gcc47" -a -x /usr/bin/g++-4.7 ]; then
     export FEELPP_WORKDIR=/tmp/feel-gcc47/
-    rm -rf /tmp/feel-gcc47
+    rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=gcc-4.7,FEELPP_CXX=/usr/bin/g++-4.7 #,FEELPP_EXPLICIT_VECTORIZATION=SSE2
-    rm -rf /tmp/feel-gcc47
+    rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_gcc48" -a -x /usr/bin/g++-4.8 ]; then
     export FEELPP_WORKDIR=/tmp/feel-gcc48/
-    rm -rf /tmp/feel-gcc48
+    rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=gcc-4.8,FEELPP_CXX=/usr/bin/g++-4.8 #,FEELPP_EXPLICIT_VECTORIZATION=SSE2
-    rm -rf /tmp/feel-gcc48
+    rm -rf $FEELPP_WORKDIR 
 fi
 if [ ! -z "$do_clang" -a -x /usr/bin/clang++ ]; then
     export FEELPP_WORKDIR=/tmp/feel-clang
-    rm -rf /tmp/feel-clang
+    rm -rf $FEELPP_WORKDIR 
     $COMMON,FEELPP_CXXNAME=clang-3.3,FEELPP_CXX=/usr/bin/clang++ #,FEELPP_EXPLICIT_VECTORIZATION=SSE2
-    rm -rf /tmp/feel-clang
+    rm -rf $FEELPP_WORKDIR 
 fi
 rm -rf $FEELPP_SCRATCHDIR
