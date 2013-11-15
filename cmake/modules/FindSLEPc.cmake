@@ -40,6 +40,9 @@ find_path (SLEPC_DIR include/slepc.h
   /usr/lib/slepcdir/3.1 # Debian
   /usr/lib/slepcdir/3.0.0 # Debian
   /opt/local/lib/petsc # macports
+  # Homebrew
+  /opt/local/lib/slepcdir/3.4.3/darwin-cxx-debug
+  /opt/local/lib/slepcdir/3.4.3/darwin-cxx-opt
   $ENV{HOME}/slepc
   DOC "SLEPc Directory")
 

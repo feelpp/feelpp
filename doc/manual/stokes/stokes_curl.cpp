@@ -84,10 +84,12 @@ int main(int argc, char**argv )
     a+= integrate(_range=markedfaces(mesh,"inlet"),
                   _expr=( curlxt(u)*cross(id(u),N()) +
                           curlx(u)*cross(idt(u),N()) +
+                          -trans(divt(u)*N())*id(u)  +
                           30*cross(id(u),N())*cross(idt(u),N())/hFace() ) );
     a+= integrate(_range=markedfaces(mesh,"outlet"),
                   _expr=( curlxt(u)*cross(id(u),N()) +
                           curlx(u)*cross(idt(u),N()) +
+                          -trans(divt(u)*N())*id(u)  +
                           30*cross(id(u),N())*cross(idt(u),N())/hFace() ) );
 
     // right hand side
