@@ -108,11 +108,11 @@ public :
     typedef double value_type;
 
     /*mesh*/
-    typedef Simplex<2,Order> entity_type;
+    typedef Simplex<2,1> entity_type; /*dim,order*/
     typedef Mesh<entity_type> mesh_type;
 
     /*basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -167,15 +167,15 @@ public:
     typedef boost::shared_ptr<eigen_matrix_type> eigen_matrix_ptrtype;
 
     /*mesh*/
-    typedef Simplex<2,Order> entity_type;
+    typedef Simplex<2,1> entity_type; /*dim,order*/
     typedef Mesh<entity_type> mesh_type;
     typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef FunctionSpace<mesh_type, fusion::vector<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
     /*basis*/
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
+    typedef bases<Lagrange<Order, Scalar> > basis_type;
 
     /*space*/
     typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
@@ -226,6 +226,9 @@ public:
 
     typedef FsFunctionalLinear< space_type > functional_type;
     typedef boost::shared_ptr<functional_type> functional_ptrtype;
+
+    typedef Preconditioner<double> preconditioner_type;
+    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     //@}
 
@@ -581,8 +584,10 @@ private:
     po::variables_map M_vm;
 
     backend_ptrtype backend;
-    backend_ptrtype backendl2;
+    backend_ptrtype M_backendl2;
     bool M_is_steady ;
+
+    preconditioner_ptrtype M_preconditionerl2;
 
     /* mesh parameters */
     double meshSize;
@@ -630,7 +635,7 @@ template<int Order>
 HeatShield<Order>::HeatShield()
     :
     backend( backend_type::build( BACKEND_PETSC ) ),
-    backendl2( backend_type::build( BACKEND_PETSC ) ),
+    M_backendl2( backend_type::build( BACKEND_PETSC ) ),
     M_is_steady( false ),
     meshSize( 2e-1 ),
     export_number( 0 ),
@@ -643,13 +648,20 @@ HeatShield<Order>::HeatShield( po::variables_map const& vm )
     :
     M_vm( vm ),
     backend( backend_type::build( vm ) ),
-    backendl2( backend_type::build( vm , "backendl2" ) ),
+    M_backendl2( backend_type::build( vm , "backendl2" ) ),
     M_is_steady( vm["steady"].as<bool>() ),
     meshSize( vm["hsize"].as<double>() ),
     export_number( 0 ),
     do_export( vm["do-export"].as<bool>() ),
     M_Dmu( new parameterspace_type )
-{ }
+{
+        M_preconditionerl2 = preconditioner(_pc=(PreconditionerType) M_backendl2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                            _backend= M_backendl2,
+                                            _pcfactormatsolverpackage=(MatSolverPackageType) M_backendl2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                            _worldcomm=M_backendl2->comm(),
+                                            _prefix=M_backendl2->prefix() ,
+                                            _rebuild=true);
+}
 
 
 
@@ -849,7 +861,8 @@ void HeatShield<Order>::assemble()
         integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
         ;
-    M->close();
+
+    M_preconditionerl2->setMatrix( M );
 
     //scalar product used for mass matrix
     InnerMassMatrix = backend->newMatrix( _test=Xh, _trial=Xh );
@@ -863,7 +876,6 @@ void HeatShield<Order>::assemble()
         integrate( _range= markedfaces( mesh, "left" ), _expr= 0.01 * idt( u )*id( v ) ) +
         integrate( _range= markedfaces( mesh, "gamma_holes" ), _expr= 0.001 * idt( u )*id( v ) )
         ;
-    Mpod->close();
 
     D = backend->newMatrix( Xh, Xh );
     F = backend->newVector( Xh );
@@ -1138,7 +1150,7 @@ template<int Order>
 void HeatShield<Order>::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    backendl2->solve( _matrix=M,  _solution=u, _rhs=f );
+    M_backendl2->solve( _matrix=M,  _solution=u, _rhs=f , _prec=M_preconditionerl2 );
     //std::cout << "l2solve(u,f) done\n";
 }
 

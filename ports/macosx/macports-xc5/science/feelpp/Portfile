@@ -13,7 +13,7 @@ name                 feel++
 
 fetch.type           git
 git.url              https://github.com/feelpp/feelpp.git
-git.branch           feature/port-macosx-xc5
+git.branch           develop
 
 version              dev
 categories           science
