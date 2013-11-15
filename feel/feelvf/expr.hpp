@@ -50,6 +50,7 @@
 
 #include <Eigen/Core>
 
+#include <feel/feelcore/environment.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
 #include <feel/feelvf/shape.hpp>
@@ -293,7 +294,7 @@ public:
         typedef typename LambdaExpr1::value_type value_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
 
@@ -654,9 +655,9 @@ public:
     //ublas::matrix<typename expression_type::value_type>
 
     typename expression_type::value_type
-    evaluate( bool parallel = true ) const
+    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
     {
-        return M_expr.evaluate( parallel );
+        return M_expr.evaluate( parallel,worldcomm );
     }
 
     typename expression_type::value_type
@@ -1230,7 +1231,7 @@ public:
 
     typedef Cst<T> expression_type;
 
-    explicit Cst( const T& value )
+    constexpr explicit Cst( const T& value )
         :
         M_constant( value )
     {
@@ -1250,16 +1251,16 @@ public:
             return *this;
         }
 
-    value_type value() const
+    constexpr value_type value() const
     {
         return M_constant;
     }
 
-    value_type evaluate() const
+    constexpr value_type evaluate() const
     {
         return M_constant;
     }
-    value_type evaluate( bool ) const
+    constexpr value_type evaluate( bool ) const
     {
         return M_constant;
     }
@@ -1271,7 +1272,7 @@ public:
     };
     template<typename TheExpr>
     typename Lambda<TheExpr>::type
-    operator()( TheExpr const& e  ) { return Cst<double>(M_constant); }
+    operator()( TheExpr const& e  ) { return typename Lambda<TheExpr>::type(M_constant); }
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -1280,7 +1281,7 @@ public:
         typedef typename Cst<T>::value_type value_type;
 
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<0> >, mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
 
@@ -1330,32 +1331,32 @@ public:
         {
         }
 
-        value_type
+        constexpr value_type
         evalij( uint16_type /*i*/, uint16_type /*j*/ ) const
         {
             return M_constant;
         }
 
 
-        value_type
+        constexpr value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/  ) const
         {
             return M_constant;
         }
         template<int PatternContext>
-        value_type
+        constexpr value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/,
                  mpl::int_<PatternContext> ) const
         {
             return M_constant;
         }
 
-        value_type
+        constexpr value_type
         evaliq( uint16_type /*i*/, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/  ) const
         {
             return M_constant;
         }
-        value_type
+        constexpr value_type
         evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
             return M_constant;
@@ -1454,7 +1455,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef Shape<gmc_type::nDim, Vectorial, false, false> shape;
         static const bool theshape = ( shape::M == gmc_type::nDim && shape::N == 1 );
@@ -1521,7 +1522,7 @@ public:
         FEELPP_STRONG_INLINE value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         template<int PatternContext>
@@ -1529,20 +1530,20 @@ public:
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/,
                  mpl::int_<PatternContext> ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
 
         FEELPP_STRONG_INLINE value_type
         evaliq( uint16_type /*i*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         FEELPP_STRONG_INLINE value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==CType ) || ( CType==-1 ) );
+            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
             //return M_one[c1];
         }
         vector_type M_one;
@@ -1969,7 +1970,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
@@ -2164,7 +2165,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         BOOST_MPL_ASSERT_MSG( ( boost::is_same<typename l_type::shape, typename r_type::shape>::value ),
@@ -2372,7 +2373,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename l_type::shape shape;
 
@@ -2800,7 +2801,7 @@ public:
         typedef typename mpl::if_<fusion::result_of::has_key<Geo_t, vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<0> >,
                 mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
         typedef typename mpl::if_<mpl::equal_to<mpl::int_<rank>,

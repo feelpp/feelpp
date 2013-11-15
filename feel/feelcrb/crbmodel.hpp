@@ -38,7 +38,13 @@
 #include <feel/feeldiscr/bdf2.hpp>
 #include <feel/feelvf/vf.hpp>
 
+#include <feel/feeldiscr/operatorlinearfree.hpp>
+#include <feel/feeldiscr/operatorlinearcomposite.hpp>
+#include <feel/feeldiscr/fsfunctionallinearfree.hpp>
+#include <feel/feeldiscr/fsfunctionallinearcomposite.hpp>
+
 #include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelcore/pslogger.hpp>
 
 
 namespace Feel
@@ -146,6 +152,15 @@ public:
     //! time discretization
     typedef Bdf<space_type>  bdf_type;
     typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
+
+    typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
+    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+
+    typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
+    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+
+    typedef Preconditioner<double> preconditioner_type;
+    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     static const int nb_spaces = functionspace_type::nSpaces;
     typedef typename mpl::if_< boost::is_same< mpl::int_<nb_spaces> , mpl::int_<2> > , fusion::vector< mpl::int_<0>, mpl::int_<1> >  ,
@@ -259,6 +274,12 @@ public:
         if ( M_is_initialized )
             return;
 
+        M_preconditioner = preconditioner(_pc=(PreconditionerType) M_backend->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                          _backend= M_backend,
+                                          _pcfactormatsolverpackage=(MatSolverPackageType) M_backend->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                          _worldcomm=M_backend->comm(),
+                                          _prefix=M_backend->prefix() ,
+                                          _rebuild=true);
         M_is_initialized=true;
 
         if( ! M_model->isInitialized() )
@@ -277,6 +298,11 @@ public:
             //std::cout << "  -- init FEM  model\n";
             //M_model->init();
         }
+
+        auto Xh = M_model->functionSpace();
+        u = Xh->element();
+        v = Xh->element();
+
     }
 
     //@}
@@ -349,6 +375,25 @@ public:
     }
 
     /**
+     * \brief Returns the matrix associated with the inner product
+     */
+    sparse_matrix_ptrtype const& innerProductForMassMatrix() const
+    {
+        return M_model->innerProductForMassMatrix();
+    }
+
+    /**
+     * \brief Returns the matrix associated with the inner product
+     */
+    sparse_matrix_ptrtype  innerProductForMassMatrix()
+    {
+        return M_model->innerProductForMassMatrix();
+    }
+
+
+
+
+    /**
      * \brief Returns the matrix associated with the \f$H_1\f$ inner product
      */
     sparse_matrix_ptrtype const& h1() const
@@ -386,7 +431,10 @@ public:
     }
     size_type Qm( mpl::bool_<false> ) const
     {
-        return 1;
+        if( M_model->constructOperatorCompositeM() )
+            return functionspace_type::nSpaces;
+        else
+            return 1;
     }
 
     int QInitialGuess() const
@@ -441,6 +489,11 @@ public:
         return M_model->parameterSpace();
     }
 
+
+    parameter_type refParameter()
+    {
+        return M_model->refParameter();
+    }
     //@}
 
     /** @name  Mutators
@@ -493,9 +546,23 @@ public:
         betaAqm = steady_beta.get<0>();
         betaFqm = steady_beta.get<1>();
 
-        betaMqm.resize( 1 );
-        betaMqm[0].resize( 1 );
-        betaMqm[0][0] = 1 ;
+        int nspace = functionspace_type::nSpaces;
+        //if model provides implementation of operator composite M
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
 
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
@@ -521,9 +588,24 @@ public:
         steady_beta = M_model->computeBetaQm(T, mu , time );
         betaAqm = steady_beta.get<0>();
         betaFqm = steady_beta.get<1>();
-        betaMqm.resize( 1 );
-        betaMqm[0].resize( 1 );
-        betaMqm[0][0] = 1 ;
+
+        int nspace = functionspace_type::nSpaces;
+        if ( M_model->constructOperatorCompositeM() )
+        {
+            betaMqm.resize( nspace );
+            for(int q=0; q<nspace; q++)
+            {
+                betaMqm[q].resize(1);
+                betaMqm[q][0] = 1 ;
+            }
+        }
+        else
+        {
+            betaMqm.resize( 1 );
+            betaMqm[0].resize(1);
+            betaMqm[0][0] = 1 ;
+        }
+
 
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
@@ -537,15 +619,32 @@ public:
     offline_merge_type update( parameter_type const& mu,  double time=0 )
     {
         auto all_beta = this->computeBetaQm( mu , time );
-        return offlineMerge(  all_beta , mu );
+        offline_merge_type offline_merge;
+
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+            offline_merge = offlineMerge( all_beta , mu );
+        else
+            offline_merge = offlineMergeOnFly( all_beta, mu );
+
+        return offline_merge;
     }
     offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 )
     {
         auto all_beta = this->computeBetaQm(  T , mu , time );
-        return offlineMerge( all_beta, mu );
+
+        offline_merge_type offline_merge;
+
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+            offline_merge = offlineMerge( all_beta , mu );
+        else
+            offline_merge = offlineMergeOnFly( all_beta, mu );
+
+        return offline_merge;
+
     }
 
-    element_type solveFemUsingOnlineEimPicard( parameter_type const& mu );
+    element_type solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu );
+    element_type solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu );
     element_type solveFemUsingOfflineEim( parameter_type const& mu );
 
 
@@ -642,13 +741,52 @@ public:
     }
 
 
+    /**
+     * Access to a pre-assemble objects given by the model
+     * The key of the map is a tuple of two double (one for "q" index and other for "m" index)
+     * The q^th term of the affine decomposition can have m terms from the EIM
+     * Let MAT the matrix associated to index (q,m)
+     * MAT can have contributions from elements of the mesh, or faces, or both
+     * that is why we have a vector of pre-assemble objects (and not only one pre-assemble object)
+     * associated with a tuple <q,m>
+     */
+    //bilinear form
+    operatorcomposite_ptrtype operatorCompositeA() const
+    {
+        return M_model->operatorCompositeA();
+    }
+    //linear form
+    std::vector< functionalcomposite_ptrtype > functionalCompositeF() const
+    {
+        return M_model->functionalCompositeF();
+    }
+    //mass matrix
+    operatorcomposite_ptrtype operatorCompositeM() const
+    {
+        return operatorCompositeM( mpl::bool_<model_type::is_time_dependent>() );
+    }
+    operatorcomposite_ptrtype operatorCompositeM( mpl::bool_<true> ) const
+    {
+        return M_model->operatorCompositeM();
+    }
+    operatorcomposite_ptrtype operatorCompositeM( mpl::bool_<false> ) const
+    {
+        bool constructed_by_model = M_model->constructOperatorCompositeM();
+        if( constructed_by_model )
+            return M_model->operatorCompositeM();
+        else
+            return preAssembleMassMatrix();
+    }
+
 
     /**
      * \brief Compute the affine decomposition of the various forms
      *
-     * This function defined in the \p M_model assembles the parameter
-     * independant part of the affine decomposition of the bilinear and linear
-     * forms.
+     * This function assembles the parameter independant part of
+     * the affine decomposition of the bilinear and linear forms.
+     * This function will assemble and stock all matrices/vector
+     * associated to the affine decomposition and must be called
+     * ONLY if crb.stock-matrices=true
      */
     affine_decomposition_type computeAffineDecomposition()
     {
@@ -657,13 +795,140 @@ public:
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<true> )
     {
         boost::tie( M_Mqm, M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
+
+        if( M_Aqm.size() == 0 )
+        {
+            auto compositeM = operatorCompositeM();
+            int q_max = this->Qm();
+            M_Mqm.resize( q_max);
+            for(int q=0; q<q_max; q++)
+            {
+                int m_max = this->mMaxM(q);
+                M_Mqm[q].resize(m_max);
+                for(int m=0; m<m_max;m++)
+                {
+                    auto operatorfree = compositeM->operatorlinear(q,m);
+                    size_type pattern = operatorfree->pattern();
+                    auto trial = operatorfree->domainSpace();
+                    auto test=operatorfree->dualImageSpace();
+                    M_Mqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Mqm[q][m]);//fill the matrix
+                }//m
+            }//q
+
+            auto compositeA = operatorCompositeA();
+            q_max = this->Qa();
+            M_Aqm.resize( q_max);
+            for(int q=0; q<q_max; q++)
+            {
+                int m_max = this->mMaxA(q);
+                M_Aqm[q].resize(m_max);
+                for(int m=0; m<m_max;m++)
+                {
+                    auto operatorfree = compositeA->operatorlinear(q,m);
+                    size_type pattern = operatorfree->pattern();
+                    auto trial = operatorfree->domainSpace();
+                    auto test=operatorfree->dualImageSpace();
+                    M_Aqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
+                }//m
+            }//q
+
+            auto vector_compositeF = functionalCompositeF();
+            int number_outputs = vector_compositeF.size();
+            M_Fqm.resize(number_outputs);
+            for(int output=0; output<number_outputs; output++)
+            {
+                auto composite_f = vector_compositeF[output];
+                int q_max = this->Ql(output);
+                M_Fqm[output].resize( q_max);
+                for(int q=0; q<q_max; q++)
+                {
+                    int m_max = this->mMaxF(output,q);
+                    M_Fqm[output][q].resize(m_max);
+                    for(int m=0; m<m_max;m++)
+                    {
+                        auto operatorfree = composite_f->functionallinear(q,m);
+                        auto space = operatorfree->space();
+                        M_Fqm[output][q][m]= M_backend->newVector( space );
+                        operatorfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
+                    }//m
+                }//q
+            }//output
+        }
+
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
     }
     affine_decomposition_type computeAffineDecomposition( mpl::bool_<false> )
     {
         initial_guess_type initial_guess;
         boost::tie( M_Aqm, M_Fqm ) = M_model->computeAffineDecomposition();
-        assembleMassMatrix();
+
+        if ( M_Aqm.size() > 0 )
+        {
+            assembleMassMatrix();
+        }
+        else
+        {
+            auto compositeM = operatorCompositeM();
+            int q_max = this->Qm();
+            M_Mqm.resize( q_max);
+            for(int q=0; q<q_max; q++)
+            {
+                int m_max = this->mMaxM(q);
+                M_Mqm[q].resize(m_max);
+                for(int m=0; m<m_max;m++)
+                {
+                    auto operatorfree = compositeM->operatorlinear(q,m);
+                    size_type pattern = operatorfree->pattern();
+                    auto trial = operatorfree->domainSpace();
+                    auto test=operatorfree->dualImageSpace();
+                    M_Mqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Mqm[q][m]);//fill the matrix
+                }//m
+            }//q
+
+            auto compositeA = operatorCompositeA();
+            q_max = this->Qa();
+            M_Aqm.resize( q_max);
+            for(int q=0; q<q_max; q++)
+            {
+                int m_max = this->mMaxA(q);
+                M_Aqm[q].resize(m_max);
+                for(int m=0; m<m_max;m++)
+                {
+                    auto operatorfree = compositeA->operatorlinear(q,m);
+                    size_type pattern = operatorfree->pattern();
+                    auto trial = operatorfree->domainSpace();
+                    auto test=operatorfree->dualImageSpace();
+                    M_Aqm[q][m]= M_backend->newMatrix( _test=test , _trial=trial , _pattern=pattern );
+                    operatorfree->matPtr(M_Aqm[q][m]);//fill the matrix
+                }//m
+            }//q
+
+            auto vector_compositeF = functionalCompositeF();
+            int number_outputs = M_model->Nl();
+            M_Fqm.resize(number_outputs);
+            for(int output=0; output<number_outputs; output++)
+            {
+                auto composite_f = vector_compositeF[output];
+                int q_max = this->Ql(output);
+                M_Fqm[output].resize(q_max);
+                for(int q=0; q<q_max; q++)
+                {
+                    int m_max = this->mMaxF(output,q);
+                    M_Fqm[output][q].resize(m_max);
+                    for(int m=0; m<m_max;m++)
+                    {
+                        auto functionalfree = composite_f->functionallinear(q,m);
+                        auto space = functionalfree->space();
+                        M_Fqm[output][q][m]= M_backend->newVector( space );
+                        functionalfree->containerPtr(M_Fqm[output][q][m]);//fill the vector
+                    }//m
+                }//q
+            }//output
+        }
+
         return boost::make_tuple( M_Mqm, M_Aqm, M_Fqm );
     }
 
@@ -723,28 +988,31 @@ public:
      *
      * \return the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
      */
-    const sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false ) const
-    {
-        if ( transpose )
-            return M_Aqm[q][m]->transpose();
-
-        return M_Aqm[q][m];
-    }
-
-    /**
-     * \brief Returns the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
-     *
-     * \param q and m are index of the component in the affine decomposition
-     * \param transpose transpose \c A_q
-     *
-     * \return the matrix \c Aq[q][m] of the affine decomposition of the bilinear form
-     */
     sparse_matrix_ptrtype Aqm( uint16_type q, uint16_type m, bool transpose = false )
+    {
+        if( option(_name="crb.stock-matrices").template as<bool>() )
         {
-        if ( transpose )
-            return M_Aqm[q][m]->transpose();
+            //in this case matrices have already been stocked
+            if ( transpose )
+                return M_Aqm[q][m]->transpose();
 
-        return M_Aqm[q][m];
+            return M_Aqm[q][m];
+        }
+        else
+        {
+            auto composite = operatorCompositeA();
+            auto opfree = composite->operatorlinear(q,m);
+            size_type pattern = opfree->pattern();
+            auto trial = opfree->domainSpace();
+            auto test = opfree->dualImageSpace();
+            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+            opfree->matPtr( matrix ); //assemble the matrix
+
+            if ( transpose )
+                return matrix->transpose();
+
+            return matrix;
+        }
     }
 
 
@@ -758,10 +1026,29 @@ public:
      */
     const sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false ) const
     {
-        if ( transpose )
-            return M_Mqm[q][m]->transpose();
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+        {
+            //in this case matrices have already been stocked
+            if ( transpose )
+                return M_Mqm[q][m]->transpose();
 
-        return M_Mqm[q][m];
+            return M_Mqm[q][m];
+        }
+        else
+        {
+            auto composite = operatorCompositeM();
+            auto opfree = composite->operatorlinear(q,m);
+            size_type pattern = opfree->pattern();
+            auto trial = opfree->domainSpace();
+            auto test = opfree->dualImageSpace();
+            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+            opfree->matPtr( matrix ); //assemble the matrix
+
+            if ( transpose )
+                return matrix->transpose();
+
+            return matrix;
+        }
     }
 
     /**
@@ -774,10 +1061,29 @@ public:
      */
     sparse_matrix_ptrtype Mqm( uint16_type q, uint16_type m, bool transpose = false )
     {
-        if ( transpose )
-            return M_Mqm[q][m]->transpose();
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+        {
+            //in this case matrices have already been stocked
+            if ( transpose )
+                return M_Mqm[q][m]->transpose();
 
-        return M_Mqm[q][m];
+            return M_Mqm[q][m];
+        }
+        else
+        {
+            auto composite = operatorCompositeM();
+            auto opfree = composite->operatorlinear(q,m);
+            size_type pattern = opfree->pattern();
+            auto trial = opfree->domainSpace();
+            auto test = opfree->dualImageSpace();
+            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+            opfree->matPtr( matrix ); //assemble the matrix
+
+            if ( transpose )
+                return matrix->transpose();
+
+            return matrix;
+        }
     }
 
     const vector_ptrtype InitialGuessVector( uint16_type q, uint16_type m ) const
@@ -803,7 +1109,23 @@ public:
      */
     value_type Aqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+        {
+            //in this case matrices have already been stocked
+            return M_Aqm[q][m]->energy( xi_j, xi_i, transpose );
+        }
+        else
+        {
+            auto composite = operatorCompositeA();
+            auto opfree = composite->operatorlinear(q,m);
+            size_type pattern = opfree->pattern();
+            auto trial = opfree->domainSpace();
+            auto test = opfree->dualImageSpace();
+            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+            opfree->matPtr( matrix ); //assemble the matrix
+
+            return matrix->energy( xi_j, xi_i, transpose );
+        }
     }
 
     /**
@@ -818,8 +1140,25 @@ public:
      */
     value_type Mqm( uint16_type q, uint16_type m, element_type const& xi_i, element_type const& xi_j, bool transpose = false ) const
     {
-        return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+        {
+            //in this case matrices have already been stocked
+            return M_Mqm[q][m]->energy( xi_j, xi_i, transpose );
+        }
+        else
+        {
+            auto composite = operatorCompositeM();
+            auto opfree = composite->operatorlinear(q,m);
+            size_type pattern = opfree->pattern();
+            auto trial = opfree->domainSpace();
+            auto test = opfree->dualImageSpace();
+            auto matrix = M_backend->newMatrix( _trial=trial , _test=test , _pattern=pattern );
+            opfree->matPtr( matrix ); //assemble the matrix
+
+            return matrix->energy( xi_j, xi_i, transpose );
+        }
     }
+
 
 
 
@@ -836,11 +1175,25 @@ public:
      */
     vector_ptrtype Fqm( uint16_type l, uint16_type q, int m ) const
     {
-        return M_Fqm[l][q][m];
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+        {
+            return M_Fqm[l][q][m];
+        }
+        else
+        {
+            auto vector_composite = functionalCompositeF();
+            auto composite = vector_composite[l];
+            auto functional = composite->functionallinear(q,m);
+            auto space = functional->space();
+            auto vector = M_backend->newVector( space );
+            functional->containerPtr( vector );
+            return vector;
+        }
     }
+
     element_ptrtype  InitialGuessQm( uint16_type q, int m ) const
     {
-        return InitialGuessQm[q][m];
+        return M_InitialGuessV[q][m];
     }
 
     /**
@@ -856,12 +1209,27 @@ public:
      */
     value_type Fqm( uint16_type l, uint16_type q,  uint16_type m, element_type const& xi )
     {
-        element_ptrtype eltF( new element_type( M_model->functionSpace() ) );
-        for(int i=0; i<eltF->localSize();i++)
-            eltF->operator()(i)=M_Fqm[l][q][m]->operator()(i);
-        return inner_product( *eltF , xi );
-        //return inner_product( *M_Fqm[l][q][m], xi );
+
+        value_type result=0;
+
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+        {
+            result = inner_product( *M_Fqm[l][q][m] , xi );
+        }
+        else
+        {
+            auto vector_composite = functionalCompositeF();
+            auto composite = vector_composite[l];
+            auto functional = composite->functionallinear(q,m);
+            auto space = functional->space();
+            auto vector = M_backend->newVector( space );
+            functional->containerPtr( vector );
+            result = inner_product( *vector, xi ) ;
+        }
+
+        return result;
     }
+
 
     /**
      * \brief the inner product \f$f_{qm}(\xi) = \xi^T F_{qm} \f$
@@ -876,8 +1244,26 @@ public:
      */
     value_type Fqm( uint16_type l, uint16_type q, uint16_type m, element_ptrtype const& xi )
     {
-        return inner_product( M_Fqm[l][q][m], xi );
+        value_type result=0;
+
+        if( option(_name="crb.stock-matrices").template as<bool>() )
+        {
+            result = inner_product( *M_Fqm[l][q][m] , xi );
+        }
+        else
+        {
+            auto vector_composite = functionalCompositeF();
+            auto composite = vector_composite[l];
+            auto functional = composite->functionallinear(q,m);
+            auto space = functional->space();
+            auto vector = M_backend->newVector( space );
+            functional->containerPtr( vector );
+            result = inner_product( *vector, xi ) ;
+        }
+
+        return result;
     }
+
 
     /**
      * returns the scalar product of the vector x and vector y
@@ -892,6 +1278,22 @@ public:
     double scalarProduct( vector_ptrtype const& X, vector_ptrtype const& Y )
     {
         return M_model->scalarProduct( X, Y );
+    }
+
+
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_type const& X, vector_type const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
+    }
+    /**
+     * returns the scalar product used for the mass matrix of the vector x and vector y
+     */
+    double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        return M_model->scalarProductForMassMatrix( X, Y );
     }
 
 
@@ -934,6 +1336,7 @@ public:
      */
     element_type solve( parameter_type const& mu )
     {
+        //return this->solveFemUsingAffineDecompositionFixedPoint( mu );
         return M_model->solve( mu );
     }
 
@@ -1008,9 +1411,9 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu )
+    value_type output( int output_index, parameter_type const& mu , element_type &u , bool need_to_solve=false)
     {
-        return M_model->output( output_index, mu );
+        return M_model->output( output_index, mu , u , need_to_solve );
     }
 
     int computeNumberOfSnapshots()
@@ -1171,18 +1574,96 @@ private:
      *
      */
     offline_merge_type offlineMerge( betaqm_type const& all_beta, parameter_type const& mu );
+    offline_merge_type offlineMergeOnFly( betaqm_type const& all_beta , parameter_type const& mu  );
 
     void assembleMassMatrix( );
     void assembleMassMatrix( mpl::bool_<true> );
     void assembleMassMatrix( mpl::bool_<false> );
 
+    operatorcomposite_ptrtype preAssembleMassMatrix( ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<true> ) const ;
+    operatorcomposite_ptrtype preAssembleMassMatrix( mpl::bool_<false> ) const ;
+
     void assembleInitialGuessV( initial_guess_type & initial_guess );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<true> );
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<false> );
+    element_type u,v;
+
+    preconditioner_ptrtype M_preconditioner;
 
 };
 
 
+template <typename ModelType>
+struct PreAssembleMassMatrixInCompositeCase
+{
+
+
+    //! mesh type
+    typedef typename ModelType::mesh_type mesh_type;
+
+    //! mesh shared_ptr
+    typedef typename ModelType::mesh_ptrtype mesh_ptrtype;
+
+    //! space_type
+    typedef typename ModelType::space_type space_type;
+
+    //! function space type
+    typedef typename ModelType::functionspace_type functionspace_type;
+    typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
+
+    //! element of the functionspace type
+    typedef typename ModelType::element_type element_type;
+    typedef typename ModelType::element_ptrtype element_ptrtype;
+
+
+    typedef OperatorLinearComposite<space_type, space_type> operatorcomposite_type;
+    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+
+    PreAssembleMassMatrixInCompositeCase( element_type const u ,
+                                          element_type const v )
+        :
+        M_composite_u ( u ),
+        M_composite_v ( v )
+    {
+        auto Xh = M_composite_u.functionSpace();
+        op_mass = opLinearComposite( _imageSpace=Xh, _domainSpace=Xh );
+    }
+
+    template< typename T >
+    void
+    operator()( const T& t ) const
+    {
+
+        using namespace Feel::vf;
+
+        auto u = M_composite_u.template element< T::value >();
+        auto v = M_composite_v.template element< T::value >();
+        auto Xh = M_composite_u.functionSpace();
+        mesh_ptrtype mesh = Xh->mesh();
+
+        auto expr = integrate( _range=elements( mesh ) , _expr=trans( idt( u ) )*id( v ) ) ;
+        auto opfree = opLinearFree( _imageSpace=Xh, _domainSpace=Xh, _expr=expr );
+
+        //each composant of the affine decomposition
+        //is the subspace contribution
+        int q=T::value;
+        int m=0;
+        auto tuple = boost::make_tuple( q , m );
+        op_mass->addElement( tuple , opfree );
+    }
+
+
+    operatorcomposite_ptrtype opmass()
+    {
+        return op_mass;
+    }
+
+    element_type  M_composite_u;
+    element_type  M_composite_v;
+    operatorcomposite_ptrtype op_mass;
+
+};
 
 
 template <typename ModelType>
@@ -1362,6 +1843,49 @@ CRBModel<TruthModelType>::initB()
 }
 
 
+//create a vector of preassemble objects
+//for the mass matrix
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
+CRBModel<TruthModelType>::preAssembleMassMatrix() const
+{
+    static const bool is_composite = functionspace_type::is_composite;
+    return preAssembleMassMatrix( mpl::bool_< is_composite >() );
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<false> ) const
+{
+
+    auto Xh = M_model->functionSpace();
+    auto mesh = Xh->mesh();
+
+    auto expr=integrate( _range=elements( mesh ) , _expr=idt( u )*id( v ) );
+    auto op_mass = opLinearComposite( _domainSpace=Xh , _imageSpace=Xh  );
+    auto opfree = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=expr );
+    opfree->setName("mass operator (automatically created)");
+    //in this case, the affine decompositon has only one element
+    op_mass->addElement( boost::make_tuple(0,0) , opfree );
+    return op_mass;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::operatorcomposite_ptrtype
+CRBModel<TruthModelType>::preAssembleMassMatrix( mpl::bool_<true> ) const
+{
+    auto Xh = M_model->functionSpace();
+
+    index_vector_type index_vector;
+    PreAssembleMassMatrixInCompositeCase<TruthModelType> preassemble_mass_matrix_in_composite_case ( u , v );
+    fusion::for_each( index_vector, preassemble_mass_matrix_in_composite_case );
+
+    auto op_mass = preassemble_mass_matrix_in_composite_case.opmass();
+    return op_mass;
+}
+
+
 template<typename TruthModelType>
 void
 CRBModel<TruthModelType>::assembleMassMatrix( void )
@@ -1380,8 +1904,6 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<false> )
     M_Mqm[0].resize( 1 );
     M_Mqm[0][0] = M_backend->newMatrix( _test=Xh , _trial=Xh );
     auto mesh = Xh->mesh();
-    element_type u ( Xh , "u" );
-    element_type v ( Xh , "v" );
     form2( _test=Xh, _trial=Xh, _matrix=M_Mqm[0][0] ) =
         integrate( _range=elements( mesh ), _expr=idt( u )*id( v )  );
     M_Mqm[0][0]->close();
@@ -1392,9 +1914,6 @@ void
 CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
 {
     auto Xh = M_model->functionSpace();
-
-    element_type u ( Xh , "u" );
-    element_type v ( Xh , "v" );
 
     index_vector_type index_vector;
     int size = functionspace_type::nSpaces;
@@ -1424,7 +1943,6 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
 {
     auto Xh = M_model->functionSpace();
     auto mesh = Xh->mesh();
-    element_type v ( Xh , "v" );
 
     int q_max= this->QInitialGuess();
     M_InitialGuessV.resize( q_max );
@@ -1461,7 +1979,6 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
     using namespace Feel::vf;
     auto Xh = M_model->functionSpace();
     auto mesh = Xh->mesh();
-    element_type v ( Xh , "v" );
 
     int q_max= this->QInitialGuess();
     M_InitialGuessV.resize( q_max );
@@ -1512,6 +2029,48 @@ CRBModel<TruthModelType>::assembleInitialGuess( parameter_type const& mu )
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::offline_merge_type
+CRBModel<TruthModelType>::offlineMergeOnFly(betaqm_type const& all_beta, parameter_type const& mu  )
+{
+    //recovery from the model of free operators Aqm in A = \sum_q \sum_m \beta_qm( u ; mu ) A_qm( u, v )
+    auto compositeA = this->operatorCompositeA();
+    //idem with other operator / functional
+    auto compositeM = this->operatorCompositeM();
+    auto vector_compositeF = this->functionalCompositeF();
+
+    //acces to beta coefficients
+    auto beta_M = all_beta.template get<0>();
+    auto beta_A = all_beta.template get<1>();
+    //warning : beta_F is a vector of beta_coefficients
+    auto beta_F = all_beta.template get<2>();
+
+    //associate beta coefficients to operators
+    compositeA->setScalars( beta_A );
+    compositeM->setScalars( beta_M );
+
+    //merge
+    auto A = M_model->newMatrix();
+    auto M = M_model->newMatrix();
+    compositeA->sumAllMatrices( A );
+    //auto A = compositeA->sumAllMatrices();
+    //auto M = compositeM->sumAllMatrices();
+    compositeM->sumAllMatrices( M );
+
+    std::vector<vector_ptrtype> F( Nl() );
+
+    for(int output=0; output<Nl(); output++)
+    {
+        auto compositeF = vector_compositeF[output];
+        compositeF->setScalars( beta_F[output] );
+        F[output] = M_model->newVector();
+        compositeF->sumAllVectors( F[output] );
+    }
+
+    return boost::make_tuple( M, A, F );
+}
+
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::offline_merge_type
 CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_type const& mu )
 {
 
@@ -1530,6 +2089,8 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
 
     auto A = this->newMatrix();
     auto M = this->newMatrix();
+    //size_type pattern = operatorCompositeA()->operatorlinear(0,0)->pattern();
+
 #endif
     std::vector<vector_ptrtype> F( Nl() );
 
@@ -1539,6 +2100,7 @@ CRBModel<TruthModelType>::offlineMerge( betaqm_type const& all_beta , parameter_
     //warning : beta_F is a vector of beta_coefficients
     auto beta_F = all_beta.template get<2>();
 
+    A->zero();
     for ( size_type q = 0; q < Qa(); ++q )
     {
         for(size_type m = 0; m < mMaxA(q); ++m )
@@ -1616,7 +2178,7 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
         bdf_coeff = mybdf->polyDerivCoefficient( 0 );
         auto bdf_poly = mybdf->polyDeriv();
         *vec_bdf_poly = bdf_poly;
-        boost::tie(M, A, F, boost::tuples::ignore) = this->update( mu , mybdf->time() );
+        boost::tie(M, A, F) = this->update( mu , mybdf->time() );
         *Rhs = *F[0];
         if( !isSteady() )
         {
@@ -1633,7 +2195,7 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
 
 template<typename TruthModelType>
 typename CRBModel<TruthModelType>::element_type
-CRBModel<TruthModelType>::solveFemUsingOnlineEimPicard( parameter_type const& mu )
+CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_type const& mu )
 {
     auto Xh= this->functionSpace();
 
@@ -1672,7 +2234,6 @@ CRBModel<TruthModelType>::solveFemUsingOnlineEimPicard( parameter_type const& mu
     mybdf->setTimeFinal( time_final );
 
     u=*InitialGuess;
-
     double norm=0;
     int iter=0;
 
@@ -1690,19 +2251,119 @@ CRBModel<TruthModelType>::solveFemUsingOnlineEimPicard( parameter_type const& mu
         do {
             boost::tie(M, A, F) = this->update( mu , u , mybdf->time() );
             *Rhs = *F[0];
+
             if( !isSteady() )
             {
                 A->addMatrix( bdf_coeff, M );
                 Rhs->addVector( *vec_bdf_poly, *M );
             }
             uold = u;
-            M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs );
+            M_preconditioner->setMatrix( A );
+            M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner);
             norm = this->computeNormL2( uold , u );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
         mybdf->shiftRight(u);
     }
     return u;
+}
+
+template<typename TruthModelType>
+typename CRBModel<TruthModelType>::element_type
+CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parameter_type const& mu )
+{
+    int output_index = option(_name="crb.output-index").template as<int>();
+
+    auto Xh= this->functionSpace();
+
+    bdf_ptrtype mybdf;
+    mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
+    sparse_matrix_ptrtype A,Adu;
+    sparse_matrix_ptrtype M;
+    std::vector<vector_ptrtype> F;
+    auto udu = Xh->element();
+    auto uold = Xh->element();
+    vector_ptrtype Rhs( M_backend->newVector( Xh ) );
+    auto dual_initial_field = Xh->elementPtr();
+
+    double time_initial;
+    double time_step;
+    double time_final;
+
+    if ( this->isSteady() )
+    {
+        time_initial=0;
+        time_step = 1e30;
+        time_final = 1e30;
+        //InitialGuess = this->assembleInitialGuess( mu ) ;
+    }
+    else
+    {
+        time_initial=this->timeFinal()+this->timeStep();
+        time_step=-this->timeStep();
+        time_final=this->timeInitial()+this->timeStep();
+    }
+
+    mybdf->setTimeInitial( time_initial );
+    mybdf->setTimeStep( time_step );
+    mybdf->setTimeFinal( time_final );
+
+    double norm=0;
+    int iter=0;
+
+    double bdf_coeff ;
+    auto vec_bdf_poly = M_backend->newVector( Xh );
+
+    if ( this->isSteady() )
+        udu.zero() ;
+    else
+    {
+        boost::tie( M, A, F) = this->update( mu , mybdf->timeInitial() );
+        *Rhs=*F[output_index];
+        M_preconditioner->setMatrix( M );
+        M_backend->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner );
+        udu=*dual_initial_field;
+    }
+
+
+    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
+    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+    for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
+    {
+        iter=0;
+        bdf_coeff = mybdf->polyDerivCoefficient( 0 );
+        auto bdf_poly = mybdf->polyDeriv();
+        *vec_bdf_poly = bdf_poly;
+        do {
+            boost::tie(M, A, F) = this->update( mu , udu , mybdf->time() );
+
+            if( ! isSteady() )
+            {
+                A->addMatrix( bdf_coeff, M );
+                Rhs->zero();
+                *vec_bdf_poly = bdf_poly;
+                Rhs->addVector( *vec_bdf_poly, *M );
+            }
+            else
+            {
+                *Rhs = *F[output_index];
+                Rhs->scale( -1 );
+            }
+
+            if( option("crb.use-symmetric-matrix").template as<bool>() )
+                Adu = A;
+            else
+                A->transpose( Adu );
+
+            uold = udu;
+            M_preconditioner->setMatrix( Adu );
+            M_backend->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner);
+            norm = this->computeNormL2( uold , udu );
+            iter++;
+        } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
+        mybdf->shiftRight(udu);
+    }
+    return udu;
 }
 
 

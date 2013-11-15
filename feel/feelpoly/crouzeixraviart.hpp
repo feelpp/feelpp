@@ -172,11 +172,11 @@ public:
     CrouzeixRaviartDual( primal_space_type const& primal )
         :
         super( primal ),
-        _M_convex_ref(),
-        _M_eid( _M_convex_ref.topologicalDimension()+1 ),
-        _M_pts( nDim, numPoints ),
-        _M_points_face( nFacesInConvex ),
-        _M_fset( primal )
+        M_convex_ref(),
+        M_eid( M_convex_ref.topologicalDimension()+1 ),
+        M_pts( nDim, numPoints ),
+        M_points_face( nFacesInConvex ),
+        M_fset( primal )
     {
 #if 1
         std::cout << "Lagrange finite element: \n";
@@ -190,61 +190,61 @@ public:
 #endif
         equispaced_pointset_type epts;
         // in d-dimension, consider only the d-1 entity mid-points
-        int d = _M_convex_ref.topologicalDimension()-1;
+        int d = M_convex_ref.topologicalDimension()-1;
         int p = 0;
 
         // loop on each entity forming the convex of topological
         // dimension d
-        for ( int e = _M_convex_ref.entityRange( d ).begin();
-                e < _M_convex_ref.entityRange( d ).end();
+        for ( int e = M_convex_ref.entityRange( d ).begin();
+                e < M_convex_ref.entityRange( d ).end();
                 ++e )
         {
-            _M_points_face[e] = epts.pointsBySubEntity( nDim-1, e, 0 );
-            ublas::subrange( _M_pts, 0, nDim, p, p+_M_points_face[e].size2() ) = _M_points_face[e];
-            p+=_M_points_face[e].size2();
+            M_points_face[e] = epts.pointsBySubEntity( nDim-1, e, 0 );
+            ublas::subrange( M_pts, 0, nDim, p, p+M_points_face[e].size2() ) = M_points_face[e];
+            p+=M_points_face[e].size2();
         }
 
-        //std::cout << "[CrouzeixRaviartDual] points= " << _M_pts << "\n";
-        setFset( primal, _M_pts, mpl::bool_<primal_space_type::is_scalar>() );
+        //std::cout << "[CrouzeixRaviartDual] points= " << M_pts << "\n";
+        setFset( primal, M_pts, mpl::bool_<primal_space_type::is_scalar>() );
 
 
     }
 
     points_type const& points() const
     {
-        return _M_pts;
+        return M_pts;
     }
     points_type const& points( uint16_type f ) const
     {
-        return _M_points_face[f];
+        return M_points_face[f];
     }
 
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        return _M_fset( pset );
+        return M_fset( pset );
     }
 private:
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<true> )
     {
-        _M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
+        M_fset.setFunctionalSet( functional::PointsEvaluation<primal_space_type>( primal,
                                   __pts ) );
     }
 
     void setFset( primal_space_type const& primal, points_type const& __pts, mpl::bool_<false> )
     {
-        _M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
+        M_fset.setFunctionalSet( functional::ComponentsPointsEvaluation<primal_space_type>( primal,
                                   __pts ) );
     }
 
 
 private:
-    reference_convex_type _M_convex_ref;
-    std::vector<std::vector<uint16_type> > _M_eid;
-    points_type _M_pts;
-    std::vector<points_type> _M_points_face;
-    FunctionalSet<primal_space_type> _M_fset;
+    reference_convex_type M_convex_ref;
+    std::vector<std::vector<uint16_type> > M_eid;
+    points_type M_pts;
+    std::vector<points_type> M_points_face;
+    FunctionalSet<primal_space_type> M_fset;
 
 
 };
@@ -332,12 +332,12 @@ public:
     CrouzeixRaviart()
         :
         super( dual_space_type( primal_space_type() ) ),
-        _M_refconvex()
+        M_refconvex()
     {}
     CrouzeixRaviart( CrouzeixRaviart const & cr )
         :
         super( cr ),
-        _M_refconvex()
+        M_refconvex()
     {}
     ~CrouzeixRaviart()
     {}
@@ -360,7 +360,7 @@ public:
      */
     reference_convex_type const& referenceConvex() const
     {
-        return _M_refconvex;
+        return M_refconvex;
     }
 
     //@}
@@ -396,7 +396,7 @@ public:
 
 
 protected:
-    reference_convex_type _M_refconvex;
+    reference_convex_type M_refconvex;
 private:
 
 };

@@ -6,7 +6,7 @@
        Date: 2005-11-27
 
   Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006,2007 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2006,2007 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ enum   MatrixProperties
 {
     HERMITIAN          = 0x1,   /**< hermitian : \f$A^* = A\f$ */
     NON_HERMITIAN      = 0x2,   /**< non hermitian : \f$A^* != A\f$ */
-    POSITIVE_DEFINITE  = 0x4,   /**< positive definite matrix : \f$v^* A v > 0 \$f for all non-zero v */
+    POSITIVE_DEFINITE  = 0x4,   /**< positive definite matrix : \f$v^* A v > 0 \f$ for all non-zero v */
     SINGULAR           = 0x8,    /**< singular matrix : \f$det(A)=0\f$ and 0 is an eigenvalue */
     DENSE              = 0x10    /**< dense matrix */
 };
@@ -262,7 +262,8 @@ enum ProjectorType
     DIFF=2,
     HDIV=3,
     HCURL=4,
-    LIFT=5
+    LIFT=5,
+    CIP=6
 };
 
 enum MatSolverPackageType

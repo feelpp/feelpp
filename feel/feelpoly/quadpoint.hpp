@@ -79,27 +79,27 @@ public :
     typedef self_type parent_quadrature_type;
     static const uint16_type I_deg = Integration_Degree;
 
-    PointSetQuadrature(): super(), _M_w(), _M_prod(), _M_exprq() {}
+    PointSetQuadrature(): super(), M_w(), M_prod(), M_exprq() {}
 
     PointSetQuadrature( const PointSetQuadrature& Qp )
         : super( Qp ),
-          _M_w( Qp.weights() ),
-          _M_w_face( Qp.allfweights() ),
-          _M_n_face( Qp.allfpoints() ),
-          _M_prod( Qp.nPoints() ),
-          _M_exprq( Qp.nPoints() )
+          M_w( Qp.weights() ),
+          M_w_face( Qp.allfweights() ),
+          M_n_face( Qp.allfpoints() ),
+          M_prod( Qp.nPoints() ),
+          M_exprq( Qp.nPoints() )
     {}
 
     PointSetQuadrature( uint32_type Npoints )
-        : super( Npoints ), _M_w( Npoints ), _M_prod( Npoints ), _M_exprq( Npoints )
+        : super( Npoints ), M_w( Npoints ), M_prod( Npoints ), M_exprq( Npoints )
     {}
 
     PointSetQuadrature( weights_type Wts )
         :
         super( Wts.size() ),
-        _M_w( Wts ),
-        _M_prod( Wts.size() ),
-        _M_exprq( Wts.size() )
+        M_w( Wts ),
+        M_prod( Wts.size() ),
+        M_exprq( Wts.size() )
     {}
 
 
@@ -116,11 +116,11 @@ public :
         if ( this != &q )
         {
             super::operator=( q );
-            _M_w = q._M_w;
-            _M_w_face = q._M_w_face;
-            _M_n_face = q._M_n_face;
-            _M_prod = q._M_prod;
-            _M_exprq = q._M_exprq;
+            M_w = q.M_w;
+            M_w_face = q.M_w_face;
+            M_n_face = q.M_n_face;
+            M_prod = q.M_prod;
+            M_exprq = q.M_exprq;
         }
 
         return *this;
@@ -131,12 +131,12 @@ public :
 
     std::vector<weights_type> const& allfweights() const
     {
-        return _M_w_face;
+        return M_w_face;
     }
 
     std::vector<nodes_type> const& allfpoints() const
     {
-        return _M_n_face;
+        return M_n_face;
     }
 
 
@@ -146,9 +146,9 @@ public :
     weights_type const& weights( uint16_type __f ) const
     {
         if ( __f == uint16_type( -1 ) )
-            return _M_w;
+            return M_w;
 
-        return _M_w_face[__f];
+        return M_w_face[__f];
     }
 
     /**
@@ -159,7 +159,7 @@ public :
         if ( __f == uint16_type( -1 ) )
             return this->points();
 
-        return _M_n_face[__f];
+        return M_n_face[__f];
     }
 
 
@@ -168,38 +168,38 @@ public :
      */
     value_type  weight( uint16_type __f,  uint32_type q ) const
     {
-        return _M_w_face[__f][q];
+        return M_w_face[__f][q];
     }
     /**
      * \return quadrature coordinates of the q-th node of face f
      */
     ublas::matrix_column<nodes_type const>  fpoint( uint16_type __f, uint32_type __q ) const
     {
-        return ublas::column( _M_n_face[__f], __q );
+        return ublas::column( M_n_face[__f], __q );
     }
 
 
-    //  quadrature_data_type data() const { return boost::make_tuple( this->_M_n, this->_M_w ); }
+    //  quadrature_data_type data() const { return boost::make_tuple( this->M_n, this->M_w ); }
 
-    //size_type nFaces() const { return _M_n_face.size(); }
-    //size_type nPointsOnFace( int __face = 0 ) const { return _M_n_face[__face].size2(); }
+    //size_type nFaces() const { return M_n_face.size(); }
+    //size_type nPointsOnFace( int __face = 0 ) const { return M_n_face[__face].size2(); }
 
     weights_type const& weights() const
     {
-        return _M_w;
+        return M_w;
     }
     value_type const& weight( int q ) const
     {
-        return _M_w[q];
+        return M_w[q];
     }
 
     size_type nFaces() const
     {
-        return _M_n_face.size();
+        return M_n_face.size();
     }
     size_type nPointsOnFace( int __face = 0 ) const
     {
-        return _M_n_face[__face].size2();
+        return M_n_face[__face].size2();
     }
 
     /**
@@ -335,10 +335,10 @@ public :
     {
         for ( uint16_type q = 0; q < this->nPoints(); ++q )
         {
-            _M_exprq[q] = expr.evalijq( indi, indj, c1, c2, q );
+            M_exprq[q] = expr.evalijq( indi, indj, c1, c2, q );
         }
 
-        return _M_prod.dot( _M_exprq );
+        return M_prod.dot( M_exprq );
     }
     template<typename IndexTest, typename ExprType>
     value_type operator()( ExprType const& expr,
@@ -348,10 +348,10 @@ public :
     {
         for ( uint16_type q = 0; q < this->nPoints(); ++q )
         {
-            _M_exprq[q] = expr.evaliq( indi, c1, c2, q );
+            M_exprq[q] = expr.evaliq( indi, c1, c2, q );
         }
 
-        return _M_prod.dot( _M_exprq );
+        return M_prod.dot( M_exprq );
     }
 
     template<typename ExprT>
@@ -361,10 +361,10 @@ public :
     {
         for ( uint16_type q = 0; q < this->nPoints(); ++q )
         {
-            _M_exprq[q] = expr.evalq( c1, c2, q );
+            M_exprq[q] = expr.evalq( c1, c2, q );
         }
 
-        return _M_prod.dot( _M_exprq );
+        return M_prod.dot( M_exprq );
     }
     template<typename IndexTest, typename IndexTrial, typename ExprType>
     value_type operator()( ExprType const& expr,
@@ -380,7 +380,7 @@ public :
         {
             auto qReal = indexLocalToQuad[q].get<0>();
             const value_type val_expr = expr.evalijq( indi, indj, c1, c2, q );
-            res += _M_prod[qReal]*val_expr;
+            res += M_prod[qReal]*val_expr;
         }
 
         return res;
@@ -398,7 +398,7 @@ public :
         {
             auto qReal = indexLocalToQuad[q].get<0>();
             const value_type val_expr = expr.evaliq( indi, c1, c2, q );
-            res += _M_prod[qReal]*val_expr;
+            res += M_prod[qReal]*val_expr;
         }
 
         return res;
@@ -410,13 +410,13 @@ public :
         if ( this->isFaceIm() )
             for ( uint16_type q = 0; q < this->nPoints(); ++q )
             {
-                _M_prod[q] = _M_w( q )*gmc.J( q )*gmc.normalNorm( q );
+                M_prod[q] = M_w( q )*gmc.J( q )*gmc.normalNorm( q );
             }
 
         else
             for ( uint16_type q = 0; q < this->nPoints(); ++q )
             {
-                _M_prod[q] = _M_w( q )*gmc.J( q );
+                M_prod[q] = M_w( q )*gmc.J( q );
             }
     }
 
@@ -429,14 +429,14 @@ public :
             for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
             {
                 auto qReal = indexLocalToQuad[q].get<0>();
-                _M_prod[qReal] = _M_w( qReal )*gmc.J( q )*gmc.normalNorm( q );
+                M_prod[qReal] = M_w( qReal )*gmc.J( q )*gmc.normalNorm( q );
             }
 
         else
             for ( uint16_type q = 0; q < indexLocalToQuad.size(); ++q )
             {
                 auto qReal = indexLocalToQuad[q].get<0>();
-                _M_prod[qReal] = _M_w( qReal )*gmc.J( q );
+                M_prod[qReal] = M_w( qReal )*gmc.J( q );
             }
     }
 
@@ -456,13 +456,13 @@ public :
         Face()
             :
             super(),
-            _M_f( invalid_uint16_type_value )
+            M_f( invalid_uint16_type_value )
         {
         }
         Face( self_type const& quad_elt, uint16_type f = 0 )
             :
             super(),
-            _M_f( f )
+            M_f( f )
         {
             this->setPoints( quad_elt.fpoints( f ) );
             this->setWeights( quad_elt.weights( f ) );
@@ -471,7 +471,7 @@ public :
         Face( Face const& f )
             :
             super( f ),
-            _M_f( f._M_f )
+            M_f( f.M_f )
 
         {}
         Face& operator=( Face const& f )
@@ -479,7 +479,7 @@ public :
             if ( this != &f )
             {
                 super::operator=( f );
-                _M_f = f._M_f;
+                M_f = f.M_f;
             }
 
             return *this;
@@ -490,10 +490,10 @@ public :
         }
         uint16_type face() const
         {
-            return _M_f;
+            return M_f;
         }
     private:
-        uint16_type _M_f;
+        uint16_type M_f;
     };
 
     typedef Face face_quadrature_type;
@@ -508,9 +508,9 @@ protected:
 
     void setWeights( weights_type const& w )
     {
-        _M_prod.resize( w.size() );
-        _M_exprq.resize( w.size() );
-        _M_w = w;
+        M_prod.resize( w.size() );
+        M_exprq.resize( w.size() );
+        M_w = w;
     }
 
     template<typename Elem, typename GM, typename IM>
@@ -528,18 +528,18 @@ protected:
                             mpl::bool_<false> )
     {
         BOOST_STATIC_ASSERT( Elem::nDim == 1 );
-        _M_n_face.resize( Elem::numTopologicalFaces );
-        _M_w_face.resize( Elem::numTopologicalFaces );
+        M_n_face.resize( Elem::numTopologicalFaces );
+        M_w_face.resize( Elem::numTopologicalFaces );
 
-        _M_n_face[0].resize( Elem::nDim, 1 );
-        _M_w_face[0].resize( 1 );
-        _M_n_face[0]( 0, 0 ) = -1;
-        _M_w_face[0]( 0 ) = 1;
+        M_n_face[0].resize( Elem::nDim, 1 );
+        M_w_face[0].resize( 1 );
+        M_n_face[0]( 0, 0 ) = -1;
+        M_w_face[0]( 0 ) = 1;
 
-        _M_n_face[1].resize( Elem::nDim, 1 );
-        _M_w_face[1].resize( 1 );
-        _M_n_face[1]( 0, 0 ) = 1;
-        _M_w_face[1]( 0 ) = 1;
+        M_n_face[1].resize( Elem::nDim, 1 );
+        M_w_face[1].resize( 1 );
+        M_n_face[1]( 0, 0 ) = 1;
+        M_w_face[1]( 0 ) = 1;
 
     }
 
@@ -551,13 +551,13 @@ protected:
 
 protected:
 
-    weights_type _M_w;
+    weights_type M_w;
 
-    std::vector<weights_type> _M_w_face;
-    std::vector<nodes_type> _M_n_face;
+    std::vector<weights_type> M_w_face;
+    std::vector<nodes_type> M_n_face;
 
-    vector_type _M_prod;
-    mutable vector_type _M_exprq;
+    vector_type M_prod;
+    mutable vector_type M_exprq;
 
 };
 
@@ -569,8 +569,8 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
         boost::shared_ptr<IM> const& __qr_face,
         mpl::bool_<true>  )
 {
-    _M_n_face.resize( Elem::numTopologicalFaces );
-    _M_w_face.resize( Elem::numTopologicalFaces );
+    M_n_face.resize( Elem::numTopologicalFaces );
+    M_w_face.resize( Elem::numTopologicalFaces );
 
     // FIXME: we don't handle the case where faces are not of the
     // same type like for prism or pyramids. In that case geopc
@@ -594,8 +594,8 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
         DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
 
         value_type __len = 0.0;
-        _M_n_face[__f].resize( Elem::nDim, __qr_face->nPoints() );
-        _M_w_face[__f].resize( __qr_face->nPoints() );
+        M_n_face[__f].resize( Elem::nDim, __qr_face->nPoints() );
+        M_w_face[__f].resize( __qr_face->nPoints() );
         DVLOG(2) << "[PointSetQuadrature::constructQROnFace] npoints on face "
                       << __f << " : "
                       << __qr_face->nPoints() << "\n";
@@ -604,15 +604,15 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
 
         for ( uint16_type __ip = 0; __ip < __qr_face->nPoints(); ++__ip )
         {
-            ublas::column( _M_n_face[__f], __ip ) = __c.xReal( __ip );
+            ublas::column( M_n_face[__f], __ip ) = __c.xReal( __ip );
 
             // w = w_face * ||B*n|| * J
-            _M_w_face[ __f]( __ip ) = __qr_face->weight( __ip )*__c.J( __ip );
+            M_w_face[ __f]( __ip ) = __qr_face->weight( __ip )*__c.J( __ip );
 
-            __len += _M_w_face[ __f]( __ip );
+            __len += M_w_face[ __f]( __ip );
             DVLOG(2) << "face " << __f << " ip = " << __ip << "       J =" << __c.J( __ip ) << "\n";
             DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << __qr_face->weight( __ip ) << "\n";
-            DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << _M_w_face[ __f]( __ip ) << "\n";
+            DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << M_w_face[ __f]( __ip ) << "\n";
             //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
             //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
         }

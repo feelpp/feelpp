@@ -255,6 +255,11 @@ public:
         return M_Dmu;
     };
 
+    parameter_type refParameter()
+    {
+        return M_Dmu->min();
+    }
+
     affine_decomposition_type computeAffineDecomposition()
     {
         return boost::make_tuple( M_Aqm, M_Fqm );
@@ -281,9 +286,6 @@ public:
 
     int mMaxA( int q );
     int mMaxF( int output_index, int q );
-    int mMaxInitialGuess( int q );
-
-    int QInitialGuess() const ;
 
     /**
      * \brief compute the beta coefficient for both bilinear and linear form
@@ -351,7 +353,7 @@ public:
      * Given the output index \p output_index and the parameter \p mu, return
      * the value of the corresponding FEM output
      */
-    value_type output( int output_index, parameter_type const& mu );
+    value_type output( int output_index, parameter_type const& mu , element_type& unknown, bool need_to_solve=false);
 
     sparse_matrix_ptrtype newMatrix() const
     {
@@ -377,7 +379,7 @@ public:
 
     po::options_description const& optionsDescription() const
     {
-        return _M_desc;
+        return M_desc;
     }
 
     /**
@@ -407,13 +409,13 @@ public:
 
 private:
 
-    po::options_description _M_desc;
+    po::options_description M_desc;
 
     po::variables_map M_vm;
     backend_ptrtype M_backend;
 
     space_ptrtype Xh;
-    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::value_type> > P1h;
+    boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::element_type> > P1h;
 
     oplin_ptrtype M_oplin;
     funlin_ptrtype M_lf;

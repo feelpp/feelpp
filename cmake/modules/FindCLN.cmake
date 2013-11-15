@@ -5,6 +5,12 @@
 # CLN_INCLUDE_DIR       the include directories
 # CLN_LIBRARIES         CLN library and its dependencies (if any)
 
+# try the system version
+FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
+  PATH_SUFFIXES
+  cln
+  )
+# use the version available in contrib if the system version is not available
 FIND_PATH(CLN_INCLUDE_DIR cln/cln.h
   ${CMAKE_BINARY_DIR}/contrib/cln/include
   $ENV{FEELPP_DIR}/include
@@ -49,8 +55,10 @@ IF ( NOT CLN_INCLUDE_DIR )
   endif()
 endif()
 string(REPLACE "include/cln" "" CLN_DIR ${CLN_INCLUDE_DIR} )
+FIND_LIBRARY(CLN_LIBRARY  NAMES cln feelpp_cln   )
+
 FIND_LIBRARY(CLN_LIBRARY
-  NAMES feelpp_cln
+  NAMES cln feelpp_cln
   PATHS
   ${CMAKE_BINARY_DIR}/contrib/cln/lib/
   $ENV{FEELPP_DIR}/lib
@@ -99,13 +107,19 @@ set(CLN_LIBRARIES)
 #	pkg_check_modules(_cln cln)
 #endif()
 
-find_path(CLN_INCLUDE_DIR NAMES feel/cln/cln.h cln/cln.h
+find_path(CLN_INCLUDE_DIR NAMES  cln/cln.h )
+find_path(CLN_INCLUDE_DIR NAMES  cln/cln.h feel/cln/cln.h
   HINTS
   ${CMAKE_BINARY_DIR}/contrib/cln/include
   ${_cln_INCLUDE_DIRS}
   $ENV{CLN_DIR}/include
   NO_DEFAULT_PATH
 )
+find_library(CLN_LIBRARIES NAMES cln libcln
+  ${_cln_LIBRARY_DIR}
+  ${_cln_LIBRARY_DIRS}
+)
+
 find_library(CLN_LIBRARIES NAMES feelpp_cln libcln cln
   HINTS
   ${CMAKE_BINARY_DIR}/contrib/cln/lib

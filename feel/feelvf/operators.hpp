@@ -188,7 +188,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                 BOOST_PP_COMMA,                         \
                                 BOOST_PP_EMPTY )()                      \
                                    BOOST_PP_IF( BOOST_PP_NOT(VF_OP_TYPE_IS_VALUE( T )), \
-                                 BOOST_PP_IDENTITY(key_type>::type::pointer basis_context_ptrtype), \
+                                 BOOST_PP_IDENTITY(key_type>::type::element_type* basis_context_ptrtype), \
                                    BOOST_PP_IDENTITY( typedef boost::none_t basis_context_ptrtype ) )() \
                    /**/
 
@@ -281,7 +281,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     mpl::identity<typename fusion::result_of::value_at_key<map_basis_context_type,basis_context_key_type>::type::element_type > >::type::type basis_context_type; \
                 typedef typename mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
                     mpl::identity<mpl::int_<0> >,                       \
-                    mpl::identity<typename fusion::result_of::value_at_key<map_basis_context_type,basis_context_key_type>::type::pointer > >::type::type basis_context_ptrtype; \
+                    mpl::identity<typename fusion::result_of::value_at_key<map_basis_context_type,basis_context_key_type>::type::element_type* > >::type::type basis_context_ptrtype; \
                 typedef typename element_type::value_type value_type;   \
                 typedef typename matrix_node<value_type>::type matrix_node_type; \
                                                                         \
@@ -360,7 +360,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -382,7 +382,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -401,7 +401,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ) \
+                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \

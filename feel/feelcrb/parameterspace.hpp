@@ -144,6 +144,7 @@ public:
                 M_space = space;
             }
 
+
         /**
          * \brief Retuns the parameter space
          */
@@ -295,7 +296,7 @@ public:
             }
 
         /**
-         * \brief create a sampling with equidistributed elements
+         * \brief create a sampling with log-equidistributed elements
          * \param N the number of samples
          */
         void logEquidistribute( int N )
@@ -315,6 +316,155 @@ public:
                 }
                 boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
             }
+
+        /**
+         * \brief create a sampling with log-equidistributed elements
+         * \param N : vector containing the number of samples on each direction
+         */
+        void logEquidistributeProduct( std::vector<int> N )
+        {
+            // first empty the set
+            this->clear();
+
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                int number_of_directions = N.size();
+
+                //contains values of parameters on each direction
+                std::vector< std::vector< double > > components;
+                components.resize( number_of_directions );
+
+                for(int direction=0; direction<number_of_directions; direction++)
+                {
+                    std::vector<double> coeff_vector = parameterspace_type::logEquidistributeInDirection( M_space , direction , N[direction] );
+                    components[direction]= coeff_vector ;
+                }
+
+                generateElementsProduct( components );
+
+            }//end of master proc
+            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+        }
+
+
+        /**
+         * \brief create a sampling with log-equidistributed and equidistributed elements
+         * \param Nlogequi : vector containing the number of log-equidistributed samples on each direction
+         * \param Nequi : vector containing the number of equidistributed samples on each direction
+         */
+        void mixEquiLogEquidistributeProduct( std::vector<int> Nlogequi , std::vector<int> Nequi )
+        {
+            // first empty the set
+            this->clear();
+
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+
+                int number_of_directions_equi = Nequi.size();
+                int number_of_directions_logequi = Nlogequi.size();
+                FEELPP_ASSERT( number_of_directions_equi == number_of_directions_logequi )( number_of_directions_equi )( number_of_directions_logequi )
+                    .error( "incompatible number of directions, you don't manipulate the same parameter space for log-equidistributed and equidistributed sampling" );
+
+                //contains values of parameters on each direction
+                std::vector< std::vector< double > > components_equi;
+                components_equi.resize( number_of_directions_equi );
+                std::vector< std::vector< double > > components_logequi;
+                components_logequi.resize( number_of_directions_logequi );
+
+                for(int direction=0; direction<number_of_directions_equi; direction++)
+                {
+                    std::vector<double> coeff_vector_equi = parameterspace_type::equidistributeInDirection( M_space , direction , Nequi[direction] );
+                    components_equi[direction]= coeff_vector_equi ;
+                    std::vector<double> coeff_vector_logequi = parameterspace_type::logEquidistributeInDirection( M_space , direction , Nlogequi[direction] );
+                    components_logequi[direction]= coeff_vector_logequi ;
+                }
+                std::vector< std::vector< std::vector<double> > > vector_components(2);
+                vector_components[0]=components_logequi;
+                vector_components[1]=components_equi;
+                generateElementsProduct( vector_components );
+
+            }//end of master proc
+            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+        }
+
+
+        /*
+         * \param a vector of vector containing values of parameters on each direction
+         * example if components has 2 vectors : [1,2,3] and [100,200] then it creates the samping :
+         * (1,100) - (2,100) - (3,100) - (1,200) - (2,200) - (3,200)
+         */
+        void generateElementsProduct( std::vector< std::vector< double > > components )
+        {
+            std::vector< std::vector< std::vector< double > > > vector_components(1);
+            vector_components[0]=components;
+            generateElementsProduct( vector_components );
+        }
+
+        void generateElementsProduct( std::vector< std::vector< std::vector< double > > > vector_components )
+        {
+            int number_of_comp = vector_components.size();
+            for(int comp=0; comp<number_of_comp; comp++)
+            {
+                int number_of_directions=vector_components[comp].size();
+                element_type mu( M_space );
+
+                //initialization
+                std::vector<int> idx( number_of_directions );
+                for(int direction=0; direction<number_of_directions; direction++)
+                    idx[direction]=0;
+
+                int last_direction=number_of_directions-1;
+
+                bool stop=false;
+                auto min=M_space->min();
+                auto max=M_space->max();
+
+                do
+                {
+                    bool already_exist = true;
+                    //construction of the parameter
+                    while( already_exist && !stop )
+                    {
+                        already_exist=false;
+                        for(int direction=0; direction<number_of_directions; direction++)
+                        {
+                            int index = idx[direction];
+                            double value = vector_components[comp][direction][index];
+                            mu(direction) = value ;
+                        }
+
+                        if( mu == min  && comp>0 )
+                            already_exist=true;
+                        if( mu == max && comp>0 )
+                            already_exist=true;
+
+                        //update values or stop
+                        for(int direction=0; direction<number_of_directions; direction++)
+                        {
+                            if( idx[direction] < vector_components[comp][direction].size()-1 )
+                            {
+                                idx[direction]++;
+                                break;
+                            }
+                            else
+                            {
+                                idx[direction]=0;
+                                if( direction == last_direction )
+                                    stop = true;
+                            }
+                        }//end loop over directions
+
+                    }//while
+
+
+                    //add the new parameter
+                    super::push_back( mu );
+
+                } while( ! stop );
+
+            }//end loop on vector_component
+        }
+
 
         /**
          * \brief write the sampling in a file
@@ -379,6 +529,47 @@ public:
                 return number;
             }
 
+
+        /**
+         * build the closest sampling with parameters given from the file
+         * look in the supersampling closest parameters
+         * \param file_name : give the real parameters we want
+         * return the index vector of parameters in the supersampling
+         */
+        std::vector<int> closestSamplingFromFile( std::string file_name="list_of_parameters_taken")
+        {
+            std::vector<int> index_vector;
+            std::ifstream file( file_name );
+            double mui;
+            std::string str;
+            int number=0;
+            file>>str;
+            while( ! file.eof() )
+            {
+                element_type mu( M_space );
+                file>>str;
+                int i=0;
+                while ( str!="]" )
+                {
+                    file >> mui;
+                    mu[i] = mui;
+                    file >> str;
+                    i++;
+                }
+                //search the closest neighbor of mu in the supersampling
+                std::vector<int> local_index_vector;
+                auto neighbors = M_supersampling->searchNearestNeighbors( mu, 1 , local_index_vector );
+                auto closest_mu = neighbors->at(0);
+                int index = local_index_vector[0];
+                this->push_back( closest_mu , index );
+                number++;
+                file>>str;
+                index_vector.push_back( index );
+            }
+            file.close();
+            return index_vector;
+        }
+
         /**
          * \brief create a sampling with equidistributed elements
          * \param N the number of samples
@@ -400,6 +591,36 @@ public:
                 }
                 boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
             }
+
+        /**
+         * \brief create a sampling with equidistributed elements
+         * \param N : vector containing the number of samples on each direction
+         */
+        void equidistributeProduct( std::vector<int> N )
+        {
+            // first empty the set
+            this->clear();
+
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                int number_of_directions = N.size();
+
+                //contains values of parameters on each direction
+                std::vector< std::vector< double > > components;
+                components.resize( number_of_directions );
+
+                for(int direction=0; direction<number_of_directions; direction++)
+                {
+                    std::vector<double> coeff_vector = parameterspace_type::equidistributeInDirection( M_space , direction , N[direction] );
+                    components[direction] = coeff_vector ;
+                }
+
+                generateElementsProduct( components );
+
+            }//end of master proc
+            boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+        }
+
 
         /**
          * \brief Returns the minimum element in the sampling and its index
@@ -745,6 +966,35 @@ public:
         }
 
     /**
+     * \brief Returns a vector representing the values of log equidistributed element of the parameter space
+     * in the given direction
+     * \param direction
+     * \param N : number of samples in the direction
+     */
+    static std::vector<double> logEquidistributeInDirection( parameterspace_ptrtype space, int direction , int N)
+    {
+        std::vector<double> result(N);
+
+        auto min_element = space->min();
+        auto max_element = space->max();
+        int space_dimension=space->dimension();
+        FEELPP_ASSERT( space_dimension > direction )( space_dimension )( direction ).error( "bad dimension of vector containing number of samples on each direction" );
+        FEELPP_ASSERT( direction >= 0 )( direction ).error( "the direction must be positive number" );
+
+        double min = min_element(direction);
+        double max = max_element(direction);
+
+        for(int i=0; i<N; i++)
+        {
+            double factor = (double)(i)/(N-1);
+            result[i] = math::exp(math::log(min)+factor*( math::log(max)-math::log(min) ) );
+        }
+
+        return result;
+    }
+
+
+    /**
      * \brief Returns a log equidistributed element of the parameter space
      * \param factor is a factor in [0,1]
      */
@@ -754,6 +1004,37 @@ public:
             mu.array() = ( space->min().array().log()+factor*( space->max().array().log()-space->min().array().log() ) ).exp();
             return mu;
         }
+
+
+    /**
+     * \brief Returns a vector representing the values of equidistributed element of the parameter space
+     * in the given direction
+     * \param direction
+     * \param N : number of samples in the direction
+     */
+    static std::vector<double> equidistributeInDirection( parameterspace_ptrtype space, int direction , int N)
+    {
+        std::vector<double> result(N);
+
+        auto min_element = space->min();
+        auto max_element = space->max();
+
+        int mu_size = min_element.size();
+        if( (mu_size < direction) || (direction < 0)  )
+            throw std::logic_error( "[ParameterSpace::equidistributeInDirection] ERROR : bad dimension of vector containing number of samples on each direction" );
+
+        double min = min_element(direction);
+        double max = max_element(direction);
+
+        for(int i=0; i<N; i++)
+        {
+            double factor = (double)(i)/(N-1);
+            result[i] = min+factor*( max-min );
+        }
+
+        return result;
+    }
+
 
     /**
      * \brief Returns a equidistributed element of the parameter space
@@ -849,62 +1130,70 @@ ParameterSpace<P>::Sampling::searchNearestNeighbors( element_type const& mu,
     size_type M=_M;
     sampling_ptrtype neighbors( new sampling_type( M_space, M ) );
 #if defined(FEELPP_HAS_ANN_H)
-    //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] start\n";
-    //if ( !M_kdtree )
-    //{
-    //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] building data points\n";
-    ANNpointArray data_pts;
-    data_pts = annAllocPts( this->size(), M_space->Dimension );
 
-    for ( size_type i = 0; i < this->size(); ++i )
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
-        std::copy( this->at( i ).data(), this->at( i ).data()+M_space->Dimension, data_pts[i] );
-        FEELPP_ASSERT( data_pts[i] != 0 )( i ) .error( "invalid pointer" );
-    }
+        //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] start\n";
+        //if ( !M_kdtree )
+        //{
+        //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] building data points\n";
+        ANNpointArray data_pts;
+        data_pts = annAllocPts( this->size(), M_space->Dimension );
 
-    //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] building tree in R^" <<  M_space->Dimension << "\n";
-    M_kdtree = kdtree_ptrtype( new kdtree_type( data_pts, this->size(), M_space->Dimension ) );
-    //}
+        for ( size_type i = 0; i < this->size(); ++i )
+        {
+            std::copy( this->at( i ).data(), this->at( i ).data()+M_space->Dimension, data_pts[i] );
+            FEELPP_ASSERT( data_pts[i] != 0 )( i ) .error( "invalid pointer" );
+        }
 
-
-    // make sure that the sampling set is big enough
-    if ( this->size() < M )
-        M=this->size();
-
-    //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] searching " << M << " neighbors in tree\n";
-    std::vector<int> nnIdx( M );
-    std::vector<double> dists( M );
-    double eps = 0;
-    M_kdtree->annkSearch( // search
-        const_cast<double*>( mu.data() ), // query point
-        M,       // number of near neighbors
-        nnIdx.data(),   // nearest neighbors (returned)
-        dists.data(),   // distance (returned)
-        eps );   // error bound
+        //std::cout << "[ParameterSpace::Sampling::searchNearestNeighbors] building tree in R^" <<  M_space->Dimension << "\n";
+        M_kdtree = kdtree_ptrtype( new kdtree_type( data_pts, this->size(), M_space->Dimension ) );
+        //}
 
 
+        // make sure that the sampling set is big enough
+        if ( this->size() < M )
+            M=this->size();
 
-    if ( M_supersampling )
-    {
-        neighbors->setSuperSampling( M_supersampling );
+        std::vector<int> nnIdx( M );
+        std::vector<double> dists( M );
+        double eps = 0;
+        M_kdtree->annkSearch( // search
+                             const_cast<double*>( mu.data() ), // query point
+                             M,       // number of near neighbors
+                             nnIdx.data(),   // nearest neighbors (returned)
+                             dists.data(),   // distance (returned)
+                             eps );   // error bound
 
-        if ( !M_superindices.empty() )
-            neighbors->M_superindices.resize( M );
-    }
 
-    //std::cout << "[parameterspace::sampling::searchNearestNeighbors] neighbor size = " << neighbors->size() << "\n";
-    for ( size_type i = 0; i < M; ++i )
-    {
-        //std::cout << "[parameterspace::sampling::searchNearestNeighbors] neighbor: " <<i << " distance = " << dists[i] << "\n";
-        neighbors->at( i ) = this->at( nnIdx[i] );
-        index_vector.push_back( nnIdx[i] );
 
-        if ( M_supersampling && !M_superindices.empty() )
-            neighbors->M_superindices[i] = M_superindices[ nnIdx[i] ];
-        //std::cout << "[parameterspace::sampling::searchNearestNeighbors] " << neighbors->at( i ) << "\n";
-    }
+        if ( M_supersampling )
+        {
+            neighbors->setSuperSampling( M_supersampling );
 
-    annDeallocPts( data_pts );
+            if ( !M_superindices.empty() )
+                neighbors->M_superindices.resize( M );
+        }
+
+        //std::cout << "[parameterspace::sampling::searchNearestNeighbors] neighbor size = " << neighbors->size() <<std::endl;
+        for ( size_type i = 0; i < M; ++i )
+        {
+            //std::cout << "[parameterspace::sampling::searchNearestNeighbors] neighbor: " <<i << " distance = " << dists[i] << "\n";
+            neighbors->at( i ) = this->at( nnIdx[i] );
+            index_vector.push_back( nnIdx[i] );
+
+            //std::cout<<"[parameterspace::sampling::searchNearestNeighbors] M_superindices.size() : "<<M_superindices.size()<<std::endl;
+            if ( M_supersampling && !M_superindices.empty() )
+                neighbors->M_superindices[i] = M_superindices[ nnIdx[i] ];
+            //std::cout << "[parameterspace::sampling::searchNearestNeighbors] " << neighbors->at( i ) << "\n";
+        }
+        annDeallocPts( data_pts );
+    }//end of procMaster
+
+    boost::mpi::broadcast( Environment::worldComm() , neighbors , Environment::worldComm().masterRank() );
+    boost::mpi::broadcast( Environment::worldComm() , index_vector , Environment::worldComm().masterRank() );
+
+
 #endif /* FEELPP_HAS_ANN_H */
 
     return neighbors;

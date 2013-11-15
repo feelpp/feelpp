@@ -81,9 +81,10 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostDofMap( mesh_type& mesh )
             for ( int c1 =0; c1 < nc1; ++c1 )
             {
                 int ind = FEType::nLocalDof*c1+i;
-                boost::tie( M_locglobOnCluster_indices[elid][ind],
-                            M_locglobOnCluster_signs[elid][ind], boost::tuples::ignore ) =
-                                localToGlobalOnCluster( elid, i, c1 );
+                auto const& dof = localToGlobalOnCluster( elid, i, c1 );
+
+                M_locglobOnCluster_indices[elid][ind] = dof.index();
+                M_locglobOnCluster_signs[elid][ind] = dof.sign();
             }
         }
     }
@@ -326,7 +327,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     DVLOG(2) << "[buildGhostInterProcessDofMap] ncdof " << ncdof << "\n";
 
     //------------------------------------------------------------------------------//
-    std::vector<bool> dofdone(this->_M_n_localWithGhost_df[myRank],false);
+    std::vector<bool> dofdone(this->M_n_localWithGhost_df[myRank],false);
     size_type nDofNotPresent=0;
 
     // iteration on all interprocessfaces in order to send requests to the near proc
@@ -401,41 +402,41 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     //------------------------------------------------------------------------------//
     //------------------------------------------------------------------------------//
     // update datamap info
-    //const size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - nDofNotPresent;
-    const size_type mynDofWithoutGhost = this->_M_n_localWithGhost_df[myRank] - nDofNotPresent;
+    //const size_type mynDofWithoutGhost = this->M_last_df[myRank] - this->M_first_df[myRank] + 1 - nDofNotPresent;
+    const size_type mynDofWithoutGhost = this->M_n_localWithGhost_df[myRank] - nDofNotPresent;
     mpi::all_gather( this->worldComm(),
                      mynDofWithoutGhost,
-                     this->_M_n_localWithoutGhost_df );
+                     this->M_n_localWithoutGhost_df );
 
-    this->_M_n_dofs=0;
+    this->M_n_dofs=0;
     for ( int proc=0; proc<this->worldComm().size(); ++proc )
     {
-        this->_M_n_dofs+=this->_M_n_localWithoutGhost_df[proc];
+        this->M_n_dofs+=this->M_n_localWithoutGhost_df[proc];
     }
 
-    this->_M_first_df_globalcluster=this->_M_first_df;
-    this->_M_last_df_globalcluster=this->_M_last_df;
+    this->M_first_df_globalcluster=this->M_first_df;
+    this->M_last_df_globalcluster=this->M_last_df;
     for ( int i=1; i<this->worldComm().size(); ++i )
     {
-        if ( this->_M_n_localWithoutGhost_df[i-1] >0 )
-            this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
+        if ( this->M_n_localWithoutGhost_df[i-1] >0 )
+            this->M_first_df_globalcluster[i]=this->M_last_df_globalcluster[i-1]+1;
         else
-            this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1];
+            this->M_first_df_globalcluster[i]=this->M_last_df_globalcluster[i-1];
 
-        if ( this->_M_n_localWithoutGhost_df[i] >0 )
-            this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
+        if ( this->M_n_localWithoutGhost_df[i] >0 )
+            this->M_last_df_globalcluster[i]=this->M_first_df_globalcluster[i]+this->M_n_localWithoutGhost_df[i]-1;
         else
-            this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i];
+            this->M_last_df_globalcluster[i]=this->M_first_df_globalcluster[i];
     }
     //------------------------------------------------------------------------------//
     // init map
-    this->M_mapGlobalProcessToGlobalCluster.resize( this->_M_n_localWithGhost_df[myRank],invalid_size_type_value );
-    this->M_mapGlobalClusterToGlobalProcess.resize( this->_M_n_localWithoutGhost_df[myRank],invalid_size_type_value );
+    this->M_mapGlobalProcessToGlobalCluster.resize( this->M_n_localWithGhost_df[myRank],invalid_size_type_value );
+    this->M_mapGlobalClusterToGlobalProcess.resize( this->M_n_localWithoutGhost_df[myRank],invalid_size_type_value );
     //------------------------------------------------------------------------------//
     // add in map the dofs presents
-    size_type firstGlobIndex = this->_M_first_df_globalcluster[myRank];
+    size_type firstGlobIndex = this->M_first_df_globalcluster[myRank];
     size_type nextGlobIndex = firstGlobIndex;
-    for ( size_type i=0; i< this->_M_n_localWithGhost_df[myRank]; ++i )
+    for ( size_type i=0; i< this->M_n_localWithGhost_df[myRank]; ++i )
     {
         //if ( setInterProcessDofNotPresent.find( i )==setInterProcessDofNotPresent.end() )
         if (!dofdone[i])
@@ -559,28 +560,28 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
                 {
                     auto itdofpt = this->dofPointBegin();
                     auto const endofpt = this->dofPointEnd();
-                    size_type indexpt=0;
-                    for ( ; itdofpt!=endofpt && !find ; ++itdofpt,++indexpt )
+                    for ( ; itdofpt!=endofpt && !find ; ++itdofpt )
                     {
-                        const auto thedofPtInFace = itdofpt->template get<0>();
+                        const auto thedofPt = itdofpt->template get<0>();
+                        if ( itdofpt->template get<2>() != comp ) continue;
+
                         DVLOG(3) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
-                                 << "thedofPtInFace: " << thedofPtInFace << "nodeDofRecv: " << nodeDofRecv << "\n";
+                                 << "thedofPt: " << thedofPt << "nodeDofRecv: " << nodeDofRecv << "\n";
 
                         // test equatlity of dofs point
                         bool find2=true;
                         for (uint16_type d=0;d<nRealDim;++d)
                         {
-                            find2 = find2 && (std::abs( thedofPtInFace[d]-nodeDofRecv[d] )<1e-9);
+                            find2 = find2 && (std::abs( thedofPt[d]-nodeDofRecv[d] )<1e-9);
                         }
                         // if find else save local dof
-                        if (find2) { locDof = indexpt;find=true; }
+                        if (find2) { locDof = itdofpt->template get<1>();find=true; }
                     }
                     // check
                     CHECK( find ) << "\nPROBLEM with parallel dof table construction : Dof point not find on interprocess face " << nodeDofRecv << "\n";
                     //------------------------------------------------------------------------------//
                     // get global dof
-                    //const auto thedof = localToGlobal( idFaceInMyPartition, locDof, comp );
-                    const auto dofGlobAsked = locDof;//thedof.template get<0>();
+                    const auto dofGlobAsked = locDof;
                     // save response
                     resAskedWithMultiProcess[cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
                 }
@@ -663,33 +664,33 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
     const int myRank = this->worldComm().rank();
     //------------------------------------------------------------------------------//
     // update datamap info
-    const size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1;// - setInterProcessDofNotPresent.size();
+    const size_type mynDofWithoutGhost = this->M_last_df[myRank] - this->M_first_df[myRank] + 1;// - setInterProcessDofNotPresent.size();
     mpi::all_gather( this->worldComm(),
                      mynDofWithoutGhost,
-                     this->_M_n_localWithoutGhost_df );
+                     this->M_n_localWithoutGhost_df );
 
-    this->_M_n_dofs=0;
+    this->M_n_dofs=0;
     for ( int proc=0; proc<this->worldComm().size(); ++proc )
     {
-        this->_M_n_dofs+=this->_M_n_localWithoutGhost_df[proc];
+        this->M_n_dofs+=this->M_n_localWithoutGhost_df[proc];
     }
 
-    this->_M_first_df_globalcluster=this->_M_first_df;
-    this->_M_last_df_globalcluster=this->_M_last_df;
+    this->M_first_df_globalcluster=this->M_first_df;
+    this->M_last_df_globalcluster=this->M_last_df;
     for ( int i=1; i<this->worldComm().size(); ++i )
     {
-        this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
-        this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
+        this->M_first_df_globalcluster[i]=this->M_last_df_globalcluster[i-1]+1;
+        this->M_last_df_globalcluster[i]=this->M_first_df_globalcluster[i]+this->M_n_localWithoutGhost_df[i]-1;
     }
     //------------------------------------------------------------------------------//
     // init map
-    this->M_mapGlobalProcessToGlobalCluster.resize( this->_M_n_localWithGhost_df[myRank],invalid_size_type_value );
-    this->M_mapGlobalClusterToGlobalProcess.resize( this->_M_n_localWithoutGhost_df[myRank],invalid_size_type_value );
+    this->M_mapGlobalProcessToGlobalCluster.resize( this->M_n_localWithGhost_df[myRank],invalid_size_type_value );
+    this->M_mapGlobalClusterToGlobalProcess.resize( this->M_n_localWithoutGhost_df[myRank],invalid_size_type_value );
     //------------------------------------------------------------------------------//
     // add in map the dofs presents
-    size_type firstGlobIndex = this->_M_first_df_globalcluster[myRank];
+    size_type firstGlobIndex = this->M_first_df_globalcluster[myRank];
     size_type nextGlobIndex = firstGlobIndex;
-    for ( size_type i=0; i< this->_M_n_localWithGhost_df[myRank]; ++i )
+    for ( size_type i=0; i< this->M_n_localWithGhost_df[myRank]; ++i )
     {
         //if ( setInterProcessDofNotPresent.find( i )==setInterProcessDofNotPresent.end() )
         {
@@ -782,7 +783,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGhostInterProcessDofMapInit( m
 
     if ( nbFaceDof == 0 ) return;
     //------------------------------------------------------------------------------//
-    std::vector<bool> dofdone(this->_M_n_localWithGhost_df[myRank],false);
+    std::vector<bool> dofdone(this->M_n_localWithGhost_df[myRank],false);
     // iteration on all interprocessfaces in order to send requests to the near proc
     auto face_it = mesh.interProcessFaces().first;
     auto const face_en = mesh.interProcessFaces().second;
@@ -1315,43 +1316,43 @@ DofTable<MeshType, FEType, PeriodicityType>::buildGlobalProcessToGlobalClusterDo
 
     //------------------------------------------------------------------------------//
     // update datamap info
-    //const size_type mynDofWithoutGhost = this->_M_last_df[myRank] - this->_M_first_df[myRank] + 1 - setInterProcessDofNotPresent.size();
-    const size_type mynDofWithoutGhost = this->_M_n_localWithGhost_df[myRank] - setInterProcessDofNotPresent.size();
+    //const size_type mynDofWithoutGhost = this->M_last_df[myRank] - this->M_first_df[myRank] + 1 - setInterProcessDofNotPresent.size();
+    const size_type mynDofWithoutGhost = this->M_n_localWithGhost_df[myRank] - setInterProcessDofNotPresent.size();
     mpi::all_gather( this->worldComm(),
                      mynDofWithoutGhost,
-                     this->_M_n_localWithoutGhost_df );
+                     this->M_n_localWithoutGhost_df );
 
-    this->_M_n_dofs=0;
+    this->M_n_dofs=0;
     for ( int proc=0; proc<this->worldComm().size(); ++proc )
     {
-        this->_M_n_dofs+=this->_M_n_localWithoutGhost_df[proc];
+        this->M_n_dofs+=this->M_n_localWithoutGhost_df[proc];
     }
 
-    this->_M_first_df_globalcluster=this->_M_first_df;
-    this->_M_last_df_globalcluster=this->_M_last_df;
+    this->M_first_df_globalcluster=this->M_first_df;
+    this->M_last_df_globalcluster=this->M_last_df;
     for ( int i=1; i<this->worldComm().size(); ++i )
     {
-        if ( this->_M_n_localWithoutGhost_df[i-1] >0 )
-            this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1]+1;
+        if ( this->M_n_localWithoutGhost_df[i-1] >0 )
+            this->M_first_df_globalcluster[i]=this->M_last_df_globalcluster[i-1]+1;
         else
-            this->_M_first_df_globalcluster[i]=this->_M_last_df_globalcluster[i-1];
+            this->M_first_df_globalcluster[i]=this->M_last_df_globalcluster[i-1];
 
-        if ( this->_M_n_localWithoutGhost_df[i] >0 )
-            this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i]+this->_M_n_localWithoutGhost_df[i]-1;
+        if ( this->M_n_localWithoutGhost_df[i] >0 )
+            this->M_last_df_globalcluster[i]=this->M_first_df_globalcluster[i]+this->M_n_localWithoutGhost_df[i]-1;
         else
-            this->_M_last_df_globalcluster[i]=this->_M_first_df_globalcluster[i];
+            this->M_last_df_globalcluster[i]=this->M_first_df_globalcluster[i];
     }
 
     //------------------------------------------------------------------------------//
     // init map
-    this->M_mapGlobalProcessToGlobalCluster.resize( this->_M_n_localWithGhost_df[myRank],invalid_size_type_value );
-    this->M_mapGlobalClusterToGlobalProcess.resize( this->_M_n_localWithoutGhost_df[myRank],invalid_size_type_value );
+    this->M_mapGlobalProcessToGlobalCluster.resize( this->M_n_localWithGhost_df[myRank],invalid_size_type_value );
+    this->M_mapGlobalClusterToGlobalProcess.resize( this->M_n_localWithoutGhost_df[myRank],invalid_size_type_value );
 
     //------------------------------------------------------------------------------//
     // add in map the dofs presents
-    size_type firstGlobIndex = this->_M_first_df_globalcluster[myRank];
+    size_type firstGlobIndex = this->M_first_df_globalcluster[myRank];
     size_type nextGlobIndex = firstGlobIndex;
-    for ( size_type i=0; i< this->_M_n_localWithGhost_df[myRank]; ++i )
+    for ( size_type i=0; i< this->M_n_localWithGhost_df[myRank]; ++i )
     {
         if ( setInterProcessDofNotPresent.find( i )==setInterProcessDofNotPresent.end() )
         {

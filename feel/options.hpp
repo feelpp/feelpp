@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-07-21
  */
-#ifndef _FEELPP_OPTIONS_HPP
-#define _FEELPP_OPTIONS_HPP 1
+#ifndef FEELPP_OPTIONS_HPP
+#define FEELPP_OPTIONS_HPP 1
 
 #include <boost/program_options.hpp>
 
@@ -93,5 +93,6 @@ po::options_description exporter_options( std::string const& prefix = "" );
 
 po::options_description material_options( std::string const& prefix = "" );
 
+po::options_description error_options( std::string const& prefix = "" );
 }
-#endif // _FEELPP_OPTIONS_HPP
+#endif // FEELPP_OPTIONS_HPP

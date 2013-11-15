@@ -50,6 +50,9 @@ namespace GiNaC
     ex substitute(ex const& f, symbol const& l, const double val );
     ex substitute(ex const& f, symbol const& l, ex const & g );
 
+    matrix substitute(matrix const& f, symbol const& l, const double val );
+    matrix substitute(matrix const& f, symbol const& l, ex const & g );
+
     //ex parse( std::string const& str, std::vector<symbol> const& syms );
     ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
 
@@ -142,31 +145,50 @@ namespace Feel
              */
             //@{
 
-            explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms )
+            explicit GinacEx( expression_type const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="")
                 :
                 M_fun( fun ),
                 M_syms( syms),
-                M_cfun()
+                M_cfun(),
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
+                DVLOG(2) << "Ginac constructor with expression_type \n";
                 GiNaC::lst exprs(fun);
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun);
 
+                // If the so file already exists, no need to re-compile but only link it
+                std::string filenameWithSuffix = M_filename + ".so";
+                if( !filename.empty() && fs::exists( filenameWithSuffix ) )
+                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                else
+                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
             }
 
             GinacEx( GinacEx const & fun )
             :
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
-            M_cfun()
+            M_cfun(),
+            M_filename( fun.M_filename )
             {
-                GiNaC::lst exprs(M_fun);
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-
-
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
+                {
+                    DVLOG(2) << "Ginac copy constructor : compile object file \n";
+                    GiNaC::lst exprs(M_fun);
+                    GiNaC::lst syml;
+                    std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
+                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+                }
+                else
+                {
+                    DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
+                    boost::mpi::communicator world;
+                    // std::string pid = boost::lexical_cast<std::string>(world.rank());
+                    // std::string filenameWithSuffix = M_filename + pid + ".so";
+                    std::string filenameWithSuffix = M_filename + ".so";
+                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                }
             }
 
             //@}
@@ -215,7 +237,7 @@ namespace Feel
                 typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
                 // change 0 into rank
                 typedef typename mpl::if_<mpl::equal_to<mpl::int_<0>,mpl::int_<0> >,
@@ -236,8 +258,9 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
+                    M_x( vec_type::Zero( M_nsyms ) )
                 {}
 
                 tensor( this_type const& expr,
@@ -245,16 +268,19 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
+                    M_x( vec_type::Zero( M_nsyms ) )
                 {}
 
                 tensor( this_type const& expr, Geo_t const& geom )
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( vec_type::Zero(M_gmc->nPoints()) ),
+                    M_x( vec_type::Zero( M_nsyms ) )
+
                 {
                 }
 
@@ -277,14 +303,14 @@ namespace Feel
 
                     int no = 1;
                     int ni = M_nsyms;///gmc_type::nDim;
-                    Eigen::VectorXd xi( M_nsyms );
+
                     for(int q = 0; q < M_gmc->nPoints();++q )
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
-                                xi[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < xi.size(); ++k )
-                                xi[k] = 0;
-                            M_fun(&ni,xi.data(),&no,&M_y[q]);
+                                M_x[k]=M_gmc->xReal( q )[k];
+                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
+                                M_x[k] = 0;
+                            M_fun(&ni,M_x.data(),&no,&M_y[q]);
                         }
 
                 }
@@ -295,14 +321,13 @@ namespace Feel
 
                     int no = 1;
                     int ni = M_nsyms;//gmc_type::nDim;
-                    Eigen::VectorXd xi( M_nsyms );
                     for(int q = 0; q < M_gmc->nPoints();++q )
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
-                                xi[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < xi.size(); ++k )
-                                xi[k] = 0;
-                            M_fun(&ni,xi.data(),&no,&M_y[q]);
+                                M_x[k]=M_gmc->xReal( q )[k];
+                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
+                                M_x[k] = 0;
+                            M_fun(&ni,M_x.data(),&no,&M_y[q]);
                         }
                 }
 
@@ -337,29 +362,31 @@ namespace Feel
                 GiNaC::FUNCP_CUBA M_fun;
                 gmc_ptrtype M_gmc;
 
-
-                vec_type M_y;
                 int M_nsyms;
+                vec_type M_y;
+                vec_type M_x;
+
             };
 
         private:
             mutable expression_type  M_fun;
             std::vector<GiNaC::symbol> M_syms;
             GiNaC::FUNCP_CUBA M_cfun;
+            std::string M_filename;
         };
 
         inline
         Expr< GinacEx<2> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym ) );
+            return Expr< GinacEx<2> >(  GinacEx<2>( f, lsym, filename ) );
         }
 
         inline
         Expr< GinacEx<2> >
-        expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym )
+        expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym ) );
+            return Expr< GinacEx<2> >(  GinacEx<2>( parse(s,lsym), lsym, filename) );
         }
 
         /**
@@ -369,17 +396,17 @@ namespace Feel
         template<int Order>
         inline
         Expr< GinacEx<Order> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym ) );
+            return Expr< GinacEx<Order> >(  GinacEx<Order>( f, lsym, filename ));
         }
 
         template<int Order>
         inline
         Expr< GinacEx<Order> >
-        expr( std::string const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(f,lsym), lsym ) );
+            return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(s,lsym), lsym, filename) );
         }
 
         template<int M=1, int N=1, int Order = 2>
@@ -428,45 +455,60 @@ namespace Feel
              */
             //@{
 
-            explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms )
+            explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="" )
                 :
                 M_fun( fun.evalm() ),
                 M_syms( syms),
-                M_cfun()
+                M_cfun(),
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
 
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
             }
-            explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms )
+            explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename=""  )
                 :
                 M_fun(fun.evalm()),
                 M_syms( syms),
-                M_cfun()
+                M_cfun(),
+                M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
 
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
             }
 
             GinacMatrix( GinacMatrix const & fun )
             :
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
-            M_cfun()
+            M_cfun(),
+            M_filename( fun.M_filename )
             {
-                GiNaC::lst exprs;
-                for( int i = 0; i < fun.M_fun.nops(); ++i ) exprs.append( fun.M_fun.op(i) );
+                if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
+                {
+                    DVLOG(2) << "Ginac copy constructor : compile object file \n";
+                    GiNaC::lst exprs;
+                    for( int i = 0; i < fun.M_fun.nops(); ++i ) exprs.append( fun.M_fun.op(i) );
 
-                GiNaC::lst syml;
-                std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun);
+                    GiNaC::lst syml;
+                    std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
+                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+                }
+                else
+                {
+                    DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
+                    boost::mpi::communicator world;
+                    //std::string pid = boost::lexical_cast<std::string>(world.rank());
+                    std::string filenameWithSuffix = M_filename + ".so";
+                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                }
             }
 
 
@@ -515,13 +557,19 @@ namespace Feel
                 typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<0> >,
                                           mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::pointer gmc_ptrtype;
+                typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
                 typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
                 typedef typename mn_to_shape<gmc_type::nDim,M,N>::type shape;
-                typedef Eigen::Matrix<value_type,shape::M,shape::N,Eigen::RowMajor> vec_type;
-                typedef std::vector<vec_type> loc_type;
-
+                // be careful that the matrix passed to ginac must be Row Major,
+                // however if the number of columns is 1 then eigen3 fails with
+                // an assertion, so we have a special when N=1 and have the
+                // matrix column major which is ok in this case
+                typedef typename mpl::if_<mpl::equal_to<mpl::int_<shape::N>, mpl::int_<1>>,
+                                          mpl::identity<Eigen::Matrix<value_type,shape::M,1>>,
+                                          mpl::identity<Eigen::Matrix<value_type,shape::M,shape::N,Eigen::RowMajor>>>::type::type mat_type;
+                typedef std::vector<mat_type> loc_type;
+                typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
                 struct is_zero
                 {
                     static const bool value = false;
@@ -532,8 +580,9 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
+                    M_x( vec_type::Zero(M_nsyms) )
                 {}
 
                 tensor( this_type const& expr,
@@ -541,16 +590,19 @@ namespace Feel
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
+                    M_x( vec_type::Zero(M_nsyms) )
+
                 {}
 
                 tensor( this_type const& expr, Geo_t const& geom )
                     :
                     M_fun( expr.fun() ),
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
-                    M_y( M_gmc->nPoints() ),
-                    M_nsyms( expr.syms().size() )
+                    M_nsyms( expr.syms().size() ),
+                    M_y( M_gmc->nPoints(), mat_type::Zero() ),
+                    M_x( vec_type::Zero(M_nsyms) )
                 {
                 }
 
@@ -573,14 +625,14 @@ namespace Feel
 
                     int no = M*N;
                     int ni = M_nsyms;//gmc_type::nDim;
-                    Eigen::VectorXd xi( M_nsyms );
                     for(int q = 0; q < M_gmc->nPoints();++q )
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
-                                xi[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < xi.size(); ++k )
-                                xi[k] = 0;
-                            M_fun(&ni,xi.data(),&no,M_y[q].data());
+                                M_x[k]=M_gmc->xReal( q )[k];
+                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
+                                M_x[k] = 0;
+                            M_fun(&ni,M_x.data(),&no,M_y[q].data());
+;
                         }
 
                 }
@@ -591,14 +643,13 @@ namespace Feel
 
                     int no = M*N;
                     int ni = M_nsyms;//gmc_type::nDim;
-                    Eigen::VectorXd xi( M_nsyms );
                     for(int q = 0; q < M_gmc->nPoints();++q )
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
-                                xi[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < xi.size(); ++k )
-                                xi[k] = 0;
-                            M_fun(&ni,xi.data(),&no,M_y[q].data());
+                                M_x[k]=M_gmc->xReal( q )[k];
+                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
+                                M_x[k] = 0;
+                            M_fun(&ni,M_x.data(),&no,M_y[q].data());
                         }
                 }
 
@@ -630,22 +681,24 @@ namespace Feel
 
                 GiNaC::FUNCP_CUBA M_fun;
                 gmc_ptrtype M_gmc;
-                loc_type M_y;
                 int M_nsyms;
+                loc_type M_y;
+                vec_type M_x;
             };
 
         private:
             mutable expression_type  M_fun;
             std::vector<GiNaC::symbol> M_syms;
             GiNaC::FUNCP_CUBA M_cfun;
+            std::string M_filename;
         }; // GinacMatrix
         /// \endcond
 
         inline
         Expr< GinacMatrix<1,1,2> >
-        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="")
         {
-            return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym ) );
+            return Expr< GinacMatrix<1,1,2> >(  GinacMatrix<1,1,2>( f, lsym, filename ) );
         }
 
         /**
@@ -655,21 +708,20 @@ namespace Feel
         template<int M, int N, int Order>
         inline
         Expr< GinacMatrix<M,N,Order> >
-        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::matrix const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym ) );
+            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename) );
         }
 
         template<int M, int N, int Order>
         inline
         Expr< GinacMatrix<M,N,Order> >
-        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym )
+        expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string filename="" )
         {
-            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym ) );
+            return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename ) );
         }
 
 
     } // vf
 } // Feel
 #endif /* __Ginac_H */
-

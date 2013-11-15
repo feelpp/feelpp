@@ -77,23 +77,28 @@ SYMMETRIC = 1 << 3
 namespace detail
 {
 template<typename T>
-DataMap datamap( T const& t, mpl::true_ )
+boost::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
 {
-    return t->map();
+    return t->mapPtr();
 }
 template<typename T>
-DataMap datamap( T const& t, mpl::false_ )
+boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
 {
-    return t.map();
+    return t.mapPtr();
 }
 template<typename T>
-DataMap datamap( T const& t )
+boost::shared_ptr<DataMap> datamap( T const& t )
 {
     return datamap( t, detail::is_shared_ptr<T>() );
 }
 
 template<typename T>
-typename T::reference ref( T t, mpl::true_ )
+#if BOOST_VERSION >= 105300
+typename boost::detail::sp_dereference< typename T::element_type >::type
+#else
+typename T::reference
+#endif
+ref( T t, mpl::true_ )
 {
     return *t;
 }
@@ -157,7 +162,8 @@ public:
     typedef boost::tuple<bool, size_type, value_type> solve_return_type;
     typedef boost::tuple<bool, size_type, value_type> nl_solve_return_type;
 
-
+    typedef DataMap datamap_type;
+    typedef boost::shared_ptr<datamap_type> datamap_ptrtype;
 
     //@}
 
@@ -169,6 +175,7 @@ public:
     Backend( po::variables_map const& vm, std::string const& prefix = "", WorldComm const& worldComm=Environment::worldComm() );
     Backend( Backend const & );
     virtual ~Backend();
+
 
     /**
      * Builds a \p Backend, if Petsc is available, use Petsc by
@@ -217,7 +224,7 @@ public:
                                      const size_type m_l,
                                      const size_type n_l,
                                      graph_ptrtype const & graph,
-                                     std::vector < std::vector<int> > indexSplit,
+                                     std::vector < std::vector<size_type> > indexSplit,
                                      size_type matrix_properties = NON_HERMITIAN )
     {
         auto mat = this->newMatrix( m,n,m_l,n_l,graph,matrix_properties );
@@ -229,24 +236,24 @@ public:
     /**
      * instantiate a new sparse vector
      */
-    virtual sparse_matrix_ptrtype newMatrix( DataMap const& dm1,
-            DataMap const& dm2,
-            size_type prop = NON_HERMITIAN,
-            bool init = true ) = 0;
+    virtual sparse_matrix_ptrtype newMatrix( datamap_ptrtype const& dm1,
+                                             datamap_ptrtype const& dm2,
+                                             size_type prop = NON_HERMITIAN,
+                                             bool init = true ) = 0;
 
     /**
      * instantiate a new sparse vector
      */
-    sparse_matrix_ptrtype newMatrix( DataMap const& domainmap,
-                                     DataMap const& imagemap,
+    sparse_matrix_ptrtype newMatrix( datamap_ptrtype const& domainmap,
+                                     datamap_ptrtype const& imagemap,
                                      graph_ptrtype const & graph,
                                      size_type matrix_properties = NON_HERMITIAN,
                                      bool init = true )
     {
         auto mat = this->newMatrix( domainmap,imagemap, matrix_properties, false );
 
-        if ( init ) mat->init( imagemap.nDof(), domainmap.nDof(),
-                                   imagemap.nLocalDofWithoutGhost(), domainmap.nLocalDofWithoutGhost(),
+        if ( init ) mat->init( imagemap->nDof(), domainmap->nDof(),
+                                   imagemap->nLocalDofWithoutGhost(), domainmap->nLocalDofWithoutGhost(),
                                    graph );
 
         mat->zero();
@@ -266,7 +273,7 @@ public:
                    const size_type m_l,
                    const size_type n_l ) =0;
 
-    virtual sparse_matrix_ptrtype newZeroMatrix( DataMap const& dm1, DataMap const& dm2 ) = 0;
+    virtual sparse_matrix_ptrtype newZeroMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 ) = 0;
 
     /**
      * helper function
@@ -289,7 +296,7 @@ public:
     {
 
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
-        auto mat = this->newMatrix( trial->mapOnOff(), test->mapOn(), properties, false );
+        auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
 
         if ( !buildGraphWithTranspose )
         {
@@ -311,10 +318,13 @@ public:
                               _pattern=pattern,
                               _pattern_block=pattern_block.transpose(),
                               _diag_is_nonzero=false,// because transpose(do just after)
+                              _close=false,
                               _collect_garbage=collect_garbage );
             // get the good graph
-            auto graph = s->graph()->transpose();
-            if ( diag_is_nonzero ) { graph->addMissingZeroEntriesDiagonal();graph->close(); }
+            auto graph = s->graph()->transpose(false);
+            if ( diag_is_nonzero )
+                graph->addMissingZeroEntriesDiagonal();
+            graph->close();
 
             //maybe do that
             //stencilManagerGarbage(boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), false/*diag_is_nonzero*/));
@@ -415,20 +425,18 @@ public:
                                      newZeroMatrix,
                                      tag,
                                      ( required
-                                       ( test,* )
-                                       ( trial,* )
+                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                       ( trial,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
                                      )
                                    )
     {
-        //return this->newZeroMatrix( trial->map(), test->map() );
-        return this->newZeroMatrix( trial->mapOnOff(), test->mapOn() );
-
+        return this->newZeroMatrix( trial->dofOnOff(), test->dofOn() );
     }
 
     /**
      * instantiate a new vector
      */
-    virtual vector_ptrtype newVector( DataMap const& dm ) = 0;
+    virtual vector_ptrtype newVector( datamap_ptrtype const& dm ) = 0;
 
     /**
      * instantiate a new vector
@@ -438,10 +446,15 @@ public:
     /**
      * helper function
      */
-    template<typename DomainSpace>
-    vector_ptrtype newVector( DomainSpace const& dm  )
+    BOOST_PARAMETER_MEMBER_FUNCTION( ( vector_ptrtype ),
+                                     newVector,
+                                     tag,
+                                     ( required
+                                       ( test,*( boost::is_convertible<mpl::_,boost::shared_ptr<FunctionSpaceBase> >) )
+                                     )
+                                   )
     {
-        return this->newVector( dm->map() );
+        return this->newVector( test->dof() );
     }
 
     //@}
@@ -751,7 +764,7 @@ public:
     /**
      * clean up
      */
-    //virtual void clear() = 0;
+    virtual void clear();
 
     /**
      * \return \f$ r = x^T * y \f$
@@ -841,9 +854,9 @@ public:
             rhs->printMatlab( M_export+"_b.m" );
         }
 
-        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
         // initialize
-        *_sol = detail::ref( solution );
+        *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
 
@@ -994,6 +1007,8 @@ public:
      */
     void attachPreconditioner( preconditioner_ptrtype preconditioner )
     {
+        if ( M_preconditioner && M_preconditioner != preconditioner )
+            M_preconditioner->clear();
         M_preconditioner = preconditioner;
     }
 
@@ -1153,7 +1168,7 @@ BOOST_PARAMETER_FUNCTION(
     else
     {
         if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
-            git->second->sendDeleteSignal();
+            git->second->clear();
 
         VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
 

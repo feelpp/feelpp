@@ -138,16 +138,9 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
     // How the nodes on this mesh will be renumbered to nodes
     // on the new_mesh.
-    std::vector<size_type> new_node_numbers ( M_mesh->numPoints() );
-    std::vector<size_type> new_vertex ( M_mesh->numPoints() );
+    std::map<size_type,size_type> new_node_numbers;
+    std::map<size_type, size_type> new_vertex;
 
-    std::fill ( new_node_numbers.begin(),
-                new_node_numbers.end(),
-                invalid_size_type_value );
-
-    std::fill ( new_vertex.begin(),
-                new_vertex.end(),
-                0 );
 
 
     // the number of nodes on the new mesh, will be incremented
@@ -191,11 +184,19 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
         new_elem.setMarker3(old_elem.marker3().value());
         */
         // partitioning update
-        new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
+        /*new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
         new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
         //new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());// TODO
+        */
+
+        // reset partitioning data
+        new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
+        new_elem.setNumberOfPartitions( 1 );
+        new_elem.setProcessId( old_elem.processId() );
+        new_elem.idInOthersPartitions().clear();
+        new_elem.neighborPartitionIds().clear();
 
 
         // Loop over the nodes on this element.
@@ -204,7 +205,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             //FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
             auto const& old_point = old_elem.point( n );
 
-            if ( new_node_numbers[old_point.id()] == invalid_size_type_value )
+            if ( new_node_numbers.find( old_point.id() ) == new_node_numbers.end() )
             {
                 new_node_numbers[old_point.id()] = n_new_nodes;
 
@@ -212,6 +213,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                 point_type pt( old_point );
                 pt.setId( n_new_nodes );
+                pt.setProcessId(old_point.processId());
 
                 // Add this node to the new mesh
                 newMesh->addPoint ( pt );
@@ -223,7 +225,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                 if ( n < element_type::numVertices )
                 {
-                    FEELPP_ASSERT( new_vertex[old_point.id()] == 0 ).error( "already seen this point?" );
+                    CHECK( new_vertex.find(old_point.id()) == new_vertex.end() ) << "already seen this point?";
                     new_vertex[old_point.id()]=1;
                 }
 
@@ -244,7 +246,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             }
 
             // Define this element's connectivity on the new mesh
-            FEELPP_ASSERT ( new_node_numbers[old_point.id()] < newMesh->numPoints() ).error( "invalid connectivity" );
+            CHECK ( new_node_numbers[old_point.id()] < newMesh->numPoints() ) <<  "invalid connectivity";
 
             DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_point.id()
                           << ") as point new(" << new_node_numbers[old_point.id()]
@@ -444,7 +446,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 for ( unsigned int n=0; n < old_elem.nPoints(); n++ )
                 {
                     //FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
-                    if ( new_node_numbers[old_elem.point( n ).id()] == invalid_size_type_value )
+                    if ( new_node_numbers.find( old_elem.point( n ).id() ) == new_node_numbers.end() )
                     {
                         new_node_numbers[old_elem.point( n ).id()] = n_new_nodes;
 
@@ -452,6 +454,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                         point_type pt( old_elem.point( n ) );
                         pt.setId( n_new_nodes );
+                        pt.setProcessId(invalid_uint16_type_value);//old_elem.point( n ).processId());
 
                         // Add this node to the new mesh
                         newMesh->addPoint ( pt );
@@ -463,13 +466,13 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                         if ( n < element_type::numVertices )
                         {
-                            FEELPP_ASSERT( new_vertex[old_elem.point( n ).id()] == 0 ).error( "already seen this point?" );
+                            CHECK( new_vertex.find(old_elem.point( n ).id()) == new_vertex.end() ) << "already seen this point?";
                             new_vertex[old_elem.point( n ).id()]=1;
                         }
                     }
 
                     // Define this element's connectivity on the new mesh
-                    FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < newMesh->numPoints() ).error( "invalid connectivity" );
+                    CHECK ( new_node_numbers[old_elem.point( n ).id()] < newMesh->numPoints() ) << "invalid connectivity";
 
                     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
                              << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
@@ -505,7 +508,11 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
 
     VLOG(2) << "submesh created\n";google::FlushLogFiles(google::GLOG_INFO);
-    newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
+    newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0,
+                                           []( int lhs, std::pair<int,int> const& rhs )
+                                           {
+                                               return lhs+rhs.second;
+                                           } ) );
 
     VLOG(2) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";google::FlushLogFiles(google::GLOG_INFO);
     // Prepare the new_mesh for use
@@ -520,9 +527,6 @@ template <typename MeshType,typename IteratorRange,int TheTag>
 typename createSubmeshTool<MeshType,IteratorRange,TheTag>::mesh_faces_ptrtype
 createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /**/ )
 {
-    // we don't deal with this situation yet
-    M_smd.reset();
-
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] creating new mesh" << "\n";
     mesh_faces_ptrtype newMesh( new mesh_faces_type( M_mesh->worldComm()) );
 
@@ -540,16 +544,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
     typedef typename mesh_faces_type::element_type new_element_type;
     typedef typename mesh_faces_type::face_type new_face_type;
 
-    std::vector<size_type> new_node_numbers ( M_mesh->numPoints() );
-    std::vector<size_type> new_vertex ( M_mesh->numPoints() );
-
-    std::fill ( new_node_numbers.begin(),
-                new_node_numbers.end(),
-                invalid_size_type_value );
-
-    std::fill ( new_vertex.begin(),
-                new_vertex.end(),
-                0 );
+    std::map<size_type,size_type> new_node_numbers;
+    std::map<size_type,size_type> new_vertex;
 
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
@@ -599,7 +595,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         {
             auto const& oldPoint = oldElem.point( n );
 
-            if ( new_node_numbers[oldPoint.id()] == invalid_size_type_value )
+            if ( new_node_numbers.find(oldPoint.id()) == new_node_numbers.end() )
             {
                 new_node_numbers[oldPoint.id()] = n_new_nodes;
 
@@ -620,7 +616,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
                 if ( n < new_element_type::numVertices )
                 {
-                    FEELPP_ASSERT( new_vertex[oldPoint.id()] == 0 ).error( "already seen this point?" );
+                    CHECK( new_vertex.find(oldPoint.id()) == new_vertex.end() ) << "already seen this point?";
                     new_vertex[oldPoint.id()]=1;
                 }
 
@@ -668,6 +664,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         // Add an equivalent element type to the new_mesh
         auto const& e = newMesh->addElement( newElem );
         new_element_id[it->id()]= e.id();
+        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), it->id() ) );
 
 #if 0
         // Maybe add faces for this element
@@ -802,7 +799,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                     {
                         auto const& oldPoint = old_elem.point( n );
                         //FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
-                        if ( new_node_numbers[oldPoint.id()] == invalid_size_type_value )
+                        if ( new_node_numbers.find(oldPoint.id()) == new_node_numbers.end() )
                         {
                             new_node_numbers[oldPoint.id()] = n_new_nodes;
 
@@ -823,13 +820,13 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
                             if ( n < new_element_type::numVertices )
                             {
-                                FEELPP_ASSERT( new_vertex[oldPoint.id()] == 0 ).error( "already seen this point?" );
+                                CHECK( new_vertex.find(oldPoint.id()) == new_vertex.end() ) << "already seen this point?";
                                 new_vertex[oldPoint.id()]=1;
                             }
                         }
 
                         // Define this element's connectivity on the new mesh
-                        FEELPP_ASSERT ( new_node_numbers[old_elem.point( n ).id()] < newMesh->numPoints() ).error( "invalid connectivity" );
+                        CHECK ( new_node_numbers[old_elem.point( n ).id()] < newMesh->numPoints() ) << "invalid connectivity";
 
                         DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
                                  << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
@@ -847,8 +844,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                     // Add an equivalent element type to the new_mesh
                     auto const& e = newMesh->addElement( new_elem );
                     new_element_id[old_elem.id()]= e.id();
-
-                    //M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), old_elem.id() ) );
+                    M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), old_elem.id() ) );
 
                     // save idEltAsked;
                     auto elttt = newMesh->elementIterator( e.id(),  proc );
@@ -860,7 +856,11 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
     } // if ( nProc > 1 )
 
-    newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
+    newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0,
+                                              []( int lhs, std::pair<int,int> const& rhs )
+                                              {
+                                                  return lhs+rhs.second;
+                                              } ) );
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
@@ -894,16 +894,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
     typedef typename mesh_edges_type::element_type new_element_type;
 
-    std::vector<size_type> new_node_numbers ( M_mesh->numPoints() );
-    std::vector<size_type> new_vertex ( M_mesh->numPoints() );
-
-    std::fill ( new_node_numbers.begin(),
-                new_node_numbers.end(),
-                invalid_size_type_value );
-
-    std::fill ( new_vertex.begin(),
-                new_vertex.end(),
-                0 );
+    std::map<size_type,size_type> new_node_numbers;
+    std::map<size_type,size_type> new_vertex;
 
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
@@ -948,7 +940,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
         for ( unsigned int n=0; n < oldElem.nPoints(); n++ )
         {
 
-            if ( new_node_numbers[oldElem.point( n ).id()] == invalid_size_type_value )
+            if ( new_node_numbers.find(oldElem.point( n ).id()) == new_node_numbers.end() )
             {
                 new_node_numbers[oldElem.point( n ).id()] = n_new_nodes;
 
@@ -967,7 +959,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
                 if ( n < new_element_type::numVertices )
                 {
-                    FEELPP_ASSERT( new_vertex[oldElem.point( n ).id()] == 0 ).error( "already seen this point?" );
+                    CHECK( new_vertex.find(oldElem.point( n ).id()) == new_vertex.end() ) << "already seen this point?";
                     new_vertex[oldElem.point( n ).id()]=1;
                 }
 
@@ -976,10 +968,10 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
             newElem.setPoint( n, newMesh->point( new_node_numbers[oldElem.point( n ).id()] ) );
             newElem.setFace( n, newMesh->point( new_node_numbers[oldElem.point( n ).id()] ) );
         } // end for n
-        FEELPP_ASSERT( newElem.pointPtr(0) ).error( "invalid point 0 in edge" );
-        FEELPP_ASSERT( newElem.pointPtr(1) ).error( "invalid point 1 in edge" );
-        FEELPP_ASSERT( newElem.facePtr(0) ).error( "invalid face 0 in edge" );
-        FEELPP_ASSERT( newElem.facePtr(1) ).error( "invalid face 1 in edge" );
+        CHECK( newElem.pointPtr(0) ) << "invalid point 0 in edge";
+        CHECK( newElem.pointPtr(1) ) << "invalid point 1 in edge";
+        CHECK( newElem.facePtr(0) ) << "invalid face 0 in edge";
+        CHECK( newElem.facePtr(1) ) << "invalid face 1 in edge";
 
         // set id of element
         newElem.setId ( n_new_elem );
@@ -994,9 +986,13 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
     } // for ( ; itListRange!=enListRange ; ++itListRange)
 
 
-    newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0 ) );
+    newMesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0,
+                                              []( int lhs, std::pair<int,int> const& rhs )
+                                              {
+                                                  return lhs+rhs.second;
+                                              } ) );
 
-    DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
+    DVLOG(2) << "[createSubmesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
     newMesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     newMesh->updateForUse();

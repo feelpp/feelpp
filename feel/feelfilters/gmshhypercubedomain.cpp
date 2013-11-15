@@ -161,14 +161,14 @@ GmshHypercubeDomain::getDescription2D() const
     ostr << this->preamble();
 
 
-    ostr << "a=" << this->M_I[0].first << ";\n"
-         << "b=" << this->M_I[0].second << ";\n"
-         << "c=" << this->M_I[1].first << ";\n"
-         << "d=" << this->M_I[1].second << ";\n"
-         << "Point(1) = {a,c,0.0,h};\n"
-         << "Point(2) = {b,c+"<<this->shear()<<",0.0,h};\n"
-         << "Point(3) = {b+" << this->shear() << ",d,0.0,h};\n"
-         << "Point(4) = {a+" << this->shear() << ",d+"<<this->shear()<<",0.0,h};\n"
+    ostr << "xmin=" << this->M_I[0].first << ";\n"
+         << "xmax=" << this->M_I[0].second << ";\n"
+         << "ymin=" << this->M_I[1].first << ";\n"
+         << "ymax=" << this->M_I[1].second << ";\n"
+         << "Point(1) = {xmin,ymin,0.0,h};\n"
+         << "Point(2) = {xmax,ymin+"<<this->shear()<<",0.0,h};\n"
+         << "Point(3) = {xmax+" << this->shear() << ",ymax,0.0,h};\n"
+         << "Point(4) = {xmin+" << this->shear() << ",ymax+"<<this->shear()<<",0.0,h};\n"
          << "Line(1) = {4,1};\n"
          << "Line(2) = {1,2};\n"
          << "Line(3) = {2,3};\n"
@@ -176,7 +176,17 @@ GmshHypercubeDomain::getDescription2D() const
          << "Line Loop(5) = {1,2,3,4};\n"
          << "Plane Surface(6) = {5};\n";
 
-    if ( this->usePhysicalNames() == false )
+    if ( this->subStructuring() == true )
+    {
+        ostr << "Physical Point(\"CrossPoints\") = {1,2,3,4};\n";
+        ostr << "Physical Line(\"NORTH\") = {4};\n"
+             << "Physical Line(\"WEST\") = {1};\n"
+             << "Physical Line(\"SOUTH\") = {2};\n"
+             << "Physical Line(\"EAST\") = {3};\n"
+             << "Physical Surface(\"Omega\") = {6};\n";
+
+    }
+    else if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Line(1) = {1};\n"
              << "Physical Line(2) = {2};\n"
@@ -184,7 +194,6 @@ GmshHypercubeDomain::getDescription2D() const
              << "Physical Line(4) = {4};\n"
              << "Physical Surface(6) = {6};\n";
     }
-
     else
     {
         ostr << "Physical Line(\"Dirichlet\") = {1,3};\n"
@@ -192,17 +201,25 @@ GmshHypercubeDomain::getDescription2D() const
              << "Physical Surface(\"Mat1\") = {6};\n";
     }
 
-    if ( M_use_hypercube )
+    if ( this->structuredMesh() || M_use_hypercube )
     {
+        if ( this->structuredMesh() == 1 || M_use_hypercube )
+            ostr << "nx = (xmax-xmin)/h;\n"
+                 << "ny = (ymax-ymin)/h;\n";
+        else if ( this->structuredMesh() == 2 )
+            ostr << "nx = 1/h;\n"
+                 << "ny = 1/h;\n";
 
-        ostr << "nx = 1/h;\n"
-             << "ny = 1/h;\n"
-             << "\n"
+        ostr << "\n"
              << "Transfinite Line {1,3} = ny + 1 Using Progression 1.0;\n"
              << "Transfinite Line {2,4} = nx + 1 Using Progression 1.0;\n"
              << "\n"
-             << "Transfinite Surface {6} = {1,2,3,4};\n"
-             << "Recombine Surface {6};\n";
+             << "Transfinite Surface {6} = {1,2,3,4};\n";
+
+    }
+    if ( M_use_hypercube )
+    {
+        ostr << "Recombine Surface {6};\n";
     }
 
     return ostr.str();
@@ -214,16 +231,19 @@ GmshHypercubeDomain::getDescription3D() const
     std::ostringstream ostr;
     ostr << this->preamble();
 
-    ostr << "a=" << this->M_I[0].first << ";\n"
-         << "b=" << this->M_I[0].second << ";\n"
-         << "c=" << this->M_I[1].first << ";\n"
-         << "d=" << this->M_I[1].second << ";\n"
-         << "e=" << this->M_I[2].first << ";\n"
-         << "f=" << this->M_I[2].second << ";\n"
-         << "Point(1) = {a,c,e,h};\n"
-         << "Point(2) = {b,c,e,h};\n"
-         << "Point(3) = {b,d,e,h};\n"
-         << "Point(4) = {a,d,e,h};\n"
+    ostr << "xmin=" << this->M_I[0].first << ";\n"
+         << "xmax=" << this->M_I[0].second << ";\n"
+         << "ymin=" << this->M_I[1].first << ";\n"
+         << "ymax=" << this->M_I[1].second << ";\n"
+         << "zmin=" << this->M_I[2].first << ";\n"
+         << "zmax=" << this->M_I[2].second << ";\n"
+         << "nx = 1/h;\n"
+         << "ny = 1/h;\n"
+         << "nz = 1/h;\n"
+         << "Point(1) = {xmin,ymin,zmin,h};\n"
+         << "Point(2) = {xmax,ymin,zmin,h};\n"
+         << "Point(3) = {xmax,ymax,zmin,h};\n"
+         << "Point(4) = {xmin,ymax,zmin,h};\n"
          << "Line(1) = {2,3};\n"
          << "Line(2) = {3,4};\n"
          << "Line(3) = {4,1};\n"
@@ -231,15 +251,31 @@ GmshHypercubeDomain::getDescription3D() const
          << "Line Loop(5) = {2,3,4,1};\n"
          << "Plane Surface(6) = {5};\n"
          << "\n"
-         << "Extrude Surface {6, {0,0,f-e} } {\n"
-         << "  Layers { {(f-e)/h}, {1.0} };\n";
+         << "Extrude Surface {6, {0,0,zmax-zmin} } {\n"
+         << "  Layers { {(zmax-zmin)/h}, {1.0} };\n";
+
+
 
     if ( M_use_hypercube )
         ostr << "  Recombine;\n";
 
     ostr << "};\n";
 
-
+    // if one wants a mesh which is regular using transfinite, remove
+    // the 'if' however tre is a bug in gmsh which prevent of doing
+    // thatat momentsee // https://github.com/feelpp/feelpp/issues/147
+    // for more details
+    if ( M_use_hypercube )
+        ostr << "Transfinite Line {4,10,2,8} = nx + 1  Using Progression 1;\n"
+             << "Transfinite Line {3,9,1,11} = ny + 1 Using Progression 1;\n"
+             << "Transfinite Line {14,18,13,22} = nz + 1 Using Progression 1;\n"
+             << "\n"
+             << "Transfinite Surface {6} = {3,2,1,4};\n"
+             << "Transfinite Surface {23} = {14,2,1,10};\n"
+             << "Transfinite Surface {19} = {6,10,1,4};\n"
+             << "Transfinite Surface {15} = {5,3,4,6};\n"
+             << "Transfinite Surface {27} = {5,14,2,3};\n"
+             << "Transfinite Surface {28} = {6,10,14,5};\n";
     if ( this->usePhysicalNames() == false && this->subStructuring() == false )
     {
         ostr << "Physical Line(1) = {1};\n"
@@ -276,10 +312,7 @@ GmshHypercubeDomain::getDescription3D() const
 
     if ( M_use_hypercube )
     {
-        ostr << "nx = 1/h;\n"
-             << "ny = 1/h;\n"
-             << "nz = 1/h;\n"
-             << "\n"
+        ostr << "\n"
              << "Transfinite Line {4,10,2,8} = nx + 1  Using Progression 1;\n"
              << "Transfinite Line {3,9,1,11} = ny + 1 Using Progression 1;\n"
              << "Transfinite Line {14,18,13,22} = nz + 1 Using Progression 1;\n"
