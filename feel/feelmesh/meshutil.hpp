@@ -66,20 +66,20 @@ struct MakeBareEntity<Ele, 3>
 
     MakeBareEntity( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
     entity_type
     operator()() const
     {
         entity_type bface;
 
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        size_type i2 = ( _M_element.point( 1 ) ).id();
-        size_type i3 = ( _M_element.point( 2 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        size_type i2 = ( M_element.point( 1 ) ).id();
+        size_type i3 = ( M_element.point( 2 ) ).id();
 
         if ( Ele::face_type::numVertices == 4 )
         {
-            size_type i4 = ( _M_element.point( 3 ) ).id();
+            size_type i4 = ( M_element.point( 3 ) ).id();
             bface = makeBareFace( i1, i2, i3, i4 ).first;
         }
 
@@ -94,18 +94,18 @@ struct MakeBareEntity<Ele, 3>
     operator()( uint16_type j ) const
     {
         entity_type bface;
-        size_type i1 = _M_element.fToP( j, 0 );
-        size_type i2 = _M_element.fToP( j, 1 );
-        size_type i3 = _M_element.fToP( j, 2 );
+        size_type i1 = M_element.fToP( j, 0 );
+        size_type i2 = M_element.fToP( j, 1 );
+        size_type i3 = M_element.fToP( j, 2 );
         // go to global
-        i1 = ( _M_element.point( i1 ) ).id();
-        i2 = ( _M_element.point( i2 ) ).id();
-        i3 = ( _M_element.point( i3 ) ).id();
+        i1 = ( M_element.point( i1 ) ).id();
+        i2 = ( M_element.point( i2 ) ).id();
+        i3 = ( M_element.point( i3 ) ).id();
 
         if ( numVertices == 4 )
         {
-            size_type i4 = _M_element.fToP( j, 3 );
-            i4 = ( _M_element.point( i4 ) ).id();
+            size_type i4 = M_element.fToP( j, 3 );
+            i4 = ( M_element.point( i4 ) ).id();
             bface = ( makeBareItem( i1, i2, i3, i4 ) ).first;
         }
 
@@ -116,7 +116,7 @@ struct MakeBareEntity<Ele, 3>
 
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 template<typename Ele>
@@ -126,14 +126,14 @@ struct MakeBareEntity<Ele, 2>
 
     MakeBareEntity( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
 
     entity_type
     operator()() const
     {
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        size_type i2 = ( _M_element.point( 1 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        size_type i2 = ( M_element.point( 1 ) ).id();
         entity_type bface;
         bface = makeBareEdge( i1, i2 ).first;
         return bface;
@@ -143,15 +143,15 @@ struct MakeBareEntity<Ele, 2>
     operator()( uint16_type j ) const
     {
         entity_type bface;
-        size_type i1 = _M_element.fToP( j, 0 );
-        size_type i2 = _M_element.fToP( j, 1 );
+        size_type i1 = M_element.fToP( j, 0 );
+        size_type i2 = M_element.fToP( j, 1 );
         // go to global
-        i1 = ( _M_element.point( i1 ) ).id();
-        i2 = ( _M_element.point( i2 ) ).id();
+        i1 = ( M_element.point( i1 ) ).id();
+        i2 = ( M_element.point( i2 ) ).id();
         bface = ( makeBareItem( i1, i2 ) ).first;
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 template<typename Ele>
@@ -161,13 +161,13 @@ struct MakeBareEntity<Ele, 1>
 
     MakeBareEntity( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
 
     entity_type
     operator()() const
     {
-        size_type i1 = ( _M_element.point( 0 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
         DVLOG(2)  << "[mesh1d::updateFaces] point index in face " << i1 << "\n";
         entity_type bface;
         bface = makeBarePoint( i1 ).first;
@@ -177,11 +177,11 @@ struct MakeBareEntity<Ele, 1>
     operator()( uint16_type j ) const
     {
         entity_type bface;
-        size_type i1 = _M_element.point( j ).id();
+        size_type i1 = M_element.point( j ).id();
         bface = makeBarePoint( i1 ).first;
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 
@@ -197,7 +197,7 @@ struct MakeBareEntityFromFace<Ele, 3>
 
     MakeBareEntityFromFace( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
 
     entity_type
@@ -205,13 +205,13 @@ struct MakeBareEntityFromFace<Ele, 3>
     {
         entity_type bface;
         // go to global
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        size_type i2 = ( _M_element.point( 1 ) ).id();
-        size_type i3 = ( _M_element.point( 2 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        size_type i2 = ( M_element.point( 1 ) ).id();
+        size_type i3 = ( M_element.point( 2 ) ).id();
 
         if ( numVertices == 4 )
         {
-            size_type i4 = ( _M_element.point( 3 ) ).id();
+            size_type i4 = ( M_element.point( 3 ) ).id();
             bface = ( makeBareItem( i1, i2, i3, i4 ) ).first;
         }
 
@@ -222,7 +222,7 @@ struct MakeBareEntityFromFace<Ele, 3>
 
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 template<typename Ele>
@@ -233,7 +233,7 @@ struct MakeBareEntityFromFace<Ele, 2>
 
     MakeBareEntityFromFace( Ele const& ele )
         :
-        _M_element( ele )
+        M_element( ele )
     {}
 
     entity_type
@@ -241,12 +241,12 @@ struct MakeBareEntityFromFace<Ele, 2>
     {
         entity_type bface;
         // go to global
-        size_type i1 = ( _M_element.point( 0 ) ).id();
-        size_type i2 = ( _M_element.point( 1 ) ).id();
+        size_type i1 = ( M_element.point( 0 ) ).id();
+        size_type i2 = ( M_element.point( 1 ) ).id();
         bface = ( makeBareItem( i1, i2 ) ).first;
         return bface;
     }
-    Ele const& _M_element;
+    Ele const& M_element;
 };
 
 } // Feel

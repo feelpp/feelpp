@@ -30,7 +30,7 @@
 #define __OrthonormalPolynomialSet_H 1
 namespace Feel
 {
-/** \cond DETAIL */
+/// \cond DETAIL 
 namespace detail
 {
 /**
@@ -274,7 +274,7 @@ template<uint16_type Dim,
          uint16_type TheTAG>
 const uint16_type OrthonormalPolynomialSet<Dim, Order, RealDim, PolySetType,T, TheTAG, Hypercube>::nLocalDof;
 } // detail
-/** \encond  */
+/// \encond  
 
 template<uint16_type Order,
          template<uint16_type Dim> class PolySetType = Scalar,

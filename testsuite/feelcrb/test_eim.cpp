@@ -158,7 +158,7 @@ public:
                           _element=u,
                           _space=this->functionSpace(),
                           _parameter=mu,
-                          _expr=sin(cst_ref(mu(0))*_e1*_e1),
+                          _expr=sin(cst_ref(mu(0))*idv(u)*idv(u)),
                           _sampling=Pset,
                           _name="q1" );
             BOOST_TEST_MESSAGE( "create e done" );

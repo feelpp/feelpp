@@ -1131,6 +1131,44 @@ mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4 )
 /**
  * \brief matrix definition
  */
+template<int M, int N, typename Expr1, typename Expr2, typename Expr3, typename Expr4, typename Expr5>
+inline
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5> > >
+mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4, Expr5 expr5 )
+{
+#if 0
+    BOOST_MPL_ASSERT_MSG( ( M == 4 && N == 1 ||
+                            M == 1 && N == 4 ||
+                            M == 2 && N == 2 ),
+                          ( INVALID_MATRIX_SIZE ),
+                          ( mpl::int_<M>, mpl::int_<N> ) );
+#endif
+    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5> > expr_t;
+    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5>( expr1, expr2, expr3, expr4, expr5 ) ) );
+}
+
+/**
+ * \brief matrix definition
+ */
+template<int M, int N, typename Expr1, typename Expr2, typename Expr3, typename Expr4, typename Expr5, typename Expr6>
+inline
+Expr<vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6> > >
+mat( Expr1  expr1, Expr2  expr2, Expr3  expr3, Expr4 expr4, Expr5 expr5, Expr6 expr6 )
+{
+#if 0
+    BOOST_MPL_ASSERT_MSG( ( M == 4 && N == 1 ||
+                            M == 1 && N == 4 ||
+                            M == 2 && N == 2 ),
+                          ( INVALID_MATRIX_SIZE ),
+                          ( mpl::int_<M>, mpl::int_<N> ) );
+#endif
+    typedef vf::detail::Mat<M, N, fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6> > expr_t;
+    return Expr<expr_t>( expr_t( fusion::vector<Expr1, Expr2, Expr3, Expr4, Expr5, Expr6>( expr1, expr2, expr3, expr4, expr5, expr6 ) ) );
+}
+
+/**
+ * \brief matrix definition
+ */
 template<int M, int N,
          typename Expr1, typename Expr2, typename Expr3, typename Expr4,
          typename Expr5, typename Expr6, typename Expr7, typename Expr8,

@@ -80,7 +80,7 @@ public:
 
     RegionTree()
         :
-        _M_root( 0 )
+        M_root( 0 )
     {}
 
     ~RegionTree()
@@ -103,7 +103,7 @@ public:
 
     size_type nbBoxes() const
     {
-        return _M_boxes.size();
+        return M_boxes.size();
     }
 
 
@@ -134,7 +134,7 @@ public:
     void clear()
     {
         destroy();
-        _M_boxes.clear();
+        M_boxes.clear();
     }
 
 
@@ -168,9 +168,9 @@ private:
 
     static void toIdVector( pbox_set_type const& bs, std::vector<size_type>& idvec );
 
-    element_base* _M_root;
+    element_base* M_root;
 
-    box_container_type _M_boxes;
+    box_container_type M_boxes;
 };
 
 /**

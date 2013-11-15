@@ -75,7 +75,7 @@ public:
      */
     explicit Context( size_type c )
         :
-        _M_context( c )
+        M_context( c )
     {}
 
     /**
@@ -84,7 +84,7 @@ public:
      */
     Context( Context const & c )
         :
-        _M_context( c._M_context )
+        M_context( c.M_context )
     {}
 
     /**
@@ -109,7 +109,7 @@ public:
     {
         if (  this != &__c )
         {
-            _M_context = __c._M_context;
+            M_context = __c.M_context;
         }
 
         return *this;
@@ -122,7 +122,7 @@ public:
      */
     Context& operator=( size_type __c )
     {
-        _M_context = __c;
+        M_context = __c;
         return *this;
     }
 
@@ -133,7 +133,7 @@ public:
      */
     size_type operator()() const
     {
-        return _M_context;
+        return M_context;
     }
 
     //@}
@@ -149,7 +149,7 @@ public:
      */
     size_type context() const
     {
-        return _M_context;
+        return M_context;
     }
 
 
@@ -166,7 +166,7 @@ public:
      */
     void setContext( size_type __v )
     {
-        _M_context = __v ;
+        M_context = __v ;
     }
 
 
@@ -179,24 +179,24 @@ public:
 
     bool test( size_type b ) const
     {
-        return ( _M_context&b )!=0;
+        return ( M_context&b )!=0;
     }
     template<typename T> bool test( T b ) const
     {
-        return ( _M_context&size_type( b ) )!=0;
+        return ( M_context&size_type( b ) )!=0;
     }
     void set( size_type b )
     {
-        _M_context |= b;
+        M_context |= b;
     }
     void set( size_type b, bool v );
     void clear( size_type b )
     {
-        _M_context &= ( uint )( ~b );
+        M_context &= ( uint )( ~b );
     }
     void reset()
     {
-        _M_context = 0;
+        M_context = 0;
     }
 
     //@}
@@ -207,14 +207,13 @@ private:
     template<class Archive>
     void serialize( Archive & ar, const unsigned int version )
         {
-            ar & _M_context;
+            ar & M_context;
         }
 
 private:
 
-    size_type _M_context;
+    size_type M_context;
 
 };
 }
 #endif /* __Context_H */
-

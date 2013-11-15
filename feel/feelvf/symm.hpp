@@ -83,11 +83,11 @@ public:
 
     explicit Sym( expression_type const & __expr )
         :
-        _M_expr( __expr )
+        M_expr( __expr )
     {}
     Sym( Sym const & te )
         :
-        _M_expr( te._M_expr )
+        M_expr( te.M_expr )
     {}
     ~Sym()
     {}
@@ -121,7 +121,7 @@ public:
 
     expression_type const& expression() const
     {
-        return _M_expr;
+        return M_expr;
     }
 
     //@}
@@ -228,7 +228,7 @@ public:
     };
 
 private:
-    mutable expression_type  _M_expr;
+    mutable expression_type  M_expr;
 };
 /// \endcond
 
@@ -259,4 +259,3 @@ antisym( ExprT v )
 }
 }
 #endif /* __Unsym_H */
-

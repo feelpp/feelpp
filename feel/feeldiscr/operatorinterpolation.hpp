@@ -235,9 +235,9 @@ public:
     OperatorInterpolation( OperatorInterpolation const & oi )
         :
         super( oi ),
-        _M_listRange( oi._M_listRange ),
-        _M_WorldCommFusion( oi._M_WorldCommFusion ),
-        _M_interptype( oi._M_interptype )
+        M_listRange( oi.M_listRange ),
+        M_WorldCommFusion( oi.M_WorldCommFusion ),
+        M_interptype( oi.M_interptype )
     {}
 
     ~OperatorInterpolation() {}
@@ -255,9 +255,9 @@ public:
      */
     //@{
 
-    WorldComm const& worldCommFusion() const { return _M_WorldCommFusion; }
+    WorldComm const& worldCommFusion() const { return M_WorldCommFusion; }
 
-    InterpType const& interpolationType() const { return _M_interptype; }
+    InterpType const& interpolationType() const { return M_interptype; }
 
     bool isDomainMeshRelatedToImageMesh() const { return this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() ); }
 
@@ -335,9 +335,9 @@ private:
                                              extrapolation_memory_type & dof_extrapolationData);
 #endif // MPI_MODE
 
-    std::list<range_iterator> _M_listRange;
-    WorldComm _M_WorldCommFusion;
-    InterpType _M_interptype;
+    std::list<range_iterator> M_listRange;
+    WorldComm M_WorldCommFusion;
+    InterpType M_interptype;
 };
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
@@ -348,11 +348,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_listRange(),
-    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    _M_interptype(interptype)
+    M_listRange(),
+    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_interptype(interptype)
 {
-    _M_listRange.push_back( elements( imagespace->mesh() ) );
+    M_listRange.push_back( elements( imagespace->mesh() ) );
     update();
 }
 
@@ -366,11 +366,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_listRange(),
-    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    _M_interptype(interptype)
+    M_listRange(),
+    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_interptype(interptype)
 {
-    _M_listRange.push_back( r );
+    M_listRange.push_back( r );
     update();
 }
 
@@ -383,9 +383,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                                                                                         bool ddmethod )
     :
     super( domainspace, imagespace, backend, false ),
-    _M_listRange( r ),
-    _M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
-    _M_interptype(interptype)
+    M_listRange( r ),
+    M_WorldCommFusion( (ddmethod) ? this->domainSpace()->worldComm() : this->domainSpace()->worldComm()+this->dualImageSpace()->worldComm() ),
+    M_interptype(interptype)
 {
     update();
 }
@@ -398,8 +398,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( this->dualImageSpace()->mesh()->numElements() == 0 )
         {
             //std::cout << "OperatorInterpolation : update nothing!" << std::endl;
-            this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->mapOnOff(),
-                                                             this->dualImageSpace()->mapOn() );
+            this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->dofOnOff(),
+                                                             this->dualImageSpace()->dofOn() );
             return;
         }
 
@@ -407,11 +407,9 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // order, different basis) or if the image of domain mesh are related to
     // each other through an extraction (one of them is the sub mesh of the
     // other)
-#if 1
-    if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) )
-#else
-        if ( ( this->dualImageSpace()->mesh().get() == ( image_mesh_type* )this->domainSpace()->mesh().get() ) )
-#endif
+    if ( this->dualImageSpace()->mesh()->isRelatedTo( this->domainSpace()->mesh() ) &&
+         boost::is_same<domain_mesh_type,image_mesh_type>::type::value // warning TODO in this case
+         )
     {
         VLOG(2) << "OperatorInterpolation: use same mesh\n";
         VLOG(2) << "isDomainMeshRelatedToImageMesh: "  << isDomainMeshRelatedToImageMesh() << "\n";
@@ -460,11 +458,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDofGlobalCluster( proc_id );
     const size_type lastcol_dof_on_proc  = this->domainSpace()->dof()->lastDofGlobalCluster( proc_id );
 #endif
+#if 0
     graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
                                                   firstcol_dof_on_proc, lastcol_dof_on_proc,
                                                   this->dualImageSpace()->mesh()->worldComm().subWorldComm() ) );
-
+#else
+    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
+#endif
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
     auto const* imagebasis = this->dualImageSpace()->basis().get();
@@ -489,8 +490,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const bool image_related_to_domain = this->dualImageSpace()->mesh()->isSubMeshFrom( this->domainSpace()->mesh() );
     const bool domain_related_to_image = this->domainSpace()->mesh()->isSubMeshFrom( this->dualImageSpace()->mesh() );
 
-    auto itListRange = _M_listRange.begin();
-    auto const enListRange = _M_listRange.end();
+    auto itListRange = M_listRange.begin();
+    auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
     iterator_type it, en;
@@ -568,8 +569,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     sparsity_graph->close();
     //-----------------------------------------
     // create matrix
-    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->mapOnOff(),
-                                                 this->dualImageSpace()->mapOn(),
+    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
+                                                 this->dualImageSpace()->dofOn(),
                                                  sparsity_graph  );
     //-----------------------------------------
 
@@ -600,11 +601,14 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     const size_type lastrow_dof_on_proc = this->dualImageSpace()->dof()->lastDof( proc_id );
     const size_type firstcol_dof_on_proc = this->domainSpace()->dof()->firstDof( proc_id );
     const size_type lastcol_dof_on_proc = this->domainSpace()->dof()->lastDof( proc_id );
-
+#if 0
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
                                                   firstcol_dof_on_proc, lastcol_dof_on_proc,
                                                   this->dualImageSpace()->mesh()->worldComm().subWorldCommSeq() ) );
+#else
+    graph_ptrtype sparsity_graph( new graph_type( this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
+#endif
 
     auto const* imagedof = this->dualImageSpace()->dof().get();
     auto const* domaindof = this->domainSpace()->dof().get();
@@ -617,6 +621,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     else locTool->updateForUse();
     // kdtree parameter
     locTool->kdtree()->nbNearNeighbor(this->interpolationType().nbNearNeighborInKdTree());
+    bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     //locTool->kdtree()->nbNearNeighbor(3);
     //locTool->kdtree()->nbNearNeighbor(this->domainSpace()->mesh()->numElements());
@@ -637,8 +643,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     size_type eltIdLocalised = 0;
 
     // for each element in range
-    auto itListRange = _M_listRange.begin();
-    auto const enListRange = _M_listRange.end();
+    auto itListRange = M_listRange.begin();
+    auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
     iterator_type it, en;
@@ -669,6 +675,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                     ublas::column(ptsReal,0 ) = boost::get<0>(imagedof->dofPoint(gdof));
                                     //------------------------
                                     // localisation process
+                                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                                     eltIdLocalised = locTool->run_analysis(ptsReal,eltIdLocalised,it->vertices()/*it->G()*/,mpl::int_<interpolation_type::value>()).template get<1>();
                                     //------------------------
                                     // for each localised points
@@ -710,8 +717,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     sparsity_graph->close(); //sparsity_graph->printPython("mygraphpython.py");
     //-----------------------------------------
     // create matrix
-    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->mapOnOff(),
-                                                 this->dualImageSpace()->mapOn(),
+    this->matPtr() = this->backend()->newMatrix( this->domainSpace()->dofOnOff(),
+                                                 this->dualImageSpace()->dofOn(),
                                                  sparsity_graph );
     //-----------------------------------------
     // assemble matrix
@@ -765,8 +772,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
             //std::cout << "OperatorInterpolation::updateNoRelationMeshMPI has One LocalActivity " << std::endl;
             if ( !this->dualImageSpace()->worldComm().isActive() && !this->domainSpace()->worldComm().isActive() )
                 {
-                    this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->mapOnOff(),
-                                                                     this->dualImageSpace()->mapOn() );
+                    this->matPtr() = this->backend()->newZeroMatrix( this->domainSpace()->dofOnOff(),
+                                                                     this->dualImageSpace()->dofOn() );
                 }
             else
                 {
@@ -815,13 +822,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 #if 0
     graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
                                                   firstrow_dof_on_proc, lastrow_dof_on_proc,
-                                                  firstcol_dof_on_proc, lastcol_dof_on_proc,
-                                                  this->dualImageSpace()->worldComm() ) );
-#else
-    graph_ptrtype sparsity_graph( new graph_type( nrow_dof_on_proc,
-                                                  firstrow_dof_on_proc, lastrow_dof_on_proc,
                                                   thefirstCol,thelastCol,
                                                   this->dualImageSpace()->worldComm() ) );
+#else
+    graph_ptrtype sparsity_graph( new graph_type(this->dualImageSpace()->dof(), this->domainSpace()->dof() ) );
 #endif
 
     size_type new_nLocalDofWithoutGhost=this->domainSpace()->nDof()/nProc_row;
@@ -1027,7 +1031,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            auto const* imagedof = this->dualImageSpace()->dof().get();
            auto const* domaindof = this->domainSpace()->dof().get();
            auto const* domainbasis = this->domainSpace()->basis().get();
-           matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
+           matrix_node_type ptsRef( domain_mesh_type::nRealDim , 1 );
            matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
 
            // analysis result
@@ -1138,17 +1142,17 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // build data map for the columns
     //this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
     //this->dualImageSpace()->worldComm().showMe();
-    DataMap mapColInterp(this->dualImageSpace()->worldComm());// this->domainSpace()->mapOnOff().worldComm());
-    mapColInterp.setNDof(this->domainSpace()->mapOnOff().nDof());
+    boost::shared_ptr<DataMap> mapColInterp( new DataMap(this->dualImageSpace()->worldComm()));// this->domainSpace()->mapOnOff().worldComm());
+    mapColInterp->setNDof(this->domainSpace()->mapOnOff().nDof());
 
-    mapColInterp.setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
-    mapColInterp.setNLocalDofWithGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithGhost()*/ );
-    mapColInterp.setFirstDof( proc_id, this->domainSpace()->mapOnOff().firstDof() );
-    mapColInterp.setLastDof( proc_id,  this->domainSpace()->mapOnOff().lastDof() );
-    mapColInterp.setFirstDofGlobalCluster( proc_id, new_firstdofcol );
-    mapColInterp.setLastDofGlobalCluster( proc_id, new_lastdofcol );
-    mapColInterp.setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);
-    mapColInterp.setMapGlobalClusterToGlobalProcess(new_mapGlobalClusterToGlobalProcess);
+    mapColInterp->setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
+    mapColInterp->setNLocalDofWithGhost( proc_id, mapCol_nLocalDof/*this->domainSpace()->mapOnOff().nLocalDofWithGhost()*/ );
+    mapColInterp->setFirstDof( proc_id, this->domainSpace()->mapOnOff().firstDof() );
+    mapColInterp->setLastDof( proc_id,  this->domainSpace()->mapOnOff().lastDof() );
+    mapColInterp->setFirstDofGlobalCluster( proc_id, new_firstdofcol );
+    mapColInterp->setLastDofGlobalCluster( proc_id, new_lastdofcol );
+    mapColInterp->setMapGlobalProcessToGlobalCluster(mapCol_globalProcessToGlobalCluster);
+    mapColInterp->setMapGlobalClusterToGlobalProcess(new_mapGlobalClusterToGlobalProcess);
     //if ( this->dualImageSpace()->worldComm().isActive() ) mapColInterp.showMeMapGlobalProcessToGlobalCluster();
 
     //-----------------------------------------
@@ -1159,7 +1163,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( this->dualImageSpace()->worldComm().isActive() )
         {
             this->matPtr() = this->backend()->newMatrix( mapColInterp,//this->domainSpace()->mapOnOff(),
-                                                         this->dualImageSpace()->mapOn(),
+                                                         this->dualImageSpace()->dofOn(),
                                                          sparsity_graph  );
         }
     //-----------------------------------------
@@ -1170,7 +1174,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( !this->dualImageSpace()->worldComm().isActive() && buildNonZeroMatrix )
         {
             this->matPtr() = this->backend()->newZeroMatrix( mapColInterp,//this->domainSpace()->mapOnOff(),
-                                                             this->dualImageSpace()->mapOn() );
+                                                             this->dualImageSpace()->dofOn() );
         }
     //-----------------------------------------
     //std::cout << "Op---6----- "  << this->worldCommFusion().godRank() << std::endl;
@@ -1225,9 +1229,11 @@ OperatorInterpolation<DomainSpaceType,
     auto const* domainbasis = this->domainSpace()->basis().get();
 
     auto locTool = this->domainSpace()->mesh()->tool_localization();
+    bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
 
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
-    matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
+    matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
 
@@ -1255,6 +1261,7 @@ OperatorInterpolation<DomainSpaceType,
                         verticesOfEltSearched = eltRandom.vertices();
 
                     // localisation process
+                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                     auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,
                                                                  mpl::int_<interpolation_type::value>());
                     if (!resLocalisation.template get<0>()[0]) // not find
@@ -1360,6 +1367,7 @@ OperatorInterpolation<DomainSpaceType,
                         verticesOfEltSearched = eltRandom.vertices();
 
                     // localisation process
+                    if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                     auto resLocalisation = locTool->run_analysis(ptsReal, eltIdLocalised, verticesOfEltSearched, mpl::int_<interpolation_type::value>());
                     if (!resLocalisation.template get<0>()[0]) // not find
                         {
@@ -1468,8 +1476,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
     // localisation tool with matrix node
     auto locTool = this->domainSpace()->mesh()->tool_localization();
+    bool notUseOptLocTest = domain_mesh_type::nDim!=domain_mesh_type::nRealDim;
+    if (notUseOptLocTest) locTool->kdtree()->nbNearNeighbor(domain_mesh_type::element_type::numPoints);
+
     matrix_node_type ptsReal( image_mesh_type::nRealDim, 1 );
-    matrix_node_type ptsRef( image_mesh_type::nRealDim , 1 );
+    matrix_node_type ptsRef( domain_mesh_type::nDim , 1 );
     matrix_node_type MlocEval(domain_basis_type::nLocalDof*domain_basis_type::nComponents1,1);
     matrix_node_type verticesOfEltSearched;
 
@@ -1664,6 +1675,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                             else // random
                                                 verticesOfEltSearched = eltRandom.vertices();
                                             // search process
+                                            if (notUseOptLocTest) eltIdLocalised=invalid_size_type_value;
                                             auto resLocalisation = locTool->run_analysis(ptsReal,eltIdLocalised,verticesOfEltSearched,mpl::int_<interpolation_type::value>());
                                             if (resLocalisation.template get<0>()[0]) // is find
                                                 {
@@ -1916,8 +1928,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     if ( this->dualImageSpace()->worldComm().isActive() )
         {
 
-            auto itListRange = _M_listRange.begin();
-            auto const enListRange = _M_listRange.end();
+            auto itListRange = M_listRange.begin();
+            auto const enListRange = M_listRange.end();
             for ( ; itListRange!=enListRange ; ++itListRange)
             {
             boost::tie( boost::tuples::ignore, it, en ) = *itListRange;

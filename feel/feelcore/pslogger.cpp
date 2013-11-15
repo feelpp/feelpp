@@ -3,7 +3,10 @@
 #include <unistd.h>
 #include <sstream>
 
-#include "pslogger.hpp"
+#include <petscsys.h>
+
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/pslogger.hpp>
 
 namespace Feel
 {
@@ -39,7 +42,10 @@ void PsLogger::log( std::string logMessage )
         system( command.str().c_str() );
     }
 
+    Environment::logMemoryUsage( logMessage );
     system( M_command.c_str() );
+
+
 }
 
 }

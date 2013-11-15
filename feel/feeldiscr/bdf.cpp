@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2006-12-30
 
-  Copyright (C) 2006 Université Joseph Fourier (Grenoble)
+  Copyright (C) 2006 Universite Joseph Fourier (Grenoble)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -40,10 +40,10 @@ namespace Feel
 {
 Bdf::Bdf( const UInt n )
     :
-    _M_order( n ),
-    _M_size( 0 ),
-    _M_alpha( n + 1 ),
-    _M_beta( n )
+    M_order( n ),
+    M_size( 0 ),
+    M_alpha( n + 1 ),
+    M_beta( n )
 {
     if ( n <= 0 || n > BDF_MAX_ORDER )
     {
@@ -57,31 +57,31 @@ Bdf::Bdf( const UInt n )
     switch ( n )
     {
     case 1:
-        _M_alpha[ 0 ] = 1.; // Backward Euler
-        _M_alpha[ 1 ] = 1.;
-        _M_beta[ 0 ] = 1.; // u^{n+1} \approx u^n
+        M_alpha[ 0 ] = 1.; // Backward Euler
+        M_alpha[ 1 ] = 1.;
+        M_beta[ 0 ] = 1.; // u^{n+1} \approx u^n
         break;
 
     case 2:
-        _M_alpha[ 0 ] = 3. / 2.;
-        _M_alpha[ 1 ] = 2.;
-        _M_alpha[ 2 ] = -1. / 2.;
-        _M_beta[ 0 ] = 2.;
-        _M_beta[ 1 ] = -1.;
+        M_alpha[ 0 ] = 3. / 2.;
+        M_alpha[ 1 ] = 2.;
+        M_alpha[ 2 ] = -1. / 2.;
+        M_beta[ 0 ] = 2.;
+        M_beta[ 1 ] = -1.;
         break;
 
     case 3:
-        _M_alpha[ 0 ] = 11. / 6.;
-        _M_alpha[ 1 ] = 3.;
-        _M_alpha[ 2 ] = -3. / 2.;
-        _M_alpha[ 3 ] = 1. / 3.;
-        _M_beta[ 0 ] = 3.;
-        _M_beta[ 1 ] = -3.;
-        _M_beta[ 2 ] = 1.;
+        M_alpha[ 0 ] = 11. / 6.;
+        M_alpha[ 1 ] = 3.;
+        M_alpha[ 2 ] = -3. / 2.;
+        M_alpha[ 3 ] = 1. / 3.;
+        M_beta[ 0 ] = 3.;
+        M_beta[ 1 ] = -3.;
+        M_beta[ 2 ] = 1.;
         break;
     }
 
-    _M_unknowns.resize( n );
+    M_unknowns.resize( n );
 }
 
 
@@ -93,7 +93,7 @@ Bdf::~Bdf()
 void
 Bdf::initialize( Vector const& u0 )
 {
-    std::for_each( _M_unknowns.begin(), _M_unknowns.end(), boost::lambda::_1 = u0 );
+    std::for_each( M_unknowns.begin(), M_unknowns.end(), boost::lambda::_1 = u0 );
 }
 
 
@@ -101,16 +101,16 @@ void
 Bdf::initialize( unknowns_type const& uv0 )
 {
     // Check if uv0 has the right dimensions
-    ASSERT( uv0.size() < _M_order, "Initial data set are not enough for the selected BDF" );
-    ASSERT( uv0.size() > _M_order, "Initial data set is too large for the selected BDF" );
+    ASSERT( uv0.size() < M_order, "Initial data set are not enough for the selected BDF" );
+    ASSERT( uv0.size() > M_order, "Initial data set is too large for the selected BDF" );
 
-    std::copy( uv0.begin(), uv0.end(), _M_unknowns.begin() );
+    std::copy( uv0.begin(), uv0.end(), M_unknowns.begin() );
 }
 const
 Bdf::unknowns_type&
 Bdf::unknowns() const
 {
-    return _M_unknowns;
+    return M_unknowns;
 }
 
 
@@ -118,27 +118,27 @@ double
 Bdf::derivateCoefficient( UInt i ) const
 {
     // Pay attention: i is c-based indexed
-    ASSERT( i >= 0 && i < _M_order + 1,
+    ASSERT( i >= 0 && i < M_order + 1,
             "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
-    return _M_alpha[ i ];
+    return M_alpha[ i ];
 }
 
 double
 Bdf::extrapolateCoefficient( UInt i ) const
 {
     // Pay attention: i is c-based indexed
-    ASSERT( i >= 0 && i < _M_order,
+    ASSERT( i >= 0 && i < M_order,
             "Error in specification of the time derivative coefficient for the BDF formula (out of range error)" );
-    return _M_beta[ i ];
+    return M_beta[ i ];
 }
 
 void
 Bdf::showMe( std::ostream& __out ) const
 {
-    __out << "*** BDF Time discretization of order " << _M_order << " ***"
-          << "  size : " << _M_unknowns[0].size() << "\n"
-          << " alpha : " << _M_alpha << "\n"
-          << "  beta : " << _M_beta << "\n";
+    __out << "*** BDF Time discretization of order " << M_order << " ***"
+          << "  size : " << M_unknowns[0].size() << "\n"
+          << " alpha : " << M_alpha << "\n"
+          << "  beta : " << M_beta << "\n";
 
 }
 
@@ -146,11 +146,11 @@ void
 Bdf::shiftRight( Vector const& __new_unk )
 {
     using namespace boost::lambda;
-    unknowns_type::reverse_iterator __it = boost::next( _M_unknowns.rbegin() );
-    std::for_each( _M_unknowns.rbegin(), boost::prior( _M_unknowns.rend() ),
+    unknowns_type::reverse_iterator __it = boost::next( M_unknowns.rbegin() );
+    std::for_each( M_unknowns.rbegin(), boost::prior( M_unknowns.rend() ),
                    ( _1 = *var( __it ), ++var( __it ) ) );
-    // u(t^{n}) coefficient is in _M_unknowns[0]
-    _M_unknowns[0] = __new_unk;
+    // u(t^{n}) coefficient is in M_unknowns[0]
+    M_unknowns[0] = __new_unk;
 }
 
 
@@ -163,11 +163,11 @@ Bdf::derivate( Real dt ) const
 Vector
 Bdf::derivate() const
 {
-    Vector __t( _M_unknowns[0].size() );
+    Vector __t( M_unknowns[0].size() );
     __t = ZeroVector( __t.size() );
 
-    for ( UInt i = 0; i < _M_order; ++i )
-        __t += _M_alpha[ i+1 ]*_M_unknowns[i];
+    for ( UInt i = 0; i < M_order; ++i )
+        __t += M_alpha[ i+1 ]*M_unknowns[i];
 
     return __t;
 }
@@ -175,11 +175,11 @@ Bdf::derivate() const
 Vector
 Bdf::extrapolate() const
 {
-    Vector __t( _M_unknowns[0].size() );
+    Vector __t( M_unknowns[0].size() );
     __t = ZeroVector( __t.size() );
 
-    for ( UInt i = 0; i < _M_order; ++i )
-        __t +=  _M_beta[ i ] * _M_unknowns[ i ];
+    for ( UInt i = 0; i < M_order; ++i )
+        __t +=  M_beta[ i ] * M_unknowns[ i ];
 
     return __t;
 }

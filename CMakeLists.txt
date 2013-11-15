@@ -74,8 +74,15 @@ OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_APPLICATIONS "enable Feel++ applications" ${FEELPP_DEFAULT})
+# enable PCH only for GCC as for now
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	OPTION(FEELPP_ENABLE_PCH_FOR_APPLICATIONS "enable Pre-Compiled Headers (PCH) for Feel++ applications" OFF)
+else()
+	set(FEELPP_ENABLE_PCH_FOR_APPLICATIONS OFF)
+endif()
 OPTION(FEELPP_ENABLE_RESEARCH "enable Feel++ research" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_TESTS "enable Feel++ tests" ${FEELPP_DEFAULT})
+OPTION(FEELPP_ENABLE_DOXYGEN "enable Feel++ doxygen documentation generation" OFF)
 OPTION(FEELPP_MINIMAL_CONFIGURATION "enable feel minimal configuration" OFF)
 
 SET(FEELPP_HOME_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "")
@@ -91,6 +98,9 @@ add_subdirectory(cmake/machines)
 
 # set the Feel++ version
 include(feelpp.version)
+
+# Use of standard headers for GiNaC compiler (for supermuc this option should be OFF)
+option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
 
 # possibly set the Feel++ configuration
 include(feelpp.machines.config)
@@ -114,15 +124,19 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS "-std=c++0x -pedantic  -ftemplate-depth-256 -Wno-inline" CACHE STRING "Default flags" FORCE)
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -fPIC" CACHE STRING "Debug flags" FORCE)
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O1" CACHE STRING "Release With Debug information flags" FORCE)
-  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions "  CACHE STRING "Release flags" FORCE)
+  SET(CMAKE_CXX_FLAGS_RELEASE "-g0 -O3 -DNDEBUG  -finline-functions"  CACHE STRING "Release flags" FORCE)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 include(ProcessorCount)
 ProcessorCount(NProcs)
-##if(N GREATER 1)
-math (EXPR NProcs2 '${NProcs}/2')
-if(NProcs2 EQUAL 0)
-  set(NProcs2 1)
+IF(NOT CMAKE_NPROCS)
+  ##if(N GREATER 1)
+  math (EXPR NProcs2 '${NProcs}/2')
+  if(NProcs2 EQUAL 0)
+    set(NProcs2 1)
+  endif()
+else()
+  set(NProcs2 "${CMAKE_NPROCS}")
 endif()
 message(STATUS "using ${NProcs2} cores out of ${NProcs} cores" )
 #  set(CTEST_BUILD_FLAGS -j${N2})
@@ -251,7 +265,7 @@ foreach(project ${projects_list})
   #get shortname
   GET_FILENAME_COMPONENT(dirname ${project} NAME)
   MESSAGE(STATUS "      " ${dirname})
-  
+
   #define option to control doc generation
   string(TOUPPER ${dirname} PROJECT)
   option(FEELPP_ENABLE_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${dirname}" OFF)
@@ -260,7 +274,7 @@ endforeach()
 #
 # data
 #
-IF(NOT APPLE AND EXISTS data)
+IF(NOT APPLE AND EXISTS "${CMAKE_SOURCE_DIR}/data")
   ADD_SUBDIRECTORY ( data )
 ENDIF()
 
@@ -310,6 +324,7 @@ endif()
 
 
 if ( FEELPP_ENABLE_DOCUMENTATION )
+  set(FEELPP_DOC_ENABLE_CAVITY_CRB off)
   ADD_SUBDIRECTORY ( doc )
 endif ( FEELPP_ENABLE_DOCUMENTATION )
 

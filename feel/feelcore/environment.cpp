@@ -37,8 +37,12 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/fstream.hpp>
-
+#include <boost/assign/std/vector.hpp>
 #include <gflags/gflags.h>
+
+#if defined ( FEELPP_HAS_PETSC_H )
+#include <petscsys.h>
+#endif
 
 #include <feel/feelconfig.h>
 #include <feel/feelcore/feel.hpp>
@@ -49,14 +53,17 @@
 #include <feel/feelcore/feelpetsc.hpp>
 #include <feel/options.hpp>
 
+namespace GiNaC {
+extern void cleanup_ex( bool verbose );
+}
 namespace detail
 {
 class Env{
 public:
     static std::string getUserName()
         {
-            register struct passwd *pw;
-            register uid_t uid;
+            struct passwd *pw;
+            uid_t uid;
             int c;
 
             uid = geteuid ();
@@ -346,28 +353,32 @@ Environment::doOptions( int argc, char** argv, po::options_description const& de
         parseAndStoreOptions( po::command_line_parser( argc, argv ), true );
         processGenericOptions();
 
+        VLOG(2) << "options parsed and stored in database";
         /**
          * parse config file if given to command line
          */
         if ( S_vm.count( "config-file" ) )
         {
-            VLOG(2)<< " parsing " << S_vm["config-file"].as<std::string>() << "\n";
 
             if ( fs::exists(  S_vm["config-file"].as<std::string>() ) )
             {
+                VLOG(2) << " parsing " << S_vm["config-file"].as<std::string>() << "...";
 
                 std::ifstream ifs( S_vm["config-file"].as<std::string>().c_str() );
                 po::store( parse_config_file( ifs, desc, true ), S_vm );
                 po::notify( S_vm );
             }
         }
-
-        std::vector<fs::path> prefixes = boost::assign::list_of( fs::current_path() )
+        using namespace boost::assign;
+        std::vector<fs::path> prefixes = S_paths;
+#if 0
+        prefixes += boost::assign::list_of( fs::current_path() )
             ( fs::path ( Environment::localConfigRepository() ) )
             ( fs::path ( Environment::systemConfigRepository().get<0>() ) )
             ( fs::path ( "/usr/share/feel/config" ) )
             ( fs::path ( "/usr/local/share/feel/config" ) )
             ( fs::path ( "/opt/local/share/feel/config" ) );
+#endif
         char* env;
         env = getenv("FEELPP_DIR");
         if (env != NULL && env[0] != '\0')
@@ -487,7 +498,7 @@ fs::path scratchdir()
     const char* env;
     // if scratsch dir not defined, define it
     env = getenv("FEELPP_SCRATCHDIR");
-    if (env != NULL && env[0] != '\0')
+    if (env == NULL || env[0] == '\0')
     {
         env = getenv("SCRATCHDIR");
         if (env != NULL && env[0] != '\0')
@@ -568,7 +579,9 @@ Environment::Environment( int& argc, char**& argv )
 void
 Environment::init( int argc, char** argv, po::options_description const& desc, AboutData const& about )
 {
-    S_scratchdir = scratchdir()/fs::path(argv[0]).filename();
+    S_scratchdir = scratchdir();
+    fs::path a0 = std::string(argv[0]);
+    S_scratchdir/= a0.filename();
     if ( !fs::exists( S_scratchdir ) )
         fs::create_directories( S_scratchdir );
     FLAGS_log_dir=S_scratchdir.string();
@@ -638,17 +651,30 @@ Environment::init( int argc, char** argv, po::options_description const& desc, A
     freeargv( envargv );
 
 }
+void
+Environment::clearSomeMemory()
+{
+    // send signal to all deleters
+    S_deleteObservers();
+    google::FlushLogFiles(google::GLOG_INFO);
+    VLOG(2) << "clearSomeMemory: delete signal sent" << "\n";
+
+}
 Environment::~Environment()
 {
     VLOG(2) << "[~Environment] sending delete to all deleters" << "\n";
 
-    // send signal to all deleters
-    S_deleteObservers();
-    google::FlushLogFiles(google::GLOG_INFO);
-    VLOG(2) << "[~Environment] delete signal sent" << "\n";
+    Environment::clearSomeMemory();
 
     if ( i_initialized )
     {
+        VLOG(2) << "clearing known paths\n";
+        S_paths.clear();
+
+        VLOG(2) << "[~Environment] cleaning up global excompiler\n";
+
+        GiNaC::cleanup_ex( false );
+
         VLOG(2) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
         PetscTruth is_petsc_initialized;
@@ -712,6 +738,11 @@ Environment::rootRepository()
     {
         return std::string( senv );
     }
+    senv = ::getenv( "WORK" );
+    if ( senv != NULL && senv[0] != '\0' )
+    {
+        return std::string( senv )+"/feel";
+    }
     senv = ::getenv( "WORKDIR" );
     if ( senv != NULL && senv[0] != '\0' )
     {
@@ -729,18 +760,22 @@ Environment::findFile( std::string const& filename )
 {
     fs::path cp = fs::current_path();
 
-    if ( fs::exists( fs::path( filename ) ) )
+    fs::path p( filename );
+    if ( p.is_absolute() && fs::exists( p ) )
     {
         LOG(INFO) << "File " << filename << " found";
         return filename;
     }
 
+#if 0
     // first try in the current path
     if ( fs::exists( cp / filename ) )
     {
         LOG(INFO) << "File " << (cp/filename) << " found";
         return ( cp/filename ).string();
     }
+#endif
+
     // look in to paths list from end-1 to begin
     auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
                             [&filename] ( fs::path const& p ) -> bool
@@ -753,6 +788,12 @@ Environment::findFile( std::string const& filename )
     {
         LOG(INFO) << "File " << (*it/filename) << " found";
         return ( *it / filename ).string();
+    }
+
+    if ( fs::exists( cp / filename ) )
+    {
+        LOG(INFO) << "File " << (cp/filename) << " found";
+        return ( cp/filename ).string();
     }
 
     if ( fs::path( filename ).extension() == ".geo" || fs::path( filename ).extension() == ".msh" )
@@ -808,7 +849,7 @@ Environment::systemGeoRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/geo";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -831,7 +872,7 @@ Environment::systemConfigRepository()
 {
     fs::path rep_path;
 
-    rep_path = BOOST_PP_STRINGIZE( INSTALL_PREFIX );
+    rep_path = Info::prefix();
     rep_path /= "share/feel/config";
     return boost::make_tuple( rep_path.string(), fs::exists( rep_path ) );
 }
@@ -842,8 +883,8 @@ Environment::changeRepositoryImpl( boost::format fmt, std::string const& logfile
     if ( Environment::vm().count( "nochdir" ) )
         return;
 
-    fs::path rep_path = fs::current_path();
-    S_paths.push_back( rep_path );
+    fs::path rep_path;
+    S_paths.push_back( fs::current_path() );
 
     typedef std::vector< std::string > split_vector_type;
 
@@ -931,6 +972,25 @@ Environment::masterWorldComm( int n )
     return S_worldcomm->masterWorld(n);
 }
 
+
+MemoryUsage
+Environment::logMemoryUsage( std::string const& message )
+{
+    MemoryUsage mem;
+#if defined ( FEELPP_HAS_PETSC_H )
+    PetscMemoryGetCurrentUsage( &mem.memory_usage );
+    LOG(INFO) << message << " PETSC get current memory usage (resident memory): "  << mem.memory_usage/1e3 << "  KBytes "  << mem.memory_usage/1e6 << "  MBytes " << mem.memory_usage/1e9 << " GBytes" ;
+    //PetscMemoryGetMaximumUsage( &mem );
+    //LOG(INFO) << logMessage << " PETSC get maximum memory usag (resident memory): " << mem/1e6 << "  MBytes " << mem/1e9 << " GBytes" ;
+
+    PetscMallocGetCurrentUsage( &mem.petsc_malloc_usage );
+    LOG(INFO) << message << " PETSC get current PETSC Malloc usage: "  << mem.petsc_malloc_usage/1e3 << "  KBytes " << mem.petsc_malloc_usage/1e6 << " MBytes " << mem.petsc_malloc_usage/1e9 << " GBytes" ;
+    PetscMallocGetMaximumUsage( &mem.petsc_malloc_maximum_usage );
+    LOG(INFO) << message << " PETSC get maximum PETSC Malloc usage(largest memory ever used so far): "  << mem.petsc_malloc_maximum_usage/1e3 << "  KBytes " << mem.petsc_malloc_maximum_usage/1e6 << " MBytes " << mem.petsc_malloc_maximum_usage/1e9 << " GBytes" ;
+#endif
+    return mem;
+}
+
 AboutData Environment::S_about;
 po::variables_map Environment::S_vm;
 boost::shared_ptr<po::options_description> Environment::S_desc;
@@ -940,7 +1000,8 @@ boost::signals2::signal<void()> Environment::S_deleteObservers;
 
 boost::shared_ptr<WorldComm> Environment::S_worldcomm;
 
-std::vector<fs::path> Environment::S_paths;
+std::vector<fs::path> Environment::S_paths = { Environment::systemConfigRepository().get<0>(),
+                                               Environment::systemGeoRepository().get<0>() };
 fs::path Environment::S_scratchdir;
 
 } // detail

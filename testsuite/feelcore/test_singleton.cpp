@@ -41,15 +41,15 @@ class A
 public:
     A()
         :
-        _M_value( -1 )
+        M_value( -1 )
     {}
     double value() const
     {
-        return _M_value;
+        return M_value;
     }
 
 private:
-    double _M_value;
+    double M_value;
 };
 
 typedef Feel::Singleton<A> aSingleton;

@@ -72,11 +72,12 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
     switch ( mspackt )
     {
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
-
+#if PETSC_VERSION_LESS_THAN(3,4,0)
     case MATSOLVER_SPOOLES :
         ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERSPOOLES );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
+#endif
 
     case MATSOLVER_SUPERLU :
         ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERSUPERLU );
@@ -123,10 +124,13 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
+#if PETSC_VERSION_LESS_THAN(3,4,0)
     case MATSOLVER_PLAPACK :
         ierr = PCFactorSetMatSolverPackage( pc, ( char* ) MATSOLVERPLAPACK );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
+#endif
+
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 1)
 
     case MATSOLVER_BAS :
@@ -243,7 +247,9 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
     case KSP_DIVERGED_BREAKDOWN_BICG : return "DIVERGED_BREAKDOWN_BICG";
     case KSP_DIVERGED_NONSYMMETRIC   : return "DIVERGED_NONSYMMETRIC";
     case KSP_DIVERGED_INDEFINITE_PC  : return "DIVERGED_INDEFINITE_PC";
+#if PETSC_VERSION_LESS_THAN(3,4,0)
     case KSP_DIVERGED_NAN            : return "DIVERGED_NAN";
+#endif
     case KSP_DIVERGED_INDEFINITE_MAT : return "DIVERGED_INDEFINITE_MAT";
 
     case KSP_CONVERGED_ITERATING : return "CONVERGED_ITERATING";

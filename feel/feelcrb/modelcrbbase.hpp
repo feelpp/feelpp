@@ -84,6 +84,8 @@ public :
     typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
     typedef typename parameterspace_type::element_type parameter_type;
 
+    typedef typename FunctionSpaceDefinition::space_type space_type;
+
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;
 
@@ -93,6 +95,24 @@ public :
     typedef Eigen::VectorXd vectorN_type;
 
     typedef std::vector< std::vector< double > > beta_vector_type;
+
+    typedef OperatorLinear< space_type , space_type > operator_type;
+    typedef boost::shared_ptr<operator_type> operator_ptrtype;
+
+    typedef OperatorLinearComposite< space_type , space_type > operatorcomposite_type;
+    typedef boost::shared_ptr<operatorcomposite_type> operatorcomposite_ptrtype;
+
+    typedef FsFunctionalLinearComposite< space_type > functionalcomposite_type;
+    typedef boost::shared_ptr<functionalcomposite_type> functionalcomposite_ptrtype;
+
+    typedef FsFunctionalLinear< space_type > functional_type;
+    typedef boost::shared_ptr<functional_type> functional_ptrtype;
+
+    typedef backend_type::vector_type vector_type;
+    typedef backend_type::vector_ptrtype vector_ptrtype;
+
+    typedef backend_type::sparse_matrix_type sparse_matrix_type;
+    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
 
     ModelCrbBase()
         :
@@ -122,6 +142,38 @@ public :
 
     virtual void initModel() = 0;
 
+    virtual operatorcomposite_ptrtype operatorCompositeA()
+    {
+        return M_compositeA;
+    }
+    virtual operatorcomposite_ptrtype operatorCompositeM()
+    {
+        return M_compositeM;
+    }
+    virtual std::vector< functionalcomposite_ptrtype > functionalCompositeF()
+    {
+        return M_compositeF;
+    }
+
+
+    //for linear steady models, mass matrix does not exist
+    //non-linear steady models need mass matrix for the initial guess
+    //this class can provide the function operatorCompositeM() to ensure compilation
+    //but we need to know if the model can provide an operator composite for mass matrix
+    //because non-linear problems have to do these operators
+    //because CRBModel is not able to construct such operators in the general case.
+    //Elements of function space are members of CRBModel
+    //then for composite spaces, we need a view of these elements
+    //BUT we can't have a view of an element of a non-composite space
+    //this function returns true if the model provides an operator composite for mass matrix
+    //false by default
+    virtual bool constructOperatorCompositeM()
+    {
+        return false;
+    }
+
+
+
     /**
      * note about the initial guess :
      * by default, if the model doesn't give an initial guess
@@ -147,6 +199,39 @@ public :
         beta[0].resize(1); //m=1
         beta[0][0]=0;
         return beta;
+    }
+
+
+
+     /**
+     * returns the scalar product used fior mass matrix ( to solve eigen values problem )
+     * of the boost::shared_ptr vector x and boost::shared_ptr vector
+     * Transient models need to implement these functions.
+     */
+    virtual double scalarProductForMassMatrix( vector_ptrtype const& X, vector_ptrtype const& Y )
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
+        return 0;
+    }
+    virtual double scalarProductForMassMatrix( vector_type const& x, vector_type const& y )
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement scalarProductForMassMatrix function");
+        return 0;
+    }
+
+    /**
+     * inner product for mass matrix
+     * Transient models need to implement these functions.
+     */
+    virtual sparse_matrix_ptrtype const& innerProductForMassMatrix () const
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
+        return M;
+    }
+    virtual sparse_matrix_ptrtype innerProductForMassMatrix ()
+    {
+        throw std::logic_error("Your model is time-dependant so you MUST implement innerProductForMassMatrix function");
+        return M;
     }
 
     /**
@@ -197,6 +282,12 @@ protected :
     funs_type M_funs;
     funsd_type M_funs_d;
     bool M_is_initialized;
+
+    sparse_matrix_ptrtype M;
+
+    operatorcomposite_ptrtype M_compositeA;
+    operatorcomposite_ptrtype M_compositeM;
+    std::vector< functionalcomposite_ptrtype > M_compositeF;
 
 };
 

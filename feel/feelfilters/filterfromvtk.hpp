@@ -100,8 +100,8 @@ public:
 #if defined(FEELPP_HAS_VTK)
     FilterFromVtk( vtkmesh_type* __vtkmesh )
     {
-        _M_vtkmesh = vtkmesh_type::New();
-        _M_vtkmesh->CopyStructure( __vtkmesh );
+        M_vtkmesh = vtkmesh_type::New();
+        M_vtkmesh->CopyStructure( __vtkmesh );
     }
 #else
     FilterFromVtk()
@@ -111,14 +111,14 @@ public:
     ~FilterFromVtk()
     {
 #if defined(FEELPP_HAS_VTK)
-        _M_vtkmesh->Delete();
+        M_vtkmesh->Delete();
 #endif /* FEELPP_HAS_VTK */
     }
 
 #if defined(FEELPP_HAS_VTK)
     vtkmesh_type* getVtkMesh()
     {
-        return _M_vtkmesh;
+        return M_vtkmesh;
     }
 #endif /* FEELPP_HAS_VTK */
 
@@ -139,7 +139,7 @@ public:
 protected :
 
 #if defined(FEELPP_HAS_VTK)
-    vtkmesh_type* _M_vtkmesh;
+    vtkmesh_type* M_vtkmesh;
 #endif /* FEELPP_HAS_VTK */
 
 private:
@@ -192,8 +192,8 @@ public:
 #if defined(FEELPP_HAS_VTK)
     FilterFromVtk3D( vtkmesh_type* __vtkmesh )
     {
-        _M_vtkmesh = vtkmesh_type::New();
-        _M_vtkmesh->CopyStructure( __vtkmesh );
+        M_vtkmesh = vtkmesh_type::New();
+        M_vtkmesh->CopyStructure( __vtkmesh );
     }
 #else
     FilterFromVtk3D()
@@ -203,14 +203,14 @@ public:
     ~FilterFromVtk3D()
     {
 #if defined(FEELPP_HAS_VTK)
-        _M_vtkmesh->Delete();
+        M_vtkmesh->Delete();
 #endif /* FEELPP_HAS_VTK */
     }
 
 #if defined(FEELPP_HAS_VTK)
     vtkmesh_type* getVtkMesh()
     {
-        return _M_vtkmesh;
+        return M_vtkmesh;
     }
 #endif /* FEELPP_HAS_VTK */
 
@@ -231,7 +231,7 @@ public:
 protected :
 
 #if defined(FEELPP_HAS_VTK)
-    vtkmesh_type* _M_vtkmesh;
+    vtkmesh_type* M_vtkmesh;
 #endif /* FEELPP_HAS_VTK */
 
 private:

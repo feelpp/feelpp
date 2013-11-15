@@ -357,8 +357,11 @@ SolverEigenSlepc<T>::solve ( MatrixSparse<T> &matrix_A_in,
     int lits;
     EPSGetOperationCounters( M_eps,PETSC_NULL,PETSC_NULL,&lits );
     //PetscPrintf(PETSC_COMM_WORLD," Number of linear iterations of the method: %d\n",lits);
-
+#if PETSC_VERSION_LESS_THAN(3,4,0)
     const EPSType              type;
+#else
+    EPSType              type;
+#endif
     EPSGetType( M_eps,&type );
     //PetscPrintf(PETSC_COMM_WORLD," Solution method: %s\n\n",type);
 
@@ -505,7 +508,11 @@ void SolverEigenSlepc<T>::setSlepcSolverType()
     //ierr = EPSSetType (M_eps, (char*) EPSARPACK);
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
 #endif
+#if PETSC_VERSION_LESS_THAN(3,4,0)
     const EPSType etype;
+#else
+    EPSType etype;
+#endif
     ierr = EPSGetType( M_eps,&etype );
     CHKERRABORT( PETSC_COMM_WORLD,ierr );
     VLOG(1) << "solution method:  " << etype << "\n";

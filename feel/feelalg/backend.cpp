@@ -27,9 +27,13 @@
    \date 2007-12-23
  */
 #include <feel/feelalg/backend.hpp>
+// PETSc defines MatType which is used as a typename by eigen3 and it conflicts
+// undef MatType here to ensure compilation since it is not needed to compile this file
+#undef MatType
+#include <feel/feelalg/backendeigen.hpp>
 #include <feel/feelalg/backendpetsc.hpp>
 #include <feel/feelalg/backendtrilinos.hpp>
-#include <feel/feelalg/backendeigen.hpp>
+
 
 namespace Feel
 {
@@ -146,6 +150,14 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
 template <typename T>
 Backend<T>::~Backend()
 {
+    this->clear();
+}
+template <typename T>
+void
+Backend<T>::clear()
+{
+    if ( M_preconditioner )
+        M_preconditioner->clear();
     LOG(INFO) << "Sending delete signal to all observers...\n";
     this->sendDeleteSignal();
     //this->clear ();
@@ -199,19 +211,21 @@ template <typename T>
 typename Backend<T>::backend_ptrtype
 Backend<T>::build( po::variables_map const& vm, std::string const& prefix, WorldComm const& worldComm )
 {
-    LOG(INFO) << "Loading backend " << vm["backend"].template as<std::string>();
+
+    std::string n= option( _name="backend" ).template as<std::string>();
+    LOG(INFO) << "Loading backend " << n;
     BackendType bt;
 
-    if ( vm["backend"].template as<std::string>() == "eigen" )
+    if ( n == "eigen" )
         bt = BACKEND_EIGEN;
 
-    else if ( vm["backend"].template as<std::string>() == "eigen_dense" )
+    else if ( n == "eigen_dense" )
         bt = BACKEND_EIGEN_DENSE;
 
-    else if ( vm["backend"].template as<std::string>() == "petsc" )
+    else if ( n == "petsc" )
         bt = BACKEND_PETSC;
 
-    else if ( vm["backend"].template as<std::string>() == "trilinos" )
+    else if ( n == "trilinos" )
         bt = BACKEND_TRILINOS;
 
     else
@@ -222,7 +236,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
         LOG(INFO) << "Falling back to backend petsc\n";
         bt = BACKEND_PETSC;
 #else
-        LOG(FATAL) << "Backend " << vm["backend"].template as<std::string>() << " not available";
+        LOG(FATAL) << "Backend " << n << " not available";
 #endif
     }
 
@@ -231,12 +245,12 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     {
     case BACKEND_EIGEN:
     {
-        return backend_ptrtype( new BackendEigen<value_type>( vm, prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
     }
     break;
     case BACKEND_EIGEN_DENSE:
     {
-        return backend_ptrtype( new BackendEigen<value_type,1>( vm, prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
     }
     break;
 
@@ -245,7 +259,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     default:
     case BACKEND_PETSC:
     {
-        return backend_ptrtype( new BackendPetsc<value_type>( vm, prefix, worldComm ) );
+        return backend_ptrtype( new BackendPetsc<value_type>( Environment::vm(), prefix, worldComm ) );
     }
     break;
 #endif
@@ -254,7 +268,7 @@ Backend<T>::build( po::variables_map const& vm, std::string const& prefix, World
     case BACKEND_TRILINOS:
     {
 #if defined ( FEELPP_HAS_TRILINOS_EPETRA )
-        return backend_ptrtype( new BackendTrilinos( vm, prefix, worldComm ) );
+        return backend_ptrtype( new BackendTrilinos( Environment::vm(), prefix, worldComm ) );
 #else
         return backend_ptrtype();
 #endif
@@ -287,7 +301,7 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
     {
         // save current solution in case of failure
         x->close();
-        x_save = this->newVector(x->map());
+        x_save = this->newVector(x->mapPtr());
         *x_save=*x;
         this->setPrecMatrixStructure( SAME_PRECONDITIONER );
     }
@@ -363,7 +377,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     {
         // save current solution in case of failure
         x->close();
-        x_save = this->newVector(x->map());
+        x_save = this->newVector(x->mapPtr());
         *x_save=*x;
 
         // if first time or rebuild prec at first newton step, need to get matStructInitial
@@ -678,9 +692,9 @@ void updateBackendPreconditionerOptions( po::options_description & _options, std
     ( prefixvm( prefix,"constant-null-space" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "set the null space to be the constant values" )
 
     ( prefixvm( prefix,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
-    ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+    ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of overlap levels" )
     ( prefixvm( prefix,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
-    ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+    ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of overlap levels" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
     ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
       "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )

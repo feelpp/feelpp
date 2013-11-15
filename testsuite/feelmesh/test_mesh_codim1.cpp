@@ -77,7 +77,7 @@ createMesh( double hsize )
 
     nameStr << "line." << meshSize;
     std::cout <<"Mesh generation ... \n";
-    fname = __gmsh.generate( nameStr.str(), ostr.str() );
+    fname = __gmsh.generate( nameStr.str(), ostr.str() ).get<0>();
 
     /* Mesh */
 

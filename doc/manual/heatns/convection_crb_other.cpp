@@ -288,7 +288,7 @@ ConvectionCrb::run( const double * X, unsigned long N, double * Y, unsigned long
 
 
 double
-ConvectionCrb::output( int output_index, parameter_type const& mu )
+ConvectionCrb::output( int output_index, parameter_type const& mu , element_type& unknown, bool need_to_solve)
 {
     using namespace vf;
     //this->solve( mu, pT );

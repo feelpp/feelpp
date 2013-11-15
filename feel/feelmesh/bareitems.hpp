@@ -522,14 +522,14 @@ public:
     //!< Max size_type currently in use
     size_type maxId() const
     {
-        return _M_id_count;
+        return M_id_count;
     }
 
     //!< Writes info in output
     void showMe() const;
 
 private:
-    size_type  _M_id_count;
+    size_type  M_id_count;
 };
 
 /*********************************************************************************
@@ -560,7 +560,7 @@ BareItem getItem( std::pair<BareItem, size_type> const & i )
 template <class BareItem>
 BareItemsHandler<BareItem>::BareItemsHandler()
     :
-    _M_id_count( 0 )
+    M_id_count( 0 )
 { }
 
 
@@ -611,10 +611,10 @@ inline
 std::pair<typename BareItemsHandler<BareItem>::size_type, bool>
 BareItemsHandler<BareItem>::addIfNotThere( const BareItem & s )
 {
-    std::pair<typename BareItemsHandler<BareItem>::iterator, bool> i( insert( std::make_pair( s, _M_id_count ) ) );
+    std::pair<typename BareItemsHandler<BareItem>::iterator, bool> i( insert( std::make_pair( s, M_id_count ) ) );
 
     if ( i.second )
-        ++_M_id_count;
+        ++M_id_count;
 
     return std::make_pair( ( i.first ) ->second, i.second );
 }
@@ -629,11 +629,11 @@ BareItemsHandler<BareItem>::addIfNotThere( const BareItem & s, const size_type i
     ( i.first ) ->second = id;
 
     // id count should grow +1
-    //FEELPP_ASSERT( _M_id_count == id )( _M_id_count )( id ).error ( "invalid item id" );
+    //FEELPP_ASSERT( M_id_count == id )( M_id_count )( id ).error ( "invalid item id" );
     if ( i.second )
     {
-        _M_id_count = id;
-        ++_M_id_count;
+        M_id_count = id;
+        ++M_id_count;
     }
 
     // for consistency with other version.
@@ -658,4 +658,3 @@ void BareItemsHandler<BareItem>::showMe() const
 }
 }
 #endif
-

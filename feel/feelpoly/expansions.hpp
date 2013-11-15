@@ -69,28 +69,28 @@ struct xi<TRIANGLE, T>
 
     xi()
         :
-        _M_xi( 2 )
+        M_xi( 2 )
     {}
 
     xi( node_type const& eta )
         :
-        _M_xi( 2 )
+        M_xi( 2 )
     {
-        _M_xi[0] = 0.5*( 1.0 + eta[0] )*( 1.0 - eta[1] ) - 1.0;
-        _M_xi[1] = eta[1];
+        M_xi[0] = 0.5*( 1.0 + eta[0] )*( 1.0 - eta[1] ) - 1.0;
+        M_xi[1] = eta[1];
     }
 
     node_type const& operator()( node_type const& eta )
     {
-        _M_xi[0] = 0.5*( 1.0 + eta[0] )*( 1.0 - eta[1] ) - 1.0;
-        _M_xi[1] = eta[1];
-        return _M_xi;
+        M_xi[0] = 0.5*( 1.0 + eta[0] )*( 1.0 - eta[1] ) - 1.0;
+        M_xi[1] = eta[1];
+        return M_xi;
     }
     node_type const& operator()() const
     {
-        return _M_xi;
+        return M_xi;
     }
-    node_type _M_xi;
+    node_type M_xi;
 };
 
 template<typename T>
@@ -101,30 +101,30 @@ struct xi<TETRAHEDRON, T>
 
     xi()
         :
-        _M_xi( 3 )
+        M_xi( 3 )
     {}
 
     xi( node_type const& eta )
         :
-        _M_xi( 3 )
+        M_xi( 3 )
     {
-        _M_xi[0] = 0.25*( 1.0 + eta[0] )*( 1.0 - eta[1] )*( 1.0 - eta[2] ) - 1.0;
-        _M_xi[1] = 0.5*( 1.0 + eta[1] )*( 1.0 - eta[2] ) - 1.0;
-        _M_xi[2] = eta[2];
+        M_xi[0] = 0.25*( 1.0 + eta[0] )*( 1.0 - eta[1] )*( 1.0 - eta[2] ) - 1.0;
+        M_xi[1] = 0.5*( 1.0 + eta[1] )*( 1.0 - eta[2] ) - 1.0;
+        M_xi[2] = eta[2];
     }
 
     node_type const& operator()( node_type const& eta )
     {
-        _M_xi[0] = 0.25*( 1.0 + eta[0] )*( 1.0 - eta[1] )*( 1.0 - eta[2] ) - 1.0;
-        _M_xi[1] = 0.5*( 1.0 + eta[1] )*( 1.0 - eta[2] ) - 1.0;
-        _M_xi[2] = eta[2];
-        return _M_xi;
+        M_xi[0] = 0.25*( 1.0 + eta[0] )*( 1.0 - eta[1] )*( 1.0 - eta[2] ) - 1.0;
+        M_xi[1] = 0.5*( 1.0 + eta[1] )*( 1.0 - eta[2] ) - 1.0;
+        M_xi[2] = eta[2];
+        return M_xi;
     }
     node_type const& operator()() const
     {
-        return _M_xi;
+        return M_xi;
     }
-    node_type _M_xi;
+    node_type M_xi;
 };
 
 
@@ -148,38 +148,38 @@ struct eta<TRIANGLE, T>
 
     eta()
         :
-        _M_eta( 2 )
+        M_eta( 2 )
     {}
 
     eta( node_type const& xi )
         :
-        _M_eta( 2 )
+        M_eta( 2 )
     {
         if ( xi[1] == 1.0 )
-            _M_eta[0] = -1.0;
+            M_eta[0] = -1.0;
 
         else
-            _M_eta[0] = 2.0 * ( 1.0 + xi[0] ) / ( 1.0 - xi[1] ) - 1.0;
+            M_eta[0] = 2.0 * ( 1.0 + xi[0] ) / ( 1.0 - xi[1] ) - 1.0;
 
-        _M_eta[1] = xi[1];
+        M_eta[1] = xi[1];
     }
 
     node_type const& operator()( node_type const& xi )
     {
         if ( xi[1] == 1.0 )
-            _M_eta[0] = -1.0;
+            M_eta[0] = -1.0;
 
         else
-            _M_eta[0] = 2.0 * ( 1.0 + xi[0] ) / ( 1.0 - xi[1] ) - 1.0;
+            M_eta[0] = 2.0 * ( 1.0 + xi[0] ) / ( 1.0 - xi[1] ) - 1.0;
 
-        _M_eta[1] = xi[1];
-        return _M_eta;
+        M_eta[1] = xi[1];
+        return M_eta;
     }
     node_type const& operator()() const
     {
-        return _M_eta;
+        return M_eta;
     }
-    node_type _M_eta;
+    node_type M_eta;
 };
 template<typename T>
 struct etas<TRIANGLE, T>
@@ -189,48 +189,48 @@ struct etas<TRIANGLE, T>
 
     etas()
         :
-        _M_eta()
+        M_eta()
     {}
 
     etas( matrix_node_type const& xi )
         :
-        _M_eta( xi.size1(), xi.size2() )
+        M_eta( xi.size1(), xi.size2() )
     {
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
             if ( xi( 1, i ) == 1.0 )
-                _M_eta( 0, i ) = -1.0;
+                M_eta( 0, i ) = -1.0;
 
             else
-                _M_eta( 0, i ) = 2.0 * ( 1.0 + xi( 0, i ) ) / ( 1.0 - xi( 1, i ) ) - 1.0;
+                M_eta( 0, i ) = 2.0 * ( 1.0 + xi( 0, i ) ) / ( 1.0 - xi( 1, i ) ) - 1.0;
 
-            _M_eta( 1, i ) = xi( 1, i );
+            M_eta( 1, i ) = xi( 1, i );
         }
 
     }
 
     matrix_node_type const& operator()( matrix_node_type const& xi )
     {
-        _M_eta.resize( xi.size1(), xi.size2() );
+        M_eta.resize( xi.size1(), xi.size2() );
 
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
             if ( xi( 1, i ) == 1.0 )
-                _M_eta( 0, i ) = -1.0;
+                M_eta( 0, i ) = -1.0;
 
             else
-                _M_eta( 0, i ) = 2.0 * ( 1.0 + xi( 0, i ) ) / ( 1.0 - xi( 1, i ) ) - 1.0;
+                M_eta( 0, i ) = 2.0 * ( 1.0 + xi( 0, i ) ) / ( 1.0 - xi( 1, i ) ) - 1.0;
 
-            _M_eta( 1, i ) = xi( 1, i );
+            M_eta( 1, i ) = xi( 1, i );
         }
 
-        return _M_eta;
+        return M_eta;
     }
     matrix_node_type const& operator()() const
     {
-        return _M_eta;
+        return M_eta;
     }
-    matrix_node_type _M_eta;
+    matrix_node_type M_eta;
 };
 
 template<typename T>
@@ -241,59 +241,59 @@ struct etas<TETRAHEDRON, T>
 
     etas()
         :
-        _M_eta()
+        M_eta()
     {}
 
     etas( matrix_node_type const& xi )
         :
-        _M_eta( xi.size1(), xi.size2() )
+        M_eta( xi.size1(), xi.size2() )
     {
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
             if ( xi( 1, i ) + xi( 2, i ) == 0. )
-                _M_eta( 0, i ) = 1.;
+                M_eta( 0, i ) = 1.;
 
             else
-                _M_eta( 0, i ) = -2. * ( 1. + xi( 0, i ) ) / ( xi( 1, i ) + xi( 2, i ) ) - 1.;
+                M_eta( 0, i ) = -2. * ( 1. + xi( 0, i ) ) / ( xi( 1, i ) + xi( 2, i ) ) - 1.;
 
             if ( xi( 2, i ) == 1. )
-                _M_eta( 1, i ) = -1.;
+                M_eta( 1, i ) = -1.;
 
             else
-                _M_eta( 1, i ) = 2. * ( 1. + xi( 1, i ) ) / ( 1. - xi( 2, i ) ) - 1.;
+                M_eta( 1, i ) = 2. * ( 1. + xi( 1, i ) ) / ( 1. - xi( 2, i ) ) - 1.;
 
-            _M_eta( 2, i ) = xi( 2, i );
+            M_eta( 2, i ) = xi( 2, i );
         }
     }
 
     matrix_node_type const& operator()( matrix_node_type const& xi )
     {
-        _M_eta.resize( xi.size1(), xi.size2() );
+        M_eta.resize( xi.size1(), xi.size2() );
 
         for ( size_type i = 0; i < xi.size2(); ++i )
         {
             if ( xi( 1, i ) + xi( 2, i ) == 0. )
-                _M_eta( 0, i ) = 1.;
+                M_eta( 0, i ) = 1.;
 
             else
-                _M_eta( 0, i ) = -2. * ( 1. + xi( 0, i ) ) / ( xi( 1, i ) + xi( 2, i ) ) - 1.;
+                M_eta( 0, i ) = -2. * ( 1. + xi( 0, i ) ) / ( xi( 1, i ) + xi( 2, i ) ) - 1.;
 
             if ( xi( 2, i ) == 1. )
-                _M_eta( 1, i ) = -1.;
+                M_eta( 1, i ) = -1.;
 
             else
-                _M_eta( 1, i ) = 2. * ( 1. + xi( 1, i ) ) / ( 1. - xi( 2, i ) ) - 1.;
+                M_eta( 1, i ) = 2. * ( 1. + xi( 1, i ) ) / ( 1. - xi( 2, i ) ) - 1.;
 
-            _M_eta( 2, i ) = xi( 2, i );
+            M_eta( 2, i ) = xi( 2, i );
         }
 
-        return _M_eta;
+        return M_eta;
     }
     matrix_node_type const& operator()() const
     {
-        return _M_eta;
+        return M_eta;
     }
-    matrix_node_type _M_eta;
+    matrix_node_type M_eta;
 };
 
 /**
@@ -317,24 +317,24 @@ public:
     psitilde()
         :
         p( 0, 0.0, 0.0 ),
-        _M_b( 0.0 )
+        M_b( 0.0 )
     {}
     psitilde( int i )
         :
         p( i, 0.0,  0.0 ),
-        _M_b( i )
+        M_b( i )
     {
     }
     psitilde( int i, int j )
         :
         p( j, 2*i+1, 0.0 ),
-        _M_b( i )
+        M_b( i )
     {
     }
     psitilde( int i, int j, int k )
         :
         p( k, 2*( i+j+1 ), 0.0 ),
-        _M_b( i+j )
+        M_b( i+j )
     {
     }
     /**
@@ -353,7 +353,7 @@ public:
      */
     value_type b( value_type const& x ) const
     {
-        return math::pow( 0.5 *( 1.0-x ), _M_b )*p( x );
+        return math::pow( 0.5 *( 1.0-x ), M_b )*p( x );
     }
     /**
      * \brief 3D case
@@ -362,10 +362,10 @@ public:
      */
     value_type c( value_type const& x ) const
     {
-        return math::pow( 0.5 *( 1.0-x ), _M_b )*p( x );
+        return math::pow( 0.5 *( 1.0-x ), M_b )*p( x );
     }
     P p;
-    value_type _M_b;
+    value_type M_b;
 };
 
 /**
@@ -388,32 +388,32 @@ struct scalings
      */
     scalings( ublas::vector<value_type> const& pts )
         :
-        _M_s( N+1,  pts.size() )
+        M_s( N+1,  pts.size() )
     {
 #if 0
         ublas::vector<value_type> one( ublas::scalar_vector<value_type>( pts.size(), 1.0 ) );
-        ublas::row( _M_s, 0 ) = one;
+        ublas::row( M_s, 0 ) = one;
 #else
-        ublas::row( _M_s, 0 ) = ublas::scalar_vector<value_type>( pts.size(), 1.0 );
+        ublas::row( M_s, 0 ) = ublas::scalar_vector<value_type>( pts.size(), 1.0 );
 #endif
 
         if ( N > 0 )
         {
-            ublas::row( _M_s, 1 ) = 0.5 * ( ublas::row( _M_s, 0 ) - pts );
+            ublas::row( M_s, 1 ) = 0.5 * ( ublas::row( M_s, 0 ) - pts );
 
             for ( uint16_type k = 2; k < N+1; ++k )
             {
-                ublas::row( _M_s, k ) = ublas::element_prod( ublas::row( _M_s, k-1 ),
-                                        ublas::row( _M_s, 1 ) );
+                ublas::row( M_s, k ) = ublas::element_prod( ublas::row( M_s, k-1 ),
+                                        ublas::row( M_s, 1 ) );
             }
         }
     }
     matrix_type const& operator()() const
     {
-        return _M_s;
+        return M_s;
     }
 
-    matrix_type _M_s;
+    matrix_type M_s;
 };
 } // details
 /// \endcond

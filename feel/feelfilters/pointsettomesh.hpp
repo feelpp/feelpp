@@ -113,15 +113,15 @@ public:
         :
         super1(),
         super2(),
-        _M_mesh( new mesh_type( Environment::worldComm().subWorldCommSeq() ) ),
-        _M_vertices()
+        M_mesh( new mesh_type( Environment::worldComm().subWorldCommSeq() ) ),
+        M_vertices()
     {}
     PointSetToMesh( PointSetToMesh const & p )
         :
         super1( p ),
         super2( p ),
-        _M_mesh( p._M_mesh ),
-        _M_vertices( p._M_vertices )
+        M_mesh( p.M_mesh ),
+        M_vertices( p.M_vertices )
     {}
 
     ~PointSetToMesh()
@@ -142,7 +142,7 @@ public:
 
     mesh_ptrtype mesh()
     {
-        return _M_mesh;
+        return M_mesh;
     }
 
     //@}
@@ -153,7 +153,7 @@ public:
 
     void addBoundaryPoints( points_type const& v )
     {
-        _M_vertices = v;
+        M_vertices = v;
     }
 
     //@}
@@ -185,8 +185,8 @@ private:
     void visit( pointset_type* pset, mpl::int_<3> );
 private:
 
-    mesh_ptrtype _M_mesh;
-    boost::optional<points_type> _M_vertices;
+    mesh_ptrtype M_mesh;
+    boost::optional<points_type> M_vertices;
 };
 
 template<typename Convex, typename T>
@@ -194,7 +194,7 @@ void
 PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 {
     DVLOG(2) << "[PointSetToMesh::visit(<1>)] pointset to mesh\n";
-    _M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
+    M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
 
     size_type __npts = pset->nPoints();
 
@@ -217,7 +217,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 
         }
 
-        _M_mesh->addPoint( __pt );
+        M_mesh->addPoint( __pt );
     }
 
     size_type n_faces = 0;
@@ -228,22 +228,22 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
     face_type* pf0 = new face_type;
 
     pf0->marker() = 0;
-    pf0->setPoint( 0, _M_mesh->point( 0 ) );
+    pf0->setPoint( 0, M_mesh->point( 0 ) );
 
     pf0->setId( n_faces++ );
     pf0->setOnBoundary( true );
-    _M_mesh->addFace( *pf0 );
+    M_mesh->addFace( *pf0 );
 
     delete pf0;
 
     face_type* pf1 = new face_type;
 
     pf1->marker() = 0;
-    pf1->setPoint( 0, _M_mesh->point( 1 ) );
+    pf1->setPoint( 0, M_mesh->point( 1 ) );
 
     pf1->setId( n_faces++ );
     pf1->setOnBoundary( true );
-    _M_mesh->addFace( *pf1 );
+    M_mesh->addFace( *pf1 );
 
     delete pf1;
 
@@ -258,45 +258,45 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
 
         if ( __nele == 1 )
         {
-            pf.setPoint( 0, _M_mesh->point( __i ) );
-            pf.setPoint( 1, _M_mesh->point( __i+1 ) );
+            pf.setPoint( 0, M_mesh->point( __i ) );
+            pf.setPoint( 1, M_mesh->point( __i+1 ) );
         }
 
         else if ( __i == 0 )
         {
-            pf.setPoint( 0, _M_mesh->point( __i ) );
-            pf.setPoint( 1, _M_mesh->point( __i+2 ) );
+            pf.setPoint( 0, M_mesh->point( __i ) );
+            pf.setPoint( 1, M_mesh->point( __i+2 ) );
         }
 
         else if ( __i == __nele-1 )
         {
-            pf.setPoint( 0, _M_mesh->point( __i+1 ) );
-            pf.setPoint( 1, _M_mesh->point( 1 ) );
+            pf.setPoint( 0, M_mesh->point( __i+1 ) );
+            pf.setPoint( 1, M_mesh->point( 1 ) );
         }
 
         else
         {
-            pf.setPoint( 0, _M_mesh->point( __i+1 ) );
-            pf.setPoint( 1, _M_mesh->point( __i+2 ) );
+            pf.setPoint( 0, M_mesh->point( __i+1 ) );
+            pf.setPoint( 1, M_mesh->point( __i+2 ) );
         }
 
-        element_type const& e  = _M_mesh->addElement( pf );
+        element_type const& e  = M_mesh->addElement( pf );
         DVLOG(2) << "o element " << e.id() << "\n"
                       << "  p1 = " << e.point( 0 ).node() << "\n"
                       << "  p2 = " << e.point( 1 ).node() << "\n";
     }
 
 
-    FEELPP_ASSERT( n_faces == _M_mesh->numFaces() )( n_faces )( _M_mesh->numFaces() ).error( "invalid face container size" );
+    FEELPP_ASSERT( n_faces == M_mesh->numFaces() )( n_faces )( M_mesh->numFaces() ).error( "invalid face container size" );
 
     DVLOG(2) <<"[PointSetToMesh<1>] done with element accumulation !\n";
 
-    _M_mesh->setNumVertices( __npts );
+    M_mesh->setNumVertices( __npts );
 
     DVLOG(2) <<"[PointSetToMesh<1>] Face Update !\n";
 
-    //// do not renumber the _M_mesh entities
-    //_M_mesh->updateForUse( MESH_ALL_COMPONENTS & (~MESH_RENUMBER) );
+    //// do not renumber the M_mesh entities
+    //M_mesh->updateForUse( MESH_ALL_COMPONENTS & (~MESH_RENUMBER) );
 
     DVLOG(2) <<"[PointSetToMesh<1>] Face Update Successful !\n";
 
@@ -309,17 +309,17 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 {
 #if defined(FEELPP_HAS_VTK)
     // reinitialize mesh
-    _M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
+    M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
 
     vtkPoints *newPoints = vtkPoints::New();
 
-    if ( _M_vertices )
+    if ( M_vertices )
     {
-        DVLOG(2) << "adding vertices\n" << _M_vertices.get() << "\n";
+        DVLOG(2) << "adding vertices\n" << M_vertices.get() << "\n";
 
-        for ( size_type i = 0; i < _M_vertices->size2(); ++i )
+        for ( size_type i = 0; i < M_vertices->size2(); ++i )
         {
-            newPoints->InsertNextPoint( _M_vertices.get()( 0, i ), _M_vertices.get()( 1, i ), 0 );
+            newPoints->InsertNextPoint( M_vertices.get()( 0, i ), M_vertices.get()( 1, i ), 0 );
         }
     }
 
@@ -392,7 +392,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 
     DVLOG(2) << "[PointSetToMesh::visit(<2>)] delaunay done, now vtk to Mesh<>\n";
     FilterFromVtk<mesh_type> meshfromvtk( outMesh );
-    meshfromvtk.visit( _M_mesh.get() );
+    meshfromvtk.visit( M_mesh.get() );
     DVLOG(2) << "[PointSetToMesh::visit(<2>)] done\n";
 
 #else
@@ -407,11 +407,11 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 {
 #if defined(FEELPP_HAS_VTK)
     // reinitialize mesh
-    _M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
+    M_mesh = mesh_ptrtype( new mesh_type( Environment::worldComm().subWorldCommSeq() ) );
 
     vtkPoints *newPoints = vtkPoints::New();
 
-    //if ( _M_add_bdy_pts )
+    //if ( M_add_bdy_pts )
     if ( 0 )
     {
         newPoints->InsertNextPoint( -1, -1, -1 );
@@ -442,7 +442,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
 
     DVLOG(2) << "[PointSetToMesh::visit(<3>)] delaunay done, now vtk to Mesh<>\n";
     FilterFromVtk3D<mesh_type> meshfromvtk( outMesh );
-    meshfromvtk.visit( _M_mesh.get() );
+    meshfromvtk.visit( M_mesh.get() );
     DVLOG(2) << "[PointSetToMesh::visit(<3>)] done\n";
 
 
