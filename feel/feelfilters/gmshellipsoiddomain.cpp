@@ -162,6 +162,10 @@ GmshEllipsoidDomain::getDescription2D() const
          << "Line Loop(5) = {2, 3, 4, 1};\n"
          << "Ruled Surface(6) = {5};\n";
 
+    // add center point in the mesh
+    ostr << "Point{ 1 } In Surface{ 6 };\n";
+    ostr << "Physical Point(\"center\") = {1};\n";
+
     if ( this->usePhysicalNames() == false )
     {
         ostr << "Physical Line(7) = {1, 4, 3, 2};\n"
@@ -245,5 +249,3 @@ GmshEllipsoidDomain::getDescription3D() const
 
 
 }
-
-

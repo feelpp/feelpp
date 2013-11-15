@@ -32,11 +32,8 @@
 #include <feel/feelcore/feel.hpp>
 
 #if defined( FEELPP_HAS_PETSC_H )
-extern "C"
-{
 #include <petsc.h>
 #include <petscerror.h>
-}
 #if defined( FEELPP_HAS_SLEPC )
 # include <slepc.h>
 #endif /* FEELPP_HAS_SLEPC */

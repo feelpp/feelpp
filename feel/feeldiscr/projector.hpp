@@ -42,15 +42,15 @@ namespace detail
 template<typename Args>
 struct projector_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
-    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::value_type image_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::element_type image_type;
     typedef boost::shared_ptr<Projector<domain_type,image_type> > return_type;
 };
 
 template<typename Args>
 struct lift_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::value_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
     typedef boost::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
 };
 
@@ -111,9 +111,10 @@ public :
         M_epsilon( epsilon ),
         M_gamma( gamma ),
         M_proj_type( proj_type ),
-        M_dir( dirichlet_type ),
-        M_matrix( M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) )
+        M_dir( dirichlet_type )
+
     {
+        M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace, _pattern=Pattern::EXTENDED ) ;
         initMatrix();
     }
 
@@ -189,7 +190,7 @@ public :
 
         ie->close();
 
-        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
+        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace(), _pattern=Pattern::EXTENDED );
         auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
 
         if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
@@ -380,6 +381,22 @@ private :
 
         }
         break;
+
+        case CIP:
+        {
+            a = integrate( elements( this->dualImageSpace()->mesh() ),
+                           trans( idt( this->domainSpace()->element() ) ) /*trial*/
+                           *id( this->dualImageSpace()->element() ) /*test*/
+                           );
+
+            a += integrate( internalfaces( this->dualImageSpace()->mesh() ),
+                            M_gamma * hFace() * hFace()
+                           * trans(jumpt( gradt(this->domainSpace()->element()) ))
+                           * jump( grad(this->dualImageSpace()->element()) )
+                           );
+        }
+        break;
+
         case NODAL:
             break;
         }

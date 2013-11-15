@@ -59,6 +59,7 @@ struct compute_graph3
         {
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
+#if 0
 #if !defined(FEELPP_ENABLE_MPI_MODE)
                 const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
                 const size_type n1_dof_on_proc    = space2->nLocalDof();
@@ -74,10 +75,8 @@ struct compute_graph3
                 const size_type first2_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
                 const size_type last2_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
 #endif
-                typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
-                        first1_dof_on_proc, last1_dof_on_proc,
-                        first2_dof_on_proc, last2_dof_on_proc,
-                        space2->worldComm() ) );
+#endif
+                typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( space2->dof(), M_space1->dof() ) );
                 zerograph->zero();
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , zerograph );
             }
@@ -89,6 +88,7 @@ struct compute_graph3
                                            _pattern_block=M_stencil->blockPattern(),
                                            _diag_is_nonzero=false,
                                            _collect_garbage=false,
+                                           _close=false,
                                            _range=M_stencil->template subRangeIterator<Space2::basis_type::TAG,Space1Type::basis_type::TAG>
                                            (mpl::bool_<BFType::template rangeiteratorType<Space2::basis_type::TAG,Space1Type::basis_type::TAG>::hasnotfindrange_type::value>() )
                                            );
@@ -135,6 +135,7 @@ struct compute_graph2
         {
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
+#if 0
 #if !defined(FEELPP_ENABLE_MPI_MODE)
                 const size_type proc_id           = M_stencil->testSpace()->template mesh<0>()->comm().rank();
                 const size_type n1_dof_on_proc    = M_space1->nLocalDof();
@@ -150,11 +151,8 @@ struct compute_graph2
                 const size_type first2_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
                 const size_type last2_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
 #endif
-
-                typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( n1_dof_on_proc,
-                        first1_dof_on_proc, last1_dof_on_proc,
-                        first2_dof_on_proc, last2_dof_on_proc,
-                        M_space1->worldComm() ) );
+#endif
+                typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type(  M_space1->dof(), space2->dof() ) );
                 zerograph->zero();
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
                                        M_stencil->trialSpace()->nDofStart( M_trial_index ),
@@ -169,6 +167,7 @@ struct compute_graph2
                                            _pattern_block=M_stencil->blockPattern(),
                                            _diag_is_nonzero=false,
                                            _collect_garbage=false,
+                                           _close=false,
                                            _range=M_stencil->template subRangeIterator<Space1Type::basis_type::TAG,Space2::basis_type::TAG>
                                            (mpl::bool_<BFType::template rangeiteratorType<Space1Type::basis_type::TAG,Space2::basis_type::TAG>::hasnotfindrange_type::value>() )
                                            );
@@ -309,8 +308,8 @@ class Stencil
 public:
     typedef X1 test_space_ptrtype;
     typedef X2 trial_space_ptrtype;
-    typedef typename X1::value_type test_space_type;
-    typedef typename X2::value_type trial_space_type;
+    typedef typename X1::element_type test_space_type;
+    typedef typename X2::element_type trial_space_type;
     typedef GraphCSR graph_type;
     typedef boost::shared_ptr<graph_type> graph_ptrtype;
     typedef Stencil<X1,X2,RangeIteratorTestType> self_type;
@@ -321,6 +320,7 @@ public:
              size_type graph_hints,
              BlocksStencilPattern block_pattern=BlocksStencilPattern(1,1,Pattern::HAS_NO_BLOCK_PATTERN),
              bool diag_is_nonzero=false,
+             bool close=true,
              rangeiterator_test_type r=rangeiterator_test_type())
         :
         _M_X1( Xh ),
@@ -330,10 +330,7 @@ public:
                                  Xh->nDofStart(), Xh->nDofStart()+ Xh->nLocalDof()-1,
                                  Yh->nDofStart(), Yh->nDofStart()+ Yh->nLocalDof()-1 ) ),
 #else
-        M_graph( new graph_type( Xh->nLocalDof(),
-                                 Xh->dof()->firstDofGlobalCluster( Xh->worldComm().globalRank() ), Xh->dof()->lastDofGlobalCluster( Xh->worldComm().globalRank() ),
-                                 Yh->dof()->firstDofGlobalCluster( Yh->worldComm().globalRank() ), Yh->dof()->lastDofGlobalCluster( Yh->worldComm().globalRank() ),
-                                 Xh->worldComm() ) ),
+        M_graph( new graph_type( Xh->dof(),Yh->dof() ) ),
 #endif
         M_block_pattern( block_pattern ),
         M_rangeIteratorTest( r )
@@ -351,7 +348,7 @@ public:
 
         if ( diag_is_nonzero && _M_X1->nLocalDofWithoutGhost()>0 && _M_X2->nLocalDofWithoutGhost()>0 ) M_graph->addMissingZeroEntriesDiagonal();
 
-        M_graph->close();
+        if ( close ) M_graph->close();
     }
 
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g, rangeiterator_test_type r=rangeiterator_test_type() )
@@ -423,23 +420,56 @@ public:
         return M_graph;
     }
 private:
-    size_type trialElementId( size_type trial_eid )
+    std::set<size_type> trialElementId( size_type test_eid, mpl::int_<0> /**/ )
         {
-            size_type idElem = trial_eid;
-            size_type domain_eid = idElem;
+            std::set<size_type> idsFind;
             const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
             const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                domain_eid = _M_X1->mesh()->subMeshToMesh( idElem );
-                DVLOG(2) << "[test_related_to_trial] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                const size_type domain_eid = _M_X1->mesh()->subMeshToMesh( test_eid );
+                DVLOG(2) << "[test_related_to_trial] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
-            if( trial_related_to_test )
+            else if( trial_related_to_test )
             {
-                domain_eid = _M_X2->mesh()->meshToSubMesh( idElem );
-                DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                const size_type domain_eid = _M_X2->mesh()->meshToSubMesh( test_eid );
+                DVLOG(2) << "[trial_related_to_test] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
-            return domain_eid;
+            else // same mesh
+            {
+                idsFind.insert(test_eid);
+            }
+
+            return idsFind;
+        }
+    std::set<size_type> trialElementId( size_type test_eid, mpl::int_<1> /**/ )
+        {
+            std::set<size_type> idsFind;
+            const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
+            const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
+            if ( test_related_to_trial )
+            {
+                const size_type domain_eid = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid )).element0().id();
+                DVLOG(2) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
+            }
+            else if( trial_related_to_test )
+            {
+                auto const& eltTest = _M_X1->mesh()->element(test_eid);
+                for (uint16_type f=0;f< _M_X1->mesh()->numLocalFaces();++f)
+                    {
+                        const size_type idFind = _M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                        if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+                    }
+                DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
+            }
+            else
+            {
+                CHECK ( false ) << "[trial_related_to_test<1>] : test and trial mesh can not be the same here\n";
+            }
+            return idsFind;
         }
 
 
@@ -564,6 +594,7 @@ BOOST_PARAMETER_FUNCTION(
       ( pattern_block,    *, default_block_pattern )
       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), false )
       ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
+      ( close,           *( boost::is_integral<mpl::_> ), true )
       ( range,           *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
     )
 )
@@ -595,7 +626,7 @@ BOOST_PARAMETER_FUNCTION(
 
         if ( git_trans != StencilManager::instance().end() && range.isNullRange() )
         {
-            auto g = git_trans->second->transpose(test->mapOn());
+            auto g = git_trans->second->transpose(close);
             //auto g = git_trans->second->transpose();
             StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = g;
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g, range ) );
@@ -606,7 +637,7 @@ BOOST_PARAMETER_FUNCTION(
         else
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
-            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, range ) );
+            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, close, range ) );
             if ( range.isNullRange() ) StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = s->graph();
             return s;
         }
@@ -744,7 +775,7 @@ Stencil<X1,X2,RangeItTestType>::mergeGraph( int row, int col, graph_ptrtype g )
 
                     else
                     {
-                        for ( auto it = row2_entries.begin(), en = row2_entries.end() ; it!=en; ++it ) row1_entries.insert( *it+col );
+                        for ( auto itcol = row2_entries.begin(), encol = row2_entries.end() ; itcol!=encol; ++itcol ) row1_entries.insert( *itcol+col );
                     }
 
                 }
@@ -773,55 +804,55 @@ Stencil<X1,X2,RangeItTestType>::mergeGraphMPI( size_type test_index, size_type t
                                DataMap const& mapOnTest, DataMap const& mapOnTrial,
                                graph_ptrtype g )
 {
+    const int myrank = this->testSpace()->worldComm().globalRank();
 
-    const int row = ( this->testSpace()->dof()->firstDofGlobalCluster()  +  this->testSpace()->nLocalDofWithoutGhostStart( test_index ) ) - mapOnTest.firstDofGlobalCluster();
-    const int col = ( this->trialSpace()->dof()->firstDofGlobalCluster() +  this->trialSpace()->nLocalDofWithoutGhostStart( trial_index ) ) - mapOnTrial.firstDofGlobalCluster();
+    const size_type globalDofRowStart = this->testSpace()->dof()->firstDofGlobalCluster()  +  this->testSpace()->nLocalDofWithoutGhostOnProcStart( myrank, test_index );
+    const size_type globalDofColStart = this->trialSpace()->dof()->firstDofGlobalCluster()  +  this->trialSpace()->nLocalDofWithoutGhostOnProcStart( myrank, trial_index );
+    const size_type locdofStart = this->testSpace()->nLocalDofWithGhostOnProcStart( myrank, test_index );
+
     typename graph_type::const_iterator it = g->begin();
     typename graph_type::const_iterator en = g->end();
-
     for ( ; it != en; ++it )
+    {
+        size_type theglobalrow = globalDofRowStart + ( it->first - mapOnTest.firstDofGlobalCluster() );
+        const size_type thelocalrow = locdofStart + it->second.get<1>();
+
+        if (it->second.get<0>()!=g->worldComm().globalRank() )
         {
-            int theglobalrow = row+it->first;
-            int thelocalrow = this->testSpace()->nLocalDofWithoutGhostOnProcStart(this->testSpace()->worldComm().globalRank(), test_index ) + it->second.get<1>();
+            const int proc = it->second.get<0>();
+            const size_type realrowStart = this->testSpace()->dof()->firstDofGlobalCluster(proc)
+                + this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index );
+            theglobalrow = realrowStart+(it->first-mapOnTest.firstDofGlobalCluster(proc));
+        }
 
-            if (it->second.get<0>()!=g->worldComm().globalRank() )
+        std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
+        std::set<size_type> const& row2_entries = boost::get<2>( it->second );
+
+        DVLOG(2) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
+        M_graph->row( theglobalrow ).template get<1>() = thelocalrow;
+        M_graph->row( theglobalrow ).template get<0>() = this->testSpace()->worldComm().mapLocalRankToGlobalRank()[it->second.get<0>()];
+
+        if ( !row2_entries.empty() )
+        {
+            for ( auto itcol = row2_entries.begin(), encol = row2_entries.end() ; itcol!=encol; ++itcol )
+            {
+                if (mapOnTrial.dofGlobalClusterIsOnProc(*itcol))
                 {
-                    const int proc = it->second.get<0>();
-                    const size_type realrow = this->testSpace()->dof()->firstDofGlobalCluster(proc)
-                        + this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index )
-                        - mapOnTest.firstDofGlobalCluster(proc);
-                    theglobalrow = realrow+it->first;
-                    thelocalrow = this->testSpace()->nLocalDofWithoutGhostOnProcStart(proc, test_index ) + it->second.get<1>();
+                    const size_type dofcol = globalDofColStart + (*itcol-mapOnTrial.firstDofGlobalCluster());
+                    row1_entries.insert( dofcol );
                 }
-
-            std::set<size_type>& row1_entries = M_graph->row( theglobalrow ).template get<2>();
-            std::set<size_type> const& row2_entries = boost::get<2>( it->second );
-
-            DVLOG(2) << "[mergeGraph] adding information to global row [" << theglobalrow << "], localrow=" << thelocalrow << "\n";
-            M_graph->row( theglobalrow ).template get<1>() = thelocalrow;
-            M_graph->row( theglobalrow ).template get<0>() = this->testSpace()->worldComm().mapLocalRankToGlobalRank()[it->second.get<0>()];
-
-            if ( !row2_entries.empty() )
+                else
                 {
-                    for ( auto it = row2_entries.begin(), en = row2_entries.end() ; it!=en; ++it )
-                        {
-                            const auto dofcol = *it+col;
-                            if (mapOnTrial.dofGlobalClusterIsOnProc(*it))
-                                row1_entries.insert( dofcol );
-                            else
-                                {
-                                    const int realproc = mapOnTrial.procOnGlobalCluster(*it);
-                                    const size_type realcol = this->trialSpace()->dof()->firstDofGlobalCluster(realproc)
-                                        + this->trialSpace()->nLocalDofWithoutGhostOnProcStart( realproc, trial_index )
-                                        - mapOnTrial.firstDofGlobalCluster(realproc);
-
-                                    row1_entries.insert(*it+realcol);
-                                }
-                        }
+                    const int realproc = mapOnTrial.procOnGlobalCluster(*itcol);
+                    const size_type realcolStart = this->trialSpace()->dof()->firstDofGlobalCluster(realproc)
+                        + this->trialSpace()->nLocalDofWithoutGhostOnProcStart( realproc, trial_index );
+                    const size_type dofcol = realcolStart + (*itcol - mapOnTrial.firstDofGlobalCluster(realproc));
+                    row1_entries.insert(dofcol);
                 }
+            }
+        }
 
-        } // for( ; it != en; ++it )
-
+    } // for( ; it != en; ++it )
 
 }
 
@@ -1225,10 +1256,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDofGlobalCluster( proc_id );
 #endif
 
-    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
-                                  first1_dof_on_proc, last1_dof_on_proc,
-                                  first2_dof_on_proc, last2_dof_on_proc,
-                                  _M_X1->worldComm() ) );
+    graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
+
     Feel::Context graph( hints );
     if ( graph.test( Pattern::ZERO ) ) { sparsity_graph->zero(); return sparsity_graph; }
 
@@ -1252,6 +1281,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     element_dof2( _M_X2->dof()->getIndicesSize() ),
                   neighbor_dof;
 
+    static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
+    static const uint16_type nDimTrial = trial_space_type::mesh_type::nDim;
+    static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
     for ( ; elem_it != elem_en; ++elem_it )
     {
 #if !defined(NDEBUG)
@@ -1259,124 +1291,128 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 #endif /* NDEBUG */
         const auto & elem = *elem_it;
 
-        size_type domain_eid = trialElementId( elem.id() );
-        if ( domain_eid == invalid_size_type_value )
-            continue;
+        auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
 
-        // Get the global indices of the DOFs with support on this element
-        //element_dof1 = _M_X1->dof()->getIndices( elem.id() );
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-        _M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
-#else // MPI
-        _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
-#endif
-        // We can be more efficient if we sort the element DOFs
-        // into increasing order
-        //std::sort(element_dof1.begin(), element_dof1.end());
-        std::sort( element_dof2.begin(), element_dof2.end() );
-
-        //const uint16_type  n1_dof_on_element = element_dof1.size();
-        const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
-        const uint16_type  n2_dof_on_element = element_dof2.size();
-
-        for ( size_type i=0; i<n1_dof_on_element; i++ )
-            //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
+        auto it_trial=domains_eid_set.begin();
+        auto const en_trial=domains_eid_set.end();
+        for ( ; it_trial!=en_trial ; ++it_trial )
         {
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-            const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
-#else // MPI
-            const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
-            auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
-            // numLocal without ghosts ! very important for the graph with petsc
-            const size_type il1 = ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
-#endif
-            //const size_type ig1 = element_dof1[i];
-            const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
-            const int ncomp1 = i / ndofpercomponent1;
-            const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+            const size_type domain_eid = *it_trial;
 
+            // Get the global indices of the DOFs with support on this element
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
+            _M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
+#else // MPI
+            _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
+#endif
+            // We can be more efficient if we sort the element DOFs
+            // into increasing order
+            //std::sort(element_dof1.begin(), element_dof1.end());
+            std::sort( element_dof2.begin(), element_dof2.end() );
+
+            //const uint16_type  n1_dof_on_element = element_dof1.size();
+            const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
+            const uint16_type  n2_dof_on_element = element_dof2.size();
+
+            for ( size_type i=0; i<n1_dof_on_element; i++ )
+                //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
             {
-                // This is what I mean
-                // assert ((ig - first_dof_on_proc) >= 0);
-                // but do the test like this because ig and
-                // first_dof_on_proc are size_types
-#if 0
-                FEELPP_ASSERT ( ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ( "invalid dof index" );
-                FEELPP_ASSERT ( ( ig1 - first1_dof_on_proc ) < sparsity_graph->size() )
-                ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
-#endif
-                graph_type::row_type& row = sparsity_graph->row( ig1 );
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
-                row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+                const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
 #else // MPI
-                row.get<0>() = theproc ;
-                row.get<1>() = il1;
+                const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
+                auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
+                // numLocal without ghosts ! very important for the graph with petsc
+                const size_type il1 = _M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
 #endif
-                DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                //const size_type ig1 = element_dof1[i];
+                const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                const int ncomp1 = i / ndofpercomponent1;
+                const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 
-                if ( do_less )
                 {
-                    if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
-                        row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
-                                             element_dof2.end() );
+                    // This is what I mean
+                    // assert ((ig - first_dof_on_proc) >= 0);
+                    // but do the test like this because ig and
+                    // first_dof_on_proc are size_types
+#if 0
+                    FEELPP_ASSERT ( ig1 >= first1_dof_on_proc )( ig1 )( first1_dof_on_proc ).error ( "invalid dof index" );
+                    FEELPP_ASSERT ( ( ig1 - first1_dof_on_proc ) < sparsity_graph->size() )
+                        ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
+#endif
+                    graph_type::row_type& row = sparsity_graph->row( ig1 );
+#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
+                    bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
+                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
+                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
+#else // MPI
+                    row.get<0>() = theproc ;
+                    row.get<1>() = il1;
+#endif
+                    DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+
+                    if ( do_less )
+                    {
+                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
+                            row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
+                                                 element_dof2.end() );
+
+                        else
+                            row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
+                                                 element_dof2.begin()+( ncomp1+1 )*ndofpercomponent2 );
+                    }
 
                     else
-                        row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
-                                             element_dof2.begin()+( ncomp1+1 )*ndofpercomponent2 );
-                }
-
-                else
-                {
-                    row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
-                }
-
-                // Now (possibly) add dof from neighboring elements
-                if ( graph.test( Pattern::EXTENDED ) )
-                {
-                    for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                     {
-                        const auto * neighbor = boost::addressof( elem );
-                        size_type neighbor_id = elem.neighbor( ms ).first;
-                        size_type neighbor_process_id = elem.neighbor( ms ).second;
+                        row.get<2>().insert( element_dof2.begin(), element_dof2.end() );
+                    }
 
-                        if ( neighbor_id != invalid_size_type_value )
-                            //&& neighbor_process_id != proc_id )
+                    // Now (possibly) add dof from neighboring elements
+                    if ( graph.test( Pattern::EXTENDED ) )
+                    {
+                        for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
+                            const auto * neighbor = boost::addressof( elem );
+                            size_type neighbor_id = elem.neighbor( ms ).first;
+                            size_type neighbor_process_id = elem.neighbor( ms ).second;
 
-                            neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
-                                                         neighbor_process_id ) );
-
-                            if ( neighbor_id == neighbor->id()  )
+                            // warning ! the last condition is a temporary solution
+                            if ( neighbor_id != invalid_size_type_value
+                                 && neighbor_process_id == proc_id )
                             {
-                                neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
 
-                                if ( do_less )
+                                neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
+                                                                                     neighbor_process_id ) );
+
+                                if ( neighbor_id == neighbor->id()  )
                                 {
-                                    if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
-                                        row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
-                                                             neighbor_dof.end() );
+                                    //neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
+                                    neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
+
+                                    if ( do_less )
+                                    {
+                                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
+                                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                                 neighbor_dof.end() );
+
+                                        else
+                                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                                 neighbor_dof.begin()+( ncomp1+1 )*ndofpercomponent2 );
+
+                                    }
 
                                     else
-                                        row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
-                                                             neighbor_dof.begin()+( ncomp1+1 )*ndofpercomponent2 );
+                                    {
+                                        row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
+                                    }
 
-                                }
-
-                                else
-                                {
-                                    row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
-                                }
-
-                            } // neighbor_id
-                        }
-
-                    } // neighbor graph
-                }
-            } // only dof on proc
-
-        }// dof loop
+                                } // neighbor_id
+                            }
+                        } // neighbor graph
+                    } // if ( graph.test( Pattern::EXTENDED ) )
+                } // only dof on proc
+            } // dof loop
+        } // trial id loop
     } // element iterator loop
 
     DVLOG(2)<< "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
@@ -1529,9 +1565,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 
-    graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
-                                  first1_dof_on_proc, last1_dof_on_proc,
-                                  first2_dof_on_proc, last2_dof_on_proc ) );
+    graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
 #if 0
     typedef typename test_mesh_type::element_const_iterator mesh_element_const_iterator;

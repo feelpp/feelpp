@@ -183,8 +183,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     //const uint16_type ndofv = fe_type::nDof;
 
 
-    std::vector<bool> points_done( imesh->numPoints() );
-    std::fill( points_done.begin(), points_done.end(),false );
+    std::map<int,bool> points_done;
 
     //if ( !u.areGlobalValuesUpdated() )
     u.updateGlobalValues();
@@ -207,7 +206,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 val[ comp ] = uvalues[l]( comp,0 );
             }
 
-            if ( points_done[ it_elt->point( l ).id() ] == false )
+            if ( points_done.find( it_elt->point( l ).id() ) == points_done.end() )
             {
                 //std::cout << "Pt: " << thedof << "Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
                 imesh->elements().modify( it_elt,

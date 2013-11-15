@@ -543,6 +543,16 @@ BOOST_DETAIL_IS_XXX_DEF( shared_ptr, boost::shared_ptr, 1 )
 
 #endif /* FEELPP_HAS_OPENMP */
 
+#if !defined( DVLOG_IF )
+
+#ifndef NDEBUG
+#define DVLOG_IF(verboselevel, condition) VLOG(verboselevel)
+#else
+#define DVLOG_IF(verboselevel,condition)                                \
+    (true || ( !VLOG_IS_ON(verboselevel) && !(condition))) ?            \
+    (void) 0 : google::LogMessageVoidify() & LOG(INFO)
+#endif // NDEBUG
+
+#endif // DVLOG_IF
 
 #endif
-

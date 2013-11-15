@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-20
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -45,9 +45,9 @@ namespace Feel
  * @author Christophe Prud'homme
  * @see
  */
-class Dof : public boost::tuple<size_type, int16_type, uint16_type, bool, Marker1>
+class Dof : public boost::tuple<size_type, int16_type, bool, uint16_type, bool, size_type>
 {
-    typedef boost::tuple<size_type, int16_type, uint16_type, bool, Marker1> super;
+    typedef boost::tuple<size_type, int16_type, bool, uint16_type, bool, size_type> super;
 public:
 
 
@@ -76,13 +76,35 @@ public:
     {
     }
 
+    Dof( size_type gid )
+        :
+        super( )
+        {
+            this->get<0>() =  gid;
+            this->get<1>() =  1;
+            this->get<2>() =  false;
+
+        }
+
+    Dof( boost::tuple<size_type, int16_type, bool> const& t )
+        :
+        super( )
+        {
+            this->get<0>() =  t.get<0>();
+            this->get<1>() =  t.get<1>();
+            this->get<2>() =  t.get<2>();
+
+        }
+
+
     /**
      *
      */
-    Dof( size_type _index, int16_type _sign, uint16_type _entity, bool _location, size_type _marker  )
+    Dof( size_type _index, int16_type _sign, bool per, uint16_type _entity = 0, bool _location = false, size_type _marker = 0  )
         :
-        super( boost::make_tuple( _index, _sign, _entity, _location, _marker ) )
-    {}
+        super(_index, _sign, per, _entity, _location, _marker)
+    {
+    }
 
     //! copy constructor
     Dof( Dof const & dof )
@@ -110,6 +132,20 @@ public:
 
         return *this;
     }
+    Dof& operator=( size_type t )
+    {
+        this->get<0>() =  t;
+        this->get<1>() =  1;
+        this->get<2>() =  false;
+        return *this;
+    }
+    Dof& operator=( boost::tuple<size_type, int16_type, bool> const& t )
+    {
+        this->get<0>() =  t.get<0>();
+        this->get<1>() =  t.get<1>();
+        this->get<2>() =  t.get<2>();
+        return *this;
+    }
     //@}
 
     /** @name Accessors
@@ -127,23 +163,28 @@ public:
     {
         return this->get<1>();
     }
+    /// \return if periodic
+    bool isPeriodic() const
+    {
+        return this->get<2>();
+    }
 
     /// \return the entity type (0: vertex, 1:edge, 2:face, 3:volume)
     uint16_type entity() const
     {
-        return this->get<2>();
+        return this->get<3>();
     }
 
     /// \return the location
     bool isOnBoundary() const
     {
-        return this->get<3>();
+        return this->get<4>();
     }
 
     /// \return the marker
-    Marker1 marker() const
+    size_type marker() const
     {
-        return this->get<4>();
+        return this->get<5>();
     }
 
     /**
@@ -159,6 +200,11 @@ public:
     /** @name  Mutators
      */
     //@{
+    // set the global dof id
+    void setIndex( size_type id )
+    {
+        this->get<0>() = id;
+    }
 
     /**
      * dof coordinates
@@ -185,7 +231,7 @@ protected:
 private:
     ublas::vector<double> M_coords;
 };
-
+#if 0
 typedef multi_index::multi_index_container<
 Dof,
 multi_index::indexed_by<
@@ -211,7 +257,52 @@ multi_index::const_mem_fun<Dof,
 Marker1,
 &Dof::marker> >
 > > dof_container_type;
+#endif
 
+class LocalDof: public std::pair<size_type,uint16_type>
+{
+public:
+    typedef std::pair<size_type,uint16_type> super;
+    LocalDof()
+        :
+        super( std::make_pair( 0, 0 ) )
+        {}
+    LocalDof( size_type e, uint16_type l )
+        :
+        super( std::make_pair( e, l ) )
+        {}
+    LocalDof( std::pair<int,int> const& p )
+        :
+        super( p )
+        {}
+    size_type elementId() const { return this->first; }
+    size_type localDof() const { return this->second; }
+};
 
+class LocalDofSet : public std::vector<LocalDof>
+{
+public:
+    typedef std::vector<LocalDof> super;
+    LocalDofSet()
+        :
+        super()
+        {}
+
+    LocalDofSet( size_type eid, uint16_type nLocalDof )
+        :
+        super(nLocalDof)
+        {
+            for(uint16_type i = 0; i < nLocalDof; ++i )
+            {
+                this->at( i ) = LocalDof( eid, i );
+            }
+        }
+    LocalDofSet const& update( size_type eid )
+        {
+            DCHECK( !this->empty() ) << "Invalid Local Dof Set";
+            std::for_each( this->begin(), this->end(), [eid]( LocalDof& d ) { d.first = eid; } );
+            return *this;
+        }
+};
 } // Feel
 #endif /* __Dof_H */

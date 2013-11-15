@@ -196,10 +196,11 @@ testFunctionalLinearComposite()
     BOOST_CHECK_SMALL( math::abs(norm_vectorfree1 - norm_vector_compositefree1 ), 1e-15 );
 
     //test sum of all vectors
-
     bool scalars_are_one=true;
-    auto vec_sum = composite->sumAllVectors( scalars_are_one );
-    auto vec_sum_free = compositefree->sumAllVectors( scalars_are_one );
+    auto vec_sum = backend->newVector( Xh );
+    composite->sumAllVectors(vec_sum, scalars_are_one );
+    auto vec_sum_free = backend->newVector( Xh );
+    compositefree->sumAllVectors(vec_sum_free, scalars_are_one );
     auto vec_free = backend->newVector( Xh );
     functionalfree->containerPtr(vec_free);
     auto vec = functional->containerPtr();
@@ -209,9 +210,9 @@ testFunctionalLinearComposite()
     double norm_sum_functional = vec->l2Norm();
     double norm_sum_functionalfree = vec_free->l2Norm();
 
-    BOOST_CHECK_SMALL( math::abs(norm_sum_composite - norm_sum_functional), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functionalfree), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functional), 1e-15 );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_composite - norm_sum_functional), 1e-14 );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functionalfree), 1e-14 );
+    BOOST_CHECK_SMALL( math::abs(norm_sum_compositefree - norm_sum_functional), 1e-14 );
 
 }
 /**

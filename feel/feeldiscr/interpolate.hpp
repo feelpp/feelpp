@@ -245,7 +245,7 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                 if ( !dof_done[dof-first_dof] )
                 {
                     dof_done[dof-first_dof]=true;
-                    ublas::column( pts, 0 ) = meshinv.referenceCoords()[dof];
+                    ublas::column( pts, 0 ) = meshinv.referenceCoords().find(dof)->second;
                     __dgeopc->update( pts );
                     //std::cout << "------------------------------------------------------------\n";
                     //std::cout << "pts = " << pts << "\n";

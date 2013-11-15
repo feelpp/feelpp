@@ -31,6 +31,7 @@
 #define __OperatorLinearComposite_H 1
 
 #include <feel/feel.hpp>
+#include <feel/feelcore/pslogger.hpp>
 
 namespace Feel
 {
@@ -158,7 +159,7 @@ public :
         M_scalars2 = scalars;
     }
 
-    matrix_ptrtype sumAllMatrices( bool use_scalar_one=false ) const
+    void sumAllMatrices(matrix_ptrtype & matrix, bool use_scalar_one=false ) const
     {
         int size1 = M_operators1.size();
         int size2 = M_operators2.size();
@@ -171,23 +172,24 @@ public :
         FEELPP_ASSERT( !size_error )( size1 )( size2 ).error( "OperatorLinearComposite has no elements, or both maps have elements" );
 
         if( size1 > 0 )
-            return sumAllMatrices1( use_scalar_one );
+            sumAllMatrices1( matrix, use_scalar_one );
         else
-            return sumAllMatrices2( use_scalar_one );
+            sumAllMatrices2( matrix, use_scalar_one );
     }
 
     //return the sum of matrices given
     //by all opertors in M_vectors
     //arguments : a vector of scalars and a bool ( use scalar=1 if true )
-    matrix_ptrtype sumAllMatrices1( bool use_scalar_one=false ) const
+    void sumAllMatrices1( matrix_ptrtype & matrix, bool use_scalar_one=false ) const
     {
         int size1 = M_operators1.size();
         int size2 = M_operators2.size();
 
         FEELPP_ASSERT( size1 > 0 )( size1 )( size2 ).error( "OperatorLinearComposite has no elements" );
 
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
         matrix->zero();
+        auto temp_matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+
         auto end = M_operators1.end();
         for(auto it=M_operators1.begin(); it!=end; ++it)
         {
@@ -195,27 +197,25 @@ public :
             double scalar=1;
             if( ! use_scalar_one )
                 scalar = M_scalars1[position];
-            auto temp_matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
             it->second->matPtr(temp_matrix);
             matrix->addMatrix( scalar , temp_matrix );
         }
-
-        return matrix;
 
     }//sumAllMatrices
 
     //return the sum of matrices given
     //by all opertors in M_vectors
     //arguments : a vector of vector of scalars and a bool ( use scalar=1 if true )
-    matrix_ptrtype sumAllMatrices2( bool use_scalar_one=false ) const
+    void sumAllMatrices2( matrix_ptrtype & matrix, bool use_scalar_one=false ) const
     {
         int size1 = M_operators1.size();
         int size2 = M_operators2.size();
 
         FEELPP_ASSERT( size2 > 0 )( size1 )( size2 ).error( "OperatorLinearComposite has no elements" );
 
-        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
         matrix->zero();
+        auto temp_matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+
         auto end = M_operators2.end();
         for(auto it=M_operators2.begin(); it!=end; ++it)
         {
@@ -225,13 +225,11 @@ public :
             double scalar=1;
             if( ! use_scalar_one )
                 scalar = M_scalars2[q][m];
-            auto temp_matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
             it->second->matPtr(temp_matrix);
             matrix->addMatrix( scalar , temp_matrix );
         }
 
-        return matrix;
-
+        temp_matrix.reset();
     }//sumAllMatrices
 
 
@@ -287,12 +285,13 @@ public :
            image_element_type&        ie ) const
     {
 
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -303,14 +302,15 @@ public :
             const typename dual_image_space_type::element_type & ie ) const
     {
 
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         *_v2 = ie;
-        vector_ptrtype _v3( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v3( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v3 );
         return inner_product( _v2, _v3 );
     }
@@ -320,12 +320,13 @@ public :
     apply( const typename domain_space_type::element_type & de,
            typename dual_image_space_type::element_type & ie )
     {
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices(  matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -335,12 +336,13 @@ public :
     apply( const domain_element_range_type & de,
            typename dual_image_space_type::element_type & ie )
     {
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices(matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -349,13 +351,13 @@ public :
     apply( const typename domain_space_type::element_type & de,
            dual_image_element_range_type & ie )
     {
-
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -364,13 +366,13 @@ public :
     apply( const domain_element_range_type & de,
            dual_image_element_range_type & ie )
     {
-
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -380,12 +382,13 @@ public :
            typename dual_image_space_type::element_type & ie )
     {
 
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -395,13 +398,13 @@ public :
     apply( const typename domain_space_type::element_type & de,
            dual_image_element_slice_type & ie )
     {
-
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -410,12 +413,13 @@ public :
     apply( /*const*/ domain_element_slice_type /*&*/ de,
                      dual_image_element_slice_type /*&*/ ie )
     {
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -426,12 +430,13 @@ public :
     apply( const domain_element_range_type & de,
            dual_image_element_slice_type & ie )
     {
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -440,12 +445,13 @@ public :
     apply( const domain_element_slice_type & de,
            dual_image_element_range_type & ie )
     {
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
         *_v1 = de;_v1->close();
-        vector_ptrtype _v2( M_backend->newVector( ie.map() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.functionSpace() ) );
         M_backend->prod( matrix, _v1, _v2 );
         ie.container() = *_v2;
     }
@@ -455,11 +461,12 @@ public :
     applyInverse( domain_element_type&      de,
                   const image_element_type& ie )
     {
-        auto matrix = sumAllMatrices( true );
+        auto matrix = M_backend->newMatrix( _test=this->dualImageSpace(), _trial=this->domainSpace(), _pattern=M_pattern );
+        sumAllMatrices( matrix, true );
         matrix->close();
 
-        vector_ptrtype _v1( M_backend->newVector( de.map() ) );
-        vector_ptrtype _v2( M_backend->newVector( ie.space()->map() ) );
+        vector_ptrtype _v1( M_backend->newVector( _test=de.functionSpace() ) );
+        vector_ptrtype _v2( M_backend->newVector( _test=ie.space() ) );
         *_v2 = ie.container();
         M_backend->solve( matrix, matrix, _v1, _v2 );
         de = *_v1;

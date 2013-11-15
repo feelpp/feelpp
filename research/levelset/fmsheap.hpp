@@ -45,21 +45,21 @@ public:
 
     void push( heap_entry_type in )
     {
-        _M_heap.push_back( in );
-        push_heap( _M_heap.begin(), _M_heap.end(), farther );
+        M_heap.push_back( in );
+        push_heap( M_heap.begin(), M_heap.end(), farther );
     }
 
     void change( heap_entry_type in )
     {
-        for ( heapvect_iter it=_M_heap.begin(); it != _M_heap.end(); ++it )
+        for ( heapvect_iter it=M_heap.begin(); it != M_heap.end(); ++it )
         {
             if ( it->second == in.second )
             {
                 if ( farther( *it, in ) )
                 {
                     *it = in;
-                    make_heap( _M_heap.begin(),
-                               _M_heap.end(),
+                    make_heap( M_heap.begin(),
+                               M_heap.end(),
                                farther );
                 }
 
@@ -73,16 +73,16 @@ public:
 
     heap_entry_type pop()
     {
-        // assert _M_heap.size() > 0
-        heap_entry_type out = *( _M_heap.begin() );
-        pop_heap( _M_heap.begin(), _M_heap.end(), farther );
-        _M_heap.pop_back();
+        // assert M_heap.size() > 0
+        heap_entry_type out = *( M_heap.begin() );
+        pop_heap( M_heap.begin(), M_heap.end(), farther );
+        M_heap.pop_back();
         return out;
     }
 
     size_type size() const
     {
-        return _M_heap.size();
+        return M_heap.size();
     }
 
 private:
@@ -100,7 +100,7 @@ private:
         return aa > bb;
     }
 
-    std::vector<heap_entry_type> _M_heap;
+    std::vector<heap_entry_type> M_heap;
 };
 
 } // namespace details
@@ -108,4 +108,3 @@ private:
 } // namespace Feel
 
 #endif /* __FMS_Heap_H */
-

@@ -38,27 +38,10 @@ Penalisation<Dim>::Penalisation():
     if ( !OutFolder.empty() )
         this->changeRepository( boost::format( OutFolder ) );
 
-    std::string File_Mesh= this->vm()["ImportMeshFromFile"].template as<std::string>();
-    LOG(INFO)<<"chargement maillage"<<"\n";
-
-    if ( fs::path( File_Mesh ).extension().string() == ".msh" )
-        mesh = loadGMSHMesh( _mesh=new mesh_type,
-                             _filename=File_Mesh,
-                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                             _rebuild_partitions=true);
-    else
-        mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _desc=geo( _filename=File_Mesh,_dim=Dim,_h=Environment::vm(_name="hsize").template as<double>() ),
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
-
-
-#if 0
-    mesh_visu = createGMSHMesh( _mesh=new mesh_type,
-                                _desc=geo( _filename=File_Mesh,_dim=2,_h=this->vm()["hsize"].template as<double>()/2 ),
-                                _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER );
-#else
+    mesh = loadMesh( _mesh = new mesh_type );
     mesh_visu = mesh;
-#endif
+
+    mesh_visu = mesh;
 
     exporter =  Exporter<mesh_type>::New();
 

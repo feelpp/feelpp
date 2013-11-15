@@ -62,7 +62,7 @@ if(NOT DEFINED HAS_GCC_WALL)
 endif()
 
 if(HAS_GCC_WALL)
-  set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wall -Wno-unused -Wno-sign-compare")
+  set(FEELPP_FLAGS "${FEELPP_FLAGS} -Wall -Wno-unused -Wno-sign-compare ")
 endif()
 if(FEELPP_EXTRA_WARNINGS)
   if(HAS_GCC_WEXTRA)
@@ -70,6 +70,10 @@ if(FEELPP_EXTRA_WARNINGS)
   endif()
 endif()
 
+CHECK_CXX_COMPILER_FLAG( -Wno-deprecated-register HAS_NO_DEPRECATED_REGISTER )
+if (  HAS_NO_DEPRECATED_REGISTER )
+  set( FEELPP_FLAGS "${FEELPP_FLAGS} -Wno-deprecated-register")
+endif()
 ################################################################################
 # Check for MSVC style
 ################################################################################

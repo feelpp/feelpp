@@ -135,11 +135,11 @@ namespace GiNaC
             ff = f.transpose();
 
         matrix g( ff.rows(), l.size() );
-        for( int i = 0; i < f.rows(); ++i )
+        for( int i = 0; i < ff.rows(); ++i )
             {
                 for( int j = 0; j < l.size(); ++j )
                     {
-                        g.set( i, j, f(i,0).diff( l[j] ) );
+                        g.set( i, j, ff(i,0).diff( l[j] ) );
                     }
             }
         return g;
@@ -221,5 +221,28 @@ namespace GiNaC
         return f.subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g)));
     }
 
+    matrix substitute(matrix const &f, symbol const& s, const double val )
+    {
+        matrix ff(f.rows(), f.cols());
+
+        for(int i=0; i<f.rows(); ++i)
+            {
+                for(int j=0; j<f.cols(); ++j)
+                    ff.set(i, j, f(i,j).subs(GiNaC::lst(s), GiNaC::lst(GiNaC::numeric(val))) );
+            }
+        return ff;
+    }
+
+    matrix substitute(matrix const &f, symbol const& s, ex const& g )
+    {
+        matrix ff(f.rows(), f.cols());
+
+        for(int i=0; i<f.rows(); ++i)
+            {
+                for(int j=0; j<f.cols(); ++j)
+                    ff.set(i, j, f(i,j).subs(GiNaC::lst(s), GiNaC::lst(GiNaC::ex(g))) );
+            }
+        return ff;
+    }
 
 }

@@ -48,21 +48,23 @@ endmacro(crb_add_octave_module)
 macro(crb_add_executable)
 
   PARSE_ARGUMENTS(CRB_EXEC
-    "LINK_LIBRARIES;CFG"
+    "SOURCES;LINK_LIBRARIES;CFG"
     "TEST"
     ${ARGN}
     )
   CAR(CRB_EXEC_NAME ${CRB_EXEC_DEFAULT_ARGS})
   CDR(CRB_EXEC_SOURCES ${CRB_EXEC_DEFAULT_ARGS})
 
-#  MESSAGE("*** Arguments for Crb application ${CRB_EXEC_NAME}")
-#  MESSAGE("    Sources: ${CRB_EXEC_SOURCES}")
-#  MESSAGE("    Link libraries: ${CRB_EXEC_LINK_LIBRARIES}")
-#  MESSAGE("    Scripts: ${CRB_EXEC_SCRIPTS}")
-#  MESSAGE("    Cfg file: ${CRB_EXEC_CFG}")
+  if ( FEELPP_ENABLE_VERBOSE_CMAKE )
+    MESSAGE("*** Arguments for Crb application ${CRB_EXEC_NAME}")
+    MESSAGE("    Sources: ${CRB_EXEC_SOURCES}")
+    MESSAGE("    Link libraries: ${CRB_EXEC_LINK_LIBRARIES}")
+    MESSAGE("    Scripts: ${CRB_EXEC_SCRIPTS}")
+    MESSAGE("    Cfg file: ${CRB_EXEC_CFG}")
+  endif()
 
   set(execname crb_${CRB_EXEC_NAME})
-  add_executable(${execname}    ${CRB_EXEC_SOURCES}  )
+  add_executable(${execname}    ${CRB_EXEC_SOURCES} )
   target_link_libraries( ${execname} ${CRB_EXEC_LINK_LIBRARIES} )
   set_property(TARGET ${execname} PROPERTY LABELS crb)
   INSTALL(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${execname}"  DESTINATION bin COMPONENT Bin)
@@ -187,11 +189,13 @@ int main( int argc, char** argv )
   ENDIF()
 
   if ( CRB_MODEL_TEST )
-    crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app 
+      ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
       LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
       CFG ${CRB_MODEL_CFG} TEST )
   else()
-    crb_add_executable(${CRB_MODEL_SHORT_NAME}app ${CRB_MODEL_SHORT_NAME}app.cpp
+    crb_add_executable(${CRB_MODEL_SHORT_NAME}app 
+      ${CRB_MODEL_SHORT_NAME}app.cpp ${CRB_MODEL_SRCS}
       LINK_LIBRARIES ${CRB_MODEL_LINK_LIBRARIES}
       CFG ${CRB_MODEL_CFG} )
   endif()

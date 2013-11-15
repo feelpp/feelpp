@@ -35,12 +35,20 @@ namespace Feel
 template <typename T>
 Vector<T>::Vector () :
     M_is_closed( false ),
-    M_is_initialized( false )
+    M_is_initialized( false ),
+    M_map ( new datamap_type( Environment::worldComm() ) )
 {}
 
 
+    /*template <typename T>
+Vector<T>::Vector ( datamap_type const& dm ) :
+    M_is_closed( false ),
+    M_is_initialized( false ),
+    M_map ( new datamap_type(dm) )
+{}
+    */
 template <typename T>
-Vector<T>::Vector ( DataMap const& dm ) :
+Vector<T>::Vector( datamap_ptrtype const& dm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
     M_map ( dm )
@@ -52,10 +60,8 @@ Vector<T>::Vector ( const size_type n, WorldComm const& _worldComm )
     :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map( n, n, _worldComm )
-{
-    //init(n, n, false);
-}
+    M_map( new datamap_type(n, n, _worldComm) )
+{}
 
 
 
@@ -66,13 +72,17 @@ Vector<T>::Vector ( const size_type n,
     :
     M_is_closed( false ),
     M_is_initialized( false ),
-    M_map( n, n_local, _worldComm )
+    M_map( new datamap_type(n, n_local, _worldComm) )
+{}
+
+template <typename T>
+Vector<T>::Vector ( Vector const& v )
+    :
+    M_is_closed( v.M_is_closed ),
+    M_is_initialized( v.M_is_initialized ),
+    M_map( v.M_map )
 {
-    //init(n, n_local, false);
 }
-
-
-
 template <typename T>
 
 Vector<T>::~Vector ()
@@ -117,9 +127,9 @@ Vector<T> & Vector<T>::operator= ( const Vector<T>& v )
 {
     if ( this != &v )
     {
-        M_map = v.map();
+        M_map = v.mapPtr();
 
-        for ( size_type i = 0; i < M_map.nLocalDofWithGhost(); ++i )
+        for ( size_type i = 0; i < this->map().nLocalDofWithGhost(); ++i )
         {
             this->set( i,  v( v.firstLocalIndex() + i ) );
         }
@@ -134,7 +144,7 @@ template <typename T>
 
 Vector<T> & Vector<T>::operator= ( const std::vector<T>& v )
 {
-    M_map = DataMap( v.size(), 0 );
+    M_map.reset( new datamap_type( v.size(), 0 ) );
     return *this;
 }
 

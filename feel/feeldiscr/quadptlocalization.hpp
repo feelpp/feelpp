@@ -125,22 +125,22 @@ public :
 
     QuadPtLocalization( IteratorRange const& elts /*, im_type const& *//*__im*/ )
         :
-        _M_listRange(),
-        _M_im( ),
-        _M_qm( ),
-        _M_ppts( _M_qm( this->im() ) ),
-        _M_hasPrecompute(false)
+        M_listRange(),
+        M_im( ),
+        M_qm( ),
+        M_ppts( M_qm( this->im() ) ),
+        M_hasPrecompute(false)
     {
-        _M_listRange.push_back( elts );
+        M_listRange.push_back( elts );
     }
 
     QuadPtLocalization( std::list<IteratorRange> const& elts )
         :
-        _M_listRange( elts ),
-        _M_im( ),
-        _M_qm( ),
-        _M_ppts( _M_qm( this->im() ) ),
-        _M_hasPrecompute(false)
+        M_listRange( elts ),
+        M_im( ),
+        M_qm( ),
+        M_ppts( M_qm( this->im() ) ),
+        M_hasPrecompute(false)
     {}
 
 
@@ -149,7 +149,7 @@ public :
      */
     im_type const& im() const
     {
-        return _M_im;
+        return M_im;
     }
 
     /**
@@ -157,7 +157,7 @@ public :
      */
     im_face_type  im( uint16_type f ) const
     {
-        return _M_im.face( f );
+        return M_im.face( f );
     }
 
     /**
@@ -165,7 +165,7 @@ public :
      */
     element_iterator_type beginElement() const
     {
-        return _M_listRange.front().template get<1>();// _M_eltbegin;
+        return M_listRange.front().template get<1>();// M_eltbegin;
     }
 #if 0
     /**
@@ -173,7 +173,7 @@ public :
      */
     element_iterator_type endElement() const
     {
-        return _M_listRange.front().template get<2>();//_M_eltend;
+        return M_listRange.front().template get<2>();//M_eltend;
     }
 #endif
     /**
@@ -181,7 +181,7 @@ public :
      */
     result_container_linear_type const & resultLinear() const
     {
-        return _M_resLinear;
+        return M_resLinear;
     }
 
     /**
@@ -189,11 +189,11 @@ public :
      */
     result_container_type const & result() const
     {
-        return _M_resBilinear;
+        return M_resBilinear;
     }
 
 
-    bool hasPrecompute() const { return _M_hasPrecompute; }
+    bool hasPrecompute() const { return M_hasPrecompute; }
 
     //--------------------------------------------------------------------------------------//
 
@@ -224,8 +224,8 @@ public :
     {
 #if 1
         element_iterator_type elt_it = this->beginElement(), elt_en = this->beginElement();
-        auto itListRange = _M_listRange.begin();
-        auto const enListRange = _M_listRange.end();
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
         bool findElt=false;
         for ( size_type ide = 0 ; itListRange!=enListRange && !findElt; ++itListRange)
         {
@@ -266,8 +266,8 @@ public :
     {
 #if 1
         element_iterator_type elt_it=this->beginElement(), elt_en=this->beginElement();
-        auto itListRange = _M_listRange.begin();
-        auto const enListRange = _M_listRange.end();
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
         bool findElt=false;
         for ( size_type ide = 0 ; itListRange!=enListRange && !findElt; ++itListRange)
         {
@@ -288,7 +288,7 @@ public :
         const uint16_type __face_id_in_elt_0 = elt_it->pos_first();
 
         auto const __perm = elt_it->element( 0 ).permutation( __face_id_in_elt_0 );
-        matrix_node_type const& quadPtsRef =  _M_ppts[ __face_id_in_elt_0].find( __perm )->second;
+        matrix_node_type const& quadPtsRef =  M_ppts[ __face_id_in_elt_0].find( __perm )->second;
         //matrix_node_type quadPtsRef = this->im().points();
         matrix_node_type newquadPtsRef( quadPtsRef.size1() , nContextPt );
 
@@ -447,7 +447,7 @@ public :
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( begin_elt_it->element( 0 ).gm(), _M_ppts[__f].find( __p )->second ) );
+                __geopc[__f][__p] = pc_ptrtype(  new pc_type( begin_elt_it->element( 0 ).gm(), M_ppts[__f].find( __p )->second ) );
             }
         }
 
@@ -471,8 +471,8 @@ public :
 
         element_iterator_type elt_it, elt_en;
 
-        auto itListRange = _M_listRange.begin();
-        auto const enListRange = _M_listRange.end();
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
             boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
@@ -534,8 +534,8 @@ public :
 
         element_iterator_type elt_it, elt_en;
 
-        auto itListRange = _M_listRange.begin();
-        auto const enListRange = _M_listRange.end();
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
             boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
@@ -592,7 +592,7 @@ public :
                     __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
             {
                 //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-                __geopc[__f][__p] = pc_ptrtype(  new pc_type( begin_elt_it->element( 0 ).gm(), _M_ppts[__f].find( __p )->second ) );
+                __geopc[__f][__p] = pc_ptrtype(  new pc_type( begin_elt_it->element( 0 ).gm(), M_ppts[__f].find( __p )->second ) );
             }
         }
 
@@ -634,8 +634,8 @@ public :
 
         element_iterator_type elt_it, elt_en;
 
-        auto itListRange = _M_listRange.begin();
-        auto const enListRange = _M_listRange.end();
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
             boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
@@ -767,8 +767,8 @@ public :
 
         element_iterator_type elt_it, elt_en;
 
-        auto itListRange = _M_listRange.begin();
-        auto const enListRange = _M_listRange.end();
+        auto itListRange = M_listRange.begin();
+        auto const enListRange = M_listRange.end();
         for ( size_type ide = 0 ; itListRange!=enListRange ; ++itListRange)
         {
             boost::tie( boost::tuples::ignore, elt_it, elt_en ) = *itListRange;
@@ -892,14 +892,14 @@ public :
         typedef Mesh1Type mesh_test_type;
 
         //clean result
-        _M_resLinear.clear();
+        M_resLinear.clear();
 
         // localize quad pts on meshTest -> storage in testEltToPtsQuad
         auto nEltTest= meshTest->numElements();
         std::vector<std::list<boost::tuple< size_type,size_type,node_type> > > testEltToPtsQuad( nEltTest );
         this->localization( mpl::int_<iDim>(),meshTest,testEltToPtsQuad );
 
-        //build a efficent container : _M_resLinear
+        //build a efficent container : M_resLinear
         size_type theIdEltTest = 0;
         auto eltTest_it = testEltToPtsQuad.begin();
         auto eltTest_en = testEltToPtsQuad.end();
@@ -922,7 +922,7 @@ public :
                     ublas::column( ptsRefTest, cptIdq ) = idq_it->template get<2>();
                 }
 
-                _M_resLinear.push_back( boost::make_tuple( theIdEltTest, indexLocalToQuad, ptsRefTest ) );
+                M_resLinear.push_back( boost::make_tuple( theIdEltTest, indexLocalToQuad, ptsRefTest ) );
             }
         }
 
@@ -938,7 +938,7 @@ public :
         typedef Mesh2Type mesh_trial_type;
 
         //clean result
-        _M_resBilinear.clear();
+        M_resBilinear.clear();
 
         auto nEltTrial= meshTrial->numElements();
         auto nEltTest= meshTest->numElements();
@@ -954,7 +954,7 @@ public :
                             trialEltToPtsQuad,
                             EltCoupled );
 
-        //build a efficent container : _M_resBilinear
+        //build a efficent container : M_resBilinear
         auto eltCoupled_it = EltCoupled.begin();
         auto eltCoupled_en = EltCoupled.end();
         size_type theIdEltTest = 0;
@@ -1017,7 +1017,7 @@ public :
             }
 
             // add to result container
-            _M_resBilinear.push_back( boost::make_tuple( theIdEltTest,mapiIdTrial2qAndPtRef ) );
+            M_resBilinear.push_back( boost::make_tuple( theIdEltTest,mapiIdTrial2qAndPtRef ) );
         }
 
     } // update
@@ -1209,8 +1209,8 @@ precompute(vf::detail::BilinearForm<FE1,FE2,ElemContType>const& __form)
         }
     }
 
-    _M_precompute = theres;
-    _M_hasPrecompute=true;
+    M_precompute = theres;
+    M_hasPrecompute=true;
 
 }
 
@@ -1275,8 +1275,8 @@ precompute(vf::detail::LinearForm<FE,VectorType,ElemContType> const& __form)
 
     }
 
-    _M_precompute = theres;
-    _M_hasPrecompute=true;
+    M_precompute = theres;
+    M_hasPrecompute=true;
 
 }
 
@@ -1285,32 +1285,32 @@ template<typename FE1,typename FE2,typename ElemContType>
 typename bilinearformContext<FE1,FE2,ElemContType>::return_type const&
 getPrecompute(vf::detail::BilinearForm<FE1,FE2,ElemContType>const& __form) const
 {
-    return boost::any_cast<typename bilinearformContext<FE1,FE2,ElemContType>::return_type const&>( _M_precompute);
+    return boost::any_cast<typename bilinearformContext<FE1,FE2,ElemContType>::return_type const&>( M_precompute);
 }
 
 template<typename FE,typename VectorType,typename ElemContType>
 typename linearformContext<FE,VectorType,ElemContType>::return_type const&
 getPrecompute(vf::detail::LinearForm<FE,VectorType,ElemContType> const& __form) const
 {
-    return boost::any_cast<typename linearformContext<FE,VectorType,ElemContType>::return_type const&>( _M_precompute);
+    return boost::any_cast<typename linearformContext<FE,VectorType,ElemContType>::return_type const&>( M_precompute);
 }
 
 private :
 
-    std::list<range_iterator> _M_listRange;
+    std::list<range_iterator> M_listRange;
 
-    element_iterator_type _M_eltbegin;
-    element_iterator_type _M_eltend;
-    mutable im_type _M_im;
-    QuadMapped<im_type> _M_qm;
-    permutation_points_type _M_ppts;
+    element_iterator_type M_eltbegin;
+    element_iterator_type M_eltend;
+    mutable im_type M_im;
+    QuadMapped<im_type> M_qm;
+    permutation_points_type M_ppts;
 
-    result_container_type _M_resBilinear;
+    result_container_type M_resBilinear;
 
-    result_container_linear_type _M_resLinear;
+    result_container_linear_type M_resLinear;
 
-    bool _M_hasPrecompute;
-    boost::any _M_precompute;
+    bool M_hasPrecompute;
+    boost::any M_precompute;
 
 
 }; // QuadPtLocalization

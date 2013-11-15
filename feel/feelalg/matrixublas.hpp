@@ -78,13 +78,13 @@ public:
 
     MatrixUBlas()
         :
-        _M_is_initialized( false ),
-        _M_mat()
+        M_is_initialized( false ),
+        M_mat()
     {}
     MatrixUBlas( MatrixUBlas const & m )
         :
-        _M_is_initialized( m._M_is_initialized ),
-        _M_mat( m._M_mat )
+        M_is_initialized( m.M_is_initialized ),
+        M_mat( m.M_mat )
     {}
 
     ~MatrixUBlas()
@@ -99,12 +99,12 @@ public:
 
     value_type& operator()( size_type i, size_type j )
     {
-        return _M_mat( i, j );
+        return M_mat( i, j );
     }
 
     value_type const& operator()( size_type i, size_type j ) const
     {
-        return _M_mat( i, j );
+        return M_mat( i, j );
     }
 
     //@}
@@ -119,7 +119,7 @@ public:
      */
     unsigned int size1 () const
     {
-        return _M_mat.size1();
+        return M_mat.size1();
     }
 
     /**
@@ -128,7 +128,7 @@ public:
      */
     unsigned int size2 () const
     {
-        return _M_mat.size2();
+        return M_mat.size2();
     }
 
     /**
@@ -136,7 +136,7 @@ public:
      */
     size_type nnz() const
     {
-        return _M_mat.nnz();
+        return M_mat.nnz();
     }
 
     /**
@@ -162,7 +162,7 @@ public:
      */
     bool isInitialized() const
     {
-        return _M_is_initialized;
+        return M_is_initialized;
     }
 
     /**
@@ -170,7 +170,7 @@ public:
      */
     matrix_type const& mat () const
     {
-        return _M_mat;
+        return M_mat;
     }
 
     /**
@@ -178,7 +178,7 @@ public:
      */
     matrix_type & mat ()
     {
-        return _M_mat;
+        return M_mat;
     }
 
 
@@ -219,7 +219,7 @@ public:
      */
     void clear ()
     {
-        _M_mat.clear();
+        M_mat.clear();
     }
 
     /**
@@ -228,12 +228,12 @@ public:
      */
     void zero ()
     {
-        _M_mat = ublas::zero_matrix<value_type>( _M_mat.size1(), _M_mat.size2() );
+        M_mat = ublas::zero_matrix<value_type>( M_mat.size1(), M_mat.size2() );
     }
 
     void zero ( size_type start1, size_type stop1, size_type start2, size_type stop2 )
     {
-        ublas::subrange( _M_mat, start1, stop1, start2, stop2 )  = ublas::zero_matrix<value_type>( stop1-start1, stop2-start2 );
+        ublas::subrange( M_mat, start1, stop1, start2, stop2 )  = ublas::zero_matrix<value_type>( stop1-start1, stop2-start2 );
     }
 
     /**
@@ -248,7 +248,7 @@ public:
                const unsigned int j,
                const value_type value )
     {
-        _M_mat( i, j ) += value;
+        M_mat( i, j ) += value;
     }
 
     /**
@@ -263,7 +263,7 @@ public:
                const unsigned int j,
                const value_type value )
     {
-        _M_mat( i, j ) = value;
+        M_mat( i, j ) = value;
     }
 
 
@@ -283,7 +283,7 @@ public:
 
     void resize( size_type nr, size_type nc, bool preserve = false )
     {
-        _M_mat.resize( nr, nc, preserve );
+        M_mat.resize( nr, nc, preserve );
     }
 
     /**
@@ -294,7 +294,7 @@ public:
     energy( ublas::vector_expression<VE1> const& __v,
             ublas::vector_expression<VE2> const& __u ) const
     {
-        return ublas::inner_prod( __v, ublas::prod( _M_mat, __u ) );
+        return ublas::inner_prod( __v, ublas::prod( M_mat, __u ) );
     }
 
     /**
@@ -309,12 +309,12 @@ protected:
 
 private:
 
-    bool _M_is_initialized;
+    bool M_is_initialized;
 
     /**
      * the ublas sparse matrix data structure
      */
-    matrix_type _M_mat;
+    matrix_type M_mat;
 
 };
 template <typename T, typename LayoutType>
@@ -328,7 +328,7 @@ void MatrixUBlas<T,LayoutType>::init ( const unsigned int m,
     if ( ( m==0 ) || ( n==0 ) )
         return;
 
-    _M_mat.resize( m,n,false );
+    M_mat.resize( m,n,false );
     this->zero ();
 }
 
@@ -337,7 +337,7 @@ void
 MatrixUBlas<T, LayoutType>::diagonalize( size_type __dof_index )
 {
     // eliminating row
-    ublas::matrix_row<matrix_type> mr ( _M_mat, __dof_index );
+    ublas::matrix_row<matrix_type> mr ( M_mat, __dof_index );
     typedef typename ublas::matrix_row<matrix_type>::iterator r_it;
 
     for ( r_it __r = mr.begin(); __r != mr.end(); ++__r )
@@ -346,7 +346,7 @@ MatrixUBlas<T, LayoutType>::diagonalize( size_type __dof_index )
     }
 
     // eliminating column
-    ublas::matrix_column<matrix_type> mc ( _M_mat, __dof_index );
+    ublas::matrix_column<matrix_type> mc ( M_mat, __dof_index );
 
     for ( typename ublas::matrix_column<matrix_type>::iterator therow = mc.begin();
             therow != mc.end(); ++therow )
@@ -355,7 +355,7 @@ MatrixUBlas<T, LayoutType>::diagonalize( size_type __dof_index )
     }
 
     // 1 on the diagonal
-    _M_mat( __dof_index, __dof_index ) = 1.0;
+    M_mat( __dof_index, __dof_index ) = 1.0;
 }
 template<typename T, typename LayoutType>
 void
@@ -386,25 +386,25 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
     //     ublas::unbounded_array<value_type> __val( __nnz );
     //     std::for_each( __val.begin(), __val.end(), boost::lambda::_1 = 0.0 );
 
-    FEELPP_ASSERT( __nnz >= _M_mat.nnz() )( __nnz )( _M_mat.nnz() ).error( "incompatible sizes" );
+    FEELPP_ASSERT( __nnz >= M_mat.nnz() )( __nnz )( M_mat.nnz() ).error( "incompatible sizes" );
 
-    DVLOG(2) << "number of nnz in old M : " << _M_mat.nnz() << ", " << _M_mat.nnz_capacity() <<"\n";
-    DVLOG(2) << "size M.value_data() :  " << _M_mat.value_data().size() << "\n";
+    DVLOG(2) << "number of nnz in old M : " << M_mat.nnz() << ", " << M_mat.nnz_capacity() <<"\n";
+    DVLOG(2) << "size M.value_data() :  " << M_mat.value_data().size() << "\n";
     //     DVLOG(2) << "           size val :  " << __val.size() << "\n";
     // save current nonzero entrie of M in the vector val
-    // std::copy( _M_mat.value_data().begin(), _M_mat.value_data().begin()+_M_mat.nnz(), __val.begin() );
+    // std::copy( M_mat.value_data().begin(), M_mat.value_data().begin()+M_mat.nnz(), __val.begin() );
 
     //std::cout << "values=";
     // std::for_each( __val.begin(), __val.end(), std::cout << boost::lambda::_1 << "\n" );
     //std::cout << "\n";
 
-    matrix_type _M_mat_backup( _M_mat );
+    matrix_type M_mat_backup( M_mat );
 
-    DVLOG(2) << "resizing M old : " << _M_mat_backup.size1() << "," << _M_mat_backup.size2() << " nnz = " << _M_mat_backup.nnz() <<"\n";
+    DVLOG(2) << "resizing M old : " << M_mat_backup.size1() << "," << M_mat_backup.size2() << " nnz = " << M_mat_backup.nnz() <<"\n";
 
-    _M_mat.reserve( __nnz, false );
+    M_mat.reserve( __nnz, false );
 
-    DVLOG(2) << "resizing M new : " << _M_mat.size1() << "," << _M_mat.size2() << " nnz = " << _M_mat.nnz() <<"\n";
+    DVLOG(2) << "resizing M new : " << M_mat.size1() << "," << M_mat.size2() << " nnz = " << M_mat.nnz() <<"\n";
 
     std::set<size_type>::const_iterator __it;
     std::set<size_type>::const_iterator __en;
@@ -424,24 +424,24 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
     size_type thesize;
 
     if ( is_row_major )
-        thesize = _M_mat.size1();
+        thesize = M_mat.size1();
 
     else
-        thesize = _M_mat.size2();
+        thesize = M_mat.size2();
 
     while ( __row < thesize )
     {
         __it = __pattern[__row].begin();
         __en = __pattern[__row].end();
 
-        _M_mat.index1_data()[__row] = __nnz_entry;
+        M_mat.index1_data()[__row] = __nnz_entry;
 
         ++__filled1;
         uint32_type __nnz_line = 0;
 
         while ( __it != __en )
         {
-            _M_mat.index2_data()[__nnz_entry] = *__it;
+            M_mat.index2_data()[__nnz_entry] = *__it;
 
             ++__filled2;
 
@@ -452,15 +452,15 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
             if ( boost::is_same<typename bindings::traits::sparse_matrix_traits<matrix_type>::ordering_type,
                     bindings::traits::row_major_t>::value )
             {
-                if ( __row < _M_mat_backup.size1() && *__it < _M_mat_backup.size2() )
-                    __pv = _M_mat_backup.find_element( __row, *__it );
+                if ( __row < M_mat_backup.size1() && *__it < M_mat_backup.size2() )
+                    __pv = M_mat_backup.find_element( __row, *__it );
             }
 
             else if ( boost::is_same<typename bindings::traits::sparse_matrix_traits<matrix_type>::ordering_type,
                       bindings::traits::column_major_t>::value )
             {
-                if ( __row < _M_mat_backup.size2() && *__it < _M_mat_backup.size1() )
-                    __pv = _M_mat_backup.find_element( *__it, __row );
+                if ( __row < M_mat_backup.size2() && *__it < M_mat_backup.size1() )
+                    __pv = M_mat_backup.find_element( *__it, __row );
             }
 
             else
@@ -469,10 +469,10 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
             }
 
             if ( __pv )
-                _M_mat.value_data()[__nnz_entry] = *__pv;
+                M_mat.value_data()[__nnz_entry] = *__pv;
 
             else
-                _M_mat.value_data()[__nnz_entry] =  value_type( 0 );
+                M_mat.value_data()[__nnz_entry] =  value_type( 0 );
 
             ++__nnz_entry;
             ++__it;
@@ -483,13 +483,13 @@ MatrixUBlas<T, LayoutType>::fill( pattern_type const& __pattern )
         ++__row;
     }
 
-    _M_mat.index1_data()[thesize] = __filled2;
+    M_mat.index1_data()[thesize] = __filled2;
     FEELPP_ASSERT( thesize+1 == __filled1 )( thesize )( __filled1 ).error( "invalid matrix storage" );
-    _M_mat.set_filled( __filled1, __filled2 );
-    FEELPP_ASSERT( _M_mat.nnz() == __filled2 )( _M_mat.nnz() )( __filled2 ).error( "inconsistent matrix storage" );
+    M_mat.set_filled( __filled1, __filled2 );
+    FEELPP_ASSERT( M_mat.nnz() == __filled2 )( M_mat.nnz() )( __filled2 ).error( "inconsistent matrix storage" );
 
-    DVLOG(2) << "***  value data size  : " << _M_mat.value_data().size() << "\n";
-    DVLOG(2) << "***              nnz  : " << _M_mat.nnz() << "\n";
+    DVLOG(2) << "***  value data size  : " << M_mat.value_data().size() << "\n";
+    DVLOG(2) << "***              nnz  : " << M_mat.nnz() << "\n";
     DVLOG(2) << "*** max nnz per line  : " << __max_nnz_per_line << "\n";
     DVLOG(2) << "*** fillMatrixFromPattern() done in " << chrono.elapsed() <<"s\n";
 }
@@ -523,8 +523,8 @@ MatrixUBlas<T, LayoutType>::printMatlab( const std::string filename ) const
 
     file_out << "S = [ ";
 
-    for ( typename matrix_type::const_iterator1 i1=_M_mat.begin1();
-            i1!=_M_mat.end1(); ++i1 )
+    for ( typename matrix_type::const_iterator1 i1=M_mat.begin1();
+            i1!=M_mat.end1(); ++i1 )
     {
         for ( typename matrix_type::const_iterator2 i2=i1.begin();
                 i2!=i1.end(); ++i2 )

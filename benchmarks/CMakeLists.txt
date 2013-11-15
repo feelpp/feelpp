@@ -31,6 +31,6 @@ macro(feel_add_bench examplename)
   add_dependencies( benchmarks ${targetname} )
 endmacro(feel_add_bench)
 
-foreach( DIR laplacian  navierstokes perf wrapper/python python )
+foreach( DIR navierstokes perf wrapper/python python )
   add_subdirectory( ${DIR} )
 endforeach()

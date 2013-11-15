@@ -242,7 +242,7 @@ public:
     PC pc()
     {
         this->init();
-        return _M_pc;
+        return M_pc;
     }
 
     /**
@@ -281,19 +281,19 @@ private:
     /**
      * Linear solver context
      */
-    SLES _M_sles;
+    SLES M_sles;
 
 #endif
 
     /**
      * Preconditioner context
      */
-    PC _M_pc;
+    PC M_pc;
 
     /**
      * Krylov subspace context
      */
-    KSP _M_ksp;
+    KSP M_ksp;
 
     bool M_constant_null_space;
 };
@@ -336,4 +336,3 @@ SolverLinearPetsc<T>::~SolverLinearPetsc ()
 
 #endif // #ifdef FEELPP_HAS_PETSC_H
 #endif // #ifdef __petsc_linear_solver_h__
-

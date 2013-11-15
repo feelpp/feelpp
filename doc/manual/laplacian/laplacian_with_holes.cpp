@@ -77,7 +77,7 @@ int main(int argc, char**argv )
 	Environment env( _argc=argc, _argv=argv,
                      _desc=feel_options(),
                      _directory=".",
-                     _about=about(_name="qs_laplacian",
+                     _about=about(_name="laplacian-with_holes",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 

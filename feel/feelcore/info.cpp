@@ -78,20 +78,7 @@ Info::versionMicro()
 char const*
 Info::versionString()
 {
-    static bool _created = false;
-    static std::ostringstream ostr;
-
-    if ( !_created )
-    {
-        ostr << FEELPP_VERSION_MAJOR << "."
-             << FEELPP_VERSION_MINOR << "."
-             << FEELPP_VERSION_MICRO << "-r"
-             << stringize(FEELPP_REVISION) << "-"
-             << stringize(FEELPP_BUILDID);
-        _created = true;
-    }
-
-    return ostr.str().c_str();
+    return stringize( FEELPP_VERSION_MAJOR ) "." stringize( FEELPP_VERSION_MINOR ) "." stringize( FEELPP_VERSION_MICRO ) "-r" stringize(FEELPP_REVISION)  "-"  stringize(FEELPP_BUILDID);
 }
 
 char const*

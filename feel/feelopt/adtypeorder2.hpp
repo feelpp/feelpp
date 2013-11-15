@@ -99,18 +99,18 @@ public:
 
     ADType( value_type val  = value_type( 0 ) )
         :
-        _M_val( val ),
-        _M_grad( nvar ),
-        _M_hessian( nvar, nvar ),
+        M_val( val ),
+        M_grad( nvar ),
+        M_hessian( nvar, nvar ),
         __dep( false ),
-        _M_deps()
+        M_deps()
     {
-        _M_grad = boost::numeric::ublas::zero_vector<double>( nvar );
-        _M_hessian = boost::numeric::ublas::zero_matrix<double>( nvar, nvar );
+        M_grad = boost::numeric::ublas::zero_vector<double>( nvar );
+        M_hessian = boost::numeric::ublas::zero_matrix<double>( nvar, nvar );
 
         if ( depvar != -1 )
         {
-            _M_grad[ depvar ] = 1.;
+            M_grad[ depvar ] = 1.;
             __dep[ depvar ] = true;
         }
     }
@@ -118,22 +118,22 @@ public:
     template<int VarNum>
     ADType( ADType<T,Nvar,2,VarNum> const& sad )
         :
-        _M_val( sad._M_val ),
-        _M_grad( sad._M_grad ),
-        _M_hessian( sad._M_hessian ),
+        M_val( sad.M_val ),
+        M_grad( sad.M_grad ),
+        M_hessian( sad.M_hessian ),
         __dep( sad.__dep ),
-        _M_deps()
+        M_deps()
     {
 
     }
     template<typename ExprT>
     ADType ( const ADExpr<ExprT>& expr )
         :
-        _M_val( 0 ),
-        _M_grad( nvar ),
-        _M_hessian( nvar, nvar ),
+        M_val( 0 ),
+        M_grad( nvar ),
+        M_hessian( nvar, nvar ),
         __dep( false ),
-        _M_deps()
+        M_deps()
     {
         *this = expr;
     }
@@ -146,7 +146,7 @@ public:
     //! returns the value
     value_type value() const
     {
-        return _M_val;
+        return M_val;
     }
 
     //! tells if the gradient or the hessian depends on the ith variable
@@ -160,24 +160,24 @@ public:
     value_type grad( int __i ) const
     {
         //ENSURE( __i >= 0 && __i < nvar );
-        return _M_grad( __i );
+        return M_grad( __i );
     }
 
     gradient_type grad() const
     {
-        return _M_grad;
+        return M_grad;
     }
 
     hessian_type hessian() const
     {
-        return _M_hessian;
+        return M_hessian;
     }
 
     //! returns the hessian value at position (i,j)
     value_type hessian( int __i, int __j ) const
     {
         //ENSURE( __i >= 0 && __i < nvar && __j >= 0 && __j < nvar );
-        return _M_hessian( __i, __j );
+        return M_hessian( __i, __j );
     }
     //@}
 
@@ -186,7 +186,7 @@ public:
     //@{
     value_type& value()
     {
-        return _M_val;
+        return M_val;
     }
     //! tells if the gradient or the hessian depends on the ith variable
     bool& deps( int __i )
@@ -198,24 +198,24 @@ public:
     value_type& grad( int __i )
     {
         //ENSURE( __i >= 0 && __i < nvar );
-        return _M_grad( __i );
+        return M_grad( __i );
     }
 
     gradient_type& grad()
     {
-        return _M_grad;
+        return M_grad;
     }
 
     hessian_type& hessian()
     {
-        return _M_hessian;
+        return M_hessian;
     }
 
     //! returns the hessian value at position (i,j)
     value_type& hessian( int __i, int __j )
     {
         //ENSURE( __i >= 0 && __i < nvar && __j >= 0 && __j < nvar );
-        return _M_hessian( __i, __j );
+        return M_hessian( __i, __j );
     }
     //@}
 
@@ -244,7 +244,7 @@ public:
 #define AD_UNARY_OP( op )                         \
       This& operator op ( value_type val )         \
       {                                            \
-        _M_val op val;                              \
+        M_val op val;                              \
         return *this;                              \
       }
     AD_UNARY_OP( += );
@@ -254,31 +254,31 @@ public:
 
     This& operator += ( This const& sad )
     {
-        _M_val += sad._M_val;
-        _M_grad += sad._M_grad;
-        _M_hessian += sad._M_hessian;
+        M_val += sad.M_val;
+        M_grad += sad.M_grad;
+        M_hessian += sad.M_hessian;
         return *this;
     }
     This& operator -= ( This const& sad )
     {
-        _M_val -= sad._M_val;
-        _M_grad -= sad._M_grad;
-        _M_hessian -= sad._M_hessian;
+        M_val -= sad.M_val;
+        M_grad -= sad.M_grad;
+        M_hessian -= sad.M_hessian;
         return *this;
     }
 
 
     This& operator *= ( This const& sad )
     {
-        _M_val *= sad._M_val;
-        _M_grad = _M_grad * sad._M_val + _M_val * sad._M_grad;
+        M_val *= sad.M_val;
+        M_grad = M_grad * sad.M_val + M_val * sad.M_grad;
         return *this;
     }
 
     This& operator /= ( This const& sad )
     {
-        _M_val /= sad._M_val;
-        _M_grad = ( _M_grad * sad._M_val - _M_val * sad._M_grad ) / ( sad._M_val * sad._M_val );
+        M_val /= sad.M_val;
+        M_grad = ( M_grad * sad.M_val - M_val * sad.M_grad ) / ( sad.M_val * sad.M_val );
         return *this;
     }
 
@@ -315,12 +315,12 @@ public:
 protected:
 
 
-    value_type _M_val;
-    gradient_type _M_grad;
-    hessian_type _M_hessian;
+    value_type M_val;
+    gradient_type M_grad;
+    hessian_type M_hessian;
 
     deps_type __dep;
-    dependency_type _M_deps;
+    dependency_type M_deps;
 };
 
 template<typename T,int Nvar, int Var>
@@ -328,9 +328,9 @@ ADType<T, Nvar, 2, Var>&
 ADType<T, Nvar, 2, Var>::operator=( value_type const& val )
 {
     __dep = false;
-    _M_val = val;
-    _M_grad = boost::numeric::ublas::zero_vector<double>( nvar );
-    _M_hessian = boost::numeric::ublas::zero_matrix<double>( nvar, nvar );;
+    M_val = val;
+    M_grad = boost::numeric::ublas::zero_vector<double>( nvar );
+    M_hessian = boost::numeric::ublas::zero_matrix<double>( nvar, nvar );;
     return *this;
 }
 
@@ -339,9 +339,9 @@ ADType<T, Nvar, 2, Var>&
 ADType<T, Nvar, 2, Var>::operator=( This const& sad )
 {
     __dep = sad.__dep;
-    _M_val = sad._M_val;
-    _M_grad = sad._M_grad;
-    _M_hessian = sad._M_hessian;
+    M_val = sad.M_val;
+    M_grad = sad.M_grad;
+    M_hessian = sad.M_hessian;
     return *this;
 }
 template<typename T,int Nvar, int Var>
@@ -351,7 +351,7 @@ ADType<T,Nvar, 2, Var>::operator=( const ADExpr<ExprT>& expr )
 {
 
 #if 0
-    _M_val = expr.value();
+    M_val = expr.value();
 
     typedef typename Feel::STL::SNoDuplicates<typename Feel::STL::SFlatten<typename ADExpr<ExprT>::Var>::Result>::Result Expr;
     typedef typename Feel::Meta::IF<Feel::STL::SIndexOf<Expr,Variable<-1> >::value == -1,
@@ -360,15 +360,15 @@ ADType<T,Nvar, 2, Var>::operator=( const ADExpr<ExprT>& expr )
             >::Result ForEachExpr;
 
     // should generate the complement to VarList of Expr
-    _M_grad = boost::numeric::ublas::zero_vector<double>( nvar );
+    M_grad = boost::numeric::ublas::zero_vector<double>( nvar );
     ForEachExpr( *this, expr );
 
-    //FOR_EACH<FOR_EACH<Expr> >( _M_grad, expr );
+    //FOR_EACH<FOR_EACH<Expr> >( M_grad, expr );
     return *this;
 #endif
-    _M_val = expr.value();
+    M_val = expr.value();
 #if 0
-    _M_deps.clear();
+    M_deps.clear();
 
     for ( int __i = 0; __i < nvar; ++__i )
     {
@@ -377,35 +377,35 @@ ADType<T,Nvar, 2, Var>::operator=( const ADExpr<ExprT>& expr )
         if ( __dep( __i ) )
         {
             //std::cerr << "depends on " << __i << "\n";
-            _M_deps.insert( __i );
+            M_deps.insert( __i );
         }
     }
 
-    if ( ! _M_deps.empty() && _M_deps.size() < nvar )
+    if ( ! M_deps.empty() && M_deps.size() < nvar )
     {
-        //_M_grad = 0;
-        //_M_hessian = _M_grad;
+        //M_grad = 0;
+        //M_hessian = M_grad;
 
-        dependency_type::iterator __begin = _M_deps.begin();
-        dependency_type::iterator __end = _M_deps.end();
+        dependency_type::iterator __begin = M_deps.begin();
+        dependency_type::iterator __end = M_deps.end();
 
         dependency_type::iterator __it = __begin;
         dependency_type::iterator __it2;
 
         while ( __it != __end )
         {
-            _M_grad( *__it )= expr.grad( *__it );
+            M_grad( *__it )= expr.grad( *__it );
             __it2 = __begin;
 
             while ( __it2 != __it )
             {
-                _M_hessian( *__it, *__it2 ) = expr.hessian( *__it, *__it2 );
-                //_M_hessian( *__it2, *__it ) = _M_hessian( *__it][ *__it2 ];
+                M_hessian( *__it, *__it2 ) = expr.hessian( *__it, *__it2 );
+                //M_hessian( *__it2, *__it ) = M_hessian( *__it][ *__it2 ];
 
                 ++__it2;
             }
 
-            _M_hessian( *__it, *__it ) = expr.hessian( *__it, *__it );
+            M_hessian( *__it, *__it ) = expr.hessian( *__it, *__it );
             ++__it;
         }
     }
@@ -416,13 +416,13 @@ ADType<T,Nvar, 2, Var>::operator=( const ADExpr<ExprT>& expr )
 
         for ( int __i = 0; __i < nvar; ++__i )
         {
-            _M_grad( __i )= expr.grad( __i );
-            _M_hessian( __i, __i ) = expr.hessian( __i, __i );
+            M_grad( __i )= expr.grad( __i );
+            M_hessian( __i, __i ) = expr.hessian( __i, __i );
 
             for ( int __j = 0; __j < __i; ++__j )
             {
-                _M_hessian( __i, __j ) = expr.hessian( __i, __j );
-                //_M_hessian( __j, __i ) = _M_hessian[ __i ][ __j ];
+                M_hessian( __i, __j ) = expr.hessian( __i, __j );
+                //M_hessian( __j, __i ) = M_hessian[ __i ][ __j ];
             }
         }
 
@@ -463,4 +463,3 @@ operator << ( std::ostream& os, const Feel::ADType<T, Nvar, 2, Var>& a )
 }
 
 #endif
-
