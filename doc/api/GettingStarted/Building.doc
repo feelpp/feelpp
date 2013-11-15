@@ -294,27 +294,18 @@ where <tt>feel</tt> is the top directory where the source have been downloaded. 
 you can customize the build type:
 \verbatim
   # Choose g++ release
-  cmake -CMAKE_CXX_COMPILER=/usr/bin/g++-4.6
+  cmake -CMAKE_CXX_COMPILER=/usr/bin/g++
   # Debug build type (-g...)
   cmake -D CMAKE_BUILD_TYPE=Debug
   # Release build type (-O3...)
   cmake -D CMAKE_BUILD_TYPE=Release
   ...
 \endverbatim
-Once Cmake has made its work, you are now able to compile the library with
+Once Cmake has done its work, you are now able to compile the library with
 \verbatim
   make
 \endverbatim
 <b>Important</b> : from now, all commands should be type in <tt>feel.opt</tt> or its subdirectories.
-
-\subsection Manual Compiling the Feel++ manual
-The manual is edited with LaTeX  so you need to have installed the LaTeX distribution on your computer. LaTeX is a high-quality typesetting system, it includes features designed for the production of technical and scientific documentation. There are several ways to make it work, for example you can go on <a href="http://www.tug.org/mactex/">MacTeX website</a> and follow the instructions to install the distribution. If the command <tt>make check</tt> in <tt>feel.opt/</tt> has been run before, the tutorial should be already compiled and ready. The steps are as follows to build the Feel tutorial
-\verbatim
-  cd feel.opt/doc/manual
-  make feelpp-manual_pdf
-\endverbatim
-The directory <tt>doc/manual</tt> contains all examples used in the tutorial. You will see how it works in the following parts.
-
 
 */
 }
