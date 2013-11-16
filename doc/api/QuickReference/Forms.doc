@@ -10,7 +10,7 @@ namespace Feel {
 
 <hr>
 
-We suppose in this section that you know how to define your mesh (see \ref Mesh) and your function spaces (see \ref Spaces). You may need integrations tools too (see \ref Integrals ).
+We suppose in this section that you know how to define your mesh (see \ref Mesh) and your function spaces (see \ref Spaces). You may need integrations tools too (see \ref Integrals).
 
 There are \feel tools you need to create linear and bilinear forms in order to solve variatonnal formulation.
 
@@ -34,7 +34,7 @@ By default, a new linear form is :
 \f[
 l(v)=\int_\Omega v
 \f]
-Then you can custom it using integrations tools.
+Then you can customize it using integrations tools.
 
 \Examples
 From \c "doc/manual/tutorial/mylaplacian.cpp" :

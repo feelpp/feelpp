@@ -99,12 +99,14 @@ template<uint16_type Dim,
          template<class, uint16_type, class> class Pts, uint16_type > class PP = Lagrange>
 class GeoMap
     :
-    public PP<Order,Scalar, Continuous,PointSetEquiSpaced, 0>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type,
-       public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
+    public PP<Order,Scalar, Continuous,PointSetEquiSpaced, 0>::template apply<Dim,RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type//,
+//public boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > >
        //public PP<Order,Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type
        {
            //typedef typename PP<Order, Scalar, PointSetFekete>::template apply<Dim, T, Entity<Dim,Order,Dim> >::result_type super;
            typedef typename PP<Order, Scalar, Continuous, PointSetEquiSpaced, 0>::template apply<Dim, RealDim/*Dim*/, T, Entity<Dim,Order,/*RealDim*/Dim> >::result_type super;
+
+           //typedef boost::enable_shared_from_this<GeoMap<Dim, Order, RealDim, T, Entity, PP > > super_enable_this;
 
            static const uint16_type nRealDimCheck2d = mpl::if_< mpl::less_equal<mpl::int_<2>,mpl::int_<RealDim> >,
            mpl::int_<RealDim>,
@@ -914,6 +916,57 @@ void update( element_type const& __e, uint16_type __f )
     }
 
 }
+
+void update( element_type const& __e, uint16_type __f, permutation_type __perm, bool __updateJacobianCtx=true )
+{
+    //M_element_c = boost::shared_ptr<element_type const>(&__e);
+    M_element = boost::addressof( __e );
+    M_face_id = __f;
+
+    M_perm = __perm;
+
+    M_h_face = __e.hFace( M_face_id );
+    //M_h_edge = __e.hEdge( M_face_id );
+
+    M_pc = M_pc_faces[__f][M_perm];
+    //M_G = __e.G();
+    M_G = ( gm_type::nNodes == element_type::numVertices ) ?__e.vertices() : __e.G();
+    M_id = __e.id();
+    M_e_marker = __e.marker();
+    M_e_marker2 = __e.marker2();
+    M_e_marker3 = __e.marker3();
+    M_h = __e.h();
+    M_meas = __e.measure();
+    M_measface = __e.faceMeasure( __f );
+    M_xrefq = M_pc->nodes();
+
+    FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )( M_G.size2() )( M_gm->nbPoints() ).error( "invalid dimensions" );
+    FEELPP_ASSERT( M_pc ).error( "invalid precompute data structure" );
+
+    if ( vm::has_point<context>::value )
+    {
+
+        //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
+        std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
+        const uint16_type size1 = M_G.size1();
+        const uint16_type size3 = M_G.size2();
+        const uint16_type size2 = M_pc->nPoints();
+
+        for ( uint16_type i = 0; i < size1; ++i )
+            for ( uint16_type j = 0; j < size2; ++j )
+            {
+                for ( uint16_type k = 0; k < size3; ++k )
+                    M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0,0 );
+            }
+    }
+
+    if ( vm::has_jacobian<context>::value && __updateJacobianCtx )
+    {
+        updateJKBN( mpl::bool_<is_linear>() );
+    }
+
+}
+
 void update( element_type const& __e,
              precompute_ptrtype const& __pc )
 {
@@ -1547,6 +1600,11 @@ void setPc( precompute_ptrtype const& __pc )
     M_pc = __pc;
 }
 
+void setPcFaces( std::vector<std::map<permutation_type, precompute_ptrtype> > const& __pcfaces )
+{
+    M_pc_faces = __pcfaces;
+}
+
 //@}
 private:
 
@@ -1914,6 +1972,8 @@ permutation_type M_perm;
 }; // Context
 
 
+
+
 template<size_type context_v, typename ElementType>
 boost::shared_ptr<Context<context_v,ElementType> >
 context( geometric_mapping_ptrtype gm, ElementType const& e, precompute_ptrtype const& pc )
@@ -1929,9 +1989,12 @@ boost::shared_ptr<Context<context_v,ElementType> >
 context( ElementType const& e, precompute_ptrtype const& pc )
 {
     return boost::shared_ptr<Context<context_v,ElementType> >(
-               new Context<context_v, ElementType>( this->shared_from_this(),
-                       e,
-                       pc ) );
+                new Context<context_v, ElementType>
+                (
+                 //super_enable_this::shared_from_this(),
+                 boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
+                e,
+                pc ) );
 }
 
 template<size_type context_v, typename ElementType>
@@ -1954,10 +2017,13 @@ context( ElementType const& e,
          uint16_type f )
 {
     return boost::shared_ptr<Context<context_v,ElementType> >(
-               new Context<context_v, ElementType>( this->shared_from_this(),
-                       e,
-                       pc,
-                       f ) );
+               new Context<context_v, ElementType>
+               (
+                //super_enable_this::shared_from_this(),
+                boost::dynamic_pointer_cast<GeoMap<Dim, Order, RealDim, T, Entity, PP > >(this->shared_from_this()),
+               e,
+               pc,
+               f ) );
 }
 
 

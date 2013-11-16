@@ -48,6 +48,8 @@ public:
     // -- TYPEDEFS --
     typedef OperatorLinear<DomainSpace, DualImageSpace> this_type;
     typedef Operator<DomainSpace, DualImageSpace> super_type;
+    typedef OperatorLinear<DualImageSpace,DomainSpace> adjoint_type;
+    typedef boost::shared_ptr<adjoint_type> adjoint_ptrtype;
 
     typedef typename super::domain_space_type domain_space_type;
     typedef typename super::dual_image_space_type  dual_image_space_type;
@@ -569,6 +571,16 @@ public:
         this->close();
         this->add( 1.0, ol );
         return *this;
+    }
+
+    adjoint_ptrtype adjoint() const
+    {
+        auto opT = adjoint_ptrtype( new adjoint_type( this->dualImageSpace(), this->domainSpace(), M_backend, false ) );
+        //opT->matPtr() = M_backend->newMatrix(_test=this->domainSpace(), _trial=this->dualImageSpace());
+        opT->matPtr() = M_backend->newMatrix( this->dualImageSpace()->dofOnOff(),
+                                              this->domainSpace()->dofOn(), (size_type) NON_HERMITIAN,false);
+        M_matrix->transpose(opT->matPtr());
+        return opT;
     }
 
 private:

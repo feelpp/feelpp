@@ -549,28 +549,19 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     size_type row_start = M_lb.front().globalRowStart();
     size_type col_start = M_lb.front().globalColumnStart();
 
-    auto local_rows_0 = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-    auto local_rows_1 = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = local_rows_0;
-    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = local_rows_1;
+    M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+    M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
 
-    auto local_cols_0 = M_trial_dof->localToGlobalIndices( elt_0 ).array() + col_start;
-    auto local_cols_1 = M_trial_dof->localToGlobalIndices( elt_1 ).array() + col_start;
-    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = local_cols_0;
-    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = local_cols_1;
-
+    M_local_cols_2.template head<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( elt_0 ).array() + col_start;
+    M_local_cols_2.template tail<trial_dof_type::nDofPerElement>().array() = M_trial_dof->localToGlobalIndices( elt_1 ).array() + col_start;
 
     if ( test_dof_type::is_modal || trial_dof_type::is_modal )
     {
-        auto local_rowsigns_0 = M_test_dof->localToGlobalSigns( elt_0 );
-        auto local_rowsigns_1 = M_test_dof->localToGlobalSigns( elt_1 );
-        M_local_rowsigns_2.template head<test_dof_type::nDofPerElement>() = local_rowsigns_0;
-        M_local_rowsigns_2.template tail<test_dof_type::nDofPerElement>() = local_rowsigns_1;
+        M_local_rowsigns_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalSigns( elt_0 );
+        M_local_rowsigns_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalSigns( elt_1 );
 
-        auto local_colsigns_0 = M_trial_dof->localToGlobalSigns( elt_0 );
-        auto local_colsigns_1 = M_trial_dof->localToGlobalSigns( elt_1 );
-        M_local_colsigns_2.template head<trial_dof_type::nDofPerElement>() = local_colsigns_0;
-        M_local_colsigns_2.template tail<trial_dof_type::nDofPerElement>() = local_colsigns_1;
+        M_local_colsigns_2.template head<trial_dof_type::nDofPerElement>() = M_trial_dof->localToGlobalSigns( elt_0 );
+        M_local_colsigns_2.template tail<trial_dof_type::nDofPerElement>() = M_trial_dof->localToGlobalSigns( elt_1 );
 
         M_rep_2.array() *= ( M_local_rowsigns_2*M_local_colsigns_2.transpose() ).array().template cast<value_type>();
     }

@@ -45,6 +45,7 @@ template<typename Shape, typename T, int Tag>
 Mesh<Shape, T, Tag>::Mesh( WorldComm const& worldComm )
     :
     super(worldComm),
+    M_numGlobalElements( 0 ),
     M_gm( new gm_type ),
     M_gm1( new gm1_type ),
     M_meas( 0 ),
@@ -203,9 +204,6 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->updateEntitiesCoDimensionOne();
             // update permutation of entities of co-dimension 1
             this->updateEntitiesCoDimensionOnePermutation();
-            // update in ghost cells of entities of co-dimension 1
-            //if (this->worldComm().localSize()>1)
-            //    this->updateEntitiesCoDimensionOneGhostCell();
 
             VLOG(2) << "[Mesh::updateForUse] update entities of codimension 1 : " << ti.elapsed() << "\n";
 
@@ -251,8 +249,6 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->elements().modify( iv,
                                      [=,&pc,&pcf]( element_type& e )
                                      {
-                                         for ( int i = 0; i < e.numPoints; ++i )
-                                             e.point( i ).addElement( e.id() );
                                          e.setMeshAndGm( this, M_gm, M_gm1 );
                                          e.updateWithPc(pc, boost::ref( pcf) );
                                      } );
@@ -266,7 +262,10 @@ Mesh<Shape, T, Tag>::updateForUse()
                                                    lambda::_1, pc, boost::ref( pcf ) ) );
 #endif
 
-            M_meas += iv->measure();
+            // only compute meas for active element (no ghost)
+            if ( !iv->isGhostCell() )
+                M_meas += iv->measure();
+
             auto _faces = iv->faces();
 
             if ( nDim == 1 )
@@ -281,15 +280,19 @@ Mesh<Shape, T, Tag>::updateForUse()
         // data such as the measure of point element neighbors
         boost::tie( iv, en ) = this->elementsRange();
 
-        for ( ; iv != en; ++iv )
+        if ( this->components().test( MESH_ADD_ELEMENTS_INFO ) )
         {
-            value_type meas = 0;
-            for( auto _elt: iv->pointElementNeighborIds() )
+            for ( ; iv != en; ++iv )
             {
-                if ( this->hasElement( _elt ) )
-                    meas += this->element( _elt ).measure();
+                value_type meas = 0;
+                for( auto _elt: iv->pointElementNeighborIds() )
+                {
+                    // warning : only compute meas for active element (no ghost)
+                    if ( this->hasElement( _elt ) )
+                        meas += this->element( _elt ).measure();
+                }
+                this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
             }
-            this->elements().modify( iv, [meas]( element_type& e ){ e.setMeasurePointElementNeighbors( meas ); } );
         }
 
         for ( auto itf = this->beginFace(), ite = this->endFace(); itf != ite; ++ itf )
@@ -297,14 +300,22 @@ Mesh<Shape, T, Tag>::updateForUse()
             this->faces().modify( itf,[this]( face_type& f ) { f.setMesh( this ); } );
         }
     }
-    //std::cout<<"this->worldComm().localSize()=     "<< this->worldComm().localSize() << std::endl;
-#if defined(FEELPP_ENABLE_MPI_MODE)
 
+#if defined(FEELPP_ENABLE_MPI_MODE)
     if ( this->components().test( MESH_UPDATE_FACES ) && this->worldComm().localSize()>1 )
     {
-        this->updateEntitiesCoDimensionOneGhostCell();
+        if ( false )
+            this->updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
+        else
+            this->updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
+
+        auto ipfRange = this->interProcessFaces();
+        for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
+            this->addFaceNeighborSubdomain( itf->partition2() );
     }
 #endif
+
+    this->updateNumGlobalElements();
 
     if ( this->components().test( MESH_PROPAGATE_MARKERS ) )
         propagateMarkers(mpl::int_<nDim>() );
@@ -317,8 +328,6 @@ Mesh<Shape, T, Tag>::updateForUse()
     M_gm1->initCache( this );
 
     M_tool_localization->setMesh( this->shared_from_this(),false );
-
-
 
     VLOG(2) << "[Mesh::updateForUse] total time : " << ti.elapsed() << "\n";
 }
@@ -1145,7 +1154,7 @@ Mesh<Shape, T, Tag>::modifyEdgesOnBoundary( face_iterator& it , mpl::bool_<true>
         }
 
     }
-    LOG(INFO) << "We have " << nelements(boundaryedges(this)) <<  " boundary edges";
+    DVLOG(3) << "We have " << nelements(boundaryedges(this)) <<  " boundary edges";
 
 }
 template<typename Shape, typename T, int Tag>
@@ -1221,7 +1230,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
 
         if ( isOnBoundary )
         {
-            LOG(INFO) << "checking " << iv->nTopologicalFaces() << " faces, isOnBoundary: " << isOnBoundary << " face_type::nDim: " << face_type::nDim;
+            VLOG(3) << "checking " << iv->nTopologicalFaces() << " faces, isOnBoundary: " << isOnBoundary << " face_type::nDim: " << face_type::nDim;
             this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, face_type::nDim ); } );
             // go to the next element, no need to look further
             continue;
@@ -1241,7 +1250,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
 
         if ( isOnBoundary )
         {
-            LOG(INFO) << "checking " << iv->nPoints() << " points, isOnBoundary: " << isOnBoundary;
+            VLOG(3) << "checking " << iv->nPoints() << " points, isOnBoundary: " << isOnBoundary;
             this->elements().modify( iv, [isOnBoundary]( element_type& e ) { e.setOnBoundary( isOnBoundary, 0 ); } );
         }
     } // loop over the elements
@@ -1249,9 +1258,9 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
               << " elements sharing a point, a edge or a face with the boundary in the database";
     BOOST_FOREACH( auto e, this->boundaryElements( 0, 2, 0 ) )
     {
-        LOG(INFO) << "boundary element : " << e.id()
-                  << " entity on boundary max dim  " << e.boundaryEntityDimension()
-                  << " process id : " << e.processId();
+        VLOG(3) << "boundary element : " << e.id()
+                << " entity on boundary max dim  " << e.boundaryEntityDimension()
+                << " process id : " << e.processId();
     }
 
 }
@@ -1262,14 +1271,14 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
     std::for_each( markers.begin(), markers.end(),
                    [=]( uint16_type marker )
                    {
-                       auto range=markedfaces( this, marker );
+                       auto range=markedfaces( this->shared_from_this(), boost::any(marker) );
                        LOG(INFO) << "removing " << nelements(range) << " faces marked "  << marker << " from boundary faces\n";
 
                        for( auto it = range.template get<1>(), en = range.template get<2>(); it != en; ++it )
                        {
                            if ( it->isOnBoundary() )
                            {
-                               LOG(INFO) << "removing face "  << it->id() << "\n";
+                               DVLOG(3) << "removing face "  << it->id() << "\n";
                                auto it2 = this->faces().template project<0>( it );
                                this->faces().modify( it2, []( face_type & f ) { f.setOnBoundary( false ); } );
 
@@ -1288,21 +1297,18 @@ Mesh<Shape, T, Tag>::removeFacesFromBoundary( std::initializer_list<uint16_type>
 #if defined(FEELPP_ENABLE_MPI_MODE)
 template<typename Shape, typename T, int Tag>
 void
-Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm()
 {
     typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_type;
 
     VLOG(2) << "[Mesh::updateEntitiesCoDimensionOneGhostCell] start on god rank "<< this->worldComm().godRank() << "\n";
 
-    std::vector<int> nbMsgToSend( this->worldComm().localSize() );
-    std::fill( nbMsgToSend.begin(),nbMsgToSend.end(),0 );
-
+    std::vector<int> nbMsgToSend( this->worldComm().localSize(), 0 );
+    std::vector<int> nbMsgToRecv( this->worldComm().localSize(), 0 );
     std::vector< std::map<int,int> > mapMsg( this->worldComm().localSize() );
-
 
     auto iv = this->beginGhostElement();
     auto en = this->endGhostElement();
-
     for ( ; iv != en; ++iv )
     {
         element_type const& __element = *iv;
@@ -1329,11 +1335,34 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     }
 
     //------------------------------------------------------------------------------------------------//
-    // counter of msg received for each process
-    std::vector<int> nbMsgToRecv;
+
+    auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
+    auto const enEltActif = this->endElementWithProcessId( this->worldComm().localRank() );
+    for ( ; itEltActif!=enEltActif ; ++itEltActif )
+    {
+        if (itEltActif->numberOfNeighborPartitions() == 0 ) continue;
+        auto itneighbor = itEltActif->neighborPartitionIds().begin();
+        auto const enneighbor = itEltActif->neighborPartitionIds().end();
+        for ( ; itneighbor!=enneighbor ; ++itneighbor )
+            nbMsgToRecv[*itneighbor]++;
+    }
+
+    //------------------------------------------------------------------------------------------------//
+
+#if !defined( NDEBUG )
+    // check nbMsgToRecv computation
+    std::vector<int> nbMsgToRecv2;
     mpi::all_to_all( this->worldComm().localComm(),
                      nbMsgToSend,
-                     nbMsgToRecv );
+                     nbMsgToRecv2 );
+    for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
+    {
+        CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
+                                                       << "myrank " << this->worldComm().localRank() << " proc " << proc
+                                                       << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
+                                                       << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
+    }
+#endif
 
     //------------------------------------------------------------------------------------------------//
     // recv id asked and re-send set of face id
@@ -1522,6 +1551,301 @@ Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCell()
     //std::cout << "[Mesh::updateEntitiesCoDimensionOneGhostCell] finish" << std::endl;
 
 } // updateEntitiesCoDimensionOneGhostCell
+
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm()
+{
+    typedef std::vector< boost::tuple<size_type, std::vector<double> > > resultghost_type;
+
+    DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : start on rank " << this->worldComm().localRank() << "\n";
+
+    const int nProc = this->worldComm().localSize();
+
+    //------------------------------------------------------------------------------------------------//
+    // compute size of container to send and update Point and Edge info for parallelism
+    std::map< int, int > nDataInVecToSend;
+    auto iv = this->beginGhostElement();
+    auto const en = this->endGhostElement();
+    for ( ; iv != en; ++iv )
+    {
+        const int IdProcessOfGhost = iv->processId();
+        // update info for parallelism
+        this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectPointToElement() );
+        if ( nDim==3 )
+            this->elements().modify( this->elementIterator(iv->id(),IdProcessOfGhost) , typename super_elements::ElementGhostConnectEdgeToElement() );
+
+        // be sure that the counter start to 0
+        if ( nDataInVecToSend.find(IdProcessOfGhost) == nDataInVecToSend.end() )
+            nDataInVecToSend[IdProcessOfGhost]=0;
+        // update counter
+        nDataInVecToSend[IdProcessOfGhost]++;
+    }
+    //------------------------------------------------------------------------------------------------//
+    // init and resize the container to send
+    std::map< int, std::vector<size_type> > dataToSend;
+    auto itNDataInVecToSend = nDataInVecToSend.begin();
+    auto const enNDataInVecToSend = nDataInVecToSend.end();
+    for ( ; itNDataInVecToSend!=enNDataInVecToSend ; ++itNDataInVecToSend )
+    {
+        const int idProc = itNDataInVecToSend->first;
+        const int nData = itNDataInVecToSend->second;
+        dataToSend[idProc].resize( nData );
+    }
+    //------------------------------------------------------------------------------------------------//
+    // prepare container to send
+    std::map< int, std::map<int,size_type> > memoryMsgToSend;
+    std::map< int, int > nDataInVecToSendBis;
+    iv = this->beginGhostElement();
+    for ( ; iv != en; ++iv )
+    {
+        element_type const& __element = *iv;
+        const int idProc = __element.processId();
+        const size_type idEltInOtherPartition = __element.idInOthersPartitions( idProc );
+        // be sure that the counter start to 0
+        if ( nDataInVecToSendBis.find(idProc) == nDataInVecToSendBis.end() )
+            nDataInVecToSendBis[idProc]=0;
+        // save request
+        memoryMsgToSend[idProc][nDataInVecToSendBis[idProc]] = __element.id();
+        // update container
+        dataToSend[idProc][nDataInVecToSendBis[idProc]] = idEltInOtherPartition;
+        // update counter
+        nDataInVecToSendBis[idProc]++;
+    }
+    //------------------------------------------------------------------------------------------------//
+    // compute nbMsgToRecv
+    std::set<int> procToRecv;
+    auto itEltActif = this->beginElementWithProcessId( this->worldComm().localRank() );
+    auto const enEltActif = this->endElementWithProcessId( this->worldComm().localRank() );
+    for ( ; itEltActif!=enEltActif ; ++itEltActif )
+    {
+        if (itEltActif->numberOfNeighborPartitions() == 0 ) continue;
+        auto itneighbor = itEltActif->neighborPartitionIds().begin();
+        auto const enneighbor = itEltActif->neighborPartitionIds().end();
+        for ( ; itneighbor!=enneighbor ; ++itneighbor )
+            procToRecv.insert(*itneighbor);
+    }
+    //------------------------------------------------------------------------------------------------//
+    // counter of request
+    int nbRequest=0;
+    for ( int proc=0; proc<nProc; ++proc )
+    {
+        if ( dataToSend.find(proc) != dataToSend.end() )
+            ++nbRequest;
+        if ( procToRecv.find(proc) != procToRecv.end() )
+            ++nbRequest;
+    }
+    if ( nbRequest == 0 ) return;
+
+    mpi::request * reqs = new mpi::request[nbRequest];
+    int cptRequest=0;
+    //------------------------------------------------------------------------------------------------//
+    // first send
+    auto itDataToSend = dataToSend.begin();
+    auto const enDataToSend = dataToSend.end();
+    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    {
+        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
+        ++cptRequest;
+    }
+    //------------------------------------------------------------------------------------------------//
+    // first recv
+    std::map<int,std::vector<size_type> > dataToRecv;
+    auto itProcToRecv = procToRecv.begin();
+    auto enProcToRecv = procToRecv.end();
+    for ( ; itProcToRecv != enProcToRecv ; ++itProcToRecv )
+    {
+        const int idProc = *itProcToRecv;
+        reqs[cptRequest] = this->worldComm().localComm().irecv( idProc , 0, dataToRecv[idProc] );
+        ++cptRequest;
+    }
+    //------------------------------------------------------------------------------------------------//
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    //------------------------------------------------------------------------------------------------//
+    // build the container to ReSend
+    std::map<int, std::vector< std::vector<resultghost_type>  > > dataToReSend;
+    auto itDataRecv = dataToRecv.begin();
+    auto const enDataRecv = dataToRecv.end();
+    for ( ; itDataRecv!=enDataRecv ; ++itDataRecv )
+    {
+        const int idProc = itDataRecv->first;
+        const int nDataRecv = itDataRecv->second.size();
+        dataToReSend[idProc].resize( nDataRecv );
+        for ( int k=0; k<nDataRecv; ++k )
+        {
+            auto const& theelt = this->element( itDataRecv->second[k] );
+            //---------------------------//
+            // get faces id and bary
+            resultghost_type idFacesWithBary(this->numLocalFaces(),boost::make_tuple(0, std::vector<double>(nRealDim) ));
+            for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+            {
+                auto const& theface = theelt.face( j );
+                idFacesWithBary[j].template get<0>() = theface.id();
+                auto const& theGj = theface.vertices();//theface.G();
+#if 1
+                //compute face barycenter
+                typename Localization::matrix_node_type v( theGj.size1(), 1 );
+                ublas::scalar_vector<T> avg( theGj.size2(), T( 1 ) );
+                T n_val = int( theGj.size2() );
+
+                for ( size_type i = 0; i < theGj.size1(); ++i )
+                    v( i, 0 ) = ublas::inner_prod( ublas::row( theGj, i ), avg )/n_val;
+
+                auto baryFace = ublas::column( v,0 );
+#else // doesn't work
+                /*auto GLASbaryFace =*/ //Feel::glas::average(jkj);
+                auto baryFace = ublas::column( glas::average( theface.G() ),0 );
+#endif
+                // save facebarycenter by components
+                for ( uint16_type comp = 0; comp<nRealDim; ++comp )
+                {
+                    idFacesWithBary[j].template get<1>()[comp]=baryFace[comp];
+                }
+            }
+            //---------------------------//
+            // get points id and nodes
+            resultghost_type idPointsWithNode(element_type::numLocalVertices,boost::make_tuple(0, std::vector<double>(nRealDim) ));
+            for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
+            {
+                auto const& thepoint = theelt.point( j );
+                idPointsWithNode[j].template get<0>() = thepoint.id();
+                for ( uint16_type comp = 0; comp<nRealDim; ++comp )
+                {
+                    idPointsWithNode[j].template get<1>()[comp]=thepoint(comp);
+                }
+            }
+            //---------------------------//
+            // update container to ReSend
+            std::vector<resultghost_type> theresponse(2);
+            theresponse[0] = idPointsWithNode;
+            theresponse[1] = idFacesWithBary;
+            dataToReSend[idProc][k] = theresponse;
+        } // for ( int k=0; k<nDataRecv; ++k )
+    }
+    //------------------------------------------------------------------------------------------------//
+    // send respond to the request
+    cptRequest=0;
+    auto itDataToReSend = dataToReSend.begin();
+    auto const enDataToReSend = dataToReSend.end();
+    for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
+    {
+        reqs[cptRequest] = this->worldComm().localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
+        ++cptRequest;
+    }
+    //------------------------------------------------------------------------------------------------//
+    // recv the initial request
+    std::map<int, std::vector< std::vector<resultghost_type>  > > finalDataToRecv;
+    itDataToSend = dataToSend.begin();
+    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+    {
+        const int idProc = itDataToSend->first;
+        reqs[cptRequest] = this->worldComm().localComm().irecv( idProc, 0, finalDataToRecv[idProc] );
+        ++cptRequest;
+    }
+    //------------------------------------------------------------------------------------------------//
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    // delete reqs because finish comm
+    delete [] reqs;
+    //------------------------------------------------------------------------------------------------//
+    // update mesh : id in other partitions for the ghost cells
+    auto itFinalDataToRecv = finalDataToRecv.begin();
+    auto const enFinalDataToRecv = finalDataToRecv.end();
+    for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
+    {
+        const int idProc = itFinalDataToRecv->first;
+        const int nDataRecv = itFinalDataToRecv->second.size();
+        for ( int k=0; k<nDataRecv; ++k )
+        {
+            auto const& idPointsWithNodeRecv = itFinalDataToRecv->second[k][0];
+            auto const& idFacesWithBaryRecv = itFinalDataToRecv->second[k][1];
+            auto const& theelt = this->element( memoryMsgToSend[idProc][k], idProc );
+
+            //update faces data
+            for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+            {
+                auto const& idFaceRecv = idFacesWithBaryRecv[j].template get<0>();
+                auto const& baryFaceRecv = idFacesWithBaryRecv[j].template get<1>();
+
+                //objective : find  face_it (hence jBis in theelt ) (permutations would be necessary)
+                uint16_type jBis = invalid_uint16_type_value;
+                bool hasFind=false;
+                for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
+                {
+
+                    auto const& thefacej2 = theelt.face( j2 );
+                    //auto const& theGj2 = thefacej2.G();
+                    auto const& theGj2 = thefacej2.vertices();
+#if 1
+                    //compute face barycenter
+                    typename Localization::matrix_node_type v( theGj2.size1(), 1 );
+                    ublas::scalar_vector<T> avg( theGj2.size2(), T( 1 ) );
+                    T n_val = int( theGj2.size2() );
+
+                    for ( size_type i = 0; i < theGj2.size1(); ++i )
+                        v( i, 0 ) = ublas::inner_prod( ublas::row( theGj2, i ), avg )/n_val;
+
+                    auto baryFace = ublas::column( v,0 );
+#else // doesn't compile (I don't now why)
+                    auto const& thefacej2 =theelt.face( j2 );
+                    auto baryFace = ublas::column( glas::average( thefacej2.G() ),0 );
+#endif
+                    // compare barycenters
+                    bool find2=true;
+                    for (uint16_type d=0;d<nRealDim;++d)
+                        {
+                            find2 = find2 && ( std::abs( baryFace[d]-baryFaceRecv[d] )<1e-9 );
+                        }
+                    if (find2) { hasFind=true;jBis=j2; }
+
+                } //for ( uint16_type j2 = 0; j2 < this->numLocalFaces() && !hasFind; j2++ )
+
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost face cells are not available\n";
+
+                // get the good face
+                auto face_it = this->faceIterator( theelt.face( jBis ).id() );
+                //update the face
+                this->faces().modify( face_it, detail::updateIdInOthersPartitions( idProc, idFaceRecv ) );
+
+            } // for ( size_type j = 0; j < this->numLocalFaces(); j++ )
+
+
+            for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
+            {
+                auto const& idPointRecv = idPointsWithNodeRecv[j].template get<0>();
+                auto const& nodePointRecv = idPointsWithNodeRecv[j].template get<1>();
+
+                uint16_type jBis = invalid_uint16_type_value;
+                bool hasFind=false;
+                for ( uint16_type j2 = 0; j2 < element_type::numLocalVertices && !hasFind; j2++ )
+                {
+                    auto const& thepointj2 = theelt.point( j2 );
+                    // compare barycenters
+                    bool find2=true;
+                    for (uint16_type d=0;d<nRealDim;++d)
+                        {
+                            find2 = find2 && ( std::abs( thepointj2(d)-nodePointRecv[d] )<1e-9 );
+                        }
+                    if (find2) { hasFind=true;jBis=j2; }
+                }
+
+                CHECK ( hasFind ) << "[mesh::updateEntitiesCoDimensionOneGhostCell] : invalid partitioning data, ghost point cells are not available\n";
+                // get the good face
+                auto point_it = this->pointIterator( theelt.point( jBis ).id() );
+                //update the face
+                this->points().modify( point_it, detail::updateIdInOthersPartitions( idProc, idPointRecv ) );
+
+            } // for ( size_type j = 0; j < element_type::numLocalVertices; j++ )
+        } // for ( int k=0; k<nDataRecv; ++k )
+    } // for ( ; itFinalDataToRecv!=enFinalDataToRecv ; ++itFinalDataToRecv)
+    //------------------------------------------------------------------------------------------------//
+
+    DVLOG(1) << "updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm : finish on rank " << this->worldComm().localRank() << "\n";
+
+}
+
+
 #endif // defined(FEELPP_ENABLE_MPI_MODE)
 
 
@@ -1535,6 +1859,7 @@ Mesh<Shape, T, Tag>::check() const
     VLOG(2) << "[Mesh::check] numLocalFaces = " << this->numLocalFaces() << "\n";
     element_iterator iv = this->beginElementWithProcessId( this->worldComm().localRank() );
     element_iterator en = this->endElementWithProcessId( this->worldComm().localRank() );
+    size_type nEltInMesh = std::distance( iv,en );
 
     //boost::tie( iv, en ) = this->elementsRange();
     for ( ; iv != en; ++iv )
@@ -1559,7 +1884,7 @@ Mesh<Shape, T, Tag>::check() const
         }
 
         VLOG(2) << "[Mesh::check] element " << __element.id() << " number of neighbors: " << counter << "\n";
-        FEELPP_ASSERT( counter >= 1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
+        FEELPP_ASSERT( counter >= 1 || nEltInMesh==1 )( __element.id() )( __element.nNeighbors() )( counter ).warn( "invalid neighboring data" );
 #if 0
 
         for ( size_type j = 0; j < ( size_type )element_type::numEdges; ++j )
@@ -2098,6 +2423,8 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     typename self_type::element_iterator el_it;
     typename self_type::element_iterator el_en;
     boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *M_mesh );
+    const size_type nActifElt = std::distance( el_it, el_en );
+    if ( nActifElt==0 ) return;
 
     typedef typename self_type::element_type element_type;
     typedef typename gm_type::template Context<vm::JACOBIAN|vm::KB|vm::POINT, element_type> gmc_type;
@@ -2113,7 +2440,7 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
     M_ref_coords.clear();
     M_cvx_pts.clear();
     M_pts_cvx.clear();
-    M_pts_cvx.resize( M_mesh->numElements() );
+    M_pts_cvx.resize( nActifElt );
 
     KDTree::points_type boxpts;
     gmc_ptrtype __c( new gmc_type( M_mesh->gm(),
@@ -2192,9 +2519,10 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Localization::init()
 {
-    if ( !M_mesh ) return;
+    auto mesh = M_mesh.lock();
+    if ( !mesh ) return;
 
-    DLOG_IF( WARNING, IsInit == false ) << "You have already initialized the tool of localization\n";
+    DLOG_IF( WARNING, this->isInit() == false ) << "You have already initialized the tool of localization\n";
 
 
     //clear data
@@ -2203,7 +2531,7 @@ Mesh<Shape, T, Tag>::Localization::init()
 
     typename self_type::element_iterator el_it;
     typename self_type::element_iterator el_en;
-    boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *M_mesh );
+    boost::tie( boost::tuples::ignore, el_it, el_en ) = Feel::elements( *mesh );
 
     for ( ; el_it != el_en; ++el_it )
     {
@@ -2219,8 +2547,10 @@ Mesh<Shape, T, Tag>::Localization::init()
         }
     }
 
-    IsInit=true;
-    IsInitBoundaryFaces=false;
+    this->computeBarycenter();
+
+    M_isInit=true;
+    M_isInitBoundaryFaces=false;
 
 }
 
@@ -2228,13 +2558,10 @@ template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
 {
-    if ( !M_mesh ) return;
+    auto mesh = M_mesh.lock();
+    if ( !mesh ) return;
 
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInitBoundaryFaces == false )
-    ( IsInitBoundaryFaces ).warn( "You have already initialized the tool of localization" );
-#endif
-
+    DLOG_IF( WARNING, this->isInitBoundaryFaces() == false ) << "You have already initialized the tool of localization\n";
 
     //clear data
     M_geoGlob_Elts.clear();
@@ -2242,7 +2569,7 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
 ;
     typename self_type::location_face_iterator face_it;
     typename self_type::location_face_iterator face_en;
-    boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( M_mesh );
+    boost::tie( boost::tuples::ignore, face_it, face_en ) = Feel::boundaryfaces( mesh );
 
     for ( ; face_it != face_en; ++face_it )
     {
@@ -2260,8 +2587,10 @@ Mesh<Shape, T, Tag>::Localization::initBoundaryFaces()
         }
     }
 
-    IsInitBoundaryFaces=true;
-    IsInit=false;
+    this->computeBarycenter();
+
+    M_isInitBoundaryFaces=true;
+    M_isInit=false;
 
 }
 
@@ -2275,13 +2604,14 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
     double dmin;
     node_type x_ref;
 
+    auto mesh = M_mesh.lock();
     //get element with the id
-    auto const& elt = M_mesh->element( _id );
+    auto const& elt = mesh->element( _id );
 
     if ( elt.isOnBoundary() )
         {
             // get inverse geometric transformation
-            gmc_inverse_type gic( M_mesh->gm(), elt, this->mesh()->worldComm().subWorldCommSeq() );
+            gmc_inverse_type gic( mesh->gm(), elt, mesh->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
             x_ref=gic.xRef();
@@ -2291,7 +2621,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id, const node_type & _pt ) 
     else
         {
             // get inverse geometric transformation
-            gmc1_inverse_type gic( M_mesh->gm1(), elt, mpl::int_<1>(), this->mesh()->worldComm().subWorldCommSeq() );
+            gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>(), mesh->worldComm().subWorldCommSeq() );
             //apply the inverse geometric transformation for the point p
             gic.setXReal( _pt);
             x_ref=gic.xRef();
@@ -2315,17 +2645,18 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
     double dmin;
     node_type __x_ref;
 
+    auto mesh = M_mesh.lock();
     uint16_type nbIsIn=0;
 
     for ( uint16_type i = 0; i< nbId ; ++i )
     {
         //get element with the id
-        auto const& elt = M_mesh->element( _ids[i] );
+        auto const& elt = mesh->element( _ids[i] );
 
         if ( elt.isOnBoundary() )
             {
                 // get inverse geometric transformation
-                gmc_inverse_type gic( M_mesh->gm(), elt );
+                gmc_inverse_type gic( mesh->gm(), elt );
                 //apply the inverse geometric transformation for the point p
                 gic.setXReal( _pt);
                 __x_ref=gic.xRef();
@@ -2336,7 +2667,7 @@ Mesh<Shape, T, Tag>::Localization::isIn( std::vector<size_type> _ids, const node
         else
             {
                 // get inverse geometric transformation
-                gmc1_inverse_type gic( M_mesh->gm1(), elt, mpl::int_<1>() );
+                gmc1_inverse_type gic( mesh->gm1(), elt, mpl::int_<1>() );
                 //apply the inverse geometric transformation for the point p
                 gic.setXReal( _pt);
                 __x_ref=gic.xRef();
@@ -2356,13 +2687,12 @@ boost::tuple<bool, size_type, typename Mesh<Shape, T, Tag>::node_type>
 Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
 {
 
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+    DCHECK( this->isInit() || this->isInitBoundaryFaces() ) << "You don't have initialized the tool of localization\n";
+
+    auto mesh = M_mesh.lock();
     bool isin=false;double dmin=0;
     node_type x_ref;
-    size_type idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
+    size_type idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     this->searchInKdTree(p,ListTri);
@@ -2371,10 +2701,7 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
     auto itLT=ListTri.begin();
     auto itLT_end=ListTri.end();
 
-#if !defined( NDEBUG )
-    //if(std::distance(itLT,itLT_end)==0) std::cout<<"\nListTri vide\n";
-    FEELPP_ASSERT( std::distance( itLT,itLT_end )>0 ).error( " problem in list localization : is empty" );
-#endif
+    DCHECK( std::distance( itLT,itLT_end )>0 ) << "problem in localization : listTri is empty\n";
 
     while ( itLT != itLT_end && !isin  )
     {
@@ -2395,15 +2722,15 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p )
                 {
                     //std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
                     //std::cout << "W";
-                    auto const& eltUsedForExtrapolation = this->mesh()->element(ListTri.begin()->first);
-                    gmc_inverse_type gic( this->mesh()->gm(), eltUsedForExtrapolation, this->mesh()->worldComm().subWorldCommSeq() );
+                    auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
+                    gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
                     //apply the inverse geometric transformation for the point p
                     gic.setXReal( p);
                     boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
                 }
             else
                 {
-                    idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
+                    idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
                     isin = false;
                     //x_ref=?
                 }
@@ -2418,11 +2745,9 @@ boost::tuple<std::vector<bool>, size_type>
 Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
                                             const size_type & eltHypothetical )
 {
-
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+    // if no init then init with all geo point
+    if ( !( this->isInit() || this->isInitBoundaryFaces() ) )
+        this->init();
 
     bool find_x;
     size_type cv_id=eltHypothetical;
@@ -2518,10 +2843,7 @@ boost::tuple<bool, std::list<boost::tuple<size_type, typename Mesh<Shape, T, Tag
 Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
 {
 
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+    DCHECK( this->isInit() || this->isInitBoundaryFaces() ) << "You don't have initialized the tool of localization\n";
 
     //this->kdtree()->nbNearNeighbor(this->mesh()->numElements());
 
@@ -2609,10 +2931,11 @@ Mesh<Shape, T, Tag>::Localization::searchElements( const node_type & p )
 
     else
     {
+        auto mesh = M_mesh->lock();
         //std::cout << "\n WARNING EXTRAPOLATION \n";
         itLT=ListTri.begin();
-        elt= M_mesh->element( itLT->first );
-        typename self_type::Inverse::gic_type gic( M_mesh->gm(), elt );
+        elt= mesh->element( itLT->first );
+        typename self_type::Inverse::gic_type gic( mesh->gm(), elt );
         //apply the inverse geometric transformation for the point p
         //gic.setXReal(boost::get<0>(*ptsNN.begin()));
         gic.setXReal( p );
@@ -2709,9 +3032,9 @@ Mesh<Shape, T, Tag>::Localization::isIn( size_type _id,
     bool isin=true; // warning : start with true
     double dmin=0.;
     node_type x_ref;
-
+    auto mesh = M_mesh.lock();
     //get element with the id
-    auto const& elt= M_mesh->element( _id );
+    auto const& elt= mesh->element( _id );
     auto const& eltG = elt.G();
 
     // check conformity between setPoints (given) and eltG (localize)
@@ -2773,7 +3096,8 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
     bool isin=false,isin2=false;
     double dmin=0.;
     node_type x_ref;
-    size_type idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
+    auto mesh=this->mesh().lock();
+    size_type idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
 
     std::list< std::pair<size_type, uint> > ListTri;
     searchInKdTree( p,ListTri );
@@ -2803,15 +3127,15 @@ Mesh<Shape, T, Tag>::Localization::searchElement( const node_type & p,
                 {
                     std::cout << "WARNING EXTRAPOLATION for the point" << p << std::endl;
                     //std::cout << "W";
-                    auto const& eltUsedForExtrapolation = this->mesh()->element(ListTri.begin()->first);
-                    gmc_inverse_type gic( this->mesh()->gm(), eltUsedForExtrapolation, this->mesh()->worldComm().subWorldCommSeq() );
+                    auto const& eltUsedForExtrapolation = mesh->element(ListTri.begin()->first);
+                    gmc_inverse_type gic( mesh->gm(), eltUsedForExtrapolation, mesh->worldComm().subWorldCommSeq() );
                     //apply the inverse geometric transformation for the point p
                     gic.setXReal( p);
                     boost::tie(isin,idEltFound,x_ref) = boost::make_tuple(true,eltUsedForExtrapolation.id(),gic.xRef());
                 }
             else
                 {
-                    idEltFound = this->mesh()->beginElementWithId(this->mesh()->worldComm().localRank())->id();
+                    idEltFound = mesh->beginElementWithId(mesh->worldComm().localRank())->id();
                     isin = false;
                     //x_ref=?
                 }
@@ -2829,10 +3153,8 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
         const matrix_node_type & setPoints,
         mpl::int_<1> /**/ )
 {
-#if !defined( NDEBUG )
-    FEELPP_ASSERT( IsInit == true )
-    ( IsInit ).warn( "You don't have initialized the tool of localization" );
-#endif
+
+    DCHECK( this->isInit() || this->isInitBoundaryFaces() ) << "You don't have initialized the tool of localization\n";
 
     bool find_x=false;
     size_type cv_id=eltHypothetical;
@@ -2876,18 +3198,19 @@ Mesh<Shape, T, Tag>::Localization::run_analysis( const matrix_node_type & m,
 
 
 template<typename Shape, typename T, int Tag>
-typename Mesh<Shape, T, Tag>::node_type
-Mesh<Shape, T, Tag>::Localization::barycenter() const
+void
+Mesh<Shape, T, Tag>::Localization::computeBarycenter()
 {
-    return this->barycenter(mpl::int_<nRealDim>());
+    M_barycenter = this->computeBarycenter(mpl::int_<nRealDim>());
 }
 
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::node_type
-Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<1> /**/) const
+Mesh<Shape, T, Tag>::Localization::computeBarycenter(mpl::int_<1> /**/) const
 {
     node_type res(1);
     res(0)=0;
+    if ( this->kdtree()->nPoints()==0 ) return res;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
             auto const& pt = this->kdtree()->points()[i].template get<0>();
@@ -2898,10 +3221,12 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<1> /**/) const
 }
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::node_type
-Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<2> /**/) const
+Mesh<Shape, T, Tag>::Localization::computeBarycenter(mpl::int_<2> /**/) const
 {
     node_type res(2);
     res(0)=0;res(1)=0;
+    if ( this->kdtree()->nPoints()==0 )
+        return res;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
             auto const& pt = this->kdtree()->points()[i].template get<0>();
@@ -2912,10 +3237,12 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<2> /**/) const
 }
 template<typename Shape, typename T, int Tag>
 typename Mesh<Shape, T, Tag>::node_type
-Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<3> /**/) const
+Mesh<Shape, T, Tag>::Localization::computeBarycenter(mpl::int_<3> /**/) const
 {
     node_type res(3);
     res(0)=0;res(1)=0;res(2)=0;
+    if ( this->kdtree()->nPoints()==0 )
+        return res;
     for (size_type i = 0 ; i<this->kdtree()->nPoints() ; ++i)
         {
             auto const& pt = this->kdtree()->points()[i].template get<0>();
@@ -2926,6 +3253,17 @@ Mesh<Shape, T, Tag>::Localization::barycenter(mpl::int_<3> /**/) const
 }
 
 
+template<typename Shape, typename T, int Tag>
+void
+Mesh<Shape, T, Tag>::Localization::computeBarycentersWorld()
+{
+    LOG(INFO) << "computeBarycentersWorld : run mpi::all_gather\n";
+    auto mesh = M_mesh.lock();
+    M_barycentersWorld = std::vector<node_type>( mesh->worldComm().localSize() );
+    mpi::all_gather( mesh->worldComm().localComm(),
+                     this->barycenter(),
+                     *M_barycentersWorld );
+}
 
 
 

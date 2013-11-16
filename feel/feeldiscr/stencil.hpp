@@ -323,8 +323,8 @@ public:
              bool close=true,
              rangeiterator_test_type r=rangeiterator_test_type())
         :
-        M_X1( Xh ),
-        M_X2( Yh ),
+        _M_X1( Xh ),
+        _M_X2( Yh ),
 #if !defined(FEELPP_ENABLE_MPI_MODE)
         M_graph( new graph_type( Xh->nLocalDof(),
                                  Xh->nDofStart(), Xh->nDofStart()+ Xh->nLocalDof()-1,
@@ -336,8 +336,8 @@ public:
         M_rangeIteratorTest( r )
     {
         // init block_pattern if empty
-        uint16_type nbSubSpace1 = M_X1->nSubFunctionSpace();
-        uint16_type nbSubSpace2 = M_X2->nSubFunctionSpace();
+        uint16_type nbSubSpace1 = _M_X1->nSubFunctionSpace();
+        uint16_type nbSubSpace2 = _M_X2->nSubFunctionSpace();
 
         if ( this->isBlockPatternNoPattern( 0,0 ) )
         {
@@ -346,15 +346,15 @@ public:
 
         M_graph = this->computeGraph( graph_hints );
 
-        if ( diag_is_nonzero && M_X1->nLocalDofWithoutGhost()>0 && M_X2->nLocalDofWithoutGhost()>0 ) M_graph->addMissingZeroEntriesDiagonal();
+        if ( diag_is_nonzero && _M_X1->nLocalDofWithoutGhost()>0 && _M_X2->nLocalDofWithoutGhost()>0 ) M_graph->addMissingZeroEntriesDiagonal();
 
         if ( close ) M_graph->close();
     }
 
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g, rangeiterator_test_type r=rangeiterator_test_type() )
         :
-        M_X1( Xh ),
-        M_X2( Yh ),
+        _M_X1( Xh ),
+        _M_X2( Yh ),
         M_graph( g ),
         M_block_pattern(Xh->nSubFunctionSpace(),Yh->nSubFunctionSpace(),size_type( graph_hints/*Pattern::HAS_NO_BLOCK_PATTERN*/ )),
         M_rangeIteratorTest( r )
@@ -405,11 +405,11 @@ public:
 
     test_space_ptrtype testSpace() const
     {
-        return M_X1;
+        return _M_X1;
     }
     trial_space_ptrtype trialSpace() const
     {
-        return M_X2;
+        return _M_X2;
     }
     graph_ptrtype graph() const
     {
@@ -423,17 +423,20 @@ private:
     std::set<size_type> trialElementId( size_type test_eid, mpl::int_<0> /**/ )
         {
             std::set<size_type> idsFind;
-            const bool test_related_to_trial = M_X1->mesh()->isSubMeshFrom( M_X2->mesh() );
-            const bool trial_related_to_test = M_X2->mesh()->isSubMeshFrom( M_X1->mesh() );
+
+            const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
+            const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                const size_type domain_eid = M_X1->mesh()->subMeshToMesh( test_eid );
+                const size_type domain_eid = _M_X1->mesh()->subMeshToMesh( test_eid );
+
                 DVLOG(2) << "[test_related_to_trial] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                 if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
             else if( trial_related_to_test )
             {
-                const size_type domain_eid = M_X2->mesh()->meshToSubMesh( test_eid );
+                const size_type domain_eid = _M_X2->mesh()->meshToSubMesh( test_eid );
+
                 DVLOG(2) << "[trial_related_to_test] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                 if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
@@ -447,23 +450,45 @@ private:
     std::set<size_type> trialElementId( size_type test_eid, mpl::int_<1> /**/ )
         {
             std::set<size_type> idsFind;
-            const bool test_related_to_trial = M_X1->mesh()->isSubMeshFrom( M_X2->mesh() );
-            const bool trial_related_to_test = M_X2->mesh()->isSubMeshFrom( M_X1->mesh() );
+            const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
+            const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
+            const bool trial_sibling_of_test = _M_X2->mesh()->isSiblingOf( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                const size_type domain_eid = M_X2->mesh()->face(M_X1->mesh()->subMeshToMesh( test_eid )).element0().id();
+                auto const& theface = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid ));
+                size_type domain_eid = invalid_size_type_value;
+                if ( !theface.element0().isGhostCell() )
+                    domain_eid = theface.element0().id();
+                else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+                    domain_eid = theface.element1().id();
+                else
+                    CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+
                 DVLOG(2) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                 if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
             else if( trial_related_to_test )
             {
-                auto const& eltTest = M_X1->mesh()->element(test_eid);
-                for (uint16_type f=0;f< M_X1->mesh()->numLocalFaces();++f)
+                auto const& eltTest = _M_X1->mesh()->element(test_eid);
+                for (uint16_type f=0;f< _M_X1->mesh()->numLocalFaces();++f)
                     {
-                        const size_type idFind = M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                        const size_type idFind = _M_X2->mesh()->meshToSubMesh( eltTest.face(f).id() );
                         if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
                     }
                 DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
+            }
+            else if ( trial_sibling_of_test )
+            {
+                DVLOG(1) << "test_eid = " << test_eid;
+                size_type id_in_sibling = _M_X2->mesh()->meshToSubMesh( _M_X1->mesh(), test_eid );
+                DVLOG(1) << "id_in_sibling = " << id_in_sibling;
+                size_type domain_eid = invalid_size_type_value;
+                if ( id_in_sibling!=invalid_size_type_value)
+                {
+                    domain_eid = _M_X2->mesh()->face(id_in_sibling).element0().id();
+                    DVLOG(1) << "[test_sibling_of_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                    idsFind.insert( domain_eid );
+                }
             }
             else
             {
@@ -471,7 +496,11 @@ private:
             }
             return idsFind;
         }
-
+    std::set<size_type> trialElementId( size_type test_eid, mpl::int_<2> /**/ )
+    {
+        CHECK ( false ) << "[trial_related_to_test<2>] : submesh relation with codim=2 is not implement\n";
+        return std::set<size_type>();
+    }
 
 
 public :
@@ -503,7 +532,7 @@ public :
     typename rangeiteratorType<I,J>::defaultrange_type
     rangeiterator(mpl::bool_<true> /**/) const
     {
-        return elements(M_X1->mesh());
+        return elements(_M_X1->mesh());
     }
     template <int I,int J>
     typename rangeiteratorType<I,J>::resultfindrange_type::second_type
@@ -528,8 +557,8 @@ public :
 
 private:
 
-    test_space_ptrtype M_X1;
-    trial_space_ptrtype M_X2;
+    test_space_ptrtype _M_X1;
+    trial_space_ptrtype _M_X2;
     graph_ptrtype M_graph;
     BlocksStencilPattern M_block_pattern;
     rangeiterator_test_type M_rangeIteratorTest;
@@ -550,8 +579,8 @@ struct compute_stencil_type
 }
 
 class StencilManagerImpl:
-    public std::map<boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
-    boost::shared_ptr<FunctionSpaceBase>,
+    public std::map<boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
+    boost::weak_ptr<FunctionSpaceBase>,
     size_type,
     std::vector<size_type>,
     bool >, boost::shared_ptr<GraphCSR> >,
@@ -559,8 +588,8 @@ public boost::noncopyable
 {
 public:
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
-    typedef boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
-            boost::shared_ptr<FunctionSpaceBase>,
+    typedef boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
+            boost::weak_ptr<FunctionSpaceBase>,
             size_type,
             std::vector<size_type>,
             bool > key_type;
@@ -628,7 +657,8 @@ BOOST_PARAMETER_FUNCTION(
         {
             auto g = git_trans->second->transpose(close);
             //auto g = git_trans->second->transpose();
-            StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = g;
+            stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), g );
+
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g, range ) );
             //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             return s;
@@ -638,7 +668,7 @@ BOOST_PARAMETER_FUNCTION(
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, close, range ) );
-            if ( range.isNullRange() ) StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = s->graph();
+            if ( range.isNullRange() ) stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), s->graph() );
             return s;
         }
     }
@@ -862,8 +892,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints )
 {
     VLOG(2) << "computeGraph: deciding whether the mesh are related to optimize the stencil\n";
     //if ( (is_shared_ptr<typename test_space_type::mesh_ptrtype>::value && is_shared_ptr<typename trial_space_type::mesh_ptrtype>::value ) &&
-    //dynamic_cast<void*>( M_X1->template mesh<0>().get() ) == dynamic_cast<void*>( M_X2->template mesh<0>().get() ) )
-    if ( M_X1->template mesh<0>()->isRelatedTo( M_X2->template mesh<0>() ) )
+    //dynamic_cast<void*>( _M_X1->template mesh<0>().get() ) == dynamic_cast<void*>( _M_X2->template mesh<0>().get() ) )
+    if ( _M_X1->template mesh<0>()->isRelatedTo( _M_X2->template mesh<0>() ) )
     {
         VLOG(2) << "computeGraph: meshes are related\n";
         return this->computeGraph( hints, mpl::bool_<mpl::and_< mpl::bool_< ( test_space_type::nSpaces == 1 )>,
@@ -899,7 +929,7 @@ template<typename X1,  typename X2,typename RangeItTestType>
 typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
-    fusion::for_each( M_X1->functionSpaces(),
+    fusion::for_each( _M_X1->functionSpaces(),
                       detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
@@ -908,8 +938,8 @@ template<typename X1,  typename X2,typename RangeItTestType>
 typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
 {
-    fusion::for_each( M_X1->functionSpaces(),
-                      detail::compute_graph3<self_type,trial_space_type>( this, M_X2, 0, hints ) );
+    fusion::for_each( _M_X1->functionSpaces(),
+                      detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
     return M_graph;
 }
 
@@ -917,8 +947,8 @@ template<typename X1,  typename X2,typename RangeItTestType>
 typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
 {
-    fusion::for_each( M_X2->functionSpaces(),
-                      detail::compute_graph2<self_type,test_space_type>( this, M_X1, 0, hints ) );
+    fusion::for_each( _M_X2->functionSpaces(),
+                      detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
     return M_graph;
 }
 
@@ -940,7 +970,7 @@ template<typename X1,  typename X2,typename RangeItTestType>
 typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
-    fusion::for_each( M_X1->functionSpaces(),
+    fusion::for_each( _M_X1->functionSpaces(),
                       detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
@@ -949,8 +979,8 @@ template<typename X1,  typename X2,typename RangeItTestType>
 typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
 {
-    fusion::for_each( M_X1->functionSpaces(),
-                      detail::compute_graph3<self_type,trial_space_type>( this, M_X2, 0, hints ) );
+    fusion::for_each( _M_X1->functionSpaces(),
+                      detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
     return M_graph;
 }
 
@@ -958,8 +988,8 @@ template<typename X1,  typename X2,typename RangeItTestType>
 typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
 {
-    fusion::for_each( M_X2->functionSpaces(),
-                      detail::compute_graph2<self_type,test_space_type>( this, M_X1, 0, hints ) );
+    fusion::for_each( _M_X2->functionSpaces(),
+                      detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
     return M_graph;
 }
 
@@ -976,21 +1006,21 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-    const size_type proc_id           = M_X1->mesh()->comm().rank();
-    const size_type n1_dof_on_proc    = M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = M_X2->nLocalDof();
-    const size_type first1_dof_on_proc = M_X1->dof()->firstDof( proc_id );
-    const size_type last1_dof_on_proc = M_X1->dof()->lastDof( proc_id );
-    const size_type first2_dof_on_proc = M_X2->dof()->firstDof( proc_id );
-    const size_type last2_dof_on_proc = M_X2->dof()->lastDof( proc_id );
+    const size_type proc_id           = _M_X1->mesh()->comm().rank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
     graph_ptrtype sparsity_graph( new graph_type( n1_dof_on_proc,
                                   first1_dof_on_proc, last1_dof_on_proc,
                                   first2_dof_on_proc, last2_dof_on_proc ) );
 
     typedef typename mesh_type::element_const_iterator mesh_element_const_iterator;
 
-    mesh_element_const_iterator       elem_it  = M_X1->mesh()->beginElementWithProcessId( proc_id );
-    const mesh_element_const_iterator elem_en  = M_X1->mesh()->endElementWithProcessId( proc_id );
+    mesh_element_const_iterator       elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
+    const mesh_element_const_iterator elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
 
     Feel::Context graph( hints );
     // If the user did not explicitly specify the DOF coupling
@@ -1023,8 +1053,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
             mesh_element_type const& elem = *elem_it;
 
             // Get the global indices of the DOFs with support on this element
-            element_dof1 = M_X1->dof()->getIndices( elem.id() );
-            element_dof2 = M_X2->dof()->getIndices( elem.id() );
+            element_dof1 = _M_X1->dof()->getIndices( elem.id() );
+            element_dof2 = _M_X2->dof()->getIndices( elem.id() );
 
             // We can be more efficient if we sort the element DOFs
             // into increasing order
@@ -1140,7 +1170,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                                     << ", element neighbor id " << neighbor_id
                                     << " in proc " << neighbor_process_id << "\n";
 #endif
-                            neighbor = boost::addressof( M_X1->mesh()->element( neighbor_id,
+                            neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
                                                          neighbor_process_id ) );
 
 #if 0
@@ -1151,7 +1181,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 
                             if ( neighbor_id == neighbor->id()  )
                             {
-                                neighbor_dof = M_X2->dof()->getIndices( neighbor->id() );
+                                neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
 
                                 const size_type n_dof_on_neighbor = neighbor_dof.size();
 #if 0
@@ -1239,32 +1269,32 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-    const size_type proc_id           = M_X1->mesh()->comm().rank();
-    const size_type n1_dof_on_proc    = M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = M_X2->nLocalDof();
-    const size_type first1_dof_on_proc = M_X1->dof()->firstDof( proc_id );
-    const size_type last1_dof_on_proc = M_X1->dof()->lastDof( proc_id );
-    const size_type first2_dof_on_proc = M_X2->dof()->firstDof( proc_id );
-    const size_type last2_dof_on_proc = M_X2->dof()->lastDof( proc_id );
+    const size_type proc_id           = _M_X1->mesh()->comm().rank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 #else // MPI
-    const size_type proc_id           = M_X1->worldsComm()[0].localRank();
-    const size_type n1_dof_on_proc    = M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = M_X2->nLocalDof();
-    const size_type first1_dof_on_proc = M_X1->dof()->firstDofGlobalCluster( proc_id );
-    const size_type last1_dof_on_proc = M_X1->dof()->lastDofGlobalCluster( proc_id );
-    const size_type first2_dof_on_proc = M_X2->dof()->firstDofGlobalCluster( proc_id );
-    const size_type last2_dof_on_proc = M_X2->dof()->lastDofGlobalCluster( proc_id );
+    const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDofGlobalCluster( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDofGlobalCluster( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDofGlobalCluster( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDofGlobalCluster( proc_id );
 #endif
 
-    graph_ptrtype sparsity_graph( new graph_type( M_X1->dof(),M_X2->dof() ) );
+    graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
     Feel::Context graph( hints );
     if ( graph.test( Pattern::ZERO ) ) { sparsity_graph->zero(); return sparsity_graph; }
 
-    //if (M_X1->nLocalDofWithoutGhost()==0 && M_X2->nLocalDofWithoutGhost()==0 ) return sparsity_graph;
+    //if (_M_X1->nLocalDofWithoutGhost()==0 && _M_X2->nLocalDofWithoutGhost()==0 ) return sparsity_graph;
 
-    auto elem_it  = M_X1->mesh()->beginElementWithProcessId( M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
-    auto elem_en  = M_X1->mesh()->endElementWithProcessId( M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
+    auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
+    auto elem_en  = _M_X1->mesh()->endElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
 
     // If the user did not explicitly specify the DOF coupling
     // then all the DOFS are coupled to each other.  Furthermore,
@@ -1274,11 +1304,11 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     DVLOG(2) << "[computeGraph]  : graph.test ( Pattern::COUPLED )=" <<  graph.test ( Pattern::COUPLED ) << "\n";
     DVLOG(2) << "[computeGraph]  : graph.test ( Pattern::EXTENDED)=" <<  graph.test ( Pattern::EXTENDED ) << "\n";
     bool do_less =  ( ( graph.test( Pattern::DEFAULT ) &&
-                        ( M_X1->dof()->nComponents ==
-                          M_X2->dof()->nComponents ) ) &&
+                        ( _M_X1->dof()->nComponents ==
+                          _M_X2->dof()->nComponents ) ) &&
                       !graph.test( Pattern::COUPLED ) );
     std::vector<size_type>
-    element_dof2( M_X2->dof()->getIndicesSize() ),
+    element_dof2( _M_X2->dof()->getIndicesSize() ),
                   neighbor_dof;
 
     static const uint16_type nDimTest = test_space_type::mesh_type::nDim;
@@ -1286,9 +1316,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
     for ( ; elem_it != elem_en; ++elem_it )
     {
-#if !defined(NDEBUG)
-        DVLOG(2) << "[Stencil::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
-#endif /* NDEBUG */
+        DVLOG(4) << "[Stencil::computePattern] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+
         const auto & elem = *elem_it;
 
         auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
@@ -1303,7 +1332,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
             M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
 #else // MPI
-            M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
+            _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
 #endif
             // We can be more efficient if we sort the element DOFs
             // into increasing order
@@ -1311,24 +1340,24 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
             std::sort( element_dof2.begin(), element_dof2.end() );
 
             //const uint16_type  n1_dof_on_element = element_dof1.size();
-            const uint16_type  n1_dof_on_element = M_X1->dof()->getIndicesSize();
+            const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
             const uint16_type  n2_dof_on_element = element_dof2.size();
 
             for ( size_type i=0; i<n1_dof_on_element; i++ )
                 //BOOST_FOREACH( auto ig1, M_X1->dof()->getIndices( elem.id() ) )
             {
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                const size_type ig1 = M_X1->dof()->localToGlobalId( elem.id(), i );
+                const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
 #else // MPI
-                const size_type ig1 = M_X1->dof()->mapGlobalProcessToGlobalCluster()[M_X1->dof()->localToGlobalId( elem.id(), i )];
-                auto theproc = M_X1->dof()->procOnGlobalCluster( ig1 );
+                const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
+                auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
                 // numLocal without ghosts ! very important for the graph with petsc
-                const size_type il1 = M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - M_X1->dof()->firstDofGlobalCluster( theproc );
+                const size_type il1 = _M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
 #endif
                 //const size_type ig1 = element_dof1[i];
-                const int ndofpercomponent1 = n1_dof_on_element / M_X1->dof()->nComponents;
+                const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
                 const int ncomp1 = i / ndofpercomponent1;
-                const int ndofpercomponent2 = n2_dof_on_element / M_X2->dof()->nComponents;
+                const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 
                 {
                     // This is what I mean
@@ -1349,11 +1378,11 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                     row.get<0>() = theproc ;
                     row.get<1>() = il1;
 #endif
-                    DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                    DVLOG(4) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
                     if ( do_less )
                     {
-                        if ( ncomp1 == ( M_X2->dof()->nComponents-1 ) )
+                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
                             row.get<2>().insert( element_dof2.begin()+ncomp1*ndofpercomponent2,
                                                  element_dof2.end() );
 
@@ -1381,17 +1410,17 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                                  && neighbor_process_id == proc_id )
                             {
 
-                                neighbor = boost::addressof( M_X1->mesh()->element( neighbor_id,
+                                neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
                                                                                      neighbor_process_id ) );
 
                                 if ( neighbor_id == neighbor->id()  )
                                 {
-                                    //neighbor_dof = M_X2->dof()->getIndices( neighbor->id() );
-                                    neighbor_dof = M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
+                                    //neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
+                                    neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
 
                                     if ( do_less )
                                     {
-                                        if ( ncomp1 == ( M_X2->dof()->nComponents-1 ) )
+                                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
                                             row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
                                                                  neighbor_dof.end() );
 
@@ -1557,20 +1586,20 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 
     //-----------------------------------------------------------------------//
 
-    const size_type proc_id           = M_X1->mesh()->comm().rank();
-    const size_type n1_dof_on_proc    = M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = M_X2->nLocalDof();
-    const size_type first1_dof_on_proc = M_X1->dof()->firstDof( proc_id );
-    const size_type last1_dof_on_proc = M_X1->dof()->lastDof( proc_id );
-    const size_type first2_dof_on_proc = M_X2->dof()->firstDof( proc_id );
-    const size_type last2_dof_on_proc = M_X2->dof()->lastDof( proc_id );
+    const size_type proc_id           = _M_X1->mesh()->comm().rank();
+    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
+    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
+    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
+    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
+    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
+    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
 
-    graph_ptrtype sparsity_graph( new graph_type( M_X1->dof(),M_X2->dof() ) );
+    graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
 #if 0
     typedef typename test_mesh_type::element_const_iterator mesh_element_const_iterator;
-    mesh_element_const_iterator       elem_it  = M_X1->mesh()->beginElementWithProcessId( proc_id );
-    const mesh_element_const_iterator elem_en  = M_X1->mesh()->endElementWithProcessId( proc_id );
+    mesh_element_const_iterator       elem_it  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
+    const mesh_element_const_iterator elem_en  = _M_X1->mesh()->endElementWithProcessId( proc_id );
     auto iDimRange = mpl::size_t<MESH_ELEMENTS>();
 #endif
 
@@ -1583,7 +1612,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 
     //-----------------------------------------------------------------------//
     // init localisation tools
-    auto locToolForXh2 = M_X2->mesh()->tool_localization();
+    auto locToolForXh2 = _M_X2->mesh()->tool_localization();
     locToolForXh2->updateForUse();
     bool doExtrapolationAtStartXh2 = locToolForXh2->doExtrapolation();
     if (doExtrapolationAtStartXh2) locToolForXh2->setExtrapolation( false );
@@ -1591,8 +1620,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
     bool notUseOptLocTrial = trial_mesh_type::nDim!=trial_mesh_type::nRealDim;
     if (notUseOptLocTrial) locToolForXh2->kdtree()->nbNearNeighbor(trial_mesh_type::element_type::numPoints);
 
-    //locTool->kdtree()->nbNearNeighbor(M_X2->mesh()->numElements() );
-    auto locToolForXh1 = M_X1->mesh()->tool_localization();
+    //locTool->kdtree()->nbNearNeighbor(_M_X2->mesh()->numElements() );
+    auto locToolForXh1 = _M_X1->mesh()->tool_localization();
     locToolForXh1->updateForUse();
     bool doExtrapolationAtStartXh1 = locToolForXh1->doExtrapolation();
     if (doExtrapolationAtStartXh1) locToolForXh1->setExtrapolation( false );
@@ -1615,15 +1644,15 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 
     //-----------------------------------------------------------------------//
 
-    if ( M_X1->nDof()>1 )
+    if ( _M_X1->nDof()>1 )
     {
         for ( ; elem_it != elem_en; ++elem_it )
         {
             auto const& elem = *elem_it;
 
             // Get the global indices of the DOFs with support on this element
-            element_dof1_range = M_X1->dof()->getIndices( elem.id(), iDimRange );
-            element_dof1 = M_X1->dof()->getIndices( Feel::detail::idEltStencil( iDimRange,elem ) );
+            element_dof1_range = _M_X1->dof()->getIndices( elem.id(), iDimRange );
+            element_dof1 = _M_X1->dof()->getIndices( Feel::detail::idEltStencil( iDimRange,elem ) );
             const uint16_type n1_dof_on_element_range = element_dof1_range.size();
             const uint16_type n1_dof_on_element = element_dof1.size();
 
@@ -1632,7 +1661,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
             for ( size_type i=0; i<n1_dof_on_element_range; i++ )
             {
                 const size_type ig1 = element_dof1_range[i];
-                auto const ptRealDof = boost::get<0>( M_X1->dof()->dofPoint( ig1 ) );
+                auto const ptRealDof = boost::get<0>( _M_X1->dof()->dofPoint( ig1 ) );
 
                 ublas::column(ptsReal,0 ) = ptRealDof;
                 if (notUseOptLocTrial) IdEltInXh2=invalid_size_type_value;
@@ -1647,7 +1676,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
                     listTup.insert( IdEltInXh2 );
                     hasFinds[i] = boost::make_tuple( true,IdEltInXh2 );
                     // maybe is on boundary->more elts
-                    auto const& geoelt2 = M_X2->mesh()->element( IdEltInXh2 );
+                    auto const& geoelt2 = _M_X2->mesh()->element( IdEltInXh2 );
 
                     std::vector<size_type> neighbor_ids;
                     for ( uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++ )
@@ -1682,7 +1711,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
                             {
                                 const size_type ig1ongraph = element_dof1[ii];
 
-                                element_dof2 = M_X2->dof()->getIndices( *res_it );
+                                element_dof2 = _M_X2->dof()->getIndices( *res_it );
 
                                 graph_type::row_type& row = sparsity_graph->row( ig1ongraph );
                                 bool is_on_proc = ( ig1ongraph >= first1_dof_on_proc ) && ( ig1ongraph <= last1_dof_on_proc );
@@ -1724,7 +1753,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
                             id2=hasFinds[nF2].template get<1>();
 
                             if ( id1!=id2 )
-                                doQ=true; //if( !M_X2->mesh()->element(id1).isNeighbor(M_X2->mesh()->element(id2) ) )  doQ=true;
+                                doQ=true; //if( !_M_X2->mesh()->element(id1).isNeighbor(_M_X2->mesh()->element(id2) ) )  doQ=true;
                         }
                     }
                 }
@@ -1745,7 +1774,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 #if FEELPP_EXPORT_GRAPH
                         mapBetweenMeshes[IdEltInXh2].push_back( elem.id() );
 #endif
-                        element_dof2 = M_X2->dof()->getIndices( IdEltInXh2 );
+                        element_dof2 = _M_X2->dof()->getIndices( IdEltInXh2 );
 
                         for ( size_type i=0; i<n1_dof_on_element; i++ )
                         {
@@ -1770,7 +1799,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
             auto const& elem = *elem_it;
 
             // Get the global indices of the DOFs with support on this element
-            element_dof1 = M_X1->dof()->getIndices( Feel::detail::idEltStencil( iDimRange,elem ) );
+            element_dof1 = _M_X1->dof()->getIndices( Feel::detail::idEltStencil( iDimRange,elem ) );
 
             const uint16_type nPtGeo = elem.G().size2();
             std::vector<boost::tuple<bool,size_type> > hasFinds( nPtGeo,boost::make_tuple( false,invalid_size_type_value ) );
@@ -1778,9 +1807,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
             for ( size_type i=0; i<nPtGeo; i++ )
             {
                 const size_type ig1 = element_dof1[0];
-                //const int ndofpercomponent1 = n1_dof_on_element / M_X1->dof()->nComponents;
+                //const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
                 //const int ncomp1 = i / ndofpercomponent1;
-                //const int ndofpercomponent2 = n2_dof_on_element / M_X2->dof()->nComponents;
+                //const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
 
                 typename matrix_node<typename test_mesh_type::value_type>::type ptReal( test_mesh_type::nRealDim , 1 );
                 ublas::column( ptReal ,0 ) = ublas::column( elem.G(),i );
@@ -1799,7 +1828,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
                     // maybe is on boundary->more elts
                     //size_type idElt1 = elem.id();
                     size_type idElt2 = resTemp.template get<1>();
-                    auto const& geoelt2 = M_X2->mesh()->element( idElt2 );
+                    auto const& geoelt2 = _M_X2->mesh()->element( idElt2 );
                     std::vector<size_type> neighbor_ids( geoelt2.nNeighbors() ); //neighbor_ids.clear();//(geoelt2.nNeighbors());
 
                     for ( uint16_type ms=0; ms < geoelt2.nNeighbors(); ms++ )
@@ -1831,8 +1860,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
                                     {
                                         neighLocalizedInXh1.insert( *it_neigh );
                                         bool findNeih=false;
-                                        auto const& geoeltNEW = M_X2->mesh()->element( *it_neigh );
-                                        const uint16_type nPtGeoBis = M_X2->mesh()->element( *it_neigh ).G().size2();
+                                        auto const& geoeltNEW = _M_X2->mesh()->element( *it_neigh );
+                                        const uint16_type nPtGeoBis = _M_X2->mesh()->element( *it_neigh ).G().size2();
 
                                         for ( size_type iii=0; iii<nPtGeoBis && !findNeih ; iii++ )
                                         {
@@ -1860,7 +1889,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 #endif
 
 
-                        element_dof2 = M_X2->dof()->getIndices( *res_it/*->get<0>()*/ );
+                        element_dof2 = _M_X2->dof()->getIndices( *res_it/*->get<0>()*/ );
 
                         graph_type::row_type& row = sparsity_graph->row( ig1 );
                         bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
@@ -1888,7 +1917,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
                             id2=hasFinds[nF2].template get<1>();
 
                             if ( id1!=id2 )
-                                doQ=true; //if( !M_X2->mesh()->element(id1).isNeighbor(M_X2->mesh()->element(id2) ) )  doQ=true;
+                                doQ=true; //if( !_M_X2->mesh()->element(id1).isNeighbor(_M_X2->mesh()->element(id2) ) )  doQ=true;
                         }
                     }
                 }
@@ -1906,7 +1935,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 #if FEELPP_EXPORT_GRAPH
                         mapBetweenMeshes[resQuad.template get<1>()].push_back( elem.id() );
 #endif
-                        element_dof2 = M_X2->dof()->getIndices( resQuad.template get<1>() );
+                        element_dof2 = _M_X2->dof()->getIndices( resQuad.template get<1>() );
                         //for (size_type i=0; i<n1_dof_on_element; i++)
                         //   {
                         const size_type ig1 = element_dof1[0];
@@ -1937,15 +1966,15 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 #if 0
     typedef mesh_1_type mesh_export_type;
     typedef FunctionSpace<mesh_1_type, bases<Lagrange<0, Scalar,Discontinuous> > > space_disc_type;
-    auto spaceGraphProj = space_disc_type::New( M_X1->mesh() );
-    auto elem_itt  = M_X1->mesh()->beginElementWithProcessId( proc_id );
-    auto elem_ent  = M_X1->mesh()->endElementWithProcessId( proc_id );
+    auto spaceGraphProj = space_disc_type::New( _M_X1->mesh() );
+    auto elem_itt  = _M_X1->mesh()->beginElementWithProcessId( proc_id );
+    auto elem_ent  = _M_X1->mesh()->endElementWithProcessId( proc_id );
 #else
     typedef trial_mesh_type mesh_export_type;
     typedef FunctionSpace<mesh_export_type, bases<Lagrange<0, Scalar,Discontinuous> > > space_disc_type;
-    auto spaceGraphProj = space_disc_type::New( M_X2->mesh() );
-    auto elem_itt  = M_X2->mesh()->beginElementWithProcessId( proc_id );
-    auto elem_ent  = M_X2->mesh()->endElementWithProcessId( proc_id );
+    auto spaceGraphProj = space_disc_type::New( _M_X2->mesh() );
+    auto elem_itt  = _M_X2->mesh()->beginElementWithProcessId( proc_id );
+    auto elem_ent  = _M_X2->mesh()->endElementWithProcessId( proc_id );
 #endif
     auto graphProj = spaceGraphProj->element();
     graphProj.zero();

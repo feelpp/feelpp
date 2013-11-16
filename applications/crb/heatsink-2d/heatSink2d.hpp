@@ -57,6 +57,7 @@
 
 
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 namespace Feel
 {
@@ -133,7 +134,8 @@ public :
  * @author Christophe Prud'homme
  * @see
  */
-    class HeatSink2D : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
+class HeatSink2D : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition > ,
+                   public boost::enable_shared_from_this< HeatSink2D >
 {
 public:
 
@@ -190,6 +192,10 @@ public:
     typedef space_ptrtype functionspace_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef boost::shared_ptr<element_type> element_ptrtype;
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<super_type, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* export */
     typedef Exporter<mesh_type> export_type;
@@ -318,6 +324,14 @@ public:
     {
         return Xh;
     }
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
+    }
+
 
     //! return the parameter space
     parameterspace_ptrtype parameterSpace() const
@@ -564,6 +578,7 @@ private:
     /* mesh, pointers and spaces */
     mesh_ptrtype mesh;
     space_ptrtype Xh;
+    rbfunctionspace_ptrtype RbXh;
 
     sparse_matrix_ptrtype D,M,Mpod;
     vector_ptrtype F;
@@ -698,6 +713,7 @@ void HeatSink2D::initModel()
      * The function space and some associate elements are then defined
      */
     Xh = space_type::New( mesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
     std::cout << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // allocate an element of Xh

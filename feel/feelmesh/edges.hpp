@@ -65,29 +65,29 @@ public:
 
 
     typedef multi_index::multi_index_container<
-    edge_type,
-    multi_index::indexed_by<
-    // sort by employee::operator<
-    multi_index::ordered_unique<multi_index::identity<edge_type> >,
-    // sort by less<int> on marker
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
-    multi_index::const_mem_fun<edge_type,
-    Marker1 const&,
-    &edge_type::marker> >,
+        edge_type,
+        multi_index::indexed_by<
+            // sort by employee::operator<
+            multi_index::ordered_unique<multi_index::identity<edge_type> >,
+            // sort by less<int> on marker
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
+                                            multi_index::const_mem_fun<edge_type,
+                                                                       Marker1 const&,
+                                                                       &edge_type::marker> >,
 
-    // sort by less<int> on processId
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
-    multi_index::const_mem_fun<edge_type,
-    uint16_type,
-    &edge_type::processId> >,
+            // sort by less<int> on processId
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
+                                            multi_index::const_mem_fun<edge_type,
+                                                                       uint16_type,
+                                                                       &edge_type::processId> >,
 
-    // sort by less<int> on boundary
-    multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
-    multi_index::const_mem_fun<edge_type,
-    bool,
-    &edge_type::isOnBoundary> >
-    >
-    > edges_type;
+            // sort by less<int> on boundary
+            multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
+                                            multi_index::const_mem_fun<edge_type,
+                                                                       bool,
+                                                                       &edge_type::isOnBoundary> >
+            >
+        > edges_type;
 
 
     typedef typename edges_type::iterator edge_iterator;

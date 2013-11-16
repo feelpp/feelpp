@@ -86,7 +86,6 @@
 #include <feel/feeldiscr/parameter.hpp>
 #include <feel/feeldiscr/bases.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
-#include <feel/feelfilters/pointsettomesh.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 
@@ -1632,11 +1631,21 @@ public:
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename mesh_type::element_type>, mpl::identity<mpl::void_> >::type::type geoelement_type;
     typedef boost::shared_ptr<gm_type> gm_ptrtype;
     typedef boost::shared_ptr<gm1_type> gm1_ptrtype;
+    typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT, geoelement_type> >,
+            mpl::identity<mpl::void_> >::type::type pts_gmc_type;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::template Context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB, geoelement_type> >,
-            mpl::identity<mpl::void_> >::type::type gmc_type;
+                              mpl::identity<mpl::void_> >::type::type gmc_type;
     typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_ptrtype>, mpl::identity<mpl::void_> >::type::type geopc_ptrtype;
     typedef typename mpl::if_<mpl::greater<mpl::int_<nDim>, mpl::int_<0> >,mpl::identity<typename gm_type::precompute_type>, mpl::identity<mpl::void_> >::type::type geopc_type;
+
+    // basis context
+    //typedef typename basis_type::template Context<vm::POINT, basis_type, gm_type, geoelement_type, pts_gmc_type::context> basis_context_type;
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<mpl::void_>,
+                              mpl::identity<typename basis_0_type::template Context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
+                              //mpl::identity<typename basis_0_type::template Context<vm::POINT, basis_0_type, gm_type, geoelement_type, pts_gmc_type::context> > >::type::type basis_context_type;
+    typedef boost::shared_ptr<basis_context_type> basis_context_ptrtype;
 
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
@@ -1666,6 +1675,186 @@ public:
     */
     //@{
 
+    /**
+     * \class Context
+     */
+    class Context
+        :
+        //public std::vector<basis_context_ptrtype>
+        //the index of point is associated to a basis_context_ptrtype
+        public std::map<int,basis_context_ptrtype>
+    {
+    public:
+        static const bool is_rb_context = false;
+        typedef std::map<int,basis_context_ptrtype> super;
+        typedef typename super::value_type bc_type;
+        typedef typename matrix_node<value_type>::type matrix_node_type;
+        Context( functionspace_ptrtype Xh ) : M_Xh( Xh ) {}
+        virtual ~Context() {}
+
+        void add( node_type t )
+        {
+                add( t, mpl::bool_<is_composite>() );
+        }
+        void add( node_type t, mpl::bool_<true> )
+        {
+        }
+        void add( node_type t, mpl::bool_<false> )
+        {
+            LOG(INFO)<<"add point\n";
+
+            //rank of the current processor
+            int proc_number = Environment::worldComm().globalRank();
+
+            //total number of processors
+            int nprocs = Environment::worldComm().globalSize();
+
+            // add point t to list of points
+            M_t.push_back( t );
+
+            // localise t in space, find geometrical element in which t
+            // belongs
+            matrix_node_type m( mesh_type::nDim, 1 );
+            for(int i = 0; i < mesh_type::nDim; ++i )
+                m(i,0) = t(i);
+            auto loc =  M_Xh->mesh()->tool_localization();
+            loc->setExtrapolation( false );
+            auto analysis = loc->run_analysis( m, invalid_size_type_value );
+            auto found_points = analysis.template get<0>();
+            bool found = found_points[0];
+
+            std::vector<int> found_pt( nprocs, 0 );
+            std::vector<int> global_found_pt( nprocs, 0 );
+
+            if( found ) //we are on the proc that have the searched point
+            {
+
+                found_pt[proc_number]=1;
+
+                auto it = loc->result_analysis_begin();
+                auto en = loc->result_analysis_end();
+                DCHECK( boost::next(it) == en ) << "Logic problem in finding one point in the mesh\n";
+                auto eid = it->first;
+                auto xref = boost::get<1>( *(it->second.begin()) );
+                DVLOG(2) << "found point " << t << " in element " << eid << " on proc "<<proc_number<<"\n";
+                DVLOG(2) << "  - reference coordinates " << xref << "\n";
+
+                typename basis_type::points_type p(mesh_type::nDim,1);
+
+                ublas::column( p, 0 ) = xref;
+                // compute for each basis function in reference element its
+                // value at \hat{t} in reference element
+                auto basispc = M_Xh->basis()->preCompute( M_Xh->basis(), p );
+                DVLOG(2) << "build precompute data structure for basis functions\n";
+                auto gmpc = M_Xh->mesh()->gm()->preCompute( M_Xh->mesh()->gm(), p );
+                DVLOG(2) << "build precompute data structure for geometric mapping\n";
+
+                // build geometric mapping
+                //auto gmc2 = M_Xh->mesh()->gm()->template context<vm::POINT|vm::JACOBIAN|vm::HESSIAN|vm::KB>( M_Xh->mesh()->element( eid ),
+                //
+                //                                                                                            gmpc );
+                auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB>( M_Xh->mesh()->element( eid ), gmpc );
+                //auto gmc = M_Xh->mesh()->gm()->template context<vm::POINT>( M_Xh->mesh()->element( eid ), gmpc );
+                DVLOG(2) << "build geometric mapping context\n";
+                // compute finite element context
+                auto ctx = basis_context_ptrtype( new basis_context_type( M_Xh->basis(), gmc, basispc ) );
+                DVLOG(2) << "build basis function context\n";
+
+                //this->push_back( ctx );
+
+                int number = M_t.size()-1;
+                this->insert( std::pair<int,basis_context_ptrtype>( number , ctx ) );
+                //DVLOG(2) << "Context size: " << this->size() << "\n";
+
+                if ( nprocs > 1 )
+                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+                else
+                    global_found_pt[ 0 ] = found_pt[ 0 ];
+
+            }//if( found )
+            else
+            {
+                if ( nprocs > 1 )
+                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+
+            }//not found case
+
+            //verify that the point is on a proc
+            bool found_on_a_proc = false;
+            int i;
+            for (i = 0 ; i < global_found_pt.size(); ++i )
+            {
+                if ( global_found_pt[i] != 0 )
+                {
+                    DVLOG(2) << "processor " << i << " has the point " << t << "\n";
+                    found_on_a_proc = true;
+                    M_t_proc.push_back(i);
+                    break;
+                }
+            }
+            CHECK( found_on_a_proc ) << "the point " << t << " was not found ! \n";
+
+
+        }//add ( non composite case )
+
+
+        void addCtx( basis_context_ptrtype ctx , int proc_having_the_point)
+        {
+            int position = M_t.size();
+            this->insert( std::pair<int,basis_context_ptrtype>( position , ctx ) );
+            node_type n;//only to increase M_t ( this function may be called during online step of crb )
+            M_t.push_back( n );
+            M_t_proc.push_back( proc_having_the_point );
+        }
+        void removeCtx()
+        {
+            this->clear();
+            M_t.clear();
+            M_t_proc.clear();
+        }
+
+        int nPoints() const
+        {
+            return M_t.size();
+        }
+
+        int processorHavingPoint( int point_number ) const
+        {
+            return M_t_proc[point_number];
+        }
+
+        functionspace_ptrtype functionSpace() const
+        {
+            return M_Xh;
+        }
+
+        virtual functionspace_type* ptrFunctionSpace() const
+        {
+            LOG( INFO ) << "fem ptrFunctionSpace()";
+            return M_Xh.get();
+        }
+
+        node_type node(int i) const
+        {
+            int size = M_t.size();
+            CHECK( i < size ) <<" i  = "<<i<<" and the context has "<< size<<" points \n";
+            return M_t[i];
+        }
+
+    private:
+
+        std::vector<node_type> M_t;
+        std::vector<int> M_t_proc;//point number i is on proc M_t_proc[i]
+        functionspace_ptrtype M_Xh;
+
+
+    };
+    /**
+     * \return function space context
+     */
+    Context context() { return Context( this->shared_from_this() ); }
+
+    /*virtual*/ basis_context_ptrtype contextBasis( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) {LOG( INFO ) << "constructor FEM=="; return p.second; }
 
     /**
      * \class Element
@@ -1691,6 +1880,8 @@ public:
 
         //typedef typename fusion::result_of::accumulate<bases_list, fusion::vector<>, ChangeElement<> >
         typedef typename VectorUblas<T>::range::type ct_type;
+
+        typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> eigen_type;
 
         /**
          * usefull in // with composite case
@@ -2093,7 +2284,7 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto elt_it = P0h->mesh()->beginElement(); elt_it != P0h->mesh()->endElement(); ++elt_it )
+            for ( auto elt_it = P0h->mesh()->beginElementWithProcessId(); elt_it != P0h->mesh()->endElementWithProcessId(); ++elt_it )
             {
                 size_type eid = elt_it->id();
 
@@ -2194,8 +2385,84 @@ public:
         }
 
 
+        /*
+         * evaluate the function at all points added to functionspace_type::Context
+         */
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1>
+        evaluate( functionspace_type::Context const & context , bool do_communications=true) const
+        {
+            int npoints = context.nPoints();
+
+            //rank of the current processor
+            int proc_number = Environment::worldComm().globalRank();
+
+            //total number of processors
+            int nprocs = Environment::worldComm().globalSize();
+
+            auto it = context.begin();
+            auto en = context.end();
+
+            eigen_type __globalr( npoints );
+            __globalr.setZero();
+            eigen_type __localr( npoints );
+            __localr.setZero();
+
+            boost::array<typename array_type::index, 1> shape;
+            shape[0] = 1;
+            id_array_type v( shape );
+            if( context.size() > 0 )
+            {
+                for( int i = 0 ; it != en; ++it, ++i )
+                {
+                    v[0].setZero(1);
+                    auto basis = it->second;
+                    id( *basis, v );
+                    int global_index = it->first;
+                    __localr( global_index ) = v[0]( 0, 0 );
+                }
+            }
+
+            if( do_communications )
+                mpi::all_reduce( Environment::worldComm() , __localr, __globalr, std::plus< eigen_type >() );
+            else
+                __globalr = __localr;
+
+            return __globalr;
+        }
+
+        double
+        evaluate( functionspace_type::Context const & context, int i , bool do_communications=true) const
+        {
+            //rank of the current processor
+            int proc_number = Environment::worldComm().globalRank();
+
+            //total number of processors
+            int nprocs = Environment::worldComm().globalSize();
+
+            int npoints = context.nPoints();
+            CHECK( i >= 0 && i < npoints ) << "the index " << i << " of the point where you want to evaluate the element is out of range\n";
+            boost::array<typename array_type::index, 1> shape;
+            shape[0] = 1;
+            id_array_type v( shape );
+
+            double result=0;
+            int proc_having_the_point = context.processorHavingPoint( i );
+            if( proc_number == proc_having_the_point )
+            {
+                auto basis = context.at( i );
+                id( *basis , v );
+                result = v[0](0,0);
+            }
+
+            if( do_communications )
+                boost::mpi::broadcast( Environment::worldComm() , result , proc_having_the_point );
+
+            return result;
+        }
+
         void
         idInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
+
 
         /*
          * Get the reals points matrix in a context
@@ -3304,7 +3571,7 @@ public:
                size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                periodicity_type periodicity = periodicity_type() )
     {
-        Context ctx( mesh_components );
+        Feel::Context ctx( mesh_components );
         DVLOG(2) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
         DVLOG(2) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
@@ -3320,7 +3587,7 @@ public:
                periodicity_type periodicity = periodicity_type() )
     {
 
-        Context ctx( mesh_components );
+        Feel::Context ctx( mesh_components );
         DVLOG(2) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
         DVLOG(2) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
@@ -3333,29 +3600,33 @@ public:
     //! destructor: do nothing thanks to shared_ptr<>
     ~FunctionSpace()
         {
+            VLOG(1) << "FunctionSpace Destructor...";
             M_dof.reset();
+            CHECK( M_dof.use_count() == 0 ) << "Invalid Dof Table shared_ptr";
             M_dofOnOff.reset();
+            CHECK( M_dofOnOff.use_count() == 0 ) << "Invalid Dof OnOff shared_ptr";
             M_ref_fe.reset();
+            CHECK( M_ref_fe.use_count() == 0 ) << "Invalid reffe shared_ptr";
         }
 
 
     void setWorldsComm( std::vector<WorldComm> const& _worldsComm )
     {
         M_worldsComm=_worldsComm;
-    };
+    }
     void setWorldComm( WorldComm const& _worldComm )
     {
         M_worldComm.reset( new WorldComm( _worldComm ) );
-    };
+    }
 
     std::vector<WorldComm> const& worldsComm() const
     {
         return M_worldsComm;
-    };
+    }
     WorldComm const& worldComm() const
     {
         return *M_worldComm;
-    };
+    }
 
     bool hasEntriesForAllSpaces()
     {
@@ -4060,7 +4331,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 {
     DVLOG(2) << "calling init(<space>) begin\n";
     DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
+
     M_mesh = __m;
+    VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
 
     if ( basis_type::nDofPerEdge || nDim >= 3 )
@@ -4120,7 +4393,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
 
     DVLOG(2) << "calling init(<space>) end\n";
-
+    VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4550,7 +4823,9 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::Element( functionspace_ptrty
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::~Element()
-{}
+{
+    VLOG(1) << "Element destructor...";
+}
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
@@ -4743,6 +5018,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
 
     const uint16_type nq = context.xRefs().size2();
 
+    //double vsum=0;
+
     //array_type v( boost::extents[nComponents1][nComponents2][context.xRefs().size2()] );
     for ( int l = 0; l < basis_type::nDof; ++l )
     {
@@ -4772,12 +5049,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & conte
                     //for( typename array_type::index j = 0; j < nComponents2; ++j )
                 {
                     v[q]( i,0 ) += v_*context.id( ldof, i, 0, q );
+                    //vsum +=v_*context.id( ldof, i, 0, q );
                     //v[q](i,0) += v_*context.gmc()->J(*)*context.pc()->phi( ldof, i, 0, q );
                 }
             }
         }
     }
 
+    //LOG( INFO ) << "vsum : "<<vsum;
     //return v;
 }
 
@@ -6352,7 +6631,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>>>
 Pch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
+                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6366,7 +6646,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>>
 Pdh( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
+                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6380,7 +6661,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>>
 Odh( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( _mesh=mesh,
+                                                                                       _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6394,7 +6676,8 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>>
 Pchv( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( _mesh=mesh,
+                                                                          _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
 }
 
 /**
@@ -6406,10 +6689,17 @@ inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>>
 THch( boost::shared_ptr<MeshType> mesh )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( mesh );
+    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( _mesh=mesh,
+                                                                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ) );
 }
 
-
+template<typename A0, typename A1, typename A2, typename A3, typename A4>
+std::ostream&
+operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
+{
+    os << "Number of Dof: Global=" << Xh.nDof() << " , Local=" << Xh.nLocalDof();
+    return os;
+}
 } // Feel
 
 

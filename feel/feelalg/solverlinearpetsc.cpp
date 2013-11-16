@@ -381,7 +381,11 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     // instead of || B*b ||. In the case of right preconditioner or if
     // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
     // the above formula. UIRNorm is short for Use Initial Residual Norm.
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,4)
+    KSPConvergedDefaultSetUIRNorm( M_ksp );
+#else
     KSPDefaultConvergedSetUIRNorm( M_ksp );
+#endif
 
 
     // Solve the linear system
@@ -429,7 +433,11 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     // instead of || B*b ||. In the case of right preconditioner or if
     // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
     // the above formula. UIRNorm is short for Use Initial Residual Norm.
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,4)
+    KSPConvergedDefaultSetUIRNorm( M_ksp );
+#else
     KSPDefaultConvergedSetUIRNorm( M_ksp );
+#endif
 
     // Solve the linear system
     if ( transpose )
@@ -473,7 +481,11 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     // instead of || B*b ||. In the case of right preconditioner or if
     // KSPSetNormType(ksp,KSP_NORM_UNPRECONDIITONED) is used there is no B in
     // the above formula. UIRNorm is short for Use Initial Residual Norm.
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,4)
+    KSPConvergedDefaultSetUIRNorm( M_ksp );
+#else
     KSPDefaultConvergedSetUIRNorm( M_ksp );
+#endif
 
     // Solve the linear system
     if ( transpose )

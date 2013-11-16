@@ -133,8 +133,8 @@ struct FEContextUpdate
     FEContextUpdate( map_geometric_mapping_context_type const& mapgmc,
                      form_type const& form )
         :
-        _M_mapgmc( mapgmc ),
-        _M_form( form )
+        M_mapgmc( mapgmc ),
+        M_form( form )
     {}
 
     template<typename T>
@@ -146,19 +146,19 @@ struct FEContextUpdate
     void operator()( T& t, mpl::int_<0> ) const
     {
         typedef typename boost::remove_reference<T>::type::first_type first_type;
-        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
-        t.second->update( gmcptr, _M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( M_mapgmc ) );
+        t.second->update( gmcptr, M_form.testPc( gmcptr->faceId(), gmcptr->permutation()  ) );
     }
     template<typename T>
     void operator()( T& t, mpl::int_<1> ) const
     {
         typedef typename boost::remove_reference<T>::type::first_type first_type;
-        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( _M_mapgmc ) );
-        t.second->update( gmcptr, _M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
+        geometric_mapping_context_ptrtype gmcptr( fusion::at_key<first_type>( M_mapgmc ) );
+        t.second->update( gmcptr, M_form.trialPc( gmcptr->faceId(), gmcptr->permutation()  ) );
     }
 
-    map_geometric_mapping_context_type const& _M_mapgmc;
-    form_type const& _M_form;
+    map_geometric_mapping_context_type const& M_mapgmc;
+    form_type const& M_form;
 };
 
 

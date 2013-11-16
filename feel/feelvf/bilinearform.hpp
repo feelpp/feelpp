@@ -719,9 +719,9 @@ public:
         std::map<uint16_type, std::map<permutation_1_type,test_precompute_ptrtype> >
         precomputeTestBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
         {
-            QuadMapped<PtsSet> qm;
+            //QuadMapped<PtsSet> qm;
             typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
-            typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
+            //typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
 
             std::map<uint16_type, std::map<permutation_type,test_precompute_ptrtype> > testpc;
 
@@ -730,7 +730,8 @@ public:
                 for ( permutation_type __p( permutation_type::IDENTITY );
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    //testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts.fpoints( __f,__p.value() ) ) );
                 }
             }
 
@@ -757,9 +758,9 @@ public:
         std::map<uint16_type, std::map<permutation_2_type,trial_precompute_ptrtype> >
         precomputeTrialBasisAtPoints( PtsSet const& pts, mpl::bool_<true> )
         {
-            QuadMapped<PtsSet> qm;
+            //QuadMapped<PtsSet> qm;
             typedef typename QuadMapped<PtsSet>::permutation_type permutation_type;
-            typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
+            //typename QuadMapped<PtsSet>::permutation_points_type ppts( qm( pts ) );
 
             std::map<uint16_type, std::map<permutation_type,trial_precompute_ptrtype> > trialpc;
 
@@ -768,7 +769,8 @@ public:
                 for ( permutation_type __p( permutation_type::IDENTITY );
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    //trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), ppts[__f].find( __p )->second ) );
+                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), pts.fpoints(__f, __p.value() ) ) );
                 }
             }
 
@@ -1297,8 +1299,9 @@ public:
                                        ( rebuild,        ( bool ), false )
                                          ) )
         {
-            return backend( _name=name, _kind=kind, _rebuild=rebuild )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
-                                                                               _solution=solution);
+            return backend( _name=name, _kind=kind, _rebuild=rebuild,
+                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
+                                                                         _solution=solution);
         }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
@@ -1383,6 +1386,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     boost::timer tim;
     DVLOG(2) << "begin constructor with default listblock\n";
 
+    if ( !this->M_X1->worldComm().isActive() ) return;
+
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
     M_lb.push_back( Block ( 0, 0, 0, 0 ) );
 
@@ -1412,6 +1417,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
+    if ( !this->M_X1->worldComm().isActive() ) return;
+
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
 }
 

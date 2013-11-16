@@ -489,9 +489,5 @@ private:
     mutable matrix_type M_mat;
 };
 
-#if !defined (FEELPP_NO_EXTERN)
-extern template class MatrixEigenDense<double>;
-#endif
-
 } // Feel
 #endif /* __MatrixEigenDense_H */

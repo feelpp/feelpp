@@ -59,6 +59,7 @@
 #include <Eigen/Dense>
 
 #include <feel/feelcrb/modelcrbbase.hpp>
+#include <feel/feeldiscr/reducedbasisspace.hpp>
 
 // use the Feel namespace
 using namespace Feel;
@@ -114,8 +115,25 @@ public :
 #endif
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+
+    typedef bases< Lagrange<Order_p, Scalar> > single_basis_type;
+    typedef FunctionSpace<mesh_type, single_basis_type> mono_space_type;
+
 };
 
+
+//for compilation
+template <typename ParameterDefinition, typename FunctionSpaceDefinition >
+class EimDefinition
+{
+public :
+    typedef typename ParameterDefinition::parameterspace_type parameterspace_type;
+    typedef typename FunctionSpaceDefinition::mono_space_type mono_space_type;
+    typedef typename FunctionSpaceDefinition::space_type space_type;
+
+    typedef EIMFunctionBase<mono_space_type, space_type , parameterspace_type> fun_type;
+    typedef EIMFunctionBase<mono_space_type, space_type , parameterspace_type> fund_type;
+};
 
 /**
  * \class ConvectionCrb
@@ -126,11 +144,12 @@ public :
  * \tparam Order_p pressure polynomial order
  */
 //template< int Order_s, int Order_p, int Order_t >
-class ConvectionCrb : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition >
+class ConvectionCrb : public ModelCrbBase< ParameterDefinition, FunctionSpaceDefinition , EimDefinition< ParameterDefinition, FunctionSpaceDefinition> >,
+                      public boost::enable_shared_from_this< ConvectionCrb >
 {
 public:
 
-    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition> super_type;
+    typedef ModelCrbBase<ParameterDefinition,FunctionSpaceDefinition, EimDefinition<ParameterDefinition,FunctionSpaceDefinition> > super_type;
     typedef typename super_type::funs_type funs_type;
     typedef typename super_type::funsd_type funsd_type;
 
@@ -174,6 +193,7 @@ public:
     typedef FunctionSpace<mesh_type, basis_t_type> T_space_type;
     typedef boost::shared_ptr<T_space_type> T_space_ptrtype;
 
+
     /* parameter space */
     typedef ParameterSpace<ParameterSpaceDimension> parameterspace_type;
     typedef boost::shared_ptr<parameterspace_type> parameterspace_ptrtype;
@@ -194,6 +214,11 @@ public:
     typedef double value_type;
 
     typedef FunctionSpace<mesh_type, basis_type> space_type;
+
+
+    /*reduced basis space*/
+    typedef ReducedBasisSpace<ConvectionCrb, mesh_type, basis_type, value_type> rbfunctionspace_type;
+    typedef boost::shared_ptr< rbfunctionspace_type > rbfunctionspace_ptrtype;
 
     /* EIM */
     //typedef EIMFunctionBase<U_space_type, space_type , parameterspace_type> fun_type;
@@ -369,7 +394,16 @@ public:
     space_ptrtype functionSpace()
     {
         return Xh;
-    };
+    }
+
+    /**
+     * \brief Returns the reduced basis function space
+     */
+    rbfunctionspace_ptrtype rBFunctionSpace()
+    {
+        return RbXh;
+    }
+
 
     void setMeshSize( double s )
     {
@@ -415,6 +449,8 @@ private:
     backend_ptrtype M_backend;
 
     space_ptrtype Xh;
+
+    rbfunctionspace_ptrtype RbXh;
     boost::shared_ptr<OperatorLagrangeP1<typename space_type::sub_functionspace<2>::type::element_type> > P1h;
 
     oplin_ptrtype M_oplin;

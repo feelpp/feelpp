@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 // make sure that the init_unit_test function is defined by UTF
 //#define BOOST_TEST_MAIN
 // give a name to the testsuite
-#define BOOST_TEST_MODULE interpolation testsuite
+#define BOOST_TEST_MODULE interpolation operator testsuite
 // disable the main function creation, use our own
 //#define BOOST_TEST_NO_MAIN
 
@@ -84,111 +84,6 @@ createMesh( double hsize )
 
 }
 
-template<int Dim, int Order, int GeoOrder=1>
-struct test_interpolation
-{
-  typedef typename imesh<Dim,GeoOrder>::type mesh_type;
-  typedef double value_type;
-
-  test_interpolation( double meshSize_=DEFAULT_MESH_SIZE )
-    :
-      meshSize( meshSize_ ),
-      mesh( createMesh<Dim,GeoOrder,Dim>( meshSize ) )
-  {}
-  void operator()()
-  {
-    using namespace Feel;
-    using namespace Feel::vf;
-
-    std::cout << "Ordre géométrique = " << GeoOrder << std::endl;
-    const value_type eps = (GeoOrder == 1 ? 0.25*meshSize*meshSize : 1000*Feel::type_traits<value_type>::epsilon() );
-
-    typedef fusion::vector<Lagrange<Order, Scalar> > basis_type;
-    typedef FunctionSpace<mesh_type, basis_type> space_type;
-    boost::shared_ptr<space_type> Xh( new space_type( mesh ) );
-    typename space_type::element_type u( Xh );
-
-    u = vf::project( Xh, elements( *mesh ), constant( 1.0 ) );
-
-    node_type pt( Dim );
-    pt[0] = 0.11;
-
-    if ( Dim >= 2 )
-      pt[1] = 0.11;
-
-    if ( Dim >= 3 )
-      pt[2] = 0.11;
-
-    double v0 = u( pt )( 0,0,0 );
-#if defined(USE_BOOST_TEST)
-    BOOST_CHECK_SMALL( v0-1.0, eps );
-#else
-    FEELPP_ASSERT( math::abs( v0-1.0 ) < eps )( v0 )( math::abs( v0-1.0 ) )( eps ).warn ( "v0 != 1" );
-#endif /* USE_BOOST_TEST */
-
-    u = vf::project( Xh, elements( *mesh ), constant( 2.0 ) - Px()*Px()-Py()*Py()-Pz()*Pz() );
-    pt[0] = 0.5;
-
-    if ( Dim >= 2 )
-      pt[1] = 0.5;
-
-    if ( Dim >= 3 )
-      pt[2] = 0.5;
-
-    double v1 = u( pt )( 0,0,0 );
-    double v1_ex = 2-Dim*0.5*0.5;
-#if defined(USE_BOOST_TEST)
-    std::cout <<  "[test_interpolation] v1    = " << v1    << std::endl;
-    std::cout <<  "[test_interpolation] v1_ex = " << v1_ex << std::endl;
-    BOOST_CHECK_SMALL( v1-v1_ex, eps );
-#else
-    FEELPP_ASSERT( math::abs( v1-v1_ex ) < eps )( v1 )( math::abs( v1-v1_ex ) )( eps ).warn ( "v1 != v0_ex" );
-#endif /* USE_BOOST_TEST */
-    auto gradient( u.grad( pt ) );
-    double g_v1_x = gradient( 0,0,0 );
-    double g_v1_ex_x = -2*0.5;
-#if defined(USE_BOOST_TEST)
-    std::cout << "[test_interpolation] g_v1_x    = " << g_v1_x    << std::endl; 
-    std::cout << "[test_interpolation] g_v1_ex_x = " << g_v1_ex_x << std::endl; 
-    if(GeoOrder == 1)
-    BOOST_CHECK_SMALL( g_v1_x-g_v1_ex_x, meshSize );
-    else
-    BOOST_CHECK_SMALL( g_v1_x-g_v1_ex_x, eps );
-#else
-    FEELPP_ASSERT( math::abs( g_v1_x-g_v1_ex_x ) < eps )( g_v1_x )( math::abs( g_v1_x-g_v1_ex_x ) )( eps ).warn ( "g_v1 != g_v1_ex" );
-#endif /* USE_BOOST_TEST */
-
-    if ( Dim >= 2 )
-    {
-      double g_v1_y = gradient( 0,1,0 );
-#if defined(USE_BOOST_TEST)
-    if(GeoOrder == 1)
-    BOOST_CHECK_SMALL( g_v1_y-g_v1_ex_x, meshSize );
-    else
-    BOOST_CHECK_SMALL( g_v1_y-g_v1_ex_x, eps );
-#endif /* USE_BOOST_TEST */
-    }
-
-    if ( Dim >= 3 )
-    {
-      double g_v1_z = gradient( 0,2,0 );
-#if defined(USE_BOOST_TEST)
-    if(GeoOrder == 1)
-    BOOST_CHECK_SMALL( g_v1_z-g_v1_ex_x, meshSize );
-    else
-      BOOST_CHECK_SMALL( g_v1_z-g_v1_ex_x, eps );
-#endif /* USE_BOOST_TEST */
-    }
-
-
-  }
-  double meshSize;
-
-
-
-  typename imesh<Dim,GeoOrder>::ptrtype mesh;
-
-};
 
 template<int Dim, int Order, int RDim, int GeoOrder=1, typename value_type = double>
 struct test_interpolation_op
@@ -438,7 +333,7 @@ makeOptions()
 {
   Feel::po::options_description integrationoptions( "Test Integration options" );
   integrationoptions.add_options()
-    ( "hsize", Feel::po::value<double>()->default_value( 0.3 ), "h value" )
+    ( "hsize", Feel::po::value<double>()->default_value( 0.1 ), "h value" )
     ;
   return integrationoptions.add( Feel::feel_options() );
 }
@@ -447,12 +342,13 @@ inline
   Feel::AboutData
 makeAbout()
 {
-  Feel::AboutData about( "test_interpolation" ,
-      "test_interpolation" ,
-      "0.1",
-      "interpolation tests",
-      Feel::AboutData::License_GPL,
-      "Copyright (C) 2007, 2008 Université Joseph Fourier (Grenoble I)" );
+  Feel::AboutData about( "test_interpolation_op" ,
+                         "test_interpolation_op" ,
+                         "0.1",
+                         "interpolation operator tests",
+                         Feel::AboutData::License_GPL,
+                         "Copyright (C) 2007-2013 Université Joseph Fourier (Grenoble I)\n"
+                         "Copyright (C) 2013 Universite de Strasbourg" );
 
   about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
   return about;
@@ -494,54 +390,26 @@ init_unit_test_suite( int argc, char** argv )
 #else
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 
-BOOST_AUTO_TEST_SUITE( interpolation_suite )
+BOOST_AUTO_TEST_SUITE( interpolation_op_suite )
 
   typedef Feel::Application Application_type;
   typedef boost::shared_ptr<Application_type> Application_ptrtype;
 
-BOOST_AUTO_TEST_CASE( test_interpolation12 )
-{
-  auto myApp = Application_ptrtype(new Feel::Application);
-  BOOST_MESSAGE( "test_interpolation<1,2>" );
-  test_interpolation<1,2> t( myApp->vm()["hsize"].as<double>());
-  t();
-}
-BOOST_AUTO_TEST_CASE( test_interpolation22 )
-{
-  auto myApp = Application_ptrtype(new Feel::Application);
-  BOOST_MESSAGE( "test_interpolation<2,2>" );
-  test_interpolation<2,2> t( myApp->vm()["hsize"].as<double>() );
-  t();
-}
-BOOST_AUTO_TEST_CASE( test_interpolation32 )
-{
-  auto myApp = Application_ptrtype(new Feel::Application);
-  BOOST_MESSAGE( "test_interpolation<3,2>" );
-  test_interpolation<3,2> t( myApp->vm()["hsize"].as<double>() );
-  t();
-}
-BOOST_AUTO_TEST_CASE( test_interpolation222 )
-{
-  auto myApp = Application_ptrtype(new Feel::Application);
-  BOOST_MESSAGE( "test_interpolation<2,2,2>" );
-  test_interpolation<2,2,2> t( myApp->vm()["hsize"].as<double>() );
-  t();
-}
-BOOST_AUTO_TEST_CASE( test_interpolation_op111 )
+BOOST_AUTO_TEST_CASE( test_interpolation_op_121 )
 {
   auto myApp = Application_ptrtype(new Feel::Application);
   BOOST_MESSAGE( "test_interpolation_op<1,2,1>" );
   test_interpolation_op<1,2,1> t( myApp->vm()["hsize"].as<double>() );
   t();
 }
-BOOST_AUTO_TEST_CASE( test_interpolation_op212 )
+BOOST_AUTO_TEST_CASE( test_interpolation_op_212 )
 {
   auto myApp = Application_ptrtype(new Feel::Application);
   BOOST_MESSAGE( "test_interpolation_op<2,1,2>" );
   test_interpolation_op<2,1,2> t( myApp->vm()["hsize"].as<double>() );
   t();
 }
-BOOST_AUTO_TEST_CASE( test_interpolation_op313 )
+BOOST_AUTO_TEST_CASE( test_interpolation_op_313 )
 {
   auto myApp = Application_ptrtype(new Feel::Application);
   BOOST_MESSAGE( "test_interpolation_op<3,1,3>" );
@@ -551,32 +419,6 @@ BOOST_AUTO_TEST_CASE( test_interpolation_op313 )
 //BOOST_AUTO_TEST_CASE( test_interpolation_op112 ) { BOOST_MESSAGE( "test_interpolation_op<1,1,2>"); test_interpolation_op<1,1,2> t( 0.1 ); t(); }
 BOOST_AUTO_TEST_SUITE_END()
 
-#if 0
-BOOST_AUTO_TEST_CASE( test_lagrange_p1_op21 )
-{
-  BOOST_MESSAGE( "test_lagrange_p1_op<2,1>" );
-  test_lagrange_p1_op<2,1> t( 0.1 );
-  t();
-}
-BOOST_AUTO_TEST_CASE( test_lagrange_p1_op22 )
-{
-  BOOST_MESSAGE( "test_lagrange_p1_op<2,2>" );
-  test_lagrange_p1_op<2,2> t( 0.1 );
-  t();
-}
-BOOST_AUTO_TEST_CASE( test_lagrange_p1_op25 )
-{
-  BOOST_MESSAGE( "test_lagrange_p1_op<2,5>" );
-  test_lagrange_p1_op<2,5> t( 0.1 );
-  t();
-}
-BOOST_AUTO_TEST_CASE( test_lagrange_p1_op232 )
-{
-  BOOST_MESSAGE( "test_lagrange_p1_op<2,3,2>" );
-  test_lagrange_p1_op<2,3,2> t( 0.1 );
-  t();
-}
-#endif
 #endif // 0
 #else
   int

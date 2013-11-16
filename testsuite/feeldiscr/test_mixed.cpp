@@ -306,7 +306,7 @@ TestMixed<Dim,Order>::run()
         BOOST_TEST_MESSAGE( "[Db(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
         vector_ptrtype F( M_backend->newVector( Yh ) );
-        BOOST_CHECK_EQUAL( F->size(), Yh->nLocalDof() );
+        BOOST_CHECK_EQUAL( F->localSize(), Yh->nLocalDofWithGhost() );
         form1( _test=Yh, _vector=F, _init=true )= integrate( elements( mesh ), divv( u )*id( p ) );
 
         F->close();
@@ -331,7 +331,7 @@ TestMixed<Dim,Order>::run()
 
 
         vector_ptrtype F( M_backend->newVector( Xh ) );
-        BOOST_CHECK_EQUAL( F->size(), Xh->nLocalDof() );
+        BOOST_CHECK_EQUAL( F->localSize(), Xh->nLocalDofWithGhost() );
         form1( _test=Xh, _vector=F, _init=true )= integrate( elements( mesh ), div( u )*idv( p ) );
 
         F->close();
@@ -357,8 +357,9 @@ TestMixed<Dim,Order>::run()
     }
     {
         sparse_matrix_ptrtype D( M_backend->newMatrix( Yh, Yh ) );
-        BOOST_CHECK_EQUAL( D->size1(), Yh->nLocalDof() );
-        BOOST_CHECK_EQUAL( D->size2(), Yh->nLocalDof() );
+        BOOST_CHECK_EQUAL( D->mapRow().nLocalDofWithGhost(), Yh->nLocalDofWithGhost() );
+        BOOST_CHECK_EQUAL( D->mapCol().nLocalDofWithGhost(), Yh->nLocalDofWithGhost() );
+
         form2( _trial=Yh, _test=Yh, _matrix=D, _init=true )= integrate( elements( mesh ), idt( p )*id( p ) );
         D->close();
         //D->printMatlab( "idid.m" );
@@ -406,8 +407,9 @@ BOOST_AUTO_TEST_CASE( test_mixed2_33 )
     t.run();
     BOOST_TEST_MESSAGE( "test_mixed2 (3D,Order 3,) done" );
 }
-BOOST_AUTO_TEST_SUITE_END()
 #endif
+BOOST_AUTO_TEST_SUITE_END()
+
 
 #if 0
 int BOOST_TEST_CALL_DECL

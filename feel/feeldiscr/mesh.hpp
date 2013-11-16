@@ -91,7 +91,19 @@ const size_type EXTRACTION_KEEP_MESH_RELATION             = ( 1<<4 );
 
 namespace Feel
 {
-
+struct PeriodicEntity
+{
+    PeriodicEntity( int d, int s, int m )
+        :
+        dim(d),
+        slave(s),
+        master(m)
+        {}
+    int dim;
+    int slave;
+    int master;
+    std::map<int,int> correspondingVertices;
+};
 struct MeshMarkerName
 {
 	std::string name;
@@ -246,9 +258,16 @@ public:
 
     ~Mesh()
         {
+            VLOG(1) << "Mesh Destructor";
+            this->clear();
+        }
+    void clear()
+        {
+            VLOG(1) << "Mesh clear()";
             M_gm.reset();
             M_gm1.reset();
             M_tool_localization.reset();
+            super::clear();
         }
     /**
      * generate a new Mesh shared pointer
@@ -277,19 +296,30 @@ public:
         }
 #endif
 
+    size_type numGlobalElements() const { return M_numGlobalElements; }
 
-    size_type numGlobalElements() const
+    void updateNumGlobalElements()
+    {
+        //int ne = numElements();
+        int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
+                                this->endElementWithProcessId( this->worldComm().rank() ) );
+
+        if ( this->worldComm().localSize() >1 )
         {
-            //int ne = numElements();
-            int ne = std::distance( this->beginElementWithProcessId( this->worldComm().rank() ),
-                                    this->endElementWithProcessId( this->worldComm().rank() ) );
-            int gne;
+#if defined(FEELPP_ENABLE_MPI_MODE)
+            int gne = 0;
             mpi::all_reduce( this->worldComm(), ne, gne, [] ( int x, int y )
                              {
                                  return x + y;
                              } );
-            return gne;
+            M_numGlobalElements = gne;
+#endif
         }
+        else
+        {
+            M_numGlobalElements = ne;
+        }
+    }
     /**
      * \return the topological dimension
      */
@@ -475,6 +505,16 @@ public:
     }
 
     //@}
+
+    /**
+     * set the periodic entities
+     */
+    void setPeriodicEntities( std::vector<PeriodicEntity> const& e ) { M_periodic_entities = e; }
+
+    /**
+     * @return true if the mesh has periodic entities
+     */
+    bool isPeriodic() const { return M_periodic_entities.empty() == false; }
 
     /** @name  Methods
      */
@@ -988,6 +1028,8 @@ public:
 
         typedef typename matrix_node<typename node_type::value_type>::type matrix_node_type;
 
+        typedef boost::weak_ptr<self_type> mesh_ptrtype;
+
         typedef KDTree kdtree_type;
         typedef typename boost::shared_ptr<KDTree> kdtree_ptrtype;
 
@@ -1023,9 +1065,11 @@ public:
         Localization() :
             M_mesh (),
             M_kd_tree( new kdtree_type() ),
-            IsInit( false ),
-            IsInitBoundaryFaces( false ),
-            M_doExtrapolation( true )
+            M_isInit( false ),
+            M_isInitBoundaryFaces( false ),
+            M_doExtrapolation( true ),
+            M_barycenter(),
+            M_barycentersWorld()
         {
             DVLOG(2) << "[Mesh::Localization] create Localization tool\n";
             M_kd_tree->nbNearNeighbor( 15 );
@@ -1035,12 +1079,14 @@ public:
 
         Localization( boost::shared_ptr<self_type> m, bool init_b = true ) :
             M_mesh ( m ),
-            IsInit( init_b ),
-            IsInitBoundaryFaces( false ),
-            M_doExtrapolation( true )
+            M_isInit( init_b ),
+            M_isInitBoundaryFaces( false ),
+            M_doExtrapolation( true ),
+            M_barycenter(),
+            M_barycentersWorld()
         {
-            if ( IsInit )
-                init();
+            if ( this->isInit() )
+                this->init();
 
             M_kd_tree->nbNearNeighbor( 15 );
             M_resultAnalysis.clear();
@@ -1050,10 +1096,12 @@ public:
             M_mesh( L.M_mesh ),
             M_kd_tree( new kdtree_type( *( L.M_kd_tree ) ) ),
             M_geoGlob_Elts( L.M_geoGlob_Elts ),
-            IsInit( L.IsInit ),
-            IsInitBoundaryFaces( L.IsInitBoundaryFaces ),
+            M_isInit( L.M_isInit ),
+            M_isInitBoundaryFaces( L.M_isInitBoundaryFaces ),
             M_resultAnalysis( L.M_resultAnalysis ),
-            M_doExtrapolation( L.M_doExtrapolation )
+            M_doExtrapolation( L.M_doExtrapolation ),
+            M_barycenter( L.M_barycenter ),
+            M_barycentersWorld( L.M_barycentersWorld )
         {}
 
         /*--------------------------------------------------------------
@@ -1065,9 +1113,9 @@ public:
             M_mesh=m;
 
             if ( b )
-                init();
+                this->init();
 
-            else IsInit=b;
+            else M_isInit=b;
 
             M_resultAnalysis.clear();
         }
@@ -1086,8 +1134,8 @@ public:
          */
         void updateForUse()
         {
-            if ( IsInit==false )
-                init();
+            if ( !this->isInit() )
+                this->init();
         }
 
         /*--------------------------------------------------------------
@@ -1095,8 +1143,8 @@ public:
          */
         void updateForUseBoundaryFaces()
         {
-            if ( IsInitBoundaryFaces==false )
-                initBoundaryFaces();
+            if ( !this->isInitBoundaryFaces() )
+                this->initBoundaryFaces();
         }
 
         /*--------------------------------------------------------------
@@ -1104,12 +1152,12 @@ public:
          */
         bool isInit() const
         {
-            return IsInit;
+            return M_isInit;
         }
 
         bool isInitBoundaryFaces() const
         {
-            return IsInitBoundaryFaces;
+            return M_isInitBoundaryFaces;
         }
 
         bool doExtrapolation() const
@@ -1117,11 +1165,11 @@ public:
             return M_doExtrapolation;
         }
 
-        boost::shared_ptr<self_type> mesh()
+        mesh_ptrtype mesh()
         {
             return M_mesh;
         }
-        boost::shared_ptr<self_type> const& mesh() const
+        mesh_ptrtype mesh() const
         {
             return M_mesh;
         }
@@ -1136,10 +1184,23 @@ public:
             return M_kd_tree;
         }
 
-        node_type barycenter() const;
-        node_type barycenter(mpl::int_<1> /**/) const;
-        node_type barycenter(mpl::int_<2> /**/) const;
-        node_type barycenter(mpl::int_<3> /**/) const;
+        node_type const& barycenter() const
+        {
+            CHECK( this->isInit() || this->isInitBoundaryFaces()  ) << " localization tool not init \n";
+            return M_barycenter;
+        }
+
+        void computeBarycenter();
+
+        bool hasComputedBarycentersWorld() { return M_barycentersWorld; }
+
+        std::vector<node_type> const& barycentersWorld() const
+        {
+            CHECK( M_barycentersWorld ) << " you must call computeBarycentersWorld() before barycentersWorld() \n";
+            return M_barycentersWorld.get();
+        }
+
+        void computeBarycentersWorld();
 
         container_search_type const & result_analysis() const { return M_resultAnalysis;}
 
@@ -1218,14 +1279,16 @@ public:
          */
         void reset()
         {
-            IsInit=false;
-            init();
+            M_isInit=false;
+            M_isInitBoundaryFaces=false;
+            this->init();
         }
 
         void resetBoundaryFaces()
         {
-            IsInitBoundaryFaces=false;
-            initBoundaryFaces();
+            M_isInit=false;
+            M_isInitBoundaryFaces=false;
+            this->initBoundaryFaces();
         }
 
     private :
@@ -1246,19 +1309,29 @@ public:
         void searchInKdTree( const node_type & p,
                              std::list< std::pair<size_type, uint> > & listTri );
 
+        /*---------------------------------------------------------------
+         * computed barycenter
+         */
+        node_type computeBarycenter(mpl::int_<1> /**/) const;
+        node_type computeBarycenter(mpl::int_<2> /**/) const;
+        node_type computeBarycenter(mpl::int_<3> /**/) const;
+
     private:
 
-        boost::shared_ptr<self_type> M_mesh;
-        //KDTree M_kd_tree;
+        mesh_ptrtype M_mesh;
         kdtree_ptrtype M_kd_tree;
         //map between node and list elements
         std::map<size_type, node_elem_type > M_geoGlob_Elts;
-        bool IsInit,IsInitBoundaryFaces;
+        bool M_isInit,M_isInitBoundaryFaces;
         container_search_type M_resultAnalysis;
         bool M_doExtrapolation;
 
         ref_convex_type M_refelem;
         ref_convex1_type M_refelem1;
+
+        node_type M_barycenter;
+        boost::optional<std::vector<node_type> > M_barycentersWorld;
+
     };
 
 
@@ -1281,6 +1354,10 @@ public:
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
 
+    typename std::set<size_type>::const_iterator beginFaceNeighborSubdomains() const { return M_face_neighbor_processors.begin(); }
+    typename std::set<size_type>::const_iterator endFaceNeighborSubdomains() const { return M_face_neighbor_processors.end(); }
+    std::set<size_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
+    void addFaceNeighborSubdomain( size_type p ) { M_face_neighbor_processors.insert( p ); }
 
     //@}
 
@@ -1295,7 +1372,8 @@ protected:
     /**
      * Update in ghost cells of entities of codimension 1
      */
-    void updateEntitiesCoDimensionOneGhostCell();
+    void updateEntitiesCoDimensionOneGhostCellByUsingBlockingComm();
+    void updateEntitiesCoDimensionOneGhostCellByUsingNonBlockingComm();
 
     /**
      * check mesh connectivity
@@ -1343,7 +1421,7 @@ private:
 private:
 
     //! communicator
-    //WorldComm M_worldComm;
+    size_type M_numGlobalElements;
 
     gm_ptrtype M_gm;
     gm1_ptrtype M_gm1;
@@ -1362,6 +1440,7 @@ private:
      * processor
      */
     std::vector<uint16_type> M_neighboring_processors;
+    std::set<size_type> M_face_neighbor_processors;
 
     //partitioner_ptrtype M_part;
 
@@ -1381,6 +1460,11 @@ private:
      * get<1>() provides the topological dimension
      */
     std::map<std::string, std::vector<size_type> > M_markername;
+
+    /**
+     * periodic entities
+     */
+    std::vector<PeriodicEntity> M_periodic_entities;
 
     /**
      * to encode points coordinates
@@ -1464,6 +1548,9 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
                                Iterator const& end_elt,
                                size_type extraction_policies ) const
 {
+#if 0
+    new_mesh = Feel::createSubmesh( this->shared_from_this(), boost::make_tuple(mpl::int_<MESH_ELEMENTS>(),begin_elt, end_elt), extraction_policies );
+#else
     Context policies( extraction_policies );
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] start\n";
@@ -1618,6 +1705,7 @@ Mesh<Shape, T, Tag>::createSubmesh( self_type& new_mesh,
     new_mesh.updateForUse();
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] stop\n";
+#endif
 }
 
 
@@ -1628,11 +1716,12 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
     P1_mesh_ptrtype new_mesh( new P1_mesh_type( this->worldComm() ) );
 
-    // How the nodes on this mesh will be renumbered to nodes
-    // on the new_mesh.
-    boost::unordered_map<size_type,size_type> new_node_numbers;// ( this->numPoints() );
-    boost::unordered_map<size_type,int> new_vertex;// ( this->numPoints() );
-    std::vector<size_type> new_element_numbers ( this->numElements() );
+    // How the nodes on this mesh will be renumbered to nodes on the new_mesh.
+    boost::unordered_map<size_type,size_type> new_node_numbers;
+    boost::unordered_map<size_type,int> new_vertex;
+    std::vector<size_type> new_element_numbers ( this->numElements(), invalid_size_type_value );
+
+    const int nProc = new_mesh->worldComm().localSize();
 
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
@@ -1645,21 +1734,13 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         new_mesh->addMarkerName( itMark.first,itMark.second[0],itMark.second[1] );
     }
 
+    // data usefull for parallism
+    std::map< int, std::set<boost::tuple<size_type,size_type> > > memoryGhostId;
+    //std::set< int > setOfRecvProc;
+    std::vector<int> nbMsgToRecv( nProc , 0 );
 
-
-    const int proc_id = this->worldComm().localRank();
-    const int nProc = this->worldComm().localSize();
-    std::vector< std::list<boost::tuple<size_type,size_type> > > memory_ghostid( nProc );
-    std::vector< std::vector<size_type> > memory_id( nProc );
-    std::vector< std::vector<size_type> > vecToSend( nProc );
-    std::vector< std::vector<size_type> > vecToRecv( nProc );
-
-
-    //auto it = this->beginElementWithProcessId( this->worldComm().localRank() );
-    //auto en = this->endElementWithProcessId( this->worldComm().localRank() );
     auto it = this->beginElement();
-    auto en = this->endElement();
-
+    auto const en = this->endElement();
     for ( ; it != en; ++it )
     {
         element_type const& old_elem = *it;
@@ -1677,7 +1758,6 @@ Mesh<Shape, T, Tag>::createP1mesh() const
         new_elem.setProcessIdInPartition( old_elem.pidInPartition() );
         new_elem.setNumberOfPartitions(old_elem.numberOfPartitions());
         new_elem.setProcessId(old_elem.processId());
-        //new_elem.setIdInPartition( old_elem.pidInPartition(), n_new_elem );
         new_elem.setNeighborPartitionIds(old_elem.neighborPartitionIds());
 
         // Loop over the P1 nodes on this element.
@@ -1693,6 +1773,8 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                         typename P1_mesh_type::point_type pt( old_point );
                         pt.setId( n_new_nodes );
                         pt.setProcessId(old_point.processId());
+                        pt.clearElementsGhost();
+
                         // Add this node to the new mesh
                         new_mesh->addPoint( pt );
                         DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] number of  points " << new_mesh->numPoints() << "\n";
@@ -1742,7 +1824,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 new_face.setProcessIdInPartition( old_face.pidInPartition() );
                 new_face.setNumberOfPartitions(old_face.numberOfPartitions());
                 new_face.setProcessId(old_face.processId());
-                //new_face.setIdInPartition( old_face.pidInPartition(), n_new_faces );
+                new_face.clearIdInOthersPartitions();
                 new_face.setNeighborPartitionIds(old_face.neighborPartitionIds());
                 // update P1 points info
                 for ( uint16_type p = 0; p < face_type::numVertices; ++p )
@@ -1758,128 +1840,164 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
 
         if ( it->isGhostCell() )
+        {
+            DVLOG(2) << "element " << it->id() << " is a ghost cell\n";
+            for (auto it_pid=it->idInOthersPartitions().begin(),en_pid=it->idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
             {
-                DVLOG(2) << "element " << it->id() << " is a ghost cell\n";
-                for (auto it_pid=it->idInOthersPartitions().begin(),en_pid=it->idInOthersPartitions().end() ; it_pid!=en_pid ; ++it_pid)
-                    {
-                        DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
-                        const int procToSend=it_pid->first;
-                        if (procToSend!=it->pidInPartition())
-                            {
-                                memory_ghostid[procToSend].push_back(boost::make_tuple(new_elem.id()/*it->id()*/,it_pid->second));
-                            }
-                    }
+                DVLOG(2) << " " << it_pid->first << "-" << it_pid->second << "-"<<it->pidInPartition()<<"-"<<new_mesh->worldComm().localRank();
+                const int procToSend=it_pid->first;
+                DCHECK( procToSend!=it->pidInPartition() ) << "invalid\n";
+                memoryGhostId[procToSend].insert(boost::make_tuple(new_elem.id(),it_pid->second));
             }
+        }
+        else if (it->numberOfNeighborPartitions() /*it->numberOfPartitions()*/ >0 )
+        {
+#if 0
+            setOfRecvProc.insert( it->neighborPartitionIds().begin(), it->neighborPartitionIds().end() );
+#else
+            auto itneighbor = it->neighborPartitionIds().begin();
+            auto const enneighbor = it->neighborPartitionIds().end();
+            for ( ; itneighbor!=enneighbor ; ++itneighbor )
+                nbMsgToRecv[*itneighbor]++;
+#endif
+        }
     } // end for it
 
-
+#if 0
     if ( nProc > 1 )
+    {
+        std::map< int, std::vector<size_type> > memoryMpiMsg;
+
+        auto itghostproc = memoryGhostId.begin();
+        auto const enghostproc = memoryGhostId.end();
+        for ( ; itghostproc!=enghostproc ; ++itghostproc )
         {
-            // init container to send
-            for ( int proc=0; proc<nProc; ++proc )
-                {
-                    vecToSend[proc].resize(memory_ghostid[proc].size());
-                    memory_id[proc].resize(memory_ghostid[proc].size());
-                    auto it_mem = memory_ghostid[proc].begin();
-                    auto en_mem = memory_ghostid[proc].end();
-                    for ( int k = 0 ; it_mem!=en_mem ; ++k,++it_mem )
-                        {
-                            vecToSend[proc][k] = it_mem->get<1>();
-                            memory_id[proc][k] = it_mem->get<0>();
-                        }
-                }
+            const int procToSend = itghostproc->first;
+            const int sizeMsgToSend = itghostproc->second.size();
+            std::vector<size_type> dataToSend( sizeMsgToSend );
+            memoryMpiMsg[procToSend].resize( sizeMsgToSend );
 
-            //------------------------------------------------------
-            this->worldComm().localComm().barrier();
-            //------------------------------------------------------
+            auto itghostelt = itghostproc->second.begin();
+            auto const enghostelt = itghostproc->second.end();
+            for ( int k=0 ; itghostelt!=enghostelt ; ++itghostelt,++k )
+            {
+                dataToSend[k] = itghostelt->template get<1>();
+                memoryMpiMsg[procToSend][k] = itghostelt->template get<0>();
+            }
+            new_mesh->worldComm().localComm().send(procToSend, 0, dataToSend);
+        }
 
-            std::vector<size_type> nDataSize_vec(nProc);
-            for ( int proc=0; proc<nProc; ++proc )
-                {
-                    const auto nDataSize = vecToSend[proc].size();
-                    mpi::all_gather( this->worldComm().localComm(),
-                                     nDataSize,
-                                     nDataSize_vec );
+        auto itrecvproc = setOfRecvProc.begin();
+        auto const enrecvproc = setOfRecvProc.end();
+        for ( ; itrecvproc!=enrecvproc ; ++itrecvproc )
+        {
+            const int procToRecv = *itrecvproc;
+            std::vector<size_type> dataToRecv;
+            new_mesh->worldComm().localComm().recv(procToRecv, 0, dataToRecv);
 
-                    for ( int proc2=0; proc2<nProc; ++proc2 )
-                        {
-                            if ( nDataSize_vec[proc2] > 0  && proc!=proc2 )
-                                {
-                                    if (proc_id==proc2) // send
-                                        {
-                                            this->worldComm().localComm().send( proc, 0, vecToSend[proc] );
-                                        }
-                                    else if (proc_id==proc) // recv
-                                        {
-                                            this->worldComm().localComm().recv( proc2, 0, vecToRecv[proc2] );
-                                        }
-                                }
-                        }
-                }
+            const int nbDataToTreat = dataToRecv.size();
+            std::vector<size_type> dataToSend( nbDataToTreat );
+            for ( int k=0;k<nbDataToTreat;++k )
+            {
+                CHECK( dataToRecv[k]!=invalid_size_type_value ) << "invalid id recv \n";
+                dataToSend[k] = new_element_numbers[ dataToRecv[k] ];
+            }
+            new_mesh->worldComm().localComm().send(procToRecv, 1, dataToSend);
+        }
 
-            //------------------------------------------------------
-            this->worldComm().localComm().barrier();
-            //------------------------------------------------------
+        itghostproc = memoryGhostId.begin();
+        for ( ; itghostproc!=enghostproc ; ++itghostproc )
+        {
+            const int procToRecv = itghostproc->first;
+            std::vector<size_type> dataToRecv;
+            new_mesh->worldComm().localComm().recv(procToRecv, 1, dataToRecv);
+            const int nbDataToTreat = dataToRecv.size();
+            for ( int k=0;k<nbDataToTreat;++k )
+            {
+                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
+                new_mesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( procToRecv, dataToRecv[k]/*idEltAsked*/ ) );
+            }
+        }
 
-            for ( int proc=0 ; proc<nProc; ++proc )
-                {
-                    vecToSend[proc].resize(vecToRecv[proc].size());
-                    for (int k=0;k<vecToRecv[proc].size();++k)
-                        {
-                            const size_type idRequest = vecToRecv[proc][k];
-                            vecToSend[proc][k]= new_element_numbers[idRequest];
-                        }
-                }
+    } // if ( nProc > 1 )
+#else
+    if ( nProc > 1 )
+    {
+        std::map< int, std::vector<size_type> > memoryMpiMsg;
+        std::vector<int> nbMsgToSend( nProc , 0 );
 
-            //------------------------------------------------------
-            this->worldComm().localComm().barrier();
-            //------------------------------------------------------
+        auto itghostproc = memoryGhostId.begin();
+        auto const enghostproc = memoryGhostId.end();
+        for ( ; itghostproc!=enghostproc ; ++itghostproc )
+        {
+            const int procToSend = itghostproc->first;
+            const int sizeMsgToSend = itghostproc->second.size();
+            memoryMpiMsg[procToSend].resize( sizeMsgToSend );
 
-            for ( int proc=0; proc<nProc; ++proc )
-                {
-                    const auto nDataSize = vecToSend[proc].size();
-                    mpi::all_gather( this->worldComm().localComm(),
-                                     nDataSize,
-                                     nDataSize_vec );
+            auto itghostelt = itghostproc->second.begin();
+            auto const enghostelt = itghostproc->second.end();
+            for ( int k=0 ; itghostelt!=enghostelt ; ++itghostelt,++k )
+            {
+                const size_type idInOtherPart = itghostelt->template get<1>();
+                new_mesh->worldComm().localComm().send(procToSend, nbMsgToSend[procToSend], idInOtherPart);
+                ++nbMsgToSend[procToSend];
+                memoryMpiMsg[procToSend][k] = itghostelt->template get<0>();
+            }
+            //CHECK( nbMsgToSend[procToSend] == sizeMsgToSend ) << "invalid data to send\n";
+        }
 
-                    for ( int proc2=0; proc2<nProc; ++proc2  )
-                        {
-                            if ( nDataSize_vec[proc2] > 0 && proc!=proc2 )
-                                {
-                                    if (proc_id==proc2) // send
-                                        {
-                                            this->worldComm().localComm().send( proc, 0, vecToSend[proc] );
-                                        }
-                                    else if (proc_id==proc) // recv
-                                        {
-                                            this->worldComm().localComm().recv( proc2, 0, vecToRecv[proc2] );
-                                        }
-                                }
-                        }
-                }
+#if !defined( NDEBUG )
+        // check nbMsgToRecv computation
+        std::vector<int> nbMsgToRecv2( nProc , 0 );
+        mpi::all_to_all( new_mesh->worldComm().localComm(),
+                         nbMsgToSend,
+                         nbMsgToRecv2 );
+        for ( int proc=0; proc<nProc; ++proc )
+            CHECK( nbMsgToRecv[proc]==nbMsgToRecv2[proc] ) << "paritioning data incorect "
+                                                           << "myrank " << this->worldComm().localRank() << " proc " << proc
+                                                           << " nbMsgToRecv[proc] " << nbMsgToRecv[proc]
+                                                           << " nbMsgToRecv2[proc] " << nbMsgToRecv2[proc] << "\n";
+#endif
+
+        // recv dof asked and re-send dof in this proc
+        for ( int procToRecv=0; procToRecv<nProc; ++procToRecv )
+        {
+            for ( int cpt=0; cpt<nbMsgToRecv[procToRecv]; ++cpt )
+            {
+                //recv
+                size_type idEltRecv;
+                new_mesh->worldComm().localComm().recv( procToRecv, cpt, idEltRecv );
+
+                const size_type idEltAsked = new_element_numbers[ idEltRecv ];
+                DCHECK( idEltAsked!=invalid_size_type_value ) << "invalid elt id\n";
+
+                new_mesh->worldComm().localComm().send(procToRecv, cpt, idEltAsked);
+            }
+        }
+
+        itghostproc = memoryGhostId.begin();
+        for ( ; itghostproc!=enghostproc ; ++itghostproc )
+        {
+            const int procToRecv = itghostproc->first;
+
+            auto itghostelt = itghostproc->second.begin();
+            auto const enghostelt = itghostproc->second.end();
+            for ( int k=0 ; itghostelt!=enghostelt ; ++itghostelt,++k )
+            {
+                size_type idEltAsked;
+                new_mesh->worldComm().localComm().recv(procToRecv, k, idEltAsked);
+
+                auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
+                new_mesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
+            }
+        }
 
 
-            //------------------------------------------------------
-            this->worldComm().localComm().barrier();
-            //------------------------------------------------------
 
-            for ( int proc=0 ; proc<nProc; ++proc )
-                {
-                    //std::cout << " vecToRecv[proc].size() " << vecToRecv[proc].size() << std::endl;
-                    for (int k=0;k<vecToRecv[proc].size();++k)
-                        {
-                            auto elttt = new_mesh->elementIterator( memory_id[proc][k], /*new_mesh->worldComm().localRank()*/ proc );
-                            new_mesh->elements().modify( elttt, detail::updateIdInOthersPartitions( proc, vecToRecv[proc][k] ) );
-                        }
-                }
-
-
-        } // if ( nProc > 1 )
-
-
+    }  // if ( nProc > 1 )
+#endif
 
     new_mesh->setNumVertices( std::accumulate( new_vertex.begin(), new_vertex.end(), 0,
-                                               //[]( size_type lhs, std::pair<size_type,int> const& rhs )
                                                []( size_type lhs, std::pair<size_type,int> const& rhs )
                                                {
                                                    return lhs+rhs.second;
@@ -1888,7 +2006,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
 
     DVLOG(2) << "[Mesh<Shape,T>::createP1mesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
-    new_mesh->components().set ( /*MESH_RENUMBER|*/MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    new_mesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
     // run intensive job
     new_mesh->updateForUse();
 

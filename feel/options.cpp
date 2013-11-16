@@ -27,6 +27,7 @@
    \date 2007-07-21
  */
 #include <feel/options.hpp>
+#include <feel/feelalg/enums.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 
 namespace Feel
@@ -35,7 +36,7 @@ namespace Feel
 std::string
 prefixvm( std::string const& prefix,
           std::string const& opt,
-          std::string const& sep = "." );
+          std::string const& sep );
 
 
 po::options_description
@@ -158,6 +159,18 @@ gmsh_domain_options( std::string const& prefix )
 }
 
 po::options_description
+on_options( std::string const& prefix )
+{
+    po::options_description _options( "Dirichlet treatment options " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"on.type" ).c_str(), Feel::po::value<int>()->default_value( ON_ELIMINATION ), "Strong Dirichlet conditions treatment type" )
+        ( prefixvm( prefix,"on.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "print in logfiles information about Dirichlet conditions treatment" )
+        ;
+    return _options;
+}
+
+
+po::options_description
 ginac_options( std::string const& prefix )
 {
     po::options_description _options( "GiNaC " + prefix + " options" );
@@ -226,6 +239,9 @@ feel_options( std::string const& prefix  )
 
         /* functions options */
         .add( functions_options( prefix ) )
+
+        /* functions options */
+        .add( on_options( prefix ) )
 
         ;
 

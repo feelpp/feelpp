@@ -131,7 +131,7 @@ public:
      * the matrix before usage with
      * \p init(...).
      */
-    MatrixPetsc();
+    MatrixPetsc( WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixPetsc( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
@@ -533,7 +533,7 @@ public :
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
 
-    MatrixPetscMPI();
+    MatrixPetscMPI( WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixPetscMPI( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 

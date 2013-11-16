@@ -146,14 +146,14 @@ public:
 
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
-        super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( argc, argv, ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -228,6 +228,15 @@ public:
 
     void loadDB()
         {
+            int proc_number = Environment::worldComm().globalRank();
+            int global_size = Environment::worldComm().globalSize();
+            std::string pslogfile = ( boost::format("PsLogCrbOffline-%1%_%2%") %global_size %proc_number ).str();
+
+            bool only_master=option(_name="crb.system-memory-evolution").template as<bool>();
+            bool all_procs  =option(_name="crb.system-memory-evolution-on-all-procs").template as<bool>();
+            bool only_one_proc=only_master * ( Environment::worldComm().globalRank()==Environment::worldComm().masterRank() );
+            bool write_memory_evolution = all_procs || only_one_proc ;
+
             bool crb_use_predefined = option(_name="crb.use-predefined-WNmu").template as<bool>();
             std::string file_name;
             int NlogEquidistributed = option(_name="crb.use-logEquidistributed-WNmu").template as<int>();
@@ -235,6 +244,10 @@ public:
             int NlogEquidistributedScm = option(_name="crb.scm.use-logEquidistributed-C").template as<int>();
             int NequidistributedScm = option(_name="crb.scm.use-equidistributed-C").template as<int>();
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
+            if( crb_use_predefined )
+            {
+                file_name = ( boost::format("SamplingWNmu") ).str();
+            }
             if( NlogEquidistributed+Nequidistributed > 0 )
             {
                 file_name = ( boost::format("SamplingWNmu") ).str();
@@ -261,7 +274,7 @@ public:
             {
                 if ( M_mode == CRBModelMode::SCM )
                 {
-                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    if( proc_number == Environment::worldComm().masterRank() )
                         std::cout << "No SCM DB available, do scm offline computations first...\n";
                     if( crb->scm()->doScmForMassMatrix() )
                         crb->scm()->setScmForMassMatrix( true );
@@ -275,10 +288,12 @@ public:
                 if ( M_mode == CRBModelMode::CRB )
                     //|| M_mode == CRBModelMode::SCM )
                 {
-                    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                    if( proc_number == Environment::worldComm().masterRank() )
                         std::cout << "No CRB DB available, do crb offline computations...\n";
                     crb->setOfflineStep( true );
                     crb->offline();
+                    if( write_memory_evolution )
+                        this->generateMemoryEvolution(pslogfile);
                 }
 
                 else if ( M_mode != CRBModelMode::SCM )
@@ -300,10 +315,17 @@ public:
                 if( current_dimension < dimension_max && !crb_use_predefined )
                     do_offline=true;
 
+                if( ! do_offline )
+                {
+                    crb->loadSCMDB();
+                }
+
                 if( do_offline )
                 {
                     crb->setOfflineStep( true );
                     crb->offline();
+                    if( write_memory_evolution )
+                        this->generateMemoryEvolution(pslogfile);
                 }
             }
         }
@@ -401,7 +423,7 @@ public:
             {
                 if( crb->printErrorDuringOfflineStep() )
                     crb->printErrorsDuringRbConstruction();
-                if ( crb->showMuSelection() )
+                if ( crb->showMuSelection() && Environment::worldComm().globalRank()==Environment::worldComm().masterRank() )
                     crb->printMuSelection();
             }
 
@@ -682,7 +704,9 @@ public:
                                 //dimension of the RB (not necessarily the max)
                                 int N =  option(_name="crb.dimension").template as<int>();
 
-                                auto o = crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+                                bool print_rb_matrix = option(_name="crb.print-rb-matrix").template as<bool>();
+                                double online_tol = option(_name="crb.online-tolerance").template as<double>();
+                                auto o = crb->run( mu, online_tol , N, print_rb_matrix);
                                 double time_crb = ti.elapsed();
 
                                 auto WN = crb->wn();
@@ -692,10 +716,12 @@ public:
                                 auto uN = solutions.template get<0>();
                                 auto uNdu = solutions.template get<1>();
 
+                                int size = uN.size();
+
                                 //if( model->isSteady()) // Re-use uN given by lb in crb->run
-                                u_crb = crb->expansion( uN , N , WN ); // Re-use uN given by lb in crb->run
+                                u_crb = crb->expansion( uN[size-1] , N , WN ); // Re-use uN given by lb in crb->run
                                 if( solve_dual_problem )
-                                    u_crb_dual = crb->expansion( uNdu , N , WNdu );
+                                    u_crb_dual = crb->expansion( uNdu[0] , N , WNdu );
                                 //else
                                 //    u_crb = crb->expansion( mu , N , WN );
 
@@ -708,7 +734,8 @@ public:
 
                                 double relative_error = -1;
                                 double relative_estimated_error = -1;
-                                double condition_number = o.template get<3>();
+                                auto matrix_info = o.template get<3>();
+                                double condition_number = matrix_info.template get<0>();
                                 double l2_error = -1;
                                 double h1_error = -1;
                                 double l2_dual_error = -1;
@@ -879,12 +906,13 @@ public:
                                     int Nmax = crb->dimension();
                                     for( int N = 1; N <= Nmax ; N++ )
                                     {
-                                        auto o= crb->run( mu,  option(_name="crb.online-tolerance").template as<double>() , N);
+                                        auto o= crb->run( mu,  online_tol , N, print_rb_matrix);
                                         auto ocrb = o.template get<0>();
                                         auto solutions=o.template get<2>();
                                         auto u_crb = solutions.template get<0>();
                                         auto u_crb_du = solutions.template get<1>();
-                                        auto uN = crb->expansion( u_crb, N, WN );
+                                        int size = u_crb.size();
+                                        auto uN = crb->expansion( u_crb[size-1], N, WN );
 
                                         element_type uNdu;
 
@@ -892,7 +920,7 @@ public:
                                         auto u_dual_error = model->functionSpace()->element();
                                         if( solve_dual_problem )
                                         {
-                                            uNdu = crb->expansion( u_crb_du, N, WNdu );
+                                            uNdu = crb->expansion( u_crb_du[0], N, WNdu );
                                             u_dual_error = u_dual_fem - uNdu;
                                         }
 
@@ -911,6 +939,8 @@ public:
 
                                         double solution_error=0;
                                         double dual_solution_error=0;
+                                        double square_solution_error=0;
+                                        double square_dual_solution_error=0;
                                         double ref_primal=0;
                                         double ref_dual=0;
                                         if( model->isSteady() )
@@ -936,12 +966,15 @@ public:
                                                         ref_dual += ref_betaAqm[0][q][m]*model->Aqm(q,m,u_dual_fem,u_dual_fem);
                                                     }
                                                 }
+                                                square_dual_solution_error = dual_solution_error;
                                                 dual_solution_error = math::sqrt( dual_solution_error );
                                                 ref_dual = math::sqrt( ref_dual );
                                             }
+                                            square_solution_error = solution_error;
                                             solution_error = math::sqrt( solution_error );
                                             ref_primal = math::sqrt( ref_primal );
                                             //dual_solution_error = math::sqrt( model->scalarProduct( u_dual_error, u_dual_error ) );
+
                                         }
                                         else
                                         {
@@ -970,6 +1003,7 @@ public:
                                                     }
                                                 }
                                             }
+                                            square_solution_error = solution_error;
                                             solution_error = math::sqrt( solution_error );
                                             ref_primal = math::sqrt( ref_primal );
 
@@ -1000,7 +1034,7 @@ public:
                                                         }
                                                     }
                                                 }
-
+                                                square_dual_solution_error = dual_solution_error;
                                                 dual_solution_error = math::sqrt( dual_solution_error );
                                                 ref_dual = math::sqrt( ref_dual );
 
@@ -1010,7 +1044,8 @@ public:
 
                                         double l2_error = l2Norm( u_error )/l2Norm( u_fem );
                                         double h1_error = h1Norm( u_error )/h1Norm( u_fem );
-                                        double condition_number = o.template get<3>();
+                                        auto matrix_info = o.template get<3>();
+                                        double condition_number = matrix_info.template get<0>();
                                         double output_error_bound_efficiency = output_relative_estimated_error / rel_err;
 
                                         double relative_primal_solution_error = solution_error / ref_primal ;
@@ -1056,7 +1091,86 @@ public:
                                         M_mapConvCRB["PrimalResidualNorm"][N-1](curpar - 1) =  primal_residual_norm;
                                         M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
                                         LOG(INFO) << "N=" << N << " done.\n";
-                                    }
+
+                                        if( option(_name="crb.compute-matrix-information").template as<bool>() )
+                                        {
+                                            auto matrix_info = o.template get<3>();// conditioning of primal reduced matrix + determinant
+                                            double conditioning = matrix_info.template get<0>();
+                                            double determinant = matrix_info.template get<1>();
+                                            LOG( INFO ) << " primal reduced matrix information ";
+                                            LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
+                                            LOG( INFO ) << std::setprecision(15)<<"conditioning : "<<conditioning;
+                                            LOG( INFO ) << std::setprecision(15)<<"determinant : "<<determinant;
+                                        }
+                                        if( relative_primal_solution_error_bound_efficiency < 1 )
+                                        {
+                                            LOG( INFO ) << "N : "<<N;
+                                            LOG( INFO ) << std::setprecision(15)<<"efficiency of error estimation on primal solution is "<<relative_primal_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                            LOG( INFO ) << std::setprecision(15)<<"mu : \n"<<mu;
+                                            LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_estimated_error : "<<relative_primal_solution_estimated_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"relative_primal_solution_error : "<<relative_primal_solution_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"primal_solution_estimated_error : "<<solution_estimated_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"primal_solution_error : "<<solution_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_solution_error;
+                                            //LOG( INFO ) << std::setprecision(15)<<"u_crb : \n"<<u_crb[size-1];
+                                            LOG( INFO ) << std::setprecision(15)<<"primal solution norme  : "<<uN.l2Norm();
+                                        }
+                                        if( relative_dual_solution_error_bound_efficiency < 1 )
+                                        {
+                                            LOG( INFO ) <<std::setprecision(15)<< "efficiency of error estimation on dual solution is "<<relative_dual_solution_error_bound_efficiency<<" ( should be >= 1 )";
+                                            LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
+                                            LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_estimated_error : "<<relative_dual_solution_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<<"relative_dual_solution_error : "<<relative_dual_solution_error;
+                                            LOG( INFO ) <<std::setprecision(15)<<"dual_solution_estimated_error : "<<dual_solution_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<<"dual_solution_error : "<<dual_solution_error;
+                                            LOG( INFO ) << std::setprecision(15)<<"square error : "<<square_dual_solution_error;
+                                            //LOG( INFO ) << std::setprecision(15)<<"u_crb_du : \n"<<u_crb_du[0];
+                                            LOG( INFO ) << std::setprecision(15)<<"dual solution norme  : "<<uNdu.l2Norm();
+                                        }
+                                        if( output_error_bound_efficiency < 1 )
+                                        {
+                                            LOG( INFO ) <<std::setprecision(15)<<"efficiency of error estimation on output is "<<output_error_bound_efficiency<<" ( should be >= 1 )";
+                                            LOG( INFO ) <<std::setprecision(15)<< "mu : \n"<<mu;
+                                            LOG( INFO ) <<std::setprecision(15)<< "output_relative_estimated_error : "<<output_relative_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<< "output_relative_error : "<<rel_err;
+                                            LOG( INFO ) <<std::setprecision(15)<< "output_estimated_error : "<<output_estimated_error;
+                                            LOG( INFO ) <<std::setprecision(15)<< "output_error : "<< std::abs( output_fem-ocrb );
+                                        }
+
+                                        if ( option(_name="crb.check.residual").template as<bool>()  && solve_dual_problem  )
+                                        {
+                                            std::vector < std::vector<double> > primal_residual_coefficients = all_upper_bounds.template get<3>();
+                                            std::vector < std::vector<double> > dual_residual_coefficients = all_upper_bounds.template get<4>();
+                                            if( model->isSteady() )
+                                            {
+                                                crb->checkResidual( mu , primal_residual_coefficients, dual_residual_coefficients, uN, uNdu );
+                                            }
+                                            else
+                                            {
+                                                std::vector< element_type > uNelement;
+                                                std::vector< element_type > uNelement_old;
+                                                std::vector< element_type > uNelement_du;
+                                                std::vector< element_type > uNelement_du_old;
+
+                                                auto u_crb_old = solutions.template get<2>();
+                                                auto u_crb_du_old = solutions.template get<3>();
+
+                                                //size is the number of time step
+                                                for(int t=0; t<size; t++)
+                                                {
+                                                    uNelement.push_back( crb->expansion( u_crb[t], N, WN ) );
+                                                    uNelement_old.push_back( crb->expansion( u_crb_old[t], N, WN ) );
+                                                    uNelement_du.push_back( crb->expansion( u_crb_du[t], N, WNdu ) );
+                                                    uNelement_du_old.push_back( crb->expansion( u_crb_du_old[t], N, WNdu ) );
+                                                }//loop over time step
+
+                                                crb->compareResidualsForTransientProblems(N, mu ,
+                                                                                          uNelement, uNelement_old, uNelement_du, uNelement_du_old,
+                                                                                          primal_residual_coefficients, dual_residual_coefficients );
+                                            }//transient case
+                                        }//check residuals computations
+
+                                    }//loop over basis functions ( N )
                                     if( proc_number == Environment::worldComm().masterRank() )
                                     {
                                         LOG(INFO) << "save in logfile\n";
@@ -1316,6 +1430,60 @@ private:
             os << "\n";
         }
 
+
+    /*
+     * read the file generated by PsLogger
+     * and generate a file to plot memory evolution in function of number of elements
+     * ( during offline step )
+     */
+    void generateMemoryEvolution(std::string pslogname)
+    {
+        std::ifstream file_read (pslogname);
+        std::vector< double > memory;
+        std::vector< double > percent;
+
+        // number of elements in the RB
+        int N = crb->dimension();
+        memory.resize( N );
+        percent.resize( N );
+        if( file_read )
+        {
+            double mem;
+            double per;
+            std::string str;
+            //first line
+            for(int i=0; i<5; i++)
+                file_read >> str;
+            //second line
+            for(int i=0; i<3; i++)
+                file_read >> str;
+            //for each elements in the RB
+            for(int i=0; i<N; i++)
+            {
+                file_read >> str ;
+                file_read >> mem;
+                file_read >> per;
+                file_read >> str;
+                memory[i] = mem;
+                percent[i] = per;
+            }
+            file_read.close();
+        }//if file
+        else
+        {
+            throw std::logic_error( "[OpusApp::generateMemoryEvaluation] ERROR loading the file generated by ps-log (does not exist)" );
+        }//no file
+
+        int proc_number = Environment::worldComm().globalRank();
+        int global_size = Environment::worldComm().globalSize();
+        std::string file_name = ( boost::format("MemoryEvolution-%1%_%2%") %global_size %proc_number ).str();
+        std::ofstream file_write;
+        file_write.open( file_name,std::ios::out );
+        file_write << "N \t Memory \t Percent \n";
+        for(int i=0; i<N; i++)
+            file_write << i << "\t"<< memory[i]<< "\t" << percent[i] << "\n";
+        file_write.close();
+    }
 
     //double l2Norm( typename ModelType::parameter_type const& mu, int N )
     double l2Norm( element_type const& u )

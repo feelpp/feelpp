@@ -719,6 +719,9 @@ public:
 
     void addVector( int* i, int n, value_type* v );
 
+    void addVector ( const Vector<value_type>& V_in,
+                     const MatrixSparse<value_type>& A_in );
+
     void clear();
 
     void localize();

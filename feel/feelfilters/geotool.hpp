@@ -51,23 +51,24 @@
 /*_________________________________________________*/
 
 # define GEOTOOL_SHAPE                                                  \
-    ( 18, ( ( Line          , 1, 0, 0, "line"         , 2, LINE       ), \
-            ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE   ), \
-            ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE  ), \
-            ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE ), \
-            ( Pentagon      , 2, 1, 0, "pentagon"     , 5, PENTAGON   ), \
-            ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON    ), \
-            ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE     ), \
-            ( Ellipse       , 2, 1, 0, "ellipse"      , 3, ELLIPSE    ), \
-            ( Pie           , 2, 1, 0, "pie"          , 3, PIE        ), \
-            ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A ), \
-            ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B ), \
-            ( Peanut        , 2, 1, 0, "peanut"       , 4, PEANUT     ), \
-            ( Hexaedre      , 3, 6, 1, "hexaedre"     , 8, HEXAEDRE   ), \
-            ( Cube          , 3, 6, 1, "cube"         , 2, CUBE       ), \
-            ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE   ), \
-            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE     ), \
-            ( Tube          , 3,20, 4, "tube"         , 5, TUBE       ), \
+    ( 19, ( ( Line          , 1, 0, 0, "line"         , 2, LINE        ), \
+            ( Triangle      , 2, 1, 0, "triangle"     , 3, TRIANGLE    ), \
+            ( Rectangle     , 2, 1, 0, "rectangle"    , 2, RECTANGLE   ), \
+            ( Quadrangle    , 2, 1, 0, "quadrangle"   , 4, QUADRANGLE  ), \
+            ( Pentagon      , 2, 1, 0, "pentagon"     , 5, PENTAGON    ), \
+            ( Hexagon       , 2, 1, 0, "hexagon"      , 6, HEXAGON     ), \
+            ( Circle        , 2, 1, 0, "circle"       , 2, CIRCLE      ), \
+            ( Ellipse       , 2, 1, 0, "ellipse"      , 3, ELLIPSE     ), \
+            ( Pie           , 2, 1, 0, "pie"          , 3, PIE         ), \
+            ( Special_1a    , 2, 2, 0, "special_1a"   , 1, SPECIAL_1A  ), \
+            ( Special_1b    , 2, 1, 0, "special_1b"   , 1, SPECIAL_1B  ), \
+            ( Peanut        , 2, 1, 0, "peanut"       , 4, PEANUT      ), \
+            ( Tetrahedron   , 3, 4, 1, "tetrahedron"  , 4, TETRAHEDRON ), \
+            ( Hexahedron    , 3, 6, 1, "hexahedron"   , 8, HEXAHEDRON  ), \
+            ( Cube          , 3, 6, 1, "cube"         , 2, CUBE        ), \
+            ( Cylindre      , 3, 6, 1, "cylindre"     , 4, CYLINDRE    ), \
+            ( Sphere        , 3, 8, 1, "sphere"       , 2, SPHERE      ), \
+            ( Tube          , 3,20, 4, "tube"         , 5, TUBE        ), \
             ( Special3D_1   , 3, 9, 1, "special3D_1"  , 1, SPECIAL3D_1 ) \
             )                                                           \
       )                                                                 \
@@ -399,10 +400,10 @@
 
 /*_________________________________________________*/
 
-# define GEOTOOL_MARKER_POINT_HEXAEDRE            \
+# define GEOTOOL_MARKER_POINT_HEXAHEDRON          \
     ( 1, ( ( 1, 8, ( 1,2,3,4,5,6,7,8 ) ) ) )      \
     /**/
-# define GEOTOOL_MARKER_LINE_HEXAEDRE           \
+# define GEOTOOL_MARKER_LINE_HEXAHEDRON         \
     ( 12, ( (  1, 1, (  1 ) ),                  \
             (  2, 1, (  2 ) ),                  \
             (  3, 1, (  3 ) ),                  \
@@ -418,7 +419,7 @@
             )                                   \
       )                                         \
     /**/
-# define GEOTOOL_MARKER_SURFACE_HEXAEDRE        \
+# define GEOTOOL_MARKER_SURFACE_HEXAHEDRON      \
     ( 6, ( ( 1, 1, ( 1 ) ),                     \
            ( 2, 1, ( 2 ) ),                     \
            ( 3, 1, ( 3 ) ),                     \
@@ -428,7 +429,34 @@
            )                                    \
       )                                         \
     /**/
-# define GEOTOOL_MARKER_VOLUME_HEXAEDRE         \
+# define GEOTOOL_MARKER_VOLUME_HEXAHEDRON       \
+    ( 1, ( ( 1, 1, ( 1 ) ) )                    \
+      )                                         \
+    /**/
+/*_________________________________________________*/
+
+# define GEOTOOL_MARKER_POINT_TETRAHEDRON          \
+    ( 1, ( ( 1, 4, ( 1,2,3,4 ) ) ) )               \
+    /**/
+# define GEOTOOL_MARKER_LINE_TETRAHEDRON       \
+    ( 6, ( (  1, 1, (  1 ) ),                  \
+            (  2, 1, (  2 ) ),                  \
+            (  3, 1, (  3 ) ),                  \
+            (  4, 1, (  4 ) ),                  \
+            (  5, 1, (  5 ) ),                  \
+            (  6, 1, (  6 ) )                   \
+            )                                   \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_SURFACE_TETRAHEDRON     \
+    ( 4, ( ( 1, 1, ( 1 ) ),                     \
+           ( 2, 1, ( 2 ) ),                     \
+           ( 3, 1, ( 3 ) ),                     \
+           ( 4, 1, ( 4 ) )                      \
+           )                                    \
+      )                                         \
+    /**/
+# define GEOTOOL_MARKER_VOLUME_TETRAHEDRON      \
     ( 1, ( ( 1, 1, ( 1 ) ) )                    \
       )                                         \
     /**/
@@ -589,11 +617,6 @@ typedef boost::shared_ptr<data_geo_type> data_geo_ptrtype;
 
 
 void run( data_geo_ptrtype __dg );
-
-//A faire avec les BoostPP
-//void runRectangle(data_geo_ptrtype dg);
-//void runCircle(data_geo_ptrtype dg);
-//void runHexaedre(data_geo_ptrtype dg);
 
 
 

@@ -44,12 +44,15 @@ endfunction ()
 find_path (PETSC_DIR include/petsc.h
   HINTS ENV PETSC_DIR
   PATHS
-  /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
+  /usr/lib/petsc
+  /usr/lib/petscdir/3.4.2 /usr/lib/petscdir/3.3 /usr/lib/petscdir/3.2 /usr/lib/petscdir/3.1 /usr/lib/petscdir/3.0.0 /usr/lib/petscdir/2.3.3 /usr/lib/petscdir/2.3.2 # Debian
   /opt/local/lib/petsc # macports
+  /usr/local/lib/petscdir/3.4.3/darwin-cxx-debug # homebrew...
+  /usr/local/lib/petscdir/3.4.3/darwin-cxx-opt # homebrew...
   $ENV{HOME}/petsc
   $ENV{PETSC_HOME}
   DOC "PETSc Directory")
-
+message(STATUS "Petsc Dir: ${PETSC_DIR}")
 find_program (MAKE_EXECUTABLE NAMES make gmake)
 
 foreach( debian_arches linux kfreebsd )
@@ -60,11 +63,20 @@ foreach( debian_arches linux kfreebsd )
   ENDIF()
 endforeach()
 
+IF ( "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
+  set( DARWIN_FLAVORS darwin-cxx-debug darwin-cxx-opt ${DARWIN_FLAVORS})
+ELSE()
+  set( DARWIN_FLAVORS darwin-cxx-opt darwin-cxx-debug ${DARWIN_FLAVORS})
+ENDIF()
+
+message(STATUS "Darwin flavors: ${DARWIN_FLAVORS}")
 if (PETSC_DIR AND NOT PETSC_ARCH)
   set (_petsc_arches
     $ENV{PETSC_ARCH}                   # If set, use environment variable first
     ${DEBIAN_FLAVORS}  # Debian defaults
-    x86_64-unknown-linux-gnu i386-unknown-linux-gnu)
+    ${DARWIN_FLAVORS}  # Darwin defaults
+    x86_64-unknown-linux-gnu i386-unknown-linux-gnu )
+
   set (petscconf "NOTFOUND" CACHE FILEPATH "Cleared" FORCE)
   foreach (arch ${_petsc_arches})
     if (NOT PETSC_ARCH)
@@ -79,7 +91,7 @@ if (PETSC_DIR AND NOT PETSC_ARCH)
   endforeach (arch)
   set (petscconf "NOTFOUND" CACHE INTERNAL "Scratch variable" FORCE)
 endif (PETSC_DIR AND NOT PETSC_ARCH)
-
+message(STATUS "PETSC_ARCH: ${PETSC_ARCH}")
 set (petsc_slaves LIBRARIES_SYS LIBRARIES_VEC LIBRARIES_MAT LIBRARIES_DM LIBRARIES_KSP LIBRARIES_SNES LIBRARIES_TS
   INCLUDE_DIR INCLUDE_CONF)
 include (FindPackageMultipass)

@@ -281,7 +281,12 @@ public:
         void operator()( element_type& e )
         {
             for ( int i = 0; i < e.numPoints; ++i )
+            {
                 e.point( i ).addElementGhost( e.processId(),e.id() );
+                // only if point is on interprocess
+                if ( e.point( i ).processId()!=invalid_uint16_type_value )
+                    e.point( i ).addNeighborPartitionId( e.processId() );
+            }
         }
     };
 
@@ -321,8 +326,15 @@ public:
     {}
 
     virtual ~Elements()
-    {}
+    {
+        this->clear();
+    }
 
+    void clear()
+        {
+            VLOG(1) << "deleting elements...\n";
+            M_elements.clear();
+        }
     //@}
 
     /** @name Operator overloads
@@ -411,9 +423,10 @@ public:
     /**
      * \return \c true if element with id \p i is found, \c false otherwise
      */
-    bool hasElement( size_type i ) const
+    bool hasElement( size_type i, uint16_type p = invalid_uint16_type_value ) const
     {
-        return M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) ) !=
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().find( boost::make_tuple( part, i ) ) !=
                M_elements.template get<0>().end();
     }
 
@@ -560,33 +573,39 @@ public:
         return M_elements.template get<detail::by_marker3>().equal_range( boost::make_tuple( Marker3( m ), this->worldCommElements().localRank() ) );
     }
 
-    element_iterator beginElementWithProcessId( size_type m )
+    element_iterator beginElementWithProcessId( uint16_type p = invalid_uint16_type_value )
     {
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().lower_bound( boost::make_tuple( part ) );
     }
-    element_const_iterator beginElementWithProcessId( size_type m ) const
+    element_const_iterator beginElementWithProcessId( uint16_type p = invalid_uint16_type_value ) const
     {
-        return M_elements.template get<0>().lower_bound( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().lower_bound( boost::make_tuple( part ) );
     }
-    element_iterator endElementWithProcessId( size_type m )
+    element_iterator endElementWithProcessId( uint16_type p = invalid_uint16_type_value )
     {
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().upper_bound( boost::make_tuple( part ) );
     }
-    element_const_iterator endElementWithProcessId( size_type m ) const
+    element_const_iterator endElementWithProcessId( uint16_type p = invalid_uint16_type_value ) const
     {
-        return M_elements.template get<0>().upper_bound( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().upper_bound( boost::make_tuple( part ) );
     }
 
     std::pair<element_const_iterator, element_const_iterator>
-    elementsWithProcessId( size_type m ) const
+    elementsWithProcessId( uint16_type p = invalid_uint16_type_value ) const
     {
-        return M_elements.template get<0>().equal_range( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().equal_range( boost::make_tuple( part ) );
     }
 
     std::pair<element_iterator, element_iterator>
-    elementsWithProcessId( size_type m )
+    elementsWithProcessId( uint16_type p = invalid_uint16_type_value )
     {
-        return M_elements.template get<0>().equal_range( boost::make_tuple( m ) );
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().equal_range( boost::make_tuple( part ) );
     }
 
     /**
@@ -714,11 +733,12 @@ public:
      *  element on processor \p p
      */
     std::pair<location_element_const_iterator, location_element_const_iterator>
-    boundaryElements( size_type p  ) const
+    boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, size_type p  ) const
     {
-        auto lower = boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 0);
-        auto upper = boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, 2);
-        return M_elements.template get<detail::by_location>().range( lower, upper );
+        auto lower = M_elements.template get<detail::by_location>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), entity_min_dim ) );
+        auto upper = M_elements.template get<detail::by_location>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), entity_max_dim ) );
+        return std::make_pair( lower, upper );
+
     }
 
     /**
@@ -726,13 +746,15 @@ public:
      *  element on processor \p p
      */
     std::pair<location_element_const_iterator, location_element_const_iterator>
-    boundaryElements( uint16_type entity_min_dim, uint16_type entity_max_dim, size_type p  ) const
+    boundaryElements( size_type p  ) const
     {
-        auto lower = M_elements.template get<detail::by_location>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, entity_min_dim ) );
-        auto upper = M_elements.template get<detail::by_location>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), ON_BOUNDARY, entity_max_dim ) );
-        return std::make_pair( lower, upper );
+        return boundaryElements( 0, 2, p );
+        //auto lower = boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), 0);
+        //auto upper = boost::make_tuple( this->worldCommElements().localRank(), bool(ON_BOUNDARY), 2);
+        //return M_elements.template get<detail::by_location>().range( lower, upper );
 
     }
+
 
     /**
      * \return the range of iterator \c (begin,end) over the internal
@@ -741,7 +763,7 @@ public:
     std::pair<location_element_const_iterator, location_element_const_iterator>
     internalElements( size_type p  ) const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(),  INTERNAL, invalid_uint16_type_value ) );
+        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(),  bool(INTERNAL), invalid_uint16_type_value ) );
     }
 
 

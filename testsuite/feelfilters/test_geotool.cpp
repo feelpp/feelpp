@@ -204,7 +204,7 @@ void runSpecial1a( Application_ptrtype testApp )
 
 //-----------------------------------------------------//
 
-void runHexaedre( Application_ptrtype testApp )
+void runHexahedron( Application_ptrtype testApp )
 {
 
     typedef Mesh<Simplex<3,1,3> > mesh_type;
@@ -219,7 +219,7 @@ void runHexaedre( Application_ptrtype testApp )
     GeoTool::Node x6( 1,-1, 1);
     GeoTool::Node x7( 1, 1, 1);
     GeoTool::Node x8(-1, 1, 1);
-    GeoTool::Hexaedre H( meshSize,"Hex",x1,x2,x3,x4,x5,x6,x7,x8);
+    GeoTool::Hexahedron H( meshSize,"Hex",x1,x2,x3,x4,x5,x6,x7,x8);
     H.setMarker(_type="surface",_name="Crush",_marker5=true);
     H.setMarker(_type="surface",_name="Free",_marker1=true);
     H.setMarker(_type="surface",_name="Fixed",
@@ -230,7 +230,7 @@ void runHexaedre( Application_ptrtype testApp )
     H.setMarker(_type="volume",_name="OmegaSolid",_markerAll=true);
 
     auto mesh = H.createMesh(_mesh=new mesh_type,
-                             _name="domainHexaedre" );
+                             _name="domainHexahedron" );
 
     auto area = integrate( _range=elements( mesh ),
                            _expr=cst(1.) ).evaluate()( 0,0 );
@@ -352,6 +352,29 @@ void runSphereHollow( Application_ptrtype testApp )
 }
 #endif
 
+#if 0
+void runTetrahedron( Application_ptrtype testApp )
+{
+    typedef Mesh<Simplex<3,1,3> > mesh_type;
+    double meshSize = testApp->vm()["hsize3d"].as<double>()/3.;
+
+    GeoTool::Node x1( -1,-1,-1 );
+    GeoTool::Node x2(  1,-1,-1 );
+    GeoTool::Node x3(  0, 1,-1 );
+    GeoTool::Node x4(  0, 0, 1 );
+    GeoTool::Tetrahedron R( meshSize,"OMEGA",x1,x2,x3,x4 );
+    R.setMarker(_type="surface",_name="Boundary1",_marker1=true);
+    R.setMarker(_type="surface",_name="Boundary2",_marker2=true);
+    R.setMarker(_type="surface",_name="Boundary3",_marker3=true);
+    R.setMarker(_type="surface",_name="Boundary4",_marker4=true);
+    R.setMarker(_type="volume",_name="Omega",_markerAll=true);
+    auto mesh = R.createMesh(_mesh=new mesh_type,
+                             _name="domainTetra",
+                             _hmax=meshSize );
+
+}
+#endif
+
 } // namespace test_geotool
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( test_geotool::makeAbout(), test_geotool::makeOptions() )
@@ -379,11 +402,12 @@ BOOST_AUTO_TEST_CASE( interp_geotool )
     test_geotool::runRectangleWithPerfo(testApp);
     test_geotool::runRectangleWithConformalInternalShape(testApp);
     test_geotool::runSpecial1a(testApp);
-    test_geotool::runHexaedre(testApp);
+    test_geotool::runHexahedron(testApp);
     test_geotool::runCylinder(testApp);
     test_geotool::runCubeWithPerfo(testApp);
     test_geotool::runCubeWithConformalInternalShape(testApp);
     //test_geotool::runSphere(testApp);
+    //test_geotool::runTetrahedron(testApp);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

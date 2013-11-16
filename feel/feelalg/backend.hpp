@@ -26,11 +26,12 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-12-23
  */
-#ifndef __Backend_H
-#define __Backend_H 1
+#ifndef Backend_H
+#define Backend_H 1
 
 #include <boost/timer.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 #include <boost/fusion/include/fold.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
@@ -290,10 +291,16 @@ public:
                                        ( buildGraphWithTranspose, ( bool ),false )
                                        ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,( int ),0 )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                        ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::newMatrix begin" );
+        }
+
+        if ( !this->comm().isActive() ) return sparse_matrix_ptrtype();
 
         //auto mat = this->newMatrix( trial->map(), test->map(), properties, false );
         auto mat = this->newMatrix( trial->dofOnOff(), test->dofOn(), properties, false );
@@ -338,6 +345,10 @@ public:
 
         mat->zero();
         mat->setIndexSplit( trial->dofIndexSplit() );
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::newMatrix end" );
+        }
         return mat;
     }
 
@@ -454,6 +465,8 @@ public:
                                      )
                                    )
     {
+        if ( !this->comm().isActive() ) return vector_ptrtype();
+
         return this->newVector( test->dof() );
     }
 
@@ -832,9 +845,14 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                      )
                                    )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::solve begin" );
+        }
         this->setTolerances( _dtolerance=dtolerance,
                              _rtolerance=rtolerance,
                              _atolerance=atolerance,
@@ -872,6 +890,10 @@ public:
         //new
         _sol->close();
         detail::ref( solution ) = *_sol;
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::solve end" );
+        }
         return ret;
     }
 
@@ -943,9 +965,14 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
+                                       ( verbose,   ( bool ), option(_prefix=this->prefix(),_name="backend.verbose").template as<bool>() )
                                      )
                                    )
     {
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::nlSolve begin" );
+        }
         this->setTolerancesSNES( _stolerance=stolerance,
                                  _rtolerance=rtolerance,
                                  _atolerance=atolerance,
@@ -982,6 +1009,10 @@ public:
         _sol->close();
         detail::ref( solution ) = *_sol;
         detail::ref( solution ).close();
+        if ( verbose )
+        {
+            Environment::logMemoryUsage( "backend::nlSolve end" );
+        }
         return ret;
     }
 
@@ -1111,12 +1142,12 @@ typedef boost::shared_ptr<backend_type> backend_ptrtype;
 namespace detail
 {
 class BackendManagerImpl:
-    public std::map<std::pair<BackendType,std::string>, backend_ptrtype >,
+    public std::map<boost::tuple<BackendType,std::string,int>, backend_ptrtype >,
     public boost::noncopyable
 {
 public:
     typedef backend_ptrtype value_type;
-    typedef std::pair<BackendType,std::string> key_type;
+    typedef boost::tuple<BackendType,std::string,int> key_type;
     typedef std::map<key_type, value_type> backend_manager_type;
 
 };
@@ -1144,6 +1175,7 @@ BOOST_PARAMETER_FUNCTION(
       ( name,           ( std::string ), "" )
       ( kind,           ( BackendType ), BACKEND_PETSC )
       ( rebuild,        ( bool ), false )
+      ( worldcomm,      (WorldComm), Environment::worldComm() )
     ) )
 {
     // register the BackendManager into Feel::Environment so that it gets the
@@ -1158,11 +1190,11 @@ BOOST_PARAMETER_FUNCTION(
 
     Feel::detail::ignore_unused_variable_warning( args );
 
-    auto git = detail::BackendManager::instance().find( std::make_pair( kind, name ) );
+    auto git = detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
 
     if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
-        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
         return git->second;
     }
 
@@ -1171,17 +1203,17 @@ BOOST_PARAMETER_FUNCTION(
         if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
-        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << "\n";
+        VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
 
         backend_ptrtype b;
         if ( vm.empty() )
         {
-            b = Feel::backend_type::build( kind );
+            b = Feel::backend_type::build( kind, worldcomm );
         }
         else
-            b = Feel::backend_type::build( vm, name );
+            b = Feel::backend_type::build( vm, name, worldcomm );
         VLOG(2) << "storing backend in singleton" << "\n";
-        detail::BackendManager::instance().operator[]( std::make_pair( kind, name ) ) = b;
+        detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
 
@@ -1242,4 +1274,4 @@ bool isMatrixInverseSymmetric ( boost::shared_ptr<MatrixSparse<T> >& A, boost::s
 }
 
 }
-#endif /* __Backend_H */
+#endif /* Backend_H */

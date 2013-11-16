@@ -8877,6 +8877,7 @@ public:
     /** @name Typedefs
      */
     //@{
+    typedef Simplex<Dim,1> convex_type;
     typedef T value_type;
     typedef ublas::matrix<value_type,ublas::column_major> matrix_type;
     typedef ublas::vector<value_type> vector_type;
@@ -8899,6 +8900,7 @@ public:
     typedef IMSimplex<Dim,Order,T> parent_quadrature_type;
     static const uint16_type nDim = Dim;
     static const uint16_type nOrder = Order;
+    static const uint16_type nQuadPoints = quad_type::nPoints;
 
     //@}
 
