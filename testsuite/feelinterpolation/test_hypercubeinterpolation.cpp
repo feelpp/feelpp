@@ -136,17 +136,31 @@ Test<Dim,Order>::run()
 
 
     auto u = vf::project( _space=Xh,
-                          _range=elements(mesh),
+                          _range=markedfaces(mesh,"NORTH"),
                           _expr=cst(1.) );
                           //_expr=cos( pi*Px() )*sin( pi*Py() ) );
 
     auto tu = TXh->element();
     opI->apply( u,tu );
+    u.printMatlab( "u1.m" );
+    tu.printMatlab( "tu1.m" );
 
-    auto error = integrate( _range=elements( TXh->mesh() ),
-                            _expr=(idv( u )-idv( tu) )*(idv( u )-idv( tu) ) ).evaluate()( 0,0 );
+    auto l2error = normL2( _range=elements( TXh->mesh() ), _expr=idv( u )-idv( tu) );
 
-    std::cout<<"error= "<< error <<"\n";
+    BOOST_TEST_MESSAGE( "l2 error 1 = " << l2error );
+    BOOST_CHECK_SMALL( l2error, 1e-13 );
+
+    u = vf::project( _space=Xh,
+                     _range=markedfaces(mesh,"NORTH"),
+                     _expr=sin( pi*Px() )*cos( pi*Py() ) );
+    opI->apply( u,tu );
+    u.printMatlab( "u2.m" );
+    tu.printMatlab( "tu2.m" );
+
+    l2error = normL2( _range=elements( TXh->mesh() ), _expr=idv( u )-idv( tu) );
+
+    BOOST_TEST_MESSAGE( "l2 error 2 = " << l2error );
+    BOOST_CHECK_SMALL( l2error, 1e-13 );
 
 } // Test::run
 
