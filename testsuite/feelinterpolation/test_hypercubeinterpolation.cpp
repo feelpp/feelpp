@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Abdoulaye Samake <abdoulaye.samake1@e.ujf-grenoble.fr>
-       Date: 2011-08-20
+       Date: 2013-11-15
 
-  Copyright (C) 2008-2010 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file test_trace.cpp
    \author Abdoulaye Samake <abdoulaye.samake.@imag.fr>
-   \date 2011-08-20
+   \date 2013-11-15
  */
+
+#define BOOST_TEST_MODULE test_operatorinterpolation_hypercube
+#include <testsuite/testsuite.hpp>
 
 #include <feel/options.hpp>
 
@@ -37,20 +39,27 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 
+
+
+namespace test_interpolation
+{
 using namespace Feel;
-using namespace Feel::vf;
 
 inline
-po::options_description
-makeOptions()
+AboutData
+makeAbout()
 {
-    po::options_description testoptions( "Test options" );
-    testoptions.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-        ;
-    return testoptions.add( Feel::feel_options() );
-}
+    AboutData about( "Test_OperatorInterpolationHypercube" ,
+                     "Test_OperatorInterpolationHypercube" ,
+                     "0.1",
+                     "test operator interpolation on hypercubes",
+                     Feel::AboutData::License_GPL,
+                     "Copyright (c) 2013 Feel++ Consortium" );
 
+    about.addAuthor( "Abdoulaye Samake", "developer", "asamake@gmail.com", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
+    return about;
+}
 
 template<int Dim, int Order>
 class Test
@@ -71,8 +80,7 @@ public:
     Test()
         :
         super(),
-        backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() )
+        backend( backend_type::build( Environment::vm() ) )
     {}
 
     void run();
@@ -80,8 +88,6 @@ public:
 private:
 
     backend_ptrtype backend;
-    double meshSize;
-
 }; // Test
 
 template<int Dim, int Order>
@@ -92,13 +98,12 @@ Test<Dim,Order>::run()
     std::cout << "------------------------------------------------------------\n";
     std::cout << "Execute Test<" << Dim << "," << Order << ">\n";
 
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%G%4%/h_%5%/" )
-                                       % this->about().appName()
-                                       % convex_type::name()
-                                       % Dim
-                                       % Order
-                                       % meshSize );
+    Environment::changeRepository( boost::format( "testsuite/feelinterpolation/%1%/%2%-%3%/P%4%/h_%5%/" )
+                                   % this->about().appName()
+                                   % convex_type::name()
+                                   % Dim
+                                   % Order
+                                   % option(_name="gmsh.hsize").template as<double>() );
 
     auto mesh = createGMSHMesh( _mesh=new mesh_type,
                                 _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
@@ -107,7 +112,7 @@ Test<Dim,Order>::run()
                                               _usenames=false,
                                               _shape="hypercube",
                                               _dim=Dim,
-                                              _h=meshSize,
+                                              _h=option(_name="gmsh.hsize").template as<double>() ,
                                               _convex="Hypercube",
                                               //_convex=convex_type::name(),
                                               _xmin=0.,
@@ -132,7 +137,8 @@ Test<Dim,Order>::run()
 
     auto u = vf::project( _space=Xh,
                           _range=elements(mesh),
-                          _expr=cos( pi*Px() )*sin( pi*Py() ) );
+                          _expr=cst(1.) );
+                          //_expr=cos( pi*Px() )*sin( pi*Py() ) );
 
     auto tu = TXh->element();
     opI->apply( u,tu );
@@ -144,18 +150,23 @@ Test<Dim,Order>::run()
 
 } // Test::run
 
-int
-main( int argc, char** argv )
-{
-
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=about(_name="test_hyper_interp",
-                                  _author="Abdoulaye Samake",
-                                  _email="abdoulaye.samake@imag.fr") );
-    Application app;
-
-    app.add( new Test<2,1>() );
-    app.run();
-
 }
+/**
+ * main code
+ */
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_interpolation::makeAbout(),
+                                 Feel::feel_options() )
+
+BOOST_AUTO_TEST_SUITE( interp_operatorinterpolation )
+
+BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo1 )
+{
+    BOOST_TEST_MESSAGE( "interp_interpolation_hypercube_2d_1d_q1" );
+    using namespace test_interpolation;
+
+    Test<2,1> t;
+    t.run();
+    BOOST_TEST_MESSAGE( "interp_interpolation_hypercube_2d_1d_q1 done" );
+}
+
+BOOST_AUTO_TEST_SUITE_END()
