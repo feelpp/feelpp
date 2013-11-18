@@ -210,6 +210,7 @@ template<class Archive>
 void
 CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
 {
+#if 0
     auto mesh = mesh_type::New();
     auto is_mesh_loaded = mesh->load( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
 
@@ -219,6 +220,7 @@ CRBElementsDB<ModelType>::save( Archive & ar, const unsigned int version ) const
         mesh = first_element.functionSpace()->mesh() ;
         mesh->save( _name="mymesh",_path=this->dbLocalPath(),_type="binary" );
     }
+#endif
 
     int size = M_WN.size();
 

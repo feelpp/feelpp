@@ -610,7 +610,9 @@ public:
     {
         checkInvariant();
 
-        real_type local_min = *std::min_element( M_vec.begin(), M_vec.end() );
+        real_type local_min = (this->localSize()>0)?
+            *std::min_element( M_vec.begin(), M_vec.end() ) :
+            std::numeric_limits<real_type>::max() ;
 
         real_type global_min = local_min;
 
@@ -636,7 +638,9 @@ public:
     {
         checkInvariant();
 
-        real_type local_max = *std::max_element( M_vec.begin(), M_vec.end() );
+        real_type local_max = (this->localSize()>0)?
+            *std::max_element( M_vec.begin(), M_vec.end() ) :
+            std::numeric_limits<real_type>::min() ;
 
         real_type global_max = local_max;
 

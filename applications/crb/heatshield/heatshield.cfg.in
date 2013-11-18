@@ -1,34 +1,35 @@
 #mesh size
-hsize=3e-1
+hsize=1e-1
 #hsize=1.5e-1
-steady=false
+steady=true
 do-export=false
 
 #name of the .msh file
 #for example :
 #mshfile = /home/veys/feel/geofiles/heatshield/heatshield_h3e-1_np2.msh
 
-#run mode
-# 0 : PFEM
-# 1 : SCM
-# 2 : CRB
 [heatshield.run]
 mode=2
 sampling.size=10
 
-
 [heatshield.bdf]
 order=1
-#time-step=1	
-#time-final=1
 time-step=0.2
-time-final=2
+time-final=20
 
-#CRB error type option
-# 0 : RESIDUAL
-# 1 : REDISUAL_SCM
-# 2 : NO_RESIDUAL
-# 3 : EMPIRICAL
+[backend-primal]
+ksp-rtol=1e-15
+reuse-prec=false
+#ksp-monitor=true
+
+[backend-dual]
+ksp-rtol=1e-15
+reuse-prec=false
+
+[backendl2]
+ksp-rtol=1e-15
+reuse-prec=true #resolution with the same matrix, only rhs change
+
 [crb]
 #use-predefined-WNmu=true
 #use-predefined-test-sampling=true
@@ -36,7 +37,7 @@ dimension-max=15
 Nm=1
 output-index=1
 error-max=1e-14
-error-type=0
+error-type=1
 orthonormalize-primal=true
 orthonormalize-dual=true
 visualize-basis=false
@@ -50,9 +51,9 @@ show-residual=false
 [crb.check]
 gs=0
 rb=0
-residual=0
+residual=false
 residual-transient-problems=false
-
+results-repo-name=HeatShield
 
 #parameter for scm
 [crb.scm]
@@ -65,5 +66,5 @@ print-matrix=false
 solvereigen.tol=1e-10
 solvereigen.maxiter=100000
 solvereigen.ncv=10
-
+use-scm=false
 

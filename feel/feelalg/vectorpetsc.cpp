@@ -811,6 +811,17 @@ VectorPetscMPI<T>::addVector ( int* i, int n, value_type* v )
 
 template <typename T>
 void
+VectorPetscMPI<T>::addVector( const Vector<value_type>& V_in,
+                              const MatrixSparse<value_type>& A_in )
+{
+    super::addVector( V_in,A_in );
+    this->localize();
+}
+
+//----------------------------------------------------------------------------------------------------//
+
+template <typename T>
+void
 VectorPetscMPI<T>::clear()
 {
     if ( this->isInitialized() )

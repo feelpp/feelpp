@@ -52,7 +52,6 @@ cmake \
 	    -DCMAKE_INSTALL_LIBDIR:PATH=${HOME}/packages/openturns/lib \
 	    -DOPENTURNS_LIBRARY_PATH:PATH=lib \
             -DOPENTURNS_CONFIG_CMAKE_PATH:PATH=lib/cmake/openturns \
-            -DOPENTURNS_SYSCONFIG_PATH:PATH=/etc/openturns-1.1 \
             -DOPENTURNS_WRAPPER_PATH:PATH=lib/openturns-1.1/wrappers \
             -DOPENTURNS_SYSTEM_INSTALL:BOOL=ON \
 	    -DOPENTURNS_SYSCONFIG_PATH:PATH=${HOME}/packages/openturns/etc \

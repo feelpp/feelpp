@@ -96,6 +96,10 @@ public:
     typedef typename model_type::functionspace_type functionspace_type;
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
 
+    //! reduced basis function space type
+    typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
+    typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+
     //! element of the functionspace type
     typedef typename model_type::element_type element_type;
     typedef typename model_type::element_ptrtype element_ptrtype;
@@ -287,6 +291,13 @@ public:
     {
         return M_model->functionSpace();
     }
+
+    //!  Returns the reduced basis function space
+    rbfunctionspace_ptrtype  rBFunctionSpace() const
+    {
+        return M_model->rBFunctionSpace();
+    }
+
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
     size_type Qa() const
