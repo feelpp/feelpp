@@ -78,7 +78,7 @@ Info::versionMicro()
 char const*
 Info::versionString()
 {
-    return stringize( FEELPP_VERSION_MAJOR ) "." stringize( FEELPP_VERSION_MINOR ) "." stringize( FEELPP_VERSION_MICRO )  stringize(FEELPP_VERSION_PRERELEASE) stringize(FEELPP_VERSION_METADATABUILDID);
+    return stringize( FEELPP_VERSION_MAJOR ) "." stringize( FEELPP_VERSION_MINOR ) "." stringize( FEELPP_VERSION_MICRO )  stringize(FEELPP_VERSION_PRERELEASE) stringize(FEELPP_VERSION_METADATA) stringize(FEELPP_BUILDID);
 }
 
 char const*

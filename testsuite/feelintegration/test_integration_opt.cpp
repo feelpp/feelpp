@@ -84,7 +84,7 @@ typedef boost::mpl::list<boost::mpl::pair<mpl::int_<2>,mpl::int_<2> >,
         boost::mpl::pair<mpl::int_<2>,mpl::int_<3> >,
         boost::mpl::pair<mpl::int_<2>,mpl::int_<4> >,
         boost::mpl::pair<mpl::int_<3>,mpl::int_<2> >,
-        boost::mpl::pair<mpl::int_<3>,mpl::int_<4> >
+        boost::mpl::pair<mpl::int_<3>,mpl::int_<3> >
         > dim_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( integration_opt, T, dim_types )
 {
@@ -157,6 +157,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
             GeoTool::Node B( std::sqrt( 2. )/2,std::sqrt( 2. )/2 ); // 45D
 
             GeoTool::Pie Pie( meshSize,"pie", C, A, B );
+            Pie.setMarker(_type="line",_name="Boundary",_markerAll=true);
+            Pie.setMarker(_type="surface",_name="Omega",_markerAll=true);
+
             mesh = Pie.createMesh(_mesh=new mesh_type,
                                   _name=( boost::format( "pie-%1%-%2%" ) % T::value % l ).str() );
         }
@@ -167,6 +170,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_pie, T, order_types )
             GeoTool::Node C( 0,0 );
             GeoTool::Node A( 1,0. );
             GeoTool::Circle Circle( meshSize,"circle", C, A );
+            Circle.setMarker(_type="line",_name="Boundary",_markerAll=true);
+            Circle.setMarker(_type="surface",_name="Omega",_markerAll=true);
+
             mesh = Circle.createMesh(_mesh=new mesh_type,
                                      _name=( boost::format( "circle-%1%-%2%" ) % T::value % l ).str() );
         }

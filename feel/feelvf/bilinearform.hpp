@@ -1299,8 +1299,9 @@ public:
                                        ( rebuild,        ( bool ), false )
                                          ) )
         {
-            return backend( _name=name, _kind=kind, _rebuild=rebuild )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
-                                                                               _solution=solution);
+            return backend( _name=name, _kind=kind, _rebuild=rebuild,
+                            _worldcomm=this->M_X1->worldComm() )->solve( _matrix=this->matrixPtr(), _rhs=rhs.vectorPtr(),
+                                                                         _solution=solution);
         }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( typename Backend<value_type>::solve_return_type ),
@@ -1385,6 +1386,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     boost::timer tim;
     DVLOG(2) << "begin constructor with default listblock\n";
 
+    if ( !this->M_X1->worldComm().isActive() ) return;
+
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
     M_lb.push_back( Block ( 0, 0, 0, 0 ) );
 
@@ -1414,6 +1417,8 @@ BilinearForm<FE1, FE2, ElemContType>::BilinearForm( space_1_ptrtype const& Xh,
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
+    if ( !this->M_X1->worldComm().isActive() ) return;
+
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=M_X1, _trial=M_X2 );
 }
 

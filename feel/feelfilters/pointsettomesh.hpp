@@ -43,6 +43,7 @@
 #pragma clang diagnostic ignored "-W#warnings"
 #endif
 
+#include <vtkVersion.h>
 #include <vtkPointSet.h>
 #include <vtkDelaunay2D.h>
 #include <vtkDelaunay3D.h>
@@ -122,7 +123,7 @@ public:
         :
         super1(),
         super2(),
-        M_mesh( new mesh_type( Environment::worldComm().subWorldCommSeq() ) ),
+        M_mesh( new mesh_type( Environment::worldCommSeq() ) ),
         M_vertices()
     {}
     PointSetToMesh( PointSetToMesh const & p )
@@ -347,7 +348,11 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<2> )
 
     vtkDelaunay2D *delaunay2D = vtkDelaunay2D::New();
 
+#if VTK_MAJOR_VERSION <= 5
     delaunay2D->SetInput( polyData );
+#else
+    delaunay2D->SetInputData( polyData );
+#endif
 
     /**
      * The Offset parameter helps to get a convex hull of the points.
@@ -440,7 +445,11 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<3> )
     polyData->SetPoints( newPoints );
 
     vtkDelaunay3D *delaunay3D = vtkDelaunay3D::New();
+#if VTK_MAJOR_VERSION <= 5
     delaunay3D->SetInput( polyData );
+#else
+    delaunay3D->SetInputData( polyData );
+#endif
     delaunay3D->SetOffset( 5 );
 
     DVLOG(2) <<"[PointSetToMesh::visit(<3>)] Offset = " << delaunay3D->GetOffset() << "\n";

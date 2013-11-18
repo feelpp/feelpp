@@ -1,0 +1,176 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+# $Id$
+
+source ${portpath}/../../tcl/fixLibsAndExecutables.tcl
+
+PortSystem  1.0
+# Portgroup is not an option until we find a way to get rid of the -arch option
+#PortGroup   cmake 1.0
+PortGroup   active_variants 1.1
+
+name                 feel++
+
+fetch.type           git
+git.url              https://github.com/feelpp/feelpp.git
+git.branch           develop
+
+version              dev
+categories           science
+platforms            macosx darwin freebsd
+maintainers          feelpp.org:christophe.prudhomme
+description          Finite Element Embedded Library and Language in C++
+long_description    \
+ Feel++ is a versatile finite element library\
+ to solve partial differential equations.\
+ \
+ Support 1D, 2D, 3D\
+ \
+ Support the following basic entities: simplices (segment, triangle,\
+ tetrahedron) and product of simplices (quadrangle, hexahedron)\
+ \
+ Support various point sets on these basic entities: equispaced\
+ points, quadrature points, interpolation points (Gauss-Lobatto,\
+ Fekete, WarpBlend?)\
+ \
+ Support continuous and discontinuous Galerkin methods\
+ \
+ Support various polynomial sets:\
+ \
+  * Lagrange(continuous,discontinuous,all dimensions,all interpolation\
+ point sets)\
+ \
+  * Dubiner(discontinuous), boundary adapted(continuous)\
+ \
+  * Legendre(discontinuous), boundary adapted(continuous)\
+ \
+ Provide mathematical concept for higher order abstraction (Function\
+ spaces and associated elements, forms and operators)\
+ \
+ Provide a language embedded in C++ for variational formulations,\
+ projection and numerical integration
+
+homepage            http://www.feelpp.org
+
+#default_variants    +gcc46
+depends_lib-append  port:gcc48
+#configure.compiler  macports-gcc-4.6
+
+# require_active_variants gcc48 fortran openmpi
+# require_active_variants boost openmpi
+
+# Append dependency on readline
+# Apparently MacOs X packs an old gcc version that causes a cast error
+# between incompatible 'const char *' to 'char *'
+# Old topic: http://www.ginac.de/pipermail/ginac-list/2007-January/001045.html
+depends_lib    \
+    port:petsc\
+    port:cmake\
+    port:openmpi\
+    port:boost \
+    port:gmsh-devel\
+    port:libANN \
+    port:glpk \
+    port:readline \
+    port:bison \
+    port:flex \
+    port:autoconf \
+    port:automake
+
+#    port:slepc\
+
+
+#worksrcdir	feelpp-${version}
+configure	{
+    file mkdir ${worksrcpath}/build
+    system "cd ${worksrcpath}/build && ${configure.cmd} .. ${configure.args} "
+}
+
+build {
+    if {${build.jobs} ne {} } {
+        system "cd ${worksrcpath}/build && ${build.cmd} ${build.target} -j ${build.jobs} "
+    } else {
+        system "cd ${worksrcpath}/build && ${build.cmd} ${build.target}"
+    }
+}
+
+configure.env-append  PETSC_DIR=${prefix}/lib/petsc
+configure.env-append  SLEPC_DIR=${prefix}/lib/petsc
+
+# make sure to keep below in sync with cmake Portgroup except
+# for the configure.args option that mess up feel++
+# standard place to install extra CMake modules
+set cmake_share_module_dir ${prefix}/share/cmake/modules
+configure.cmd       cmake
+configure.pre_args  ""
+configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
+                    -DCMAKE_VERBOSE_MAKEFILE=ON \
+                    -DCMAKE_COLOR_MAKEFILE=ON \
+                    -DCMAKE_BUILD_TYPE=Release \
+                    -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+                    -DCMAKE_CC_COMPILER=/usr/bin/clang \
+                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.8 \
+                    -DMPI_Fortran_COMPILER=${prefix}/bin/openmpif90 \
+                    -Wno-dev
+#                    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+#                    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+#                    -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
+#                    -DMPI_Fortran_INCLUDE_PATH=${prefix}/include/openmpi \
+#                    -DFEEL_ENABLE_DOCUMENTATION=OFF \
+#                    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=TRUE \
+#                    -DCMAKE_DISABLE_FIND_PACKAGE_OpenTURNS=TRUE \
+#                    -DCMAKE_DISABLE_FIND_PACKAGE_Metis=TRUE \
+
+#                    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
+
+#variant gcc45 conflicts gcc44 gcc46 gcc47 description {Build with gcc 4.5} {}
+#variant gcc46 conflicts gcc44 gcc45 gcc47 description {Build with gcc 4.6} {}
+#variant gcc47 conflicts gcc44 gcc45 gcc46 description {Build with gcc 4.7} {}
+
+
+configure.args-append -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++
+
+
+# let the default destdir
+# destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
+
+#post-build {
+#   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
+#}
+
+destroot {
+   system "cd ${worksrcpath}/build && ${destroot.cmd} ${destroot.target} ${destroot.destdir}"
+}
+
+post-destroot {
+    fixLibsAndExecutables ${worksrcpath} ${destroot}
+}
+
+
+variant octave description {Add octave bindings} {
+  depends_lib_append \
+    port:octave
+  configure.args-append \
+    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=FALSE
+}
+
+variant tbb description {Add tbb support} {
+  depends_lib_append \
+    port:tbb
+}
+
+variant doc description {Add doc support} {
+  depends_lib_append \
+    port:doxygen \
+    port:latex2html \
+    port:imagemagick \
+  configure.args-append \
+    -DFEEL_ENABLE_DOCUMENTATION=ON
+}
+
+variant scipy description {Add python bindings} {
+  depends_lib_append \
+    port:py26-scipy\
+    port:py26-numpy
+}
+

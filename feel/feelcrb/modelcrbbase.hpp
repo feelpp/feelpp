@@ -51,7 +51,7 @@ public :
     typedef Mesh<entity_type > mesh_type ;
 
     /*basis*/
-    typedef Lagrange<1,Scalar> basis_type ;
+    typedef bases< Lagrange<1,Scalar> > basis_type ;
 
     /*space*/
     typedef FunctionSpace<mesh_type , basis_type > space_type ;
@@ -73,7 +73,7 @@ public :
 
 
 
-template <typename ParameterDefinition, typename FunctionSpaceDefinition, typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition> >
+template <typename ParameterDefinition=ParameterDefinitionBase, typename FunctionSpaceDefinition=FunctionSpaceDefinitionBase, typename EimDefinition = EimDefinitionBase<ParameterDefinition,FunctionSpaceDefinition> >
 class ModelCrbBase : public ModelCrbBaseBase
 {
 
@@ -85,6 +85,9 @@ public :
     typedef typename parameterspace_type::element_type parameter_type;
 
     typedef typename FunctionSpaceDefinition::space_type space_type;
+
+    typedef typename space_type::element_type element_type;
+    typedef boost::shared_ptr<element_type> element_ptrtype;
 
     typedef boost::shared_ptr<fun_type> fun_ptrtype;
     typedef std::vector<fun_ptrtype> funs_type;

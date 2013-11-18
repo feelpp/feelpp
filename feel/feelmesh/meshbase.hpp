@@ -309,6 +309,9 @@ public:
             return M_smd->mesh;
         }
 
+    //! true if is a sub mesh
+    bool isSubMesh() const { return !M_smd == false; }
+
     //! \return true if the mesh is related to the mesh \p m
     bool isSubMeshFrom( MeshBase const* m ) const
         {
@@ -331,6 +334,16 @@ public:
             bool res = m->isSubMeshFrom( this );
             if ( res == false ) return res;
             DVLOG(4) << "this isParentMeshOf m: " << res << "\n";
+            return res;
+        }
+    //! \return true if the mesh is related to the mesh \p m
+    bool isSiblingOf( boost::shared_ptr<MeshBase> m ) const
+        {
+            DVLOG(4) << "isSibling<mesh_ptrtype> called\n";
+            if ( !M_smd || !m->hasSubMeshData() ) return false;
+            bool res = M_smd->mesh.get() == m->M_smd->mesh.get();
+            if ( res == false ) return res;
+            DVLOG(4) << "this isSibling m: " << res << "\n";
             return res;
         }
 #if 0
@@ -363,7 +376,10 @@ public:
             DVLOG(4) << "isSubMeshFrom: " << is_submesh_from << "\n";
             bool is_parentmesh_of = isParentMeshOf( m );
             DVLOG(4) << "is_parentmesh_of: " << is_parentmesh_of << "\n";
-            return same_mesh || is_submesh_from || is_parentmesh_of;
+            bool is_sibling_of = isSiblingOf( m );
+            DVLOG(4) << "is_sibling_of: " << is_sibling_of << "\n";
+            return same_mesh || is_submesh_from || is_parentmesh_of || is_sibling_of;
+            //return same_mesh || is_submesh_from || is_parentmesh_of;
         }
 
     //! \return id in parent mesh given the id in the sub mesh
@@ -390,8 +406,17 @@ public:
                 return id;
             if ( isRelatedTo( m ) )
             {
-                CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
-                return M_smd->bm.left.find( id )->second;
+                if ( this->isSubMeshFrom( m ) )
+                {
+                    CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+                    return M_smd->bm.left.find( id )->second;
+                }
+                else if ( this->isSiblingOf( m ) )
+                {
+                    size_type id_in_parent =  M_smd->bm.left.find( id )->second;
+                    size_type id_in_sibling =  m->meshToSubMesh( id_in_parent );
+                    return id_in_sibling;
+                }
             }
             return invalid_size_type_value;
         }
@@ -403,9 +428,19 @@ public:
                 return id;
             if ( isRelatedTo( m ) )
             {
-                CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
-                if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
-                    return M_smd->bm.right.find( id )->second;
+                if ( this->isSubMeshFrom( m ) )
+                {
+                    CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+                    if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
+                        return M_smd->bm.right.find( id )->second;
+
+                }
+                else if ( this->isSiblingOf( m ) )
+                {
+                    size_type id_in_parent =  m->subMeshToMesh( id );
+                    size_type id_in_sibling =  this->meshToSubMesh( id_in_parent );
+                    return id_in_sibling;
+                }
                 // the submesh element id has not been found, return invalid value
                 // will return invalid_size_type_value
             }

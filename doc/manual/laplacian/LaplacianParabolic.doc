@@ -64,7 +64,7 @@
     \snippet laplacian_parabolic.cpp marker3
     \snippet laplacian_parabolic.cpp marker10
 
-    \warning At the end of each solve, we should re-initialised $u^{n}$, $u^{n-1}$...; so don't forget the shifting operation :
+    \warning At the end of each solve, we should re-initialised $\fu^{n}$\f, $\fu^{n-1}$\f...; so don't forget the shifting operation :
     \snippet laplacian_parabolic.cpp marker15
     and also, don't forget to increment the time :
     \snippet laplacian_parabolic.cpp marker16
