@@ -281,7 +281,12 @@ public:
         void operator()( element_type& e )
         {
             for ( int i = 0; i < e.numPoints; ++i )
+            {
                 e.point( i ).addElementGhost( e.processId(),e.id() );
+                // only if point is on interprocess
+                if ( e.point( i ).processId()!=invalid_uint16_type_value )
+                    e.point( i ).addNeighborPartitionId( e.processId() );
+            }
         }
     };
 
@@ -418,9 +423,10 @@ public:
     /**
      * \return \c true if element with id \p i is found, \c false otherwise
      */
-    bool hasElement( size_type i ) const
+    bool hasElement( size_type i, uint16_type p = invalid_uint16_type_value ) const
     {
-        return M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) ) !=
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommElements().localRank() : p;
+        return M_elements.template get<0>().find( boost::make_tuple( part, i ) ) !=
                M_elements.template get<0>().end();
     }
 

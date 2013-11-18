@@ -383,6 +383,28 @@ public:
     }
 
 
+    pid_point_iterator beginPointWithProcessId( uint16_type p = invalid_uint16_type_value )
+    {
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_point_const_iterator beginPointWithProcessId( uint16_type p = invalid_uint16_type_value ) const
+    {
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<detail::by_pid>().lower_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_point_iterator endPointWithProcessId( uint16_type p = invalid_uint16_type_value )
+    {
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+    }
+    pid_point_const_iterator endPointWithProcessId( uint16_type p = invalid_uint16_type_value ) const
+    {
+        const uint16_type part = (p==invalid_uint16_type_value)? this->worldCommPoints().localRank() : p;
+        return M_points.template get<detail::by_pid>().upper_bound( /*boost::make_tuple( part )*/ part );
+    }
+
+
     std::pair<pid_point_iterator, pid_point_iterator>
     pointsWithProcessId( size_type p ) const
     {

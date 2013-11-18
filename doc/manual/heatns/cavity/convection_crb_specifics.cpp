@@ -62,6 +62,8 @@ void ConvectionCrb::initModel()
     }
 
     Xh = space_type::New( mesh );
+    RbXh = rbfunctionspace_type::New( _model=this->shared_from_this() , _mesh=mesh );
+
     LOG(INFO)<<"number of dofs : "<<Xh->nLocalDof()<<"\n";
     pT = element_ptrtype( new element_type( Xh ) );
 
@@ -235,11 +237,11 @@ void ConvectionCrb::initModel()
     if ( weakdir == 1 )
     {
         // weak Dirichlet on temperature (T=0|left wall)
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
-                                                                    - gradt( t )*N()*id( s ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh, "Tfixed" ),
+                                                                         - gradt( t )*N()*id( s ) );
+    form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[1][0] ) += integrate ( markedfaces( mesh,"Tfixed" ),
                                                                     - grad( s )*N()*idt( t ) );
-        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+        form2( _test=Xh, _trial=Xh, _matrix=M_Aqm[2][0] ) += integrate ( markedfaces( mesh, "Tfixed"  ),
                                                                     gamma*idt( t )*id( s )/hFace() );
     }
 
@@ -534,11 +536,11 @@ void ConvectionCrb ::updateJacobianWithoutAffineDecomposition( const vector_ptrt
         if ( weakdir == 1 )
         {
             // weak Dirichlet on temperature (T=0|left wall)
-            bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+            bf  += integrate ( markedfaces( mesh, "Tfixed" ),
                                - gradt( t )*N()*id( s )*cst_ref( sqgrpr ) );
-            bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+            bf  += integrate ( markedfaces( mesh, "Tfixed" ),
                                - grad( s )*N()*idt( t )*cst_ref( sqgrpr ) );
-            bf  += integrate ( markedfaces( mesh,mesh->markerName( "Tfixed" ) ),
+            bf  += integrate ( markedfaces( mesh,"Tfixed" ),
                                gamma*idt( t )*id( s )/hFace() );
         }
 

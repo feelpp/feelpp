@@ -91,13 +91,18 @@ SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& pre
 template <typename T>
 SolverEigen<T>::SolverEigen( SolverEigen const& eis )
     :
+    M_prefix( eis.M_prefix ),
     M_eigen_solver_type    ( eis.M_eigen_solver_type ),
     M_eigen_problem_type   ( eis.M_eigen_problem_type ),
     M_position_of_spectrum ( eis.M_position_of_spectrum ),
     M_spectral_transform   ( eis.M_spectral_transform ),
     M_is_initialized       ( eis.M_is_initialized ),
     M_nev( eis.M_nev ),
-    M_ncv( eis.M_ncv )
+    M_ncv( eis.M_ncv ),
+    M_maxit( eis.M_maxit ),
+    M_tolerance( eis.M_tolerance ),
+    M_mapRow( eis.M_mapRow ),
+    M_mapCol( eis.M_mapCol )
 {
 }
 

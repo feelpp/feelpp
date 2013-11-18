@@ -115,7 +115,7 @@ public:
      * the matrix before usage with
      * \p init(...).
      */
-    MatrixSparse ();
+    MatrixSparse( WorldComm const& worldComm=Environment::worldComm() );
 
     MatrixSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol, WorldComm const& worldComm=Environment::worldComm() );
 
@@ -788,7 +788,8 @@ typedef boost::shared_ptr<d_sparse_matrix_type> sparse_matrix_ptrtype;
 // MatrixSparse inline members
 template <typename T>
 inline
-MatrixSparse<T>::MatrixSparse () :
+MatrixSparse<T>::MatrixSparse( WorldComm const& worldComm ) :
+    M_worldComm( worldComm ),
     M_is_initialized( false ),
     M_mprop( NON_HERMITIAN )
 {}

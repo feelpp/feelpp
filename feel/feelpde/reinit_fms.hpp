@@ -29,8 +29,8 @@
 #ifndef __Reinit_Fms_H
 #define __Reinit_Fms_H 1
 
-#include <feel/feel.hpp>
-
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelpde/fmsheap.hpp>
 #include <feel/feelpde/fmspoint.hpp>
 
