@@ -238,6 +238,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( forceRelaxation )
 
     BOOST_PARAMETER_NAME( use_tbb )
+    BOOST_PARAMETER_NAME( use_harts )
     BOOST_PARAMETER_NAME( grainsize )
     BOOST_PARAMETER_NAME( partitioner )
 

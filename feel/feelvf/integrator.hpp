@@ -54,6 +54,22 @@
 #include <google/profiler.h>
 #endif
 
+#if defined(FEELPP_HAS_HARTS)
+#include "RunTimeSystem/Model/RunTimeSysEnv.h"
+#include "RunTimeSystem/DataMng/DataHandler.h"
+#include "RunTimeSystem/TaskMng/TaskMng.h"
+#include "RunTimeSystem/TaskMng/AsynchTask.h"
+#include "RunTimeSystem/TaskMng/StdScheduler.h"
+#include "RunTimeSystem/TaskMng/StdDriver.h"
+#include "RunTimeSystem/TaskMng/TBBScheduler.h"
+#include "RunTimeSystem/TaskMng/TBBDriver.h"
+#include "RunTimeSystem/TaskMng/PTHDriver.h"
+
+#include "RunTimeSystem/DataMng/DataArgs.h"
+
+#include "Utils/PerfTools/PerfCounterMng.h"
+#endif //defined(FEELPP_HAS_HARTS)
+
 namespace Feel
 {
 namespace vf
@@ -217,7 +233,7 @@ public:
      */
     //@{
 
-    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb, int grainsize, std::string const& partitioner,
+    Integrator( Elements const& elts, Im const& /*__im*/, expression_type const& __expr, GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
                 boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts(),
@@ -228,6 +244,7 @@ public:
         M_expr( __expr ),
         M_gt( gt ),
         M_use_tbb( use_tbb ),
+        M_use_harts( use_harts ),
         M_grainsize( grainsize ),
         M_partitioner( partitioner ),
         M_QPL( qpl )
@@ -237,7 +254,7 @@ public:
     }
 
     Integrator( std::list<Elements> const& elts, Im const& /*__im*/, expression_type const& __expr,
-                GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb, int grainsize, std::string const& partitioner,
+                GeomapStrategyType gt, Im2 const& /*__im2*/, bool use_tbb, bool use_harts, int grainsize, std::string const& partitioner,
                 boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > qpl )
         :
         M_elts( elts ),
@@ -246,6 +263,7 @@ public:
         M_expr( __expr ),
         M_gt( gt ),
         M_use_tbb( use_tbb ),
+        M_use_harts( use_harts ),
         M_grainsize( grainsize ),
         M_partitioner( partitioner ),
         M_QPL( qpl )
@@ -268,6 +286,7 @@ public:
         M_expr( __vfi.M_expr ),
         M_gt( __vfi.M_gt ),
         M_use_tbb( __vfi.M_use_tbb ),
+        M_use_harts( __vfi.M_use_harts ),
         M_grainsize( __vfi.M_grainsize ),
         M_partitioner( __vfi.M_partitioner ),
         M_QPL( __vfi.M_QPL )
@@ -311,7 +330,7 @@ public:
             quad_type quad;
             quad1_type quad1;
             //BOOST_STATIC_ASSERT( ( boost::is_same<expr_type,e_type> ) );
-            auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_tbb, M_grainsize, M_partitioner, quadptloc_ptrtype() );
+            auto i = Integrator<Elements, quad_type, expr_type, quad1_type>( M_elts, quad, new_expr, M_gt, quad1, M_use_tbb, M_use_harts, M_grainsize, M_partitioner, quadptloc_ptrtype() );
             DLOG(INFO) << " -- M_elts size=" << M_elts.size() << "\n";
             DLOG(INFO) << " -- nelts=" << std::distance( M_eltbegin, M_eltend ) << "\n";
             DLOG(INFO) << " -- integrate: quad = " << i.im().nPoints() << "\n";
@@ -737,6 +756,7 @@ private:
     expression_type   M_expr;
     GeomapStrategyType M_gt;
     bool M_use_tbb;
+    bool M_use_harts;
     int M_grainsize;
     std::string M_partitioner;
     mutable boost::shared_ptr<QuadPtLocalization<Elements, Im, Expr > > M_QPL;
@@ -2418,12 +2438,44 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     boost::timer __timer;
 
 #if defined(FEELPP_HAS_TBB)
+    if ( M_use_tbb )
+    {
+        //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
+        element_iterator it = this->beginElement();
+        element_iterator en = this->endElement();
+        typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
 
-    //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
-    if ( !M_use_tbb )
-#else
+        if ( it == en )
+            return eval::zero();
+
+        std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
+
+        for ( auto _it = it; _it != en; ++_it )
+            _v.push_back( boost::cref( *_it ) );
+
+        tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), M_grainsize );
+        context_type thecontext( this->expression(), this->im(), *it );
+
+        if ( M_partitioner == "auto" )
+            tbb::parallel_reduce( r,  thecontext );
+
+        else if ( M_partitioner == "simple" )
+            tbb::parallel_reduce( r,  thecontext, tbb::simple_partitioner() );
+
+        //else if ( M_partitioner == "affinity" )
+        //tbb::parallel_reduce( r,  thecontext, tbb::affinity_partitioner() );
+        return thecontext.result();
+    }
+    else
+#endif // defined(FEELPP_HAS_TBB)
+#if defined(FEELPP_HAS_HARTS)
+    if ( M_use_harts )
+    {
+        //std::cout << "Integrator Uses HARTS: " << M_use_tbb << "\n";
+    }
+    else
+#endif // defined(FEELPP_HAS_HARTS)
     if ( 1 )
-#endif
     {
         //
         // some typedefs
@@ -2601,37 +2653,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
     }
-
-    else
-    {
-#if defined(FEELPP_HAS_TBB)
-        element_iterator it = this->beginElement();
-        element_iterator en = this->endElement();
-        typedef ContextEvaluate<expression_type, im_type, typename eval::the_element_type> context_type;
-
-        if ( it == en )
-            return eval::zero();
-
-        std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-
-        for ( auto _it = it; _it != en; ++_it )
-            _v.push_back( boost::cref( *_it ) );
-
-        tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), M_grainsize );
-        context_type thecontext( this->expression(), this->im(), *it );
-
-        if ( M_partitioner == "auto" )
-            tbb::parallel_reduce( r,  thecontext );
-
-        else if ( M_partitioner == "simple" )
-            tbb::parallel_reduce( r,  thecontext, tbb::simple_partitioner() );
-
-        //else if ( M_partitioner == "affinity" )
-        //tbb::parallel_reduce( r,  thecontext, tbb::affinity_partitioner() );
-        return thecontext.result();
-#endif // FEELPP_HAS_TBB
-    }
-
 }
 template<typename Elements, typename Im, typename Expr, typename Im2>
 typename Integrator<Elements, Im, Expr, Im2>::eval::matrix_type
@@ -3203,13 +3224,14 @@ integrate_impl( Elts const& elts,
                 GeomapStrategyType const& gt,
                 Im2 const& im2,
                 bool use_tbb,
+                bool use_harts,
                 int grainsize,
                 std::string const& partitioner,
                 boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > > quadptloc
                 = boost::shared_ptr<QuadPtLocalization<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT > >() )
 {
     typedef Integrator<typename Feel::detail::quadptlocrangetype<Elts>::type, Im, ExprT, Im2> expr_t;
-    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, grainsize, partitioner, quadptloc ) );
+    return Expr<expr_t>( expr_t( elts, im, expr, gt, im2, use_tbb, use_harts, grainsize, partitioner, quadptloc ) );
 }
 
 
@@ -3280,6 +3302,7 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
       ( use_tbb,   ( bool ), false )
+      ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
@@ -3288,7 +3311,7 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
 
-    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, grainsize, partitioner, quadptloc );
+    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
 
     if ( verbose )
     {
@@ -3318,6 +3341,7 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
       ( use_tbb,   ( bool ), false )
+      ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
@@ -3325,7 +3349,7 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     double a = integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                           _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
     return math::sqrt( a );
 }
@@ -3346,6 +3370,7 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
       ( use_tbb,   ( bool ), false )
+      ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
@@ -3353,7 +3378,7 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     return integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
-                      _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                      _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                       _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
 }
 
@@ -3374,6 +3399,7 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
       ( use_tbb,   ( bool ), false )
+      ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
@@ -3381,10 +3407,10 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     double a = integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                           _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
     double b = integrate( _range=range, _expr=grad_expr*trans(grad_expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                           _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
     return math::sqrt( a + b );
 }
@@ -3405,6 +3431,7 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
       ( use_tbb,   ( bool ), false )
+      ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
@@ -3412,7 +3439,7 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     double a = integrate( _range=range, _expr=grad_expr*trans(grad_expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                           _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
     return math::sqrt( a );
 }
@@ -3433,6 +3460,7 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
       ( use_tbb,   ( bool ), false )
+      ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
@@ -3442,13 +3470,13 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
-                             _use_tbb=use_tbb, _grainsize=grainsize,
+                             _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm )( 0, 0 );
     DLOG(INFO) << "[mean] nelements = " << nelements(range) << "\n";
     DLOG(INFO) << "[mean] measure = " << meas << "\n";
     CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
     auto eint = integrate( _range=range, _expr=expr, _quad=quad, _geomap=geomap,
-                           _quad1=quad1, _use_tbb=use_tbb, _grainsize=grainsize,
+                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                            _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm );
     DLOG(INFO) << "[mean] integral = " << eint << "\n";
     DLOG(INFO) << "[mean] mean = " << eint/meas << "\n";
@@ -3470,6 +3498,7 @@ BOOST_PARAMETER_FUNCTION(
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
       ( use_tbb,   ( bool ), false )
+      ( use_harts,   ( bool ), false )
       ( grainsize,   ( int ), 100 )
       ( partitioner,   *, "auto" )
       ( verbose,   ( bool ), false )
@@ -3477,7 +3506,7 @@ BOOST_PARAMETER_FUNCTION(
 )
 {
     double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
-                             _use_tbb=use_tbb, _grainsize=grainsize,
+                             _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
     DLOG(INFO) << "[mean] measure = " << meas << "\n";
     CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
