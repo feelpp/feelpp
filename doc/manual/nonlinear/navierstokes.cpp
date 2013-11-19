@@ -101,9 +101,9 @@ public:
     typedef Lagrange<2, Vectorial> basis_u_type;
     typedef Lagrange<1, Scalar> basis_p_type;
     typedef Lagrange<0, Scalar> basis_l_type;
-#if 0
+#if 1
     typedef bases<basis_u_type,basis_p_type, basis_l_type> basis_type;
-#elif  (FEELPP_BC == Neumann)
+#elif  0
     typedef bases<basis_u_type,basis_p_type> basis_type;
 #endif
 
@@ -173,19 +173,19 @@ void Navier_Stokes::init()
         std::cout << this->optionsDescription() << "\n";
         return;
     }
-    mesh = createGMSHMesh( _mesh=new mesh_type,
+    /*mesh = createGMSHMesh( _mesh=new mesh_type,
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                             _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
                                           _shape="hypercube",
                                           _dim=convex_type().dimension(),
-                                          _h=meshSize ) );
-    /*mesh = createGMSHMesh( _mesh=new mesh_type,
+                                          _h=meshSize ) );*/
+    mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=domain( _name="kovaznay",
                                          _usenames=false,
                                          _shape="hypercube",
                                          _h=meshSize,
                                          _xmin=-0.5, _xmax=1,
-                                         _ymin=-0.5, _ymax=1.5 ) );*/
+                                         _ymin=-0.5, _ymax=1.5 ) );
      //mesh = unitSquare();
     mesh->addMarkerName( "inlet", 1, 1 );
     mesh->addMarkerName( "outlet", 3, 1 );
@@ -206,7 +206,7 @@ void Navier_Stokes::run()
     auto v = V.template element<0>( "u" );
     auto p = U.template element<1>( "p" );
     auto q = V.template element<1>( "p" );
-#if 0
+#if 1
     auto lambda = U.template element<2>();
     auto nu = V.template element<2>();
 #endif
@@ -220,16 +220,16 @@ void Navier_Stokes::run()
             auto v = V.template element<0>( "u" );
             auto p = U.template element<1>( "p" );
             auto q = V.template element<1>( "p" );
-#if 0
+#if 1
             auto lambda = U.template element<2>();
             auto nu = V.template element<2>();
 #endif
-            auto mu=1;
+            auto mu=0.035;
 
             if (!J) J = backend()->newMatrix( Vh, Vh );
             std::cout << "coucou1 " << "\n";
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-            a += integrate( elements( mesh ), mu*inner(gradt( u ),grad( v )) );
+            a = integrate( elements( mesh ), mu*inner(gradt( u ),grad( v )) );
             std::cout << "coucou2 " << "\n";
             a += integrate( elements( mesh ), id(q)*divt(u) -idt(p)*div(v) );
             std::cout << "coucou3 " << "\n";
@@ -238,19 +238,19 @@ void Navier_Stokes::run()
             //a += integrate( elements( mesh ), trans(id(v))*gradt(u)*idv(u));
             std::cout << "coucou5 " << "\n";
 
-#if 0
+#if 1
             a += integrate(elements(mesh), id(q)*idt(lambda)+idt(p)*id(nu));
 #endif
 
             //a += integrate(elements(mesh), idt(p)*id(nu));
 
-#if 0
+#if 1
             std::cout << "Dirichlet " << "\n";
             //Weak Dirichlet conditions
             a += integrate( boundaryfaces( mesh ),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
             a += integrate( boundaryfaces( mesh ),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
             a += integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-#elif 1
+#elif 0
             //Neumann BC
             a += integrate( markedfaces(mesh,"wall1"),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
             a += integrate( markedfaces(mesh,"wall2"),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
@@ -276,13 +276,13 @@ void Navier_Stokes::run()
             auto v = V.template element<0>( "u" );
             auto p = U.template element<1>( "p" );
             auto q = V.template element<1>( "p" );
-#if 0
+#if 1
             auto lambda = U.template element<2>();
             auto nu = V.template element<2>();
 #endif
 
             //Solution Kovasnay
-            /*auto mu=0.035;
+            auto mu=0.035;
             double lambdaa = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
             auto u1 = 1. - exp( lambdaa * Px() ) * cos( 2.*pi*Py() );
             auto u2 = ( lambdaa/( 2.*pi ) ) * exp( lambdaa * Px() ) * sin( 2.*pi*Py() );
@@ -290,10 +290,10 @@ void Navier_Stokes::run()
             auto p_exact = -0.5*exp( 2.*lambdaa*Px() ) ;
             auto f1 = ( -mu*( -lambdaa*lambdaa*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambdaa*exp( 2.0*lambdaa*Px() ) );
             auto f2 = ( -mu*( lambdaa*lambdaa*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )*pi ) );
-            auto f = vec( f1,f2 ); //+ convection;*/
+            auto f = vec( f1,f2 ); //+ convection;
 
             //Solution Poiseuille
-            auto mu=1;
+            /*auto mu=1;
             auto rayon=1;
             auto P_inlet = 1.;
             auto P_outlet = 0.;
@@ -301,28 +301,28 @@ void Navier_Stokes::run()
 
             auto u_exact=vec(Py()*(1-(Py()))/(2*L),cst(0.) );
             auto p_exact=(P_outlet-P_inlet)*Px() + P_inlet;
-            auto f=vec(cst(0.) , cst(0.) );
+            auto f=vec(cst(0.) , cst(0.) );*/
 
             U=*X;
 
             auto r = form1( _test=Vh, _vector=R );
-            r += integrate( elements( mesh ),-inner( f,id( v ) ) );
+            r = integrate( elements( mesh ),-inner( f,id( v ) ) );
             r += integrate( elements( mesh ), inner(mu*gradv( u ),grad( v )) );
             r +=  integrate( elements( mesh ),-idv(p)*div(v) + id(q)*divv(u));
             // convective terms
             //r += integrate( elements( mesh ), trans(gradv( u )*idv(u))*id(v));
 
 
-#if 0
+#if 1
             r += integrate ( elements( mesh ), +id( q )*idv( lambda )+idv( p )*id( nu ) );
 #endif
 
-#if 0
+#if 1
             //Weak Dirichlet
             auto SigmaNv = ( -idv( p )*N() + mu*gradv( u )*N() );
             auto SigmaN = ( -id( q )*N() + mu*grad( v )*N() );
             r +=integrate ( boundaryfaces(mesh), - trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
-#elif 1
+#elif 0
             //Neumann
             auto SigmaNv = ( -idv( p )*N() + mu*gradv( u )*N() );
             auto SigmaN = ( -id( q )*N() + mu*grad( v )*N() );
@@ -342,17 +342,17 @@ void Navier_Stokes::run()
     backend()->nlSolve( _solution=U );
 
     //Poiseuille
-    auto rayon=1;
+    /*auto rayon=1;
     auto P_inlet = 1.;
     auto P_outlet = 0.;
     auto L=1;
     auto u_exact=vec(Py()*(1-Py())/(2*L),cst(0.) );
     auto p_exact=(P_outlet-P_inlet)*Px() + P_inlet;
-    auto f=vec(cst(0.) , cst(0.) );
+    auto f=vec(cst(0.) , cst(0.) );*/
 
 
     //Solution Kovasnay
-    /*auto mu=0.035;
+    auto mu=0.035;
     double lambdaa = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
     auto u1 = 1. - exp( lambdaa * Px() ) * cos( 2.*pi*Py() );
     auto u2 = ( lambdaa/( 2.*pi ) ) * exp( lambdaa * Px() ) * sin( 2.*pi*Py() );
@@ -360,7 +360,7 @@ void Navier_Stokes::run()
     auto p_exact = -0.5*exp( 2.*lambdaa*Px() );
     auto f1 = ( -mu*( -lambdaa*lambdaa*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )+4.0*exp( lambdaa*Px() )*cos( 2.0*pi*Py() )*pi*pi )-lambdaa*exp( 2.0*lambdaa*Px() ) );
     auto f2 = ( -mu*( lambdaa*lambdaa*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )*pi ) );
-    auto f = vec( f1,f2 ); //+ convection;*/
+    auto f = vec( f1,f2 ); //+ convection;
 
     double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
@@ -389,9 +389,9 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-#if 0
+#if 1
     auto appli_name="steady_ns_dirichlet";
-#elif 1
+#elif 0
     auto appli_name="steady_ns_neumann";
 #endif
     Environment env( _argc=argc, _argv=argv,
