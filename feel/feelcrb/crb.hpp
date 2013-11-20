@@ -243,6 +243,8 @@ public:
         M_Xi( new sampling_type( M_Dmu ) ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_WNmu_complement(),
+        M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         exporter( Exporter<mesh_type>::New( "ensight" ) )
     {
 
@@ -317,6 +319,8 @@ public:
         M_Xi( new sampling_type( M_Dmu ) ),
         M_WNmu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_WNmu_complement(),
+        M_primal_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
+        M_dual_apee_mu( new sampling_type( M_Dmu, 1, M_Xi ) ),
         M_scmA( new scm_type( name+"_a", vm , model , false /*not scm for mass mastrix*/ )  ),
         M_scmM( new scm_type( name+"_m", vm , model , true /*scm for mass matrix*/ ) ),
         exporter( Exporter<mesh_type>::New( vm, "BasisFunction" ) ),
@@ -369,6 +373,8 @@ public:
         M_Xi( o.M_Xi ),
         M_WNmu( o.M_WNmu ),
         M_WNmu_complement( o.M_WNmu_complement ),
+        M_primal_apee_mu( o.M_primal_apee_mu ),
+        M_dual_apee_mu( o.M_dual_apee_mu ),
         M_C0_pr( o.M_C0_pr ),
         M_C0_du( o.M_C0_du ),
         M_Lambda_pr( o.M_Lambda_pr ),
@@ -756,18 +762,16 @@ public:
      * fixed point for primal problem ( offline step )
      * \param mu : current parameter
      * \param A : matrix of the bilinear form (fill the matrix)
-     * \param zero_iteration : don't perfom iterations if true ( for linear problems for example )
      */
-    element_type offlineFixedPointPrimal( parameter_type const& mu, sparse_matrix_ptrtype & A, bool zero_iteration ) ;
+    element_type offlineFixedPointPrimal( parameter_type const& mu );//, sparse_matrix_ptrtype & A ) ;
 
     /*
      * \param mu : current parameter
      * \param dual_initial_field : to be filled
      * \param A : matrix of the primal problem, needed only to check dual properties
      * \param u : solution of the primal problem, needed only to check dual properties
-     * \param zero_iteration : don't perfom iterations if true ( for linear problems for example )
      */
-    element_type offlineFixedPointDual( parameter_type const& mu , element_ptrtype & dual_initial_field, const sparse_matrix_ptrtype & A, const element_type & u, bool zero_iteration ) ;
+    element_type offlineFixedPointDual( parameter_type const& mu , element_ptrtype & dual_initial_field );//, const sparse_matrix_ptrtype & A, const element_type & u ) ;
 
     /*
      * fixed point ( primal problem ) - ONLINE step
@@ -1104,6 +1108,34 @@ public:
      */
     void computationalTimeStatistics( std::string appname );
 
+    /**
+     * update basis built to have error estimators from F.Casenave's paper
+     * \param N : current number of elements in the RB
+     * \param new parameters that we must select from N-1 to N
+     * Be carreful, M_primal_apee_basis and M_dual_apee_basis don't have the same size because affine decomposition can be different
+     */
+    void updateApeeBasisConstruction( int N , std::vector< parameter_type > const & new_primal_parameters, std::vector< parameter_type > const & new_dual_parameters) const;
+    void updateApeeOfflineResidualComputation( int N , std::vector< parameter_type > const & new_primal_parameters, std::vector< parameter_type > const & new_dual_parameters ) ;
+    void computePrimalApeeBasis( parameter_type const& mu)  const ;
+    void computeDualApeeBasis( parameter_type const& mu)  const ;
+    double computeSquareDualNormOfPrimalResidual( parameter_type const& mu, element_type const & u);
+    double computeSquareDualNormOfDualResidual( parameter_type const& mu, element_type const & udu);
+    //compute X-vector in F.Casenave's paper
+    vectorN_type computeOnlinePrimalApeeVector( parameter_type const& mu , vectorN_type const & uN, vectorN_type const & uNold=vectorN_type(), double dt=1e30, double time=1e30 ) const;
+    vectorN_type computeOnlineDualApeeVector( parameter_type const& mu , vectorN_type const & uNdu, vectorN_type const & uNduold=vectorN_type(), double dt=1e30, double time=1e30 ) const ;
+
+    void assemblePrimalAndDualApeeBasisMatrices( int N ) const ;
+
+    /**
+     * Greedy algorithm for apee basis
+     * \param N : current number of elements in the RB
+     * \param new_parameters : vector to be enrich by new parameters associated to N
+     */
+    void selectPrimalApeeParameters( int N, std::vector< parameter_type > & new_parameters );
+    void selectDualApeeParameters( int N, std::vector< parameter_type > & new_parameters );
+
+    double computeOnlinePrimalApee( int N , parameter_type const& mu , vectorN_type const & uN, vectorN_type const & uNold=vectorN_type(), double dt=1e30, double time=1e30 ) const ;
+    double computeOnlineDualApee( int N , parameter_type const& mu , vectorN_type const & uNdu, vectorN_type const & uNduold=vectorN_type(), double dt=1e30, double time=1e30 ) const ;
     //@}
 
 
@@ -1140,6 +1172,11 @@ private:
     sampling_ptrtype M_WNmu;
     sampling_ptrtype M_WNmu_complement;
 
+    //sampling of parameter space to build a posteriori error estimators (paper of F.Casenave)
+    //Accurate a posteriori error evaluation in the reduced basis method - 2012
+    sampling_ptrtype M_primal_apee_mu;
+    sampling_ptrtype M_dual_apee_mu;
+
     //scm
     scm_ptrtype M_scmA;
     scm_ptrtype M_scmM;
@@ -1175,6 +1212,15 @@ private:
     std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cmm_pr;
     std::vector< std::vector< std::vector< std::vector< matrixN_type > > > > M_Cmm_du;
 
+    //X( \mu_r ) in F.casnave's paper
+    mutable std::vector< vectorN_type > M_primal_apee_basis;
+    mutable std::vector< vectorN_type > M_dual_apee_basis;
+    //V_r in F.casnave's paper ( contains square of dual norm of residuals )
+    vectorN_type M_primal_V;
+    vectorN_type M_dual_V;
+    //matrices who have X( \mu_r ) as columns
+    mutable matrixN_type M_primal_T;
+    mutable matrixN_type M_dual_T;
 
     std::vector<double> M_coeff_pr_ini_online;
     std::vector<double> M_coeff_du_ini_online;
@@ -1266,7 +1312,7 @@ po::options_description crbOptions( std::string const& prefix = "" );
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_matrix_ptrtype & A, bool zero_iteration )
+CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, sparse_matrix_ptrtype & A )
 {
     auto u = M_model->functionSpace()->element();
 
@@ -1311,7 +1357,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
     int iteration=0;
     double increment_norm=1e3;
 
-    if( zero_iteration )
+    if( option(_name="crb.use-linear-model").template as<bool>() )
         increment_norm = 0;
 
     double bdf_coeff;
@@ -1345,7 +1391,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
             boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
 
             if( iteration == 0 )
-                A = Apr;
+                //A = Apr;
 
             if ( ! M_model->isSteady() )
             {
@@ -1355,7 +1401,9 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
                 Rhs->addVector( *vec_bdf_poly, *M );
             }
             else
+            {
                 *Rhs = *F[0];
+            }
             //Apr->close();
 
             //backup for non linear problems
@@ -1406,7 +1454,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
             *eltF = *F[l];
             LOG(INFO) << "u^T F[" << l << "]= " << inner_product( u, *eltF ) << " at time : "<<M_bdf_primal->time()<<"\n";
         }
-        LOG(INFO) << "[CRB::offlineWithErrorEstimation] energy = " << A->energy( u, u ) << "\n";
+        LOG(INFO) << "[CRB::offlineWithErrorEstimation] energy = " << Apr->energy( u, u ) << "\n";
 
     }//end of loop over time
 
@@ -1444,7 +1492,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu, sparse_ma
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::element_type
-CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptrtype & dual_initial_field, const sparse_matrix_ptrtype & A, const element_type & u, bool zero_iteration )
+CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptrtype & dual_initial_field) //const sparse_matrix_ptrtype & A, const element_type & u )
 {
 
     //M_backend_dual = backend_type::build( BACKEND_PETSC );
@@ -1489,7 +1537,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
     vector_ptrtype Rhs( M_backend_dual->newVector( M_model->functionSpace() ) );
 
-    if( zero_iteration )
+    if( option(_name="crb.use-linear-model").template as<bool>() )
         increment_norm = 0;
 
     double bdf_coeff;
@@ -1592,10 +1640,10 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
         M_bdf_dual->shiftRight( udu );
 
         //check dual property
-        double term1 = A->energy( udu, u );
-        double term2 = Adu->energy( u, udu );
-        double diff = math::abs( term1-term2 );
-        LOG(INFO) << "< A u , udu > - < u , A* udu > = "<<diff<<"\n";
+        //double term1 = A->energy( udu, u );
+        //double term2 = Adu->energy( u, udu );
+        //double diff = math::abs( term1-term2 );
+        //LOG(INFO) << "< A u , udu > - < u , A* udu > = "<<diff<<"\n";
 
         if ( ! M_model->isSteady() )
         {
@@ -1723,6 +1771,7 @@ CRB<TruthModelType>::offline()
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
             std::cout << " -- sampling init done in " << ti.elapsed() << "s\n";
         ti.restart();
+
 
         if ( M_error_type == CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
         {
@@ -1963,6 +2012,8 @@ CRB<TruthModelType>::offline()
 
         // empty sets
         M_WNmu->clear();
+        M_primal_apee_mu->clear();
+        M_dual_apee_mu->clear();
 
         if( M_error_type == CRB_NO_RESIDUAL )
             mu = M_Dmu->element();
@@ -2179,12 +2230,9 @@ CRB<TruthModelType>::offline()
         if ( M_model->isSteady() && ! M_use_newton )
         {
 
-            //we need to treat nonlinearity also in offline step
-            //because in online step we have to treat nonlinearity ( via a fixed point for example )
-            bool zero_iteration=false;
-            u = offlineFixedPointPrimal( mu , A , zero_iteration );
+            u = offlineFixedPointPrimal( mu );//, A  );
             if( solve_dual_problem )
-                udu = offlineFixedPointDual( mu , dual_initial_field ,  A , u, zero_iteration );
+                udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
         }
 
         if ( M_model->isSteady() && M_use_newton )
@@ -2203,10 +2251,9 @@ CRB<TruthModelType>::offline()
 
         if( ! M_model->isSteady() )
         {
-            bool zero_iteration=true;
-            u = offlineFixedPointPrimal( mu,  A , zero_iteration );
+            u = offlineFixedPointPrimal( mu  );
             if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
-                udu = offlineFixedPointDual( mu , dual_initial_field ,  A , u, zero_iteration );
+                udu = offlineFixedPointDual( mu , dual_initial_field );
         }
 
 
@@ -2384,6 +2431,7 @@ CRB<TruthModelType>::offline()
             number_of_added_elements=1;
 
         M_N+=number_of_added_elements;
+
 
         double norm_max = option(_name="crb.orthonormality-tol").template as<double>();
         int max_iter = option(_name="crb.orthonormality-max-iter").template as<int>();
@@ -2698,6 +2746,24 @@ CRB<TruthModelType>::offline()
         }
 
         timer2.restart();
+
+        if( option(_name="crb.use-accurate-apee").template as<bool>() )
+        {
+            if( solve_dual_problem )
+            {
+                std::vector< parameter_type > new_primal_parameters;
+                selectPrimalApeeParameters( M_N,  new_primal_parameters );
+                std::vector< parameter_type > new_dual_parameters;
+                selectDualApeeParameters( M_N,  new_dual_parameters );
+                updateApeeBasisConstruction( M_N , new_primal_parameters , new_dual_parameters );
+                updateApeeOfflineResidualComputation( M_N , new_primal_parameters , new_dual_parameters );
+                assemblePrimalAndDualApeeBasisMatrices( M_N );
+            }
+            else
+                throw std::logic_error( "[CRB::offline] if you want accurate a posteriori error estimation make sure that crb.solve-dual-problem=true " );
+        }
+
+
 
         M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
         if ( M_database_contains_variance_info )
@@ -3281,7 +3347,6 @@ CRB<TruthModelType>::checkResidual( parameter_type const& mu, std::vector< std::
     Atun->scale( -1 );
     *Frhs = *F[0];
     *Lrhs = *F[M_output_index];
-
 
 #if 0
     LOG(INFO) << "[CRB::checkResidual] residual (f,f) " << M_N-1 << ":=" << M_model->scalarProduct( Frhs, Frhs ) << "\n";
@@ -4419,18 +4484,32 @@ CRB<TruthModelType>::delta( size_type N,
         double primal_sum=0;
         double dual_sum=0;
 
+        bool accurate_apee = option(_name="crb.use-accurate-apee").template as<bool>();
+
         //vectors to store residual coefficients
         int K = Tf/dt;
         primal_residual_coeffs.resize( K );
         dual_residual_coeffs.resize( K );
-        for ( double time=dt; time<=Tf; time+=dt )
+
+        if( accurate_apee )
         {
-            auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
-            primal_sum += pr.template get<0>();
-            primal_residual_coeffs[time_index].resize( pr.template get<1>().size() );
-            primal_residual_coeffs[time_index] = pr.template get<1>() ;
-            time_index++;
-        }//end of time loop for primal problem
+            //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
+            for ( double time=dt; time<=Tf; time+=dt )
+            {
+                primal_sum += computeOnlinePrimalApee( N , mu , uN[time_index], uNold[time_index], dt, time );
+            }
+        }
+        else
+        {
+            for ( double time=dt; time<=Tf; time+=dt )
+            {
+                auto pr = transientPrimalResidual( N, mu, uN[time_index], uNold[time_index], dt, time );
+                primal_sum += pr.template get<0>();
+                primal_residual_coeffs[time_index].resize( pr.template get<1>().size() );
+                primal_residual_coeffs[time_index] = pr.template get<1>() ;
+                time_index++;
+            }//end of time loop for primal problem
+        }
 
         time_index--;
 
@@ -4441,15 +4520,26 @@ CRB<TruthModelType>::delta( size_type N,
 
         if( solve_dual_problem )
         {
-            for ( double time=Tf; time>=dt; time-=dt )
+            if( accurate_apee )
             {
-                auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
-                dual_sum += du.template get<0>();
-                dual_residual_coeffs[time_index].resize( du.template get<1>().size() );
-                dual_residual_coeffs[time_index] = du.template get<1>();
-                time_index--;
-            }//end of time loop for dual problem
-        }
+                //in this case, we use a different way to compute primal_sum (i.e. square of dual norm of primal residual)
+                for ( double time=Tf; time>=dt; time-=dt )
+                {
+                    dual_sum += computeOnlineDualApee( N , mu , uNdu[time_index], uNduold[time_index], dt, time );
+                }
+            }//with accurate apee
+            else
+            {
+                for ( double time=Tf; time>=dt; time-=dt )
+                {
+                    auto du = transientDualResidual( N, mu, uNdu[time_index], uNduold[time_index], dt, time );
+                    dual_sum += du.template get<0>();
+                    dual_residual_coeffs[time_index].resize( du.template get<1>().size() );
+                    dual_residual_coeffs[time_index] = du.template get<1>();
+                    time_index--;
+                }//end of time loop for dual problem
+            }//not with accurate apee
+        }//solve dual problem
 
 
         bool show_residual = this->vm()["crb.show-residual"].template as<bool>() ;
@@ -5306,8 +5396,8 @@ CRB<TruthModelType>::steadyDualResidual( int Ncur,parameter_type const& mu, vect
             {
                 for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
                 {
-                    value_type a_q2 = betaFqm[M_output_index][__q2][__m2]*a_q1;
-                    __lambda_du += a_q2 * M_Lambda_du[__q1][__m1][__q2][__m2].head( __N ).dot( Undu );
+                    value_type f_q2 = betaFqm[M_output_index][__q2][__m2]*a_q1;
+                    __lambda_du += f_q2 * M_Lambda_du[__q1][__m1][__q2][__m2].head( __N ).dot( Undu );
                 }//m2
             }//q2
 
@@ -6578,6 +6668,525 @@ CRB<TruthModelType>::projectionOnPodSpace( const element_type & u , element_ptrt
 
 }
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::updateApeeBasisConstruction( int N , std::vector< parameter_type > const & new_primal_parameters, std::vector< parameter_type > const & new_dual_parameters ) const
+{
+    int index = M_primal_V.size(); // current size
+    int primal_size=new_primal_parameters.size();
+    int new_size = index + primal_size;
+    for(int i=0; i<primal_size; i++)
+    {
+        auto mu = new_primal_parameters[i];
+        computePrimalApeeBasis( mu );
+    }
+
+    int dual_size=new_dual_parameters.size();
+    new_size = index + dual_size;
+    for(int i=0; i<dual_size; i++)
+    {
+        auto mu = new_dual_parameters[i];
+        computeDualApeeBasis( mu );
+    }
+
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::updateApeeOfflineResidualComputation( int N , std::vector< parameter_type > const & new_primal_parameters, std::vector< parameter_type > const & new_dual_parameters )
+{
+    int index = M_primal_V.size(); // current size
+    int primal_size=new_primal_parameters.size();
+    int new_size = index + primal_size;
+    M_primal_V.conservativeResize( new_size );
+    for(int i=0; i<primal_size; i++)
+    {
+        auto mu = new_primal_parameters[i];
+        auto u = offlineFixedPointPrimal( mu );
+        M_primal_V(index) = computeSquareDualNormOfPrimalResidual( mu , u );
+    }
+    index = M_dual_V.size(); // current size
+
+    element_ptrtype dual_initial_field( new element_type( M_model->functionSpace() ) );
+    int dual_size=new_dual_parameters.size();
+    new_size = index + dual_size;
+    M_dual_V.conservativeResize( new_size );
+    for(int i=0; i<dual_size; i++)
+    {
+        auto mu = new_dual_parameters[i];
+        auto udu = offlineFixedPointDual( mu, dual_initial_field);
+        M_dual_V(index) = computeSquareDualNormOfDualResidual( mu , udu );
+    }
+
+}
+
+
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeSquareDualNormOfPrimalResidual( parameter_type const& mu, element_type const & u )
+{
+    sparse_matrix_ptrtype A;
+    std::vector<vector_ptrtype> F;
+
+    boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
+
+    vector_ptrtype Aun( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Un( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Frhs( M_backend->newVector( M_model->functionSpace() ) );
+    *Un = u;
+    A->multVector( Un, Aun );
+    Aun->close();
+    Aun->scale( -1 );
+    *Frhs = *F[0];
+
+    auto primal_residual = Frhs ;
+    primal_residual->add( *Aun );
+
+    vector_ptrtype __e_pr(  M_backend->newVector( M_model->functionSpace() ) );
+    M_model->l2solve( __e_pr, primal_residual );
+
+    double dual_norm_primal_residual = math::sqrt( M_model->scalarProduct( __e_pr,__e_pr ) );
+
+    return dual_norm_primal_residual ;
+}
+
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeSquareDualNormOfDualResidual( parameter_type const& mu, element_type const & udu )
+{
+    sparse_matrix_ptrtype A,At;
+    std::vector<vector_ptrtype> F;
+
+    boost::tie( boost::tuples::ignore, A, F ) = M_model->update( mu );
+
+    At = M_model->newMatrix();
+    if( option("crb.use-symmetric-matrix").template as<bool>() )
+        At = A;
+    else
+        A->transpose( At );
+
+    vector_ptrtype Atun( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Undu( M_backend->newVector( M_model->functionSpace() ) );
+    vector_ptrtype Lrhs( M_backend->newVector( M_model->functionSpace() ) );
+    *Undu = udu;
+    At->multVector( Undu, Atun );
+    Atun->close();
+    Atun->scale( -1 );
+    *Lrhs = *F[M_output_index];
+
+    auto dual_residual = Lrhs ;
+    dual_residual->add( *Atun );
+
+    vector_ptrtype __e_du(  M_backend->newVector( M_model->functionSpace() ) );
+    M_model->l2solve( __e_du, dual_residual );
+
+    double dual_norm_dual_residual = math::sqrt( M_model->scalarProduct( __e_du,__e_du ) );
+
+    return dual_norm_dual_residual ;
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::assemblePrimalAndDualApeeBasisMatrices( int N ) const
+{
+    int Qa = M_model->Qa();
+    int Qf = M_model->Ql( 0 );
+    int Ql = M_model->Ql( M_output_index );
+    int primal_size = Qf*Qf + N*Qa*Qf + N*N*Qa*Qa;
+    int dual_size = Ql*Ql + N*Qa*Ql + N*N*Qa*Qa;
+
+    LOG( INFO ) << "[assemblePrimalAndDualApeeBasisMatrices] primal matrix : "<<primal_size<<" * "<<primal_size<<" and dual matrix : "<<dual_size<<" * "<<dual_size;
+    int primal_rows=M_primal_T.rows();
+    int primal_cols=M_primal_T.cols();
+    FEELPP_ASSERT( primal_rows == primal_cols )( primal_rows )( primal_cols ).error( "invalid size of matrix M_primal_T (should be a square matrix)");
+
+    int number_of_elements_to_add = primal_size - primal_rows;
+    FEELPP_ASSERT( number_of_elements_to_add  > 0 )( number_of_elements_to_add )(primal_size)(primal_rows).error( "assemblePrimalAndDualApeeBasisMatrices was called but there is no elements to add in M_primal_T ");
+
+    M_primal_T.conservativeResize( primal_size , primal_size );
+    for(int i=primal_rows; i<primal_size; i++)
+    {
+        M_primal_T.col( i ) = M_primal_apee_basis[ i ];
+    }
+
+    int dual_rows=M_dual_T.rows();
+    int dual_cols=M_dual_T.cols();
+    FEELPP_ASSERT( dual_rows == dual_cols )( dual_rows )( dual_cols ).error( "invalid size of matrix M_dual_T (should be a square matrix)");
+
+    number_of_elements_to_add = dual_size - dual_rows;
+    FEELPP_ASSERT( number_of_elements_to_add  > 0 )( number_of_elements_to_add )(dual_size)(dual_rows).error( "assemblePrimalAndDualApeeBasisMatrices was called but there is no elements to add in M_dual_T ");
+
+    M_dual_T.conservativeResize( dual_size , dual_size );
+    for(int i=dual_rows; i<dual_size; i++)
+    {
+        M_dual_T.col( i ) = M_dual_apee_basis[ i ];
+    }
+
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::selectPrimalApeeParameters( int N, std::vector< parameter_type > & new_parameters )
+{
+    int Qa = M_model->Qa();
+    int Qf = M_model->Ql( 0 );
+    int primal_size = Qf*Qf + N*Qa*Qf + N*N*Qa*Qa;
+    int current_size = M_primal_apee_mu->size();
+    //number of parameters to add :
+    int elem_to_add = primal_size - current_size;
+    LOG( INFO ) << "[selectPrimalApeeParameters] elem_to_add : "<<elem_to_add;
+    new_parameters.resize( elem_to_add );
+    parameter_type mu( M_Dmu );
+    size_type index=0;
+    for(int i=0; i<elem_to_add; i++)
+    {
+        bool already_exist;
+        do
+        {
+            //initialization
+            already_exist=false;
+            //pick randomly an element in parameter space
+            mu = M_Dmu->element();
+            //make sure that the new mu is not already is M_primal_apee_mu or in M_WNmu
+            BOOST_FOREACH( auto _mu, *M_primal_apee_mu )
+            {
+                if( mu == _mu )
+                    already_exist=true;
+            }
+            BOOST_FOREACH( auto _mu, *M_WNmu )
+            {
+                if( mu == _mu )
+                    already_exist=true;
+            }
+        }
+        while( already_exist );
+        M_primal_apee_mu->push_back( mu , index );
+        new_parameters[i]=mu;
+        //M_primal_apee_mu_complement = M_primal_apee_mu->complement();
+    }
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::selectDualApeeParameters( int N, std::vector< parameter_type > & new_parameters )
+{
+    int Qa = M_model->Qa();
+    int Ql = M_model->Ql( M_output_index );
+    int dual_size = Ql*Ql + N*Qa*Ql + N*N*Qa*Qa;
+    int current_size = M_dual_apee_mu->size();
+    //number of parameters to add :
+    int elem_to_add = dual_size - current_size;
+    LOG( INFO ) << "[selectDualApeeParameters] elem_to_add : "<<elem_to_add;
+    new_parameters.resize( elem_to_add );
+    parameter_type mu( M_Dmu );
+    size_type index=0;
+    for(int i=0; i<elem_to_add; i++)
+    {
+        bool already_exist;
+        do
+        {
+            //initialization
+            already_exist=false;
+            //pick randomly an element in parameter space
+            mu = M_Dmu->element();
+            //make sure that the new mu is not already is M_dual_apee_mu or in M_WNmu
+            BOOST_FOREACH( auto _mu, *M_dual_apee_mu )
+            {
+                if( mu == _mu )
+                    already_exist=true;
+            }
+            BOOST_FOREACH( auto _mu, *M_WNmu )
+            {
+                if( mu == _mu )
+                    already_exist=true;
+            }
+        }
+        while( already_exist );
+        M_dual_apee_mu->push_back( mu , index );
+        new_parameters[i]=mu;
+        //M_dual_apee_mu_complement = M_dual_apee_mu->complement();
+    }
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::computePrimalApeeBasis( parameter_type const& mu ) const
+{
+    int N = M_WNmu->size();
+    //compute RB solution
+    std::vector< vectorN_type > uN_vector;
+    std::vector< vectorN_type > uNdu_vector;
+    std::vector< vectorN_type > uNold_vector;
+    std::vector< vectorN_type > uNduold_vector;
+    auto tuple = lb( N, mu, uN_vector, uNdu_vector, uNold_vector, uNduold_vector );
+
+    vectorN_type uN;
+    double time;
+    if ( M_model->isSteady() )
+    {
+        uN = uNdu_vector[0];
+        time=1e30;
+    }
+    else
+        throw std::logic_error( "[CRB::computeApeeBasis] ERROR not yet implemented for transient case, if you want to run CRB on a transient problem, make sure that crb.use-accurate-apee=false" );
+
+    auto Xpr = computeOnlinePrimalApeeVector( mu , uN );
+    M_primal_apee_basis.push_back(Xpr);
+}
+
+template<typename TruthModelType>
+typename CRB<TruthModelType>::vectorN_type
+CRB<TruthModelType>::computeOnlinePrimalApeeVector( parameter_type const& mu , vectorN_type const & uN, vectorN_type const & uNold, double dt, double time ) const
+{
+    vectorN_type Xpr;
+    int N = M_WNmu->size();
+    LOG( INFO ) << "[computePrimalApeeBasis] N = "<<N;
+    int Qa = M_model->Qa();
+    int Qf = M_model->Ql( 0 );
+
+    int primal_size = Qf*Qf + N*Qa*Qf + N*N*Qa*Qa;
+    Xpr.resize(primal_size);
+
+    beta_vector_type betaAqm;
+    beta_vector_type betaMqm;
+    std::vector<beta_vector_type> betaFqm;
+
+    //get beta coefficients
+    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+
+    int idx=0;//start
+
+    for ( int __q1 = 0; __q1 < Qf; ++__q1 )
+    {
+        for ( int __m1 = 0; __m1 < M_model->mMaxF(0,__q1); ++__m1 )
+        {
+            value_type fq1 = betaFqm[0][__q1][__m1];
+            for ( int __q2 = 0; __q2 < Qf; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxF(0,__q2); ++__m2 )
+                {
+                    value_type fq2 = betaFqm[0][__q2][__m2];
+                    Xpr(idx) = fq1*fq2;
+                    idx++;
+                }//m2
+            }//q2
+        }//m1
+    }//q1
+
+    for ( int __q1 = 0; __q1 < Qa; ++__q1 )
+    {
+        for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
+        {
+            value_type aq1 = betaAqm[__q1][__m1];
+
+            for ( int __q2 = 0; __q2 < Qf; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxF(0,__q2); ++__m2 )
+                {
+                    value_type fq2 = betaFqm[0][__q2][__m2];
+                    for(int n=0; n<N; n++)
+                    {
+                        Xpr(idx) = uN(n) *aq1 * fq2;
+                        idx++;
+                    }
+                }//m2
+            }//q2
+
+
+            for ( int __q2 = 0; __q2 < Qa; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                {
+                    value_type aq2 = betaAqm[__q2][__m2];
+                    for(int n1=0; n1<N; n1++)
+                    {
+                        for(int n2=0; n2<N; n2++)
+                        {
+                            Xpr(idx) = uN(n1)*aq1*uN(n2)*aq2;
+                            idx++;
+                        }
+                    }
+                }//m2
+            }//q2
+        }//m1
+    }//q1
+
+    return Xpr;
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::computeDualApeeBasis( parameter_type const& mu ) const
+{
+    int N = M_WNmu->size();
+    //compute RB solution
+    std::vector< vectorN_type > uN_vector;
+    std::vector< vectorN_type > uNdu_vector;
+    std::vector< vectorN_type > uNold_vector;
+    std::vector< vectorN_type > uNduold_vector;
+    auto tuple = lb( N, mu, uN_vector, uNdu_vector, uNold_vector, uNduold_vector );
+
+    vectorN_type uNdu;
+    double time;
+
+    if ( M_model->isSteady() )
+    {
+        uNdu = uNdu_vector[0];
+        time=1e30;
+    }
+    else
+        throw std::logic_error( "[CRB::computeApeeBasis] ERROR not yet implemented for transient case, if you want to run CRB on a transient problem, make sure that crb.use-accurate-apee=false" );
+
+    auto Xdu = computeOnlineDualApeeVector( mu , uNdu );
+    M_dual_apee_basis.push_back(Xdu);
+
+}
+
+template<typename TruthModelType>
+typename CRB<TruthModelType>::vectorN_type
+CRB<TruthModelType>::computeOnlineDualApeeVector( parameter_type const& mu , vectorN_type const & uNdu, vectorN_type const & uNold , double dt, double time ) const
+{
+
+    vectorN_type Xdu;
+    int N = M_WNmu->size();
+    int Qa = M_model->Qa();
+    int Ql = M_model->Ql( M_output_index );
+
+    int dual_size = Ql*Ql + N*Qa*Ql + N*N*Ql*Ql;
+    Xdu.resize(dual_size);
+
+    beta_vector_type betaAqm;
+    beta_vector_type betaMqm;
+    std::vector<beta_vector_type> betaFqm;
+
+    //get beta coefficients
+    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uNdu , N , M_model->rBFunctionSpace()->dualRB() ), mu ,time );
+
+    int idx=0;//start
+
+    for ( int __q1 = 0; __q1 < Ql; ++__q1 )
+    {
+        for ( int __m1 = 0; __m1 < M_model->mMaxF(M_output_index,__q1); ++__m1 )
+        {
+            value_type fq1 = betaFqm[M_output_index][__q1][__m1];
+            for ( int __q2 = 0; __q2 < Ql; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
+                {
+                    value_type fq2 = betaFqm[M_output_index][__q2][__m2];
+                    Xdu(idx) = fq1*fq2;
+                    idx++;
+                }//m2
+            }//q2
+        } //m1
+    } //q1
+
+    for ( int __q1 = 0; __q1 < Qa; ++__q1 )
+    {
+        for ( int __m1 = 0; __m1 < M_model->mMaxA(__q1); ++__m1 )
+        {
+            value_type aq1 = betaAqm[__q1][__m1];
+            for ( int __q2 = 0; __q2 < Ql; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
+                {
+                    value_type fq2 = betaFqm[M_output_index][__q2][__m2];
+                    for(int n=0; n<N; n++)
+                    {
+                        Xdu(idx) = uNdu(n)*aq1*fq2;
+                        idx++;
+                    }
+                }//m2
+            }//q2
+
+            for ( int __q2 = 0; __q2 < Qa; ++__q2 )
+            {
+                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                {
+                    value_type aq2 = betaAqm[__q2][__m2];
+                    for(int n1=0; n1<N; n1++)
+                    {
+                        for(int n2=0; n2<N; n2++)
+                        {
+                            Xdu(idx) = uNdu(n1)*aq1*uNdu(n2)*aq2;
+                            idx++;
+                        }
+                    }
+                }//m2
+            }//q2
+        }//m1
+    }//q1
+
+    return Xdu;
+}
+
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeOnlinePrimalApee(  int N, parameter_type const& mu , vectorN_type const & uN, vectorN_type const & uNold , double dt, double time ) const
+{
+    int primal_rows = M_primal_T.rows();
+    FEELPP_ASSERT( primal_rows >= N )( primal_rows )( N ).error( "invalid size of RB dimension or M_primal_T is not correctly filled");
+
+    vectorN_type lambda;
+    int Qa = M_model->Qa();
+    int Qf = M_model->Ql( 0 );
+    int primal_size = Qf*Qf + N*Qa*Qf + N*N*Qa*Qa; //d in the F.Casenave's paper
+    lambda.resize(primal_size);
+
+    if( option(_name="crb.compute-matrix-information").template as<bool>() )
+    {
+        double cond = computeConditioning( M_primal_T );
+        double det = M_primal_T.determinant();
+        LOG( INFO ) << "[computeOnlinePrimalApee] matrix information :";
+        LOG( INFO ) << "condition number = "<<cond;
+        LOG( INFO ) << "determinant = "<<det;
+    }
+
+    auto X = computeOnlinePrimalApeeVector( mu , uN );
+    lambda = M_primal_T.block( 0,0,N,N ).lu().solve( X );
+
+    double result=0;
+    for(int i=0; i<primal_size; i++)
+    {
+        result += lambda(i)*M_primal_V(i);
+    }
+
+    return result;
+}
+
+template<typename TruthModelType>
+double
+CRB<TruthModelType>::computeOnlineDualApee(  int N, parameter_type const& mu , vectorN_type const & uN, vectorN_type const & uNold , double dt, double time ) const
+{
+    int dual_rows = M_dual_T.rows();
+    FEELPP_ASSERT( dual_rows >= N )( dual_rows )( N ).error( "invalid size of RB dimension or M_dual_T is not correctly filled");
+
+    vectorN_type lambda;
+    int Qa = M_model->Qa();
+    int Ql = M_model->Ql( M_output_index );
+    int dual_size = Ql*Ql + N*Qa*Ql + N*N*Ql*Ql; //d in the F.Casenave's paper
+    lambda.resize(dual_size);
+
+    if( option(_name="crb.compute-matrix-information").template as<bool>() )
+    {
+        double cond = computeConditioning( M_dual_T );
+        double det = M_dual_T.determinant();
+        LOG( INFO ) << "[computeOnlineDualApee] matrix information :";
+        LOG( INFO ) << "condition number = "<<cond;
+        LOG( INFO ) << "determinant = "<<det;
+    }
+
+    auto X = computeOnlineDualApeeVector( mu , uN );
+    lambda = M_dual_T.block( 0,0,N,N ).lu().solve( X );
+
+    double result=0;
+    for(int i=0; i<dual_size; i++)
+    {
+        result += lambda(i)*M_dual_V(i);
+    }
+
+    return result;
+}
 
 
 template<typename TruthModelType>
@@ -6708,6 +7317,15 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     ar & BOOST_SERIALIZATION_NVP( M_use_newton );
     ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
+
+    ar & BOOST_SERIALIZATION_NVP( M_primal_apee_basis );
+    ar & BOOST_SERIALIZATION_NVP( M_dual_apee_basis );
+    ar & BOOST_SERIALIZATION_NVP( M_primal_V );
+    ar & BOOST_SERIALIZATION_NVP( M_dual_V );
+    ar & BOOST_SERIALIZATION_NVP( M_primal_T );
+    ar & BOOST_SERIALIZATION_NVP( M_dual_T );
+
+
 #if 0
         for(int i=0; i<M_N; i++)
             ar & BOOST_SERIALIZATION_NVP( M_WN[i] );
@@ -6826,6 +7444,12 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
                 throw std::logic_error( "[CRB::loadDB] ERROR in the database used the option use-newton=false and it's not the case in your option" );
         }
 
+    ar & BOOST_SERIALIZATION_NVP( M_primal_apee_basis );
+    ar & BOOST_SERIALIZATION_NVP( M_dual_apee_basis );
+    ar & BOOST_SERIALIZATION_NVP( M_primal_V );
+    ar & BOOST_SERIALIZATION_NVP( M_dual_V );
+    ar & BOOST_SERIALIZATION_NVP( M_primal_T );
+    ar & BOOST_SERIALIZATION_NVP( M_dual_T );
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
               << "[loadDB] N : " << M_N << "\n"
