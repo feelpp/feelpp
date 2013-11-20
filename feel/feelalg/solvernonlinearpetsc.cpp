@@ -465,12 +465,12 @@ void SolverNonLinearPetsc<T>::setReuse ( int jac, int prec )
 template <typename T>
 void SolverNonLinearPetsc<T>::init ()
 {
+    int ierr=0;
     // Initialize the data structures if not done so already.
     if ( !this->initialized() )
     {
         this->M_is_initialized = true;
 
-        int ierr=0;
 
 # if ((PETSC_VERSION_MAJOR == 2) && (PETSC_VERSION_MINOR <= 1) && (PETSC_VERSION_SUBMINOR <= 1))
 
@@ -500,7 +500,6 @@ void SolverNonLinearPetsc<T>::init ()
         ierr = SNESSetFromOptions( M_snes );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-        //int ierr=0;
         // if the non linear solver type is define by the user in the code
         switch ( this->getType() )
         {
@@ -530,48 +529,6 @@ void SolverNonLinearPetsc<T>::init ()
             // no-op
             break;
         }
-
-
-        double __relResTol,__absResTol,__absSolTol;
-        int __nbItMax, __nbEvalFuncMax;
-
-        if ( this->getAbsoluteResidualTol()==0 )
-        {
-            ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL );
-            CHKERRABORT( this->worldComm().globalComm(),ierr );
-        }
-
-        else __absResTol = this->getAbsoluteResidualTol();
-
-        if ( this->getRelativeResidualTol()==0 )
-        {
-            ierr = SNESGetTolerances( M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL );
-            CHKERRABORT( this->worldComm().globalComm(),ierr );
-        }
-
-        else __relResTol = this->getRelativeResidualTol();
-
-        if ( this->getAbsoluteSolutionTol()==0 )
-        {
-            ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL );
-            CHKERRABORT( this->worldComm().globalComm(),ierr );
-        }
-
-        else __absSolTol = this->getAbsoluteSolutionTol();
-
-        if ( this->getNbItMax()==0 )
-        {
-            ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL );
-            CHKERRABORT( this->worldComm().globalComm(),ierr );
-        }
-
-        else __nbItMax = this->getNbItMax();
-
-        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
-
-        ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
-        CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         //KSP ksp;
         ierr = SNESGetKSP ( M_snes, &M_ksp );
@@ -610,7 +567,50 @@ void SolverNonLinearPetsc<T>::init ()
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
+    } // if ( !this->initialized() )
+
+
+
+    double __relResTol,__absResTol,__absSolTol;
+    int __nbItMax, __nbEvalFuncMax;
+
+    if ( this->getAbsoluteResidualTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, &__absResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
     }
+
+    else __absResTol = this->getAbsoluteResidualTol();
+
+    if ( this->getRelativeResidualTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, &__relResTol, PETSC_NULL, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
+
+    else __relResTol = this->getRelativeResidualTol();
+
+    if ( this->getAbsoluteSolutionTol()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, &__absSolTol, PETSC_NULL, PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
+
+    else __absSolTol = this->getAbsoluteSolutionTol();
+
+    if ( this->getNbItMax()==0 )
+    {
+        ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbItMax, PETSC_NULL );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
+
+    else __nbItMax = this->getNbItMax();
+
+    ierr = SNESGetTolerances( M_snes, PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL, &__nbEvalFuncMax );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    ierr = SNESSetTolerances( M_snes,__absResTol,__relResTol,__absSolTol,__nbItMax,__nbEvalFuncMax );
+    CHKERRABORT( this->worldComm().globalComm(),ierr );
 
 
 }
