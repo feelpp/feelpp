@@ -173,12 +173,15 @@ void Navier_Stokes::init()
         std::cout << this->optionsDescription() << "\n";
         return;
     }
-    /*mesh = createGMSHMesh( _mesh=new mesh_type,
+
+    /* mesh = createGMSHMesh( _mesh=new mesh_type,
                             _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
                             _desc=domain( _name= ( boost::format( "%1%-%2%-%3%" ) % "hypercube" % convex_type().dimension() % 1 ).str() ,
                                           _shape="hypercube",
                                           _dim=convex_type().dimension(),
                                           _h=meshSize ) );*/
+
+
     mesh = createGMSHMesh( _mesh=new mesh_type,
                            _desc=domain( _name="kovaznay",
                                          _usenames=false,
@@ -186,7 +189,7 @@ void Navier_Stokes::init()
                                          _h=meshSize,
                                          _xmin=-0.5, _xmax=1,
                                          _ymin=-0.5, _ymax=1.5 ) );
-     //mesh = unitSquare();
+
     mesh->addMarkerName( "inlet", 1, 1 );
     mesh->addMarkerName( "outlet", 3, 1 );
     mesh->addMarkerName( "wall1", 2, 1 );
@@ -227,39 +230,33 @@ void Navier_Stokes::run()
             auto mu=0.035;
 
             if (!J) J = backend()->newMatrix( Vh, Vh );
-            std::cout << "coucou1 " << "\n";
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-            a = integrate( elements( mesh ), mu*inner(gradt( u ),grad( v )) );
-            std::cout << "coucou2 " << "\n";
-            a += integrate( elements( mesh ), id(q)*divt(u) -idt(p)*div(v) );
-            std::cout << "coucou3 " << "\n";
+
+            a = integrate( elements( mesh ), mu*trace(gradt( u )*trans(grad( v )) ) );
+            a += integrate( elements( mesh ), - id(q)*divt(u) -idt(p)*div(v) );
             // Convective terms
             //a += integrate( elements( mesh ), trans(id(v))*gradv(u)*idt(u));
             //a += integrate( elements( mesh ), trans(id(v))*gradt(u)*idv(u));
-            std::cout << "coucou5 " << "\n";
 
 #if 1
             a += integrate(elements(mesh), id(q)*idt(lambda)+idt(p)*id(nu));
 #endif
 
-            //a += integrate(elements(mesh), idt(p)*id(nu));
-
 #if 1
-            std::cout << "Dirichlet " << "\n";
-            //Weak Dirichlet conditions
+            //Weak Dirichlet conditions on all the boundary faces
             a += integrate( boundaryfaces( mesh ),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
             a += integrate( boundaryfaces( mesh ),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
             a += integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 #elif 0
-            //Neumann BC
+            //Neumann BC on inlet and outlet and Dirichlet BC on the wall
             a += integrate( markedfaces(mesh,"wall1"),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
             a += integrate( markedfaces(mesh,"wall2"),-trans( -idt(p)*N()+mu*gradt(u)*N() )*id( v ));
             std::cout << "Neumann " << "\n";
             a += integrate( markedfaces(mesh,"wall1"),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
             a += integrate( markedfaces(mesh,"wall2"),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));
 
-            a += integrate( markedfaces(mesh,"wall1"), +penalbc*inner( idt( u ),id( v ) )/hFace() );
-            a += integrate( markedfaces(mesh,"wall2"), +penalbc*inner( idt( u ),id( v ) )/hFace() );
+            a += integrate( markedfaces(mesh,"wall1"), +penalbc*trans( idt( u ) )*id( v )/hFace() );
+            a += integrate( markedfaces(mesh,"wall2"), +penalbc*trans( idt( u ) )*id( v )/hFace() );
 #endif
 
 
@@ -307,23 +304,25 @@ void Navier_Stokes::run()
 
             auto r = form1( _test=Vh, _vector=R );
             r = integrate( elements( mesh ),-inner( f,id( v ) ) );
-            r += integrate( elements( mesh ), inner(mu*gradv( u ),grad( v )) );
-            r +=  integrate( elements( mesh ),-idv(p)*div(v) + id(q)*divv(u));
+
+            r += integrate( elements( mesh ), trace(trans(mu*gradv( u ))*grad( v )) );
+            r +=  integrate( elements( mesh ),-idv(p)*div(v) - id(q)*divv(u));
+
             // convective terms
             //r += integrate( elements( mesh ), trans(gradv( u )*idv(u))*id(v));
 
 
 #if 1
-            r += integrate ( elements( mesh ), +id( q )*idv( lambda )+idv( p )*id( nu ) );
+            r += integrate ( elements( mesh ), +id( q )*idv( lambda )+(idv( p )-p_exact)*id( nu ) );
 #endif
 
 #if 1
-            //Weak Dirichlet
+            //Weak Dirichlet BC on all the boundary faces
             auto SigmaNv = ( -idv( p )*N() + mu*gradv( u )*N() );
             auto SigmaN = ( -id( q )*N() + mu*grad( v )*N() );
             r +=integrate ( boundaryfaces(mesh), - trans( SigmaNv )*id( v ) - trans( SigmaN )*( idv( u ) - u_exact ) + penalbc*trans( idv( u ) - u_exact )*id( v )/hFace() );
 #elif 0
-            //Neumann
+            //Neumann BC on the inlet and outlet faces and Dirichlet BC on the wall
             auto SigmaNv = ( -idv( p )*N() + mu*gradv( u )*N() );
             auto SigmaN = ( -id( q )*N() + mu*grad( v )*N() );
             r +=integrate ( markedfaces(mesh,"inlet"),  -trans( -P_inlet*N() )*id( v ) );
@@ -334,13 +333,6 @@ void Navier_Stokes::run()
 
         };
 
-    u=vf::project(Vh->functionSpace<0>(), elements(mesh), zero<2,1>());
-    p=vf::project(Vh->functionSpace<1>(), elements(mesh), constant(0.0));
-
-    backend()->nlSolver()->residual = Residual;
-    backend()->nlSolver()->jacobian = Jacobian;
-    backend()->nlSolve( _solution=U );
-
     //Poiseuille
     /*auto rayon=1;
     auto P_inlet = 1.;
@@ -350,8 +342,7 @@ void Navier_Stokes::run()
     auto p_exact=(P_outlet-P_inlet)*Px() + P_inlet;
     auto f=vec(cst(0.) , cst(0.) );*/
 
-
-    //Solution Kovasnay
+    //Kovasnay solution
     auto mu=0.035;
     double lambdaa = 1./( 2.*mu ) - math::sqrt( 1./( 4.*mu*mu ) + 4.*pi*pi );
     auto u1 = 1. - exp( lambdaa * Px() ) * cos( 2.*pi*Py() );
@@ -362,9 +353,34 @@ void Navier_Stokes::run()
     auto f2 = ( -mu*( lambdaa*lambdaa*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )/pi/2.0-2.0*lambdaa*exp( lambdaa*Px() )*sin( 2.0*pi*Py() )*pi ) );
     auto f = vec( f1,f2 ); //+ convection;
 
+    u=vf::project(Vh->functionSpace<0>(), elements(mesh), zero<2,1>());
+    p=vf::project(Vh->functionSpace<1>(), elements(mesh), constant(0.0));
+
+    backend()->nlSolver()->residual = Residual;
+    backend()->nlSolver()->jacobian = Jacobian;
+    backend()->nlSolve( _solution=U );
+
+#if 0
+    u=vf::project(Vh->functionSpace<0>(), elements(mesh), u_exact);
+    p=vf::project(Vh->functionSpace<1>(), elements(mesh), p_exact);
+
+    backend()->nlSolve( _solution=U );
+#endif
+
+
+    vector_ptrtype R = backend()->newVector( Vh );
+    vector_ptrtype X = backend()->newVector( Vh );
+    *X = U;
+    Residual( X,R );
+    std::cout << "residual -= " << R->dot( X ) << "\n";
+
+    //sparse_matrix_ptrtype J = backend()->newMatrix( Vh, Vh );
+    //Jacobian( X,J );
+    //backend()->solve( _matrix=J, _solution=U, _rhs=R );
+
     double u_errorL2 = integrate( elements( u.mesh() ), trans( idv( u )-u_exact )*( idv( u )-u_exact ) ).evaluate()( 0, 0 );
     std::cout << "||u_error||_2 = " << math::sqrt( u_errorL2 ) << "\n";
- 
+
     double p_errorL2 = integrate( elements( u.mesh() ), ( idv( p ) - p_exact )*( idv( p )-p_exact )).evaluate()( 0, 0 );
     std::cout << "||p_error||_2 = " << math::sqrt( p_errorL2 ) << "\n";
 
@@ -389,14 +405,9 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-#if 1
-    auto appli_name="steady_ns_dirichlet";
-#elif 0
-    auto appli_name="steady_ns_neumann";
-#endif
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name= appli_name,
+                     _about=about(_name="steady_ns",
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
     Feel::Navier_Stokes Navier_Stokes;

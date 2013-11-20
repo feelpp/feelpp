@@ -5,7 +5,7 @@ PortGroup   conflicts_build 1.0
 PortGroup   active_variants 1.1
 
 name		petsc
-version     3.4.2
+version     3.4.3
 categories  math science
 maintainers	mmoll
 description	Portable, Extensible Toolkit for Scientific Computation
@@ -26,8 +26,8 @@ distname	${name}-lite-${version}
 worksrcdir	${name}-${version}
 universal_variant   no
 
-checksums           rmd160  42926cb5278844694d6a032d9d814049a290cec0 \
-                    sha256  4527d9175e42feacb64a97d032357c794a9e1eee31c6abf077101f7df440c1bc
+checksums           rmd160  4bb25b775a6a79d5435a5dfe2194492935c6d895 \
+                    sha256  77ff8771413e62003665ccc431b780f2be7305ead91a77c0ad59d08f78fa6e2d
 
 depends_build-append  port:cmake
 depends_lib-append  port:hdf5-18 \
@@ -105,6 +105,8 @@ variant ml description {Install with ML package} conflicts accelerate {
     configure.args-append \
         --download-ml
 }
+
+default_variants +atlas +ml
 
 if {![variant_isset mpich2]} {
     default_variants +openmpi
