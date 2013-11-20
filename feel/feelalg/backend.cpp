@@ -144,9 +144,9 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_maxitKSP( vm[prefixvm( prefix,"ksp-maxit" )].template as<size_type>() ),
     M_maxitKSPinSNES( vm[prefixvm( prefix,"snes-ksp-maxit" )].template as<size_type>() ),
     M_maxitSNES( vm[prefixvm( prefix,"snes-maxit" )].template as<size_type>() ),
-    M_maxitKSPReuse( vm[prefixvm( prefix,"ksp-maxit-reuse" )].template as<size_type>() ),
-    M_maxitKSPinSNESReuse( vm[prefixvm( prefix,"snes-ksp-maxit-reuse" )].template as<size_type>() ),
-    M_maxitSNESReuse( vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<size_type>() ),
+    M_maxitKSPReuse( (vm.count(prefixvm( prefix,"ksp-maxit-reuse")))? vm[prefixvm( prefix,"ksp-maxit-reuse" )].template as<size_type>() : M_maxitKSP ),
+    M_maxitKSPinSNESReuse( (vm.count(prefixvm( prefix,"snes-ksp-maxit-reuse")))? vm[prefixvm( prefix,"snes-ksp-maxit-reuse" )].template as<size_type>() : M_maxitKSPinSNES ),
+    M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<size_type>() : M_maxitSNES ),
     M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
     M_ksp( vm[prefixvm( prefix,"ksp-type" )].template as<std::string>() ),
     M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
@@ -754,7 +754,7 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"ksp-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
     ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )
     ( prefixvm( prefix,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
-    ( prefixvm( prefix,"ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
+    ( prefixvm( prefix,"ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
     ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
     ( prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( true ), "rebuild jacobian at each Newton when reuse jacobian" )
     ( prefixvm( prefix,"reuse-prec" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner" )
@@ -770,9 +770,9 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
     ( prefixvm( prefix,"snes-stol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "step length tolerance" )
     ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
-    ( prefixvm( prefix,"snes-maxit-reuse" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
+    ( prefixvm( prefix,"snes-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
     ( prefixvm( prefix,"snes-ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
-    ( prefixvm( prefix,"snes-ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
+    ( prefixvm( prefix,"snes-ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
     ( prefixvm( prefix,"snes-ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-5 ), "relative tolerance" )
     ( prefixvm( prefix,"snes-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor snes" )
     ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )
