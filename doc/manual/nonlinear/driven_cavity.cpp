@@ -203,7 +203,7 @@ void Driven_Cavity::run()
     auto v = V.template element<0>( "u" );
     auto p = U.template element<1>( "p" );
     auto q = V.template element<1>( "p" );
-    // #if defined( FEELPP_USE_LM )
+    //#if defined( FEELPP_USE_LM )
     auto lambda = U.template element<2>();
     auto nu = V.template element<2>();
     //#endif
@@ -307,7 +307,6 @@ void Driven_Cavity::run()
                 exporter->step( 0 )->add( "uex", u_exact);
                 exporter->save();
             }
-        //this->exportResults( U, V );
 };
 }
 
