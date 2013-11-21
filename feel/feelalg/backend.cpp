@@ -60,8 +60,12 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_reuseJacIsBuild(false),
     M_reuseJacRebuildAtFirstNewtonStep(true),
     M_transpose( false ),
-    M_maxit( 1000 ),
+    M_maxitKSP( 1000 ),
+    M_maxitKSPinSNES( M_maxitKSP ),
     M_maxitSNES( 50 ),
+    M_maxitKSPReuse( M_maxitKSP ),
+    M_maxitKSPinSNESReuse( M_maxitKSPinSNES ),
+    M_maxitSNESReuse( M_maxitSNES ),
     M_export( "" ),
     M_ksp( "gmres" ),
     M_pc( "lu" ),
@@ -97,8 +101,12 @@ Backend<T>::Backend( Backend const& backend )
     M_reuseJacIsBuild( backend.M_reuseJacIsBuild) ,
     M_reuseJacRebuildAtFirstNewtonStep( backend.M_reuseJacRebuildAtFirstNewtonStep ),
     M_transpose( backend.M_transpose ),
-    M_maxit( backend.M_maxit ),
+    M_maxitKSP( backend.M_maxitKSP ),
+    M_maxitKSPinSNES( backend.M_maxitKSPinSNES ),
     M_maxitSNES( backend.M_maxitSNES ),
+    M_maxitKSPReuse( backend.M_maxitKSPReuse ),
+    M_maxitKSPinSNESReuse( backend.M_maxitKSPinSNESReuse ),
+    M_maxitSNESReuse( backend.M_maxitSNESReuse ),
     M_export( backend.M_export ),
     M_ksp( backend.M_ksp ),
     M_pc( backend.M_pc ),
@@ -133,8 +141,12 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_reuseJacIsBuild( false ) ,
     M_reuseJacRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" )].template as<bool>() ),
     M_transpose( false ),
-    M_maxit( vm[prefixvm( prefix,"ksp-maxit" )].template as<size_type>() ),
+    M_maxitKSP( vm[prefixvm( prefix,"ksp-maxit" )].template as<size_type>() ),
+    M_maxitKSPinSNES( vm[prefixvm( prefix,"snes-ksp-maxit" )].template as<size_type>() ),
     M_maxitSNES( vm[prefixvm( prefix,"snes-maxit" )].template as<size_type>() ),
+    M_maxitKSPReuse( (vm.count(prefixvm( prefix,"ksp-maxit-reuse")))? vm[prefixvm( prefix,"ksp-maxit-reuse" )].template as<size_type>() : M_maxitKSP ),
+    M_maxitKSPinSNESReuse( (vm.count(prefixvm( prefix,"snes-ksp-maxit-reuse")))? vm[prefixvm( prefix,"snes-ksp-maxit-reuse" )].template as<size_type>() : M_maxitKSPinSNES ),
+    M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<size_type>() : M_maxitSNES ),
     M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
     M_ksp( vm[prefixvm( prefix,"ksp-type" )].template as<std::string>() ),
     M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
@@ -358,6 +370,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
     M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
     M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
+
     M_nlsolver->setNbItMax( this->maxIterationsSNES() );
     M_nlsolver->setRelativeResidualTol( this->rToleranceSNES() );
     M_nlsolver->setAbsoluteResidualTol( this->aToleranceSNES() );
@@ -365,7 +378,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setRtoleranceKSP( this->rtoleranceKSPinSNES() );
     M_nlsolver->setAtoleranceKSP( this->aTolerance() );
     M_nlsolver->setDtoleranceKSP( this->dTolerance() );
-    M_nlsolver->setMaxitKSP( this->maxIterations() );
+    M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNES() );
 
     M_nlsolver->init();
 
@@ -397,6 +410,10 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         //M_nlsolver->setReuse( -1, -2 );
         M_nlsolver->setReuse( typeReuseJac, typeReusePrec );
 
+        //int maxIterationsReuseJac=10;
+        M_nlsolver->setNbItMax( this->maxIterationsSNESReuse() );
+        M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNESReuse() );
+
         // compute cst jacobian in case of quasi-newton!
         if ( reuseJac &&  (!M_reuseJacIsBuild || M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
     }
@@ -414,13 +431,19 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         x_save->close();
         *x=*x_save;
 
-        M_nlsolver->init();
-        M_nlsolver->setPreconditionerType( this->pcEnumType() );
-        M_nlsolver->setKspSolverType( this->kspEnumType() );
+        //M_nlsolver->init();
+        //M_nlsolver->setPreconditionerType( this->pcEnumType() );
+        //M_nlsolver->setKspSolverType( this->kspEnumType() );
         M_nlsolver->setPrecMatrixStructure( matStructInitial/*SAME_NONZERO_PATTERN*/ );
+        M_nlsolver->setNbItMax( this->maxIterationsSNES() );
+        M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNES() );
 
         //M_nlsolver->setReuse( 1, -2 );
         M_nlsolver->setReuse( 1, 1 );
+
+        this->nlSolver()->jacobian( x, A );
+
+        // call solver which must execute with success
         auto ret2 = M_nlsolver->solve( A, x, b, tol, its );
 
         if ( ret2.first < 0 )
@@ -460,7 +483,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setRtoleranceKSP( this->rtoleranceKSPinSNES() );
     M_nlsolver->setAtoleranceKSP( this->aTolerance() );
     M_nlsolver->setDtoleranceKSP( this->dTolerance() );
-    M_nlsolver->setMaxitKSP( this->maxIterations() );
+    M_nlsolver->setMaxitKSP( this->maxIterationsKSP() );
 
     M_nlsolver->init();
     M_nlsolver->setReuse( 1, 1 );
@@ -513,7 +536,7 @@ Backend<T>::stop()
         M_firstSolveTime = solveTime;
 
         if ( !M_reuseFailed )
-            M_maxit = std::max(size_type(10),std::min( M_maxit, ( size_type )( 1.5*solveIter + 10.5 ) ));
+            M_maxitKSP = std::max(size_type(10),std::min( M_maxitKSP, ( size_type )( 1.5*solveIter + 10.5 ) ));
     }
 
     else
@@ -541,7 +564,7 @@ Backend<T>::stop()
 
         if ( M_reusePC )
         {
-            M_maxit = std::max( size_type(10),std::min( M_maxit, ( size_type )( M_totalSolveIter/M_nUsePC + 0.5 ) ));
+            M_maxitKSP = std::max( size_type(10),std::min( M_maxitKSP, ( size_type )( M_totalSolveIter/M_nUsePC + 0.5 ) ));
         }
     }
 }
@@ -553,7 +576,7 @@ Backend<T>::reset()
     M_reusePC = false;
     M_totalSolveIter = 0.0;
     M_nUsePC = 0;
-    //M_backend->set_maxiter( M_maxit );
+    //M_backend->set_maxiter( M_maxitKSP );
 
 }
 
@@ -731,6 +754,7 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"ksp-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
     ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )
     ( prefixvm( prefix,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
+    ( prefixvm( prefix,"ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
     ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
     ( prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( true ), "rebuild jacobian at each Newton when reuse jacobian" )
     ( prefixvm( prefix,"reuse-prec" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner" )
@@ -746,6 +770,9 @@ po::options_description backend_options( std::string const& prefix )
     ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
     ( prefixvm( prefix,"snes-stol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "step length tolerance" )
     ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
+    ( prefixvm( prefix,"snes-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
+    ( prefixvm( prefix,"snes-ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
+    ( prefixvm( prefix,"snes-ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
     ( prefixvm( prefix,"snes-ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-5 ), "relative tolerance" )
     ( prefixvm( prefix,"snes-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor snes" )
     ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )

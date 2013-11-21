@@ -203,7 +203,7 @@ void Driven_Cavity::run()
     auto v = V.template element<0>( "u" );
     auto p = U.template element<1>( "p" );
     auto q = V.template element<1>( "p" );
-    // #if defined( FEELPP_USE_LM )
+    //#if defined( FEELPP_USE_LM )
     auto lambda = U.template element<2>();
     auto nu = V.template element<2>();
     //#endif
@@ -220,20 +220,16 @@ void Driven_Cavity::run()
             //#if defined( FEELPP_USE_LM )
             auto lambda = U.template element<2>();
             auto nu = V.template element<2>();
-            auto mu=0.001;
+            auto mu=0.04;
             //#endif
 
             if (!J) J = backend()->newMatrix( Vh, Vh );
-            std::cout << "coucou1 " << "\n";
             auto a = form2( _test=Vh, _trial=Vh, _matrix=J );
-            a += integrate( elements( mesh ), mu*inner(gradt( u ),grad( v )) );
-            std::cout << "coucou2 " << "\n";
+            a = integrate( elements( mesh ), mu*inner(gradt( u ),grad( v )) );
             a += integrate( elements( mesh ), id(q)*divt(u) -idt(p)*div(v) );
-            std::cout << "coucou3 " << "\n";
             // Convective terms
             a += integrate( elements( mesh ), trans(id(v))*gradv(u)*idt(u));
             a += integrate( elements( mesh ), trans(id(v))*gradt(u)*idv(u));
-            std::cout << "coucou5 " << "\n";
 
             //#if defined( FEELPP_USE_LM )
             a += integrate(elements(mesh), id(q)*idt(lambda)+idt(p)*id(nu));
@@ -245,13 +241,11 @@ void Driven_Cavity::run()
             a += integrate( boundaryfaces( mesh ),-trans( -id(p)*N()+mu*grad(u)*N() )*idt( u ));//
             a += integrate( boundaryfaces( mesh ), +penalbc*inner( idt( u ),id( v ) )/hFace() );
 
-          
 
         };
 
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
-            std::cout << "coucou6 " << "\n";
             auto U = Vh->element( "(u,p)" );
             auto V = Vh->element( "(v,q)" );
             auto u = U.template element<0>( "u" );
@@ -263,8 +257,7 @@ void Driven_Cavity::run()
             auto lambda = U.template element<2>();
             auto nu = V.template element<2>();
             //#endif
-            auto mu=0.001;
-            std::cout << "coucou7 " << "\n";
+            auto mu=0.04;
 
 
             auto uex=vec(cst(1.) , cst(0.) );
@@ -272,19 +265,11 @@ void Driven_Cavity::run()
 
 
             U=*X;
-            std::cout << "coucou8 " << "\n";
             auto r = form1( _test=Vh, _vector=R );
-            std::cout << "coucou9 " << "\n";
             //r += integrate( elements( mesh ),-inner( f,id( v ) ) );
-            std::cout << "coucou10 " << "\n";
-            r += integrate( elements( mesh ), trans(gradv( u )*idv(u))*id(v));
-            std::cout << "coucou11 " << "\n";
+            r = integrate( elements( mesh ), trans(gradv( u )*idv(u))*id(v));//convective term
             r += integrate( elements( mesh ), inner(mu*gradv( u ),grad( v )) );
-            std::cout << "coucou12 " << "\n";
             r +=  integrate( elements( mesh ),-idv(p)*div(v) + id(q)*divv(u));
-            std::cout << "coucou13 " << "\n";
-
-           
             //#if defined( FEELPP_USE_LM )
             r += integrate ( elements( mesh ), +id( q )*idv( lambda )+idv( p )*id( nu ) );
             //#endif
@@ -297,18 +282,19 @@ void Driven_Cavity::run()
 
 
         };
-    std::cout << "coucou14 " << "\n";
     u=vf::project(Vh->functionSpace<0>(), elements(mesh), zero<2,1>());
-    //std::cout << "coucou15 " << "\n";
     p=vf::project(Vh->functionSpace<1>(), elements(mesh), constant(0.0));
-    //std::cout << "coucou16 " << "\n";
 
+    std::cout << "Initializing residual " << "\n";
     backend()->nlSolver()->residual = Residual;
-    //std::cout << "coucou17 " << "\n";
+    std::cout << "Initializing the Jacobian matrix" << "\n";
     backend()->nlSolver()->jacobian = Jacobian;
-    //std::cout << "coucou18 " << "\n";
+    std::cout << "Start solving" << "\n";
     backend()->nlSolve( _solution=U );
-    //std::cout << "coucou19 " << "\n";
+    std::cout << "Done!" << "\n";
+
+    auto uex=vec(cst(1.) , cst(0.) );
+    auto u_exact=vf::project(Vh->functionSpace<0>(), markedfaces(mesh, 4), uex );
 
         if ( exporter->doExport() )
             {
@@ -318,9 +304,9 @@ void Driven_Cavity::run()
                 v = U.template element<0>();
                 exporter->step( 0 )->add( "u", U.template element<0>() );
                 exporter->step( 0 )->add( "p", U.template element<1>() );
+                exporter->step( 0 )->add( "uex", u_exact);
                 exporter->save();
             }
-        //this->exportResults( U, V );
 };
 }
 
