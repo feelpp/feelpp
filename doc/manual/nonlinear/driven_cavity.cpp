@@ -40,7 +40,7 @@ makeOptions()
          ( "Re", Feel::po::value<double>()->default_value( 100 ), "Reynolds number" )
          ( "bccoeff", Feel::po::value<double>()->default_value( 100.0 ), "coeff for weak Dirichlet conditions" )
          ;
-     return  drivencavityoptions.add( Feel::feel_options() ).add( backend_options( "newtonns" ) );
+     return  drivencavityoptions.add( Feel::feel_options() ).add( Feel::backend_options( "newtonns" ) );
 }
 
 inline
