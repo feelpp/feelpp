@@ -1281,64 +1281,75 @@ BOOST_PARAMETER_FUNCTION(
     )
 
 {
-    gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1, worldcomm ) );
+    fs::path mesh_name=fs::path(Environment::findFile(filename));
+    LOG_IF( WARNING, mesh_name.extension() != ".geo" && mesh_name.extension() != ".msh" )
+        << "Invalid filename " << filename << " it should have either the .geo or .msh extension\n";
 
-    gmsh_ptr->setCharacteristicLength( h );
+    if ( mesh_name.extension() == ".geo" )
+    {
+        gmsh_ptrtype gmsh_ptr( new Gmsh( 3, 1, worldcomm ) );
+
+        gmsh_ptr->setCharacteristicLength( h );
 #if BOOST_FILESYSTEM_VERSION == 3
-    gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
+        gmsh_ptr->setPrefix( fs::path( filename ).stem().string() );
 #elif BOOST_FILESYSTEM_VERSION == 2
-    gmsh_ptr->setPrefix( fs::path( filename ).stem() );
+        gmsh_ptr->setPrefix( fs::path( filename ).stem() );
 #endif
 
-    std::string filename_with_path = Environment::findFile( filename );
-    if ( filename_with_path.empty() )
-    {
-        std::vector<std::string> plist = Environment::geoPathList();
-        std::ostringstream ostr;
-        std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
-        CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
-    }
+        std::string filename_with_path = Environment::findFile( filename );
+        if ( filename_with_path.empty() )
+        {
+            std::vector<std::string> plist = Environment::geoPathList();
+            std::ostringstream ostr;
+            std::for_each( plist.begin(), plist.end(), [&ostr]( std::string s ) { ostr << " - " << s << "\n"; } );
+            CHECK( !filename_with_path.empty() ) << "File " << filename << " cannot be found in the following paths list:\n " << ostr.str();
+        }
 
-    gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( filename_with_path ) );
-    gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
-    gmsh_ptr->setGeoParameters( geo_parameters );
+        gmsh_ptr->setDescription( gmsh_ptr->getDescriptionFromFile( filename_with_path ) );
+        gmsh_ptr->setGeoParameters( gmsh_ptr->retrieveGeoParameters( gmsh_ptr->description() ), 0 );
+        gmsh_ptr->setGeoParameters( geo_parameters );
 
-    if( worldcomm.globalRank() == worldcomm.masterRank() )
-    {
-        fs::path cp = fs::current_path();
-        std::vector<std::string> depends_on_files;
-        if ( !depends.empty() )
-            algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
-        // copy include/merged files needed by geometry file
-        boost::for_each( depends_on_files,
-                         [&cp, &files_path]( std::string const& _filename )
-                         {
-                             fs::path file_path( files_path );
-                             file_path /= _filename;
-
-                             try
+        if( worldcomm.globalRank() == worldcomm.masterRank() )
+        {
+            fs::path cp = fs::current_path();
+            std::vector<std::string> depends_on_files;
+            if ( !depends.empty() )
+                algorithm::split( depends_on_files, depends, algorithm::is_any_of( ":,; " ), algorithm::token_compress_on );
+            // copy include/merged files needed by geometry file
+            boost::for_each( depends_on_files,
+                             [&cp, &files_path]( std::string const& _filename )
                              {
-                                 boost::system::error_code ec;
+                                 fs::path file_path( files_path );
+                                 file_path /= _filename;
 
-                                 if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
-                                     std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
+                                 try
+                                 {
+                                     boost::system::error_code ec;
 
-                                 else if ( !fs::exists( cp / _filename )  )
-                                     fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
+                                     if ( !( fs::exists( file_path ) && fs::is_regular_file( file_path ) ) )
+                                         std::cout << "File : " << file_path << " doesn't exist or is not a regular file" << std::endl;
 
-                             }
+                                     else if ( !fs::exists( cp / _filename )  )
+                                         fs::copy_file( file_path, fs::path( _filename ), fs::copy_option::none );
 
-                             catch ( const fs::filesystem_error& e )
-                             {
-                                 std::cerr << "Error: " << e.what() << std::endl;
-                             }
-                         } );
+                                 }
+
+                                 catch ( const fs::filesystem_error& e )
+                                 {
+                                     std::cerr << "Error: " << e.what() << std::endl;
+                                 }
+                             } );
+        }
+        worldcomm.barrier();
+
+
+        return gmsh_ptr;
     }
-    worldcomm.barrier();
-
-
-    return gmsh_ptr;
-
+    else
+    {
+        LOG(WARNING) << "[feelfilter->geo] : " << mesh_name.extension() << "file ignored." << "\n";
+        return NULL;
+    }
 }
 
 
