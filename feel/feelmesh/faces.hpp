@@ -822,13 +822,15 @@ public:
 
             if ( ( tag2_0 != -1 && tag2_0 == tag2_1 ) || e.isOnBoundary() )
                 e.setMarker2( tag2_0 );
-
+            else if ( tag2_0 != -1 && tag2_1 != -1 )
+                e.setMarker2( std::max(tag2_0,tag2_1) );
             else
-                e.setMarker3( 0 );
+                e.setMarker2( 0 );
 
             if ( ( tag3_0 != -1 && tag3_0 == tag3_1 ) || e.isOnBoundary() )
                 e.setMarker3( tag3_0 );
-
+            else if ( tag3_0 != -1 && tag3_1 != -1 )
+                e.setMarker3( std::max(tag3_0,tag3_1) );
             else
                 e.setMarker3( 0 );
         } );
