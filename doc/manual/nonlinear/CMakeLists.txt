@@ -29,4 +29,4 @@ feelpp_add_application(doc_steadynavierstokes SRCS navierstokes.cpp LABEL doc )
 #feelpp_add_application(doc_steadynavierstokes_neumann SRCS navierstokes.cpp LABEL doc)
 
 #
-feelpp_add_application(doc_drivencavity SRCS driven_cavity.cpp LABEL doc GEO driven_cavity.geo CFG driven_cavity.cfg)
+feelpp_add_application(doc_drivencavity SRCS drivencavity_main.cpp drivencavity_2d.cpp drivencavity_3d.cpp LABEL doc GEO drivencavity_2d.geo drivencavity_3d.geo CFG drivencavity.cfg)
