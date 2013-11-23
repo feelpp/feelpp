@@ -202,7 +202,8 @@ public:
     {
         M_mapCol=d;
     }
-
+protected:
+    void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
 private:
     /**
      * Tells PETSC to use the user-specified solver stored in

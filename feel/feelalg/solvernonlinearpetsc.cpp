@@ -524,6 +524,23 @@ void SolverNonLinearPetsc<T>::init ()
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         break;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,0)
+        case NRICHARDSON: check( SNESSetType( M_snes, SNESNRICHARDSON ) ); break;
+        case NKSPONLY: check( SNESSetType( M_snes, SNESKSPONLY ) ); break;
+        case VINEWTONRSLS: check( SNESSetType( M_snes, SNESVINEWTONRSLS ) ); break;
+        case VINEWTONRSTR: check( SNESSetType( M_snes, SNESVINEWTONSSLS ) ); break;
+        case NGMRES: check( SNESSetType( M_snes, SNESNGMRES ) ); break;
+        case QN: check( SNESSetType( M_snes, SNESQN ) ); break;
+        case NSHELL: check( SNESSetType( M_snes, SNESSHELL ) ); break;
+        case GS: check( SNESSetType( M_snes, SNESGS ) ); break;
+        case NCG: check( SNESSetType( M_snes, SNESNCG ) ); break;
+        case FAS: check( SNESSetType( M_snes, SNESFAS ) ); break;
+        case MS: check( SNESSetType( M_snes, SNESMS ) ); break;
+        case NASM: check( SNESSetType( M_snes, SNESNASM ) ); break;
+        case ANDERSON: check( SNESSetType( M_snes, SNESANDERSON ) ); break;
+        case ASPIN: check( SNESSetType( M_snes, SNESASPIN ) ); break;
+#endif
+
 
         case SELECT_IN_ARGLIST:
             // no-op
