@@ -153,6 +153,7 @@ public :
 
         auto rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
         auto rb_evaluate_from_contextfem = evaluateFromContext( _context=ctxfem , _expr=idv(u) );
+
         double norm_rb_evaluations_from_ctxrb = rb_evaluate_from_contextrb.norm();
         double norm_rb_evaluations_from_ctxfem = rb_evaluate_from_contextfem.norm();
 
@@ -166,7 +167,7 @@ public :
 
 
         //grad
-        auto grad_fem = evaluateFromContext( _context=ctxfem , _expr=gradv(u_fem) );
+        auto grad_fem = evaluateFromContext( _context=ctxfem , _expr=gradv(u) );
         auto grad_rb  = evaluateFromContext( _context=ctxrb , _expr=gradv(u) );
         Eigen::VectorXd true_values_grad( 6 );
         /*du/dx*/true_values_grad( 0 ) = 1; /*du/dy*/true_values_grad( 1 ) = 0;
@@ -202,10 +203,11 @@ public :
         double norm_dy_fem = dy_fem.norm();
         double norm_dy_rb = dy_rb.norm();
         double norm_true_dy = true_values_dy.norm();
-        BOOST_CHECK_SMALL( math::abs(norm_dy_fem-norm_true_dy), 1e-14 );
-        BOOST_CHECK_SMALL( math::abs(norm_dy_rb-norm_true_dy), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(dy_fem(0)), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(dy_fem(1)), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(dy_rb(0)), 1e-14 );
+        BOOST_CHECK_SMALL( math::abs(dy_rb(1)), 1e-14 );
         LOG( INFO ) << " rb dy from contextrb :\n"<<dy_rb;
-
 
 
         //test with u = ( 0 1 )
@@ -245,6 +247,7 @@ public :
         BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-14 );
         LOG( INFO ) << " rb grad from contextrb :\n"<<grad_rb;
+
 
         /*
          * test with lambda expression
