@@ -62,11 +62,15 @@ fi
 
 #Update each research project
 cd $feelpp_source/research
-for i in `ls`
+for i in `grep foreach CMakeLists.txt | grep -v \# | grep proj | sed "s/)//g" | cut -d" " -f2-`
+  #for i in `ls`
 do 
-  cd $i
-  git pull
-  cd ..
+  if [ -d ${i} ]; 
+  then 
+    cd $i
+    git pull
+    cd ..
+  fi
 done
 cd
 
