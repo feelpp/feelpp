@@ -60,6 +60,16 @@ else
   git pull
 fi
 
+#Update each research project
+cd $feelpp_source/research
+for i in `ls`
+do 
+  cd $i
+  git pull
+  cd ..
+done
+cd
+
 #Create in ${gh_pages}/feelpp the associated doc of the ${branch}
 builddox develop $feelpp_source $gh_pages
 #builddox release/version-0.92 $feelpp_source $gh_pages
