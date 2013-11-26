@@ -1348,7 +1348,7 @@ BOOST_PARAMETER_FUNCTION(
     else
     {
         LOG(WARNING) << "[feelfilter->geo] : " << mesh_name.extension() << "file ignored." << "\n";
-        return NULL;
+        return nullptr;
     }
 }
 
