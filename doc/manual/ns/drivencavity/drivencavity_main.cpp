@@ -47,8 +47,8 @@ inline
 Feel::AboutData
 makeAbout()
 {
-    Feel::AboutData about( "driven_cavity" ,
-                           "driven_cavity" ,
+    Feel::AboutData about( "drivencavity" ,
+                           "drivencavity" ,
                            "0.1",
                            "A Steady state incompressible Navier-Stokes solver using a Newton solver",
                            Feel::AboutData::License_GPL,
@@ -56,11 +56,17 @@ makeAbout()
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Ranine Tarabay", "developer", "ranine.a.tarabay@gmail.com", "" );
+    about.addAuthor( "Marcela Szopos", "developer", "szopos@math.unistra.fr", "" );
     return about;
 
 }
 
-
+/*
+ * declare as extern to ensure that they are not instantiated
+ * here(save compiling time)
+ */
+extern template class Feel::DrivenCavity<2>;
+extern template class Feel::DrivenCavity<3>;
 
 int main( int argc, char** argv )
 {
@@ -68,9 +74,15 @@ int main( int argc, char** argv )
     using namespace Feel;
     Environment env( _argc=argc, _argv=argv,
                      _desc=makeOptions(),
-                     _about=about(_name="driven_cavity",
-                                  _author="Christophe Prud'homme",
-                                  _email="christophe.prudhomme@feelpp.org") );
-    Feel::DrivenCavity<2> DrivenCavity;
-    DrivenCavity.run();
+                     _about=makeAbout());
+    if ( option(_name="dim").as<int>() == 3 )
+    {
+        Feel::DrivenCavity<3> DrivenCavity;
+        DrivenCavity.run();
+    }
+    else
+    {
+        Feel::DrivenCavity<2> DrivenCavity;
+        DrivenCavity.run();
+    }
 }

@@ -538,8 +538,10 @@ public :
             eigen_vector_type result( nComponents );
             int npts = super::nPoints();
             DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
+
             for(int component=0; component<nComponents; component++)
                 result(component) = coeffs.transpose()*M_phi[component].col(node_index);
+
             return result;
         }
 
@@ -554,19 +556,19 @@ public :
                 npts=1; //we study only the node at node_index
 
             eigen_vector_type result ;
-            for(int c=0; c<nComponents; c++)
+            for(int d=0; d<nDim; d++)
             {
-                for(int d=0; d<nDim; d++)
+                for(int c=0; c<nComponents; c++)
                 {
                     eigen_vector_type result_comp_dim( npts );
                     if( node_index >= 0 )
                     {
-                        auto prod = coeffs.transpose()*M_grad[c][d];
+                        auto prod = coeffs.transpose()*M_grad[c][d].col(node_index);
                         result_comp_dim=prod.transpose();
                     }
                     else
                     {
-                        auto prod = coeffs.transpose()*M_grad[c][d].col(node_index);
+                        auto prod = coeffs.transpose()*M_grad[c][d];
                         result_comp_dim=prod.transpose();
                     }
                     //concatenate
@@ -576,6 +578,7 @@ public :
                     result << tmp,result_comp_dim;
                 }
             }
+#if 0
             //we now reorganize datas
             eigen_vector_type tmp( result );
             for(int p=0; p<npts; p++)
@@ -586,6 +589,7 @@ public :
                         result(p*nComponents*nDim+c+d) = tmp(p+npts*c*d);
                 }
             }
+#endif
             return result;
         }//grad
 
@@ -606,12 +610,12 @@ public :
                 eigen_vector_type result_comp_dim( npts );
                 if( node_index >= 0 )
                 {
-                    auto prod = coeffs.transpose()*M_grad[c][N];
+                    auto prod = coeffs.transpose()*M_grad[c][N].col(node_index);
                     result_comp_dim=prod.transpose();
                 }
                 else
                 {
-                    auto prod = coeffs.transpose()*M_grad[c][N].col(node_index);
+                    auto prod = coeffs.transpose()*M_grad[c][N];
                     result_comp_dim=prod.transpose();
                 }
                 //concatenate
@@ -620,6 +624,7 @@ public :
                 result.resize( new_size );
                 result << tmp,result_comp_dim;
             }
+#if 0
             //we now reorganize datas
             eigen_vector_type tmp( result );
             for(int p=0; p<npts; p++)
@@ -627,6 +632,7 @@ public :
                 for(int c=0; c<nComponents; c++)
                     result(p*nComponents*nDim+c+N) = tmp(p+npts*c*N);
             }
+#endif
             return result;
         }//d
 
@@ -672,19 +678,28 @@ public :
         {
             auto evalx = evaluateFromContext( _context=ctx , _expr= dxv( M_primal_rb_basis[i] ) );
             for(int p=0; p<npts; p++)
-                evaluation( 0 , p ) = evalx( p );
+            {
+                for(int c=0; c<nComponents;c++)
+                    evaluation( 0 , p*nComponents+c ) = evalx( p*nComponents+c );
+            }
         }
         if( nDim >= 2 )
         {
             auto evaly = evaluateFromContext( _context=ctx , _expr= dyv( M_primal_rb_basis[i] ) );
             for(int p=0; p<npts; p++)
-                evaluation( 1 , p ) = evaly( p );
+            {
+                for(int c=0; c<nComponents;c++)
+                    evaluation( 1 , p*nComponents+c ) = evaly( p*nComponents+c );
+            }
         }
         if( nDim == 3 )
         {
             auto evalz = evaluateFromContext( _context=ctx , _expr= dzv( M_primal_rb_basis[i] ) );
             for(int p=0; p<npts; p++)
-                evaluation( 2 , p ) = evalz( p );
+            {
+                for(int c=0; c<nComponents;c++)
+                    evaluation( 2 , p*nComponents+c ) = evalz( p*nComponents+c );
+            }
         }
         return evaluation;
     }
@@ -715,15 +730,26 @@ public :
 
         eigen_vector_type gradRB( eigen_vector_type coeffs) const
         {
-            return M_rbctx.grad( coeffs, M_index);
+            //std::cout<<"call gradRB with M_index : "<<M_index<<std::endl;
+            return M_rbctx.grad( coeffs , M_index);
+            //return M_rbctx.grad( coeffs );//, M_index);
         }
 
         eigen_vector_type dRB(int N, eigen_vector_type coeffs) const
         {
-            return M_rbctx.d(N, coeffs, M_index);
+            return M_rbctx.d(N, coeffs , M_index);
+            //return M_rbctx.d(N, coeffs );//, M_index);
         }
 
-        int nPoints() const { return M_rbctx.nPoints();}
+        int nPoints() const
+        {
+            return M_rbctx.nPoints();
+        }
+        int pointIndex() const
+        {
+            return M_index;
+        }
+
     private :
         int M_index;
         ContextRBSet const& M_rbctx;
@@ -1171,8 +1197,8 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
-    std::cout << "is basis context ? " << boost::is_same<Context_t,typename fespace_type::basis_context_type>::value << "\n";
-    std::cout << "is ctxrb  ? " << boost::is_same<Context_t,ctxrb_type>::value << "\n";
+    //std::cout << "is basis context ? " << boost::is_same<Context_t,typename fespace_type::basis_context_type>::value << "\n";
+    //std::cout << "is ctxrb  ? " << boost::is_same<Context_t,ctxrb_type>::value << "\n";
     //LOG( INFO ) << "function if of RBSpace is called with a context of type \n"<< typeid( Context_t ).name();
     ctxrb_type const* rb_context = dynamic_cast< ctxrb_type const* >( &context );
     if( rb_context == 0 )
@@ -1250,16 +1276,10 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     LOG( INFO ) << " id_ with a RB context";
 
-    //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.idRB( *this );
-
-    //loop over points in the context
-    for(int t=0; t<rb_context.nPoints(); t++)
+    auto evaluation = rb_context.idRB( *this );
+    for(int c=0; c<nComponents; c++)
     {
-        for(int c=0; c<nComponents; c++)
-        {
-            v[t]( c,0 ) = evaluation_at_all_points(t*nComponents + c);
-        }
+        v[0]( c,0 ) = evaluation(c);
     }
 }
 
@@ -1272,18 +1292,14 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     LOG( INFO ) << " grad_ with a RB context";
 
-    //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.gradRB( *this );
-
-    //loop over points in the context
-    for(int t=0; t<rb_context.nPoints(); t++)
+    int index = rb_context.pointIndex();
+    //evaluate the gradient at a specific point (called by evaluateFromContext)
+    auto evaluation = rb_context.gradRB( *this );
+    for(int d=0;d<nDim;d++)
     {
         for(int c=0; c<nComponents; c++)
         {
-            for(int d=0;d<nDim;d++)
-            {
-                v[t]( c,d ) = evaluation_at_all_points(t*nComponents*nDim +c+d);
-            }
+            v[0]( c,d ) += evaluation(c+d*nComponents);
         }
     }
 }
@@ -1297,16 +1313,11 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Con
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
     LOG( INFO ) << " d_ with a RB context";
 
-    //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.dRB(N, *this );
+    auto evaluation = rb_context.dRB(N, *this );
 
-    //loop over points in the context
-    for(int t=0; t<rb_context.nPoints(); t++)
+    for(int c=0; c<nComponents; c++)
     {
-        for(int c=0; c<nComponents; c++)
-        {
-            v[t]( c,0 ) = evaluation_at_all_points(t*nComponents*nDim + c);
-        }
+        v[0]( c,0 ) = evaluation(c);
     }
 
 }
