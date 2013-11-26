@@ -60,19 +60,13 @@ else
   git pull
 fi
 
-#Update each research project
-cd $feelpp_source/research
-for i in `grep foreach CMakeLists.txt | grep -v \# | grep proj | sed "s/)//g" | cut -d" " -f2-`
-  #for i in `ls`
-do 
-  if [ -d ${i} ]; 
-  then 
-    cd $i
-    git pull
-    cd ..
-  fi
-done
-cd
+#Update hifimagnet
+if [ -d $feelpp_source/research/hifimagnet ]; 
+then 
+  cd $feelpp_source/research/hifimagnet
+  git pull
+  cd 
+fi
 
 #Create in ${gh_pages}/feelpp the associated doc of the ${branch}
 builddox develop $feelpp_source $gh_pages
