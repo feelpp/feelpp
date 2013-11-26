@@ -105,7 +105,7 @@ order to know what is going on with \feel on Ubuntu
 <a href="#" class="top">top</a>
 <hr>
 \section Mac Feel++ on Mac OS X
-\feel is also working on Mac operating systems. The way to make it work is quite different.
+\feel is also supported on Mac operating systems, starting from OS X 10.9 Mavericks. The way to make it work is quite different.
 
 \subsection Compilers Compilers
 In order to make \feel and <tt>cmake</tt> work properly, you first have to install \lia Xcode for Gcc/clang. <br />
@@ -224,41 +224,6 @@ To do that uncomment the following line in the file  <tt>/opt/local/etc/macports
 buildmakejobs	0 $\#$ all the cores
 \endverbatim
 At the end of the <tt>sudo port install feel++</tt>, you have all dependencies installed. To build all the Makefile, \cmake is automatically launched but can have some libraries may not be found but they are not mandatory for build Feel++, only the features related to the missing libraries will be missing.
-
-\subsection PETsc PETSc and SLEPc on Snow Leopard and Lion
-We have heard about issues with petsc and slepc with some new MacBook Pro with Snow Leopard while they are being installed with the command
-\verbatim
-  sudo port install feel++
-\endverbatim
-If it's the case, that probably means there is an issue with atlas. If atlas is already installed, you have to unsinstall it (be careful with dependencies, they also have to be uninstalled). Once it's done, you should do
-\verbatim
-  cd <path to feel top directory>/ports/macosx/macports
-  portindex -f
-\endverbatim
-then type in the exact same order :
-\verbatim
-  sudo port uninstall slepc
-  sudo port uninstall petsc
-  sudo port install -d petsc
-  sudo port install slepc
-\endverbatim
-Then add to you shell script environment (e.g. for Bash shells <tt>.bashrc</tt> or
-<tt>.profile</tt> or for CSh shells <tt>.tcshrc</tt>)
-\verbatim
-  # Sh based shell
-  export PETSC_DIR=/opt/local/lib/petsc
-  export SLEPC_DIR=/opt/local/lib/petsc
-
-  # CSh based shell
-  setenv PETSC_DIR /opt/local/lib/petsc
-  setenv SLEPC_DIR /opt/local/lib/petsc
-\endverbatim
-and type once again
-\verbatim
-  sudo port install feel++
-\endverbatim
-
-In that order, slepc and petsc will be installed before atlas, and feel will be properly installed.
 
 \subsection Missing Missing ports
 <tt>cmake</tt> can build Makefiles even if some packages are missing (latex2html, VTK ...). It's not necessary to install them but you can complete the installation
