@@ -349,6 +349,9 @@ public:
         typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
+    static const bool isLagrangeP0Continuous = mpl::and_< boost::is_same<mpl::int_<nOrder>,mpl::int_<0> >,
+                                                          boost::is_same<continuity_type, Continuous > >::type::value;
+
 
     //@}
 
