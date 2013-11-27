@@ -303,13 +303,15 @@ public :
         LOG( INFO ) << "total time to evaluate gradient of u_crb using rb context : "<<time_grad_rb_ctxrb;
 
 
-
-        for(int i=0; i<300; i=i+10)
+        for(int i=0; i<50; i++)
         {
-            node_type t(Dim);
-            t(0)=0.2; t(1)=0.1;
-            ctxfem.add( t );
-            ctxrb.add( t );
+            for(int j=0; j<5; j++)
+            {
+                node_type t(Dim);
+                t(0)=0.2; t(1)=0.1;
+                ctxfem.add( t );
+                ctxrb.add( t );
+            }
 
             timer.restart();
             fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
@@ -324,7 +326,7 @@ public :
             LOG( INFO ) << "now with "<<ctxrb.nPoints()<<" points ...";
             LOG( INFO ) << "total time to evaluate u_fem using fem context : "<<time_evaluation_fem_ctxfem;
             LOG( INFO ) << "total time to evaluate u_crb using fem context : "<<time_evaluation_rb_ctxfem;
-            LOG( INFO ) << "total time to evaluate u_crb using rb context : "<<time_evaluation_rb_ctxrb;
+            LOG( INFO ) << "total time to evaluate u_crb using rb context  : "<<time_evaluation_rb_ctxrb;
         }
 
 
