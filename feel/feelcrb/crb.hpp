@@ -1390,9 +1390,6 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         {
             boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
 
-            if( iteration == 0 )
-                //A = Apr;
-
             if ( ! M_model->isSteady() )
             {
                 Apr->addMatrix( bdf_coeff, M );
