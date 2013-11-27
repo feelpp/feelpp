@@ -500,9 +500,11 @@ void SolverNonLinearPetsc<T>::init ()
         ierr = SNESSetFromOptions( M_snes );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
+#if 0
         // if the non linear solver type is define by the user in the code
         switch ( this->getType() )
         {
+            //LS, TR Newton-type with line search and trust region
         case LINE_SEARCH :
         {
 #if PETSC_VERSION_LESS_THAN(3,4,0)
@@ -525,16 +527,28 @@ void SolverNonLinearPetsc<T>::init ()
         }
         break;
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,4,0)
+
+        //NRichardson Nonlinear Richardson, usually preconditioned
         case NRICHARDSON: check( SNESSetType( M_snes, SNESNRICHARDSON ) ); break;
+
         case NKSPONLY: check( SNESSetType( M_snes, SNESKSPONLY ) ); break;
+            //VIRS, VISS reduced space and semi-smooth method for
+            //variational inequalities
         case VINEWTONRSLS: check( SNESSetType( M_snes, SNESVINEWTONRSLS ) ); break;
         case VINEWTONRSTR: check( SNESSetType( M_snes, SNESVINEWTONSSLS ) ); break;
+            //NGMRES Nonlinear GMRES
         case NGMRES: check( SNESSetType( M_snes, SNESNGMRES ) ); break;
+            //QN Quasi-Newton methods like BFGS
         case QN: check( SNESSetType( M_snes, SNESQN ) ); break;
+            //Shell Your method, often used as a (nonlinear) preconditioner
         case NSHELL: check( SNESSetType( M_snes, SNESSHELL ) ); break;
+            //GS Nonlinear Gauss-Seidel sweeps
         case GS: check( SNESSetType( M_snes, SNESGS ) ); break;
+            //NCG Nonlinear Conjugate Gradients
         case NCG: check( SNESSetType( M_snes, SNESNCG ) ); break;
+            //FAS Full approximation scheme (nonlinear multigrid)
         case FAS: check( SNESSetType( M_snes, SNESFAS ) ); break;
+            //MS Multi-stage smoothers (in FAS for hyperbolic problems)
         case MS: check( SNESSetType( M_snes, SNESMS ) ); break;
         case NASM: check( SNESSetType( M_snes, SNESNASM ) ); break;
         case ANDERSON: check( SNESSetType( M_snes, SNESANDERSON ) ); break;
@@ -546,7 +560,23 @@ void SolverNonLinearPetsc<T>::init ()
             // no-op
             break;
         }
-
+#else
+        std::string s = option(_name="snes-type",_prefix=this->prefix()).template as<std::string>();
+        LOG(INFO) << "snes type: " << s;
+        check( SNESSetType( M_snes, s.c_str() ) );
+#if 0
+        //check( SNESNGMRESSetRestartType( M_snes, 5 ) );
+        SNES pc;
+        check( SNESGetPC( M_snes, &pc ) );
+        SNESType spc;
+        check( SNESGetType( pc, &spc ) );
+        LOG(INFO) << "npc snes type: " << spc;
+        //check( SNESSetType( pc, SNESNRICHARDSON ) );
+        check( SNESSetType( pc, SNESNEWTONLS ) );
+        //check( SNESSetIterationNumber(pc, 5 ) );
+        check( SNESMonitorSet( pc,SNESMonitorDefault,PETSC_NULL,PETSC_NULL ) );
+#endif
+#endif
         //KSP ksp;
         ierr = SNESGetKSP ( M_snes, &M_ksp );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
@@ -767,6 +797,9 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
     SNESGetConvergedReason( M_snes,&reason );
     LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
 
+    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+        check( SNESView( M_snes, PETSC_VIEWER_STDOUT_WORLD ) );
+
     if ( reason<0 )
     {
         LOG(ERROR) << "Nonlinear solve did not converge due to " << PetscConvertSNESReasonToString(reason)
@@ -896,10 +929,14 @@ SolverNonLinearPetsc<T>::solve ( dense_matrix_type&  jac_in,  // System Jacobian
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
 
+
+    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+        check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
+
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
-        DVLOG(2)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+        VLOG(1)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
     this->clear();
@@ -1004,10 +1041,13 @@ SolverNonLinearPetsc<T>::solve ( map_dense_matrix_type&  jac_in,  // System Jaco
     SNESConvergedReason reason;
     SNESGetConvergedReason( M_snes,&reason );
 
+    if ( option( _prefix=this->prefix(), _name="snes-view" ).template as<bool>() )
+        check( SNESView( M_snes,PETSC_VIEWER_STDOUT_SELF ) );
+
     //LOG(INFO) << "[solvernonlinearpetsc] convergence reason : " << reason << "\n";
     if ( reason<0 )
     {
-        DVLOG(2)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
+        VLOG(1)  << "[solvernonlinearpetsc] not converged (see petscsnes.h for an explanation): " << reason << "\n";
     }
 
     this->clear();
