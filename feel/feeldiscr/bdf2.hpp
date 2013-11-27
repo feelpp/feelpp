@@ -1002,6 +1002,7 @@ public:
     */
     double restart();
 
+
     /**
        Update the vectors of the previous time steps by shifting on the right
        the old values.
@@ -1009,6 +1010,14 @@ public:
     */
     template<typename container_type>
     void shiftRight( typename space_type::template Element<value_type, container_type> const& u_curr );
+
+    template<typename container_type>
+    double
+    next( typename space_type::template Element<value_type, container_type> const& u_curr )
+        {
+            this->shiftRight( u_curr );
+            return this->next();
+        }
 
     //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative
     //! formula
