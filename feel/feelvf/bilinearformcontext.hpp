@@ -125,15 +125,52 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename IM2,typename IMTest,typename IMTrial>
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::Context( form_type& __form,
+        map_test_geometric_mapping_context_type const& _gmcTest,
+        map_trial_geometric_mapping_context_type const& _gmcTrial,
+        map_geometric_mapping_expr_context_type const & _gmcExpr,
+        ExprT const& expr,
+        IM const& im, IM2 const& im2, IMTest const& imTest, IMTrial const& imTrial )
+    :
+    M_form( __form ),
+    M_lb( __form.blockList() ),
+    M_test_dof( __form.testSpace()->dof().get() ),
+    M_trial_dof( __form.trialSpace()->dof().get() ),
+
+    M_test_pc( new test_precompute_type( M_form.testSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
+    M_test_pc_face( precomputeTestBasisAtPoints( imTest ) ),
+    M_trial_pc( new trial_precompute_type( M_form.trialSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
+    M_trial_pc_face( precomputeTrialBasisAtPoints( imTrial ) ),
+
+    M_test_gmc( _gmcTest ),
+    M_trial_gmc( _gmcTrial ),
+
+    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testSpace()->fe(), *this ) ) ),
+    M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) ) ),
+    M_trial_fec( getMap( M_test_fec, fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(), *this ) ) ) ),
+    M_trial_fec0( getMapL( M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_trial_fec ) ) ) ),
+    M_rep(),
+    M_rep_2(),
+    M_eval_expr00( new eval00_expr_type( expr, _gmcExpr, M_test_fec0, M_trial_fec0 ) ),
+    M_eval_expr01(),
+    M_eval_expr10(),
+    M_eval_expr11(),
+    M_integrator( im )
+{
+    // faces
+    M_eval_expr00->init( im2 );
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
 template</*typename IM2, */typename IMTest,typename IMTrial>
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::Context( form_type& __form,
         map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const & _gmcExpr,
         ExprT const& expr,
-        IM const& im,
-                                                                                                                       //IM2 const& im2,
-        IMTest const& imTest, IMTrial const& imTrial )
+        IM const& im, IMTest const& imTest, IMTrial const& imTrial )
     :
     M_form( __form ),
     M_lb( __form.blockList() ),
