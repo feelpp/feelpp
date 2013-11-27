@@ -5,8 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2013-04-07
 
-   Copyright (C) 2004 EPFL
-   Copyright (C) 2006-2012 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2013 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -501,7 +500,7 @@ public :
          * then we reorganize datas to have
          * [ comp0, comp1, comp2 ,... ,comp0, comp1, comp2 ]
          */
-        eigen_vector_type id( eigen_vector_type coeffs , bool need_to_update=true) const
+        eigen_vector_type id( eigen_vector_type const& coeffs , bool need_to_update=true) const
         {
             //if( need_to_update )
             //    this->update();
@@ -532,7 +531,7 @@ public :
         }
 
         //evaluation at only one node
-        eigen_vector_type id( eigen_vector_type coeffs , int node_index , bool need_to_update=true) const
+        eigen_vector_type id( eigen_vector_type const& coeffs , int node_index , bool need_to_update=true) const
         {
             //boost::mpi::timer timer;
             //if( need_to_update )
@@ -725,7 +724,7 @@ public :
         }
 
         //return the evaluation of an element (of RB space) at the node indexed by node_index
-        eigen_vector_type idRB( eigen_vector_type coeffs, bool need_to_update=true) const
+        eigen_vector_type idRB( eigen_vector_type const& coeffs, bool need_to_update=true) const
         {
             return M_rbctx.id( coeffs, M_index, need_to_update);
         }
