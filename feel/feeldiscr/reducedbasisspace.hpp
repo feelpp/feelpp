@@ -5,8 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    Date: 2013-04-07
 
-   Copyright (C) 2004 EPFL
-   Copyright (C) 2006-2012 Université Joseph Fourier (Grenoble I)
+   Copyright (C) 2013 Feel++ Consortium
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -41,6 +40,7 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Dense>
+#include <boost/timer.hpp>
 
 
 namespace Feel
@@ -343,7 +343,7 @@ public :
                                      )
                                    )
     {
-        LOG( INFO ) << "ReducedBasis NEW (new impl)";
+        //LOG( INFO ) << "ReducedBasis NEW (new impl)";
         return NewImpl( model, mesh, worldscomm, components, periodicity );
     }
 
@@ -500,7 +500,7 @@ public :
          * then we reorganize datas to have
          * [ comp0, comp1, comp2 ,... ,comp0, comp1, comp2 ]
          */
-        eigen_vector_type id( eigen_vector_type coeffs , bool need_to_update=true) const
+        eigen_vector_type id( eigen_vector_type const& coeffs , bool need_to_update=true) const
         {
             //if( need_to_update )
             //    this->update();
@@ -531,22 +531,26 @@ public :
         }
 
         //evaluation at only one node
-        eigen_vector_type id( eigen_vector_type coeffs , int node_index , bool need_to_update=true) const
+        eigen_vector_type id( eigen_vector_type const& coeffs , int node_index , bool need_to_update=true) const
         {
+            //boost::mpi::timer timer;
             //if( need_to_update )
             //    this->update();
             eigen_vector_type result( nComponents );
             int npts = super::nPoints();
             DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
+
             for(int component=0; component<nComponents; component++)
                 result(component) = coeffs.transpose()*M_phi[component].col(node_index);
+
+            //LOG( INFO )<<"[RBspace ContextRBSet] function id() in "<<timer.elapsed()<<"s";
             return result;
         }
 
         /*
          * for given element coefficients, gives the gradient of the element at node given in context_fem
          */
-        eigen_vector_type grad( eigen_vector_type coeffs , int node_index=-1 ) const
+        eigen_vector_type grad( eigen_vector_type const& coeffs , int node_index=-1 ) const
         {
             int npts = super::nPoints();
             DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
@@ -554,19 +558,19 @@ public :
                 npts=1; //we study only the node at node_index
 
             eigen_vector_type result ;
-            for(int c=0; c<nComponents; c++)
+            for(int d=0; d<nDim; d++)
             {
-                for(int d=0; d<nDim; d++)
+                for(int c=0; c<nComponents; c++)
                 {
                     eigen_vector_type result_comp_dim( npts );
                     if( node_index >= 0 )
                     {
-                        auto prod = coeffs.transpose()*M_grad[c][d];
+                        auto prod = coeffs.transpose()*M_grad[c][d].col(node_index);
                         result_comp_dim=prod.transpose();
                     }
                     else
                     {
-                        auto prod = coeffs.transpose()*M_grad[c][d].col(node_index);
+                        auto prod = coeffs.transpose()*M_grad[c][d];
                         result_comp_dim=prod.transpose();
                     }
                     //concatenate
@@ -576,6 +580,7 @@ public :
                     result << tmp,result_comp_dim;
                 }
             }
+#if 0
             //we now reorganize datas
             eigen_vector_type tmp( result );
             for(int p=0; p<npts; p++)
@@ -586,6 +591,7 @@ public :
                         result(p*nComponents*nDim+c+d) = tmp(p+npts*c*d);
                 }
             }
+#endif
             return result;
         }//grad
 
@@ -593,7 +599,7 @@ public :
         /*
          * for given element coefficients, gives the dx,dy or dy of the element at node given in context_fem
          */
-        eigen_vector_type d(int N, eigen_vector_type coeffs , int node_index=-1 ) const
+        eigen_vector_type d(int N, eigen_vector_type const& coeffs , int node_index=-1 ) const
         {
             int npts = super::nPoints();
             DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
@@ -606,12 +612,12 @@ public :
                 eigen_vector_type result_comp_dim( npts );
                 if( node_index >= 0 )
                 {
-                    auto prod = coeffs.transpose()*M_grad[c][N];
+                    auto prod = coeffs.transpose()*M_grad[c][N].col(node_index);
                     result_comp_dim=prod.transpose();
                 }
                 else
                 {
-                    auto prod = coeffs.transpose()*M_grad[c][N].col(node_index);
+                    auto prod = coeffs.transpose()*M_grad[c][N];
                     result_comp_dim=prod.transpose();
                 }
                 //concatenate
@@ -620,6 +626,7 @@ public :
                 result.resize( new_size );
                 result << tmp,result_comp_dim;
             }
+#if 0
             //we now reorganize datas
             eigen_vector_type tmp( result );
             for(int p=0; p<npts; p++)
@@ -627,6 +634,7 @@ public :
                 for(int c=0; c<nComponents; c++)
                     result(p*nComponents*nDim+c+N) = tmp(p+npts*c*N);
             }
+#endif
             return result;
         }//d
 
@@ -638,7 +646,6 @@ public :
 
         rbspace_type* ptrFunctionSpace() const
         {
-            LOG( INFO ) << "rb ptrFunctionSpace()";
             return M_rbspace.get();
         }
 
@@ -672,19 +679,28 @@ public :
         {
             auto evalx = evaluateFromContext( _context=ctx , _expr= dxv( M_primal_rb_basis[i] ) );
             for(int p=0; p<npts; p++)
-                evaluation( 0 , p ) = evalx( p );
+            {
+                for(int c=0; c<nComponents;c++)
+                    evaluation( 0 , p*nComponents+c ) = evalx( p*nComponents+c );
+            }
         }
         if( nDim >= 2 )
         {
             auto evaly = evaluateFromContext( _context=ctx , _expr= dyv( M_primal_rb_basis[i] ) );
             for(int p=0; p<npts; p++)
-                evaluation( 1 , p ) = evaly( p );
+            {
+                for(int c=0; c<nComponents;c++)
+                    evaluation( 1 , p*nComponents+c ) = evaly( p*nComponents+c );
+            }
         }
         if( nDim == 3 )
         {
             auto evalz = evaluateFromContext( _context=ctx , _expr= dzv( M_primal_rb_basis[i] ) );
             for(int p=0; p<npts; p++)
-                evaluation( 2 , p ) = evalz( p );
+            {
+                for(int c=0; c<nComponents;c++)
+                    evaluation( 2 , p*nComponents+c ) = evalz( p*nComponents+c );
+            }
         }
         return evaluation;
     }
@@ -704,26 +720,37 @@ public :
             M_index( ctx.first ),
             M_rbctx( rb )
         {
-            LOG( INFO ) << "M_index : "<<M_index;
+            //LOG( INFO ) << "M_index : "<<M_index;
         }
 
         //return the evaluation of an element (of RB space) at the node indexed by node_index
-        eigen_vector_type idRB( eigen_vector_type coeffs, bool need_to_update=true) const
+        eigen_vector_type idRB( eigen_vector_type const& coeffs, bool need_to_update=true) const
         {
             return M_rbctx.id( coeffs, M_index, need_to_update);
         }
 
-        eigen_vector_type gradRB( eigen_vector_type coeffs) const
+        eigen_vector_type gradRB( eigen_vector_type const& coeffs) const
         {
-            return M_rbctx.grad( coeffs, M_index);
+            //std::cout<<"call gradRB with M_index : "<<M_index<<std::endl;
+            return M_rbctx.grad( coeffs , M_index);
+            //return M_rbctx.grad( coeffs );//, M_index);
         }
 
-        eigen_vector_type dRB(int N, eigen_vector_type coeffs) const
+        eigen_vector_type dRB(int N, eigen_vector_type const& coeffs) const
         {
-            return M_rbctx.d(N, coeffs, M_index);
+            return M_rbctx.d(N, coeffs , M_index);
+            //return M_rbctx.d(N, coeffs );//, M_index);
         }
 
-        int nPoints() const { return M_rbctx.nPoints();}
+        int nPoints() const
+        {
+            return M_rbctx.nPoints();
+        }
+        int pointIndex() const
+        {
+            return M_index;
+        }
+
     private :
         int M_index;
         ContextRBSet const& M_rbctx;
@@ -736,7 +763,7 @@ public :
 
     ctxrb_ptrtype contextBasis( typename ContextRB::ctx_ptrtype const& p, ContextRBSet const& c )
         {
-            LOG(INFO)<<"constructor ContextRB== ";
+            //LOG(INFO)<<"constructor ContextRB== ";
             return boost::make_shared<ctxrb_type>( p, c );
         }
 
@@ -843,7 +870,7 @@ public :
         /*
          * return the reduced basis space associated
          */
-        void setReducedBasisSpace( rbspace_ptrtype rbspace )
+        void setReducedBasisSpace( rbspace_ptrtype const& rbspace )
         {
             M_rbspace = rbspace;
         }
@@ -940,7 +967,7 @@ public :
         /*
          * evaluate the element to nodes in context
          */
-        eigen_vector_type evaluate(  ctxrbset_type & context_rb )
+        eigen_vector_type evaluate(  ctxrbset_type const& context_rb )
         {
            return context_rb.id( *this );
         }
@@ -1171,18 +1198,18 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v ) const
 {
-    std::cout << "is basis context ? " << boost::is_same<Context_t,typename fespace_type::basis_context_type>::value << "\n";
-    std::cout << "is ctxrb  ? " << boost::is_same<Context_t,ctxrb_type>::value << "\n";
+    //std::cout << "is basis context ? " << boost::is_same<Context_t,typename fespace_type::basis_context_type>::value << "\n";
+    //std::cout << "is ctxrb  ? " << boost::is_same<Context_t,ctxrb_type>::value << "\n";
     //LOG( INFO ) << "function if of RBSpace is called with a context of type \n"<< typeid( Context_t ).name();
     ctxrb_type const* rb_context = dynamic_cast< ctxrb_type const* >( &context );
     if( rb_context == 0 )
     {
-        LOG( INFO ) << "will call id_ with a FEM context";
+        //LOG( INFO ) << "will call id_ with a FEM context";
         return id_( context, v, mpl::bool_<false>() );
     }
     else
     {
-        LOG( INFO ) << "will call id_ with a RB context";
+        //LOG( INFO ) << "will call id_ with a RB context";
         return id_( context, v, mpl::bool_<true>() );
     }
 #if 0
@@ -1206,12 +1233,12 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context
     ctxrb_type const* rb_context = dynamic_cast< ctxrb_type const* >( &context );
     if( rb_context == 0 )
     {
-        LOG( INFO ) << "will call grad_ with a FEM context";
+        //LOG( INFO ) << "will call grad_ with a FEM context";
         return grad_( context, v, mpl::bool_<false>() );
     }
     else
     {
-        LOG( INFO ) << "will call grad_ with a RB context";
+        //LOG( INFO ) << "will call grad_ with a RB context";
         return grad_( context, v, mpl::bool_<true>() );
     }
 }
@@ -1225,12 +1252,12 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Con
     ctxrb_type const* rb_context = dynamic_cast< ctxrb_type const* >( &context );
     if( rb_context == 0 )
     {
-        LOG( INFO ) << "will call d_ with a FEM context";
+        //LOG( INFO ) << "will call d_ with a FEM context";
         return d_( N, context, v, mpl::bool_<false>() );
     }
     else
     {
-        LOG( INFO ) << "will call d_ with a RB context";
+        //LOG( INFO ) << "will call d_ with a RB context";
         return d_( N, context, v, mpl::bool_<true>() );
     }
 }
@@ -1247,20 +1274,19 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
+    //boost::mpi::timer timer;
+
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
-    LOG( INFO ) << " id_ with a RB context";
+    //LOG( INFO )<<"[ReducedBasisSpace] id_ with context rb,  timer for dynamic cast :  "<<timer.elapsed();
 
-    //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.idRB( *this );
+    auto evaluation = rb_context.idRB( *this );
 
-    //loop over points in the context
-    for(int t=0; t<rb_context.nPoints(); t++)
+    for(int c=0; c<nComponents; c++)
     {
-        for(int c=0; c<nComponents; c++)
-        {
-            v[t]( c,0 ) = evaluation_at_all_points(t*nComponents + c);
-        }
+        v[0]( c,0 ) = evaluation(c);
     }
+
+
 }
 
 template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -1270,20 +1296,16 @@ void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<true> ) const
 {
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
-    LOG( INFO ) << " grad_ with a RB context";
+    //LOG( INFO ) << " grad_ with a RB context";
 
-    //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.gradRB( *this );
-
-    //loop over points in the context
-    for(int t=0; t<rb_context.nPoints(); t++)
+    int index = rb_context.pointIndex();
+    //evaluate the gradient at a specific point (called by evaluateFromContext)
+    auto evaluation = rb_context.gradRB( *this );
+    for(int d=0;d<nDim;d++)
     {
         for(int c=0; c<nComponents; c++)
         {
-            for(int d=0;d<nDim;d++)
-            {
-                v[t]( c,d ) = evaluation_at_all_points(t*nComponents*nDim +c+d);
-            }
+            v[0]( c,d ) += evaluation(c+d*nComponents);
         }
     }
 }
@@ -1295,18 +1317,13 @@ void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<true> ) const
 {
     ctxrb_type const& rb_context = dynamic_cast< ctxrb_type const& >( context );
-    LOG( INFO ) << " d_ with a RB context";
+    //LOG( INFO ) << " d_ with a RB context";
 
-    //vector of all evaluations at all points in the context ( at all components )
-    auto evaluation_at_all_points = rb_context.dRB(N, *this );
+    auto evaluation = rb_context.dRB(N, *this );
 
-    //loop over points in the context
-    for(int t=0; t<rb_context.nPoints(); t++)
+    for(int c=0; c<nComponents; c++)
     {
-        for(int c=0; c<nComponents; c++)
-        {
-            v[t]( c,0 ) = evaluation_at_all_points(t*nComponents*nDim + c);
-        }
+        v[0]( c,0 ) = evaluation(c);
     }
 
 }
@@ -1317,8 +1334,7 @@ template<typename Context_t>
 void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
 {
-
-    LOG( INFO ) << "id_ with a FEM context";
+    //LOG( INFO ) << "id_ with a FEM context";
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
@@ -1332,24 +1348,27 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
 
     const uint16_type nq = context.xRefs().size2();
 
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    int rb_size = this->size();
+    //loop on RB dof
+    for(int N=0; N<rb_size; N++)
     {
-        const int ncdof = is_product?nComponents1:1;
 
-        for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
+        // the RB unknown can be written as
+        // u^N = \sum_i^N u_i^N \PHI_i where \PHI_i are RB basis functions (i.e. elements of FEM function space)
+        // u^N = \sum_i^N u_i^N \sum_j \PHI_ij \phi_j where PHI_ij is a scalar and phi_j is the j^th fem basis function
+        value_type u_i = this->operator()( N );
+
+        for ( int l = 0; l < basis_type::nDof; ++l )
         {
-            typename array_type::index ldof = basis_type::nDof*c1+l;
-            size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            const int ncdof = is_product?nComponents1:1;
 
-            //loop on RB dof
-            for(int N=0; N<this->size(); N++)
+            for ( typename array_type::index c1 = 0; c1 < ncdof; ++c1 )
             {
-                // the RB unknown can be written as
-                // u^N = \sum_i^N u_i^N \PHI_i where \PHI_i are RB basis functions (i.e. elements of FEM function space)
-                // u^N = \sum_i^N u_i^N \sum_j \PHI_ij \phi_j where PHI_ij is a scalar and phi_j is the j^th fem basis function
-                value_type u_i = this->operator()( N );
+                typename array_type::index ldof = basis_type::nDof*c1+l;
+                size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ) );
 
                 //N is the index of the RB basis function (i.e fem element)
+                //FEM coefficient associated to the global dof "gdof" of the N^th RB element in the basis
                 value_type rb_basisij = this->basisValue( N , gdof );
 
                 //coefficient u_i^N * \PHI_ij
@@ -1359,14 +1378,14 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
                 {
                     for ( typename array_type::index i = 0; i < nComponents1; ++i )
                     {
+                        //context contains evaluation of FEM basis functions
+                        //context.id give access to M_phi in PolynomialSet
                         v[q]( i,0 ) += coefficient*context.id( ldof, i, 0, q );
                     }
                 }
-
-            }//end of loop on RB dof
-
+            }
         }
-    }
+    }//end of loop on RB dof
 
 }
 
@@ -1378,7 +1397,7 @@ void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context_t const & context, grad_array_type& v , mpl::bool_<false> ) const
 {
 
-    LOG( INFO ) << "grad_ with a FEM context";
+    //LOG( INFO ) << "grad_ with a FEM context";
     if ( !this->areGlobalValuesUpdated() )
         this->updateGlobalValues();
 
@@ -1390,20 +1409,22 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context
     if ( elt_id == invalid_size_type_value )
         return;
 
-    for ( int l = 0; l < basis_type::nDof; ++l )
+    int rb_size = this->size();
+
+    //loop on RB dof
+    for(int N=0; N<rb_size; N++)
     {
-        const int ncdof = is_product?nComponents1:1;
 
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        value_type u_i = this->operator()( N );
+
+        for ( int l = 0; l < basis_type::nDof; ++l )
         {
-            int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            const int ncdof = is_product?nComponents1:1;
 
-            //loop on RB dof
-            for(int N=0; N<this->size(); N++)
+            for ( int c1 = 0; c1 < ncdof; ++c1 )
             {
-
-                value_type u_i = this->operator()( N );
+                int ldof = c1*basis_type::nDof+l;
+                size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( elt_id, l, c1 ) );
 
                 //N is the index of the RB basis function (i.e fem element)
                 value_type rb_basisij = this->basisValue( N , gdof );
@@ -1421,9 +1442,11 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context
                         }//j
                     }//k
                 }//q
-            }//N
-        }//c1
-    }//l
+            }//c1
+        }//l
+
+    }//N
+
 
 }
 
@@ -1435,18 +1458,20 @@ void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
 {
 
-    for ( int i = 0; i < basis_type::nDof; ++i )
+    int rb_size = this->size();
+
+    for(int rbN=0; rbN<rb_size; rbN++)
     {
-        const int ncdof = is_product?nComponents1:1;
+        value_type u_i = this->operator()( rbN );
 
-        for ( int c1 = 0; c1 < ncdof; ++c1 )
+        for ( int i = 0; i < basis_type::nDof; ++i )
         {
-            size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            const int ncdof = is_product?nComponents1:1;
 
-            for(int rbN=0; rbN<this->size(); rbN++)
+            for ( int c1 = 0; c1 < ncdof; ++c1 )
             {
-                value_type u_i = this->operator()( rbN );
+                size_type ldof = basis_type::nDof*c1 + i;
+                size_type gdof = boost::get<0>( M_femfunctionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
 
                 //N is the index of the RB basis function (i.e fem element)
                 value_type rb_basisij = this->basisValue( rbN , gdof );
@@ -1461,9 +1486,11 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Con
                         v[q]( i,0 ) += coefficient*context.d( ldof, i, N, q );
                     }
                 }//q
-            }//rbN
-        }//c1
-    }//i
+            }//c1
+        }//i
+
+    }//rbN
+
 }
 
 

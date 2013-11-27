@@ -60,16 +60,27 @@ namespace GiNaC
 
 namespace Feel
 {
-    using  GiNaC::matrix;
-    using  GiNaC::symbol;
-    using  GiNaC::lst;
-    using  GiNaC::ex;
-    using  GiNaC::parser;
+using  GiNaC::matrix;
+using  GiNaC::symbol;
+using  GiNaC::lst;
+using  GiNaC::ex;
+using  GiNaC::parser;
 
-    template<int Dim> inline std::vector<symbol> symbols() { return {symbol("x")}; }
-    template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
-    template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
-    template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
+template<int Dim> inline std::vector<symbol> symbols() { return {symbol("x")}; }
+template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
+template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
+template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
+
+std::vector<symbol> symbols( std::vector<std::string> const& s );
+
+class Symbols : public std::vector<symbol>
+{
+public:
+    Symbols():std::vector<symbol>(symbols({"x","y","z", "t"})) {}
+    Symbols(std::initializer_list<std::string> s ):std::vector<symbol>(symbols(s)) {}
+    Symbols(std::vector<std::string> const& s ):std::vector<symbol>(symbols(s)) {}
+
+};
 
     inline
     std::vector<symbol>
@@ -104,9 +115,9 @@ namespace Feel
     {
         void operator()() const
         {
-            VLOG(2) << "[BackendManagerDeleter] clear GinacExprManager Singleton: " << GinacExprManager::instance().size() << "\n";
+            VLOG(2) << "[GinacManagerDeleter] clear GinacExprManager Singleton: " << GinacExprManager::instance().size() << "\n";
             GinacExprManager::instance().clear();
-            VLOG(2) << "[BackendManagerDeleter] clear GinacExprManager done\n";
+            VLOG(2) << "[GinacManagerDeleter] clear GinacExprManager done\n";
         }
     };
     typedef Feel::Singleton<GinacExprManagerDeleterImpl> GinacExprManagerDeleter;
@@ -154,6 +165,8 @@ namespace Feel
             typedef GinacEx<Order> this_type;
             typedef double value_type;
 
+            typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
+
             template<typename TheExpr>
             struct Lambda
             {
@@ -174,9 +187,10 @@ namespace Feel
                 :
                 M_fun( fun ),
                 M_syms( syms),
+                M_params( vec_type::Zero( M_syms.size() ) ),
                 M_cfun( new GiNaC::FUNCP_CUBA() ),
                 M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
-            {
+                {
                 DVLOG(2) << "Ginac constructor with expression_type \n";
                 GiNaC::lst exprs(fun);
                 GiNaC::lst syml;
@@ -184,8 +198,8 @@ namespace Feel
 
                 std::string filenameWithSuffix = M_filename + ".so";
 
-                // register the PreconditionerManager into Feel::Environment so that it gets the
-                // PreconditionerManager is cleared up when the Environment is deleted
+                // register the GinacExprManager into Feel::Environment so that it gets the
+                // GinacExprManager is cleared up when the Environment is deleted
                 static bool observed=false;
                 if ( !observed )
                     {
@@ -226,6 +240,7 @@ namespace Feel
             :
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
+            M_params( fun.M_params ),
             M_cfun( fun.M_cfun ),
             M_filename( fun.M_filename )
             {
@@ -264,6 +279,8 @@ namespace Feel
              */
             //@{
 
+            vec_type const& parameterValue() const { return M_params; }
+            value_type parameterValue( int p ) const { return M_params[p]; }
 
             //@}
 
@@ -271,6 +288,31 @@ namespace Feel
              */
             //@{
 
+
+            void setParameterValues( vec_type const& p )
+                {
+                    CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
+                    M_params = p;
+                }
+            void setParameterValues( std::map<std::string,value_type> const& mp )
+                {
+                    CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
+                    for( auto p : mp )
+                    {
+                        auto it = std::find_if( M_syms.begin(), M_syms.end(),
+                                                [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
+                        if ( it != M_syms.end() )
+                        {
+                            M_params[it-M_syms.begin()] = p.second;
+                            LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
+                            LOG(INFO) << "parameter: " << M_params;
+                        }
+                        else
+                        {
+                            LOG(INFO) << "Invalid parameters : " << p.first << " with value: " << p.second;
+                        }
+                    }
+                }
 
             //@}
 
@@ -320,8 +362,9 @@ namespace Feel
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_x( vec_type::Zero( M_nsyms ) )
-                {}
+                    M_x( expr.parameterValue() )
+                {
+                }
 
                 tensor( this_type const& expr,
                         Geo_t const& geom, Basis_i_t const& /*fev*/ )
@@ -330,8 +373,9 @@ namespace Feel
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_x( vec_type::Zero( M_nsyms ) )
-                {}
+                    M_x(  expr.parameterValue() )
+                {
+                }
 
                 tensor( this_type const& expr, Geo_t const& geom )
                     :
@@ -339,11 +383,10 @@ namespace Feel
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( vec_type::Zero(M_gmc->nPoints()) ),
-                    M_x( vec_type::Zero( M_nsyms ) )
+                    M_x( expr.parameterValue() )
 
                 {
                 }
-
                 template<typename IM>
                 void init( IM const& im )
                 {
@@ -368,8 +411,6 @@ namespace Feel
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
                                 M_x[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
-                                M_x[k] = 0;
                             M_fun(&ni,M_x.data(),&no,&M_y[q]);
                         }
 
@@ -385,8 +426,6 @@ namespace Feel
                         {
                             for(int k = 0;k < gmc_type::nDim;++k )
                                 M_x[k]=M_gmc->xReal( q )[k];
-                            for( int k = gmc_type::nDim; k < M_x.size(); ++k )
-                                M_x[k] = 0;
                             M_fun(&ni,M_x.data(),&no,&M_y[q]);
                         }
                 }
@@ -436,6 +475,7 @@ namespace Feel
         private:
             mutable expression_type  M_fun;
             std::vector<GiNaC::symbol> M_syms;
+            vec_type M_params;
             boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
             std::string M_filename;
         };
