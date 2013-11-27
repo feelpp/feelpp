@@ -294,12 +294,39 @@ public :
         LOG( INFO ) << " rb grad from contextrb :\n"<<rb_grad_from_contextrb;
 
 
+        LOG( INFO ) << "with "<<ctxrb.nPoints()<<" points ...";
         LOG( INFO ) << "total time to evaluate u_fem using fem context : "<<time_evaluation_fem_ctxfem;
         LOG( INFO ) << "total time to evaluate u_crb using fem context : "<<time_evaluation_rb_ctxfem;
         LOG( INFO ) << "total time to evaluate u_crb using rb context : "<<time_evaluation_rb_ctxrb;
         LOG( INFO ) << "total time to evaluate gradient of u_fem using fem context : "<<time_grad_fem_ctxfem;
         LOG( INFO ) << "total time to evaluate gradient of u_crb using fem context : "<<time_grad_rb_ctxfem;
         LOG( INFO ) << "total time to evaluate gradient of u_crb using rb context : "<<time_grad_rb_ctxrb;
+
+
+
+        for(int i=0; i<300; i=i+10)
+        {
+            node_type t(Dim);
+            t(0)=0.2; t(1)=0.1;
+            ctxfem.add( t );
+            ctxrb.add( t );
+
+            timer.restart();
+            fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
+            time_evaluation_fem_ctxfem = time_evaluation_fem_ctxfem+timer.elapsed();
+            timer.restart();
+            rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
+            time_evaluation_rb_ctxrb = timer.elapsed();
+            timer.restart();
+            rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxfem , _expr=idv(u) );
+            time_evaluation_rb_ctxfem = timer.elapsed();
+
+            LOG( INFO ) << "now with "<<ctxrb.nPoints()<<" points ...";
+            LOG( INFO ) << "total time to evaluate u_fem using fem context : "<<time_evaluation_fem_ctxfem;
+            LOG( INFO ) << "total time to evaluate u_crb using fem context : "<<time_evaluation_rb_ctxfem;
+            LOG( INFO ) << "total time to evaluate u_crb using rb context : "<<time_evaluation_rb_ctxrb;
+        }
+
 
         /*
          * test with lambda expression
