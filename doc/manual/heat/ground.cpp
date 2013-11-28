@@ -303,7 +303,7 @@ Ground<Dim, Order>::run()
               << "The initial time is : " << M_bdf->timeInitial() << "\n"
               << "The final time is  : " << M_bdf->timeFinal() << "\n";
 
-    for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
+    for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next(T) )
     {
         std::cout << "============================================================\n";
         std::cout << "T =" << M_bdf->time() << "s\n";

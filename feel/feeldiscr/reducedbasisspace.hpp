@@ -550,7 +550,7 @@ public :
         /*
          * for given element coefficients, gives the gradient of the element at node given in context_fem
          */
-        eigen_vector_type grad( eigen_vector_type coeffs , int node_index=-1 ) const
+        eigen_vector_type grad( eigen_vector_type const& coeffs , int node_index=-1 ) const
         {
             int npts = super::nPoints();
             DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
@@ -599,7 +599,7 @@ public :
         /*
          * for given element coefficients, gives the dx,dy or dy of the element at node given in context_fem
          */
-        eigen_vector_type d(int N, eigen_vector_type coeffs , int node_index=-1 ) const
+        eigen_vector_type d(int N, eigen_vector_type const& coeffs , int node_index=-1 ) const
         {
             int npts = super::nPoints();
             DCHECK(npts > node_index)<<"node_index "<<node_index<<" must be lower that npts "<<npts;
@@ -729,14 +729,14 @@ public :
             return M_rbctx.id( coeffs, M_index, need_to_update);
         }
 
-        eigen_vector_type gradRB( eigen_vector_type coeffs) const
+        eigen_vector_type gradRB( eigen_vector_type const& coeffs) const
         {
             //std::cout<<"call gradRB with M_index : "<<M_index<<std::endl;
             return M_rbctx.grad( coeffs , M_index);
             //return M_rbctx.grad( coeffs );//, M_index);
         }
 
-        eigen_vector_type dRB(int N, eigen_vector_type coeffs) const
+        eigen_vector_type dRB(int N, eigen_vector_type const& coeffs) const
         {
             return M_rbctx.d(N, coeffs , M_index);
             //return M_rbctx.d(N, coeffs );//, M_index);
@@ -870,7 +870,7 @@ public :
         /*
          * return the reduced basis space associated
          */
-        void setReducedBasisSpace( rbspace_ptrtype rbspace )
+        void setReducedBasisSpace( rbspace_ptrtype const& rbspace )
         {
             M_rbspace = rbspace;
         }
@@ -967,7 +967,7 @@ public :
         /*
          * evaluate the element to nodes in context
          */
-        eigen_vector_type evaluate(  ctxrbset_type & context_rb )
+        eigen_vector_type evaluate(  ctxrbset_type const& context_rb )
         {
            return context_rb.id( *this );
         }
@@ -1348,9 +1348,11 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::id_( Context_t
 
     const uint16_type nq = context.xRefs().size2();
 
+    int rb_size = this->size();
     //loop on RB dof
-    for(int N=0; N<this->size(); N++)
+    for(int N=0; N<rb_size; N++)
     {
+
         // the RB unknown can be written as
         // u^N = \sum_i^N u_i^N \PHI_i where \PHI_i are RB basis functions (i.e. elements of FEM function space)
         // u^N = \sum_i^N u_i^N \sum_j \PHI_ij \phi_j where PHI_ij is a scalar and phi_j is the j^th fem basis function
@@ -1407,8 +1409,10 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( Context
     if ( elt_id == invalid_size_type_value )
         return;
 
+    int rb_size = this->size();
+
     //loop on RB dof
-    for(int N=0; N<this->size(); N++)
+    for(int N=0; N<rb_size; N++)
     {
 
         value_type u_i = this->operator()( N );
@@ -1454,8 +1458,9 @@ void
 ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Context_t const & context, id_array_type& v , mpl::bool_<false> ) const
 {
 
+    int rb_size = this->size();
 
-    for(int rbN=0; rbN<this->size(); rbN++)
+    for(int rbN=0; rbN<rb_size; rbN++)
     {
         value_type u_i = this->operator()( rbN );
 

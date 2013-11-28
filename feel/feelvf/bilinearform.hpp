@@ -496,8 +496,7 @@ public:
                  map_trial_geometric_mapping_context_type const& _gmcTrial,
                  map_geometric_mapping_expr_context_type const & gmcExpr,
                  ExprT const& expr,
-                 IM const& im,
-                 IMTest const& imTest, IMTrial const& imTrial );
+                 IM const& im, IMTest const& imTest, IMTrial const& imTrial );
 
         template<typename IM2>
         Context( form_type& __form,
@@ -507,6 +506,15 @@ public:
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2 );
+
+        template<typename IM2,typename IMTest,typename IMTrial>
+        Context( form_type& __form,
+                 map_test_geometric_mapping_context_type const& gmcTest,
+                 map_trial_geometric_mapping_context_type const& _gmcTrial,
+                 map_geometric_mapping_expr_context_type const & gmcExpr,
+                 ExprT const& expr,
+                 IM const& im,
+                 IM2 const& im2, IMTest const& imTest, IMTrial const& imTrial );
 
         template<typename IM2>
         Context( form_type& __form,
