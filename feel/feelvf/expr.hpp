@@ -624,6 +624,11 @@ public:
         return M_expr;
     }
 
+    expression_type& expression()
+    {
+        return M_expr;
+    }
+
     //@}
 
     /** @name  Mutators

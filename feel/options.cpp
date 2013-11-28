@@ -83,6 +83,9 @@ functions_options( std::string const& prefix )
         ( prefixvm( prefix,"functions.epsilon" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "epsilon" )
         ( prefixvm( prefix,"functions.gamma" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "gamma" )
         ( prefixvm( prefix,"functions.delta" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "delta" )
+        ( prefixvm( prefix,"functions.nu" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "nu" )
+        ( prefixvm( prefix,"functions.mu" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "mu" )
+        ( prefixvm( prefix,"functions.rho" ).c_str(), Feel::po::value<std::string>()->default_value( "1" ), "rho" )
         ;
     return _options;
 }

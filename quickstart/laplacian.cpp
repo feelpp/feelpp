@@ -5,8 +5,10 @@ int main(int argc, char**argv )
 {
     //# marker1 #
     using namespace Feel;
+    po::options_description desc("qs_laplacian");
+    desc.add(feel_options()).add_options()( "mu",po::value<double>() -> default_value(1.),"mu" );
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
+                     _desc=desc,
                      _about=about(_name="qs_laplacian",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -24,11 +26,13 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
+    auto nu = expr( option(_name="functions.nu").as<std::string>(), Symbols{"x","y","mu"} );
+    nu.expression().setParameterValues( { { "mu", option(_name="mu").as<double>() } } );
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) );
+                  _expr=nu*gradt(u)*trans(grad(v)) );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=expr( option(_name="functions.g").as<std::string>(), symbols<2>() ) );
+          _expr=expr( option(_name="functions.g").as<std::string>(), Symbols{"x","y"} ) );
     a.solve(_rhs=l,_solution=u);
     //# endmarker3 #
 
