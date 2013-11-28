@@ -330,7 +330,7 @@ HeatSink<Dim, Order>::run()
     out.open( "averages", std::ios::out );
 
     /// [marker4]
-    for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next() )
+    for ( M_bdf->start(); M_bdf->isFinished()==false; M_bdf->next(T) )
     {
         lt.zero();
 
