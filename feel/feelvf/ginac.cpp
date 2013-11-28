@@ -34,7 +34,7 @@
 
 namespace GiNaC
 {
-    ex parse( std::string const& str, std::vector<symbol>  const& syms, std::vector<symbol> const& params = std::vector<symbol>() )
+    ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>() )
     {
         using namespace Feel;
         LOG(INFO) << "Parsing " << str << " using GiNaC";
