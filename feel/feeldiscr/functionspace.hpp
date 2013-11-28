@@ -1701,7 +1701,7 @@ public:
         }
         void add( node_type t, mpl::bool_<false> )
         {
-            LOG(INFO)<<"add point\n";
+            //LOG(INFO)<<"add point\n";
 
             //rank of the current processor
             int proc_number = Environment::worldComm().globalRank();
@@ -1854,7 +1854,7 @@ public:
      */
     Context context() { return Context( this->shared_from_this() ); }
 
-    /*virtual*/ basis_context_ptrtype contextBasis( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) {LOG( INFO ) << "constructor FEM=="; return p.second; }
+    /*virtual*/ basis_context_ptrtype contextBasis( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) { return p.second; }
 
     /**
      * \class Element
