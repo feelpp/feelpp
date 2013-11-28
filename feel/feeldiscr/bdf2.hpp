@@ -440,7 +440,7 @@ public:
      * \todo implements the strategies here, at the moment constant
      * time step
      */
-    double next() const
+    virtual double next() const
     {
         FEELPP_ASSERT( state() == BDF_RUNNING ).error( "invalid BDF state" );
         M_real_time_per_iteration = M_timer.elapsed();
@@ -1011,12 +1011,14 @@ public:
     template<typename container_type>
     void shiftRight( typename space_type::template Element<value_type, container_type> const& u_curr );
 
+    double next() const { return super::next(); }
+
     template<typename container_type>
     double
     next( typename space_type::template Element<value_type, container_type> const& u_curr )
         {
             this->shiftRight( u_curr );
-            return this->next();
+            return super::next();
         }
 
     //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative
