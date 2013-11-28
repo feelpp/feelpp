@@ -128,12 +128,14 @@ void runStokesDirichletLM()
 
     form2( _trial=Vh2, _test=Vh1 ,_matrix=A,
            _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() )
-        += integrate( _range=elements(submesh),
+        += integrate( //_range=elements(submesh),
+                     _range=markedfaces(mesh,listMarker),
                       _expr=inner(idt(lambda),id(u)) );
 
     form2( _trial=Vh1, _test=Vh2 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
         += integrate( _range=elements(submesh),
+                      //_range=markedfaces(mesh,listMarker),
                       _expr=inner(idt(u),id(lambda)) );
 
     form1( _test=Vh2, _vector=F,
