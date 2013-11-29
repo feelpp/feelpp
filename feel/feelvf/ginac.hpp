@@ -84,7 +84,7 @@ public:
 
     inline
     std::vector<symbol>
-    symbols( std::initializer_list<std::string> l )
+    symbols( std::initializer_list<std::string> const& l )
     {
         std::vector<symbol> s;
         std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
@@ -92,7 +92,7 @@ public:
     }
     inline
     std::vector<symbol>
-    symbols( std::vector<std::string> l )
+    symbols( std::vector<std::string> const& l )
     {
         std::vector<symbol> s;
         std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
