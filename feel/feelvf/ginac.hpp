@@ -234,7 +234,7 @@ public:
                             GinacExprManager::instance().operator[]( filename ) = M_cfun;
                     }
                 }
-            }
+                }
 
             GinacEx( GinacEx const & fun )
             :
@@ -545,6 +545,8 @@ public:
             typedef GinacMatrix<M,N,Order> this_type;
             typedef double value_type;
 
+            typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
+
             template<typename TheExpr>
             struct Lambda
             {
@@ -560,25 +562,68 @@ public:
              */
             //@{
 
-            explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="" )
+            explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="",
+                                  WorldComm const& world=Environment::worldComm() )
                 :
                 M_fun( fun.evalm() ),
                 M_syms( syms),
-                M_cfun(),
+                M_params( vec_type::Zero( M_syms.size() ) ),
+                M_cfun( new GiNaC::FUNCP_CUBA() ),
                 M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
+                DVLOG(2) << "Ginac matrix constructor with expression_type \n";
                 GiNaC::lst exprs;
                 for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
 
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+
+                std::string filenameWithSuffix = M_filename + ".so";
+
+                // register the GinacExprManager into Feel::Environment so that it gets the
+                // GinacExprManager is cleared up when the Environment is deleted
+                static bool observed=false;
+                if ( !observed )
+                    {
+                        Environment::addDeleteObserver( GinacExprManagerDeleter::instance() );
+                        observed = true;
+                    }
+
+                bool hasLinked = ( GinacExprManager::instance().find( filename ) != GinacExprManager::instance().end() )? true : false;
+                if ( hasLinked )
+                {
+                    M_cfun = GinacExprManager::instance().find( filename )->second;
+                }
+                else
+                {
+                    // master rank check if the lib exist and compile this one if not done
+                    if ( ( world.isMasterRank() && !fs::exists( filenameWithSuffix ) ) || M_filename.empty() )
+                    {
+                        DVLOG(2) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                        GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
+                        hasLinked=true;
+                        if ( !M_filename.empty() )
+                            GinacExprManager::instance().operator[]( filename ) = M_cfun;
+                    }
+                    // wait the lib compilation
+                    if ( !M_filename.empty() ) world.barrier();
+                    // link with other process
+                    if ( !hasLinked )
+                    {
+                        DVLOG(2) << "GiNaC::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                        GiNaC::link_ex(filenameWithSuffix, *M_cfun);
+                        if ( !M_filename.empty() )
+                            GinacExprManager::instance().operator[]( filename ) = M_cfun;
+                    }
+                }
             }
-            explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename=""  )
+            explicit GinacMatrix( GiNaC::ex const & fun, std::vector<GiNaC::symbol> const& syms, std::string filename="",
+                                  WorldComm const& world=Environment::worldComm() )
                 :
                 M_fun(fun.evalm()),
                 M_syms( syms),
-                M_cfun(),
+                M_params( vec_type::Zero( M_syms.size() ) ),
+                M_cfun( new GiNaC::FUNCP_CUBA() ),
                 M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
@@ -586,13 +631,52 @@ public:
 
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+
+               std::string filenameWithSuffix = M_filename + ".so";
+
+                // register the GinacExprManager into Feel::Environment so that it gets the
+                // GinacExprManager is cleared up when the Environment is deleted
+                static bool observed=false;
+                if ( !observed )
+                    {
+                        Environment::addDeleteObserver( GinacExprManagerDeleter::instance() );
+                        observed = true;
+                    }
+
+                bool hasLinked = ( GinacExprManager::instance().find( filename ) != GinacExprManager::instance().end() )? true : false;
+                if ( hasLinked )
+                {
+                    M_cfun = GinacExprManager::instance().find( filename )->second;
+                }
+                else
+                {
+                    // master rank check if the lib exist and compile this one if not done
+                    if ( ( world.isMasterRank() && !fs::exists( filenameWithSuffix ) ) || M_filename.empty() )
+                    {
+                        DVLOG(2) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                        GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
+                        hasLinked=true;
+                        if ( !M_filename.empty() )
+                            GinacExprManager::instance().operator[]( filename ) = M_cfun;
+                    }
+                    // wait the lib compilation
+                    if ( !M_filename.empty() ) world.barrier();
+                    // link with other process
+                    if ( !hasLinked )
+                    {
+                        DVLOG(2) << "GiNaC::link_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
+                        GiNaC::link_ex(filenameWithSuffix, *M_cfun);
+                        if ( !M_filename.empty() )
+                            GinacExprManager::instance().operator[]( filename ) = M_cfun;
+                    }
+                }
             }
 
             GinacMatrix( GinacMatrix const & fun )
             :
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
+            M_params( fun.M_params ),
             M_cfun(),
             M_filename( fun.M_filename )
             {
@@ -604,15 +688,17 @@ public:
 
                     GiNaC::lst syml;
                     std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
-                    GiNaC::compile_ex(exprs, syml, M_cfun, M_filename);
+                    GiNaC::compile_ex(exprs, syml, *M_cfun, M_filename);
                 }
                 else
                 {
+#if 0
                     DVLOG(2) << "Ginac copy constructor : link with existing object file \n";
                     boost::mpi::communicator world;
                     //std::string pid = boost::lexical_cast<std::string>(world.rank());
                     std::string filenameWithSuffix = M_filename + ".so";
-                    GiNaC::link_ex(filenameWithSuffix, M_cfun);
+                    GiNaC::link_ex(filenameWithSuffix, *M_cfun);
+#endif
                 }
             }
 
@@ -630,6 +716,8 @@ public:
              */
             //@{
 
+            vec_type const& parameterValue() const { return M_params; }
+            value_type parameterValue( int p ) const { return M_params[p]; }
 
             //@}
 
@@ -637,6 +725,30 @@ public:
              */
             //@{
 
+            void setParameterValues( vec_type const& p )
+                {
+                    CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
+                    M_params = p;
+                }
+            void setParameterValues( std::map<std::string,value_type> const& mp )
+                {
+                    CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
+                    for( auto p : mp )
+                    {
+                        auto it = std::find_if( M_syms.begin(), M_syms.end(),
+                                                [&p]( GiNaC::symbol const& s ) { return s.get_name() == p.first; } );
+                        if ( it != M_syms.end() )
+                        {
+                            M_params[it-M_syms.begin()] = p.second;
+                            LOG(INFO) << "setting parameter : " << p.first << " with value: " << p.second;
+                            LOG(INFO) << "parameter: " << M_params;
+                        }
+                        else
+                        {
+                            LOG(INFO) << "Invalid parameters : " << p.first << " with value: " << p.second;
+                        }
+                    }
+                }
 
             //@}
 
@@ -644,9 +756,12 @@ public:
              */
             //@{
 
+
+            //@}
+
             const GiNaC::FUNCP_CUBA& fun() const
             {
-                return M_cfun;
+                return *M_cfun;
             }
 
             std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
@@ -687,7 +802,7 @@ public:
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( vec_type::Zero(M_nsyms) )
+                    M_x( expr.parameterValue() )
                 {}
 
                 tensor( this_type const& expr,
@@ -697,7 +812,7 @@ public:
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( vec_type::Zero(M_nsyms) )
+                    M_x( expr.parameterValue() )
 
                 {}
 
@@ -707,7 +822,7 @@ public:
                     M_gmc( fusion::at_key<key_type>( geom ).get() ),
                     M_nsyms( expr.syms().size() ),
                     M_y( M_gmc->nPoints(), mat_type::Zero() ),
-                    M_x( vec_type::Zero(M_nsyms) )
+                    M_x( expr.parameterValue() )
                 {
                 }
 
@@ -794,7 +909,8 @@ public:
         private:
             mutable expression_type  M_fun;
             std::vector<GiNaC::symbol> M_syms;
-            GiNaC::FUNCP_CUBA M_cfun;
+            vec_type M_params;
+            boost::shared_ptr<GiNaC::FUNCP_CUBA> M_cfun;
             std::string M_filename;
         }; // GinacMatrix
         /// \endcond
