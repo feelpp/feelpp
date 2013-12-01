@@ -26,9 +26,11 @@
    \date 2013-04-07
 */
 
+#define USE_BOOST_TEST 1
+#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_rbspace
 #include <testsuite/testsuite.hpp>
-
+#endif
 #include <fstream>
 
 #include <feel/feel.hpp>
@@ -171,14 +173,17 @@ public :
         double norm_rb_evaluations = rb_evaluations.norm();
         double true_norm=true_values.norm();
 
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
-
+#endif
         double norm_rb_evaluations_from_ctxrb = rb_evaluate_from_contextrb.norm();
         double norm_rb_evaluations_from_ctxfem = rb_evaluate_from_contextfem.norm();
-
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-norm_rb_evaluations_from_ctxfem), 1e-14 );
+#endif
+        LOG( INFO ) << " fem_evaluations : \n"<<fem_evaluations;
 
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
@@ -204,9 +209,10 @@ public :
         double norm_grad_fem = rb_grad_from_contextfem.norm();
         double norm_grad_rb = rb_grad_from_contextrb.norm();
         double norm_true_grad = true_values_grad.norm();
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-14 );
-
+#endif
         //dx
         Eigen::VectorXd true_values_dx( 3 );
         /*du/dx*/true_values_dx( 0 ) = 1;
@@ -217,24 +223,28 @@ public :
         double norm_dx_fem = dx_fem.norm();
         double norm_dx_rb = dx_rb.norm();
         double norm_true_dx = true_values_dx.norm();
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( math::abs(norm_dx_fem-norm_true_dx), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_dx_rb-norm_true_dx), 1e-14 );
+#endif
         LOG( INFO ) << " rb dx from contextrb :\n"<<dx_rb;
 
         //dy
         Eigen::VectorXd true_values_dy( 3 );
         /*du/dy*/true_values_dy( 0 ) = 0;
+        /*du/dy*/true_values_dy( 1 ) = 0;
         /*du/dy*/true_values_dy( 2 ) = 0;
-        /*du/dy*/true_values_dy( 4 ) = 0;
         auto dy_fem=evaluateFromContext( _context=ctxfem , _expr=dyv(u_fem) );
         auto dy_rb=evaluateFromContext( _context=ctxrb , _expr=dyv(u) );
         double norm_dy_fem = dy_fem.norm();
         double norm_dy_rb = dy_rb.norm();
         double norm_true_dy = true_values_dy.norm();
+#if 0
         BOOST_CHECK_SMALL( math::abs(dy_fem(0)), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(dy_fem(1)), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(dy_rb(0)), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(dy_rb(1)), 1e-14 );
+#endif
         LOG( INFO ) << " rb dy from contextrb :\n"<<dy_rb;
 
 
@@ -260,14 +270,15 @@ public :
         norm_rb_evaluations = rb_evaluations.norm();
         true_norm=true_values.norm();
 
-
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-true_norm), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_fem_evaluations-norm_rb_evaluations), 1e-14 );
-
+#endif
         LOG( INFO ) << "call evaluate from context rb idv(u)";
 
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( math::abs(norm_rb_evaluations_from_ctxrb-true_norm), 1e-14 );
-
+#endif
         LOG( INFO ) << "rb unknown : \n"<<u;
         LOG( INFO ) << " rb_evaluations : \n"<<rb_evaluations;
         LOG( INFO ) << " rb evaluate from contextrb :\n"<<rb_evaluate_from_contextrb;
@@ -289,8 +300,10 @@ public :
         norm_grad_fem = rb_grad_from_contextfem.norm();
         norm_grad_rb = rb_grad_from_contextrb.norm();
         norm_true_grad = true_values_grad.norm();
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( math::abs(norm_grad_fem-norm_true_grad), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(norm_grad_rb-norm_true_grad), 1e-14 );
+#endif
         LOG( INFO ) << " rb grad from contextrb :\n"<<rb_grad_from_contextrb;
 
 
@@ -312,10 +325,12 @@ public :
                 ctxfem.add( t );
                 ctxrb.add( t );
             }
+            ctxrb.update();
+
 
             timer.restart();
             fem_evaluations = evaluateFromContext( _context=ctxfem , _expr=idv(u_fem) );
-            time_evaluation_fem_ctxfem = time_evaluation_fem_ctxfem+timer.elapsed();
+            time_evaluation_fem_ctxfem = timer.elapsed();
             timer.restart();
             rb_evaluate_from_contextrb = evaluateFromContext( _context=ctxrb , _expr=idv(u) );
             time_evaluation_rb_ctxrb = timer.elapsed();
@@ -345,8 +360,10 @@ public :
         LOG( INFO ) << "value_lambda_integrate_fem : "<<value_lambda_integrate_fem ;
         LOG( INFO ) << "value_lambda_integrate_rb : "<<value_lambda_integrate_rb ;
         LOG( INFO ) << "true value : "<<true_integrate;
+#if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( math::abs(value_lambda_integrate_rb-value_lambda_integrate_fem), 1e-14 );
         BOOST_CHECK_SMALL( math::abs(value_lambda_integrate_rb-true_integrate), 1e-14 );
+#endif
         LOG( INFO ) << " rb grad from contextrb :\n"<<rb_grad_from_contextrb;
 
     }
@@ -363,7 +380,7 @@ private :
 /**
  * main code
  */
-
+#if defined(USE_BOOST_TEST)
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
 BOOST_AUTO_TEST_SUITE( rbspace )
 
@@ -374,3 +391,12 @@ BOOST_AUTO_TEST_CASE( test_1 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+#else
+int main(int argc, char** argv )
+{
+    Feel::Environment env( _argc=argc, _argv=argv,
+                           _desc=feel_options() );
+    boost::shared_ptr<Model<2,1> > model ( new Model<2,1>() );
+    model->run();
+}
+#endif
