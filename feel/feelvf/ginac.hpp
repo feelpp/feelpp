@@ -568,7 +568,7 @@ public:
                 M_fun( fun.evalm() ),
                 M_syms( syms),
                 M_params( vec_type::Zero( M_syms.size() ) ),
-                M_cfun(),
+                M_cfun( new GiNaC::FUNCP_CUBA() ),
                 M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 DVLOG(2) << "Ginac matrix constructor with expression_type \n";
@@ -623,7 +623,7 @@ public:
                 M_fun(fun.evalm()),
                 M_syms( syms),
                 M_params( vec_type::Zero( M_syms.size() ) ),
-                M_cfun(),
+                M_cfun( new GiNaC::FUNCP_CUBA() ),
                 M_filename(filename.empty()?filename:(fs::current_path()/filename).string())
             {
                 GiNaC::lst exprs;
@@ -677,7 +677,7 @@ public:
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
             M_params( fun.M_params ),
-            M_cfun(),
+            M_cfun( fun.M_cfun ),
             M_filename( fun.M_filename )
             {
                 if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
@@ -761,7 +761,7 @@ public:
 
             const GiNaC::FUNCP_CUBA& fun() const
             {
-                return M_cfun;
+                return *M_cfun;
             }
 
             std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
