@@ -182,7 +182,10 @@ endif(NOT FEELPP_MODE)
 if(NOT CTEST_BINARY_DIRECTORY)
   SET (CTEST_BINARY_DIRECTORY "${FEELPP_WORK_DIR}/${FEELPP_MODE}_${FEELPP_CXXNAME}")
 endif(NOT CTEST_BINARY_DIRECTORY)
-
+## Remove ${CTEST_BINARY_DIRECTORY}/CMakeCache.txt - usefull if config has changed (petsc, boost...)
+execute_process(COMMAND "rm ${CTEST_BINARY_DIRECTORY}/CMakeCache.txt")
+message(STATUS "CMakeCache.txt removed")
+  
 ## mandatory variables (the default should be ok in most cases):
 
 #if(NOT FEELPP_NO_UPDATE)
