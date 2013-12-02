@@ -320,7 +320,7 @@ if(FEELPP_CXX AND NOT WIN32)
 endif(FEELPP_CXX AND NOT WIN32)
 
 ctest_start(${FEELPP_MODE})
-# ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}") #git pull
+ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}") #git pull
 
 ## CMAKE has to be called once !
 #ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
@@ -328,24 +328,23 @@ ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}"
   SOURCE "${CTEST_SOURCE_DIRECTORY}"
   OPTIONS "${CMAKE_OPTIONS}"
   )
-message("OPTIONS: " ${CMAKE_OPTIONS})
-# # Submit results to a dashboard server.
-# ctest_submit(PARTS Configure)
-# ctest_submit(PARTS Update Notes)
-# 
-# foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
-#   set_property(GLOBAL PROPERTY SubProject ${subproject})
-#   set_property(GLOBAL PROPERTY Label ${subproject})
-# 
-#   message(WARNING "build target "${subproject})
-#   #set(CTEST_BUILD_TARGET “${subproject}”)
-#   set(CTEST_BUILD_TARGET ${subproject})
-#   ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND)
-#   ctest_submit(PARTS Build)
-# 
-#   message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
-#   # runs only tests that have a LABELS property matching "${subproject}"
-#   ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
-#   # Submit results to a dashboard server.
-#   ctest_submit(PARTS Test)
-# endforeach()
+# Submit results to a dashboard server.
+ctest_submit(PARTS Configure)
+ctest_submit(PARTS Update Notes)
+
+foreach(subproject ${CTEST_PROJECT_SUBPROJECTS})
+  set_property(GLOBAL PROPERTY SubProject ${subproject})
+  set_property(GLOBAL PROPERTY Label ${subproject})
+
+  message(WARNING "build target "${subproject})
+  #set(CTEST_BUILD_TARGET “${subproject}”)
+  set(CTEST_BUILD_TARGET ${subproject})
+  ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" APPEND)
+  ctest_submit(PARTS Build)
+
+  message(WARNING "BUILD "${CTEST_BINARY_DIRECTORY})
+  # runs only tests that have a LABELS property matching "${subproject}"
+  ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}" INCLUDE_LABEL "${subproject}"  )
+  # Submit results to a dashboard server.
+  ctest_submit(PARTS Test)
+endforeach()
