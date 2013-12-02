@@ -677,7 +677,7 @@ public:
             M_fun( fun.M_fun ),
             M_syms( fun.M_syms),
             M_params( fun.M_params ),
-            M_cfun(),
+            M_cfun( fun.M_cfun ),
             M_filename( fun.M_filename )
             {
                 if( !(M_fun==fun.M_fun && M_syms==fun.M_syms && M_filename==fun.M_filename) || M_filename.empty() )
