@@ -323,11 +323,8 @@ ctest_start(${FEELPP_MODE})
 ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}") #git pull
 
 ## CMAKE has to be called once !
-#ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" OPTIONS "-DCTEST_USE_LAUNCHERS=${CTEST_USE_LAUNCHERS}")
-ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}"
-  SOURCE "${CTEST_SOURCE_DIRECTORY}"
-  OPTIONS "${CMAKE_OPTIONS}"
-  )
+set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} ${CMAKE_OPTIONS} ${CTEST_SOURCE_DIRECTORY}")
+ctest_configure() # Execute CTEST_CONFIGURE_COMMAND
 # Submit results to a dashboard server.
 ctest_submit(PARTS Configure)
 ctest_submit(PARTS Update Notes)
