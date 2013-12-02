@@ -768,7 +768,11 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"ksp-converged-reason" ).c_str() , "converged reason ksp" )
 
         ( prefixvm( prefix,"snes-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the SNES data structure" )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
         ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( SNESNEWTONLS ), "Set the SNES solver" )
+#else
+        ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( SNESLS ), "Set the SNES solver" )
+#endif
         ( prefixvm( prefix,"snes-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "relative tolerance" )
         ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
         ( prefixvm( prefix,"snes-stol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "step length tolerance" )
