@@ -417,7 +417,7 @@ public:
      */
     void saveTimeSet() const
     {
-        if ( this->worldComm().isMasterRank() )
+        if ( ! this->worldComm().isMasterRank() )
             {
                 ++M_cptOfSave;
                 return;
