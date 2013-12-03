@@ -76,11 +76,11 @@ struct quad
     }
     static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<2> )
     {
-        return __e2p_order1[3*e+p];
+        return __e2p_order2[3*e+p];
     }
     static uint16_type e2p( uint16_type e, uint16_type p,boost::mpl::int_<3> )
     {
-        return __e2p_order1[4*e+p];
+        return __e2p_order3[4*e+p];
     }
     static const uint16_type __e2p_order1[8];
     static const uint16_type __e2p_order2[12];
