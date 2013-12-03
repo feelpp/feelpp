@@ -1689,19 +1689,25 @@ public:
         typedef std::map<int,basis_context_ptrtype> super;
         typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
+        typedef typename super::iterator iterator;
         Context( functionspace_ptrtype Xh ) : M_Xh( Xh ) {}
         virtual ~Context() {}
 
-        void add( node_type t )
+        std::pair<iterator, bool>
+        add( node_type const& t )
         {
-                add( t, mpl::bool_<is_composite>() );
+            return add( t, mpl::bool_<is_composite>() );
         }
-        void add( node_type t, mpl::bool_<true> )
+        std::pair<iterator, bool>
+        add( node_type const& t, mpl::bool_<true> )
         {
+            return std::make_pair( this->end(), false );
         }
-        void add( node_type t, mpl::bool_<false> )
+        std::pair<iterator, bool>
+        add( node_type const& t, mpl::bool_<false> )
         {
-            LOG(INFO)<<"add point\n";
+            std::pair<iterator, bool> ret = std::make_pair(this->end(),false);
+            //LOG(INFO)<<"add point\n";
 
             //rank of the current processor
             int proc_number = Environment::worldComm().globalRank();
@@ -1763,7 +1769,7 @@ public:
                 //this->push_back( ctx );
 
                 int number = M_t.size()-1;
-                this->insert( std::pair<int,basis_context_ptrtype>( number , ctx ) );
+                ret = this->insert( std::pair<int,basis_context_ptrtype>( number , ctx ) );
                 //DVLOG(2) << "Context size: " << this->size() << "\n";
 
                 if ( nprocs > 1 )
@@ -1793,7 +1799,7 @@ public:
                 }
             }
             CHECK( found_on_a_proc ) << "the point " << t << " was not found ! \n";
-
+            return ret;
 
         }//add ( non composite case )
 
@@ -1854,7 +1860,7 @@ public:
      */
     Context context() { return Context( this->shared_from_this() ); }
 
-    /*virtual*/ basis_context_ptrtype contextBasis( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) {LOG( INFO ) << "constructor FEM=="; return p.second; }
+    /*virtual*/ basis_context_ptrtype contextBasis( std::pair<int, basis_context_ptrtype> const& p, Context const& c ) { return p.second; }
 
     /**
      * \class Element

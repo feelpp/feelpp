@@ -534,7 +534,7 @@ main( int argc, char** argv )
                                   _author="Christophe Prud'homme",
                                   _email="christophe.prudhomme@feelpp.org") );
 
-    Feel::Stokes_Poiseuille_Test<2,3> Stokes_Poiseuille_Test;
+    Feel::Stokes_Poiseuille_Test<1,1> Stokes_Poiseuille_Test;
     Stokes_Poiseuille_Test.run();
 }
 

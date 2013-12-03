@@ -60,6 +60,14 @@ else
   git pull
 fi
 
+#Update hifimagnet
+if [ -d $feelpp_source/research/hifimagnet ]; 
+then 
+  cd $feelpp_source/research/hifimagnet
+  git pull
+  cd 
+fi
+
 #Create in ${gh_pages}/feelpp the associated doc of the ${branch}
 builddox develop $feelpp_source $gh_pages
 #builddox release/version-0.92 $feelpp_source $gh_pages

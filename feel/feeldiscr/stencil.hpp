@@ -1293,8 +1293,11 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 
     //if (_M_X1->nLocalDofWithoutGhost()==0 && _M_X2->nLocalDofWithoutGhost()==0 ) return sparsity_graph;
 
-    auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
-    auto elem_en  = _M_X1->mesh()->endElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
+    //auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
+    //auto elem_en  = _M_X1->mesh()->endElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
+    auto rangeTest = this->rangeiterator<0,0>(mpl::bool_<rangeiteratorType<0,0>::hasnotfindrange_type::value>());
+    auto elem_it = rangeTest.template get<1>();
+    auto elem_en = rangeTest.template get<2>();
 
     // If the user did not explicitly specify the DOF coupling
     // then all the DOFS are coupled to each other.  Furthermore,

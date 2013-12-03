@@ -933,13 +933,8 @@ public:
         // multi process
         if ( this->worldComm().localSize()>1 )
             {
-                auto it_nlocDof = this->M_n_localWithGhost_df.begin();
-                auto const en_nlocDof = this->M_n_localWithGhost_df.end();
-                bool isP0continuous = true;
-                for ( ; it_nlocDof!=en_nlocDof && isP0continuous ; ++it_nlocDof )
-                    isP0continuous = isP0continuous && (*it_nlocDof==1);
-
-                if ( !isP0continuous )//this->M_n_dofs>1 )
+                bool isP0continuous = fe_type::isLagrangeP0Continuous;
+                if ( !isP0continuous )
                     {
 #if defined(FEELPP_ENABLE_MPI_MODE)
                         VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
@@ -952,13 +947,17 @@ public:
                     }
                 else
                     {
-                        for ( int proc=0; proc<this->worldComm().globalSize(); ++proc )
+                        int themasterRank = 0;
+                        bool findMasterProc=false;
+                        for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
                         {
-                            if (proc==0)
+                            if (!findMasterProc && this->nLocalDofWithGhost(proc) > 0)
                             {
                                 this->M_n_localWithoutGhost_df[proc] = 1;
                                 this->M_first_df_globalcluster[proc] = 0;
                                 this->M_last_df_globalcluster[proc] = 0;
+                                themasterRank=proc;
+                                findMasterProc=true;
                             }
                             else
                             {
@@ -966,21 +965,25 @@ public:
                                 this->M_first_df_globalcluster[proc] = 25;// 0;
                                 this->M_last_df_globalcluster[proc] = 25; //0;
                             }
-                            this->M_n_localWithGhost_df[proc] = 1;
+                            //this->M_n_localWithGhost_df[proc] = 1;
                         }
 
-                        if (this->worldComm().globalRank()==0)
+                        if (this->nLocalDofWithGhost() >0 )
                         {
-                            this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
-                            this->M_mapGlobalClusterToGlobalProcess[0]=0;
-                        }
-                        else
-                        {
-                            this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
-                        }
+                            if (themasterRank == this->worldComm().localRank())
+                            {
+                                this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
+                                this->M_mapGlobalClusterToGlobalProcess[0]=0;
+                            }
+                            else
+                            {
+                                this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
+                            }
 
-                        this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
-                        this->M_mapGlobalProcessToGlobalCluster[0]=0;
+                            this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
+                            this->M_mapGlobalProcessToGlobalCluster[0]=0;
+                        }
+                        this->M_n_dofs = 1;
                     }
         }
 
@@ -3059,8 +3062,7 @@ DofTable<MeshType, FEType, PeriodicityType>::buildDofMap( mesh_type& M, size_typ
         this->M_last_df[p] = dataRecvFromGather[p].template get<2>();
 
         size_type mynDofWithGhost = ( !procHasNoElt )?
-            this->M_last_df[p] - this->M_first_df[p] + 1 :
-            this->M_first_df[p];
+            this->M_last_df[p] - this->M_first_df[p] + 1 : 0;
         this->M_n_localWithGhost_df[p] = mynDofWithGhost;
     }
 

@@ -90,16 +90,15 @@ makeAbout()
 }
 namespace Feel
 {
-// 2D
-extern template class Stokes<2, 2, 1>;
-extern template class Stokes<2, 3, 1>;
-extern template class Stokes<2, 4, 1>;
-
-extern template class Stokes<3, 2, 1>;
-extern template class Stokes<3, 2, 2>;
-extern template class Stokes<3, 3, 1>;
-extern template class Stokes<3, 3, 2>;
-extern template class Stokes<3, 4, 1>;
+    // 2D
+    extern template class Stokes<2, 2, 1>;//P2P1G1
+    extern template class Stokes<2, 3, 1>;//P3P2G1
+    extern template class Stokes<2, 4, 1>;//P4P3G1
+    //3D
+    extern template class Stokes<3, 2, 1>;//P2P1G1
+    extern template class Stokes<3, 2, 2>;//P2P1G2
+    extern template class Stokes<3, 3, 1>;//P3P2G1
+    extern template class Stokes<3, 3, 2>;//P3P2G2
 
 }
 
@@ -119,7 +118,7 @@ int main( int argc, char** argv )
     }
 #if defined(DIM2)
     benchmark.add( new Stokes<2, 2, 1>( "2D-P2P1G1" ) ) ;
-    //benchmark.add( new Stokes<2, 3, 1>( "2D-P3P2G1" ) ) ;
+    benchmark.add( new Stokes<2, 3, 1>( "2D-P3P2G1" ) ) ;
 #else
     benchmark.add( new Stokes<3, 2, 1>( "3D-P2P1G1" ) ) ;
     benchmark.add( new Stokes<3, 2, 2>( "3D-P2P1G2" ) ) ;
@@ -157,7 +156,8 @@ main( int argc, char** argv )
 #if defined(DIM2)
     Stokes<DIM2,2,1> stokes;
 #elif defined(DIM3)
-    Stokes<DIM3,2,1> stokes;
+    //Stokes<DIM3,2,1> stokes;
+    Stokes<DIM3,3,1> stokes;
 #endif
     stokes.run();
 }

@@ -509,6 +509,9 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     KSPConvergedReason reason;
     KSPGetConvergedReason( M_ksp,&reason );
 
+    if ( option( _prefix=this->prefix(), _name="ksp-view" ).template as<bool>() )
+        check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
+
     if ( reason==KSP_DIVERGED_INDEFINITE_PC )
     {
         LOG(INFO) << "[solverlinearpetsc] Divergence because of indefinite preconditioner;\n";

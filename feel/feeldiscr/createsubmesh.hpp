@@ -76,22 +76,24 @@ public :
     typedef SubMeshData smd_type;
     typedef boost::shared_ptr<smd_type> smd_ptrtype;
 
-    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range, WorldComm const& wc  )
+    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,IteratorRange const& range, WorldComm const& wc, size_type updateComponentsMesh  )
         :
         M_mesh( inputMesh ),
         M_listRange(),
         M_smd( new smd_type( inputMesh ) ),
-        M_worldComm( wc )
+        M_worldComm( wc ),
+        M_updateComponentsMesh( updateComponentsMesh )
         {
             M_listRange.push_back( range );
         }
 
-    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,std::list<IteratorRange> const& range, WorldComm const& wc  )
+    createSubmeshTool( boost::shared_ptr<MeshType> inputMesh,std::list<IteratorRange> const& range, WorldComm const& wc, size_type updateComponentsMesh  )
         :
         M_mesh( inputMesh ),
         M_listRange( range ),
         M_smd( new smd_type( inputMesh ) ),
-        M_worldComm( wc )
+        M_worldComm( wc ),
+        M_updateComponentsMesh( updateComponentsMesh )
         {}
 
 
@@ -104,6 +106,8 @@ public :
 
     smd_ptrtype subMeshData() { return M_smd; }
 
+    size_type updateComponentsMesh() const { return M_updateComponentsMesh; }
+
 private:
 
     mesh_ptrtype build( mpl::int_<MESH_ELEMENTS> /**/ );
@@ -115,6 +119,7 @@ private:
     std::list<range_type> M_listRange;
     smd_ptrtype M_smd;
     WorldComm M_worldComm;
+    size_type M_updateComponentsMesh;
 };
 
 template <typename MeshType,typename IteratorRange,int TheTag>
@@ -465,7 +470,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
     VLOG(2) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";google::FlushLogFiles(google::GLOG_INFO);
     // Prepare the new_mesh for use
-    newMesh->components().set ( MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    newMesh->components().reset();
+    newMesh->components().set ( this->updateComponentsMesh()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK*/ );
     newMesh->updateForUse();
     VLOG(2) << "createSubmesh(MESH_ELEMENTS) done\n";google::FlushLogFiles(google::GLOG_INFO);
 
@@ -773,8 +779,10 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                                               } ) );
 
     DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] update face/edge info if necessary\n";
+
     // Prepare the new_mesh for use
-    newMesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    newMesh->components().reset();
+    newMesh->components().set ( this->updateComponentsMesh()/*MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK*/ );
     newMesh->updateForUse();
 
     return newMesh;
@@ -904,7 +912,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
 
     DVLOG(2) << "[createSubmesh] update face/edge info if necessary\n";
     // Prepare the new_mesh for use
-    newMesh->components().set ( MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK );
+    newMesh->components().reset();
+    newMesh->components().set ( this->updateComponentsMesh()/*MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK*/ );
     newMesh->updateForUse();
 
 
@@ -926,12 +935,13 @@ template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
 typename createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
 createSubmesh( boost::shared_ptr<MeshType> inputMesh,
                IteratorRange const& range,
-               size_type ctx = EXTRACTION_KEEP_MESH_RELATION )
+               size_type ctx = EXTRACTION_KEEP_MESH_RELATION,
+               size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
 {
     //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
     //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
 
-    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range,inputMesh->worldComm() );
+    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
     auto m = cSmT.build();
     Context c( ctx );
     if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )
@@ -944,13 +954,14 @@ typename createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRa
 createSubmesh( boost::shared_ptr<MeshType> inputMesh,
                IteratorRange const& range,
                WorldComm wc,
-               size_type ctx = EXTRACTION_KEEP_MESH_RELATION )
+               size_type ctx = EXTRACTION_KEEP_MESH_RELATION,
+               size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
 
 {
     //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
     //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
 
-    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range, wc );
+    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range, wc,updateComponentsMesh );
     auto m = cSmT.build();
     Context c( ctx );
     if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )

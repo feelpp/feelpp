@@ -612,16 +612,33 @@ public:
      */
     size_type maxIterations() const
     {
-        return M_maxit;
+        return M_maxitKSP;
     }
-
-    /**
-     * \return the maximum number of SNES iterations
-     */
+    size_type maxIterationsKSP() const
+    {
+        return M_maxitKSP;
+    }
+    size_type maxIterationsKSPinSNES() const
+    {
+        return M_maxitKSPinSNES;
+    }
     size_type maxIterationsSNES() const
     {
-        return M_maxitSNES;
+        return M_maxitSNESReuse;
     }
+    size_type maxIterationsKSPReuse() const
+    {
+        return M_maxitKSPReuse;
+    }
+    size_type maxIterationsKSPinSNESReuse() const
+    {
+        return M_maxitKSPinSNESReuse;
+    }
+    size_type maxIterationsSNESReuse() const
+    {
+        return M_maxitSNESReuse;
+    }
+
 
     /**
      * \return the KSP relative tolerance in SNES
@@ -693,7 +710,7 @@ public:
         M_rtolerance = rtolerance;
         M_dtolerance = dtolerance;
         M_atolerance = atolerance;
-        M_maxit = maxit;
+        M_maxitKSP = maxit;
     }
 
     BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
@@ -835,7 +852,7 @@ public:
                                        ( prec,( preconditioner_ptrtype ), preconditioner( _prefix=this->prefix(),_matrix=matrix,_pc=this->pcEnumType()/*LU_PRECOND*/,
                                                                                           _pcfactormatsolverpackage=this->matSolverPackageEnumType(), _backend=this->shared_from_this(),
                                                                                           _worldcomm=this->comm() ) )
-                                       ( maxit,( size_type ), M_maxit/*1000*/ )
+                                       ( maxit,( size_type ), M_maxitKSP/*1000*/ )
                                        ( rtolerance,( double ), M_rtolerance/*1e-13*/ )
                                        ( atolerance,( double ), M_atolerance/*1e-50*/ )
                                        ( dtolerance,( double ), M_dtolerance/*1e5*/ )
@@ -1119,7 +1136,8 @@ private:
     bool   M_reuseFailed;
     boost::timer M_timer;
     bool   M_transpose;
-    size_type    M_maxit, M_maxitSNES;
+    size_type    M_maxitKSP, M_maxitKSPinSNES, M_maxitSNES;
+    size_type    M_maxitKSPReuse, M_maxitKSPinSNESReuse, M_maxitSNESReuse;
     size_type    M_iteration;
     std::string M_export;
     std::string M_ksp;
