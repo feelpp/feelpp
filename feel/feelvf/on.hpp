@@ -3,10 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-03-15
+       Date: 2013-12-03
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file integratoron.hpp
+   \file on.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-03-15
+   \date 2013-12-03
  */
-#ifndef __INTEGRATORON_HPP
-#define __INTEGRATORON_HPP 1
+#ifndef FEELPP_ELEMENTON_HPP
+#define FEELPP_ELEMENTON_HPP 1
 
 #include <boost/timer.hpp>
 #include <boost/foreach.hpp>
@@ -39,106 +38,16 @@ namespace Feel
 {
 namespace vf
 {
-/// \cond detail
-template<typename T>
-struct access_value
-{
-};
-#if defined( FEELPP_HAS_QD_REAL )
-template<>
-struct access_value<dd_real>
-{
-    access_value( dd_real val, int /*n*/ )
-    {
-        v = val;
-    }
-    dd_real operator()() const
-    {
-        return v;
-    }
-    dd_real v;
-};
-template<>
-struct access_value<qd_real>
-{
-    access_value( qd_real val, int /*n*/ )
-    {
-        v = val;
-    }
-    qd_real operator()() const
-    {
-        return v;
-    }
-    qd_real v;
-};
-#endif /*FEELPP_HAS_QD_REAL*/
-
-#if defined(FEELPP_HAS_MPFR)
-template<>
-struct access_value<mp_type>
-{
-    access_value( mp_type val, int /*n*/ )
-    {
-        v = val;
-    }
-    mp_type operator()() const
-    {
-        return v;
-    }
-    mp_type v;
-};
-#endif /* FEELPP_HAS_MPFR */
-
-template<>
-struct access_value<double>
-{
-    access_value( double val, int /*n*/ )
-    {
-        v = val;
-    }
-    double operator()() const
-    {
-        return v;
-    }
-    double v;
-};
-template<>
-struct access_value<int>
-{
-    access_value( int val, int /*n*/ )
-    {
-        v = val;
-    }
-    double operator()() const
-    {
-        return v;
-    }
-    double v;
-};
-template<>
-struct access_value<node_type>
-{
-    access_value( node_type vec, int n )
-    {
-        v = vec[n];
-    }
-    double operator()() const
-    {
-        return v;
-    }
-    double v;
-};
+///\cond detail
 /*!
-  \class IntegratorOnExpr
+  \class ElementOnExpr
   \brief Handle Dirichlet condition
-
-
 
   @author Christophe Prud'homme
   @see
 */
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr >
-class IntegratorOnExpr
+template<typename ElementRange, typename Elem, typename OnExpr >
+class ElementOnExpr
 {
 public:
 
@@ -155,7 +64,6 @@ public:
     typedef typename boost::tuples::template element<1, ElementRange>::type element_iterator;
 
     typedef Elem element_type;
-    typedef RhsElem rhs_element_type;
     typedef typename element_type::value_type value_type;
     typedef typename element_type::return_type return_type;
     typedef boost::function<return_type ( node_type const& )> bc_type;
@@ -181,32 +89,26 @@ public:
      */
     //@{
 
-    IntegratorOnExpr( ElementRange const& __elts,
-                      element_type const& __u,
-                      rhs_element_type const& __rhs,
-                      expression_type const& __expr,
-                      size_type __on )
+    ElementOnExpr( ElementRange const& __elts,
+                   element_type& __u,
+                   expression_type const& __expr )
         :
         M_eltbegin( __elts.template get<1>() ),
         M_eltend( __elts.template get<2>() ),
         M_u( __u ),
-        M_rhs( __rhs ),
-        M_expr( __expr ),
-        M_on_strategy( __on )
+        M_expr( __expr )
     {
     }
-    IntegratorOnExpr( IntegratorOnExpr const& ioe )
+    ElementOnExpr( ElementOnExpr const& ioe )
         :
         M_eltbegin( ioe.M_eltbegin ),
         M_eltend( ioe.M_eltend ),
         M_u( ioe.M_u ),
-        M_rhs( ioe.M_rhs ),
-        M_expr( ioe.M_expr ),
-        M_on_strategy( ioe.M_on_strategy )
+        M_expr( ioe.M_expr )
     {
     }
 
-    ~IntegratorOnExpr() {}
+    ~ElementOnExpr() {}
 
     //@}
 
@@ -238,60 +140,22 @@ public:
     /** @name  Methods
      */
     //@{
-
-    /**
-     * assembly routine for Dirichlet condition
-     *
-     */
-    template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
-                   FormType& __f ) const
-    {
-        typedef typename Elem::functionspace_type functionspace_type;
-        DVLOG(2) << "[IntegratorOn::assemble()] is_same: "
-                      << mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>::value << "\n";
-        assemble( __u, __v, __f, mpl::bool_<boost::is_same<functionspace_type,Elem1>::value>() );
-    }
+    void apply();
     //@}
-private:
-
-    template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                   boost::shared_ptr<Elem2> const& /*__v*/,
-                   FormType& /*__f*/, mpl::bool_<false> ) const {}
-
-    template<typename Elem1, typename Elem2, typename FormType>
-    void assemble( boost::shared_ptr<Elem1> const& __u,
-                   boost::shared_ptr<Elem2> const& __v,
-                   FormType& __f, mpl::bool_<true> ) const;
 
 private:
 
     element_iterator M_eltbegin;
     element_iterator M_eltend;
 
-    element_type const& M_u;
-    mutable rhs_element_type M_rhs;
+    element_type& M_u;
     expression_type M_expr;
-    Context M_on_strategy;
 };
 
-template<typename ElementRange, typename Elem, typename RhsElem, typename OnExpr>
-template<typename Elem1, typename Elem2, typename FormType>
+template<typename ElementRange, typename Elem, typename OnExpr>
 void
-IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_ptr<Elem1> const& /*__u*/,
-                                                                  boost::shared_ptr<Elem2> const& /*__v*/,
-                                                                  FormType& __form,
-                                                                  mpl::bool_<true> ) const
+ElementOnExpr<ElementRange, Elem, OnExpr>::apply()
 {
-#if 0
-
-    if ( !boost::is_same<Elem1, typename Elem::functionspace_type>::value ||
-         !boost::is_same<Elem2, typename Elem::functionspace_type>::value )
-        return;
-
-#endif
     DVLOG(2) << "call on::assemble() " << "\n";
     //
     // a few typedefs
@@ -323,15 +187,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
     typedef typename expression_type::template tensor<map_gmc_type> t_expr_type;
     typedef typename t_expr_type::shape shape;
 
-    // make sure that the form is close, ie the associated matrix is assembled
-    __form.matrix().close();
-    // make sure that the right hand side is closed, ie the associated vector is assembled
-    M_rhs->close();
-
     //
     // start
     //
-    DVLOG(2)  << "assembling Dirichlet conditions\n";
     boost::timer __timer;
 
     std::vector<int> dofs;
@@ -360,7 +218,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
         typedef typename geoelement_type::permutation_type permutation_type;
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
-        DVLOG(2)  << "[integratoron] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
+        DVLOG(2)  << "[elementon] numTopologicalFaces = " << geoelement_type::numTopologicalFaces << "\n";
         std::vector<std::map<permutation_type, geopc_ptrtype> > __geopc( geoelement_type::numTopologicalFaces );
 
         for ( uint16_type __f = 0; __f < geoelement_type::numTopologicalFaces; ++__f )
@@ -436,18 +294,18 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
 
             std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
                                                                       M_u.functionSpace()->nDof() ) );
-            DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
-            DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
+            DVLOG(2)  << "[elementon] dof start = " << range_dof.first << "\n";
+            DVLOG(2)  << "[elementon] dof range = " << range_dof.second << "\n";
 
             for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
                 for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
                     for ( uint16_type l = 0; l < nbFaceDof; ++l )
                     {
-                        DVLOG(2) << "[integratoronexpr] local dof=" << l
+                        DVLOG(2) << "[elementonexpr] local dof=" << l
                                  << " |comp1=" << c1 << " comp 2= " << c2 << " | pt = " <<  __c->xReal( l ) << "\n";
                         typename expression_type::value_type __value = expr.evalq( c1, c2, l );
-                        DVLOG(2) << "[integratoronexpr] value=" << __value << "\n";
+                        DVLOG(2) << "[elementonexpr] value=" << __value << "\n";
 
                         // global Dof
                         size_type thedof =  M_u.start() +
@@ -459,116 +317,34 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( boost::shared_
                                         thedof ) != dofs.end() )
                             continue;
 
-                        if ( M_on_strategy.test( ON_ELIMINATION|ON_ELIMINATION_SYMMETRIC ) )
-                        {
-                            DVLOG(2) << "Eliminating row " << thedof << " using value : " << __value << "\n";
-
-                            // this can be quite expensive depending on the
-                            // matrix storage format.
-                            //__form.diagonalize( thedof, range_dof, M_rhs, __value, thedof_nproc );
-
-                            // only the real dof ( not the ghosts )
-                            //if ( __form.testSpace()->mapOn().dofGlobalClusterIsOnProc( __form.testSpace()->mapOn().mapGlobalProcessToGlobalCluster( thedof ) ) )
-                            {
-                                dofs.push_back( thedof );
-                                values.push_back(  __value );
-                            }
-
-                            //M_rhs.set( thedof, __value );
-                        }
-
-                        else if (  M_on_strategy.test( ON_PENALISATION ) &&
-                                   !M_on_strategy.test( ON_ELIMINATION | ON_ELIMINATION_SYMMETRIC ) )
-                        {
-                            __form.set( thedof, thedof, 1.0*1e30 );
-                            M_rhs->set( thedof, __value*1e30 );
-                        }
+                        M_u( thedof ) = __value;
                     } // loop on space components
 
                 } // loop on face dof
         }
 
     } // __face_it != __face_en
-
-
-    if ( __form.rowStartInMatrix()!=0)
-    {
-        auto const thedofshift = __form.rowStartInMatrix();
-        for (auto itd=dofs.begin(),end=dofs.end() ; itd!=end ; ++itd)
-            *itd+=thedofshift;
-    }
-    auto x = M_rhs->clone();
-    //CHECK( dofs.size() > 0 ) << "Invalid number of Dirichlet dof, should be > 0 ";
-    CHECK( values.size() == dofs.size() ) << "Invalid dofs/values size: " << dofs.size() << "/" << values.size();
-    //x->zero();
-    x->addVector( dofs.data(), dofs.size(), values.data() );
-    //values->zero();
-
-    __form.zeroRows( dofs, *x, *M_rhs, M_on_strategy );
-    x.reset();
 }
 
 
 namespace detail
 {
-template<typename T >
-struct v_ptr1
-{
-    typedef T type;
-};
-template<typename T >
-struct v_ptr2
-{
-    typedef typename T::vector_ptrtype type;
-};
 
 template<typename Args>
-struct integratoron_type
+struct elementon_type
 {
     typedef typename clean_type<Args,tag::range>::type _range_type;
-    typedef typename clean_type<Args,tag::rhs>::type _rhs_type;
     typedef typename clean_type<Args,tag::element>::type _element_type;
     typedef typename clean_type<Args,tag::expr>::type _expr_type;
-#if 1
-    typedef typename mpl::if_<Feel::detail::is_vector_ptr<_rhs_type>,
-                              mpl::identity<v_ptr1<_rhs_type> >,
-                              mpl::identity<v_ptr2<_rhs_type> > >::type::type::type the_rhs_type;
-#else
-    typedef _rhs_type the_rhs_type;
-#endif
-typedef IntegratorOnExpr<_range_type, _element_type, the_rhs_type,
-            typename mpl::if_<boost::is_arithmetic<_expr_type>,
-            mpl::identity<Expr<Cst<_expr_type> > >,
-            mpl::identity<_expr_type> >::type::type> type;
-    typedef Expr<type> expr_type;
+    typedef ElementOnExpr<_range_type, _element_type,
+                      typename mpl::if_<boost::is_arithmetic<_expr_type>,
+                                        mpl::identity<Expr<Cst<_expr_type> > >,
+                                        mpl::identity<_expr_type> >::type::type> type;
 };
 
-template<typename V>
-typename V::vector_ptrtype
-getRhsVector( V const&  v, mpl::false_ )
-{
-    return v.vectorPtr();
-}
-
-template<typename V>
-V
-getRhsVector( V const&  v, mpl::true_ )
-{
-    return v;
-}
-
-template<typename V>
-typename mpl::if_<Feel::detail::is_vector_ptr<V>,
-                  mpl::identity<v_ptr1<V> >,
-                  mpl::identity<v_ptr2<V> > >::type::type::type
-getRhsVector( V const&  v )
-{
-    return getRhsVector( v, Feel::detail::is_vector_ptr<V>() );
-}
 
 
 }
-///\endcond detail
 /**
  *
  * \brief projection/interpolation of an expresion onto a nodal functionspace
@@ -577,59 +353,31 @@ getRhsVector( V const&  v )
  * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)
  * \arg expr the expression to project
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
- * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
 BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::integratoron_type<Args>::expr_type ), // return type
-    on,    // 2. function name
+    ( typename vf::detail::elementon_type<Args>::type ), // return type
+    on2,    // 2. function name
 
     tag,           // 3. namespace of tag types
 
     ( required
       ( range, *  )
       ( element, *  )
-      ( rhs, *  )
       ( expr,   * )
         ) // 4. one required parameter, and
 
     ( optional
       ( prefix,   ( std::string ), "" )
-      ( type,   ( int ), option(_prefix=prefix,_name="on.type").template as<int>() )
       ( verbose,   ( bool ), option(_prefix=prefix,_name="on.verbose").template as<bool>() )
         )
     )
 {
-    typename vf::detail::integratoron_type<Args>::type ion( range,
-                                                            element,
-                                                            Feel::vf::detail::getRhsVector(rhs),
-                                                            expr,
-                                                            on_context_type(type) );
+    typename vf::detail::elementon_type<Args>::type ion( range,element,expr );
     if ( verbose )
     {
-        LOG(INFO) << "Dirichlet condition over : "<< nelements(range) << " faces";
-        switch( type )
-        {
-        case ON_ELIMINATION:
-            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, unsymmetric)";
-            break;
-        case ON_ELIMINATION|ON_ELIMINATION_KEEP_DIAGONAL:
-            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, unsymmetric)";
-            break;
-        case ON_ELIMINATION_SYMMETRIC:
-            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination, symmetric, more expensive than unsymmetric treatment)";
-            break;
-        case ON_ELIMINATION_SYMMETRIC|ON_ELIMINATION_KEEP_DIAGONAL:
-            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (elimination and keep diagonal, symmetric, more expensive than unsymmetric treatment)";
-            break;
-        case ON_PENALISATION:
-            LOG(INFO) << "treatment of Dirichlet condition: " << type << " (penalisation, symmetric, very big value on diagonal)";
-            break;
-        default:
-            break;
-        }
+        LOG(INFO) << "set Dof over : "<< nelements(range) << " faces";
     }
-    //typename vf::detail::integratoron_type<Args>::type ion( range, element, rhs, expr, type );
-    return typename vf::detail::integratoron_type<Args>::expr_type( ion );
+    return ion;
 }
 
 
