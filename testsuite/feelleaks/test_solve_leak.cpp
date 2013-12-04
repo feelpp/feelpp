@@ -45,6 +45,8 @@ int main(int argc, char**argv )
 #if defined(FEELPP_HAS_GPERFTOOLS)
     HeapLeakChecker checkere("checker");
 #endif /* FEELPP_HAS_GPERFTOOLS */
+
+    boost::shared_ptr < MatrixSparse<double> > ptr_m;
     {
         for(int i = 0; i < 2; ++i )
         {
@@ -67,14 +69,25 @@ int main(int argc, char**argv )
             a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u, _expr=expr( g, syms ) );
             a.solve(_rhs=l,_solution=u);
 
+            LOG(INFO) << "pointing on matrix from bilinear form = "<<a.matrixPtr().use_count()<<std::endl;
+
             LOG(INFO) << " 1- L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-expr( g, syms ) );
             backend(_name="toto",_rebuild=true)->solve(_matrix=a.matrixPtr(),_rhs=l.vectorPtr(),_solution=u);
 
+            LOG(INFO) << "pointing on matrix after using backend->solve() = "<<a.matrixPtr().use_count()<<std::endl;
+
             LOG(INFO) << " 2- L2 error norm : " << normL2( _range=elements(mesh), _expr=idv(u)-expr( g, syms ) );
 
-            Environment::clearSomeMemory();
+            ptr_m = a.matrixPtr();
+            LOG(INFO) << "pointing on ptr_m = "<<ptr_m.use_count()<<std::endl;
+
         }
     }
+
+    LOG(INFO) << "pointing on ptr_m before clearSomeMemory = "<<ptr_m.use_count()<<std::endl;
+    Environment::clearSomeMemory();
+    LOG(INFO) << "pointing on ptr_m after clearSomeMemory = "<<ptr_m.use_count()<<std::endl;
+
 #if defined(FEELPP_HAS_GPERFTOOLS)
     CHECK(checkere.NoLeaks()) << "There are leaks";
 #endif /* FEELPP_HAS_GPERFTOOLS */

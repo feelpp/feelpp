@@ -6703,52 +6703,5 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
 
 
 
-#if 0
-template<
-typename A0,
-         typename A1,
-         typename A2,
-         typename A3,
-         typename A4,
-         typename T,
-         typename Cont>
-struct FSElement: public Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<T, Cont>
-{
-};
-
-template<
-typename A0,
-         typename A1,
-         typename A2,
-         typename A3,
-         typename A4>
-//struct version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<double,Feel::VectorUblas<double> > >
-struct version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type >
-{
-    //typedef typename version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<double,Feel::VectorUblas<double> > > version_type;
-    typedef typename version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type > version_type;
-    typedef mpl::int_<2> type;
-    typedef mpl::integral_c_tag tag;
-    BOOST_STATIC_CONSTANT( unsigned int, value = version_type::type::value );
-};
-
-#define FEELPP_REGISTER_ELEMENT( element_type )   \
-    namespace boost {                                                   \
-    namespace serialization {                                           \
-    template<>                                                          \
-    struct version<element_type>                                        \
-    {                                                                   \
-        typedef mpl::int_<2> type;                                      \
-        typedef mpl::integral_c_tag tag;                                \
-        BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value); \
-    };                                                                  \
-    }                                                                   \
-    }
-#
-
-#endif
-
-
-
 
 #endif /* __FunctionSpace_H */
