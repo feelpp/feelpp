@@ -154,8 +154,8 @@ testFunctionalLinearComposite()
     double result = functional->operator()( element );
     double result_free = functionalfree->operator()( element );
 
-    BOOST_CHECK_SMALL( math::abs(result_composite-result_compositefree), 1e-15 );
-    BOOST_CHECK_SMALL( math::abs(result-result_compositefree), 1e-15 );
+    BOOST_CHECK_SMALL( math::abs(result_composite-result_compositefree), 5.7e-14 );
+    BOOST_CHECK_SMALL( math::abs(result-result_compositefree), 5.7e-14 );
     BOOST_CHECK_SMALL( math::abs(result_free-result_compositefree), 1e-15 );
 
 
