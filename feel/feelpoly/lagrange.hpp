@@ -46,7 +46,7 @@
 #include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/fe.hpp>
-//#include <feel/feelpoly/mortar.hpp>
+#include <feel/feelpoly/isp0continuous.hpp>
 
 
 
@@ -317,6 +317,7 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
     static const bool is_product = true;
 
+    typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
@@ -357,6 +358,8 @@ public:
     {
         typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
+
+    static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
 
     //@}
 

@@ -144,7 +144,7 @@ We call the solver to resolve the problem (\ref Solver).
 \snippet mystokes.cpp marker_main
 
 */
-//# marker_main #
+/// [marker_main]
 int main(int argc, char**argv )
 {
     Environment env( _argc=argc, _argv=argv,

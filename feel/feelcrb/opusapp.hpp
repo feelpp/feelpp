@@ -244,6 +244,10 @@ public:
             int NlogEquidistributedScm = option(_name="crb.scm.use-logEquidistributed-C").template as<int>();
             int NequidistributedScm = option(_name="crb.scm.use-equidistributed-C").template as<int>();
             typename crb_type::sampling_ptrtype Sampling( new typename crb_type::sampling_type( model->parameterSpace() ) );
+            if( crb_use_predefined )
+            {
+                file_name = ( boost::format("SamplingWNmu") ).str();
+            }
             if( NlogEquidistributed+Nequidistributed > 0 )
             {
                 file_name = ( boost::format("SamplingWNmu") ).str();
