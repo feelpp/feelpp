@@ -43,22 +43,14 @@ add_subdirectory (feelvf )
 add_subdirectory (feelpde)
 
 
-if( NOT FEELPP_ENABLE_BUILD_STATIC )
-  add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
-  set_target_properties( feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
-  set_property(TARGET feelpp PROPERTY LABELS feel++)
 
-  #target_link_libraries (feelpp ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
-  target_link_libraries (feelpp ${FEELPP_LIBRARIES})
-  set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
+add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
+set_target_properties( feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
+set_property(TARGET feelpp PROPERTY LABELS feel++)
 
-  # Install feelpp
-  INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Bin)
-else()
-  cmake_policy(PUSH)
-  cmake_policy(SET CMP0022)
-  add_library(feelpp options.cpp ${FEELPP_SRCS})
-  set_property(TARGET feelpp PROPERTY LABELS feel++)
-  target_link_libraries (feelpp ${FEELPP_LIBRARIES})
-  cmake_policy(PUSH)
-endif()
+#target_link_libraries (feelpp ${PETSC_LIBRARIES} ${Boost_LIBRARIES} ${MPI_LIBRARIES} ${LIBXML2_LIBRARIES} ${TBB_LIBRARIES})
+target_link_libraries (feelpp ${FEELPP_LIBRARIES})
+set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
+
+# Install feelpp
+INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Bin)

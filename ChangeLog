@@ -12,6 +12,8 @@
    - performance improvements in parallel computing: reduce collective
      operations, rewrite of some internals
    - improved Ginac(symbolic calculus) support
+   - updated documentation to reflect Homebrew(MacOSX) support and the more
+     stringent requirement that g++ must be at least 4.6 and clang 3.2
 
    \subsection features0960 Features
 

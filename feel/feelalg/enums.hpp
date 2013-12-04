@@ -233,7 +233,21 @@ enum SolverNonLinearType
 {
     SELECT_IN_ARGLIST=0,
     LINE_SEARCH,
-    TRUST_REGION
+    TRUST_REGION,
+    NRICHARDSON,
+    NKSPONLY,
+    VINEWTONRSLS,
+    VINEWTONRSTR,
+    NGMRES,
+    QN,
+    NSHELL,
+    GS,
+    NCG,
+    FAS,
+    MS,
+    NASM,
+    ANDERSON,
+    ASPIN
 };
 
 /**

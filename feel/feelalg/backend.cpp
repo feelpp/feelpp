@@ -60,8 +60,12 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_reuseJacIsBuild(false),
     M_reuseJacRebuildAtFirstNewtonStep(true),
     M_transpose( false ),
-    M_maxit( 1000 ),
+    M_maxitKSP( 1000 ),
+    M_maxitKSPinSNES( M_maxitKSP ),
     M_maxitSNES( 50 ),
+    M_maxitKSPReuse( M_maxitKSP ),
+    M_maxitKSPinSNESReuse( M_maxitKSPinSNES ),
+    M_maxitSNESReuse( M_maxitSNES ),
     M_export( "" ),
     M_ksp( "gmres" ),
     M_pc( "lu" ),
@@ -97,8 +101,12 @@ Backend<T>::Backend( Backend const& backend )
     M_reuseJacIsBuild( backend.M_reuseJacIsBuild) ,
     M_reuseJacRebuildAtFirstNewtonStep( backend.M_reuseJacRebuildAtFirstNewtonStep ),
     M_transpose( backend.M_transpose ),
-    M_maxit( backend.M_maxit ),
+    M_maxitKSP( backend.M_maxitKSP ),
+    M_maxitKSPinSNES( backend.M_maxitKSPinSNES ),
     M_maxitSNES( backend.M_maxitSNES ),
+    M_maxitKSPReuse( backend.M_maxitKSPReuse ),
+    M_maxitKSPinSNESReuse( backend.M_maxitKSPinSNESReuse ),
+    M_maxitSNESReuse( backend.M_maxitSNESReuse ),
     M_export( backend.M_export ),
     M_ksp( backend.M_ksp ),
     M_pc( backend.M_pc ),
@@ -133,8 +141,12 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_reuseJacIsBuild( false ) ,
     M_reuseJacRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" )].template as<bool>() ),
     M_transpose( false ),
-    M_maxit( vm[prefixvm( prefix,"ksp-maxit" )].template as<size_type>() ),
+    M_maxitKSP( vm[prefixvm( prefix,"ksp-maxit" )].template as<size_type>() ),
+    M_maxitKSPinSNES( vm[prefixvm( prefix,"snes-ksp-maxit" )].template as<size_type>() ),
     M_maxitSNES( vm[prefixvm( prefix,"snes-maxit" )].template as<size_type>() ),
+    M_maxitKSPReuse( (vm.count(prefixvm( prefix,"ksp-maxit-reuse")))? vm[prefixvm( prefix,"ksp-maxit-reuse" )].template as<size_type>() : M_maxitKSP ),
+    M_maxitKSPinSNESReuse( (vm.count(prefixvm( prefix,"snes-ksp-maxit-reuse")))? vm[prefixvm( prefix,"snes-ksp-maxit-reuse" )].template as<size_type>() : M_maxitKSPinSNES ),
+    M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<size_type>() : M_maxitSNES ),
     M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
     M_ksp( vm[prefixvm( prefix,"ksp-type" )].template as<std::string>() ),
     M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
@@ -358,6 +370,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setShowKSPMonitor( this->showKSPMonitor() );
     M_nlsolver->setShowKSPConvergedReason( this->showKSPConvergedReason() );
     M_nlsolver->setShowSNESConvergedReason( this->showSNESConvergedReason() );
+
     M_nlsolver->setNbItMax( this->maxIterationsSNES() );
     M_nlsolver->setRelativeResidualTol( this->rToleranceSNES() );
     M_nlsolver->setAbsoluteResidualTol( this->aToleranceSNES() );
@@ -365,7 +378,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setRtoleranceKSP( this->rtoleranceKSPinSNES() );
     M_nlsolver->setAtoleranceKSP( this->aTolerance() );
     M_nlsolver->setDtoleranceKSP( this->dTolerance() );
-    M_nlsolver->setMaxitKSP( this->maxIterations() );
+    M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNES() );
 
     M_nlsolver->init();
 
@@ -397,6 +410,10 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         //M_nlsolver->setReuse( -1, -2 );
         M_nlsolver->setReuse( typeReuseJac, typeReusePrec );
 
+        //int maxIterationsReuseJac=10;
+        M_nlsolver->setNbItMax( this->maxIterationsSNESReuse() );
+        M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNESReuse() );
+
         // compute cst jacobian in case of quasi-newton!
         if ( reuseJac &&  (!M_reuseJacIsBuild || M_reuseJacRebuildAtFirstNewtonStep) ) { this->nlSolver()->jacobian( x, A );M_reuseJacIsBuild=true;}
     }
@@ -414,13 +431,19 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
         x_save->close();
         *x=*x_save;
 
-        M_nlsolver->init();
-        M_nlsolver->setPreconditionerType( this->pcEnumType() );
-        M_nlsolver->setKspSolverType( this->kspEnumType() );
+        //M_nlsolver->init();
+        //M_nlsolver->setPreconditionerType( this->pcEnumType() );
+        //M_nlsolver->setKspSolverType( this->kspEnumType() );
         M_nlsolver->setPrecMatrixStructure( matStructInitial/*SAME_NONZERO_PATTERN*/ );
+        M_nlsolver->setNbItMax( this->maxIterationsSNES() );
+        M_nlsolver->setMaxitKSP( this->maxIterationsKSPinSNES() );
 
         //M_nlsolver->setReuse( 1, -2 );
         M_nlsolver->setReuse( 1, 1 );
+
+        this->nlSolver()->jacobian( x, A );
+
+        // call solver which must execute with success
         auto ret2 = M_nlsolver->solve( A, x, b, tol, its );
 
         if ( ret2.first < 0 )
@@ -460,7 +483,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
     M_nlsolver->setRtoleranceKSP( this->rtoleranceKSPinSNES() );
     M_nlsolver->setAtoleranceKSP( this->aTolerance() );
     M_nlsolver->setDtoleranceKSP( this->dTolerance() );
-    M_nlsolver->setMaxitKSP( this->maxIterations() );
+    M_nlsolver->setMaxitKSP( this->maxIterationsKSP() );
 
     M_nlsolver->init();
     M_nlsolver->setReuse( 1, 1 );
@@ -513,7 +536,7 @@ Backend<T>::stop()
         M_firstSolveTime = solveTime;
 
         if ( !M_reuseFailed )
-            M_maxit = std::max(size_type(10),std::min( M_maxit, ( size_type )( 1.5*solveIter + 10.5 ) ));
+            M_maxitKSP = std::max(size_type(10),std::min( M_maxitKSP, ( size_type )( 1.5*solveIter + 10.5 ) ));
     }
 
     else
@@ -541,7 +564,7 @@ Backend<T>::stop()
 
         if ( M_reusePC )
         {
-            M_maxit = std::max( size_type(10),std::min( M_maxit, ( size_type )( M_totalSolveIter/M_nUsePC + 0.5 ) ));
+            M_maxitKSP = std::max( size_type(10),std::min( M_maxitKSP, ( size_type )( M_totalSolveIter/M_nUsePC + 0.5 ) ));
         }
     }
 }
@@ -553,7 +576,7 @@ Backend<T>::reset()
     M_reusePC = false;
     M_totalSolveIter = 0.0;
     M_nUsePC = 0;
-    //M_backend->set_maxiter( M_maxit );
+    //M_backend->set_maxiter( M_maxitKSP );
 
 }
 
@@ -724,106 +747,118 @@ po::options_description backend_options( std::string const& prefix )
 {
     po::options_description _options( "Linear and NonLinear Solvers Backend " + prefix + " options" );
     _options.add_options()
-    // solver options
-    ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: petsc, eigen, eigen_dense" )
-    ( prefixvm( prefix,"backend.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "set the backend to be verbose" )
-    ( prefixvm( prefix,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance" )
-    ( prefixvm( prefix,"ksp-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
-    ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )
-    ( prefixvm( prefix,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
-    ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
-    ( prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( true ), "rebuild jacobian at each Newton when reuse jacobian" )
-    ( prefixvm( prefix,"reuse-prec" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner" )
-    ( prefixvm( prefix,"reuse-prec.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( false ), "rebuild preconditioner at each Newton when reuseprec" )
+        // solver options
+        ( prefixvm( prefix,"backend" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ), "backend type: petsc, eigen, eigen_dense" )
+        ( prefixvm( prefix,"backend.verbose" ).c_str(), Feel::po::value<bool>()->default_value( false ), "set the backend to be verbose" )
+        ( prefixvm( prefix,"ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-13 ), "relative tolerance" )
+        ( prefixvm( prefix,"ksp-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
+        ( prefixvm( prefix,"ksp-dtol" ).c_str(), Feel::po::value<double>()->default_value( 1e5 ), "divergence tolerance" )
+        ( prefixvm( prefix,"ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
+        ( prefixvm( prefix,"ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
+        ( prefixvm( prefix,"reuse-jac" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse jacobian" )
+        ( prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( true ), "rebuild jacobian at each Newton when reuse jacobian" )
+        ( prefixvm( prefix,"reuse-prec" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reuse preconditioner" )
+        ( prefixvm( prefix,"reuse-prec.rebuild-at-first-newton-step" ).c_str(), Feel::po::value<bool>()->default_value( false ), "rebuild preconditioner at each Newton when reuseprec" )
 
-    ( prefixvm( prefix,"export-matlab" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix" )
+        ( prefixvm( prefix,"export-matlab" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix" )
 
-    ( prefixvm( prefix,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
-    ( prefixvm( prefix,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
-    ( prefixvm( prefix,"ksp-converged-reason" ).c_str() , "converged reason ksp" )
+        ( prefixvm( prefix,"ksp-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the KSP data structure" )
+        ( prefixvm( prefix,"ksp-type" ).c_str(), Feel::po::value<std::string>()->default_value( "gmres" ), "cg, bicgstab, gmres" )
+        ( prefixvm( prefix,"ksp-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor ksp" )
+        ( prefixvm( prefix,"ksp-converged-reason" ).c_str() , "converged reason ksp" )
 
-    ( prefixvm( prefix,"snes-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "relative tolerance" )
-    ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
-    ( prefixvm( prefix,"snes-stol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "step length tolerance" )
-    ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
-    ( prefixvm( prefix,"snes-ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-5 ), "relative tolerance" )
-    ( prefixvm( prefix,"snes-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor snes" )
-    ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )
+        ( prefixvm( prefix,"snes-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the SNES data structure" )
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
+        ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( SNESNEWTONLS ), "Set the SNES solver" )
+#else
+        ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( SNESLS ), "Set the SNES solver" )
+#endif
+        ( prefixvm( prefix,"snes-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "relative tolerance" )
+        ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
+        ( prefixvm( prefix,"snes-stol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "step length tolerance" )
+        ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
+        ( prefixvm( prefix,"snes-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
+        ( prefixvm( prefix,"snes-ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
+        ( prefixvm( prefix,"snes-ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
+        ( prefixvm( prefix,"snes-ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-5 ), "relative tolerance" )
+        ( prefixvm( prefix,"snes-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor snes" )
+        ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )
 
 
-    // preconditioner options
-    ( prefixvm( prefix,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
-    ( prefixvm( prefix,"sub-pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of sub-preconditioners (lu, ilut, ilutp, diag, id,...)" )
-    ( prefixvm( prefix,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display preconditioner information" )
-    ( prefixvm( prefix,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
-    ( prefixvm( prefix,"constant-null-space" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "set the null space to be the constant values" )
+        // preconditioner options
+        ( prefixvm( prefix,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the PC data structure" )
+        ( prefixvm( prefix,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
+        ( prefixvm( prefix,"sub-pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of sub-preconditioners (lu, ilut, ilutp, diag, id,...)" )
+        ( prefixvm( prefix,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display preconditioner information" )
+        ( prefixvm( prefix,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
+        ( prefixvm( prefix,"constant-null-space" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "set the null space to be the constant values" )
 
-    ( prefixvm( prefix,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
-    ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
-    ( prefixvm( prefix,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
-    ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+        ( prefixvm( prefix,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
+        ( prefixvm( prefix,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+        ( prefixvm( prefix,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
+        ( prefixvm( prefix,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
-    ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
-      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
-    ( prefixvm( prefix,"sub-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
-      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+        ( prefixvm( prefix,"sub-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 
 #else
-    ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
-      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
-    ( prefixvm( prefix,"sub-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
-      "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+        ( prefixvm( prefix,"pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+        ( prefixvm( prefix,"sub-pc-factor-mat-solver-package-type" ).c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #endif
 
-    ( prefixvm( prefix,"ilu-threshold" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners" )
-    ( prefixvm( prefix,"ilu-fillin" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners" )
-    ( prefixvm( prefix,"pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu" )
-    ( prefixvm( prefix,"sub-pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
-    ( prefixvm( prefix,"pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
-    ( prefixvm( prefix,"sub-pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+        ( prefixvm( prefix,"ilu-threshold" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "threshold value for preconditioners" )
+        ( prefixvm( prefix,"ilu-fillin" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "fill-in level value for preconditioners" )
+        ( prefixvm( prefix,"pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu" )
+        ( prefixvm( prefix,"sub-pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
+        ( prefixvm( prefix,"pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+        ( prefixvm( prefix,"sub-pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ), "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
 
-    // solver control options
-    ( prefixvm( prefix,"gmres-restart" ).c_str(), Feel::po::value<int>()->default_value( 30 ), "number of iterations before solver restarts (gmres)" )
-    ( prefixvm( prefix,"ksp-verbose" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations" )
-    ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, schur)" )
-    ( prefixvm( prefix,"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
-    ;
+        // solver control options
+        ( prefixvm( prefix,"gmres-restart" ).c_str(), Feel::po::value<int>()->default_value( 30 ), "number of iterations before solver restarts (gmres)" )
+        ( prefixvm( prefix,"ksp-verbose" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "(=0,1,2) print solver iterations" )
+        ( prefixvm( prefix,"fieldsplit-type" ).c_str(), Feel::po::value<std::string>()->default_value( "additive" ), "type of fieldsplit (additive, multiplicative, schur)" )
+        ( prefixvm( prefix,"fieldsplit-schur-fact-type" ).c_str(), Feel::po::value<std::string>()->default_value( "full" ), "type of schur factorization (diag, lower, upper, full)" )
+        ;
 
     for ( uint16_type i=0; i<5; ++i )
     {
         std::string prefixfieldsplit = ( boost::format( "%1%fieldsplit-%2%" ) %prefixvm( prefix,"" ) %i ).str();
 
         _options.add_options()
-       ( prefixvm( prefixfieldsplit,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( (i==0)?"lu":"none" ), "type of fieldsplit preconditioners" )
-       ( prefixvm( prefixfieldsplit,"sub-pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of fieldsplit preconditioners" )
+            ( prefixvm( prefixfieldsplit,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( (i==0)?"lu":"none" ), "type of fieldsplit preconditioners" )
+            ( prefixvm( prefixfieldsplit,"sub-pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of fieldsplit preconditioners" )
             ( prefixvm( prefixfieldsplit,"ksp-type").c_str(), Feel::po::value<std::string>()->default_value( /*"gmres"*/"preonly" ), "type of fieldsplit solver" )
 #if defined(FEELPP_HAS_MUMPS) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,2,0 )
-       (  prefixvm( prefixfieldsplit,"pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
-          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
-       (  prefixvm( prefixfieldsplit,"sub-pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
-          "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+            (  prefixvm( prefixfieldsplit,"pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+               "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
+            (  prefixvm( prefixfieldsplit,"sub-pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "mumps" ),
+               "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #else
-       ( prefixvm( prefixfieldsplit,"pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+            ( prefixvm( prefixfieldsplit,"pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
               "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
-       ( prefixvm( prefixfieldsplit,"sub-pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
+            ( prefixvm( prefixfieldsplit,"sub-pc-factor-mat-solver-package-type").c_str(), Feel::po::value<std::string>()->default_value( "petsc" ),
               "sets the software that is used to perform the factorization (petsc,umfpack, spooles, petsc, superlu, superlu_dist, mumps,...)" )
 #endif
 
-       ( prefixvm( prefixfieldsplit,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
-       ( prefixvm( prefixfieldsplit,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
-       ( prefixvm( prefixfieldsplit,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
-       ( prefixvm( prefixfieldsplit,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+            ( prefixvm( prefixfieldsplit,"pc-gasm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of gasm (basic, restrict, interpolate, none)" )
+            ( prefixvm( prefixfieldsplit,"pc-gasm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
+            ( prefixvm( prefixfieldsplit,"pc-asm-type" ).c_str(), Feel::po::value<std::string>()->default_value( "restrict" ), "type of asm (basic, restrict, interpolate, none)" )
+            ( prefixvm( prefixfieldsplit,"pc-asm-overlap" ).c_str(), Feel::po::value<int>()->default_value( 2 ), "number of overlap levels" )
 
-       ( prefixvm( prefixfieldsplit,"pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
-       ( prefixvm( prefixfieldsplit,"sub-pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
-       ( prefixvm( prefixfieldsplit,"pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ),
-         "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
-       ( prefixvm( prefixfieldsplit,"sub-pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ),
-         "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+            ( prefixvm( prefixfieldsplit,"pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
+            ( prefixvm( prefixfieldsplit,"sub-pc-factor-levels" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "Sets the number of levels of fill to use for ilu as a sub-preconditioner" )
+            ( prefixvm( prefixfieldsplit,"pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ),
+              "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
+            ( prefixvm( prefixfieldsplit,"sub-pc-factor-fill" ).c_str(), Feel::po::value<double>()->default_value( 6 ),
+              "Indicate the amount of fill you expect in the factored matrix, fill = number nonzeros in factor/number nonzeros in original matrix." )
 
-       ( prefixvm( prefixfieldsplit,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
-       ( prefixvm( prefixfieldsplit,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
-        ;
+            ( prefixvm( prefixfieldsplit,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
+            ( prefixvm( prefixfieldsplit,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
+            ;
     }
 
     // mg or ml preconditioner

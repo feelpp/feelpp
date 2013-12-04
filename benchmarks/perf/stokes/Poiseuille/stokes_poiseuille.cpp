@@ -360,6 +360,8 @@ Stokes_Poiseuille<POrder,GeoOrder>::run()
     double taille = 4*math::atan(1.)*r*r*L;
     double mean_p_exact = integrate( elements( mesh ),  p_exact ).evaluate()(0,0) /taille;
     std::cout << "[stokes] mean(p_exact)=" << mean_p_exact << "\n";
+
+    //***************************CL: Dirichlet-Neumann**********************************
  #if(FEELPP_COND==DN)
     auto u_ex_proj=vf::project(Uh,elements(mesh),u_exact);
     auto D_ex = sym(gradv(u_ex_proj ));
@@ -397,6 +399,7 @@ Stokes_Poiseuille<POrder,GeoOrder>::run()
     chrono.restart();
     stokes.solve( _rhs=stokes_rhs, _solution=U);
 
+//***************************CL: Dirichlet-Dirichlet **********************************
 #elif(FEELPP_COND==DD)
     // right hand side
     auto stokes_rhs = form1( _test=Xh, _vector=F );
@@ -430,6 +433,7 @@ Stokes_Poiseuille<POrder,GeoOrder>::run()
     chrono.restart();
     stokes.solve( _rhs=stokes_rhs, _solution=U);
 
+//***************************CL: Neumann-Neumann**********************************
 #elif (FEELPP_COND==NN)
     auto u_ex_proj=vf::project(Uh,elements(mesh),u_exact);
     auto D_ex = sym(gradv(u_ex_proj ));

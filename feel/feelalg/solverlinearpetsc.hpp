@@ -259,6 +259,8 @@ public:
      */
     real_type getInitialResidual();
 
+protected:
+    void check( int err ) { CHKERRABORT( this->worldComm().globalComm(), err ); }
 private:
 
     /**
