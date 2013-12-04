@@ -71,10 +71,10 @@ template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
 template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
 template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
 
-std::vector<symbol> symbols( std::vector<std::string> const& s );
 
 class Symbols : public std::vector<symbol>
 {
+ std::vector<symbol> symbols( std::vector<std::string> const& s );
 public:
     Symbols():std::vector<symbol>(symbols({"x","y","z", "t"})) {}
     Symbols(std::initializer_list<std::string> s ):std::vector<symbol>(symbols(s)) {}
