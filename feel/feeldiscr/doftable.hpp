@@ -49,11 +49,12 @@
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelpoly/mapped.hpp>
+#include <feel/feelpoly/isp0continuous.hpp>
 #include <feel/feelalg/datamap.hpp>
 #include <feel/feeldiscr/dof.hpp>
 
 #include <feel/feeldiscr/doffromelement.hpp>
-#include <feel/feeldiscr/doffromMortar.hpp>
+#include <feel/feeldiscr/doffrommortar.hpp>
 #include <feel/feeldiscr/doffromboundary.hpp>
 #include <feel/feeldiscr/doffromperiodic.hpp>
 namespace Feel
@@ -791,7 +792,6 @@ public:
      */
     void build( mesh_type& M );
 
-
     /**
      * build dof map associated to the periodic dof, must be called
      * before buildDofMap
@@ -1518,32 +1518,27 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     // multi process
     if ( this->worldComm().localSize()>1 )
     {
-        auto it_nlocDof = this->M_n_localWithGhost_df.begin();
-        auto const en_nlocDof = this->M_n_localWithGhost_df.end();
-        bool isP0continuous = true;
-        for ( ; it_nlocDof!=en_nlocDof && isP0continuous ; ++it_nlocDof )
-            isP0continuous = isP0continuous && (*it_nlocDof==1);
+        bool isP0continuous = isP0Continuous<fe_type>::result;
 
         if ( !isP0continuous )//this->M_n_dofs>1 )
         {
-#if defined(FEELPP_ENABLE_MPI_MODE)
             VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
             this->buildGhostDofMap( M );
             VLOG(2) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
-#else
-            std::cerr << "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" << std::endl;
-            //throw std::logic_error( "ERROR : FEELPP_ENABLE_MPI_MODE is OFF" );
-#endif
         }
         else
         {
-            for ( int proc=0; proc<this->worldComm().globalSize(); ++proc )
+            int themasterRank = 0;
+            bool findMasterProc=false;
+            for ( int proc=0; proc<this->worldComm().localSize(); ++proc )
             {
-                if (proc==0)
+                if (!findMasterProc && this->nLocalDofWithGhost(proc) > 0)
                 {
                     this->M_n_localWithoutGhost_df[proc] = 1;
                     this->M_first_df_globalcluster[proc] = 0;
                     this->M_last_df_globalcluster[proc] = 0;
+                    themasterRank=proc;
+                    findMasterProc=true;
                 }
                 else
                 {
@@ -1551,27 +1546,29 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
                     this->M_first_df_globalcluster[proc] = 25;// 0;
                     this->M_last_df_globalcluster[proc] = 25; //0;
                 }
-                this->M_n_localWithGhost_df[proc] = 1;
+                //this->M_n_localWithGhost_df[proc] = 1;
             }
 
-            if (this->worldComm().globalRank()==0)
+            if (this->nLocalDofWithGhost() >0 )
             {
-                this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
-                this->M_mapGlobalClusterToGlobalProcess[0]=0;
-            }
-            else
-            {
-                this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
-            }
+                if (themasterRank == this->worldComm().localRank())
+                {
+                    this->M_mapGlobalClusterToGlobalProcess.resize( 1 );
+                    this->M_mapGlobalClusterToGlobalProcess[0]=0;
+                }
+                else
+                {
+                    this->M_mapGlobalClusterToGlobalProcess.resize( 0 );
+                }
 
-            this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
-            this->M_mapGlobalProcessToGlobalCluster[0]=0;
+                this->M_mapGlobalProcessToGlobalCluster.resize( 1 );
+                this->M_mapGlobalProcessToGlobalCluster[0]=0;
+            }
+            this->M_n_dofs = 1;
         }
     }
-
     else
     {
-#if defined(FEELPP_ENABLE_MPI_MODE)
         // in sequential : identity map
         const size_type s = this->M_n_localWithGhost_df[this->comm().rank()];
         this->M_mapGlobalProcessToGlobalCluster.resize( s );
@@ -1580,8 +1577,6 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalProcessToGlobalCluster[i]=i;
 
         for ( size_type i=0; i<s ; ++i ) this->M_mapGlobalClusterToGlobalProcess[i]=i;
-
-#endif
     }
 
     VLOG(2) << "[Dof::build] done building the map\n";
@@ -1989,8 +1984,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
         this->M_last_df[p] = dataRecvFromGather[p].template get<2>();
 
         size_type mynDofWithGhost = ( !procHasNoElt )?
-            this->M_last_df[p] - this->M_first_df[p] + 1 :
-            this->M_first_df[p];
+            this->M_last_df[p] - this->M_first_df[p] + 1 : 0;
         this->M_n_localWithGhost_df[p] = mynDofWithGhost;
     }
 

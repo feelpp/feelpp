@@ -102,6 +102,8 @@ crbOptions( std::string const& prefix )
     ( "crb.stock-matrices",Feel::po::value<bool>()->default_value( true ), "assemble and stock all matrices/vectors if true, but it can takes a lot of memory")
     ( "crb.system-memory-evolution",Feel::po::value<bool>()->default_value( false ), "generate a file to plot memory evolution during offline step only on the master processor (file written : MemoryEvolution)")
     ( "crb.system-memory-evolution-on-all-procs",Feel::po::value<bool>()->default_value( false ), "same than system-memory-evolution but on all processors")
+
+    ( "crb.use-accurate-apee",Feel::po::value<bool>()->default_value( false ), "use a posteriori error estimators from F.Casenave's paper if true, classic one else")
     ;
 
     crboptions

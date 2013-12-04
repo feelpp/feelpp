@@ -140,6 +140,9 @@ void PreconditionerPetsc<T>::init ()
     std::string type =  Environment::vm()["pc-factor-mat-solver-package-type"].template as<std::string>();
     this->setMatSolverPackageType( matSolverPackageEnumType( type ) );
 
+    if ( option( _prefix=this->name(), _name="pc-view" ).template as<bool>() )
+        check( PCView( M_pc, PETSC_VIEWER_STDOUT_WORLD ) );
+
     this->M_is_initialized = true;
 }
 

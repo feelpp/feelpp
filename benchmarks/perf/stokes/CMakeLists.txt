@@ -78,7 +78,7 @@ feelpp_add_application( perf_stokes_convergence SRCS bench.cpp ${taylor_hood}
 
 
 add_custom_target(gen_feel_perf_stokes_pressure ALL )
-foreach(N 2  )
+foreach(N 2 3 )
   math (EXPR P '${N}-1')
   foreach(G 1  )
     foreach(D 2  3)

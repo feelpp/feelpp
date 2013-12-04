@@ -62,6 +62,11 @@ Traces<Dim,Order>::run()
     auto Vh  = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order,Scalar>>>::New( _mesh=mesh,
                                                                                       _worldscomm=Environment::worldsCommSeq(1) );
 
+    auto localMesh = createSubmesh( mesh, elements(mesh), Environment::worldCommSeq() );
+    auto VhLocal = FunctionSpace<Mesh<Simplex<Dim>>, bases<Lagrange<Order,Scalar>>>::New( _mesh=localMesh,
+                                                                                     _worldscomm=Environment::worldsCommSeq(1) );
+    auto uLocal = VhLocal->element();
+
     LOG(INFO) << "Vh" << *Vh;
     auto u = Vh->element();
     //u = vf::project( Vh, elements(mesh), cst( Environment::worldComm().globalRank() ) );
@@ -102,8 +107,13 @@ Traces<Dim,Order>::run()
         auto op = opInterpolation( _domainSpace =Vh,
                                    _imageSpace = Xh,
                                    _backend= backend(_worldcomm=Environment::worldCommSeq()), _ddmethod=true );
+        auto opLocal = opInterpolation( _domainSpace =VhLocal,
+                                   _imageSpace = Xh,
+                                   _backend= backend(_worldcomm=Environment::worldCommSeq()), _ddmethod=true );
         auto opT = op->adjoint();
         u += opT->operator()(l);
+        auto opLocalT = opLocal->adjoint();
+        uLocal += opLocalT->operator()(l);
 
         if ( Dim == 2 )
         {

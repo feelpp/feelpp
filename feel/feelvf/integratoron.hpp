@@ -568,9 +568,10 @@ getRhsVector( V const&  v )
 
 
 }
+///\endcond detail
 /**
  *
- * \brief projection/interpolation of an expresion onto a noal functionspace
+ * \brief projection/interpolation of an expresion onto a nodal functionspace
  *
  * \arg space the function space to project onto
  * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)

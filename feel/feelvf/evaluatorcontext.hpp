@@ -171,7 +171,6 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     //CHECK( shape::M == 1 ) << "Invalid expression shape " << shape::M << " should be 1";
 
     int npoints = M_ctx.nPoints();
-
     element_type __globalv( npoints*shape::M*shape::N );
     __globalv.setZero();
 
@@ -198,31 +197,6 @@ EvaluatorContext<CTX, ExprT>::operator()() const
         {
             auto const& ctx = *it;
 
-#if 0
-            context_type vec_ctx ( Xh );
-
-            //element associated with the geometrical mapping
-            auto const& e = ctx.second->gmContext()->element();
-
-            vec_ctx.clear();
-            vec_ctx.addCtx(  it->second , proc_number );
-
-            //project the expression only on element containing point
-            auto proj_expr = vf::project( _space=Xh, _expr=M_expr , _range=idedelements( Xh->mesh(), e.id() ) );
-
-            //evaluate the projected expression at point p
-            bool do_communications=false;//we don't want that each proc have the result now ( but latter )
-            auto val = proj_expr.evaluate( vec_ctx , do_communications );
-
-            //global index of the local point
-            int global_p = it->first;
-
-            __localv( global_p ) = val( 0 );
-
-            vec_ctx.removeCtx();
-
-#else
-
             //if( CTX::is_rb_context )
             //    LOG( INFO ) << "we have a RB context ";
             //else
@@ -242,19 +216,6 @@ EvaluatorContext<CTX, ExprT>::operator()() const
                 //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
                 }
             }
-
-#endif
-
-
-#if 0
-            t_expr_type tensor_expr( M_expr, mapgmci );
-            tensor_expr.update( mapgmci );
-
-            for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
-            {
-                __localv( shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
-            }
-#endif
         }
     }
 
