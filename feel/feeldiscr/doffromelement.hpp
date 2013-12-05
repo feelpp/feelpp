@@ -29,6 +29,8 @@
 #ifndef FEELPP_DofFromElement_H
 #define FEELPP_DofFromElement_H 1
 
+#include <feel/feeldiscr/dof.hpp>
+
 namespace Feel
 {
 /**
