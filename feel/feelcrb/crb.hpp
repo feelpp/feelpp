@@ -1303,6 +1303,8 @@ private:
     preconditioner_ptrtype M_preconditioner_primal;
     preconditioner_ptrtype M_preconditioner_dual;
 
+    //true if the model is executed in steady mode
+    bool M_model_executed_in_steady_mode;
 };
 
 po::options_description crbOptions( std::string const& prefix = "" );
@@ -1685,6 +1687,7 @@ typename CRB<TruthModelType>::convergence_type
 CRB<TruthModelType>::offline()
 {
 
+    M_model_executed_in_steady_mode = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
     int proc_number = this->worldComm().globalRank();
     M_rbconv_contains_primal_and_dual_contributions = true;
 
@@ -5078,8 +5081,9 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
     value_type __Cma_pr=0;
     value_type __Cmm_pr=0;
 
-
-    if ( ! M_model->isSteady() )
+    //the model can be time-dependant and be executed in steady mode
+    //so in that case, we don't need to compute this.
+    if ( ! M_model->isSteady() && ! M_model_executed_in_steady_mode )
     {
 
         for ( size_type __q1=0 ; __q1<__Qm; ++__q1 )
@@ -5124,7 +5128,7 @@ CRB<TruthModelType>::transientPrimalResidual( int Ncur,parameter_type const& mu,
                 }//q2
             }//m1
         }//q1
-    }//end of if(! M_model->isSteady() )
+    }//end of if(! M_model->isSteady() && ! M_model_executed_in_steady_mode )
 
 #if 0
     std::cout<<"[transientResidual]  time "<<time<<std::endl;
@@ -5273,7 +5277,7 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
 
 #if 1
 
-    if ( ! M_model->isSteady() )
+    if ( ! M_model->isSteady() && ! M_model_executed_in_steady_mode )
     {
 
         for ( int __q1=0 ; __q1<__Qm; ++__q1 )
@@ -5309,7 +5313,7 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
 
             } //m1
         }//end of loop over q1
-    }//end of if(! M_model->isSteady() )
+    }//end of if(! M_model->isSteady() && ! M_model_executed_in_steady_mode )
 
 #else
 #endif
@@ -5485,349 +5489,347 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<true>, int number_of_
 
     offlineResidual( Ncur, mpl::bool_<false>(), number_of_added_elements );
 
-
-    for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
+    //the model can be time-dependant and be executed in steady mode
+    //so in that case, we don't need to compute this.
+    if( ! M_model_executed_in_steady_mode )
     {
-        for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
+
+        for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
         {
-
-            for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
+            for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
             {
-                for ( int __m2 = 0; __m2 < M_model->mMaxF(0,__q2); ++__m2 )
+                for ( int __q2 = 0; __q2 < __QRhs; ++__q2 )
                 {
-
-                    M_Cmf_pr[__q1][__m1][__q2][__m2].conservativeResize( __N );
-
-                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(0,__q2); ++__m2 )
                     {
-                        *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
-                        Mqm[__q1][__m1]->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
 
-                        M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
-
-                        M_Cmf_pr[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
-                    }// elem
-                }//m2
-            }//q2
-        }//m1
-    }//q1
-
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "     o M_Cmf_pr updated in " << ti.elapsed() << "s\n";
-    ti.restart();
-
-
-    for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
-    {
-        for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
-        {
-
-            for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
-            {
-                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
-                {
-
-                    M_Cma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
-
-                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
-                    {
-                        *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
-                        Mqm[__q1][__m1]->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
-
-                        for ( int __l = 0; __l < ( int )__N; ++__l )
-                        {
-                            *__X=M_model->rBFunctionSpace()->primalBasisElement(__l);
-                            Aqm[__q2][__m2]->multVector(  __X, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-
-                            M_Cma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
-                        }// l
-                    }//end of loop over elem
-
-                    for ( int __j = 0; __j < ( int )__N; ++__j )
-                    {
-                        *__X=M_model->rBFunctionSpace()->primalBasisElement(__j);
-                        Mqm[__q1][ __m1]->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
+                        M_Cmf_pr[__q1][__m1][__q2][__m2].conservativeResize( __N );
 
                         for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
                         {
                             *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
-                            Aqm[__q2][ __m2]->multVector(  __X, __W );
+                            Mqm[__q1][__m1]->multVector(  __X, __W );
                             __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
+                            M_model->l2solve( __Z1, __W );
 
-                            M_Cma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
-                        }//elem
-                    }// __j
+                            M_model->l2solve( __Z2, Fqm[0][__q2][__m2] );
 
-                }// on m2
-            }// on q2
-        }// on m1
-    } // on q1
-
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "     o M_Cma_pr updated in " << ti.elapsed() << "s\n";
-    ti.restart();
-
-    for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
-    {
-        for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
-        {
-
-            for ( int __q2 = 0; __q2 < __Qm; ++__q2 )
-            {
-
-                for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
-                {
-
-                    M_Cmm_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
-
-                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
-                    {
-                        *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
-                        Mqm[__q1][__m1]->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
-
-                        for ( int __l = 0; __l < ( int )__N; ++__l )
-                        {
-                            *__X=M_model->rBFunctionSpace()->primalBasisElement(__l);
-                            Mqm[__q2][__m2]->multVector(  __X, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-
-                            M_Cmm_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
-                        }// l
-                    }//end of loop over elem
-
-                    for ( int __j = 0; __j < ( int )__N; ++__j )
-                    {
-                        *__X=M_model->rBFunctionSpace()->primalBasisElement(__j);
-                        Mqm[__q1][ __m1]->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
-
-                        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
-                        {
-                            *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
-                            Mqm[__q2][ __m2]->multVector(  __X, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-
-                            M_Cmm_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
-
-                        }//elem
-                    }//j
-
-                }// on m2
-            } // on q2
-        }// on m1
-    } // on q1
-
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "     o M_Cmm_pr updated in " << ti.elapsed() << "s\n";
-    ti.restart();
-
-
-    sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
-    sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
-    sparse_matrix_ptrtype Mtq1 = M_model->newMatrix();
-    sparse_matrix_ptrtype Mtq2 = M_model->newMatrix();
-    //
-    // Dual
-    //
-
-
-    LOG(INFO) << "[offlineResidual] Cmf_du Cma_du Cmm_du\n";
-
-    for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
-    {
-
-        for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
-        {
-
-            if( option("crb.use-symmetric-matrix").template as<bool>() )
-                Mtq1 = Mqm[__q1][__m1];
-            else
-                Mqm[__q1][__m1]->transpose( Mtq1 );
-
-            for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
-            {
-                for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
-                {
-
-                    M_Cmf_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
-                    M_Cmf_du_ini[__q1][__m1][__q2][__m2].conservativeResize( __N );
-
-                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
-                    {
-                        *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
-                        Mtq1->multVector(  __X, __W );
-                        __W->close();
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
-
-                        *__Fdu = *Fqm[M_output_index][__q2][__m2];
-                        __Fdu->close();
-                        __Fdu->scale( -1.0 );
-                        M_model->l2solve( __Z2, __Fdu );
-
-                        M_Cmf_du[ __q1][__m1][ __q2][__m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
-
-                        *__Fdu = *Fqm[M_output_index][__q2][__m2];
-                        __Fdu->close();
-                        M_model->l2solve( __Z2, __Fdu );
-                        M_Cmf_du_ini[ __q1][__m1][ __q2][__m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
-                    }//elem
-                } // m2
-            } // q2
-        } // m1
-    } // q1
-
-
-    for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
-    {
-        for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
-        {
-
-            if( option("crb.use-symmetric-matrix").template as<bool>() )
-                Mtq1 = Mqm[__q1][__m1];
-            else
-                Mqm[__q1][__m1]->transpose( Mtq1 );
-
-            for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
-            {
-                for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
-                {
-
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
-                        Atq2 = Aqm[__q2][__m2];
-                    else
-                        Aqm[__q2][__m2]->transpose( Atq2 );
-
-                    M_Cma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
-
-                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
-                    {
-
-                        *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
-                        Mtq1->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
-
-                        for ( int __l = 0; __l < ( int )__N; ++__l )
-                        {
-                            *__X=M_model->rBFunctionSpace()->dualBasisElement(__l);
-                            Atq2->multVector(  __X, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-
-                            M_Cma_du[ __q1][__m1][__q2][ __m2]( elem,__l ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
-                        }//j
-                    }//elem
-
-                    for ( int __j = 0; __j < ( int )__N; ++__j )
-                    {
-                        *__X=M_model->rBFunctionSpace()->dualBasisElement(__j);
-                        Mtq1->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
-
-                        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
-                        {
-                            *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
-                            Atq2->multVector(  __X, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-
-                            M_Cma_du[ __q1][__m1][__q2][ __m2]( __j,elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
-                        }//elem
-                    }//j
-
-                }// m2
-            } // q2
-        }// m1
-    } // q1
-
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "     o Cma_du updated in " << ti.elapsed() << "s\n";
-
-    ti.restart();
-
-
-
-    for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
-    {
-        for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
-        {
-            if( option("crb.use-symmetric-matrix").template as<bool>() )
-                Mtq1 = Mqm[__q1][__m1];
-            else
-                Mqm[__q1][__m1]->transpose( Mtq1 );
-
-            for ( int __q2 = 0; __q2 < __Qm; ++__q2 )
-            {
-                for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
-                {
-
-                    if( option("crb.use-symmetric-matrix").template as<bool>() )
-                        Mtq2 = Mqm[__q2][__m2];
-                    else
-                        Mqm[__q2][__m2]->transpose( Mtq2 );
-
-                    M_Cmm_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
-
-                    for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
-                    {
-                        *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
-                        Mtq1->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
-
-                        for ( int __l = 0; __l < ( int )__N; ++__l )
-                        {
-                            *__X=M_model->rBFunctionSpace()->dualBasisElement(__l);
-                            Mtq2->multVector(  __X, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-
-                            M_Cmm_du[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
-                        }//l
-                    }//elem
-
-                    for ( int __j = 0; __j < ( int )__N; ++__j )
-                    {
-                        *__X=M_model->rBFunctionSpace()->dualBasisElement(__j);
-                        Mtq1->multVector(  __X, __W );
-                        __W->scale( -1. );
-                        M_model->l2solve( __Z1, __W );
-
-                        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
-                        {
-                            *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
-                            Mtq2->multVector(  __X, __W );
-                            __W->scale( -1. );
-                            M_model->l2solve( __Z2, __W );
-
-                            M_Cmm_du[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
+                            M_Cmf_pr[ __q1][ __m1][ __q2][ __m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
                         }// elem
-                    }// j
+                    }//m2
+                }//q2
+            }//m1
+        }//q1
 
-                }// m2
-            } // q2
-        }// m1
-    } // q1
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o M_Cmf_pr updated in " << ti.elapsed() << "s\n";
+        ti.restart();
 
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout << "     o Cmm_du updated in " << ti.elapsed() << "s\n";
-    ti.restart();
+
+        for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
+            {
+                for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                {
+                    for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                    {
+
+                        M_Cma_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+
+                        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                        {
+                            *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
+                            Mqm[__q1][__m1]->multVector(  __X, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            for ( int __l = 0; __l < ( int )__N; ++__l )
+                            {
+                                *__X=M_model->rBFunctionSpace()->primalBasisElement(__l);
+                                Aqm[__q2][__m2]->multVector(  __X, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+
+                                M_Cma_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
+                            }// l
+                        }//end of loop over elem
+
+                        for ( int __j = 0; __j < ( int )__N; ++__j )
+                        {
+                            *__X=M_model->rBFunctionSpace()->primalBasisElement(__j);
+                            Mqm[__q1][ __m1]->multVector(  __X, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                            {
+                                *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
+                                Aqm[__q2][ __m2]->multVector(  __X, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+
+                                M_Cma_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
+                            }//elem
+                        }// __j
+
+                    }// on m2
+                }// on q2
+            }// on m1
+        } // on q1
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o M_Cma_pr updated in " << ti.elapsed() << "s\n";
+        ti.restart();
+
+        for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
+            {
+                for ( int __q2 = 0; __q2 < __Qm; ++__q2 )
+                {
+                    for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
+                    {
+
+                        M_Cmm_pr[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+
+                        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                        {
+                            *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
+                            Mqm[__q1][__m1]->multVector(  __X, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            for ( int __l = 0; __l < ( int )__N; ++__l )
+                            {
+                                *__X=M_model->rBFunctionSpace()->primalBasisElement(__l);
+                                Mqm[__q2][__m2]->multVector(  __X, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+
+                                M_Cmm_pr[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
+                            }// l
+                        }//end of loop over elem
+
+                        for ( int __j = 0; __j < ( int )__N; ++__j )
+                        {
+                            *__X=M_model->rBFunctionSpace()->primalBasisElement(__j);
+                            Mqm[__q1][ __m1]->multVector(  __X, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                            {
+                                *__X=M_model->rBFunctionSpace()->primalBasisElement(elem);
+                                Mqm[__q2][ __m2]->multVector(  __X, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+
+                                M_Cmm_pr[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
+
+                            }//elem
+                        }//j
+
+                    }// on m2
+                } // on q2
+            }// on m1
+        } // on q1
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o M_Cmm_pr updated in " << ti.elapsed() << "s\n";
+        ti.restart();
+
+
+        sparse_matrix_ptrtype Atq1 = M_model->newMatrix();
+        sparse_matrix_ptrtype Atq2 = M_model->newMatrix();
+        sparse_matrix_ptrtype Mtq1 = M_model->newMatrix();
+        sparse_matrix_ptrtype Mtq2 = M_model->newMatrix();
+        //
+        // Dual
+        //
+
+
+        LOG(INFO) << "[offlineResidual] Cmf_du Cma_du Cmm_du\n";
+
+        for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
+            {
+
+                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    Mtq1 = Mqm[__q1][__m1];
+                else
+                    Mqm[__q1][__m1]->transpose( Mtq1 );
+
+                for ( int __q2 = 0; __q2 < __QOutput; ++__q2 )
+                {
+                    for ( int __m2 = 0; __m2 < M_model->mMaxF(M_output_index,__q2); ++__m2 )
+                    {
+
+                        M_Cmf_du[__q1][__m1][__q2][__m2].conservativeResize( __N );
+                        M_Cmf_du_ini[__q1][__m1][__q2][__m2].conservativeResize( __N );
+
+                        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                        {
+                            *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
+                            Mtq1->multVector(  __X, __W );
+                            __W->close();
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            __Fdu->close();
+                            __Fdu->scale( -1.0 );
+                            M_model->l2solve( __Z2, __Fdu );
+
+                            M_Cmf_du[ __q1][__m1][ __q2][__m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
+
+                            *__Fdu = *Fqm[M_output_index][__q2][__m2];
+                            __Fdu->close();
+                            M_model->l2solve( __Z2, __Fdu );
+                            M_Cmf_du_ini[ __q1][__m1][ __q2][__m2]( elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
+                        }//elem
+                    } // m2
+                } // q2
+            } // m1
+        } // q1
+
+
+        for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
+            {
+
+                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    Mtq1 = Mqm[__q1][__m1];
+                else
+                    Mqm[__q1][__m1]->transpose( Mtq1 );
+
+                for ( int __q2 = 0; __q2 < __QLhs; ++__q2 )
+                {
+                    for ( int __m2 = 0; __m2 < M_model->mMaxA(__q2); ++__m2 )
+                    {
+
+                        if( option("crb.use-symmetric-matrix").template as<bool>() )
+                            Atq2 = Aqm[__q2][__m2];
+                        else
+                            Aqm[__q2][__m2]->transpose( Atq2 );
+
+                        M_Cma_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+
+                        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                        {
+
+                            *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
+                            Mtq1->multVector(  __X, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            for ( int __l = 0; __l < ( int )__N; ++__l )
+                            {
+                                *__X=M_model->rBFunctionSpace()->dualBasisElement(__l);
+                                Atq2->multVector(  __X, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+
+                                M_Cma_du[ __q1][__m1][__q2][ __m2]( elem,__l ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
+                            }//j
+                        }//elem
+
+                        for ( int __j = 0; __j < ( int )__N; ++__j )
+                        {
+                            *__X=M_model->rBFunctionSpace()->dualBasisElement(__j);
+                            Mtq1->multVector(  __X, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                            {
+                                *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
+                                Atq2->multVector(  __X, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+
+                                M_Cma_du[ __q1][__m1][__q2][ __m2]( __j,elem ) = 2.0*M_model->scalarProduct( __Z1, __Z2 );
+                            }//elem
+                        }//j
+
+                    }// m2
+                } // q2
+            }// m1
+        } // q1
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o Cma_du updated in " << ti.elapsed() << "s\n";
+
+        ti.restart();
+
+        for ( int __q1 = 0; __q1 < __Qm; ++__q1 )
+        {
+            for ( int __m1 = 0; __m1 < M_model->mMaxM(__q1); ++__m1 )
+            {
+                if( option("crb.use-symmetric-matrix").template as<bool>() )
+                    Mtq1 = Mqm[__q1][__m1];
+                else
+                    Mqm[__q1][__m1]->transpose( Mtq1 );
+
+                for ( int __q2 = 0; __q2 < __Qm; ++__q2 )
+                {
+                    for ( int __m2 = 0; __m2 < M_model->mMaxM(__q2); ++__m2 )
+                    {
+                        if( option("crb.use-symmetric-matrix").template as<bool>() )
+                            Mtq2 = Mqm[__q2][__m2];
+                        else
+                            Mqm[__q2][__m2]->transpose( Mtq2 );
+
+                        M_Cmm_du[__q1][__m1][__q2][__m2].conservativeResize( __N, __N );
+
+                        for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                        {
+                            *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
+                            Mtq1->multVector(  __X, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            for ( int __l = 0; __l < ( int )__N; ++__l )
+                            {
+                                *__X=M_model->rBFunctionSpace()->dualBasisElement(__l);
+                                Mtq2->multVector(  __X, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+
+                                M_Cmm_du[ __q1][ __m1][ __q2][ __m2]( elem,__l ) = M_model->scalarProduct( __Z1, __Z2 );
+                            }//l
+                        }//elem
+
+                        for ( int __j = 0; __j < ( int )__N; ++__j )
+                        {
+                            *__X=M_model->rBFunctionSpace()->dualBasisElement(__j);
+                            Mtq1->multVector(  __X, __W );
+                            __W->scale( -1. );
+                            M_model->l2solve( __Z1, __W );
+
+                            for ( int elem=__N-number_of_added_elements; elem<__N; elem++ )
+                            {
+                                *__X=M_model->rBFunctionSpace()->dualBasisElement(elem);
+                                Mtq2->multVector(  __X, __W );
+                                __W->scale( -1. );
+                                M_model->l2solve( __Z2, __W );
+
+                                M_Cmm_du[ __q1][ __m1][ __q2][ __m2]( __j,elem ) = M_model->scalarProduct( __Z1, __Z2 );
+                            }// elem
+                        }// j
+
+                    }// m2
+                } // q2
+            }// m1
+        } // q1
+
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            std::cout << "     o Cmm_du updated in " << ti.elapsed() << "s\n";
+        ti.restart();
+
+    }//if( ! M_model_executed_in_steady_mode )
 
     LOG(INFO) << "[offlineResidual] Done.\n";
 
@@ -7322,6 +7324,8 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     ar & BOOST_SERIALIZATION_NVP( M_primal_T );
     ar & BOOST_SERIALIZATION_NVP( M_dual_T );
 
+    ar & BOOST_SERIALIZATION_NVP( M_model_executed_in_steady_mode );
+
 
 #if 0
         for(int i=0; i<M_N; i++)
@@ -7447,6 +7451,14 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_dual_V );
     ar & BOOST_SERIALIZATION_NVP( M_primal_T );
     ar & BOOST_SERIALIZATION_NVP( M_dual_T );
+
+    ar & BOOST_SERIALIZATION_NVP( M_model_executed_in_steady_mode );
+    bool current_option=option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
+    if( M_model_executed_in_steady_mode != current_option )
+    {
+        if( M_model_executed_in_steady_mode )
+            throw std::logic_error( "[CRB::loadDB] ERROR in the database used the model was executed in steady mode but now you want to execute it in transient mode. Change the option or rebuild the database using --crb.rebuild-database=true" );
+    }
 #if 0
     std::cout << "[loadDB] output index : " << M_output_index << "\n"
               << "[loadDB] N : " << M_N << "\n"
