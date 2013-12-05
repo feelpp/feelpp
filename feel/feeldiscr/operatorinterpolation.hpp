@@ -537,7 +537,7 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
     }
     else if( domain_sibling_of_image )
     {
-        CHECK(false) << "not implement domain_sibling_of_image\n";
+        idsFind.insert( domainMesh->meshToSubMesh( imageMesh, imageEltId ) );
     }
     else // same mesh
     {
