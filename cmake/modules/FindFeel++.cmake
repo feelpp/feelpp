@@ -230,6 +230,23 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   add_subdirectory(contrib/ginac)
 endif()
 
+#
+# HARTS
+#
+OPTION( FEELPP_ENABLE_HARTS "Enable Harts (Runtime parallelization system)" OFF )
+if ( FEELPP_ENABLE_HARTS )
+    FIND_PACKAGE( HARTS )
+    if( HARTS_FOUND )
+        SET(CMAKE_REQUIRED_INCLUDES "${HARTS_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+        INCLUDE_DIRECTORIES( ${HARTS_INCLUDES} )
+        ADD_DEFINITIONS(${HARTS_DEFINITIONS})
+        SET(FEELPP_LIBRARIES ${HARTS_LIBRARIES} ${FEELPP_LIBRARIES})
+        SET(FEELPP_HAS_HARTS 1)
+        SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HARTS" )
+    endif()
+endif()
+
+
 if ( FEELPP_ENABLE_EXODUS )
   include_directories(${FEELPP_SOURCE_DIR}/contrib/exodus-5.24/exodus/cbind/include/)
   add_subdirectory(contrib/exodus-5.24/exodus)

@@ -117,6 +117,9 @@
 /* Define to 1 if you have the <tbb.h> header file. */
 #cmakedefine FEELPP_HAS_TBB_H
 
+/* Define to 1 if you have harts. */
+#cmakedefine FEELPP_HAS_HARTS
+
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
 #cmakedefine FEELPP_HAS_UFSPARSE_UMFPACK_H
 
