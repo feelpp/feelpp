@@ -51,13 +51,13 @@ solvereigen_options( std::string const& prefix )
     po::options_description _options( "Solver EigenValue Slepc -- " + prefix + " solver options" );
     _options.add_options()
     // solver options
-    ( ( _prefix+"solvereigen-solver-type" ).c_str(), Feel::po::value<int>()->default_value( KRYLOVSCHUR ), "type of eigenvalue solver" )
-    ( ( _prefix+"solvereigen-problem-type" ).c_str(), Feel::po::value<int>()->default_value( NHEP ), "type of eigenvalue problem" )
-    ( ( _prefix+"solvereigen-position" ).c_str(), Feel::po::value<int>()->default_value( LARGEST_MAGNITUDE ), "eigenvalue solver position in spectrum: LARGEST_MAGNITUDE=0, SMALLEST_MAGNITUDE=1, LARGEST_REAL=2, SMALLEST_REAL=3, LARGEST_IMAGINARY=4, SMALLEST_IMAGINARY=5" )
-    ( ( _prefix+"solvereigen-nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
-    ( ( _prefix+"solvereigen-ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
-    ( ( _prefix+"solvereigen-tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
-    ( ( _prefix+"solvereigen-maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" );
+    ( ( _prefix+"solvereigen.solver-type" ).c_str(), Feel::po::value<int>()->default_value( KRYLOVSCHUR ), "type of eigenvalue solver" )
+    ( ( _prefix+"solvereigen.problem-type" ).c_str(), Feel::po::value<int>()->default_value( NHEP ), "type of eigenvalue problem" )
+    ( ( _prefix+"solvereigen.position" ).c_str(), Feel::po::value<int>()->default_value( LARGEST_MAGNITUDE ), "eigenvalue solver position in spectrum: LARGEST_MAGNITUDE=0, SMALLEST_MAGNITUDE=1, LARGEST_REAL=2, SMALLEST_REAL=3, LARGEST_IMAGINARY=4, SMALLEST_IMAGINARY=5" )
+    ( ( _prefix+"solvereigen.nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
+    ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
+    ( ( _prefix+"solvereigen.tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
+    ( ( _prefix+"solvereigen.maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" );
 
     return _options;
 }
@@ -78,13 +78,13 @@ template <typename T>
 SolverEigen<T>::SolverEigen( po::variables_map const& vm, std::string const& prefix )
     :
     M_prefix( ( !prefix.empty() && !boost::algorithm::ends_with( prefix, "-" ) )? ( prefix+"-" ):prefix ),
-    M_eigen_solver_type    ( ( EigenSolverType )vm[M_prefix+"solvereigen-solver-type"].template as<int>() ),
-    M_eigen_problem_type   ( ( EigenProblemType )vm[M_prefix+"solvereigen-problem-type"].template as<int>() ),
-    M_position_of_spectrum ( ( PositionOfSpectrum )vm[M_prefix+"solvereigen-position"].template as<int>() ),
+    M_eigen_solver_type    ( ( EigenSolverType )vm[M_prefix+"solvereigen.solver-type"].template as<int>() ),
+    M_eigen_problem_type   ( ( EigenProblemType )vm[M_prefix+"solvereigen.problem-type"].template as<int>() ),
+    M_position_of_spectrum ( ( PositionOfSpectrum )vm[M_prefix+"solvereigen.position"].template as<int>() ),
     M_spectral_transform   ( SHIFT ),
     M_is_initialized       ( false ),
-    M_nev( vm[M_prefix+"solvereigen-nev"].template as<int>() ),
-    M_ncv( vm[M_prefix+"solvereigen-ncv"].template as<int>() )
+    M_nev( vm[M_prefix+"solvereigen.nev"].template as<int>() ),
+    M_ncv( vm[M_prefix+"solvereigen.ncv"].template as<int>() )
 {
 }
 
