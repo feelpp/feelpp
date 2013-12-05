@@ -16,14 +16,13 @@ using namespace Feel;
 using namespace Feel::vf;
 
 
-template<int Dim>
+template<int Dim, int Order>
 class EigenProblem
 :
 public Simget
 {
     typedef Simget super;
 public:
-    static const uint16_type Order = 2;
     typedef double value_type;
     typedef Backend<value_type> backend_type;
     typedef boost::shared_ptr<backend_type> backend_ptrtype;
@@ -38,33 +37,14 @@ public:
     typedef typename space_type::element_type element_type;
     typedef Exporter<mesh_type> export_type;
 
-    /**
-     * Constructor
-     */
-    EigenProblem()
-        :
-        super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        eigen( SolverEigen<value_type>::build( this->vm() ) )
-        {
-        }
-
     void run();
 private:
 
-    backend_ptrtype M_backend;
-    double meshSize;
-    std::string shape;
-    std::vector<int> flags;
-    boost::shared_ptr<SolverEigen<value_type> > eigen;
 }; // EigenProblem
 
-template<int Dim> const uint16_type EigenProblem<Dim>::Order;
-
-template<int Dim>
+template<int Dim, int Order>
 void
-EigenProblem<Dim>::run()
+EigenProblem<Dim, Order>::run()
 {
     if ( Environment::worldComm().isMasterRank() )
     {
@@ -73,10 +53,10 @@ EigenProblem<Dim>::run()
     }
 
     Environment::changeRepository( boost::format( "eigen/%1%/%2%D-P%3%/h_%4%/" )
-                                  % this->about().appName()
-                                  % Dim
-                                  % Order
-                                  % meshSize );
+                                   % this->about().appName()
+                                   % Dim
+                                   % Order
+                                   % option(_name="gmsh.hsize").template as<double>() );
 
     auto mesh = loadMesh(_mesh = new mesh_type );
 
@@ -159,8 +139,8 @@ main( int argc, char** argv )
 
     Application app;
 
-    app.add( new EigenProblem<2>() );
-    app.add( new EigenProblem<3>() );
+    app.add( new EigenProblem<2,2>() );
+    //app.add( new EigenProblem<3,2>() );
     app.run();
 }
 
