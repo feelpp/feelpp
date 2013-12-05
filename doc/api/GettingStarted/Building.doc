@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
-    /** \page Building Building Feel++
+/** \page Building Building Feel++
 \author Christophe Prud'homme
 \author Alexandre Ancel
 
@@ -58,7 +58,7 @@ Required packages :
 \li Boost >= 1.49
 \li Petsc >= 3.2
 \li Cmake >= 2.8.7
-\li Gmsh (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
+\li Gmsh >= 2.8.3 (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
 \li Libxml2
 
 Optional packages :
