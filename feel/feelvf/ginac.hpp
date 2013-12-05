@@ -71,10 +71,27 @@ template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
 template<> inline std::vector<symbol> symbols<2>() { return {symbol("x"),symbol("y") };}
 template<> inline std::vector<symbol> symbols<3>() { return {symbol("x"),symbol("y"),symbol("z") };}
 
+inline
+std::vector<symbol>
+symbols( std::initializer_list<std::string> l )
+{
+    std::vector<symbol> s;
+    std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
+    return s;
+}
+inline
+std::vector<symbol>
+symbols( std::vector<std::string> l )
+{
+    std::vector<symbol> s;
+    std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
+    return s;
+}
+
 
 class Symbols : public std::vector<symbol>
 {
- std::vector<symbol> symbols( std::vector<std::string> const& s );
+
 public:
     Symbols():std::vector<symbol>(symbols({"x","y","z", "t"})) {}
     Symbols(std::initializer_list<std::string> s ):std::vector<symbol>(symbols(s)) {}
@@ -82,22 +99,6 @@ public:
 
 };
 
-    inline
-    std::vector<symbol>
-    symbols( std::initializer_list<std::string> l )
-    {
-        std::vector<symbol> s;
-        std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
-        return s;
-    }
-    inline
-    std::vector<symbol>
-    symbols( std::vector<std::string> l )
-    {
-        std::vector<symbol> s;
-        std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
-        return s;
-    }
 
     class GinacExprManagerImpl :
         public std::map<std::string, boost::shared_ptr<GiNaC::FUNCP_CUBA> > ,
