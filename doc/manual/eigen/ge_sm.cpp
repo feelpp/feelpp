@@ -140,7 +140,7 @@ main( int argc, char** argv )
     Application app;
 
     app.add( new EigenProblem<2,2>() );
-    //app.add( new EigenProblem<3,2>() );
+    app.add( new EigenProblem<3,2>() );
     app.run();
 }
 
