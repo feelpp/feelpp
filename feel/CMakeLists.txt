@@ -52,11 +52,5 @@ set_property(TARGET feelpp PROPERTY LABELS feel++)
 target_link_libraries (feelpp ${FEELPP_LIBRARIES})
 set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
 
-  # Install feelpp
-  INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Bin)
-
-#if( FEELPP_ENABLE_BUILD_STATIC )
-#  add_library(feelpp options.cpp ${FEELPP_SRCS})
-#  set_property(TARGET feelpp PROPERTY LABELS feel++)
-#  target_link_libraries (feelpp ${FEELPP_LIBRARIES})
-#endif()
+# Install feelpp
+INSTALL(TARGETS feelpp DESTINATION lib/ COMPONENT Bin)

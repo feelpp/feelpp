@@ -46,7 +46,7 @@
 #include <feel/feelpoly/functionalset.hpp>
 #include <feel/feelpoly/functionals.hpp>
 #include <feel/feelpoly/fe.hpp>
-#include <feel/feelpoly/mortar.hpp>
+#include <feel/feelpoly/isp0continuous.hpp>
 
 
 
@@ -317,6 +317,7 @@ public:
     static const uint16_type nComponents = polyset_type::nComponents;
     static const bool is_product = true;
 
+    typedef Lagrange<N, RealDim, O, PolySetType, ContinuityType, T, Convex,  Pts, TheTAG> this_type;
     typedef Lagrange<N, RealDim, O, Scalar, continuity_type, T, Convex,  Pts, TheTAG> component_basis_type;
 
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
@@ -343,15 +344,22 @@ public:
         typedef Lagrange<N-1, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
+    struct SSpace
+    {
+        static constexpr uint16_type TheOrder = (O > 1)?O-1:0;
+        typedef typename mpl::if_<mpl::less_equal<mpl::int_<O>, mpl::int_<1> >,
+                                  mpl::identity<Lagrange<N, RealDim, 0, PolySetType, Discontinuous, T, Convex,  Pts, TheTAG> >,
+                                  mpl::identity<Lagrange<N, RealDim, TheOrder, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> > >::type::type type;
+
+    };
+
     template<uint16_type NewDim>
     struct ChangeDim
     {
         typedef Lagrange<NewDim, RealDim, O, PolySetType, continuity_type, T, Convex,  Pts, TheTAG> type;
     };
 
-    static const bool isLagrangeP0Continuous = mpl::and_< boost::is_same<mpl::int_<nOrder>,mpl::int_<0> >,
-                                                          boost::is_same<continuity_type, Continuous > >::type::value;
-
+    static const bool isLagrangeP0Continuous = isP0Continuous<this_type>::result;
 
     //@}
 

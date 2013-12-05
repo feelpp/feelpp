@@ -254,15 +254,3 @@ namespace GiNaC
 
 }
 
-
-namespace Feel
-{
-std::vector<GiNaC::symbol> symbols( std::vector<std::string> const& s )
-{
-    std::vector<GiNaC::symbol> vs;
-    for( auto sym : s )
-        vs.push_back( GiNaC::symbol(sym) );
-    return vs;
-}
-
-}
