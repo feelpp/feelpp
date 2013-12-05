@@ -4,6 +4,22 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
+# Check compiler 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # require at least gcc 4.6
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.6)
+        message(FATAL_ERROR "GCC version must be at least 4.6!")
+    endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    # require at least clang 3.3
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
+        message(FATAL_ERROR "Clang version must be at least 3.3!")
+    endif()
+else()
+    message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
+    message(WARNING "CMAKE_CXX_COMPILER_ID=" ${CMAKE_CXX_COMPILER_ID})
+endif()
+
 #should check the version of gcc for -std=c++0x ou -std=c++11
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
@@ -229,6 +245,23 @@ if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/feel AND EXISTS ${CMAKE_CURRENT_SOURCE_D
   set(DL_LIBS ${CMAKE_DL_LIBS})
   add_subdirectory(contrib/ginac)
 endif()
+
+#
+# HARTS
+#
+OPTION( FEELPP_ENABLE_HARTS "Enable Harts (Runtime parallelization system)" OFF )
+if ( FEELPP_ENABLE_HARTS )
+    FIND_PACKAGE( HARTS )
+    if( HARTS_FOUND )
+        SET(CMAKE_REQUIRED_INCLUDES "${HARTS_INCLUDES};${CMAKE_REQUIRED_INCLUDES}")
+        INCLUDE_DIRECTORIES( ${HARTS_INCLUDES} )
+        ADD_DEFINITIONS(${HARTS_DEFINITIONS})
+        SET(FEELPP_LIBRARIES ${HARTS_LIBRARIES} ${FEELPP_LIBRARIES})
+        SET(FEELPP_HAS_HARTS 1)
+        SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HARTS" )
+    endif()
+endif()
+
 
 if ( FEELPP_ENABLE_EXODUS )
   include_directories(${FEELPP_SOURCE_DIR}/contrib/exodus-5.24/exodus/cbind/include/)
