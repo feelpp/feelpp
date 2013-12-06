@@ -179,7 +179,7 @@ public:
     typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous> p0_space_type;
     typedef typename p0_space_type::element_type p0_element_type;
 
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Continuous> continuous_p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Continuous > > > continuous_p0_space_type;
     typedef boost::shared_ptr<continuous_p0_space_type> continuous_p0_space_ptrtype;
     typedef typename continuous_p0_space_type::element_type continuous_p0_element_type;
 
@@ -368,55 +368,43 @@ public:
     computeBetaQm( parameter_type const& mu , double time=1e30 )
     {
 
-        bool use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
-        if( use_ginac )
+        if( M_use_ginac )
         {
-            int qa = Qa();
-            M_betaAqm.resize( qa );
-            for(int i=0; i<qa; i++)
-            {
-                M_betaAqm[i].resize( 1 );
-                std::string name = ( boost::format("beta.A%1%") %i ).str();
-                std::string filename = ( boost::format("GinacA%1%") %i ).str();
-                auto ginac_expression = expr( option(_name=name).as<std::string>(), Symbols{"x","y","BiotOut" , "BiotIn"} , filename );
-                ginac_expression.expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
+            ginac_expressionA[0].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
+            auto projection=project(_space=continuous_p0, _expr=ginac_expressionA[0]);
+            M_betaAqm[0][0] = projection(0);
+            ginac_expressionA[1].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
+            projection=project(_space=continuous_p0, _expr=ginac_expressionA[1]);
+            M_betaAqm[1][0] = projection(0);
+            ginac_expressionA[2].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } } );
+            projection=project(_space=continuous_p0, _expr=ginac_expressionA[2]);
+            M_betaAqm[2][0] = projection(0);
 
-                auto projection=project(_space=continuous_p0, _expr=ginac_expression);
-                M_betaAqm[i][0] = projection(0);
-            }
+            projection=project(_space=continuous_p0, _expr=ginac_expressionM[0]);
+            M_betaMqm[0][0] = projection(0);
 
-            int qm=Qm();
-            M_betaMqm.resize(qm );
-            for(int i=0; i<qm; i++)
-            {
-                M_betaMqm[i].resize( 1 );
-                std::string name = ( boost::format("beta.M%1%") %i ).str();
-                std::string filename = ( boost::format("GinacM%1%") %i ).str();
-                auto ginac_expression = expr( option(_name=name).as<std::string>(), Symbols{"x","y"} , filename );
+            ginac_expressionF[0].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
+            projection=project(_space=continuous_p0, _expr=ginac_expressionF[0]);
+            M_betaFqm[0][0][0] = projection(0);
+            ginac_expressionF[1].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
+            projection=project(_space=continuous_p0, _expr=ginac_expressionF[1]);
+            M_betaFqm[1][0][0] = projection(0);
 
-                auto projection=project(_space=continuous_p0, _expr=ginac_expression);
-                M_betaMqm[i][0] = projection(0);
-            }
-
+#if 0
+            int idx=0;
             int nl = Nl();
-            M_betaFqm.resize( nl );
             for(int i=0; i<nl; i++)
             {
                 int ql=Ql(i);
-                M_betaFqm[i].resize( ql );
                 for(int j=0; j<ql; j++)
                 {
-                    M_betaFqm[i][j].resize( 1 );
-                    std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
-                    std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
-                    auto ginac_expression = expr( option(_name=name).as<std::string>(), Symbols{"x","y", "BiotOut" , "BiotIn", "surface"} , filename );
-                    ginac_expression.expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
-
-                    auto projection=project(_space=continuous_p0, _expr=ginac_expression);
+                    ginac_expressionF[idx].expression().setParameterValues( { { "BiotOut", mu(0) } , { "BiotIn", mu(1) } , { "surface", surface } } );
+                    auto projection=project(_space=continuous_p0, _expr=ginac_expressionF[idx]);
                     M_betaFqm[i][j][0] = projection(0);
+                    idx++;
                 }
             }
-
+#endif
 #if 0
             LOG( INFO ) << "mu = "<<mu(0)<<" -- "<<mu(1);
             LOG( INFO ) <<"A0 : "<<M_betaAqm[0][0]<<" -- should be 1";
@@ -650,6 +638,9 @@ public:
         return M_Dmu->min();
     }
 
+    void initDataStructureForBetaCoeff();
+    void buildGinacExpressions();
+
 private:
 
     po::variables_map M_vm;
@@ -701,6 +692,12 @@ private:
     bdf_ptrtype M_bdf;
 
     element_type u,v;
+
+    bool M_use_ginac ;
+
+    std::vector< Expr<GinacEx<2> > > ginac_expressionA;
+    std::vector< Expr<GinacEx<2> > > ginac_expressionM;
+    std::vector< Expr<GinacEx<2> > > ginac_expressionF;
 };
 
 template<int Order>
@@ -735,8 +732,67 @@ HeatShield<Order>::HeatShield( po::variables_map const& vm )
                                             _rebuild=true);
 }
 
+template<int Order>
+void
+HeatShield<Order>::initDataStructureForBetaCoeff()
+{
+    int qa = Qa();
+    M_betaAqm.resize( qa );
+    for(int i=0; i<qa; i++)
+        M_betaAqm[i].resize( 1 );
+
+    int qm=Qm();
+    M_betaMqm.resize(qm );
+    for(int i=0; i<qm; i++)
+        M_betaMqm[i].resize( 1 );
+
+    int nl = Nl();
+    M_betaFqm.resize( nl );
+    for(int i=0; i<nl; i++)
+    {
+        int ql=Ql(i);
+        M_betaFqm[i].resize( ql );
+        for(int j=0; j<ql; j++)
+            M_betaFqm[i][j].resize( 1 );
+    }
+
+}
+
+template<int Order>
+void
+HeatShield<Order>::buildGinacExpressions()
+{
+
+    int qa = Qa();
+    for(int i=0; i<qa; i++)
+    {
+        std::string name = ( boost::format("beta.A%1%") %i ).str();
+        std::string filename = ( boost::format("GinacA%1%") %i ).str();
+        ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), {symbol("x"),symbol("y"),symbol("BiotOut") , symbol("BiotIn")} , filename ) );
+    }
 
 
+    int qm=Qm();
+    for(int i=0; i<qm; i++)
+    {
+        std::string name = ( boost::format("beta.M%1%") %i ).str();
+        std::string filename = ( boost::format("GinacM%1%") %i ).str();
+        ginac_expressionM.push_back( expr( option(_name=name).as<std::string>(), {symbol("x"),symbol("y")} , filename ) );
+    }
+
+    int nl = Nl();
+    for(int i=0; i<nl; i++)
+    {
+        int ql=Ql(i);
+        for(int j=0; j<ql; j++)
+        {
+            std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
+            std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
+            ginac_expressionF.push_back( expr( option(_name=name).as<std::string>(), {symbol("x"),symbol("y"),symbol("BiotOut") , symbol("BiotIn"), symbol("surface")} , filename ) );
+        }
+    }
+
+}
 
 template<int Order>
 gmsh_ptrtype
@@ -811,8 +867,9 @@ template<int Order>
 void HeatShield<Order>::initModel()
 {
 
-
     using namespace Feel::vf;
+
+    M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
 
     std::string mshfile_name = option("mshfile").as<std::string>();
 
@@ -871,6 +928,10 @@ void HeatShield<Order>::initModel()
         }
     }
 
+    initDataStructureForBetaCoeff();
+    if( M_use_ginac )
+        buildGinacExpressions();
+
     typename Feel::ParameterSpace<ParameterSpaceDimension>::Element mu_min( M_Dmu );
     mu_min <<  /* Bi_out */ 1e-2 , /*Bi_in*/1e-3;
     M_Dmu->setMin( mu_min );
@@ -886,6 +947,7 @@ void HeatShield<Order>::initModel()
     if (option(_name="crb.stock-matrices").template as<bool>() )
         stockAffineDecomposition();
     ps.log("after stocking matrices");
+
 
 } // HeatShield::init
 
