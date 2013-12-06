@@ -24,9 +24,9 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file myapp.cpp
-   \author Guillaume DOLLÉ <guillaume.dolle@math.unistra.fr>
-   \date 2013-02-07
+   \file myblas.cpp
+   \author Vincent HUBER <vincent.huber@cemosis.fr>
+   \date 2013-12-06
  */
 
 #include <feel/feel.hpp>
@@ -34,30 +34,35 @@ using namespace Feel;
 
 int main( int argc, char* argv[] )
 {
-    // create custom command option
-    po::options_description app_options( "MyApp options" );
-    app_options.add( feel_options() );
-    app_options.add_options()
-	( "value",
-          po::value<double>() -> default_value(4.2),
-          "a 'double' with default value" )
-    ;
-
     // initialize feel++ environment
     Environment env( _argc=argc, _argv=argv,
-                     _desc=app_options,
-                     _about=about( _name="myapp",
+                     _desc=feel_options(),
+                     _about=about( _name="myblas",
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org") );
 
-    auto m = mat<2,2>(cst(1),cst(1),cst(1),cst(1));
+    auto mesh = unitSquare();
+
+    auto m = mat<2,2>(cst(1.),cst(0.),cst(0.),cst(1.));
     auto v1 = vec(cst(1),cst(1));
     auto v2 = mat<2,1>(cst(1),cst(1));
     auto v3 = trans(v2); 
-    auto mv1 = m*v1;
-    auto mv2 = m*v2;
-    auto mv3 = m*v3;
+    auto v4 = trans(v1); 
+    auto mv1 = m*v1; //OK
+    auto mv2 = m*v2; //OK
+    auto mv3 = m*v3; // NOT OK
+    auto mv4 = m*v4; // NOT OK
+    
+    double int_1 = integrate( _range = elements( mesh ), _expr= trans(v1)*mv1 ).evaluate()(0,0);
+    double int_2 = integrate( _range = elements( mesh ), _expr= trans(v2)*mv2 ).evaluate()(0,0);
+    double int_3 = integrate( _range = elements( mesh ), _expr= trans(v3)*mv3 ).evaluate()(0,0);
+    double int_4 = integrate( _range = elements( mesh ), _expr= trans(v4)*mv4 ).evaluate()(0,0);
 
-
+    std::cout 
+      << int_1 << "\t"
+      << int_2 << "\t"
+      << int_3 << "\t"
+      << int_4 
+      << std::endl;
 } 
 
