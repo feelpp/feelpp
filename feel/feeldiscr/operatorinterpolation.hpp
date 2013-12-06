@@ -537,7 +537,22 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
     }
     else if( domain_sibling_of_image )
     {
-        CHECK(false) << "not implement domain_sibling_of_image\n";
+#if 0
+        auto const& theface = domainMesh->face( imageMesh->subMeshToMesh( imageEltId ) );
+        size_type domainEltId = invalid_size_type_value;
+        if ( !theface.element0().isGhostCell() )
+            domainEltId = theface.element0().id();
+        else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+            domainEltId = theface.element1().id();
+        else
+            CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+
+        VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
+        if ( domainEltId != invalid_size_type_value ) idsFind.insert( domainEltId );
+        idsFind.insert( domainMesh->meshToSubMesh( imageMesh, imageEltId ) );
+#else
+        CHECK(false)  << "to be implement";
+#endif
     }
     else // same mesh
     {

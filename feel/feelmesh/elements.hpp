@@ -763,7 +763,10 @@ public:
     std::pair<location_element_const_iterator, location_element_const_iterator>
     internalElements( size_type p  ) const
     {
-        return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(),  bool(INTERNAL), invalid_uint16_type_value ) );
+        auto lower = M_elements.template get<detail::by_location>().lower_bound( boost::make_tuple( this->worldCommElements().localRank(), bool(INTERNAL), 0 ) );
+        auto upper = M_elements.template get<detail::by_location>().upper_bound( boost::make_tuple( this->worldCommElements().localRank(), bool(INTERNAL), 2 ) );
+        return std::make_pair( lower, upper );
+        //return M_elements.template get<detail::by_location>().equal_range( boost::make_tuple( this->worldCommElements().localRank(),  bool(INTERNAL), invalid_uint16_type_value ) );
     }
 
 

@@ -540,10 +540,14 @@ BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type
 
     if ( verbose )
     {
-        std::for_each( err.begin(), err.end(), []( double e )
+        int i = 0;
+        for( auto e : err )
         {
-            std::cout << "||A x - lambda B x ||/||x|| = " << e << "\n";
-        } );
+            if ( Environment::worldComm().isMasterRank() )
+            {
+                std::cout << i++ << "-th mode error ||A x - lambda B x ||/||x|| = " << e << "\n";
+            }
+        }
     }
 
     return eigen->eigenModes();
