@@ -93,8 +93,8 @@ void runStokesDirichletLM()
     }
 
     auto U = Vh1->elementPtr();
-    auto u = U->element<0>();
-    auto p = U->element<1>();
+    auto u = U->template element<0>();
+    auto p = U->template element<1>();
     auto lambda = Vh2->elementPtr();
     BlocksBaseGraphCSR myblockGraph(2,2);
 

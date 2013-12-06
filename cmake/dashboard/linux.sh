@@ -36,7 +36,8 @@ fi
 if [ ! -z "$do_clang" -a -x /usr/bin/clang++ ]; then
     export FEELPP_WORKDIR=/tmp/feel-clang
     rm -rf $FEELPP_WORKDIR 
-    $COMMON,FEELPP_CXXNAME=clang-3.3,FEELPP_CXX=/usr/bin/clang++ 
+    clang_version=`echo | clang -dM -E - | grep clang_version | awk '{print $3}' | sed "s/\"//g"`
+    $COMMON,FEELPP_CXXNAME=clang-$clang_version,FEELPP_CXX=/usr/bin/clang++ 
     rm -rf $FEELPP_WORKDIR 
 fi
 rm -rf $FEELPP_SCRATCHDIR

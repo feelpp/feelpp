@@ -233,7 +233,12 @@ Mesh<Shape, T, Tag>::updateForUse()
             boost::tie( iv, en ) = this->elementsRange();
             for ( ; iv != en; ++iv )
             {
-                this->elements().modify( iv, typename super_elements::ElementConnectPointToElement() );
+                this->elements().modify( iv,
+                                         []( element_type& e )
+                                         {
+                                             for ( int i = 0; i < e.numPoints; ++i )
+                                                 e.point( i ).addElement( e.id() );
+                                         });
             }
         }
 
