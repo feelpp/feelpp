@@ -45,8 +45,8 @@ main( int argc, char** argv )
                                    _email="feelpp-devel@feelpp.org" ) );
 
     // create the mesh (specify the dimension of geometric entity)
-    auto mesh = unitHypercube<3>();
-    
+    auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>> );
+
     // our function to integrate
     auto f = Px()*Px() + Py()*Py() + Pz()*Pz();
 
@@ -57,7 +57,7 @@ main( int argc, char** argv )
     // compute integral of f (local contribution)
     double intf_2 = integrate( _range = elements( mesh ),
                                _expr = f ).evaluate(false)( 0,0 );
- 
+
     // compute integral f on boundary
     double intf_3 = integrate( _range = boundaryfaces( mesh ),
                                _expr = f ).evaluate()( 0,0 );
@@ -67,6 +67,3 @@ main( int argc, char** argv )
 }
 //# endmarker_main #
 //\endcode
-
-
-
