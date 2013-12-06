@@ -38,6 +38,18 @@
 namespace Feel
 {
 
+template<size_t S, class ITERATOR>
+ITERATOR begin( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
+{
+    return range.template get<1>();
+}
+
+template<size_t S, class ITERATOR>
+ITERATOR end( boost::tuple<mpl::size_t<S>,ITERATOR,ITERATOR> &range )
+{
+    return range.template get<2>();
+}
+
 enum ElementsType
 {
     MESH_ELEMENTS = 0,           /**< elements */

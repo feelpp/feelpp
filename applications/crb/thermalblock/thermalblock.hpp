@@ -224,7 +224,7 @@ public:
 
     typedef  boost::numeric::ublas::vector<element_type> Vector_type ;
 
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Continuous> continuous_p0_space_type;
+    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar, Continuous > > > continuous_p0_space_type;
     typedef boost::shared_ptr<continuous_p0_space_type> continuous_p0_space_ptrtype;
     typedef typename continuous_p0_space_type::element_type continuous_p0_element_type;
 
@@ -393,84 +393,72 @@ public:
     {
 
         bool use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
-        if( use_ginac )
+        if( M_use_ginac )
         {
             int qa = Qa();
             int nl = Nl();
 
-            std::vector< std::string > symbols_vec;
-            symbols_vec.push_back( "x" );
-            symbols_vec.push_back( "y" );
+            // prepare map of symbols
             std::map<std::string,double> map_symbols;
-            //mu_i inside the domain (all subdomains index)
             for ( int i=0; i<nx*ny; i++ )
             {
                 std::string symbol = ( boost::format("k%1%") %i ).str();
-                symbols_vec.push_back( symbol );
                 map_symbols.insert( std::pair< std::string, double > (symbol,mu(i)) );
             }
-            int index_beta=nx*ny;
 
-            M_betaAqm.resize( qa );
+            //update ginac expressions
             for ( int i=0; i<nx*ny; i++ )
             {
-                M_betaAqm[i].resize( 1 );
-                std::string name = ( boost::format("beta.A%1%") %i ).str();
-                std::string filename = ( boost::format("GinacA%1%") %i ).str();
-                auto ginac_expression = expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename );
-                ginac_expression.expression().setParameterValues( map_symbols );
-
-                auto projection=project(_space=continuous_p0, _expr=ginac_expression);
+                ginac_expressionA[i].expression().setParameterValues( map_symbols );
+                auto projection=project(_space=continuous_p0, _expr=ginac_expressionA[i]);
                 M_betaAqm[i][0] = projection(0);
             }
-            index_beta=nx*ny;
+            int index_beta=nx*ny;
             for ( int i=0; i<north_subdomain_index.size(); i++ )
             {
-                M_betaAqm[index_beta].resize( 1 );
                 int j = north_subdomain_index[i]-1;
-                std::string name = ( boost::format("beta.A%1%") %j ).str();
-                std::string filename = ( boost::format("GinacA%1%") %index_beta ).str();
-                auto ginac_expression = expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename );
-
-                ginac_expression.expression().setParameterValues( map_symbols );
-
-                auto projection=project(_space=continuous_p0, _expr=ginac_expression);
+                ginac_expressionA[j].expression().setParameterValues( map_symbols );
+                auto projection=project(_space=continuous_p0, _expr=ginac_expressionA[j]);
                 M_betaAqm[index_beta][0] = projection(0);
                 index_beta++;
             }
             int idx = nx*ny;
-            M_betaAqm[index_beta].resize( 1 );
-            std::string name = ( boost::format("beta.Alast") ).str();
-            std::string filename = ( boost::format("GinacAlast") ).str();
-            auto ginac_expression = expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename );
-            ginac_expression.expression().setParameterValues( map_symbols );
-            auto projection=project(_space=continuous_p0, _expr=ginac_expression);
+            ginac_expressionA[idx].expression().setParameterValues( map_symbols );
+            auto projection=project(_space=continuous_p0, _expr=ginac_expressionA[idx]);
             M_betaAqm[index_beta][0] = projection(0);
 
-            M_betaFqm.resize( nl );
+            idx=0;
             for(int i=0; i<nl; i++)
             {
                 int ql=Ql(i);
-                M_betaFqm[i].resize( ql );
                 for(int j=0; j<ql; j++)
                 {
-                    M_betaFqm[i][j].resize( 1 );
-                    std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
-                    std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
-                    auto ginac_expression = expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename );
-                    ginac_expression.expression().setParameterValues( map_symbols );
-
-                    auto projection=project(_space=continuous_p0, _expr=ginac_expression);
+                    ginac_expressionF[idx].expression().setParameterValues( map_symbols );
+                    auto projection=project(_space=continuous_p0, _expr=ginac_expressionF[idx]);
                     M_betaFqm[i][j][0] = projection(0);
+                    idx++;
                 }
             }
+#if 0
+            /* check ................*/
+            for ( int i=0; i<nx*ny; i++ )
+            {
+                LOG( INFO )<< "M_betaAqm["<<i<<"][0] = "<<M_betaAqm[i][0]<<" -- should be "<<mu(i);
+            }
+            index_beta=nx*ny;
+            for ( int i=0; i<north_subdomain_index.size(); i++ )
+           {
+               LOG( INFO ) << " M_betaAqm["<<index_beta<<"][0] = "<<M_betaAqm[index_beta][0]<<" -- should be "<<  mu ( north_subdomain_index[i]-1 );
+               index_beta++;
+           }
+            LOG( INFO ) << " M_betaAqm["<<index_beta<<"][0] = "<<M_betaAqm[index_beta][0]<<" -- should be 1";
+            LOG( INFO ) << "M_betaFqm[0][0][0] : "<<M_betaFqm[0][0][0]<<" -- should be 1";
+            /* end check ........... */
+#endif
+
         }//ginac
         else
         {
-
-            M_betaAqm.resize( Qa() );
-            for(int j=0; j<this->Qa(); j++)
-                M_betaAqm[j].resize(1);
 
             //mu_i inside the domain (all subdomains index)
             for ( int i=0; i<nx*ny; i++ )
@@ -491,35 +479,11 @@ public:
 
             M_betaAqm[index_beta][0] = 1;
 
-            M_betaFqm.resize( Nl() );
-            for(int i=0; i<Nl(); i++)
-            {
-                M_betaFqm[i].resize( Ql(i) );
-                for(int j=0;j<Ql(i);j++)
-                    M_betaFqm[i][j].resize(1);
-            }
             //compliant output
             for ( int i=0; i<Ql( 0 ); i++ ) M_betaFqm[0][i][0] = 1;
 
         }//don't use ginac
         return boost::make_tuple( M_betaAqm, M_betaFqm);
-
-#if 0
-        /* check ................*/
-        for ( int i=0; i<nx*ny; i++ )
-        {
-            LOG( INFO )<< "M_betaAqm["<<i<<"][0] = "<<M_betaAqm[i][0]<<" -- should be "<<mu(i);
-        }
-       index_beta=nx*ny;
-        for ( int i=0; i<north_subdomain_index.size(); i++ )
-        {
-            LOG( INFO ) << " M_betaAqm["<<index_beta<<"][0] = "<<M_betaAqm[index_beta][0]<<" -- should be "<<  mu ( north_subdomain_index[i]-1 );
-            index_beta++;
-        }
-        LOG( INFO ) << " M_betaAqm["<<index_beta<<"][0] = "<<M_betaAqm[index_beta][0]<<" -- should be 1";
-        LOG( INFO ) << "M_betaFqm[0][0][0] : "<<M_betaFqm[0][0][0]<<" -- should be 1";
-        /* end check ........... */
-#endif
 
     }
 
@@ -609,6 +573,9 @@ public:
         return M_Dmu->min();
     }
 
+    void initDataStructureForBetaCoeff();
+    void buildGinacExpressions();
+
 private:
 
     po::variables_map M_vm;
@@ -657,8 +624,86 @@ private:
     beta_vector_type M_betaAqm;
     std::vector< beta_vector_type > M_betaFqm;
 
+    bool M_use_ginac ;
+
+    std::vector< Expr<GinacEx<2> > > ginac_expressionA;
+    std::vector< Expr<GinacEx<2> > > ginac_expressionF;
+
 }; // ThermalBlock
 
+
+
+void
+ThermalBlock::initDataStructureForBetaCoeff()
+{
+    int qa = Qa();
+    M_betaAqm.resize( qa );
+    for(int i=0; i<qa; i++)
+        M_betaAqm[i].resize( 1 );
+
+   int nl = Nl();
+    M_betaFqm.resize( nl );
+    for(int i=0; i<nl; i++)
+    {
+        int ql=Ql(i);
+        M_betaFqm[i].resize( ql );
+        for(int j=0; j<ql; j++)
+            M_betaFqm[i][j].resize( 1 );
+    }
+}
+
+void
+ThermalBlock::buildGinacExpressions()
+{
+
+    int qa = this->Qa();
+    int nl = this->Nl();
+
+
+    //create list of symbols
+    std::vector< std::string > symbols_vec;
+    symbols_vec.push_back( "x" );
+    symbols_vec.push_back( "y" );
+    for ( int i=0; i<nx*ny; i++ )
+    {
+        std::string symbol = ( boost::format("k%1%") %i ).str();
+        symbols_vec.push_back( symbol );
+    }
+
+    //build ginac expressions
+    int index_beta=nx*ny;
+    for ( int i=0; i<nx*ny; i++ )
+    {
+        std::string name = ( boost::format("beta.A%1%") %i ).str();
+        std::string filename = ( boost::format("GinacA%1%") %i ).str();
+        ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
+    }
+    index_beta=nx*ny;
+    for ( int i=0; i<north_subdomain_index.size(); i++ )
+    {
+        int j = north_subdomain_index[i]-1;
+        std::string name = ( boost::format("beta.A%1%") %j ).str();
+        std::string filename = ( boost::format("GinacA%1%") %index_beta ).str();
+        ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
+        index_beta++;
+    }
+    int idx = nx*ny;
+    std::string name = ( boost::format("beta.Alast") ).str();
+    std::string filename = ( boost::format("GinacAlast") ).str();
+    ginac_expressionA.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
+
+    for(int i=0; i<nl; i++)
+    {
+        int ql=Ql(i);
+        for(int j=0; j<ql; j++)
+        {
+            std::string name = ( boost::format("beta.F%1%.%2%") %i %j ).str();
+            std::string filename = ( boost::format("GinacF%1%.%2%") %i %j ).str();
+            ginac_expressionF.push_back( expr( option(_name=name).as<std::string>(), Symbols( symbols_vec ) , filename ) );
+        }
+    }
+
+}
 
 gmsh_ptrtype
 thermalBlockGeometry( int nx, int ny, double hsize )
@@ -743,6 +788,8 @@ thermalBlockGeometry( int nx, int ny, double hsize )
 void
 ThermalBlock::initModel()
 {
+
+    M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
 
     //std::string mshfile_name = M_vm["mshfile"].as<std::string>();
     std::string mshfile_name = option(_name="mshfile").as<std::string>();
@@ -902,6 +949,10 @@ ThermalBlock::initModel()
 
     //form2( Xh, Xh, M, _init=true ) =
     //    integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
+
+    initDataStructureForBetaCoeff();
+    if( M_use_ginac )
+        buildGinacExpressions();
 
 }//initModel()
 
