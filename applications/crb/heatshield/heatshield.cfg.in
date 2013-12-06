@@ -56,7 +56,7 @@ print-error-during-rb-construction=false
 cvg-study=true
 show-residual=false
 is-model-executed-in-steady-mode=true
-use-ginac-for-beta-expressions=true
+use-ginac-for-beta-expressions=false
 [crb.check]
 gs=0
 rb=0
