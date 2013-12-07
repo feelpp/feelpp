@@ -1747,13 +1747,21 @@ CRB<TruthModelType>::offline()
 
         LOG(INFO) << "[CRB::offline] compute random sampling\n";
 
-        int sampling_size = this->vm()["crb.sampling-size"].template as<int>();
-        std::string file_name = ( boost::format("M_Xi_%1%") % sampling_size ).str();
+        std::string sampling_mode = option("crb.sampling-mode").template as<std::string>();
+        int sampling_size = option("crb.sampling-size").template as<int>();
+        std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode) % sampling_size ).str();
         std::ifstream file ( file_name );
         if( ! file )
         {
             // random sampling
-            M_Xi->randomize( sampling_size );
+            if( sampling_mode == "log-random" )
+                M_Xi->randomize( sampling_size );
+            else if( sampling_mode == "log-equidistribute" )
+                M_Xi->logEquidistribute( sampling_size );
+            else if( sampling_mode == "equidistribute" )
+                M_Xi->equidistribute( sampling_size );
+            else
+                throw std::logic_error( "[CRB::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
             //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
             M_Xi->writeOnFile(file_name);
         }
