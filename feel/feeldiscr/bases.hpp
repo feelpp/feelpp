@@ -225,6 +225,39 @@ struct meshes
 };
 
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
+struct mortars
+        :
+    public detail::mortars_base,
+    public mpl::if_<boost::is_same<A0,mpl::void_>,
+                    boost::fusion::vector<>,
+                    typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                      boost::fusion::vector<A0>,
+                                      typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                        boost::fusion::vector<A0,A1>,
+                                                        typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                          boost::fusion::vector<A0,A1,A2>,
+                                                                          typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                            boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                            boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
+
+{
+    typedef typename mpl::if_<boost::is_same<A0,mpl::void_>,
+                              boost::fusion::vector<>,
+                              typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                                boost::fusion::vector<A0>,
+                                                typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                                  boost::fusion::vector<A0,A1>,
+                                                                  typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                                    boost::fusion::vector<A0,A1,A2>,
+                                                                                    typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                                      boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                                      boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type super;
+
+    typedef mortars<A0,A1,A2,A3,A4> this_type;
+    mortars( super const& m ) : super( m ) {}
+};
+
+template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct Periodicity
         :
     public detail::periodic_base,
