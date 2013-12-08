@@ -90,7 +90,8 @@ public:
     typedef typename space_type::real_type real_type;
     typedef VectorType vector_type;
     typedef boost::shared_ptr<VectorType> vector_ptrtype;
-    typedef typename space_type::template Element<value_type, ElemContType> element_type;
+    //typedef typename space_type::template Element<value_type, ElemContType> element_type;
+    typedef typename space_type::template Element<value_type> element_type;
 
 #if 0
     typedef typename space_type::component_fespace_type component_fespace_type;
@@ -558,6 +559,7 @@ public:
         return M_F( i );
     }
 
+#if 0
     /**
      * Computes the application of the form on an element of the function space
      *
@@ -568,7 +570,7 @@ public:
     {
         return M_F->dot( __v );
     }
-
+#endif
     /**
      * Computes the application of the form on an element of the function space
      *

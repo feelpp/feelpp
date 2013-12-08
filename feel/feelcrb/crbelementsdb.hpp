@@ -162,7 +162,7 @@ CRBElementsDB<ModelType>::saveDB()
 
     if ( ofs )
     {
-        boost::archive::text_oarchive oa( ofs );
+        boost::archive::binary_oarchive oa( ofs );
         // write class instance to archive
         oa << *this;
         // archive and stream closed when destructors are called
@@ -192,7 +192,7 @@ CRBElementsDB<ModelType>::loadDB()
 
     if ( ifs )
     {
-        boost::archive::text_iarchive ia( ifs );
+        boost::archive::binary_iarchive ia( ifs );
         // write class instance to archive
         ia >> *this;
         //std::cout << "Loading " << db << " done...\n";
