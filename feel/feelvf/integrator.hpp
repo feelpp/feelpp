@@ -1659,6 +1659,11 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 {
     LOG(INFO) << "[integrator::assembleInCaseOfInterpolate] vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS>\n";
 
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
+
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
@@ -1687,7 +1692,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
 
     // typedef on formcontext
-    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_type,map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
     typedef form_context_type fcb_type;
     typedef fcb_type* focb_ptrtype;
 
@@ -1708,16 +1713,18 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     }
     if (!findEltForInit) return;
 
+
     //-----------------------------------------------//
-    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), this->im().points() ) );
+    im_range_type imRange;
+    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
     gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
     //-----------------------------------------------//
-    pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.testSpace()->fe()->points()/* this->im().points()*/ ) );
+    pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.testSpace()->fe()->points() ) );
     gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
     map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
     //-----------------------------------------------//
-    pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() /*this->im().points()*/ ) );
+    pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
     gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
     map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
     //-----------------------------------------------//
@@ -1727,7 +1734,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                mapgmcFormTrial,
                                                mapgmcExpr,
                                                this->expression(),
-                                               this->im() ) );
+                                               imRange ) );
 
     //-----------------------------------------------//
 
@@ -1823,6 +1830,10 @@ template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
 {
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
 
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
@@ -1843,7 +1854,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
 
     // typedef on formcontext
-    typedef typename FormType::template Context<map_gmc_form_type, expression_type, im_type,map_gmc_expr_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_form_type, expression_type, im_range_type, map_gmc_expr_type> form_context_type;
     typedef form_context_type fcb_type;
     typedef fcb_type* focb_ptrtype;
 
@@ -1866,7 +1877,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
     //-----------------------------------------------//
 
-    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), this->im().points() ) );
+    im_range_type imRange;
+    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
     gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
     map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
 
@@ -1883,7 +1895,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
                                                mapgmcForm,
                                                mapgmcExpr,
                                                this->expression(),
-                                               this->im() ) );
+                                               imRange ) );
 
     //-----------------------------------------------//
 
@@ -2592,6 +2604,11 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                                  mpl::int_<MESH_FACES> /**/ ) const
 {
 
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
+
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
@@ -2629,7 +2646,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
 
 
     // typedef on formcontext
-    typedef typename im_type::face_quadrature_type face_im_type;
+    typedef typename im_range_type::face_quadrature_type face_im_type;
 
     typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type,map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
     typedef form_context_type fcb_type;
@@ -2652,22 +2669,24 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
     if (!findEltForInit) return;
 
 
-    QuadMapped<im_type> qm;
-    typedef typename QuadMapped<im_type>::permutation_type permutation_type;
-    typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
+    //QuadMapped<im_type> qm;
+    typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
+    //typename QuadMapped<im_range_type>::permutation_points_type ppts( qm( im() ) );
 
-    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( im().nFaces() );
-    std::vector<face_im_type> face_ims( im().nFaces() );
+    im_range_type imRange;
+    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( imRange.nFaces() );
+    std::vector<face_im_type> face_ims( imRange.nFaces() );
 
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
     {
-        face_ims[__f] = this->im( __f );
+        face_ims[__f] = imRange.face( __f );
 
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
             //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), ppts[__f].find( __p )->second ) );
+            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+
         }
     }
 
@@ -2700,7 +2719,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                                                mapgmcExpr,
                                                this->expression(),
                                                face_ims[__face_id_in_elt_0],
-                                               this->im() ) );
+                                               imRange ) );
 
     //-----------------------------------------------//
 
@@ -2799,6 +2818,12 @@ template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
 {
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
+
     // typedef on integral mesh (expr) :
     typedef typename eval::gm_type gm_expr_type;
     typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
@@ -2818,7 +2843,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;
 
     // typedef on formcontext
-    typedef typename im_type::face_quadrature_type face_im_type;
+    typedef typename im_range_type::face_quadrature_type face_im_type;
 
     typedef typename FormType::template Context<map_gmc_form_type, expression_type, face_im_type,map_gmc_expr_type> form_context_type;
     typedef form_context_type fcb_type;
@@ -2842,22 +2867,23 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
 
     //-----------------------------------------------//
 
-    QuadMapped<im_type> qm;
-    typedef typename QuadMapped<im_type>::permutation_type permutation_type;
-    typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
+    //QuadMapped<im_type> qm;
+    typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
+    //typename QuadMapped<im_type>::permutation_points_type ppts( qm( im() ) );
 
-    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( im().nFaces() );
-    std::vector<face_im_type> face_ims( im().nFaces() );
+    im_range_type imRange;
+    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( imRange.nFaces() );
+    std::vector<face_im_type> face_ims( imRange.nFaces() );
 
     for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
     {
-        face_ims[__f] = this->im( __f );
+        face_ims[__f] = imRange.face( __f );
 
         for ( permutation_type __p( permutation_type::IDENTITY );
               __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
         {
             //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
-            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), ppts[__f].find( __p )->second ) );
+            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
         }
     }
 
@@ -2885,7 +2911,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Lin
                                                mapgmcExpr,
                                                this->expression(),
                                                face_ims[__face_id_in_elt_0],
-                                               this->im() ) );
+                                               imRange ) );
 
     //-----------------------------------------------//
 
