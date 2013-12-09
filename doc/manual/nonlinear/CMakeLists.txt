@@ -25,7 +25,4 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 feelpp_add_application(doc_bratu SRCS bratu.cpp LABEL doc)
 feelpp_add_application(doc_nonlinearpow SRCS nonlinearpow.cpp LABEL doc)
-feelpp_add_application(doc_steadynavierstokes SRCS navierstokes.cpp LABEL doc )
-#feelpp_add_application(doc_steadynavierstokes_neumann SRCS navierstokes.cpp CFG kovasnay.cfg GEO kovasnaystraight2.geo LABEL doc)
-
-#
+feelpp_add_application(doc_steadynavierstokes SRCS navierstokes.cpp CFG kovasnay.cfg GEO kovasnaystraight2.geo LABEL doc )

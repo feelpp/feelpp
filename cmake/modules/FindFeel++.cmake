@@ -4,16 +4,17 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
-# Check compiler 
+# Check compiler
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # require at least gcc 4.6
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.6)
         message(FATAL_ERROR "GCC version must be at least 4.6!")
     endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    message(STATUS "clang version :  ${CMAKE_CXX_COMPILER_VERSION}")
     # require at least clang 3.3
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.3)
-        message(FATAL_ERROR "Clang version must be at least 3.3!")
+        message(FATAL_ERROR "Clang version must be at least 3.3! we have clang ${CMAKE_CXX_COMPILER_VERSION}")
     endif()
 else()
     message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
