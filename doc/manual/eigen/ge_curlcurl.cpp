@@ -106,7 +106,7 @@ EigenProblem<Dim, Order>::run()
         {
             std::cout << " -- eigenvalue " << i << " = (" << mode.second.get<0>() << "," <<  mode.second.get<1>() << ")\n";
             femodes[i] = *mode.second.get<2>();
-            double l2div = normL2(_range=elements(mesh),_expr=divv(femodes[i].template element<0>() ));
+            double l2div = normL2(_range=elements(mesh),_expr=divv(femodes[i] ));
             if ( Environment::worldComm().isMasterRank() )
             {
                 std::cout << "  - div = " <<  l2div << "\n";
@@ -123,7 +123,7 @@ EigenProblem<Dim, Order>::run()
         int i = 0;
         for( auto const& mode: femodes )
         {
-            e->add( ( boost::format( "mode-u-%1%" ) % i ).str(), mode.template element<0>() );
+            e->add( ( boost::format( "mode-u-%1%" ) % i ).str(), mode );
         }
 
         e->save();
