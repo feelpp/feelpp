@@ -251,9 +251,9 @@ void SolverLinearPetsc<T>::init ()
         ierr = KSPGetType ( M_ksp, &ksp_type );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-        if ( strcmp( ksp_type, "preonly" ) )
+        if ( std::string((char*)ksp_type) == std::string( ( char* )KSPPREONLY ) )
         {
-            ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_TRUE );
+            ierr = KSPSetInitialGuessNonzero ( M_ksp, PETSC_FALSE );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
 
@@ -710,6 +710,11 @@ SolverLinearPetsc<T>::setPetscSolverType()
 #else
         ierr = KSPSetType ( M_ksp, ( char* ) KSPCHEBYSHEV );
 #endif
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+        return;
+
+    case PREONLY :
+        ierr = KSPSetType ( M_ksp, ( char* ) KSPPREONLY );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
         return;
 
