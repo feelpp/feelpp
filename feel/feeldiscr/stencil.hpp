@@ -1401,7 +1401,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                     {
                         for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
-                            const auto * neighbor = boost::addressof( elem );
+                            const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
                             size_type neighbor_id = elem.neighbor( ms ).first;
                             size_type neighbor_process_id = elem.neighbor( ms ).second;
 
