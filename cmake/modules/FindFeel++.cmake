@@ -745,7 +745,7 @@ endif( FEELPP_ENABLE_OCTAVE)
 # Gmsh
 #
 FIND_PACKAGE(Gmsh)
-if(not GMSH_FOUND)#Download and Instal it
+if(GMSH_NOTFOUND)#Download and Instal it
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
   message(STATUS "Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
   execute_process(
