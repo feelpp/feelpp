@@ -273,11 +273,27 @@ you can customize the build type:
   cmake -D CMAKE_BUILD_TYPE=Release
   ...
 \endverbatim
-Once Cmake has done its work, you are now able to compile the library with
+Once Cmake has done its work, you are now able to compile the library with:
 \verbatim
   make
 \endverbatim
-<b>Important</b> : from now, all commands should be type in <tt>feel.opt</tt> or its subdirectories.
+You can speed up the compilation process, if you have a multicore processor. To do so, you have to specify the number of parallel jobs <tt>make</tt> will be allowed to spawn by using the <tt>-j</tt> flag:
+\verbatim
+  make -j <nbjobs>
+\endverbatim
+<b>Important</b>: from now on, all commands should be typed in <tt>feel.opt</tt> or its subdirectories.
+
+<p>
+<b>Unit tests</b>:
+\feel comes with built-in unit tests to ensure that the library is working correctly. You can launch basic tests based on the quickstart application by typing:
+\verbatim
+  make check
+\endverbatim
+Or you can execute the whole testsuite, by typing the following command: (This might take a while)
+\verbatim
+  make check-full
+\endverbatim
+</p>
 
 */
 }
