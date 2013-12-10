@@ -431,7 +431,7 @@ public:
         static const bool r_is_terminal = right_expression_type::is_terminal;
 
         BOOST_MPL_ASSERT_MSG( ( left_shape::nDim > 1 ),
-                              CROOSS_INVALID_DIMENSION,
+                              CROSS_INVALID_DIMENSION,
                               (mpl::int_<left_shape::nDim>,mpl::int_<right_shape::nDim>));
         BOOST_MPL_ASSERT_MSG( left_shape::nDim == right_shape::nDim,
                               CROSS_INVALID_DIMENSION_LEFT_AND_RIGHT_SHOULD_BE_THE_SAME,
