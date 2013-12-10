@@ -85,15 +85,15 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
       PATHS
       $ENV{GMSH_DIR}/lib
-	  NO_DEFAULT_PATH)
+      NO_DEFAULT_PATH)
 
     set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
   endif(NOT GMSH_LIBRARY)
 
   FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
     PATH
-      $ENV{GMSH_DIR}
-      ${CMAKE_SYSTEM_PREFIX_PATH}
+    $ENV{GMSH_DIR}
+    ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib  )
 
@@ -122,7 +122,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   mark_as_advanced( GMSH_LIBRARY )
   mark_as_advanced( GL2PS_LIBRARY )
   IF ( FEELPP_ENABLE_OPENGL )
-     mark_as_advanced( GL_LIBRARY )
+    mark_as_advanced( GL_LIBRARY )
   ENDIF()
   mark_as_advanced( GMSH_EXECUTABLE )
 
