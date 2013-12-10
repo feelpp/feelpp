@@ -77,11 +77,13 @@ public:
 
     EvaluatorContext( context_type const& ctx,
                       expression_type const& __expr,
-                      GeomapStrategyType geomap_strategy )
+                      GeomapStrategyType geomap_strategy,
+                      bool mpi_communications )
         :
         M_ctx( ctx ),
         M_expr( __expr ),
-        M_geomap_strategy( geomap_strategy )
+        M_geomap_strategy( geomap_strategy ),
+        M_mpi_communications( mpi_communications )
     {
         DVLOG(2) << "EvaluatorContext constructor from expression\n";
     }
@@ -91,7 +93,8 @@ public:
         :
         M_ctx( __vfi.M_ctx ),
         M_expr( __vfi.M_expr ),
-        M_geomap_strategy( __vfi.M_geomap_strategy )
+        M_geomap_strategy( __vfi.M_geomap_strategy ),
+        M_mpi_communications( __vfi.M_mpi_communications )
     {
         DVLOG(2) << "EvaluatorContext copy constructor\n";
     }
@@ -143,6 +146,7 @@ private:
     context_type M_ctx;
     expression_type const&  M_expr;
     GeomapStrategyType M_geomap_strategy;
+    bool M_mpi_communications;
 };
 
 template<typename CTX, typename ExprT>
@@ -219,6 +223,14 @@ EvaluatorContext<CTX, ExprT>::operator()() const
         }
     }
 
+
+    if( ! M_mpi_communications )
+    {
+        //in this case, we don't call mpi::all_reduce
+        //to fill __globalv
+        return __localv;
+    }
+
     //bring back each proc contribution in __globalv
     mpi::all_reduce( Environment::worldComm() , __localv, __globalv, std::plus< element_type >() );
     //LOG( INFO ) << "__globalv : "<<__globalv;
@@ -247,10 +259,11 @@ template<typename Ctx, typename ExprT>
 typename details::EvaluatorContext<Ctx, Expr<ExprT> >::element_type
 evaluatecontext_impl( Ctx const& ctx,
                       Expr<ExprT> const& __expr,
-                      GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO )
+                      GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO,
+                      bool mpi_communications = true )
 {
     typedef details::EvaluatorContext<Ctx, Expr<ExprT> > proj_t;
-    proj_t p( ctx, __expr, geomap );
+    proj_t p( ctx, __expr, geomap , mpi_communications );
     return p();
 }
 
@@ -263,6 +276,7 @@ evaluatecontext_impl( Ctx const& ctx,
  * \arg pset set of points (e.g. quadrature points) in the reference elements to be transformed in the real elements
  * \arg expr the expression to project
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
+ * \arg mpi_communications a bool that indicates if all proc communicate or not
  */
 BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::evaluate_context<Args>::element_type ), // return type
@@ -277,11 +291,12 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+      ( mpi_communications, (bool), true )
     )
 )
 {
     //LOG(INFO) << "evaluate expression..." << std::endl;
-    return evaluatecontext_impl( context, expr, geomap );
+    return evaluatecontext_impl( context, expr, geomap , mpi_communications );
     //LOG(INFO) << "evaluate expression done." << std::endl;
 }
 
