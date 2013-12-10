@@ -608,6 +608,8 @@ Backend<T>::kspEnumType() const
 
     else if ( this->kspType()=="chebyshev" )  return CHEBYSHEV;
 
+    else if ( this->kspType()=="preonly" )  return PREONLY;
+
     else return GMRES;
 
 } // Backend::kspEnumType
