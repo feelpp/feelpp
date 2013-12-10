@@ -99,6 +99,19 @@ public:
     Symbols(std::vector<std::string> const& s ):std::vector<symbol>(symbols(s)) {}
 };
 
+template<typename... Args>
+class Fields
+    :
+    public boost::fusion::vector<Args...>
+{
+public:
+    typedef boost::fusion::vector<Args...> super;
+    typedef Fields<Args...> this_type;
+	static const int s = sizeof...(Args);
+    Fields( super const& m) : super( m ) {}
+
+};
+
 class GinacExprManagerImpl :
         public std::map<std::string, boost::shared_ptr<GiNaC::FUNCP_CUBA> > ,
         public boost::noncopyable
@@ -234,6 +247,7 @@ public:
                         GinacExprManager::instance().operator[]( filename ) = M_cfun;
                 }
             }
+            this->setParameterFromOption();
         }
 
     GinacEx( GinacEx const & fun )
@@ -288,6 +302,29 @@ public:
      */
     //@{
 
+    void setParameterFromOption()
+        {
+            std::map<std::string,value_type> m;
+            for( auto const& s : M_syms )
+            {
+                if ( Environment::vm().count( s.get_name() ) )
+                {
+                    // use try/catch in order to catch casting exception for
+                    // option that do not return double. Indeed we are only
+                    // collecting symbols in option database which can be cast
+                    // to numerical types
+                    try
+                    {
+                        value_type v = option( _name=s.get_name() ).template as<double>();
+                        m.insert( std::make_pair( s.get_name(), v ) );
+                        LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
+                    }
+                    catch(...)
+                    {}
+                }
+            }
+            this->setParameterValues( m );
+        }
 
     void setParameterValues( vec_type const& p )
         {
