@@ -153,7 +153,7 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     
     LOG(INFO) << "[Exporter] format :  " << estr << "\n";
     LOG(INFO) << "[Exporter] N      :  " << N << "\n";
-    if( N > 1 && || estr != "gmsh" )
+    if( N > 1 || estr != "gmsh" )
         LOG(WARNING) << "[Exporter] format " << estr << " is not available for mesh order > 1 - using gmsh exporter instead\n";
 
     if ( N == 1 && ( estr == "ensight"   ) )
