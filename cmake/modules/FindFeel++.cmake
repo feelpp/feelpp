@@ -4,7 +4,7 @@
 #  FEELPP_INCLUDE_DIR = where feel/feelcore/feel.hpp can be found
 #  FEELPP_LIBRARY    = the library to link in
 
-# Check compiler 
+# Check compiler
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # require at least gcc 4.6
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.6)
@@ -62,6 +62,7 @@ else()
   OPTION(FEELPP_ENABLE_OPENTURNS "enable feel++ OpenTURNS support" ON)
 endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
+
 
 OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
 OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
@@ -486,6 +487,7 @@ FIND_LIBRARY(PTESMUMPS_LIBRARY
   $ENV{PETSC_DIR}/lib
   $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
   /opt/local/lib/petsc/lib
+  $ENV{PTSCOTCH_DIR}/lib
   )
 message(STATUS "PTESMUMPS: ${PTESMUMPS_LIBRARY}" )
 IF( PTESMUMPS_LIBRARY )
