@@ -2,6 +2,8 @@
 
 # $Id$
 
+source ${portpath}/../../../macports-xc5/tcl/fixLibsAndExecutables.tcl
+
 PortSystem  1.0
 # Portgroup is not an option until we find a way to get rid of the -arch option
 #PortGroup   cmake 1.0
@@ -9,10 +11,10 @@ PortSystem  1.0
 name                 feel++
 
 fetch.type           git
-git.url              https://code.google.com/p/feelpp
-git.branch           4be79d40d260
+git.url              https://github.com/feelpp/feelpp.git
+git.branch           master
 
-version              0.92.0-git-${git.branch}
+version              master
 categories           science
 platforms            macosx darwin freebsd
 maintainers          feelpp.org:christophe.prudhomme
@@ -49,14 +51,26 @@ long_description    \
 
 homepage            http://www.feelpp.org
 
-worksrcdir	feel++-${version}
+#worksrcdir	feel++-${version}
 configure	{
-    file mkdir ${worksrcdir}/build
-    system "cd ${worksrcdir}/build && cmake ${configure.args} ../"
+    file mkdir ${worksrcpath}/build
+    system "cd ${worksrcpath}/build && ${configure.cmd} .. ${configure.args} "
+    #file mkdir ${worksrcdir}/build
+    #system "cd ${worksrcdir}/build && cmake ${configure.args} ../"
 }
 
-configure.env-append  PETSC_DIR=/opt/local/lib/petsc
-configure.env-append  SLEPC_DIR=/opt/local/lib/petsc
+#build.target feelpp
+
+build {
+    if {${build.jobs} ne {} } {
+        system "cd ${worksrcpath}/build && ${build.cmd} ${build.target} -j ${build.jobs} "
+    } else {
+        system "cd ${worksrcpath}/build && ${build.cmd} ${build.target}"
+    }
+}
+
+configure.env-append  PETSC_DIR=${prefix}/lib/petsc
+configure.env-append  SLEPC_DIR=${prefix}/lib/petsc
 
 
 # make sure to keep below in sync with cmake Portgroup except
@@ -71,31 +85,44 @@ configure.args      -DCMAKE_INSTALL_PREFIX=${prefix}\
                     -DCMAKE_BUILD_TYPE=Release \
                     -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
                     -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
-                    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
                     -DCMAKE_MODULE_PATH=${cmake_share_module_dir} \
-                    -DCMAKE_CXX_COMPILER=${prefix}/bin/g++-mp-4.6 \
-                    -DCMAKE_CC_COMPILER=${prefix}/bin/gcc-mp-4.6 \
-                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.6 \
-                    -DFEEL_ENABLE_DOCUMENTATION=OFF \
-                    -DCMAKE_DISABLE_FIND_PACKAGE_Octave=TRUE \
-                    -DCMAKE_DISABLE_FIND_PACKAGE_OpenTURNS=TRUE \
-                    -DCMAKE_DISABLE_FIND_PACKAGE_Metis=TRUE \
+                    -DCMAKE_CXX_COMPILER=${prefix}/bin/g++-mp-4.7 \
+                    -DCMAKE_C_COMPILER=${prefix}/bin/gcc-mp-4.7 \
+                    -DCMAKE_Fortran_COMPILER=${prefix}/bin/gfortran-mp-4.7 \
+                    -DMPI_Fortran_COMPILER=${prefix}/bin/openmpif90 \
+                    -DFEELPP_ENABLE_DOCUMENTATION=OFF \
+                    -DFEELPP_ENABLE_APPLICATIONS=OFF \
+                    -DFEELPP_ENABLE_BENCHMARKS=OFF \
+                    -DFEELPP_ENABLE_TESTS=OFF \
+                    -DFEELPP_ENABLE_RESEARCH=OFF \
                     -Wno-dev
+
+
+
 
 variant gcc45 conflicts gcc44 gcc46 gcc47 description {Build with gcc 4.5} {}
 variant gcc46 conflicts gcc44 gcc45 gcc47 description {Build with gcc 4.6} {}
 variant gcc47 conflicts gcc44 gcc45 gcc46 description {Build with gcc 4.7} {}
 
 
-default_variants    +gcc46
-depends_lib-append  port:gcc46
-configure.compiler  macports-gcc-4.6
+default_variants    +gcc47
+depends_lib-append  port:gcc47
+configure.compiler  macports-gcc-4.7
 
 configure.args-append \
     -DMPI_COMPILER=/opt/local/lib/openmpi/bin/mpic++\
 
 
-destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
+#destroot.destdir DESTDIR=${destroot}${prefix}/lib/feel++
+
+destroot {
+   system "cd ${worksrcpath}/build && ${destroot.cmd} ${destroot.target} ${destroot.destdir}"
+}
+
+post-destroot {
+    fixLibsAndExecutables ${worksrcpath} ${destroot}
+}
+
 
 #post-build {
 #   system "cd ${worksrcpath}/doc/api/ && make -k doxygen"
@@ -106,10 +133,11 @@ depends_lib    \
     port:boost \
     port:petsc\
     port:gmsh-devel\
-    port:libANN \
-    port:glpk
+    port:glpk \
+    port:slepc\
 
-#    port:slepc\
+
+#    port:libANN \
 
 variant octave description {Add octave bindings} {
   depends_lib_append \
@@ -134,7 +162,7 @@ variant doc description {Add doc support} {
 
 variant scipy description {Add python bindings} {
   depends_lib_append \
-    port:py26-scipy\
-    port:py26-numpy
+    port:py27-scipy\
+    port:py27-numpy
 }
 
