@@ -85,7 +85,7 @@ IF( EXISTS "${CMAKE_CURRENT_BINARY_DIR}/doc/api/html" )
 ENDIF()
 
 
-INSTALL(FILES quickstart/laplacian.cpp DESTINATION share/doc/feel/examples/quickstart/ COMPONENT Doc)
+INSTALL(FILES quickstart/qs_laplacian.cpp DESTINATION share/doc/feel/examples/quickstart/ COMPONENT Doc)
 
 FILE(WRITE CMakeLists.txt.doc  "cmake_minimum_required(VERSION 2.8)
 set(CMAKE_MODULE_PATH \"${CMAKE_INSTALL_PREFIX}/share/feel/cmake/modules/\")
@@ -93,7 +93,7 @@ Find_Package(Feel++)
 
 add_custom_target(tutorial)
 
-feelpp_add_application( qs_laplacian SRCS quickstart/laplacian.cpp INCLUDE_IN_ALL)")
+feelpp_add_application( qs_laplacian SRCS quickstart/qs_laplacian.cpp INCLUDE_IN_ALL)")
 
 FILE(GLOB examples "${CMAKE_CURRENT_SOURCE_DIR}/doc/manual/tutorial/*.*pp")
 
