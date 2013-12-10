@@ -64,6 +64,7 @@ else()
 endif()
 OPTION(FEELPP_ENABLE_OCTAVE "Enable Feel++/Octave interface" OFF)
 
+
 OPTION(FEELPP_ENABLE_OPENGL "enable feel++ OpenGL support" ON)
 OPTION(FEELPP_DISABLE_EIGEN_ALIGNMENT "disable alignement (hence vectorization) in Eigen" OFF)
 
@@ -487,6 +488,7 @@ FIND_LIBRARY(PTESMUMPS_LIBRARY
   $ENV{PETSC_DIR}/lib
   $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
   /opt/local/lib/petsc/lib
+  $ENV{PTSCOTCH_DIR}/lib
   )
 message(STATUS "PTESMUMPS: ${PTESMUMPS_LIBRARY}" )
 IF( PTESMUMPS_LIBRARY )
