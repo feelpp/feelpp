@@ -103,6 +103,11 @@ include(feelpp.version)
 # Use of standard headers for GiNaC compiler (for supermuc this option should be OFF)
 option(USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER "Enable use of standard include headers in ginac-excompiler" ON)
 
+OPTION(FEELPP_ENABLE_HOMEBREW "Enable Feel++/Homebrew support" OFF)
+if (APPLE)
+  set(FEELPP_ENABLE_HOMEBREW ON)
+endif()
+
 # possibly set the Feel++ configuration
 include(feelpp.machines.config)
 
