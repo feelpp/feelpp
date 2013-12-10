@@ -713,18 +713,25 @@ public :
         }
 
     /**
-     * evaluate the i^th basis function at nodes
-     * given by the context ctx
+     * evaluate all basis functions at (only one) node given by ctx
+     * returns matrix of size nComponents x N if N is RB size
      */
     eigen_matrix_type evaluateBasis( boost::shared_ptr<ContextRB> const& ctx )
         {
             eigen_matrix_type m( nComponents, M_primal_rb_basis.size() );
             std::map<int,ctxrb_ptrtype> mc{{0,ctx}};
             ContextRBSet s( mc );
+
+            //index of the column to be filled
             int c = 0;
+
+            //loop over each basis functions
             for( auto& b : M_primal_rb_basis )
             {
-                m.col(c++) = evaluateFromContext( _context=s , _expr=idv(b) );
+                //in a parallel context the point given by ctx is located only on one proc
+                //so we need to indicate to evaluateFromContext not do "all_reduce" at the end
+                //that is why we use a boolean mpi_communications
+                m.col(c++) = evaluateFromContext( _context=s , _expr=idv(b) , _mpi_communications=false );
             }
             return m;
         }
@@ -736,9 +743,14 @@ public :
             int npts = ctx.nPoints();
             eigen_matrix_type evaluation;
             evaluation.resize( nDim , npts*nComponents );
+
+            //in a parallel context the point given by ctx is located only on one proc
+            //so we need to indicate to evaluateFromContext not do "all_reduce" at the end
+            //that is why we use a boolean _mpi_communications
+
             if( nDim >= 1 )
             {
-                auto evalx = evaluateFromContext( _context=ctx , _expr= dxv( M_primal_rb_basis[i] ) );
+                auto evalx = evaluateFromContext( _context=ctx , _expr= dxv( M_primal_rb_basis[i] ) , _mpi_communications=false );
                 for(int p=0; p<npts; p++)
                 {
                     for(int c=0; c<nComponents;c++)
@@ -747,7 +759,7 @@ public :
             }
             if( nDim >= 2 )
             {
-                auto evaly = evaluateFromContext( _context=ctx , _expr= dyv( M_primal_rb_basis[i] ) );
+                auto evaly = evaluateFromContext( _context=ctx , _expr= dyv( M_primal_rb_basis[i] ), _mpi_communications=false );
                 for(int p=0; p<npts; p++)
                 {
                     for(int c=0; c<nComponents;c++)
@@ -756,7 +768,7 @@ public :
             }
             if( nDim == 3 )
             {
-                auto evalz = evaluateFromContext( _context=ctx , _expr= dzv( M_primal_rb_basis[i] ) );
+                auto evalz = evaluateFromContext( _context=ctx , _expr= dzv( M_primal_rb_basis[i] ), _mpi_communications=false );
                 for(int p=0; p<npts; p++)
                 {
                     for(int c=0; c<nComponents;c++)
@@ -969,28 +981,38 @@ public :
             }
 
         /*
-         * evaluate the element to nodes in context
-         *
-         * for given element coefficients, evaluate the element at node given in context_fem
-         * in order to use matrix-vector multiplication, for np points, the result is given as follows :
-         * np first elements of the vector : evaluation of the first component of field
-         * np others : evaluation of second component
-         * and in 3D case ( and vector field ) last np elements : evaluation of the third components
-         *[ comp0 , ... , comp0 , comp1 , ... , comp1 , ... , comp2 , ... , comp2 ]
-         * then we reorganize datas to have
-         * [ comp0, comp1, comp2 ,... ,comp0, comp1, comp2 ]
+         * evaluate the element to nodes in contextRBSet
          */
         eigen_vector_type evaluate(  ctxrbset_type const& context_rb )
             {
                 int npts = context_rb.nPoints();
-                Eigen::Matrix<value_type, Eigen::Dynamic, 1> result( npts*nComponents );
-                int p = 0;
-                for( auto const& ctx : context_rb )
+                //from now we manipulate local datas
+                //one proc can have zero, one or more context_rb
+                eigen_vector_type local_result( npts*nComponents );
+                eigen_vector_type global_result( npts*nComponents );
+                local_result.setZero();
+                global_result.setZero();
+                auto it = context_rb.begin();
+                auto en = context_rb.end();
+
+                //loop on local points
+                for ( int p = 0; it!=en ; ++it, ++p )
                 {
-                    result.segment( nComponents*p, nComponents )  = this->evaluate( *ctx.second );
-                    p++;
+                    int global_position=it->first;
+                    auto ctx=it->second;
+                    local_result.segment( nComponents*global_position, nComponents )  = this->evaluate( *ctx );
                 }
-                return result;
+                mpi::all_reduce( Environment::worldComm() , local_result, global_result, std::plus< eigen_vector_type >() );
+
+                return global_result;
+
+                //int p = 0;
+                //for( auto const& ctx : context_rb )
+                //{
+                    //result.segment( nComponents*p, nComponents )  = this->evaluate( *ctx.second );
+                    //p++;
+                //}
+
             }
 
 

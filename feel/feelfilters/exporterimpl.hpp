@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2010-04-21
 
-  Copyright (C) 2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010 UniversitÃ© Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -150,6 +150,11 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
 {
     std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
+    
+    LOG(INFO) << "[Exporter] format :  " << estr << "\n";
+    LOG(INFO) << "[Exporter] N      :  " << N << "\n";
+    if( N > 1 && estr != "gmsh" )
+        LOG(WARNING) << "[Exporter] format " << estr << " is not available for mesh order > 1 - using gmsh exporter instead\n";
 
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
