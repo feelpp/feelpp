@@ -3908,15 +3908,11 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     int number_of_time_step=1;
     size_type Qm;
 
-    int time_index = number_of_time_step-1;
-
     if ( M_model->isSteady() )
     {
         time_step = 1e30;
         time_for_output = 1e30;
-        time_index=0;
         Qm = 0;
-        //number_of_time_step=1;
     }
 
     else
@@ -3926,14 +3922,18 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
         time_final = M_model->timeFinal();
 
         if ( K > 0 )
+        {
             time_for_output = K * time_step;
-
+            number_of_time_step = K;
+        }
         else
         {
             number_of_time_step = time_final / time_step;
             time_for_output = number_of_time_step * time_step;
         }
     }
+
+    int time_index = number_of_time_step-1;
 
     beta_vector_type betaAqm;
     beta_vector_type betaMqm;
@@ -3966,7 +3966,6 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
 
     for ( time=time_for_output; time>=time_step; time-=time_step )
     {
-
         int fi=0;
         vectorN_type next_uNdu( M_N );
 
@@ -4006,9 +4005,6 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
                 Fdu = -Ldu;
             uNdu[time_index] = Adu.lu().solve( Fdu );
 
-            if ( time_index>0 )
-                uNduold[time_index-1] = uNdu[time_index];
-
             fi++;
 
            if( option(_name="crb.use-linear-model").template as<bool>() )
@@ -4030,7 +4026,11 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
             throw std::logic_error( "[CRB::fixedPointDual] fixed point ERROR : increment > critical value " );
 
         if( time_index > 0 )
-            time_index--;
+            uNduold[time_index-1] = uNdu[time_index];
+
+
+        time_index--;
+
 
     }//end of non steady case
 
@@ -4137,7 +4137,6 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
     for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
     {
-
         //computeProjectionInitialGuess( mu , N , uN[time_index] );
 
         //vectorN_type error;
@@ -5323,7 +5322,6 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
         }//end of loop over q1
     }//end of if(! M_model->isSteady() && ! M_model_executed_in_steady_mode )
 
-#else
 #endif
 
     value_type delta_du;
@@ -5333,10 +5331,8 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
     else
         delta_du =  math::abs( __gamma_du+__Cma_du+__Cmm_du ) ;
 
-
-
 #if 0
-    std::cout<<"[dualN2Q2] time "<<time<<std::endl;
+    std::cout<<"[transientDualResidual] time "<<time<<std::endl;
     std::cout<<"Undu = \n"<<Undu<<std::endl;
     std::cout<<"Unduold = \n"<<Unduold<<std::endl;
     std::cout<<"__c0_du = "<<__c0_du<<std::endl;
