@@ -151,8 +151,10 @@ Exporter<MeshType, N>::New( po::variables_map const& vm, std::string prefix, Wor
     std::string estr = vm["exporter.format"].template as<std::string>();
     Exporter<MeshType, N>* exporter =  0;//Factory::type::instance().createObject( estr  );
     
-    VLOG(1) << "[Exporter] format :  " << estr << "\n";
-    VLOG(1) << "[Exporter] N      :  " << N << "\n";
+    LOG(INFO) << "[Exporter] format :  " << estr << "\n";
+    LOG(INFO) << "[Exporter] N      :  " << N << "\n";
+    if( N > 1 && || estr != "gmsh" )
+        LOG(WARNING) << "[Exporter] format " << estr << " is not available for mesh order > 1 - using gmsh exporter instead\n";
 
     if ( N == 1 && ( estr == "ensight"   ) )
         exporter = new ExporterEnsight<MeshType, N>( worldComm );
