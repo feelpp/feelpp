@@ -26,10 +26,6 @@ using namespace Feel::vf;
 void run()
 {
     typedef Mesh< Simplex<DIM> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef bases<Lagrange<1, Scalar> > basisP1_type;
-    typedef FunctionSpace<mesh_type, basisP1_type, Feel::Periodicity <Feel::NoPeriodicity> > spaceP1_type;
-    typedef boost::shared_ptr< spaceP1_type > spaceP1_ptrtype;
 
     auto mesh = loadMesh( _mesh=new mesh_type );
 
