@@ -744,16 +744,6 @@ public:
             M_ret( eval::matrix_type::Zero() )
         {
         }
-        HartsContextEvaluate( HartsContextEvaluate& c, tbb::split )
-            :
-            M_gm( new gm_type( *c.M_gm ) ),
-            //M_geopc( new gmpc_type( M_gm, c.M_im.points() ) ),
-            M_geopc( c.M_geopc ),
-            M_c( new gmc_type( M_gm, c.M_c->element(), M_geopc ) ),
-            M_expr( c.M_expr ),
-            M_im( c.M_im ),
-            M_ret( eval::matrix_type::Zero() )
-        {}
 
         HartsContextEvaluate( HartsContextEvaluate const& c )
             :
@@ -766,13 +756,14 @@ public:
             M_ret( c.M_ret )
         {
         }
-        //std::vector<boost::reference_wrapper<const typename mesh_type::element_type> > _v;
-        typedef typename std::vector<boost::reference_wrapper<const typename eval::element_type> >::iterator elt_iterator;
-        void operator() ( const tbb::blocked_range<elt_iterator>& r )
-        {
-#if 1
 
-            for ( auto _elt = r.begin(); _elt != r.end(); ++_elt )
+        void computeCPU(DataArgsType& args)
+        {
+            // DEFINE the range to be iterated on
+            std::vector<boost::reference_wrapper<const typename eval::element_type> > * r =
+                args.get("r")->get<std::vector<boost::reference_wrapper<const typename eval::element_type> > >();
+
+            for ( auto _elt = r->begin(); _elt != r->end(); ++_elt )
             {
                 M_c->update( *_elt );
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( M_c ) );
@@ -780,39 +771,14 @@ public:
                 M_expr.update( mapgmc );
                 M_im.update( *M_c );
 
-#if 1
-
                 for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
+                {
                     for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
                     {
                         M_ret( c1,c2 ) += M_im( M_expr, c1, c2 );
                     }
-
-#endif
+                }
             }
-
-#else
-#if 0
-
-            for ( int i = 0; i < 10000; ++i )
-                for ( uint16_type c1 = 0; c1 < eval::shape::M; ++c1 )
-                    for ( uint16_type c2 = 0; c2 < eval::shape::N; ++c2 )
-                    {
-                        M_ret( c1,c2 ) += i*i; //M_im( M_expr, c1, c2 );
-                    }
-
-#endif
-#endif
-        }
-        void join( HartsContextEvaluate const& other )
-        {
-            M_ret += other.M_ret;
-        }
-
-        void computeCPU(DataArgsType& args)
-        {
-
-
         }
 
         value_type result() const
@@ -3031,7 +2997,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         typename eval::matrix_type res( eval::matrix_type::Zero() );
         typedef HartsContextEvaluate<expression_type, im_type, typename eval::the_element_type> harts_context_type;
 
-        //std::cout << "Integrator Uses HARTS: " << M_use_tbb << "\n";
+        std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
 
         // typedef basic types
         typedef RunTimeSystem::PThreadDriver                        PTHDriverType ;
@@ -3047,6 +3013,17 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         char * str = NULL;
         int nMPIProc = 1;
 
+        // Compute a number of available cores for computation
+        // Taking into account the number of MPI processes launched for this app on this node
+        NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Block);
+
+        // Compute Number of available CPU cores
+        int paramNbCores = 0;
+        int nTotalCoresNode = 12;//numaAffMng.get_num_cores();
+        int nAvailCores = nTotalCoresNode - nMPIProc;
+        int coresPerProcess = 0;
+        int remainder = 0;
+
         #ifdef FEELPP_HAS_MPI
         str = getenv("OMPI_COMM_WORLD_LOCAL_SIZE");
         if(str)
@@ -3054,19 +3031,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             nMPIProc = atoi(str);
         }
         #endif
-
-        // Compute a number of available cores for computation
-        // Taking into account the number of MPI processes launched for this app on this node
-        NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Block);
-
-        // Compute Number of available CPU cores
-        int paramNbCores = 0;
-        int nTotalCoresNode = numaAffMng.get_num_cores();
-        int nAvailCores = nTotalCoresNode - nMPIProc;
-        int coresPerProcess = 0;
-        int remainder = 0;
-
-        std::cout << "HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << std::endl;
 
         // TOFIX: Have a repartition taking into account the NUMA architecture
         // Guess the number of threads that can be spawned
@@ -3093,8 +3057,6 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
         }
 
-        std::cout << "HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << std::endl;
-
         element_iterator it = this->beginElement();
         element_iterator en = this->endElement();
 
@@ -3108,15 +3070,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         /* count the number of elements */
         int nbElts = std::distance(it,en);
 
-        std::cout << "1. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
-
-        // TODO: Free the memory
-
-        /* create a task manager */
+        /* create a task and data managers */
         TaskMngType taskMng;
+        DataMngType dataMng;
 
         /* create a task list */
-        std::vector<harts_context_type> hce;
+        std::vector<harts_context_type * > hce;
         std::vector<int> taskList;
 
         /* Using pthread */
@@ -3129,61 +3088,70 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
         taskList.push_back(taskMng.addNew(compFkTask));
 
-        std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
-
-        /*
-        for ( auto _it = it; _it != en; ++_it )
-            _v.push_back( boost::cref( *_it ) );
-        */
-
-        //tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), M_grainsize );
-
-
         std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
 
         int nbEltPerRange = nbElts / coresPerProcess;
         int remainderElt = nbElts % coresPerProcess;
-        int n;
-        int idx = 0;
 
-        for(int i = 0 ; i< nbThread; ++i)
+        std::vector<std::vector<boost::reference_wrapper<const typename eval::element_type> > > _v;
+
+        /* build data vector for threads */
+        int i = 0, j = 0, k= 0, nb = 0;
+        auto _it = it;
+        while( _it != en )
         {
-            /*
-            DataHandlerType* a_handler = data_mng.getNewData();
-            a_handler->set<MatrixType const>(&A[i]);
-            DataHandlerType* a_handler_w = data_mng.getNewData();
-            a_handler_w->set<MatrixType>(&A[i]);
-            DataHandlerType* x_handler = data_mng.getNewData();
-            x_handler->set<VectorType>(&x[i]);
-            DataHandlerType* b_handler = data_mng.getNewData();
-            b_handler->set<VectorType const>(&b[i]);
-            DataHandlerType* b_handler_w = data_mng.getNewData();
-            b_handler_w->set<VectorType>(&b[i]);
-            */
+            std::vector<boost::reference_wrapper<const typename eval::element_type> > _v1;
 
-            TaskType* task = new TaskType(&hce[i]);
-            /*
-            task->args().add("A",DataHandlerType::R,a_handler);
-            task->args().add("B",DataHandlerType::R,b_handler);
-            task->args().add("X",DataHandlerType::W,x_handler);
-            */
+            nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
+            for(j = 0; j < nb; j++)
+            {
+                _v1.push_back( boost::cref( *_it ) );
+                _it++;
+                k++;
+            }
+
+            _v.push_back(_v1);
+
+            std::cout << "T" << i << ": nbelem=" << nbElts << " (" << k << ", " << nb << ")" << std::endl;
+
+            i++;
+        }
+
+        /* create tasks and associate them data */
+        for(int i = 0 ; i< nbThread; i++)
+        {
+            DataHandlerType * v_handler = dataMng.getNewData();
+            v_handler->set<std::vector<boost::reference_wrapper<const typename eval::element_type> > >(&_v[i]);
+
+            harts_context_type * t = new harts_context_type(this->expression(), this->im(), *it);
+            hce.push_back(t);
+            TaskType* task = new TaskType(t);
+            task->args().add("r", DataHandlerType::R, v_handler);
+
             typename TaskType::FuncType f = &harts_context_type::computeCPU;
             task->set("cpu",f);
             int uid = taskMng.addNew(task);
             compFkTask->add(uid);
-
-            n = nbEltPerRange;
-            /* take the remaining elements if the number of */
-            /* elements is not a multiple of teh number of threads */
-            if(n < remainderElt)
-            {
-                n++;
-            }
-            std::cout << "T" << i << ": nbelem=" << n << " range=(" << idx << ", " << idx + nbEltPerRange - 1 << ")" << std::endl;
         }
 
         RunTimeSystem::StdScheduler scheduler;
         taskMng.run(scheduler, taskList);
+
+        for(int i = 0 ; i< nbThread; i++)
+        {
+            res += hce[i]->result();
+        }
+
+        // Free memory
+        #if 0
+        delete threadEnv;
+        delete compFkTask;
+
+        for(int i = 0 ; i < nbThread; i++)
+        {
+            delete hce[i];
+        }
+        #endif
 
         return res;
     }
