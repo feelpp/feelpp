@@ -28,8 +28,9 @@ include (FindPackageHandleStandardArgs)
 # otherwise in the second instance it will pich the standard version installed on the system if
 # it is available
 
-find_program( GMSH_EXECUTABLE gmsh
-  PATH
+find_program( GMSH_EXECUTABLE 
+  NAMES gmsh
+  PATHS
   $ENV{GMSH_DIR}/bin
   ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
   PATH_SUFFIXES bin
@@ -43,8 +44,9 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     Gmsh.h Context.h GModel.h
     PATHS
     $ENV{GMSH_DIR}
-    ${CMAKE_BINARY_DIR}/contrib/gmsh/
-    PATH_SUFFIXES include include/gmsh
+    ${CMAKE_BINARY_DIR}/contrib/gmsh/include/gmsh
+    PATH_SUFFIXES
+    include include/gmsh
     DOC "Directory where GMSH header files are stored" )
 
   include_directories(${GMSH_INCLUDE_DIR})
@@ -72,7 +74,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
 
   FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATH
+    PATHS
     $ENV{GMSH_DIR}
     ${CMAKE_BINARY_DIR}/contrib/gmsh
     ${CMAKE_SYSTEM_PREFIX_PATH}
@@ -110,7 +112,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
       PATH_SUFFIXES
       lib  )
   ENDIF()
-
+  
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
     GMSH_INCLUDE_DIR GMSH_LIBRARY GMSH_EXECUTABLE
     )
