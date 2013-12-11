@@ -750,7 +750,7 @@ if(GMSH_NOTFOUND)#Download and Instal it
   message(STATUS "Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
   execute_process(
     COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh --prefix=${CMAKE_BINARY_DIR}/contrib/gmsh ${NProcs2}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
     #      OUTPUT_QUIET
     OUTPUT_FILE "gmsh-configure"
     )
