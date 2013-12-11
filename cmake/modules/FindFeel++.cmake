@@ -745,18 +745,18 @@ endif( FEELPP_ENABLE_OCTAVE)
 # Gmsh
 #
 FIND_PACKAGE(Gmsh)
-if(GMSH_NOTFOUND)#Download and Instal it
+if(NOT GMSH_INCLUDE_DIR)#Download and Instal it
+  message(STATUS "GMSH NOT FOUND - Downloading and Installing it" )
   execute_process(COMMAND mkdir -p ${CMAKE_BINARY_DIR}/contrib/gmsh-compile)
   message(STATUS "Building gmsh in ${CMAKE_BINARY_DIR}/contrib/gmsh-compile...")
   execute_process(
-    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh --prefix=${CMAKE_BINARY_DIR}/contrib/gmsh ${NProcs2}
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gflags-compile
+    COMMAND ${FEELPP_HOME_DIR}/contrib/gmsh/gmsh.sh ${CMAKE_BINARY_DIR}/contrib/gmsh ${NProcs2}
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/gmsh-compile
     #      OUTPUT_QUIET
     OUTPUT_FILE "gmsh-configure"
     )
-
-endif()
 FIND_PACKAGE(Gmsh REQUIRED)
+endif()
 if ( GMSH_FOUND )
   ADD_DEFINITIONS( -DFEELPP_HAS_GMSH=1 -D_FEELPP_HAS_GMSH_ -DGMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
   if ( GL2PS_LIBRARY )
