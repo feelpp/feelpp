@@ -309,6 +309,13 @@ public:
             return M_smd->mesh;
         }
 
+    //! \return sub mesh
+    typename smd_type::mesh_ptrtype parentMesh() const
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            return M_smd->mesh;
+        }
+
     //! true if is a sub mesh
     bool isSubMesh() const { return !M_smd == false; }
 
