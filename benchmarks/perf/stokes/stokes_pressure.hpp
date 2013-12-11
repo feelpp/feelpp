@@ -312,8 +312,17 @@ Stokes<nDim,uOrder,geoOrder>::run()
     auto C = alpha*mat<3,2>( cst(0.), Ny(), cst(0.), -Nx(), cst(1.), cst(0.) );
     auto lagt=vec(idt(lambda1),idt(lambda2));
     auto lag=vec(id(lambda1),id(lambda2));
-    stokes +=integrate( markedfaces( mesh,inlet ), -trans(cross(id(v),N()))*(C*lagt) -trans( cross(idt( u ),N()))*(C*lag) );
-    stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*(C*lagt) -trans( cross(idt( u ),N()))*(C*lag) );
+    auto Clag = alpha*vec( id(lambda2)*Ny(), -id(lambda2)*Nx(), id(lambda1) );
+    auto Clagt = alpha*vec( idt(lambda2)*Ny(), -idt(lambda2)*Nx(), idt(lambda1) );
+    //stokes +=integrate( markedfaces( mesh,inlet ), -trans(id(v))*(C*lagt));
+    for( auto bdy : { inlet, outlet } )
+    {
+        stokes +=integrate( markedfaces( mesh, bdy ),
+                            -trans(cross(id(v),N()))*(Clagt) );
+        stokes +=integrate( markedfaces( mesh, bdy ),
+                            -trans( cross(idt( u ),N()))*(Clag) );
+    }
+    //stokes +=integrate( markedfaces( mesh,outlet ),-trans(cross(id(v),N()))*(C*lagt) -trans( cross(idt( u ),N()))*(C*lag) );
     //stokes += integrate( markedfaces( mesh,inlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
     //stokes += integrate( markedfaces( mesh,outlet ), option("eps").template as<double>()*trans(idt(lambda))*id( nu ) );
     // set lagrange multipliers to 0 on boundary weakly
