@@ -196,6 +196,8 @@ if(Boost_FOUND)
       message(STATUS "added -DBOOST_NO_VARIADIC_TEMPLATES" )
     ENDIF()
   ENDIF()
+else()
+  message(STATUS "Please check your boost version - Should be at least ${BOOST_MIN_VERSION}")
 endif()
 
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
