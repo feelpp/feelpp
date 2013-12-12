@@ -273,6 +273,14 @@ you can customize the build type:
   cmake -D CMAKE_BUILD_TYPE=Release
   ...
 \endverbatim
+
+<p>
+<b>Per-system specific configuration</b>:
+If you need to set specific CMake variables to fit an exotic system (e.g. supercomputer), you can create a machine file fitting this system.
+To do so, simply create a file named <tt>feelpp.machines.&lt;name&gt;.cmake</tt> in the <tt>cmake/machines</tt> directory, where <tt>&lt;name&gt;</tt> is the machine name returned by the execution of <tt>uname -n</tt>.
+The file will automatically be recognized and loaded, when you will be compiling \feel on this system.
+</p>
+
 Once Cmake has done its work, you are now able to compile the library with:
 \verbatim
   make
