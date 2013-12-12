@@ -392,7 +392,7 @@ public:
     computeBetaQm( parameter_type const& mu , double time=0 )
     {
 
-        bool use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
+        bool use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
         if( M_use_ginac )
         {
             int qa = Qa();
@@ -789,7 +789,7 @@ void
 ThermalBlock::initModel()
 {
 
-    M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").template as<bool>();
+    M_use_ginac = option(_name="crb.use-ginac-for-beta-expressions").as<bool>();
 
     //std::string mshfile_name = M_vm["mshfile"].as<std::string>();
     std::string mshfile_name = option(_name="mshfile").as<std::string>();
