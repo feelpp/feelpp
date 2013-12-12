@@ -29,6 +29,7 @@ namespace Feel
 /** \page Learning Learning by Examples
    - \subpage NumericalMethods
    - \subpage Generic
+   - \subpage Eigen
    - \subpage HeatTransfer
    - \subpage FluidMechanics
    - \subpage SolidMechanics
@@ -72,5 +73,3 @@ namespace Feel
    - \subpage Types
    - \subpage Layout
 */
-
-
