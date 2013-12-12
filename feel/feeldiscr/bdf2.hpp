@@ -1275,8 +1275,8 @@ template <typename SpaceType>
 void
 Bdf<SpaceType>::loadCurrent()
 {
-    BdfBaseMetadata bdfsaver( *this );
-    bdfsaver.save();
+    //BdfBaseMetadata bdfsaver( *this );
+    //bdfsaver.save();
 
     {
         std::ostringstream ostr;
