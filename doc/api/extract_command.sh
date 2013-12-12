@@ -2,7 +2,7 @@
 
 rm tmpFile
 touch tmpFile
-today=date +"%F"
+today=$(date +"%F")
 echo "/**" >> tmpFile
 echo "\\page  DocCmakeLists List of CMake Options" >> tmpFile
 echo "\\\\author Feel++ Consortium" >> tmpFile
