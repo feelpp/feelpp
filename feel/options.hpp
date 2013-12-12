@@ -57,6 +57,11 @@ po::options_description mesh_options( int Dim, std::string const& prefix = "" );
 
 po::options_description gmsh_options( std::string const& prefix = "" );
 
+/**
+ * command line options for multithreading and GPU parallelization
+ */
+po::options_description parallel_options( std::string const& prefix = "" );
+
 po::options_description ginac_options( std::string const& prefix = "" );
 
 /**

@@ -2992,7 +2992,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
     else
 #endif // defined(FEELPP_HAS_TBB)
 #if defined(FEELPP_HAS_HARTS)
-    if ( M_use_harts )
+    if ( option(_name="parallel.cpu.enable").template as<bool>() )
     {
         typename eval::matrix_type res( eval::matrix_type::Zero() );
         typedef HartsContextEvaluate<expression_type, im_type, typename eval::the_element_type> harts_context_type;
@@ -3018,8 +3018,8 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         NumaAffinityMngType numaAffMng(RunTimeSystem::NumaAffinityMng::eMode::Block);
 
         // Compute Number of available CPU cores
-        int paramNbCores = 0;
-        int nTotalCoresNode = 12;//numaAffMng.get_num_cores();
+        int paramNbCores = option(_name="parallel.cpu.restrict").template as<int>();
+        int nTotalCoresNode = numaAffMng.get_num_cores();
         int nAvailCores = nTotalCoresNode - nMPIProc;
         int coresPerProcess = 0;
         int remainder = 0;
