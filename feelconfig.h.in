@@ -120,9 +120,6 @@
 /* Define to 1 if you have harts. */
 #cmakedefine FEELPP_HAS_HARTS
 
-/* Define to 1 if HARTS has OpenCL support . */
-#cmakedefine HARTS_HAS_OPENCL
-
 /* Define to 1 if you have the <ufsparse/umfpack.h> header file. */
 #cmakedefine FEELPP_HAS_UFSPARSE_UMFPACK_H
 
