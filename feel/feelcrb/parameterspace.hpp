@@ -295,18 +295,85 @@ public:
                 this->clear();
                 //std::srand(static_cast<unsigned>(std::time(0)));
 
+                int total_proc = Environment::worldComm().globalSize();
+                int proc = Environment::worldComm().globalRank();
+                int master_proc = Environment::worldComm().masterRank();
+                int number_of_elements_per_proc =N/total_proc;
+                int extra_elements = N%total_proc;
+
+                LOG( INFO ) <<"total_proc : "<<total_proc;
+                LOG( INFO ) <<"proc : "<<proc;
+                LOG( INFO ) <<"total_number_of_elements : "<<N;
+                LOG( INFO ) <<"number_of_elements_per_proc : "<<number_of_elements_per_proc;
+                LOG( INFO ) <<"extra_elements : "<<extra_elements;
+
+                int total_number_of_elements_per_proc=0;
+                int proc_rcv_sampling=0;
+
+                int number_of_requests=2*(total_proc-1);
+                boost::mpi::request * reqs = new mpi::request[number_of_requests];
+                int count_reqs=0;
+
+                int tag=0;
+
                 // fill with log Random elements from the parameter space
-                //only with one proc and then broadcast
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                //only with one proc and then send a part of the sampling to each other proc
+                if( proc == master_proc )
                 {
-                    for ( int i = 0; i < N; ++i )
+                    for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                    {
+                        if( proc_recv_sampling < extra_elements )
+                        {
+                            total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                        }
+                        else
+                        {
+                            total_number_of_elements_per_proc=number_of_elements_per_proc;
+                        }
+
+                        if( proc_recv_sampling != master_proc )
+                        {
+                            for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                            {
+                                super::push_back( parameterspace_type::logRandom( M_space, false ) );
+                            }
+                        }
+
+                        if( total_proc > 1 )
+                        {
+                            if( proc_recv_sampling != master_proc )
+                            {
+                                reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
+                                count_reqs++;
+                                super::clear();
+                            }
+                        }//total_proc > 1
+
+                    }//proc_recv_sampling
+
+                    //the master proc fill its sampling in last
+                    //because sampling for others are deleted via super::clear
+                    if( master_proc < extra_elements )
+                    {
+                        total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                    }
+                    else
+                    {
+                        total_number_of_elements_per_proc=number_of_elements_per_proc;
+                    }
+                    for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
                     {
                         super::push_back( parameterspace_type::logRandom( M_space, false ) );
                     }
 
-                }
+                }//master proc
+                else
+                {
+                    reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
+                    count_reqs++;
+                }//not master proc
 
-                boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                boost::mpi::wait_all(reqs, reqs + number_of_requests);
 
             }
 
@@ -319,17 +386,106 @@ public:
                 // first empty the set
                 this->clear();
 
+
+                int total_proc = Environment::worldComm().globalSize();
+                int proc = Environment::worldComm().globalRank();
+                int master_proc = Environment::worldComm().masterRank();
+                int number_of_elements_per_proc =N/total_proc;
+                int extra_elements = N%total_proc;
+
+                LOG( INFO ) <<"total_proc : "<<total_proc;
+                LOG( INFO ) <<"proc : "<<proc;
+                LOG( INFO ) <<"total_number_of_elements : "<<N;
+                LOG( INFO ) <<"number_of_elements_per_proc : "<<number_of_elements_per_proc;
+                LOG( INFO ) <<"extra_elements : "<<extra_elements;
+
+                int total_number_of_elements_per_proc=0;
+                int proc_rcv_sampling=0;
+
+                int number_of_requests=2*(total_proc-1);
+                boost::mpi::request * reqs = new mpi::request[number_of_requests];
+                int count_reqs=0;
+
+                int tag=0;
+                int shift=0;
+
                 if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 {
+                    std::vector<Element> temporary_sampling;
+
                     // fill with log Random elements from the parameter space
+                    // first we fill temporary_sampling and then we distribute a part of it to each proc
                     for ( int i = 0; i < N; ++i )
                     {
                         double factor = double( i )/( N-1 );
-                        super::push_back( parameterspace_type::logEquidistributed( factor,
-                                                                                   M_space ) );
+                        temporary_sampling.push_back( parameterspace_type::logEquidistributed( factor,
+                                                                                               M_space ) );
                     }
-                }
-                boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+
+                    for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                    {
+                        if( proc_recv_sampling < extra_elements )
+                        {
+                            total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                            shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                        }
+                        else
+                        {
+                            int e=number_of_elements_per_proc;
+                            total_number_of_elements_per_proc=e;
+                            shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                        }
+
+                        if( proc_recv_sampling != master_proc )
+                        {
+                            for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                            {
+                                int idx=local_element+shift;
+                                super::push_back( temporary_sampling[idx] );
+                            }
+                        }
+
+                        if( total_proc > 1 )
+                        {
+                            if( proc_recv_sampling != master_proc )
+                            {
+                                reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
+                                count_reqs++;
+                                super::clear();
+                            }
+                        }//total_proc > 1
+
+                    }//proc_recv_sampling
+
+
+                    //the master proc fill its sampling in last
+                    //because sampling for others are deleted via super::clear
+                    if( master_proc < extra_elements )
+                    {
+                        total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                        shift=master_proc*total_number_of_elements_per_proc;
+                    }
+                    else
+                    {
+                        int e=number_of_elements_per_proc;
+                        total_number_of_elements_per_proc=e;
+                        shift=extra_elements*(e+1) + (master_proc-extra_elements)*e;
+                    }
+                    for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                    {
+                        int idx=local_element+shift;
+                        super::push_back( temporary_sampling[idx] );
+                    }
+
+                }//master proc
+                else
+                {
+                    reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
+                    count_reqs++;
+                }//not master proc
+
+                boost::mpi::wait_all(reqs, reqs + number_of_requests);
+
             }
 
         /**
@@ -490,23 +646,23 @@ public:
          */
         void writeOnFile( std::string file_name = "list_of_parameters_taken" )
             {
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                int proc = Environment::worldComm().globalRank();
+                int total_proc = Environment::worldComm().globalSize();
+                //std::string real_file_name = (boost::format(file_name+"-proc%1%on%2%") %proc %total_proc ).str();
+                std::ofstream file;
+                file.open( file_name,std::ios::out );
+                element_type mu( M_space );
+                int size = mu.size();
+                int number = 0;
+                BOOST_FOREACH( mu, *this )
                 {
-                    std::ofstream file;
-                    file.open( file_name,std::ios::out );
-                    element_type mu( M_space );
-                    int size = mu.size();
-                    int number = 0;
-                    BOOST_FOREACH( mu, *this )
-                    {
-                        file<<std::setprecision(15)<<" mu_"<<number<<"= [ ";
-                        for(int i=0; i<size-1; i++)
-                            file << mu[i]<<" , ";
-                        file<< mu[size-1] << " ] \n" ;
-                        number++;
-                    }
-                    file.close();
+                    file<<std::setprecision(15)<<" mu_"<<number<<"= [ ";
+                    for(int i=0; i<size-1; i++)
+                        file << mu[i]<<" , ";
+                    file<< mu[size-1] << " ] \n" ;
+                    number++;
                 }
+                file.close();
             }
 
         /**
@@ -594,17 +750,103 @@ public:
                 // first empty the set
                 this->clear();
 
+                int total_proc = Environment::worldComm().globalSize();
+                int proc = Environment::worldComm().globalRank();
+                int master_proc = Environment::worldComm().masterRank();
+                int number_of_elements_per_proc =N/total_proc;
+                int extra_elements = N%total_proc;
+
+                LOG( INFO ) <<"total_proc : "<<total_proc;
+                LOG( INFO ) <<"proc : "<<proc;
+                LOG( INFO ) <<"total_number_of_elements : "<<N;
+                LOG( INFO ) <<"number_of_elements_per_proc : "<<number_of_elements_per_proc;
+                LOG( INFO ) <<"extra_elements : "<<extra_elements;
+
+                int total_number_of_elements_per_proc=0;
+                int proc_recv_sampling=0;
+
+                int number_of_requests=2*(total_proc-1);
+                boost::mpi::request * reqs = new mpi::request[number_of_requests];
+                int count_reqs=0;
+
+                int tag=0;
+                int shift=0;
+
+
                 if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
                 {
                     // fill with log Random elements from the parameter space
+                    std::vector< Element > temporary_sampling;
                     for ( int i = 0; i < N; ++i )
                     {
                         double factor = double( i )/( N-1 );
-                        super::push_back( parameterspace_type::equidistributed( factor,
-                                                                                M_space ) );
+                        temporary_sampling.push_back( parameterspace_type::equidistributed( factor,
+                                                                                            M_space ) );
                     }
-                }
-                boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+
+                    for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                    {
+                        if( proc_recv_sampling < extra_elements )
+                        {
+                            total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                            shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                        }
+                        else
+                        {
+                            int e=number_of_elements_per_proc;
+                            total_number_of_elements_per_proc=e;
+                            shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                        }
+
+                        if( proc_recv_sampling != master_proc )
+                        {
+                            for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                            {
+                                int idx=local_element+shift;
+                                super::push_back( temporary_sampling[idx] );
+                            }
+                        }
+
+                        if( total_proc > 1 )
+                        {
+                            if( proc_recv_sampling != master_proc )
+                            {
+                                reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
+                                count_reqs++;
+                                super::clear();
+                            }
+                        }//total_proc > 1
+
+                    }//proc_recv_sampling
+
+
+                    //the master proc fill its sampling in last
+                    //because sampling for others are deleted via super::clear
+                    if( master_proc < extra_elements )
+                    {
+                        total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                        shift=master_proc*total_number_of_elements_per_proc;
+                    }
+                    else
+                    {
+                        int e=number_of_elements_per_proc;
+                        total_number_of_elements_per_proc=e;
+                        shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                    }
+                    for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                    {
+                        int idx=local_element+shift;
+                        super::push_back( temporary_sampling[idx] );
+                    }
+
+                }//master proc
+                else
+                {
+                    reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
+                    count_reqs++;
+                }//not master proc
+
+                boost::mpi::wait_all(reqs, reqs + number_of_requests);
             }
 
         /**
@@ -641,7 +883,7 @@ public:
          * \brief Returns the minimum element in the sampling and its index
          */
         boost::tuple<element_type,size_type>
-        min() const
+        min( bool check=true ) const
             {
                 element_type mumin( M_space );
                 mumin = M_space->max();
@@ -659,7 +901,8 @@ public:
 
                     ++i;
                 }
-                mumin.check();
+                if( check )
+                    mumin.check();
                 return boost::make_tuple( mumin, index );
             }
 
@@ -667,7 +910,7 @@ public:
          * \brief Returns the maximum element in the sampling and its index
          */
         boost::tuple<element_type,size_type>
-        max() const
+        max( bool check=true ) const
             {
                 element_type mumax( M_space );
                 mumax = M_space->min();
@@ -685,7 +928,8 @@ public:
 
                     ++i;
                 }
-                mumax.check();
+                if( check )
+                    mumax.check();
                 return boost::make_tuple( mumax, index );
             }
         /**

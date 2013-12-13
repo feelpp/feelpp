@@ -2997,7 +2997,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         typename eval::matrix_type res( eval::matrix_type::Zero() );
         typedef HartsContextEvaluate<expression_type, im_type, typename eval::the_element_type> harts_context_type;
 
-        std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
+        //std::cout << "Integrator Uses HARTS: " << M_use_harts << "\n";
 
         // typedef basic types
         typedef RunTimeSystem::PThreadDriver                        PTHDriverType ;
@@ -3088,7 +3088,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         PTHForkJoinTaskType* compFkTask = new PTHForkJoinTaskType(forkjoin, taskMng.getTasks());
         taskList.push_back(taskMng.addNew(compFkTask));
 
-        std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
+        //std::cout << "2. HARTS: nMPIProc=" << nMPIProc << ", nTotalCoresNode=" << nTotalCoresNode << ", coresPerProcess=" << coresPerProcess << ", remainder=" << remainder << ", nbElements="<< nbElts <<  std::endl;
 
         int nbEltPerRange = nbElts / coresPerProcess;
         int remainderElt = nbElts % coresPerProcess;
@@ -3112,7 +3112,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
             _v.push_back(_v1);
 
-            std::cout << "T" << i << ": nbelem=" << nbElts << " (" << k << ", " << nb << ")" << std::endl;
+            //std::cout << "T" << i << ": nbelem=" << nbElts << " (" << k << ", " << nb << ")" << std::endl;
 
             i++;
         }
@@ -3153,6 +3153,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         }
         #endif
 
+        DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
     }
     else
