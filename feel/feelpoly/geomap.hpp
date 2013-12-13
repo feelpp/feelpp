@@ -1785,6 +1785,9 @@ void updateJKBN( mpl::bool_<true>  )
  */
 void updateJKBN( mpl::bool_<false>  )
 {
+
+     const bool doComputeNormal = ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value );
+
     //std::cout << "nPoints() =" << nPoints() << "\n";
     //VLOG(1) << "[geomap] G = "<< M_G << "\n";
     //double res = 0;
@@ -1846,7 +1849,7 @@ void updateJKBN( mpl::bool_<false>  )
 
         M_Jt[q] = M_J;
 
-        if ( vm::has_kb<context>::value )
+        if ( vm::has_kb<context>::value || doComputeNormal )
         {
             //VLOG(1) << "[geomap] B[" << q << "]= "<< M_B << "\n";
             M_Bt[q].resize( M_B.size1(), M_B.size2() );
@@ -1856,8 +1859,9 @@ void updateJKBN( mpl::bool_<false>  )
 
     }
 
+
     //VLOG(1) << "[geomap] res(sum J) = " << res << "\n";
-    if ( ( ( NDim != PDim ) || ( vm::has_normal<context>::value ) ) && ( M_face_id != invalid_uint16_type_value ) )
+    if ( doComputeNormal )
     {
         //std::cout << "has normal\n";
         for ( int q = 0; q < nPoints(); ++q )
