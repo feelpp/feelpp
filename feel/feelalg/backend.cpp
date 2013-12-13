@@ -68,6 +68,7 @@ Backend<T>::Backend( WorldComm const& worldComm )
     M_maxitSNESReuse( M_maxitSNES ),
     M_export( "" ),
     M_ksp( "gmres" ),
+    M_snesType( "ls" ),
     M_pc( "lu" ),
     M_fieldSplit( "additive" ),
     M_pcFactorMatSolverPackage( "petsc" ),
@@ -109,6 +110,7 @@ Backend<T>::Backend( Backend const& backend )
     M_maxitSNESReuse( backend.M_maxitSNESReuse ),
     M_export( backend.M_export ),
     M_ksp( backend.M_ksp ),
+    M_snesType( backend.M_snesType ),
     M_pc( backend.M_pc ),
     M_fieldSplit( backend.M_fieldSplit ),
     M_pcFactorMatSolverPackage( backend.M_pcFactorMatSolverPackage ),
@@ -149,6 +151,7 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, Wor
     M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<size_type>() : M_maxitSNES ),
     M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
     M_ksp( vm[prefixvm( prefix,"ksp-type" )].template as<std::string>() ),
+    M_snesType( vm[prefixvm( prefix,"snes-type" )].template as<std::string>() ),
     M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
     M_fieldSplit( vm[prefixvm( prefix,"fieldsplit-type" )].template as<std::string>() ),
     M_pcFactorMatSolverPackage( vm[prefixvm( prefix,"pc-factor-mat-solver-package-type" )].template as<std::string>() ),
@@ -362,6 +365,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 {
     MatrixStructure matStructInitial = this->precMatrixStructure();
 
+    M_nlsolver->setType( this->snesEnumType() );
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
@@ -468,6 +472,7 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
                      const double tol, const int its )
 {
 
+    M_nlsolver->setType( this->snesEnumType() );
     M_nlsolver->setPreconditionerType( this->pcEnumType() );
     M_nlsolver->setKspSolverType( this->kspEnumType() );
     M_nlsolver->setMatSolverPackageType( this->matSolverPackageEnumType() );
@@ -613,6 +618,47 @@ Backend<T>::kspEnumType() const
     else return GMRES;
 
 } // Backend::kspEnumType
+
+template<typename T>
+SolverNonLinearType
+Backend<T>::snesEnumType() const
+{
+    if ( this->snesType() == "ls" || this->snesType() == "newtonls" )
+        return SolverNonLinearType::LINE_SEARCH;
+    else if ( this->snesType() == "tr" || this->snesType() == "newtontr" )
+        return SolverNonLinearType::TRUST_REGION;
+    else if ( this->snesType() == "nrichardson" )
+        return SolverNonLinearType::NRICHARDSON;
+    else if ( this->snesType() == "ksponly" )
+        return SolverNonLinearType::NKSPONLY;
+    else if ( this->snesType() == "vinewtonrsls" )
+        return SolverNonLinearType::VINEWTONRSLS;
+    else if ( this->snesType() == "vinewtonssls" )
+        return SolverNonLinearType::VINEWTONRSTR;
+    else if ( this->snesType() == "ngmres" )
+        return SolverNonLinearType::NGMRES;
+    else if ( this->snesType() == "qn" )
+        return SolverNonLinearType::QN;
+    else if ( this->snesType() == "shell" )
+        return SolverNonLinearType::NSHELL;
+    else if ( this->snesType() == "gs" )
+        return SolverNonLinearType::GS;
+    else if ( this->snesType() == "ncg" )
+        return SolverNonLinearType::NCG;
+    else if ( this->snesType() == "fas" )
+        return SolverNonLinearType::FAS;
+    else if ( this->snesType() == "ms" )
+        return SolverNonLinearType::MS;
+    else if ( this->snesType() == "nasm" )
+        return SolverNonLinearType::NASM;
+    else if ( this->snesType() == "anderson" )
+        return SolverNonLinearType::ANDERSON;
+    else if ( this->snesType() == "aspin" )
+        return SolverNonLinearType::ASPIN;
+    else
+        return SolverNonLinearType::LINE_SEARCH;
+}
+
 
 template<typename T>
 PreconditionerType
