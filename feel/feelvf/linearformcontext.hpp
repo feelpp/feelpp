@@ -314,17 +314,13 @@ void
 LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext>::assemble( size_type elt_0, size_type elt_1 )
 {
     size_type row_start = M_lb.front().globalRowStart();
-    auto local_rows_0 = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-    auto local_rows_1 = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
-    M_local_rows_2.template head<test_dof_type::nDofPerElement>() = local_rows_0;
-    M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = local_rows_1;
+    M_local_rows_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+    M_local_rows_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalIndices( elt_1 ).array() + row_start;
 
     if ( test_dof_type::is_modal )
     {
-        auto local_rowsigns_0 = M_test_dof->localToGlobalSigns( elt_0 );
-        auto local_rowsigns_1 = M_test_dof->localToGlobalSigns( elt_1 );
-        M_local_rowsigns_2.template head<test_dof_type::nDofPerElement>() = local_rowsigns_0;
-        M_local_rowsigns_2.template tail<test_dof_type::nDofPerElement>() = local_rowsigns_1;
+        M_local_rowsigns_2.template head<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalSigns( elt_0 );
+        M_local_rowsigns_2.template tail<test_dof_type::nDofPerElement>() = M_test_dof->localToGlobalSigns( elt_1 );
 
         M_rep_2.array() *= M_local_rowsigns_2.array().template cast<value_type>();
     }
