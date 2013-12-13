@@ -1752,7 +1752,7 @@ CRB<TruthModelType>::offline()
         int total_proc = this->worldComm().globalSize();
         std::string sampling_mode = option("crb.sampling-mode").template as<std::string>();
         int sampling_size = option("crb.sampling-size").template as<int>();
-        std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode) % sampling_size ).str();
+        std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
         std::ifstream file ( file_name );
         if( ! file )
         {
