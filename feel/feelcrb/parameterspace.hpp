@@ -315,27 +315,55 @@ public:
                 int count_reqs=0;
 
                 int tag=0;
+                int shift=0;
 
                 // fill with log Random elements from the parameter space
                 //only with one proc and then send a part of the sampling to each other proc
                 if( proc == master_proc )
                 {
+
+                    std::vector<Element> temporary_sampling;
+                    bool already_exist;
+                    auto mu = parameterspace_type::logRandom( M_space, false );
+                    temporary_sampling.push_back( mu );// first element
+                    for(int i=1; i<N; i++)
+                    {
+                        //while mu is already in temporary_sampling
+                        //we pick an other parameter
+                        do
+                        {
+                            already_exist=false;
+                            mu = parameterspace_type::logRandom( M_space, false );
+                            BOOST_FOREACH( auto _mu, *this )
+                            {
+                                if( mu == _mu )
+                                    already_exist=true;
+                            }
+                        }
+                        while( already_exist );
+                        temporary_sampling.push_back( mu );
+                    }//loop over N
+
                     for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
                     {
                         if( proc_recv_sampling < extra_elements )
                         {
                             total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                            shift=proc_recv_sampling*total_number_of_elements_per_proc;
                         }
                         else
                         {
-                            total_number_of_elements_per_proc=number_of_elements_per_proc;
+                            int e=number_of_elements_per_proc;
+                            total_number_of_elements_per_proc=e;
+                            shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
                         }
 
                         if( proc_recv_sampling != master_proc )
                         {
                             for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
                             {
-                                super::push_back( parameterspace_type::logRandom( M_space, false ) );
+                                int idx=local_element+shift;
+                                super::push_back( temporary_sampling[idx] );
                             }
                         }
 
@@ -351,19 +379,24 @@ public:
 
                     }//proc_recv_sampling
 
+
                     //the master proc fill its sampling in last
                     //because sampling for others are deleted via super::clear
                     if( master_proc < extra_elements )
                     {
                         total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                        shift=master_proc*total_number_of_elements_per_proc;
                     }
                     else
                     {
-                        total_number_of_elements_per_proc=number_of_elements_per_proc;
+                        int e=number_of_elements_per_proc;
+                        total_number_of_elements_per_proc=e;
+                        shift=extra_elements*(e+1) + (master_proc-extra_elements)*e;
                     }
                     for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
                     {
-                        super::push_back( parameterspace_type::logRandom( M_space, false ) );
+                        int idx=local_element+shift;
+                        super::push_back( temporary_sampling[idx] );
                     }
 
                 }//master proc
@@ -385,7 +418,6 @@ public:
             {
                 // first empty the set
                 this->clear();
-
 
                 int total_proc = Environment::worldComm().globalSize();
                 int proc = Environment::worldComm().globalRank();
