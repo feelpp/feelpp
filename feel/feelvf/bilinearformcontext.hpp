@@ -322,7 +322,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_eval_expr10->update( _gmcExpr, M_test_fec1, M_trial_fec0 );
     M_eval_expr11->update( _gmcExpr, M_test_fec1, M_trial_fec1 );
 
-    M_integrator.update( *fusion::at_key<gmc<0> >( _gmcTest ) );
+    M_integrator.update( *fusion::at_key<gmc<0> >( _gmcExpr ) );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
