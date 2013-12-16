@@ -536,6 +536,7 @@ public:
                 size_type domain_eid = idElem;
                 const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
                 const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
+                const bool test_sibling_of_trial = M_form.testSpace()->mesh()->isSiblingOf( M_form.trialSpace()->mesh() );
                 if ( test_related_to_trial )
                 {
                     domain_eid = M_form.testSpace()->mesh()->subMeshToMesh( idElem );
@@ -545,6 +546,11 @@ public:
                 {
                     domain_eid = M_form.trialSpace()->mesh()->meshToSubMesh( idElem );
                     DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
+                }
+                if ( test_sibling_of_trial )
+                {
+                    domain_eid = M_form.testSpace()->mesh()->meshToSubMesh( M_form.trialSpace()->mesh(), trial_eid );
+                    DVLOG(2) << "[trial_sibling_of_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
                 }
                 return domain_eid;
             }
