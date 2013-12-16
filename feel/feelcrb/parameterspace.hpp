@@ -287,7 +287,7 @@ public:
          * \brief create a sampling with random elements
          * \param N the number of samples
          */
-        void randomize( int N )
+        void randomize( int N , bool all_procs_have_same_sampling=false )
             {
                 CHECK( M_space ) << "Invalid(null pointer) parameter space for parameter generation\n";
 
@@ -324,8 +324,13 @@ public:
 
                     std::vector<Element> temporary_sampling;
                     bool already_exist;
+                    // first element
                     auto mu = parameterspace_type::logRandom( M_space, false );
-                    temporary_sampling.push_back( mu );// first element
+                    if( all_procs_have_same_sampling )
+                        super::push_back( mu );
+                    else
+                        temporary_sampling.push_back( mu );
+
                     for(int i=1; i<N; i++)
                     {
                         //while mu is already in temporary_sampling
@@ -341,72 +346,89 @@ public:
                             }
                         }
                         while( already_exist );
-                        temporary_sampling.push_back( mu );
+
+                        if( all_procs_have_same_sampling )
+                            super::push_back( mu );
+                        else
+                            temporary_sampling.push_back( mu );
+
                     }//loop over N
 
-                    for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                    if( ! all_procs_have_same_sampling )
                     {
-                        if( proc_recv_sampling < extra_elements )
+
+                        for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                        {
+                            if( proc_recv_sampling < extra_elements )
+                            {
+                                total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                                shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                            }
+                            else
+                            {
+                                int e=number_of_elements_per_proc;
+                                total_number_of_elements_per_proc=e;
+                                shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                            }
+
+                            if( proc_recv_sampling != master_proc )
+                            {
+                                for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                                {
+                                    int idx=local_element+shift;
+                                    super::push_back( temporary_sampling[idx] );
+                                }
+                            }
+
+                            if( total_proc > 1 )
+                            {
+                                if( proc_recv_sampling != master_proc )
+                                {
+                                    reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
+                                    count_reqs++;
+                                    super::clear();
+                                }
+                            }//total_proc > 1
+
+                        }//proc_recv_sampling
+
+                        //the master proc fill its sampling in last
+                        //because sampling for others are deleted via super::clear
+                        if( master_proc < extra_elements )
                         {
                             total_number_of_elements_per_proc=number_of_elements_per_proc+1;
-                            shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                            shift=master_proc*total_number_of_elements_per_proc;
                         }
                         else
                         {
                             int e=number_of_elements_per_proc;
                             total_number_of_elements_per_proc=e;
-                            shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                            shift=extra_elements*(e+1) + (master_proc-extra_elements)*e;
+                        }
+                        for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                        {
+                            int idx=local_element+shift;
+                            super::push_back( temporary_sampling[idx] );
                         }
 
-                        if( proc_recv_sampling != master_proc )
-                        {
-                            for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
-                            {
-                                int idx=local_element+shift;
-                                super::push_back( temporary_sampling[idx] );
-                            }
-                        }
-
-                        if( total_proc > 1 )
-                        {
-                            if( proc_recv_sampling != master_proc )
-                            {
-                                reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
-                                count_reqs++;
-                                super::clear();
-                            }
-                        }//total_proc > 1
-
-                    }//proc_recv_sampling
-
-
-                    //the master proc fill its sampling in last
-                    //because sampling for others are deleted via super::clear
-                    if( master_proc < extra_elements )
-                    {
-                        total_number_of_elements_per_proc=number_of_elements_per_proc+1;
-                        shift=master_proc*total_number_of_elements_per_proc;
-                    }
-                    else
-                    {
-                        int e=number_of_elements_per_proc;
-                        total_number_of_elements_per_proc=e;
-                        shift=extra_elements*(e+1) + (master_proc-extra_elements)*e;
-                    }
-                    for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
-                    {
-                        int idx=local_element+shift;
-                        super::push_back( temporary_sampling[idx] );
-                    }
+                    }//if all procs don't have  same sampling
 
                 }//master proc
+                if( all_procs_have_same_sampling )
+                {
+                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                }
                 else
                 {
-                    reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
-                    count_reqs++;
-                }//not master proc
+                    if( proc != master_proc )
+                    {
+                        reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
+                        count_reqs++;
+                    }//not master proc
 
-                boost::mpi::wait_all(reqs, reqs + number_of_requests);
+                    boost::mpi::wait_all(reqs, reqs + number_of_requests);
+
+                }//if all procs don't have  same sampling
 
             }
 
@@ -414,7 +436,7 @@ public:
          * \brief create a sampling with log-equidistributed elements
          * \param N the number of samples
          */
-        void logEquidistribute( int N )
+        void logEquidistribute( int N , bool all_procs_have_same_sampling=false )
             {
                 // first empty the set
                 this->clear();
@@ -450,73 +472,86 @@ public:
                     for ( int i = 0; i < N; ++i )
                     {
                         double factor = double( i )/( N-1 );
-                        temporary_sampling.push_back( parameterspace_type::logEquidistributed( factor,
-                                                                                               M_space ) );
+                        auto mu = parameterspace_type::logEquidistributed( factor,M_space ) ;
+                        if( all_procs_have_same_sampling )
+                            super::push_back( mu );
+                        else
+                            temporary_sampling.push_back( mu );
                     }
 
-                    for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                    if( ! all_procs_have_same_sampling )
                     {
-                        if( proc_recv_sampling < extra_elements )
+                        for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                        {
+                            if( proc_recv_sampling < extra_elements )
+                            {
+                                total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                                shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                            }
+                            else
+                            {
+                                int e=number_of_elements_per_proc;
+                                total_number_of_elements_per_proc=e;
+                                shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                            }
+
+                            if( proc_recv_sampling != master_proc )
+                            {
+                                for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                                {
+                                    int idx=local_element+shift;
+                                    super::push_back( temporary_sampling[idx] );
+                                }
+                            }
+
+                            if( total_proc > 1 )
+                            {
+                                if( proc_recv_sampling != master_proc )
+                                {
+                                    reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
+                                    count_reqs++;
+                                    super::clear();
+                                }
+                            }//total_proc > 1
+
+                        }//proc_recv_sampling
+
+                        //the master proc fill its sampling in last
+                        //because sampling for others are deleted via super::clear
+                        if( master_proc < extra_elements )
                         {
                             total_number_of_elements_per_proc=number_of_elements_per_proc+1;
-                            shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                            shift=master_proc*total_number_of_elements_per_proc;
                         }
                         else
                         {
                             int e=number_of_elements_per_proc;
                             total_number_of_elements_per_proc=e;
-                            shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                            shift=extra_elements*(e+1) + (master_proc-extra_elements)*e;
                         }
-
-                        if( proc_recv_sampling != master_proc )
+                        for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
                         {
-                            for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
-                            {
-                                int idx=local_element+shift;
-                                super::push_back( temporary_sampling[idx] );
-                            }
+                            int idx=local_element+shift;
+                            super::push_back( temporary_sampling[idx] );
                         }
-
-                        if( total_proc > 1 )
-                        {
-                            if( proc_recv_sampling != master_proc )
-                            {
-                                reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
-                                count_reqs++;
-                                super::clear();
-                            }
-                        }//total_proc > 1
-
-                    }//proc_recv_sampling
-
-
-                    //the master proc fill its sampling in last
-                    //because sampling for others are deleted via super::clear
-                    if( master_proc < extra_elements )
-                    {
-                        total_number_of_elements_per_proc=number_of_elements_per_proc+1;
-                        shift=master_proc*total_number_of_elements_per_proc;
-                    }
-                    else
-                    {
-                        int e=number_of_elements_per_proc;
-                        total_number_of_elements_per_proc=e;
-                        shift=extra_elements*(e+1) + (master_proc-extra_elements)*e;
-                    }
-                    for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
-                    {
-                        int idx=local_element+shift;
-                        super::push_back( temporary_sampling[idx] );
-                    }
-
+                    }//not all proc have the same sampling
                 }//master proc
+
+                if( all_procs_have_same_sampling )
+                {
+                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                }
                 else
                 {
-                    reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
-                    count_reqs++;
-                }//not master proc
+                    if( Environment::worldComm().globalRank() != Environment::worldComm().masterRank() )
+                    {
+                        reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
+                        count_reqs++;
+                    }//not master proc
 
-                boost::mpi::wait_all(reqs, reqs + number_of_requests);
+                    boost::mpi::wait_all(reqs, reqs + number_of_requests);
+
+                }//if all procs don't have  same sampling
 
             }
 
@@ -777,7 +812,7 @@ public:
          * \brief create a sampling with equidistributed elements
          * \param N the number of samples
          */
-        void equidistribute( int N )
+        void equidistribute( int N , bool all_procs_have_same_sampling=false )
             {
                 // first empty the set
                 this->clear();
@@ -812,16 +847,57 @@ public:
                     for ( int i = 0; i < N; ++i )
                     {
                         double factor = double( i )/( N-1 );
-                        temporary_sampling.push_back( parameterspace_type::equidistributed( factor,
-                                                                                            M_space ) );
+                        auto mu = parameterspace_type::equidistributed( factor, M_space );
+                        if( all_procs_have_same_sampling )
+                            super::push_back( mu );
+                        else
+                            temporary_sampling.push_back( mu );
                     }
 
-                    for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                    if( ! all_procs_have_same_sampling )
                     {
-                        if( proc_recv_sampling < extra_elements )
+                        for(int proc_recv_sampling=0; proc_recv_sampling<total_proc; proc_recv_sampling++)
+                        {
+                            if( proc_recv_sampling < extra_elements )
+                            {
+                                total_number_of_elements_per_proc=number_of_elements_per_proc+1;
+                                shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                            }
+                            else
+                            {
+                                int e=number_of_elements_per_proc;
+                                total_number_of_elements_per_proc=e;
+                                shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
+                            }
+
+                            if( proc_recv_sampling != master_proc )
+                            {
+                                for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
+                                 {
+                                     int idx=local_element+shift;
+                                     super::push_back( temporary_sampling[idx] );
+                                 }
+                            }
+
+                            if( total_proc > 1 )
+                            {
+                                if( proc_recv_sampling != master_proc )
+                                {
+                                    reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
+                                    count_reqs++;
+                                    super::clear();
+                                }
+                            }//total_proc > 1
+
+                        }//proc_recv_sampling
+
+
+                        //the master proc fill its sampling in last
+                        //because sampling for others are deleted via super::clear
+                        if( master_proc < extra_elements )
                         {
                             total_number_of_elements_per_proc=number_of_elements_per_proc+1;
-                            shift=proc_recv_sampling*total_number_of_elements_per_proc;
+                            shift=master_proc*total_number_of_elements_per_proc;
                         }
                         else
                         {
@@ -829,56 +905,30 @@ public:
                             total_number_of_elements_per_proc=e;
                             shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
                         }
-
-                        if( proc_recv_sampling != master_proc )
+                        for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
                         {
-                            for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
-                            {
-                                int idx=local_element+shift;
-                                super::push_back( temporary_sampling[idx] );
-                            }
+                            int idx=local_element+shift;
+                            super::push_back( temporary_sampling[idx] );
                         }
 
-                        if( total_proc > 1 )
-                        {
-                            if( proc_recv_sampling != master_proc )
-                            {
-                                reqs[count_reqs]=Environment::worldComm().isend( proc_recv_sampling , tag, *this);
-                                count_reqs++;
-                                super::clear();
-                            }
-                        }//total_proc > 1
-
-                    }//proc_recv_sampling
-
-
-                    //the master proc fill its sampling in last
-                    //because sampling for others are deleted via super::clear
-                    if( master_proc < extra_elements )
-                    {
-                        total_number_of_elements_per_proc=number_of_elements_per_proc+1;
-                        shift=master_proc*total_number_of_elements_per_proc;
-                    }
-                    else
-                    {
-                        int e=number_of_elements_per_proc;
-                        total_number_of_elements_per_proc=e;
-                        shift=extra_elements*(e+1) + (proc_recv_sampling-extra_elements)*e;
-                    }
-                    for(int local_element=0; local_element<total_number_of_elements_per_proc;local_element++)
-                    {
-                        int idx=local_element+shift;
-                        super::push_back( temporary_sampling[idx] );
-                    }
+                    }//if all procs have not the same sampling
 
                 }//master proc
+                if( all_procs_have_same_sampling )
+                {
+                    boost::mpi::broadcast( Environment::worldComm() , *this , Environment::worldComm().masterRank() );
+                }
                 else
                 {
-                    reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
-                    count_reqs++;
-                }//not master proc
+                    if( Environment::worldComm().globalRank() != Environment::worldComm().masterRank() )
+                    {
+                        reqs[count_reqs]=Environment::worldComm().irecv( master_proc, tag, *this);
+                        count_reqs++;
+                    }//not master proc
 
-                boost::mpi::wait_all(reqs, reqs + number_of_requests);
+                    boost::mpi::wait_all(reqs, reqs + number_of_requests);
+
+                }//if all procs don't have  same sampling
             }
 
         /**
