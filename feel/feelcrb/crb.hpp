@@ -1751,18 +1751,21 @@ CRB<TruthModelType>::offline()
 
         int total_proc = this->worldComm().globalSize();
         std::string sampling_mode = option("crb.sampling-mode").template as<std::string>();
+        bool all_proc_same_sampling=option("crb.all-procs-have-same-sampling").template as<bool>();
         int sampling_size = option("crb.sampling-size").template as<int>();
         std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
+        if( all_proc_same_sampling )
+            file_name+="-all-proc-have-same-sampling";
         std::ifstream file ( file_name );
         if( ! file )
         {
             // random sampling
             if( sampling_mode == "log-random" )
-                M_Xi->randomize( sampling_size );
+                M_Xi->randomize( sampling_size , all_proc_same_sampling );
             else if( sampling_mode == "log-equidistribute" )
-                M_Xi->logEquidistribute( sampling_size );
+                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling );
             else if( sampling_mode == "equidistribute" )
-                M_Xi->equidistribute( sampling_size );
+                M_Xi->equidistribute( sampling_size , all_proc_same_sampling );
             else
                 throw std::logic_error( "[CRB::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
             M_Xi->writeOnFile(file_name);
