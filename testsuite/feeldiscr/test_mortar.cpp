@@ -68,19 +68,28 @@ BOOST_AUTO_TEST_CASE( test_no_mortar_2 )
 
     BOOST_TEST_MESSAGE( "test_no_mortar_2 done" );
 }
-BOOST_AUTO_TEST_CASE( test_mortar_1 )
+
+typedef boost::mpl::list<boost::mpl::int_<1>,boost::mpl::int_<2>,boost::mpl::int_<3>,boost::mpl::int_<4>  > order_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_1, T, order_types )
 {
     using namespace Feel;
-    BOOST_TEST_MESSAGE( "test_mortar_1" );
+    BOOST_TEST_MESSAGE( "test_mortar_1 for order : " << T::value );
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<1,1,2>> );
-    auto Xh = Moch<1>(mesh);
+    auto Xh = Moch<T::value>(mesh);
     BOOST_CHECK_MESSAGE(Xh->is_mortar == true, "Space should be mortar" ) ;
     BOOST_CHECK_MESSAGE(Xh->isMortar() == true, "Space should be mortar" ) ;
-    BOOST_TEST_MESSAGE( "test_mortar_1 done" );
+
 
     BOOST_TEST_MESSAGE( "n elements : " << nelements( elements(mesh) ) );
     BOOST_TEST_MESSAGE( "n boundary elements : " << nelements( boundaryelements(mesh) ) );
     BOOST_TEST_MESSAGE( "n internal elements : " << nelements( internalelements(mesh) ) );
+
+    for( auto const& dof : Xh->dof()->localDof() )
+    {
+        LOG(INFO) << "local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
+                  << " global dof : " << dof.second.index();
+    }
+
 #if 1
     BOOST_CHECK_MESSAGE( nelements( internalelements(mesh) ) == nelements(elements(mesh))-2,
                          "invalid number of internal elements : " << nelements( internalelements(mesh) )
@@ -90,7 +99,7 @@ BOOST_AUTO_TEST_CASE( test_mortar_1 )
         BOOST_CHECK_MESSAGE( e.isOnBoundary() == false, "element " << e.id() << " should be internal and not on boundary" );
         auto const& dofit = Xh->dof()->localDof( e.id() );
         int nldof = std::distance( dofit.first, dofit.second );
-        BOOST_CHECK_MESSAGE(  nldof == 2, "Invalid number of dof :  " << nldof );
+        BOOST_CHECK_MESSAGE(  nldof == T::value+1, "Invalid number of dof :  " << nldof );
     }
 #endif
     BOOST_CHECK_MESSAGE( nelements( boundaryelements(mesh) ) == 2,
@@ -100,13 +109,10 @@ BOOST_AUTO_TEST_CASE( test_mortar_1 )
         BOOST_CHECK_MESSAGE( e.isOnBoundary() == true, "element " << e.id() << " should be on boundary" );
         auto const& dofit = Xh->dof()->localDof( e.id() );
         int nldof = std::distance( dofit.first, dofit.second );
-        BOOST_CHECK_MESSAGE(  nldof == 1, "Invalid number of dof :  " << nldof );
+        BOOST_CHECK_MESSAGE(  nldof == T::value, "Invalid number of dof :  " << nldof );
     }
-    for( auto const& dof : Xh->dof()->localDof() )
-    {
-        LOG(INFO) << "local dof element " << dof.first.elementId() << " id:" << dof.first.localDof()
-                  << " global dof : " << dof.second.index();
-    }
+
+    BOOST_TEST_MESSAGE( "test_mortar_1 for order : " << T::value << " done.");
 }
 
 
