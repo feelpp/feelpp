@@ -1381,7 +1381,33 @@ ParameterSpace<P>::Sampling::complement() const
 {
     //std::cout << "[ParameterSpace::Sampling::complement] start\n";
     sampling_ptrtype complement;
+    bool is_in_sampling;
+    int index=0;
 
+    if ( M_supersampling )
+    {
+        complement = sampling_ptrtype( new sampling_type( M_space, 1, M_supersampling ) );
+        complement->clear();
+        BOOST_FOREACH( auto mu_supersampling, *M_supersampling )
+        {
+            is_in_sampling=false;
+            BOOST_FOREACH( auto mu_sampling, *this )
+            {
+                if( mu_supersampling == mu_sampling )
+                {
+                    is_in_sampling=true;
+                }
+            }
+            if( ! is_in_sampling )
+                complement->push_back( mu_supersampling , index );
+
+            index++;
+        }
+        return complement;
+    }
+    return complement;
+#if 0
+    //this method works if all procs have the same super sampling
     if ( M_supersampling )
     {
         //  std::cout << "[ParameterSpace::Sampling::complement] super sampling available\n";
@@ -1410,8 +1436,8 @@ ParameterSpace<P>::Sampling::complement() const
 
         return complement;
     }
+#endif
 
-    return complement;
 }
 template<int P>
 boost::shared_ptr<typename ParameterSpace<P>::Sampling>
