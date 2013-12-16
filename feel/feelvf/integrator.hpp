@@ -934,11 +934,14 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
     if (!findEltForInit) return;
 
 
-    if ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) )
-        assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>(),true );
+    const bool test_related_to_range = __v->mesh()->isRelatedTo( it->mesh() );
+
+    //if ( dynamic_cast<void*>( const_cast<MeshBase*>( it->mesh() ) ) == dynamic_cast<void*>( __v->mesh().get() ) )
+    if ( test_related_to_range )
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<same_mesh_type::value>(), test_related_to_range/*true*/ );
 
     else
-        assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>(),false );
+        assemble( __form, mpl::int_<iDim>(), mpl::bool_<false>(), test_related_to_range/*false*/ );
 
     //assemble( __form, mpl::int_<iDim>(), mpl::bool_<true>() );
 }
@@ -2466,6 +2469,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         // true if connected to another element, false otherwise
         if ( elt_it->isConnectedTo1() )
         {
+            CHECK( false ) << "TODO!!!!\n";
 #if 0
             uint16_type __face_id_in_elt_1 = it->pos_second();
 
@@ -2560,7 +2564,214 @@ template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
 {
-    CHECK ( false ) << "[assembleWithRelationDifferentMeshType<LinearForm,MESH_FACES>] : not implement\n";
+    // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename eval::gm1_type gm1_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef typename gm1_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc1_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef boost::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm1_expr_type::precompute_type pc1_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef typename gm1_expr_type::precompute_ptrtype pc1_expr_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_expr_ptrtype> > map_gmc1_expr_type;
+
+    // typedef on linearform :
+    typedef vf::detail::LinearForm<FE,VectorType,ElemContType> FormType;
+    // test space
+    typedef typename FormType::gm_type gm_formTest_type;
+    typedef typename FormType::gm1_type gm1_formTest_type;
+    typedef typename FormType::mesh_test_element_type geoelement_formTest_type;
+    static const size_type contextTest = mpl::if_< boost::is_same< mpl::int_< gm_expr_type::nDim >,mpl::int_< gm_formTest_type::nDim > >,
+                                                   mpl::int_<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
+                                                   mpl::int_<expression_type::context|vm::POINT> >::type::value;
+    typedef typename gm_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm1_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc1_formTest_type;
+    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef boost::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
+    typedef typename gm_formTest_type::precompute_type pc_formTest_type;
+    typedef typename gm1_formTest_type::precompute_type pc1_formTest_type;
+    typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
+    typedef typename gm1_formTest_type::precompute_ptrtype pc1_formTest_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_formTest_ptrtype> > map_gmc1_formTest_type;
+
+    //-----------------------------------------------------//
+
+    static const uint16_type nDimTest = gm_formTest_type::nDim;
+    static const uint16_type nDimRange = gm_expr_type::nDim;
+    static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im1_range_type;
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_formtest_type;
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im1_formtest_type;
+    im_range_type imRange;
+    im1_range_type im1Range;
+    im_formtest_type imTest;
+
+    //-----------------------------------------------------//
+
+    typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
+    typedef typename im_range_type::face_quadrature_type face_im_type;
+    typedef typename im1_range_type::face_quadrature_type face_im1_type;
+    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopc( imRange.nFaces() );
+    std::vector<std::map<permutation_type, pc1_expr_ptrtype> > __geopc1( im1Range.nFaces() );
+    std::vector<face_im_type> face_ims( imRange.nFaces() );
+    std::vector<face_im1_type> face_ims1( im1Range.nFaces() );
+    bool hasInitGeoPc=false;
+
+    //-----------------------------------------------------//
+    // typedef on formcontext
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type> form1_context_type;
+    typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
+    typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
+
+
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    {
+        auto elt_it = lit->template get<1>();
+        auto const elt_en = lit->template get<2>();
+        DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
+
+        // check that we have elements to iterate over
+        if ( (elt_it == elt_en) || (elt_it->isConnectedTo0() == false) )
+            continue;
+
+        //-----------------------------------------------//
+
+        if (!hasInitGeoPc)
+        {
+            for ( uint16_type __f = 0; __f < imRange.nFaces(); ++__f )
+            {
+                face_ims[__f] = imRange.face( __f );
+                face_ims1[__f] = im1Range.face( __f );
+
+                for ( permutation_type __p( permutation_type::IDENTITY );
+                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                {
+                    //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                    __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+                    __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( elt_it->element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
+                }
+            }
+            hasInitGeoPc=true;
+        }
+
+        //-----------------------------------------------//
+
+        const bool rangeIsSubMeshFromTest = elt_it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+
+        const size_type idEltRangeInit = elt_it->id();
+        size_type idEltTestInit  = idEltRangeInit;
+        if ( rangeIsSubMeshFromTest )
+            idEltTestInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+        else if ( testIsSubMeshFromRange )
+            idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
+
+        //-----------------------------------------------//
+        // get the geometric mapping associated with element 0
+        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( elt_it->element( 0 ).gm(), elt_it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
+        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( elt_it->element( 0 ).gm1(), elt_it->element( 0 ), __geopc1, __face_id_in_elt_0 ) );
+
+        auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_type,im_formtest_type,
+                                                                           gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
+                                                                                                             idEltTestInit, gmcExpr0, mpl::int_<gmTestRangeRelation>() );
+
+        //-----------------------------------------------//
+
+        map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr0 ) );
+        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+        form_context_ptrtype form;
+        form1_context_ptrtype form1;
+
+
+        bool isInitConnectionTo0=false;
+        bool isInitConnectionTo1=false;
+
+        // true if connected to another element, false otherwise
+        if ( elt_it->isConnectedTo1() )
+        {
+            CHECK( false ) << "TODO!!!!\n";
+        }
+        else
+        {
+            form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcExpr,
+                                                                this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest ) );
+            //form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
+            isInitConnectionTo0=true;
+        }
+
+
+        for ( ; elt_it != elt_en; ++elt_it )
+        {
+            if ( elt_it->isGhostFace() )
+            {
+                LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
+                continue;
+            }
+            if ( elt_it->isInterProcessDomain() )
+            {
+                std::cout << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
+                LOG(WARNING) << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
+                continue;
+            }
+
+            const size_type idEltRange = elt_it->id();
+            size_type idEltTest = idEltRange;
+            if ( rangeIsSubMeshFromTest )
+                idEltTest = elt_it->mesh()->subMeshToMesh( idEltRange );
+            else if ( testIsSubMeshFromRange )
+                idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
+
+            if ( elt_it->isConnectedTo1() )
+            {
+                CHECK ( false ) << "[assembleWithRelationDifferentMeshType<LinearForm,MESH_FACES>] : isConnectedTo1 not yet implement\n";
+            }
+            else
+            {
+                __face_id_in_elt_0 = elt_it->pos_first();
+
+                if ( !isInitConnectionTo0 )
+                {
+                    form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcExpr,
+                                                                        this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest ) );
+                    //form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
+                    isInitConnectionTo0=true;
+                }
+
+                // update gmc
+                detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference, typename FormType::space_type,im_range_type,
+                                                                gmc_formTest_type,gmc_expr_type>(*elt_it,__form.testSpace(), gmcFormTest, gmcExpr0,
+                                                                                                 idEltTest, mpl::int_<gmTestRangeRelation>() );
+
+                form->update( mapgmcFormTest,mapgmcFormTest,mapgmcExpr, face_ims[__face_id_in_elt_0] );
+                form->integrate();
+                form->assemble();
+            }
+
+        } // for ( ; elt_it ... )
+
+    } // for( auto lit = ... )
+
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
