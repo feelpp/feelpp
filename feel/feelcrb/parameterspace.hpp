@@ -207,6 +207,10 @@ public:
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
     element_type element()  { return parameterspace_type::logRandom( this->shared_from_this(), true ); }
+    element_type element( bool broadcast )
+    {
+        return parameterspace_type::logRandom( this->shared_from_this(), broadcast );
+    }
     element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); *e=element(); return e; }
     bool check() const
         {
