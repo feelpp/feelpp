@@ -2031,7 +2031,11 @@ CRB<TruthModelType>::offline()
         if ( proc_number == master_proc )
         {
             if( M_error_type == CRB_NO_RESIDUAL )
-                mu = M_Dmu->element();
+            {
+                //we don't want broadcast the element
+                bool broadcast=false;
+                mu = M_Dmu->element( broadcast );
+            }
             else
             {
                 // start with M_C = { arg min mu, mu \in Xi }
@@ -2820,7 +2824,8 @@ CRB<TruthModelType>::offline()
                     //initialization
                     already_exist=false;
                     //pick randomly an element
-                    mu = M_Dmu->element();
+                    bool broadcast=false;
+                    mu = M_Dmu->element( broadcast );
                     //make sure that the new mu is not already is M_WNmu
                     BOOST_FOREACH( auto _mu, *M_WNmu )
                     {
