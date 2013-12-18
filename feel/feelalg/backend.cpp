@@ -837,7 +837,6 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the PC data structure" )
         ( prefixvm( prefix,"pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of preconditioners (lu, ilut, ilutp, diag, id,...)" )
         ( prefixvm( prefix,"sub-pc-type" ).c_str(), Feel::po::value<std::string>()->default_value( "lu" ), "type of sub-preconditioners (lu, ilut, ilutp, diag, id,...)" )
-        ( prefixvm( prefix,"pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display preconditioner information" )
         ( prefixvm( prefix,"sub-pc-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "display sub-preconditioner information" )
         ( prefixvm( prefix,"constant-null-space" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "set the null space to be the constant values" )
 
