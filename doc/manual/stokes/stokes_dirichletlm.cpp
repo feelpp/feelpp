@@ -56,17 +56,16 @@ createMeshStokesDirichletLM( mpl::int_<3> /**/ )
     return mesh;
 }
 
-decltype( -(Py()-1)*(Py()+1)*oneX() )
+decltype( (Py()-1)*(Py()+1)*N() )
 inletVelocityExpr( mpl::int_<2> /**/ )
 {
-    return -(Py()-1)*(Py()+1)*oneX();
+    return (Py()-1)*(Py()+1)*N();
 }
 
-
-decltype( -1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*oneX() )
+decltype( 1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*N() )
 inletVelocityExpr( mpl::int_<3> /**/ )
 {
-    return -1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*oneX();
+    return 1.5*2*(4./0.1681)*( pow(Py()-0 ,2) + pow(Pz()-0.205 ,2) - cst(0.205*0.205) )*N();
 }
 
 
@@ -93,8 +92,8 @@ void runStokesDirichletLM()
     }
 
     auto U = Vh1->elementPtr();
-    auto u = U->element<0>();
-    auto p = U->element<1>();
+    auto u = U->template element<0>();
+    auto p = U->template element<1>();
     auto lambda = Vh2->elementPtr();
     BlocksBaseGraphCSR myblockGraph(2,2);
 
@@ -130,7 +129,7 @@ void runStokesDirichletLM()
            _rowstart=0, _colstart=Vh1->nLocalDofWithGhost() )
         += integrate( //_range=elements(submesh),
                      _range=markedfaces(mesh,listMarker),
-                      _expr=inner(idt(lambda),id(u)) );
+                     _expr=inner(idt(lambda),id(u)) );
 
     form2( _trial=Vh1, _test=Vh2 ,_matrix=A,
            _rowstart=Vh1->nLocalDofWithGhost(), _colstart=0 )
@@ -140,8 +139,9 @@ void runStokesDirichletLM()
 
     form1( _test=Vh2, _vector=F,
            _rowstart=Vh1->nLocalDofWithGhost() )
-        += integrate(_range=markedelements(submesh,"inlet"),
-                     _expr=trans(u_in)*id(lambda));
+        += integrate(//_range=markedelements(submesh,"inlet"),
+                     _range=markedfaces(mesh,"inlet"),
+                     _expr=inner(u_in,id(lambda) ) );
 
     backend(_rebuild=true)->solve( _matrix=A, _rhs=F, _solution=UVec );
 

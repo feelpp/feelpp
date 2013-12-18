@@ -3,10 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2005-03-15
+       Date: 2013-12-03
 
-  Copyright (C) 2005,2006 EPFL
-  Copyright (C) 2006-2011 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,12 +22,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file elementon.hpp
+   \file on.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2005-03-15
+   \date 2013-12-03
  */
-#ifndef __ELEMENTON_HPP
-#define __ELEMENTON_HPP 1
+#ifndef FEELPP_ELEMENTON_HPP
+#define FEELPP_ELEMENTON_HPP 1
 
 #include <boost/timer.hpp>
 #include <boost/foreach.hpp>
@@ -39,11 +38,10 @@ namespace Feel
 {
 namespace vf
 {
+///\cond detail
 /*!
   \class ElementOnExpr
   \brief Handle Dirichlet condition
-
-
 
   @author Christophe Prud'homme
   @see
@@ -349,13 +347,12 @@ struct elementon_type
 }
 /**
  *
- * \brief projection/interpolation of an expresion onto a noal functionspace
+ * \brief projection/interpolation of an expresion onto a nodal functionspace
  *
  * \arg space the function space to project onto
  * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)
  * \arg expr the expression to project
  * \arg geomap the type of geomap to use (make sense only using high order meshes)
- * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
  */
 BOOST_PARAMETER_FUNCTION(
     ( typename vf::detail::elementon_type<Args>::type ), // return type
@@ -380,7 +377,6 @@ BOOST_PARAMETER_FUNCTION(
     {
         LOG(INFO) << "set Dof over : "<< nelements(range) << " faces";
     }
-    //typename vf::detail::elementon_type<Args>::type ion( range, element, rhs, expr, type );
     return ion;
 }
 

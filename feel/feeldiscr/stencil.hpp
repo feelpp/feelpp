@@ -90,7 +90,8 @@ struct compute_graph3
                                            _collect_garbage=false,
                                            _close=false,
                                            _range=M_stencil->template subRangeIterator<Space2::basis_type::TAG,Space1Type::basis_type::TAG>
-                                           (mpl::bool_<BFType::template rangeiteratorType<Space2::basis_type::TAG,Space1Type::basis_type::TAG>::hasnotfindrange_type::value>() )
+                                           (mpl::bool_<BFType::template rangeiteratorType<Space2::basis_type::TAG,Space1Type::basis_type::TAG>::hasnotfindrange_type::value>() ),
+                                           _quad=typename BFType::nonstandard_quadset_type()
                                            );
 
                 if ( M_stencil->testSpace()->worldComm().globalSize()>1 && M_stencil->testSpace()->hasEntriesForAllSpaces() )
@@ -169,7 +170,8 @@ struct compute_graph2
                                            _collect_garbage=false,
                                            _close=false,
                                            _range=M_stencil->template subRangeIterator<Space1Type::basis_type::TAG,Space2::basis_type::TAG>
-                                           (mpl::bool_<BFType::template rangeiteratorType<Space1Type::basis_type::TAG,Space2::basis_type::TAG>::hasnotfindrange_type::value>() )
+                                           (mpl::bool_<BFType::template rangeiteratorType<Space1Type::basis_type::TAG,Space2::basis_type::TAG>::hasnotfindrange_type::value>() ),
+                                           _quad=typename BFType::nonstandard_quadset_type()
                                            );
 
                 if ( M_stencil->testSpace()->worldComm().globalSize()>1 && M_stencil->testSpace()->hasEntriesForAllSpaces() )
@@ -300,9 +302,26 @@ stencilRangeMap( ThePair1Type const& p1, ThePair2Type const& p2)
     return stencilRangeMap2Type<ThePair1Type,ThePair2Type>( p1.second, p2.second );
 }
 
+/**
+ * define the quadrature order use with non standard stencil
+ */
+struct stencilQuadSetBase {};
+
+template <int QuadOrder1d=20, int QuadOrder2d=12, int QuadOrder3d=8 >
+struct stencilQuadSet :
+        public stencilQuadSetBase,
+        public fusion::vector< _Q<QuadOrder1d>,_Q<QuadOrder2d>,_Q<QuadOrder3d> >
+{
+    typedef fusion::vector< _Q<QuadOrder1d>,_Q<QuadOrder2d>,_Q<QuadOrder3d> > super_type;
+
+    stencilQuadSet()
+        :
+        super_type( _Q<QuadOrder1d>(), _Q<QuadOrder2d>(), _Q<QuadOrder3d>() )
+    {}
+};
 
 
-template<typename X1, typename X2,typename RangeIteratorTestType = stencilRangeMap0Type >
+template<typename X1, typename X2,typename RangeIteratorTestType = stencilRangeMap0Type, typename QuadSetType = stencilQuadSet<> >
 class Stencil
 {
 public:
@@ -312,9 +331,10 @@ public:
     typedef typename X2::element_type trial_space_type;
     typedef GraphCSR graph_type;
     typedef boost::shared_ptr<graph_type> graph_ptrtype;
-    typedef Stencil<X1,X2,RangeIteratorTestType> self_type;
+    typedef Stencil<X1,X2,RangeIteratorTestType,QuadSetType> self_type;
 
     typedef RangeIteratorTestType rangeiterator_test_type;
+    typedef QuadSetType nonstandard_quadset_type;
 
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh,
              size_type graph_hints,
@@ -571,7 +591,8 @@ struct compute_stencil_type
     typedef typename remove_pointer_const_reference_type<Args,tag::test>::type _test_type;
     typedef typename remove_pointer_const_reference_type<Args,tag::trial>::type _trial_type;
     typedef typename remove_pointer_const_reference_default_type<Args,tag::range, stencilRangeMap0Type >::type _range_type;
-    typedef Stencil<_test_type, _trial_type, _range_type> type;
+    typedef typename remove_pointer_const_reference_default_type<Args,tag::quad, stencilQuadSet<> >::type _quad_type;
+    typedef Stencil<_test_type, _trial_type, _range_type, _quad_type> type;
     typedef boost::shared_ptr<type> ptrtype;
 
 };
@@ -622,9 +643,10 @@ BOOST_PARAMETER_FUNCTION(
       ( pattern,          *( boost::is_integral<mpl::_> ), Pattern::COUPLED )
       ( pattern_block,    *, default_block_pattern )
       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), false )
-      ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
-      ( close,           *( boost::is_integral<mpl::_> ), true )
-      ( range,           *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
+      ( collect_garbage,  *( boost::is_integral<mpl::_> ), true )
+      ( close,            *( boost::is_integral<mpl::_> ), true )
+      ( range,            *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
+      ( quad,             *( boost::is_convertible<mpl::_, stencilQuadSetBase>), stencilQuadSet<>() )
     )
 )
 {
@@ -734,9 +756,9 @@ sortSparsityRow ( const BidirectionalIterator begin,
 } //
 
 }
-template<typename X1,  typename X2, typename RangeItTestType>
+template<typename X1,  typename X2, typename RangeItTestType,typename QuadSetType>
 void
-Stencil<X1,X2,RangeItTestType>::mergeGraph( int row, int col, graph_ptrtype g )
+Stencil<X1,X2,RangeItTestType,QuadSetType>::mergeGraph( int row, int col, graph_ptrtype g )
 {
     boost::timer tim;
     DVLOG(2) << "[merge graph] for composite bilinear form\n";
@@ -828,9 +850,9 @@ Stencil<X1,X2,RangeItTestType>::mergeGraph( int row, int col, graph_ptrtype g )
     DVLOG(2) << "merge graph for composite bilinear form done\n";
 }
 
-template<typename X1,  typename X2, typename RangeItTestType>
+template<typename X1,  typename X2, typename RangeItTestType, typename QuadSetType>
 void
-Stencil<X1,X2,RangeItTestType>::mergeGraphMPI( size_type test_index, size_type trial_index,
+Stencil<X1,X2,RangeItTestType,QuadSetType>::mergeGraphMPI( size_type test_index, size_type trial_index,
                                DataMap const& mapOnTest, DataMap const& mapOnTrial,
                                graph_ptrtype g )
 {
@@ -886,9 +908,9 @@ Stencil<X1,X2,RangeItTestType>::mergeGraphMPI( size_type test_index, size_type t
 
 }
 
-template<typename X1,  typename X2, typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints )
+template<typename X1,  typename X2, typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints )
 {
     VLOG(2) << "computeGraph: deciding whether the mesh are related to optimize the stencil\n";
     //if ( (is_shared_ptr<typename test_space_type::mesh_ptrtype>::value && is_shared_ptr<typename trial_space_type::mesh_ptrtype>::value ) &&
@@ -908,9 +930,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints )
 }
 
 
-template<typename X1,  typename X2, typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<false> )
+template<typename X1,  typename X2, typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<false> )
 {
     boost::timer t;
     DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
@@ -925,36 +947,36 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<false>
     return graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+ template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+ typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+ Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
                       detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
                       detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X2->functionSpaces(),
                       detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
 {
     boost::timer t;
     DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
@@ -966,27 +988,27 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
     return graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
                       detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
                       detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X2->functionSpaces(),
                       detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
@@ -997,9 +1019,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 
 
 #if 0
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true> )
 {
     boost::timer t;
     // Compute the sparsity structure of the global matrix.  This can be
@@ -1259,9 +1281,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     return sparsity_graph;
 }
 #else
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true> )
 {
     boost::timer t;
     // Compute the sparsity structure of the global matrix.  This can be
@@ -1404,7 +1426,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                     {
                         for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
-                            const auto * neighbor = boost::addressof( elem );
+                            const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
                             size_type neighbor_id = elem.neighbor( ms ).first;
                             size_type neighbor_process_id = elem.neighbor( ms ).second;
 
@@ -1563,15 +1585,14 @@ idEltStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface )
 
 } // namespace detail
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
 {
     //std::cout << "\n start graphInterp "<< std::endl;
-
-    typedef mpl::int_<20/*50*/> order_1d_type;
-    typedef mpl::int_<12/*20*/> order_2d_type;
-    typedef mpl::int_<8/*10*/> order_3d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,0>::type>::type::order > order_1d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,1>::type>::type::order > order_2d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,2>::type>::type::order > order_3d_type;
 
     typedef typename test_space_type::mesh_type test_mesh_type;
     typedef typename trial_space_type::mesh_type trial_mesh_type;
@@ -1581,8 +1602,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
             order_2d_type,
             order_3d_type >::type>::type order_used_type;
     typedef typename mpl::if_<mpl::bool_<test_mesh_type::element_type::is_simplex>,
-            mpl::identity<typename _Q<order_used_type::value>::template apply<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Simplex>::type >,
-                mpl::identity<typename _Q<order_used_type::value>::template apply<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Hypercube>::type >
+            mpl::identity<typename _Q<order_used_type::value>::template applyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Simplex>::type >,
+                mpl::identity<typename _Q<order_used_type::value>::template applyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Hypercube>::type >
     >::type::type theim_type;
 
     typedef typename test_mesh_type::Localization::matrix_node_type matrix_node_type;

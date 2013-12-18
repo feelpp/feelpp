@@ -336,7 +336,14 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
         }
         break;
         }
+
+        //if P0 continuous finish loop here
+        if (fe_type::isLagrangeP0Continuous )
+        {
+            break;
+        }
     }
+
 
     return __v;
 }

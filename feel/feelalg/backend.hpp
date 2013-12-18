@@ -500,6 +500,14 @@ public:
     }
 
     /**
+     * \return the type of non linear solver
+     */
+    std::string snesType() const
+    {
+        return M_snesType;
+    }
+
+    /**
      * \return the type of preconditioner
      */
     std::string pcType() const
@@ -532,6 +540,11 @@ public:
      * \return enum solver type from options
      **/
     SolverType kspEnumType() const;
+
+    /**
+     * \return enum snes solver type from string
+     */
+    SolverNonLinearType snesEnumType() const;
 
     /**
      * \return enum fieldsplit type from options
@@ -1141,6 +1154,7 @@ private:
     size_type    M_iteration;
     std::string M_export;
     std::string M_ksp;
+    std::string M_snesType;
     std::string M_pc;
     std::string M_fieldSplit;
     std::string M_pcFactorMatSolverPackage;

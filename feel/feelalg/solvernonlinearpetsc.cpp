@@ -500,7 +500,7 @@ void SolverNonLinearPetsc<T>::init ()
         ierr = SNESSetFromOptions( M_snes );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-#if 0
+#if 1
         // if the non linear solver type is define by the user in the code
         switch ( this->getType() )
         {
@@ -562,7 +562,7 @@ void SolverNonLinearPetsc<T>::init ()
         }
 #else
         std::string s = option(_name="snes-type",_prefix=this->prefix()).template as<std::string>();
-        LOG(INFO) << "snes type: " << s;
+        DVLOG(1) << "snes type: " << s;
         check( SNESSetType( M_snes, s.c_str() ) );
 #if 0
         //check( SNESNGMRESSetRestartType( M_snes, 5 ) );

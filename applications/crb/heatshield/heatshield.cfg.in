@@ -1,7 +1,6 @@
 #mesh size
-hsize=1e-1
+hsize=1.5e-1
 #hsize=1.5e-1
-steady=true
 do-export=false
 
 #name of the .msh file
@@ -30,6 +29,14 @@ reuse-prec=false
 ksp-rtol=1e-15
 reuse-prec=true #resolution with the same matrix, only rhs change
 
+[beta]
+A0=1
+A1=BiotOut #mu(0)
+A2=BiotIn  #mu(1)
+F0.0=BiotOut #mu(0)
+F1.0=1/surface
+M0=1
+
 [crb]
 #use-predefined-WNmu=true
 #use-predefined-test-sampling=true
@@ -48,6 +55,8 @@ solve-dual-problem=true
 print-error-during-rb-construction=false
 cvg-study=true
 show-residual=false
+is-model-executed-in-steady-mode=true
+use-ginac-for-beta-expressions=false
 [crb.check]
 gs=0
 rb=0

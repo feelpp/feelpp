@@ -9,6 +9,7 @@ namespace Feel
 /** \page GettingStarted Getting Started
    - \subpage CrashCourse
    - \subpage Building
+   - \subpage DocCmakeLists
    - \subpage FirstApp
 */
 
@@ -28,6 +29,7 @@ namespace Feel
 /** \page Learning Learning by Examples
    - \subpage NumericalMethods
    - \subpage Generic
+   - \subpage Eigen
    - \subpage HeatTransfer
    - \subpage FluidMechanics
    - \subpage SolidMechanics
@@ -71,5 +73,3 @@ namespace Feel
    - \subpage Types
    - \subpage Layout
 */
-
-

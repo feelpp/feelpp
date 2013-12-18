@@ -596,6 +596,7 @@ public:
             }
             auto ref_betaMqm = model->computeBetaQm( ref_mu , tf ).template get<0>() ;
 
+            int sampling_size = Sampling->size();
 
             BOOST_FOREACH( auto mu, *Sampling )
             {
@@ -692,14 +693,14 @@ public:
                             {
                                 LOG(INFO) << "CRB mode\n";
                                 if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                                    std::cout << "CRB mode\n";
+                                    std::cout << "CRB mode -- "<<curpar<<"/"<<sampling_size<<std::endl;
 
 
                                 boost::mpi::timer ti;
 
                                 ti.restart();
                                 LOG(INFO) << "solve crb\n";
-                                google::FlushLogFiles(google::GLOG_INFO);
+                                //google::FlushLogFiles(google::GLOG_INFO);
 
                                 //dimension of the RB (not necessarily the max)
                                 int N =  option(_name="crb.dimension").template as<int>();

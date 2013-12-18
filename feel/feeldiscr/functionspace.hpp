@@ -86,6 +86,7 @@
 #include <feel/feeldiscr/parameter.hpp>
 #include <feel/feeldiscr/bases.hpp>
 #include <feel/feeldiscr/functionspacebase.hpp>
+#include <feel/feeldiscr/mortar.hpp>
 
 #include <feel/feeldiscr/region.hpp>
 
@@ -96,6 +97,7 @@ namespace parameter = boost::parameter;
 
 namespace detail
 {
+
 
 template<typename T>
 struct vector_plus
@@ -1338,19 +1340,12 @@ struct Order
 };
 
 typedef parameter::parameters<
-//    parameter::required<tag::mesh_type, mpl::or_<boost::is_base_and_derived<MeshBase,_> >, mpl::or_<fusion::traits::is_sequence<_>, mpl::is_sequence<_> > >
-parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
-#if 0
-, parameter::optional<parameter::deduced<tag::bases_list>, mpl::or_<boost::is_base_and_derived<detail::bases_base,_>,
-mpl::or_<fusion::traits::is_sequence<_>,
-mpl::is_sequence<_> > > >
-#else
-, parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<detail::bases_base,_> >
-//, parameter::optional<parameter::deduced<tag::bases_list>, fusion::traits::is_sequence<_> >
-#endif
-, parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
-, parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
-> functionspace_signature;
+    parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
+    , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<detail::bases_base,_> >
+    , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
+    , parameter::optional<parameter::deduced<tag::mortar_type>, boost::is_base_and_derived<detail::mortar_base,_> >
+    , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
+    > functionspace_signature;
 
 
 /**
@@ -1380,6 +1375,7 @@ public:
 
     typedef typename parameter::binding<args, tag::mesh_type>::type meshes_list;
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
+    typedef typename parameter::binding<args, tag::mortar_type, mortars<NoMortar> >::type mortar_list;
     typedef typename parameter::binding<args, tag::periodicity_type, Periodicity<NoPeriodicity> >::type periodicity_type;
     typedef typename parameter::binding<args, tag::bases_list, detail::bases<Lagrange<1,Scalar> > >::type bases_list;
 
@@ -1402,6 +1398,15 @@ public:
 
 #endif
     };
+    template<typename TheMortarType, int pos>
+    struct GetMortar
+    {
+        typedef typename mpl::if_<mpl::equal_to<fusion::result_of::size<TheMortarType>,mpl::int_<1> >,
+                                  mpl::identity<fusion::result_of::at_c<TheMortarType,0> >,
+                                  mpl::identity<fusion::result_of::at_c<TheMortarType,pos> > >::type::type::type _type;
+        typedef typename boost::remove_reference<_type>::type type;
+    };
+
     template<typename BasisType>
     struct ChangeMesh
     {
@@ -1413,7 +1418,8 @@ public:
 
         typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
                               detail::bases<BasisType>,value_type,
-                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type > > _type;
+                              Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
+                              mortar_list> _type;
         typedef boost::shared_ptr<_type> type;
 
 
@@ -1427,7 +1433,7 @@ public:
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
 
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type> > > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
 //mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
@@ -1440,7 +1446,7 @@ public:
         typedef typename BasisType::component_basis_type component_basis_type;
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type> > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
                                   mpl::identity<ChangeMesh<component_basis_type> > >::type::type::type type;
     };
 
@@ -1495,6 +1501,7 @@ public:
             mpl::identity<typename mesh_type::element_type>,
             mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;
 
+
     template<typename BasisType>
     struct GetNComponents
     {
@@ -1540,6 +1547,9 @@ public:
     typedef typename GetPeriodicity<periodicity_type,0>::type periodicity_0_type;
     static const bool is_periodic = periodicity_0_type::is_periodic;
 
+    typedef typename GetMortar<mortar_list,0>::type mortar_0_type;
+    static const bool is_mortar = mortar_0_type::is_mortar;
+
     //@}
 
     /** @name Typedefs
@@ -1554,7 +1564,7 @@ public:
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef boost::shared_ptr<functionspace_type> pointer_type;
 
-    typedef FunctionSpace<meshes_list, component_basis_vector_type, value_type, periodicity_type> component_functionspace_type;
+    typedef FunctionSpace<meshes_list, component_basis_vector_type, value_type, periodicity_type, mortar_list> component_functionspace_type;
     typedef boost::shared_ptr<component_functionspace_type> component_functionspace_ptrtype;
 
 
@@ -1650,7 +1660,7 @@ public:
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<DofComposite>,
-            mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type> > >::type::type dof_type;
+                              mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type> > >::type::type dof_type;
 
     typedef boost::shared_ptr<dof_type> dof_ptrtype;
 
@@ -3970,6 +3980,9 @@ public:
     {
         return M_dofOnOff;
     }
+
+    //! \return true if mortar, false otherwise
+    constexpr bool isMortar() const { return is_mortar; }
 
     /**
      * get the \c FunctionSpace vector
@@ -6642,6 +6655,19 @@ Pch( boost::shared_ptr<MeshType> mesh )
 }
 
 /**
+ * build a function space of continuous function which are piecewise polynomial
+ * of degree (total or in each variable) less than k.
+ */
+template<int Order,typename MeshType>
+inline
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>, mortars<Mortar>>>
+Moch( boost::shared_ptr<MeshType> mesh )
+{
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>, mortars<Mortar>>::New( _mesh=mesh,
+                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
+}
+
+/**
  * \fn Pdh<k,MeshType>
  *
  * build a function space of discontinuous function which are piecewise polynomial
@@ -6707,53 +6733,6 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
     return os;
 }
 } // Feel
-
-
-
-#if 0
-template<
-typename A0,
-         typename A1,
-         typename A2,
-         typename A3,
-         typename A4,
-         typename T,
-         typename Cont>
-struct FSElement: public Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<T, Cont>
-{
-};
-
-template<
-typename A0,
-         typename A1,
-         typename A2,
-         typename A3,
-         typename A4>
-//struct version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<double,Feel::VectorUblas<double> > >
-struct version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type >
-{
-    //typedef typename version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::template Element<double,Feel::VectorUblas<double> > > version_type;
-    typedef typename version< typename Feel::FunctionSpace<A0,A1,A2,A3,A4>::element_type > version_type;
-    typedef mpl::int_<2> type;
-    typedef mpl::integral_c_tag tag;
-    BOOST_STATIC_CONSTANT( unsigned int, value = version_type::type::value );
-};
-
-#define FEELPP_REGISTER_ELEMENT( element_type )   \
-    namespace boost {                                                   \
-    namespace serialization {                                           \
-    template<>                                                          \
-    struct version<element_type>                                        \
-    {                                                                   \
-        typedef mpl::int_<2> type;                                      \
-        typedef mpl::integral_c_tag tag;                                \
-        BOOST_STATIC_CONSTANT(unsigned int, value = version::type::value); \
-    };                                                                  \
-    }                                                                   \
-    }
-#
-
-#endif
 
 
 

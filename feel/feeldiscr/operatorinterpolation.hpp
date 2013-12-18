@@ -537,7 +537,36 @@ domainEltIdFromImageEltId( boost::shared_ptr<DomainMeshType> const& domainMesh, 
     }
     else if( domain_sibling_of_image )
     {
-        CHECK(false) << "not implement domain_sibling_of_image\n";
+        static const uint16_type nDimDomain = DomainMeshType::nDim;
+        static const uint16_type nDimImage = ImageMeshType::nDim;
+
+        if ( nDimDomain > nDimImage )
+        {
+            size_type domainEltId = invalid_size_type_value;
+            auto const& theface = dynamic_cast<DomainMeshType const*>(imageMesh->parentMesh().get())->face( imageMesh->subMeshToMesh( imageEltId ) );
+            if ( !theface.element0().isGhostCell() )
+                domainEltId = theface.element0().id();
+            else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+                domainEltId = theface.element1().id();
+            else
+                CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+            // now recover the element id in domain mesh
+            domainEltId = domainMesh->meshToSubMesh( domainEltId );
+            VLOG(2) << "[image_related_to_domain] image element id: "  << imageEltId << " domain element id : " << domainEltId << "\n";
+            if ( domainEltId != invalid_size_type_value ) idsFind.insert( domainEltId );
+        }
+        else
+        {
+            auto const& eltImage = imageMesh->element(imageEltId);
+            for (uint16_type f=0;f< imageMesh->numLocalFaces();++f)
+            {
+                const size_type id_in_parent_face = dynamic_cast<ImageMeshType const*>(imageMesh->parentMesh().get())->subMeshToMesh( eltImage.face(f).id() );
+                // get now the id of the face in the domain mesh
+                const size_type idFind = domainMesh->meshToSubMesh( id_in_parent_face );
+                if ( idFind != invalid_size_type_value ) idsFind.insert( idFind );
+            }
+            DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << imageEltId << " idsFind.size() "<< idsFind.size() << "\n";
+        }
     }
     else // same mesh
     {

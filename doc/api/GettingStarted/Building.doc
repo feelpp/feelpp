@@ -1,6 +1,6 @@
 /* -*- mode: c++; coding: utf-8 -*- */
 namespace Feel {
-    /** \page Building Building Feel++
+/** \page Building Building Feel++
 \author Christophe Prud'homme
 \author Alexandre Ancel
 
@@ -58,7 +58,7 @@ Required packages :
 \li Boost >= 1.49
 \li Petsc >= 3.2
 \li Cmake >= 2.8.7
-\li Gmsh (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
+\li Gmsh >= 2.8.3 (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
 \li Libxml2
 
 Optional packages :
@@ -273,11 +273,35 @@ you can customize the build type:
   cmake -D CMAKE_BUILD_TYPE=Release
   ...
 \endverbatim
-Once Cmake has done its work, you are now able to compile the library with
+
+<p>
+<b>Per-system specific configuration</b>:
+If you need to set specific CMake variables to fit an exotic system (e.g. supercomputer), you can create a machine file fitting this system.
+To do so, simply create a file named <tt>feelpp.machines.&lt;name&gt;.cmake</tt> in the <tt>cmake/machines</tt> directory, where <tt>&lt;name&gt;</tt> is the machine name returned by the execution of <tt>uname -n</tt>.
+The file will automatically be recognized and loaded, when you will be compiling \feel on this system.
+</p>
+
+Once Cmake has done its work, you are now able to compile the library with:
 \verbatim
   make
 \endverbatim
-<b>Important</b> : from now, all commands should be type in <tt>feel.opt</tt> or its subdirectories.
+You can speed up the compilation process, if you have a multicore processor. To do so, you have to specify the number of parallel jobs <tt>make</tt> will be allowed to spawn by using the <tt>-j</tt> flag:
+\verbatim
+  make -j <nbjobs>
+\endverbatim
+<b>Important</b>: from now on, all commands should be typed in <tt>feel.opt</tt> or its subdirectories.
+
+<p>
+<b>Unit tests</b>:
+\feel comes with built-in unit tests to ensure that the library is working correctly. You can launch basic tests based on the quickstart application by typing:
+\verbatim
+  make check
+\endverbatim
+Or you can execute the whole testsuite, by typing the following command: (This might take a while)
+\verbatim
+  make check-full
+\endverbatim
+</p>
 
 */
 }

@@ -1843,14 +1843,14 @@ CRBModel<TruthModelType>::initB()
         eigs( _matrixA=M_B,
               _matrixB=M,
               _problem=( EigenProblemType )GHEP,
-              _solver=( EigenSolverType )M_vm["solvereigen-solver-type"].as<int>(),
+              _solver=( EigenSolverType )M_vm["solvereigen.solver-type"].as<int>(),
               //_spectrum=LARGEST_MAGNITUDE,
               _spectrum=SMALLEST_MAGNITUDE,
               //_transform=SINVERT,
-              _ncv=M_vm["solvereigen-ncv"].as<int>(),
-              _nev=M_vm["solvereigen-nev"].as<int>(),
-              _tolerance=M_vm["solvereigen-tol"].as<double>(),
-              _maxit=M_vm["solvereigen-maxiter"].as<int>()
+              _ncv=M_vm["solvereigen.ncv"].as<int>(),
+              _nev=M_vm["solvereigen.nev"].as<int>(),
+              _tolerance=M_vm["solvereigen.tol"].as<double>(),
+              _maxit=M_vm["solvereigen.maxiter"].as<int>()
             );
     double eigmin = 1;
 

@@ -214,6 +214,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( parameter )
     BOOST_PARAMETER_NAME( sampling )
     BOOST_PARAMETER_NAME( context )
+    BOOST_PARAMETER_NAME( mpi_communications )
 
     BOOST_PARAMETER_NAME( components )
     BOOST_PARAMETER_NAME( periodicity )
@@ -241,6 +242,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( forceRelaxation )
 
     BOOST_PARAMETER_NAME( use_tbb )
+    BOOST_PARAMETER_NAME( use_harts )
     BOOST_PARAMETER_NAME( grainsize )
     BOOST_PARAMETER_NAME( partitioner )
 

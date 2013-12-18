@@ -90,6 +90,28 @@ functions_options( std::string const& prefix )
     return _options;
 }
 po::options_description
+parameters_options( std::string const& prefix )
+{
+    po::options_description _options( "Parameters " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"parameters.f" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "f" )
+        ( prefixvm( prefix,"parameters.g" ).c_str(), Feel::po::value<double>()->default_value( 0 ), "g" )
+        ( prefixvm( prefix,"parameters.alpha" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "alpha" )
+        ( prefixvm( prefix,"parameters.beta" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta" )
+        ( prefixvm( prefix,"parameters.beta_x" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta x" )
+        ( prefixvm( prefix,"parameters.beta_y" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta y" )
+        ( prefixvm( prefix,"parameters.beta_z" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "beta z" )
+        ( prefixvm( prefix,"parameters.epsilon" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "epsilon" )
+        ( prefixvm( prefix,"parameters.gamma" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "gamma" )
+        ( prefixvm( prefix,"parameters.delta" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "delta" )
+        ( prefixvm( prefix,"parameters.nu" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "nu" )
+        ( prefixvm( prefix,"parameters.mu" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "mu" )
+        ( prefixvm( prefix,"parameters.rho" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "rho" )
+        ;
+    return _options;
+}
+
+po::options_description
 gmsh_options( std::string const& prefix )
 {
     po::options_description _options( "Gmsh " + prefix + " options" );
@@ -172,6 +194,18 @@ on_options( std::string const& prefix )
     return _options;
 }
 
+po::options_description
+parallel_options( std::string const& prefix )
+{
+    po::options_description _options( "Parallel " + prefix + " options" );
+    _options.add_options()
+        ( prefixvm( prefix,"parallel.cpu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of additional cores for parallelization" )
+        ( prefixvm( prefix,"parallel.cpu.impl" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "Specify the implementation for multithreading" )
+        ( prefixvm( prefix,"parallel.cpu.restrict" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "Restrict the multithreading to N additional cores per MPI process (0: guess the maximum number of usable cores)" )
+        ( prefixvm( prefix,"parallel.gpu.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Enable the use of GPU for parallelization" )
+        ;
+    return _options;
+}
 
 po::options_description
 ginac_options( std::string const& prefix )
@@ -230,6 +264,10 @@ feel_options( std::string const& prefix  )
 
         /* gmsh domain options */
         .add( gmsh_domain_options( prefix ) )
+        #
+#if defined(FEELPP_HAS_HARTS)
+        .add( parallel_options( prefix ) )
+#endif
 
         /* ginac options */
         .add( ginac_options( prefix ) )
@@ -242,6 +280,9 @@ feel_options( std::string const& prefix  )
 
         /* functions options */
         .add( functions_options( prefix ) )
+
+        /* parameters options */
+        .add( parameters_options( prefix ) )
 
         /* functions options */
         .add( on_options( prefix ) )

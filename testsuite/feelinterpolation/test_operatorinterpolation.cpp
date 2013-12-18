@@ -61,6 +61,7 @@ template <uint32_type OrderGeo>
 void
 test2dTo1d()
 {
+
     typedef Backend<double> backend_type;
 
     // typedef Mesh<Simplex<1,OrderGeo,2> > mesh_1d_type;
@@ -68,6 +69,10 @@ test2dTo1d()
 
     typedef Mesh<Hypercube<1,OrderGeo,2> > mesh_1d_type;
     typedef Mesh<Hypercube<2,OrderGeo,2> > mesh_2d_type;
+
+    //typedef Mesh<Simplex<1,OrderGeo,2> > mesh_1d_type;
+    //typedef Mesh<Simplex<2,OrderGeo,2> > mesh_2d_type;
+
 
     typedef bases<Lagrange<3,Vectorial,Continuous,PointSetFekete> > basis_2d_type;
     typedef FunctionSpace<mesh_2d_type, basis_2d_type> space_2d_type;
@@ -90,34 +95,55 @@ test2dTo1d()
     auto mesh2d = C.createMesh( _mesh=new mesh_2d_type,
                                 _name="test2dTo1d_domain"+mesh_2d_type::shape_type::name() );
 
+#if 0
     GeoTool::Node x3( 0,0 );
     GeoTool::Node x4( 2,1 );
     GeoTool::Line L( meshSize, "Line",x3,x4 );
     L.setMarker( _type="point",_name="Sortie",_markerAll=true );
     L.setMarker( _type="line",_name="Omega1d",_markerAll=true );
     auto mesh1d = L.createMesh( _mesh=new mesh_1d_type,
-                                _name="test2dTo1d_domain1d"+mesh_1d_type::shape_type::name() );
+                                _name="test2dTo1d_domain1d"+mesh_1d_type::shape_type::name(),_straighten=0 );
+#else
+    // create the 1d mesh from a submesh of 2d mesh because gmsh don't partion 1d mesh
+    GeoTool::Node x3( 0,0 );
+    GeoTool::Node x4( 2,1 );
+    GeoTool::Node x5( 0,1 );
+    GeoTool::Triangle T( meshSize,"OMEGA",x3,x4,x5);
+    T.setMarker( _type="line",_name="Boundary1",_marker1=true );
+    T.setMarker( _type="line",_name="Boundary2",_marker2=true,_marker3=true );
+    T.setMarker( _type="surface",_name="Omega2dFor1d",_markerAll=true );
+    auto mesh2dFor1d = T.createMesh( _mesh=new mesh_2d_type,
+                                     _name="test2dTo1d_domain2dFor1d"+mesh_2d_type::shape_type::name(), _straighten=0 );
+    auto mesh1d = createSubmesh(mesh2dFor1d,markedfaces(mesh2dFor1d,"Boundary1"));
+#endif
 
     //-----------------------------------------------------------//
 
     auto Xh1d = space_1d_type::New( _mesh=mesh1d );
     auto Xh2d = space_2d_type::New( _mesh=mesh2d );
 
-    auto u1d = Xh1d->element();
-    auto u2d = vf::project( _space=Xh2d,
-                            _range=elements( mesh2d ),
-                            _expr=vec( cos( M_PI*Px() ),sin( M_PI*Py() ) ) );
+    auto exprProj = vec( cos( M_PI*Px() ),sin( M_PI*Py() ) );
+    //auto exprProj = vec( 2*Px()*Py(), 0.25*(1.0-Py())*Px() );
+
+    auto u1dinterp = Xh1d->element();
+    auto u2dproj = vf::project( _space=Xh2d,
+                                _range=elements( mesh2d ),
+                                _expr=exprProj );
+    auto u1dproj = vf::project( _space=Xh1d,
+                                _range=elements( mesh1d ),
+                                _expr=exprProj );
 
     //-----------------------------------------------------------//
 
     auto opI=opInterpolation( _domainSpace=Xh2d,
                               _imageSpace=Xh1d );
-    opI->apply( u2d,u1d );
+    opI->apply( u2dproj,u1dinterp );
 
     auto s = integrate( _range=elements( mesh1d ),
-                        _expr=trans( idv( u2d )-idv( u1d ) )*( idv( u2d )-idv( u1d ) ) ).evaluate()( 0,0 );
+                        _expr=inner( idv( u1dinterp )-idv( u1dproj ), idv( u1dinterp )-idv( u1dproj ) ) ).evaluate()( 0,0 );
     BOOST_CHECK_SMALL( s,1e-8 );
     BOOST_TEST_MESSAGE( "s=" << s );
+
 } // test2dTo1d
 
 //---------------------------------------------------------------------------------------------//
@@ -128,8 +154,6 @@ template <uint32_type OrderGeo>
 void
 test2dTo2d()
 {
-    typedef Backend<double> backend_type;
-
     typedef Mesh<Simplex<2,OrderGeo,2> > mesh_type;
 
     //typedef bases<Lagrange<3,Scalar,Continuous,PointSetFekete> > basis_1_type;
@@ -145,7 +169,7 @@ test2dTo2d()
     //-------------------------------------------------------
     //case 1 : same mesh
     //-------------------------------------------------------
-    WorldComm myWorldComm;
+    WorldComm myWorldComm = Environment::worldComm();
     auto meshSize = option(_name="hsize").template as<double>();
     LOG(INFO) << "meshSize=" << meshSize << "\n";
     BOOST_TEST_MESSAGE( "meshSize=" << meshSize );
@@ -164,10 +188,10 @@ test2dTo2d()
     auto u2 = Xh2->element();
     auto u2a = Xh2->element();
 
+    auto exprProj = vec( cos( M_PI*Px() ),sin( M_PI*Py() ) );
     u1 = vf::project( _space=Xh1,
                       _range=elements( mesh ),
-                      _expr=vec( cos( M_PI*Px() ),sin( M_PI*Py() ) ) );
-                      //_expr=cos(M_PI*Px() ) );
+                      _expr=exprProj );
 
     auto mybackend = backend(_rebuild=true);
 
@@ -197,8 +221,8 @@ test2dTo2d()
     //-------------------------------------------------------//
     //case 2 : with interpolation tool
     //-------------------------------------------------------//
-    //GeoTool::Node x3(0.4,0);
-    GeoTool::Circle C2( meshSize/2.,"OMEGA",x1,x2);
+    GeoTool::Node x3(0.4,0);
+    GeoTool::Circle C2( meshSize/2.,"OMEGA",x1,x3);
     C2.setMarker(_type="line",_name="Boundary",_markerAll=true);
     C2.setMarker(_type="surface",_name="Omega",_markerAll=true);
     auto mesh2 = C2.createMesh(_mesh=new mesh_type,
@@ -207,41 +231,31 @@ test2dTo2d()
     auto Xh2bis = space_2_type::New(_mesh=mesh2);
     auto u2bis = Xh2bis->element();
     auto u2bisbis = Xh2bis->element();
-
+    auto u2bisproj = vf::project( _space=Xh2bis,
+                                  _range=elements( mesh2 ),
+                                  _expr=exprProj );
+    // opInterp on elements
     auto opI2=opInterpolation( _domainSpace=Xh1,
                                _imageSpace=Xh2bis,
                                _range=elements( mesh2 ),
                                _backend=mybackend );
     opI2->apply( u1,u2bis );
+    auto s3 = integrate( _range=elements( mesh2 ),
+                         _expr=inner( idv( u2bis )-idv( u2bisproj ), idv( u2bis )-idv( u2bisproj ) )
+                         /*_geomap=GeomapStrategyType::GEOMAP_HO*/ ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( s3,1e-8 );
+    BOOST_TEST_MESSAGE( "s3=" << s3 );
 
-#if 0
-    auto myexporter = Exporter<mesh_type>::New( test_app->vm(), "test2dTo2d_MyExport" );
-    myexporter->step(0)->setMesh( u2bis.mesh() );
-    myexporter->step(0)->add( "test2dTo2d_u2bis", u2bis );
-    myexporter->save();
-    auto myexporter2 = Exporter<mesh_type>::New( test_app->vm(), "test2dTo2d_MyExport2" );
-    myexporter2->step(0)->setMesh( u1.mesh() );
-    myexporter2->step(0)->add( "test2dTo2d_u1", u1 );
-    myexporter2->save();
-#endif
-
-    auto s3 = integrate(_range=elements(mesh2),
-                        _expr=trans(idv(u1))*idv(u1) ).evaluate()(0,0);
-    auto s4 = integrate(_range=elements(mesh2),
-                        _expr=trans(idv(u2bis))*idv(u2bis) ).evaluate()(0,0);
-    BOOST_CHECK_CLOSE( s3,s4,1e-6);
-    BOOST_TEST_MESSAGE( "s3=" << s3 << " s4=" << s4 << " s3-s4 = " << s3-s4 );
-
+    // opInterp on faces
     auto opI3=opInterpolation( _domainSpace=Xh1,
                                _imageSpace=Xh2bis,
                                _range=boundaryfaces( mesh2 ),
                                _backend=mybackend );
     opI3->apply( u1,u2bisbis );
-
-    auto s7 = integrate( _range=boundaryfaces( mesh2 ),
-                         _expr=trans( idv( u1 )-idv( u2bisbis ) )*( idv( u1 )-idv( u2bisbis ) ) ).evaluate()( 0,0 );
-    BOOST_CHECK_SMALL( s7,1e-6 );
-    BOOST_TEST_MESSAGE( "s7=" << s7 );
+    auto s4 = integrate( _range=boundaryfaces( mesh2 ),
+                         _expr=inner( idv( u2bisbis )-idv( u2bisproj ), idv( u2bisbis )-idv( u2bisproj ) ) ).evaluate()( 0,0 );
+    BOOST_CHECK_SMALL( s4,1e-8 );
+    BOOST_TEST_MESSAGE( "s4=" << s4 );
 
 } // test2dTo2d
 
@@ -251,7 +265,6 @@ template <uint32_type OrderGeo>
 void
 test2dOpLagrangeP1()
 {
-    typedef Backend<double> backend_type;
     typedef Mesh<Simplex<2,OrderGeo,2> > mesh_type;
     typedef bases<Lagrange<3,Vectorial,Continuous,PointSetFekete> > basis_type;
     typedef FunctionSpace<mesh_type, basis_type> space_type;
@@ -271,9 +284,10 @@ test2dOpLagrangeP1()
                               _partitions=myWorldComm.localSize() );
 
     auto Xh = space_type::New( _mesh=mesh );
+    auto exprProj = vec( cos( M_PI*Px() ),sin( M_PI*Py() ) );
     auto u = vf::project( _space=Xh,
                           _range=elements( mesh ),
-                          _expr=vec( cos( M_PI*Px() ),sin( M_PI*Py() ) ) );
+                          _expr=exprProj );
 
     auto mybackend = backend(_rebuild=true);
 
@@ -281,15 +295,19 @@ test2dOpLagrangeP1()
     auto meshLagP1 = opLagP1->mesh();
 
     auto XhLagP1 = space_P1_type::New( _mesh=meshLagP1 );
-    auto uLagP1 = XhLagP1->element();
+    auto uLagP1interp = XhLagP1->element();
+
+    auto uLagP1proj = vf::project( _space=XhLagP1,
+                          _range=elements( meshLagP1 ),
+                          _expr=exprProj );
 
     auto opI=opInterpolation( _domainSpace=Xh,
                               _imageSpace=XhLagP1,
                               _range=elements( meshLagP1 ) );
-    opI->apply( u,uLagP1 );
+    opI->apply( u,uLagP1interp );
 
-    auto s1 = integrate(_range=elements(mesh),
-                        _expr=trans(idv(u)-idv(uLagP1))*(idv(u)-idv(uLagP1)) ).evaluate()(0,0);
+    auto s1 = integrate(_range=elements(meshLagP1),
+                        _expr=inner( idv(uLagP1interp)-idv(uLagP1proj) , idv(uLagP1interp)-idv(uLagP1proj) ) ).evaluate()(0,0);
     BOOST_CHECK_SMALL( s1,1e-6);
 
 #if 0
@@ -299,125 +317,9 @@ test2dOpLagrangeP1()
 #endif
 }
 
-template <uint32_type OrderGeo>
-void
-test2dOpLagrangeP1Composite()
-{
-    typedef Backend<double> backend_type;
-    typedef Mesh<Simplex<2,OrderGeo,2> > mesh_type;
 
-    typedef Lagrange<3,Vectorial,Continuous,PointSetFekete> basis_u_type;
-    typedef Lagrange<2,Scalar,Continuous,PointSetFekete> basis_p_type;
-    typedef FunctionSpace<mesh_type, bases<basis_u_type,basis_p_type> > space_type;
+#endif // FEELPP_HAS_VTK
 
-    typedef bases<Lagrange<1,Vectorial,Continuous,PointSetFekete> > basis_P1_type;
-    typedef FunctionSpace<mesh_type, basis_P1_type> space_P1_type;
-
-    //-------------------------------
-    const int VelocityWorld=0;
-    const int PressureWorld=1;
-    std::vector<int> MapWorld(Environment::numberOfProcessors());
-    WorldComm myWorldComm;
-    if (Environment::numberOfProcessors()>1)
-        {
-            for (int proc = 0 ; proc < Environment::numberOfProcessors(); ++proc)
-                {
-                    if (proc < Environment::numberOfProcessors()/2 ) // if (proc%2==0 )
-                        MapWorld[proc] = VelocityWorld;
-                    else
-                        MapWorld[proc] = PressureWorld;
-                }
-            myWorldComm = WorldComm(MapWorld);
-        }
-
-    //-------------------------------
-
-    auto meshSize = option(_name="hsize").template as<double>();
-
-    GeoTool::Node x1( 0,0 );
-    GeoTool::Node x2( 0.6,0 );
-    GeoTool::Circle C( meshSize,"OMEGA",x1,x2 );
-    C.setMarker( _type="line",_name="Sortie",_markerAll=true );
-    C.setMarker( _type="surface",_name="OmegaFluide",_markerAll=true );
-    auto mesh = C.createMesh( _mesh = new mesh_type,
-                              _name="test2dOpLagrangeP1_domain"+mesh_type::shape_type::name(),
-                              _partitions=myWorldComm.localSize(),
-                              _worldcomm=myWorldComm);
-
-
-    //-------------------------------
-
-    std::vector<WorldComm> vecWorldComm(space_type::nSpaces);
-    std::vector<WorldComm> vecLocWorldComm(1);
-
-    int CurrentWorld=0;
-    if (myWorldComm.globalRank() < myWorldComm.globalSize()/2 )
-        CurrentWorld=VelocityWorld;
-    else
-        CurrentWorld=PressureWorld;
-
-    if (myWorldComm.globalSize()>1)
-        {
-            vecWorldComm[0]=myWorldComm.subWorldComm(VelocityWorld);
-            vecWorldComm[1]=myWorldComm.subWorldComm(PressureWorld);
-            vecLocWorldComm[0]=myWorldComm.subWorldComm(CurrentWorld);
-        }
-    else
-        {
-            vecWorldComm[0]=WorldComm();
-            vecWorldComm[1]=WorldComm();
-            vecLocWorldComm[0]=WorldComm();
-        }
-
-    //-------------------------------
-#if defined(FEELPP_ENABLE_MPI_MODE)
-    auto Xh = space_type::New( _mesh=mesh, _worldscomm=vecWorldComm );
-#else
-    auto Xh = space_type::New( _mesh=mesh );
-#endif
-    auto U = Xh->element();
-    auto u = U.template element<0>();
-    u = vf::project( _space=Xh->template functionSpace<0>(),
-                     _range=elements( mesh ),
-                     _expr=vec( cos( M_PI*Px() ),sin( M_PI*Py() ) ) );
-
-    auto mybackend = backend(_rebuild=true);
-
-    //OperatorLagrangeP1<typename space_type::template sub_functionspace<0>::type::element_type> opLagP1( Xh->template functionSpace<0>(), mybackend, vecLocWorldComm );
-    auto opLagP1 = lagrangeP1(_space=Xh->template functionSpace<0>(),
-                              _backend=mybackend,
-                              _worldscomm=vecLocWorldComm);
-    auto meshLagP1 = opLagP1->mesh();
-
-#if defined(FEELPP_ENABLE_MPI_MODE)
-    auto XhLagP1 = space_P1_type::New( _mesh=meshLagP1,_worldscomm=vecLocWorldComm );
-#else
-    auto XhLagP1 = space_P1_type::New( _mesh=meshLagP1 );
-#endif
-    auto uLagP1 = XhLagP1->element();
-
-    auto opI=opInterpolation( _domainSpace=Xh->template functionSpace<0>(),
-                              _imageSpace=XhLagP1,
-                              _range=elements( meshLagP1 ),
-                              _backend=mybackend );
-    opI->apply( u,uLagP1 );
-
-    auto s1 = integrate(_range=elements(mesh),
-                        _expr=trans(idv(u)-idv(uLagP1))*(idv(u)-idv(uLagP1)) ).evaluate()(0,0);
-    BOOST_CHECK_SMALL( s1,1e-6);
-
-#if 0
-    //auto myexporter = exporter( _mesh=meshLagP1, _name="test2dOpLagrangeP1_MyExport", _worldcomm=myWorldComm );
-    auto myexporter = exporter( _mesh=meshLagP1, _name="test2dOpLagrangeP1_MyExport" );
-    myexporter->add( "test2dOpLagrangeP1_uHO", uLagP1 );
-    myexporter->save();
-#endif
-
-
-}
-
-
-#endif
 
 } // namespace test_operatorinterpolation
 
@@ -452,6 +354,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_2d_geo2 )
     test_operatorinterpolation::test2dTo2d<2>();
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_2d_geo2 done" );
 }
+
 BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo1 )
 {
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1" );
@@ -464,6 +367,7 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo1 )
     test_operatorinterpolation::test2dTo1d<1>();
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo1 done" );
 }
+
 BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_2d_1d_geo2 )
 {
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_2d_1d_geo2" );
@@ -488,18 +392,6 @@ BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_oplagp1_geo1 )
 
     test_operatorinterpolation::test2dOpLagrangeP1<1>();
     BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagp1_geo1 done" );
-}
-BOOST_AUTO_TEST_CASE( interp_operatorinterpolation_oplagcompositep1_geo1 )
-{
-    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagcompositep1_geo1");
-    using namespace test_operatorinterpolation;
-
-    Environment::changeRepository( boost::format( "/testsuite/feeldiscr/%1%/oplagp1compositegeo1" )
-                                   % Environment::about().appName() );
-
-
-    test_operatorinterpolation::test2dOpLagrangeP1Composite<1>();
-    BOOST_TEST_MESSAGE( "interp_operatorinterpolation_oplagcompositep1_geo1 done");
 }
 #endif // FEELPP_HAS_VTK
 
