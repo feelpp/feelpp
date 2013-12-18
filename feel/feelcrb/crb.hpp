@@ -801,6 +801,7 @@ public:
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     /*
      * fixed point ( primal problem ) - ONLINE step with OpenCL
      * \param N : dimension of the reduced basis
@@ -813,6 +814,7 @@ public:
      */
     matrix_info_tuple fixedPointPrimalCL( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
+#endif
 
     /*
      * fixed point ( dual problem ) - ONLINE step
@@ -4313,6 +4315,7 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     return matrix_info;
 }
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
@@ -4412,6 +4415,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     return matrix_info;
 }
+#endif
 
 
 template<typename TruthModelType>
