@@ -76,6 +76,12 @@
 #include "HARTS.h"
 #if defined(HARTS_HAS_OPENCL)
 #include "CL/cl.hpp"
+
+#define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
+   if( err != CL_SUCCESS ) {                                                                                        \
+       std::cerr << "OpenCL error (" << err << ") in file '" << __FILE__ << " in line " << __LINE__ << ": " << name << std::endl;    \
+       exit(EXIT_FAILURE);                                                                                          \
+   } } while (0)
 #endif
 #endif
 
@@ -4312,6 +4318,93 @@ typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector , int K, bool print_rb_matrix) const
 {
+    cl_int err;
+    cl_double dzero = 0.0;
+    std::vector< cl::Platform > platformList;
+    std::vector< cl::Device > deviceList;
+    std::vector< cl::Device > gpuList;
+
+    LOG( INFO ) << "[CRB::fixedPointPrimalCL] Checking for OpenCL support\n";
+
+    /* Get available OpenCL platforms */
+    cl::Platform::get(&platformList);
+    LOG( INFO ) << "[CRB::fixedPointPrimalCL] Platform count is: " << platformList.size() << std::endl;
+    err = platformList.size()!=0 ? CL_SUCCESS : -1;
+    OPENCL_CHECK_ERR(err, "cl::Platform::get: No OpenCL Platform available");
+
+    /* Gather available GPUs on the current node */
+    for(size_t k = 0; k < platformList.size(); k++)
+    {
+        std::string platformVendor;
+        platformList[k].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
+        std::cout << "Platform " << k << " is by: " << platformVendor << "\n";
+
+        platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
+        gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
+        deviceList.clear();
+    }
+
+    /* revert back to classical implementation */
+    /* if no GPU is available */
+    if(gpuList.size() == 0)
+    {
+        LOG( INFO ) << "[CRB::fixedPointPrimalCL] Reverting to classic implementation\n";
+        fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
+    }
+
+    // TODO
+    // Check if there are several MPI processes on the same node
+    // if so, check that there are enough GPUs or split them
+
+    cl::Context context(gpuList[0],
+                        NULL,
+                        NULL,
+                        NULL,
+                        &err);
+    OPENCL_CHECK_ERR(err, "Could not create OpenCL Context");
+
+    cl::CommandQueue queue(context, gpuList[0], 0, &err);
+    OPENCL_CHECK_ERR(err, "Could not create main queue");
+
+    // TODO Typechecking of matrices
+    // TODO Check whether its better to pass the matrices row-major or column-major
+
+    /* create buffers on the GPU */
+    cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * M_model->Qa() * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    for( size_type q = 0; q < M_model->Qa(); ++q )
+    {
+        queue.enqueueWriteBuffer(Aq, CL_FALSE,
+                                q * N * N * sizeof(double),
+                                N * N * sizeof(double),
+                                M_Aqm_pr[q][0].block( 0,0,N,N ).data(),
+                                NULL, NULL);
+    }
+
+    cl::Buffer Fq(context, CL_MEM_READ_ONLY, N * M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+    {
+        queue.enqueueWriteBuffer(Fq, CL_FALSE,
+                                q * N * sizeof(double),
+                                N * sizeof(double),
+                                M_Fqm_pr[q][0].head( N ),
+                                NULL, NULL);
+    }
+
+    cl::Buffer betaAqm(context, CL_MEM_READ_WRITE, M_model->Qa() * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+
+    cl::Buffer betaFqm(context, CL_MEM_READ_WRITE, M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+
+    cl::Buffer A(context, CL_MEM_READ_WRITE, N * N * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueFillBuffer<double>(A, dzero, 0, N * N * sizeof(double), NULL, NULL);
+    cl::Buffer F(context, CL_MEM_READ_WRITE, N * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
+
     double condition_number = 0;
     double determinant = 0;
 
