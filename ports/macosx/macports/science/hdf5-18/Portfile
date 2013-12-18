@@ -1,0 +1,227 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 111272 2013-09-18 03:35:57Z eborisch@macports.org $
+
+PortSystem          1.0
+PortGroup           conflicts_build 1.0
+PortGroup           muniversal 1.0
+
+set realname        hdf5
+name                ${realname}-18
+version             1.8.11
+revision            0
+categories          science
+maintainers         mmoll openmaintainer
+
+description         HDF5 general purpose library and file format for storing\
+                    scientific data
+long_description    HDF5 is a data model, library, and file format for storing\
+                    and managing data. It supports an unlimited variety of\
+                    datatypes, and is designed for flexible and efficient I/O\
+                    and for high volume and complex data. HDF5 is portable and\
+                    is extensible, allowing applications to evolve in their use\
+                    of HDF5. The HDF5 Technology suite includes tools and\
+                    applications for managing, manipulating, viewing, and\
+                    analyzing data in the HDF5 format.
+homepage            http://www.hdfgroup.org/HDF5/
+platforms           darwin
+conflicts           hdf5
+master_sites \
+    http://www.hdfgroup.org/ftp/HDF5/current/src \
+    ftp://ftp.hdfgroup.org/HDF5/current/src/ \
+    ftp://ftp.hdfgroup.org/HDF5/prev-releases/hdf5-${version}/src/
+checksums \
+    rmd160  32786b19dd7356eecc95848d66e8e0843298ccbb \
+    sha256  5ea1ba82fc77350ee628b795ae6ede05feeaf1c6b437911a9478de456600cafb
+
+distname            ${realname}-${version}
+use_bzip2           yes
+depends_lib         port:zlib
+use_parallel_build  yes
+
+# nawk: bailing out at source line 273
+conflicts_build     nawk
+
+# llvm-gcc-4.2 produced code fails type conversion tests
+# Upstream suggestion is use -O0. Clang-produced code passes all tests.
+compiler.blacklist  llvm-gcc-4.2
+
+configure.args      --with-zlib=yes --enable-filters=all \
+                    --enable-production --disable-fortran \
+                    --disable-cxx --enable-shared --enable-static \
+                    --disable-parallel --disable-threadsafe
+
+# http://mail.hdfgroup.org/pipermail/hdf-forum_hdfgroup.org/2010-March/002682.html
+license             NCSA
+
+default_variants    +cxx +fortran +openmpi
+
+post-configure {
+    if {[variant_isset universal]} {
+        set dirs {}
+        foreach arch ${universal_archs_to_use} {
+            lappend dirs ${worksrcpath}-${arch}
+        }
+    } else {
+        set dirs ${worksrcpath}
+    }
+    foreach dir ${dirs} {
+        reinplace -E {s|-arch [a-z0-9_]+||g} \
+            ${dir}/tools/misc/h5cc \
+            ${dir}/c++/src/h5c++ \
+            ${dir}/src/libhdf5.settings \
+            ${dir}/fortran/src/h5fc
+    }
+}
+
+post-destroot {
+    xinstall -d ${destroot}${prefix}/share/hdf5/
+    xinstall -m 444 ${worksrcpath}/COPYING\
+      ${destroot}${prefix}/share/hdf5/
+}
+
+test.run            yes
+test.target         check
+
+variant szip description {Enable szip support. (Noncommercial license)} {
+    depends_lib-append          port:szip
+    configure.args-append       --with-szlib=yes
+    license                     Noncommercial
+}
+
+variant cxx description {
+    Enable c++ interfance.
+  +cxx is EXPERIMENTAL with +mpich, +openmpi, or +threadsafe
+} {
+    configure.args-delete       --disable-cxx
+    configure.args-append       --enable-cxx
+}
+
+variant fortran description {
+    Enable fortran bindings. If combined with +openmpi or +mpich, the\
+    respective MPI package must have been built with fortran support.
+  Must be combined with +gcc44, +gcc45, +gcc46, +gcc47, +gcc48, +mpich, or +openmpi
+  +fortran is EXPERIMENTAL with +threadsafe
+} {
+    configure.args-delete       --disable-fortran
+    configure.args-append       --enable-fortran 
+}
+
+if {[ variant_isset fortran ] &&
+    !([variant_isset mpich ]  ||
+      [variant_isset openmpi ] ||
+      [variant_isset gcc44]    ||
+      [variant_isset gcc45]    ||
+      [variant_isset gcc46]    ||
+      [variant_isset gcc47]    ||
+      [variant_isset gcc48]) } {
+    ui_error "+fortran requires +mpich, +openmpi, or +gccNN"
+    return -code error
+}
+
+variant threadsafe description {
+    Enable threadsafety. 
+  +threadsafe is EXPERIMENTAL with +cxx, +fortran, +mpich or +openmpi
+} {
+    configure.args-delete       --disable-threadsafe
+    configure.args-append       --enable-threadsafe --with-pthread
+}
+
+if {[ variant_isset threadsafe ] && ([ variant_isset cxx ] ||
+                                     [ variant_isset fortran ]) ||
+    ([ variant_isset mpich ] || [ variant_isset openmpi ])  &&
+    ([ variant_isset cxx ]   || [ variant_isset threadsafe ])  } {
+    
+    # Tell hdf5-18 to configure in this experimental configuration
+    configure.args-append       --enable-unsupported
+
+    notes {
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+hdf5-18 has been installed in an unsupported "Experimental" mode due to\
+selected variants. See "port variants hdf5-18 | grep EXPERIMENTAL" for more\
+information.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    }
+
+    pre-configure {
+        ui_warn {
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+hdf5-18 will been configured in an unsupported "Experimental" mode due to\
+selected variants. See "port variants hdf5-18 | grep EXPERIMENTAL" for more\
+information.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    }
+    }
+}
+
+# openmpi conflicts with universal because there is no universal variant for
+# the openmpi port at the moment
+variant openmpi description { 
+    Enable Parallel HDF5 with openmpi. Uses compiler selected with openmpi.
+  +openmpi is EXPERIMENTAL with +cxx or +threadsafe.
+} conflicts universal mpich gcc44 gcc45 gcc46 gcc47 gcc48 {
+    depends_lib-append          port:openmpi
+    configure.cc                ${prefix}/bin/openmpicc
+    configure.cxx               ${prefix}/bin/openmpicxx
+    configure.fc                ${prefix}/bin/openmpif90
+}
+
+# mpich port does not support universal
+variant mpich description {
+    Enable Parallel HDF5 with mpich. Uses compiler selected with mpich.
+  +mpich is EXPERIMENTAL with +cxx or +threadsafe.
+} conflicts universal openmpi gcc44 gcc45 gcc46 gcc47 gcc48 {
+    depends_lib-append          path:bin/mpicc-mp:mpich-default
+    configure.cc                ${prefix}/bin/mpicc-mp
+    configure.cxx               ${prefix}/bin/mpicxx-mp
+    configure.fc                ${prefix}/bin/mpif90-mp
+}
+
+if {[ variant_isset mpich ] || [ variant_isset openmpi ]} {
+    # These are compiler wrappers that already have MP's flags built in.
+    configure.cflags
+    configure.cxxflags
+    configure.ldflags
+    configure.fcflags
+    configure.cc_archflags
+    configure.cxx_archflags
+    configure.fc_archflags
+    configure.ld_archflags
+    configure.args-delete       --disable-parallel
+    configure.args-append       --enable-parallel
+}
+
+variant gcc44 description {
+    Build with MacPorts' gcc44 compiler.
+} conflicts universal gcc45 gcc46 gcc47 gcc48 openmpi mpich {
+    configure.compiler          macports-gcc-4.4
+}
+
+variant gcc45 description {
+    Build with MacPorts' gcc45 compiler.
+} conflicts universal gcc44 gcc46 gcc47 gcc48 openmpi mpich {
+    configure.compiler          macports-gcc-4.5
+}
+
+variant gcc46 description {
+    Build with MacPorts' gcc46 compiler.
+} conflicts universal gcc44 gcc45 gcc47 gcc48 openmpi mpich {
+    configure.compiler          macports-gcc-4.6
+}
+
+variant gcc47 description {
+    Build with MacPorts' gcc47 compiler.
+} conflicts universal gcc44 gcc45 gcc46 gcc48 openmpi mpich {
+    configure.compiler          macports-gcc-4.7
+}
+
+variant gcc48 description {
+    Build with MacPorts' gcc48 compiler.
+} conflicts universal gcc44 gcc45 gcc46 gcc47 openmpi mpich {
+    configure.compiler          macports-gcc-4.8
+}
+
+livecheck.type      regex
+livecheck.url       http://www.hdfgroup.org/HDF5/release/obtain5.html
+livecheck.regex     5-(\[0-9.\]+)
+
+variant mpich2 requires mpich description {Legacy compatibility variant} {}
