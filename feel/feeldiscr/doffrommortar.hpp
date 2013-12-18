@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <prudhomme@unistra.fr>
        Date: 2013-10-23
 
-  Copyright (C) 2013 Université de Strasbourg
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
