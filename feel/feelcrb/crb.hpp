@@ -71,6 +71,14 @@
 
 #include <feel/feelcore/pslogger.hpp>
 
+#if defined(FEELPP_HAS_HARTS)
+#include "hartsconfig.h"
+#include "HARTS.h"
+#if defined(HARTS_HAS_OPENCL)
+#include "CL/cl.hpp"
+#endif
+#endif
+
 
 namespace Feel
 {
@@ -785,6 +793,19 @@ public:
      * \param K : number of time step ( default value, must be >0 if used )
      */
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
+                                        std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
+
+    /*
+     * fixed point ( primal problem ) - ONLINE step with OpenCL
+     * \param N : dimension of the reduced basis
+     * \param mu :current parameter
+     * \param uN : dual reduced solution ( vectorN_type )
+     * \param uNold : dual old reduced solution ( vectorN_type )
+     * \param condition number of the reduced matrix A
+     * \param output : vector of outpus at each time step
+     * \param K : number of time step ( default value, must be >0 if used )
+     */
+    matrix_info_tuple fixedPointPrimalCL( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
     /*
@@ -2031,7 +2052,11 @@ CRB<TruthModelType>::offline()
         if ( proc_number == master_proc )
         {
             if( M_error_type == CRB_NO_RESIDUAL )
-                mu = M_Dmu->element();
+            {
+                //we don't want broadcast the element
+                bool broadcast=false;
+                mu = M_Dmu->element( broadcast );
+            }
             else
             {
                 // start with M_C = { arg min mu, mu \in Xi }
@@ -2820,7 +2845,8 @@ CRB<TruthModelType>::offline()
                     //initialization
                     already_exist=false;
                     //pick randomly an element
-                    mu = M_Dmu->element();
+                    bool broadcast=false;
+                    mu = M_Dmu->element( broadcast );
                     //make sure that the new mu is not already is M_WNmu
                     BOOST_FOREACH( auto _mu, *M_WNmu )
                     {
@@ -4283,6 +4309,20 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
 
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
+CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
+                                        std::vector< double > & output_vector , int K, bool print_rb_matrix) const
+{
+    double condition_number = 0;
+    double determinant = 0;
+
+    auto matrix_info = boost::make_tuple(condition_number,determinant);
+
+    return matrix_info;
+}
+
+
+template<typename TruthModelType>
+typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
                                   std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold,
                                   std::vector< double > & output_vector, int K, bool print_rb_matrix) const
@@ -4311,7 +4351,13 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
             time_for_output = number_of_time_step * time_step;
         }
     }
+
+
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    auto matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+#else
     auto matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+#endif
 
     int size=output_vector.size();
     double o =output_vector[size-1];

@@ -451,9 +451,10 @@ EIM<ModelType>::offline(  )
         int sampling_size = M_vm["eim.sampling-size"].template as<int>();
         std::string file_name = ( boost::format("eim_trainset_%1%") % sampling_size ).str();
         std::ifstream file ( file_name );
+        bool all_procs_have_same_sampling=true;
         if( ! file )
         {
-            M_trainset->randomize( sampling_size  );
+            M_trainset->randomize( sampling_size , all_procs_have_same_sampling );
             M_trainset->writeOnFile(file_name);
         }
         else
