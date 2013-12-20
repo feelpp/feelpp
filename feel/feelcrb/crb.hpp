@@ -4372,6 +4372,16 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     // TODO Typechecking of matrices
     // TODO Check whether its better to pass the matrices row-major or column-major
 
+    /* Get beta factors */
+    /* beta_vector_type is vector<vector<double> > */
+    int time_index=0;
+    double time = 1e30;
+    beta_vector_type betaAqm;
+    beta_vector_type betaMqm;
+    std::vector<beta_vector_type> betaFqm;
+
+    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+
     /* create buffers on the GPU */
     cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * M_model->Qa() * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
@@ -4391,15 +4401,23 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
         queue.enqueueWriteBuffer(Fq, CL_FALSE,
                                 q * N * sizeof(double),
                                 N * sizeof(double),
-                                M_Fqm_pr[q][0].head( N ),
+                                M_Fqm_pr[q][0].head( N ).data(),
                                 NULL, NULL);
     }
 
-    cl::Buffer betaAqm(context, CL_MEM_READ_WRITE, M_model->Qa() * sizeof(double), NULL, &err);
+    cl::Buffer betaAq(context, CL_MEM_READ_WRITE, M_model->Qa() * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueWriteBuffer(betaAq, CL_FALSE,
+                            0, M_model->Qa() * sizeof(double),
+                            betaAqm[0].data(),
+                            NULL, NULL);
 
-    cl::Buffer betaFqm(context, CL_MEM_READ_WRITE, M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    cl::Buffer betaFq(context, CL_MEM_READ_WRITE, M_model->Ql( 0 ) * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueWriteBuffer(betaFq, CL_FALSE,
+                            0, M_model->Ql( 0 ) * sizeof(double),
+                            betaFqm[0][0].data(),
+                            NULL, NULL);
 
     cl::Buffer A(context, CL_MEM_READ_WRITE, N * N * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
@@ -4407,6 +4425,40 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
     cl::Buffer F(context, CL_MEM_READ_WRITE, N * sizeof(double), NULL, &err);
     OPENCL_CHECK_ERR(err, "Could not allocate buffer");
     queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
+
+    std::ifstream file("crb.cl");
+    err = file.is_open() ? CL_SUCCESS : -1;
+    OPENCL_CHECK_ERR(err, "Could not open .cl file");
+
+    std::string prog(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
+    cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
+    cl::Program program(context, source, &err);
+    OPENCL_CHECK_ERR(err, "Could not init program");
+    err = program.build();
+    OPENCL_CHECK_ERR(err, "Could not build kernel");
+
+    cl::Kernel kernel(program, "VMProd");
+    /*
+    err = kernel.setArg(0, cl_v);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl.v");
+    err = kernel.setArg(1, cl_a);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl_a");
+    err = kernel.setArg(2, cl_b);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl_b");
+    err = kernel.setArg(3, sizeof(int), (void *)(&nrows));
+    OPENCL_CHECK_ERR(err, "Could not add argument: nrows");
+    */
+
+    cl::Event event;
+    err = queue.enqueueNDRangeKernel(
+            kernel,
+            cl::NullRange,
+            cl::NDRange(N),
+            cl::NDRange(1, 1),
+            NULL,
+            &event);
+    OPENCL_CHECK_ERR(err, "Could not launch kernel");
+    event.wait();
 
     double condition_number = 0;
     double determinant = 0;
