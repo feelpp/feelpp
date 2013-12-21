@@ -318,6 +318,9 @@ typedef uint16_type dim_type;
 //! Indices (starting from 0)
 typedef size_t size_type;
 
+//! type for mpi rank ids
+typedef uint16_type rank_type;
+
 #if defined( __APPLE__ )
 typedef unsigned int uint;
 #endif // __APPLE__
