@@ -71,6 +71,20 @@
 
 #include <feel/feelcore/pslogger.hpp>
 
+#if defined(FEELPP_HAS_HARTS)
+#include "hartsconfig.h"
+#include "HARTS.h"
+#if defined(HARTS_HAS_OPENCL)
+#include "CL/cl.hpp"
+
+#define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
+   if( err != CL_SUCCESS ) {                                                                                        \
+       std::cerr << "OpenCL error (" << err << ") in file '" << __FILE__ << " in line " << __LINE__ << ": " << name << std::endl;    \
+       exit(EXIT_FAILURE);                                                                                          \
+   } } while (0)
+#endif
+#endif
+
 
 namespace Feel
 {
@@ -125,7 +139,8 @@ public:
     typedef typename parameterspace_type::sampling_type sampling_type;
     typedef typename parameterspace_type::sampling_ptrtype sampling_ptrtype;
 
-    typedef boost::tuple<double, parameter_type, size_type, double, double> relative_error_type;
+    //typedef boost::tuple<double, parameter_type, size_type, double, double> relative_error_type;
+    typedef boost::tuple<double, parameter_type, double, double> relative_error_type;
     typedef relative_error_type max_error_type;
 
     typedef boost::tuple<double, std::vector< std::vector<double> > , std::vector< std::vector<double> >, double, double > error_estimation_type;
@@ -786,6 +801,21 @@ public:
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    /*
+     * fixed point ( primal problem ) - ONLINE step with OpenCL
+     * \param N : dimension of the reduced basis
+     * \param mu :current parameter
+     * \param uN : dual reduced solution ( vectorN_type )
+     * \param uNold : dual old reduced solution ( vectorN_type )
+     * \param condition number of the reduced matrix A
+     * \param output : vector of outpus at each time step
+     * \param K : number of time step ( default value, must be >0 if used )
+     */
+    matrix_info_tuple fixedPointPrimalCL( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
+                                        std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
+#endif
+
     /*
      * fixed point ( dual problem ) - ONLINE step
      * \param N : dimension of the reduced basis
@@ -1283,7 +1313,7 @@ private:
     //initial guess
     std::vector < std::vector<vectorN_type> > M_InitialGuessV_pr;
 
-    std::vector<int> M_index;
+    //std::vector<int> M_index;
     int M_mode_number;
 
     std::vector < matrixN_type > M_variance_matrix_phi;
@@ -1689,6 +1719,7 @@ CRB<TruthModelType>::offline()
 
     M_model_executed_in_steady_mode = option(_name="crb.is-model-executed-in-steady-mode").template as<bool>();
     int proc_number = this->worldComm().globalRank();
+    int master_proc = this->worldComm().masterRank();
     M_rbconv_contains_primal_and_dual_contributions = true;
 
     bool rebuild_database = this->vm()["crb.rebuild-database"].template as<bool>() ;
@@ -1747,22 +1778,25 @@ CRB<TruthModelType>::offline()
 
         LOG(INFO) << "[CRB::offline] compute random sampling\n";
 
+        int total_proc = this->worldComm().globalSize();
         std::string sampling_mode = option("crb.sampling-mode").template as<std::string>();
+        bool all_proc_same_sampling=option("crb.all-procs-have-same-sampling").template as<bool>();
         int sampling_size = option("crb.sampling-size").template as<int>();
-        std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode) % sampling_size ).str();
+        std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
+        if( all_proc_same_sampling )
+            file_name+="-all-proc-have-same-sampling";
         std::ifstream file ( file_name );
         if( ! file )
         {
             // random sampling
             if( sampling_mode == "log-random" )
-                M_Xi->randomize( sampling_size );
+                M_Xi->randomize( sampling_size , all_proc_same_sampling );
             else if( sampling_mode == "log-equidistribute" )
-                M_Xi->logEquidistribute( sampling_size );
+                M_Xi->logEquidistribute( sampling_size , all_proc_same_sampling );
             else if( sampling_mode == "equidistribute" )
-                M_Xi->equidistribute( sampling_size );
+                M_Xi->equidistribute( sampling_size , all_proc_same_sampling );
             else
                 throw std::logic_error( "[CRB::offline] ERROR invalid option crb.sampling-mode, please select between log-random, log-equidistribute or equidistribute" );
-            //M_Xi->equidistribute( this->vm()["crb.sampling-size"].template as<int>() );
             M_Xi->writeOnFile(file_name);
         }
         else
@@ -2023,16 +2057,27 @@ CRB<TruthModelType>::offline()
         M_primal_apee_mu->clear();
         M_dual_apee_mu->clear();
 
-        if( M_error_type == CRB_NO_RESIDUAL )
-            mu = M_Dmu->element();
-        else
+        if ( proc_number == master_proc )
         {
-            // start with M_C = { arg min mu, mu \in Xi }
-            boost::tie( mu, index ) = M_Xi->min();
+            if( M_error_type == CRB_NO_RESIDUAL )
+            {
+                //we don't want broadcast the element
+                bool broadcast=false;
+                mu = M_Dmu->element( broadcast );
+            }
+            else
+            {
+                // start with M_C = { arg min mu, mu \in Xi }
+                //the min is a local min so don't check
+                bool check=false;
+                boost::tie( mu, index ) = M_Xi->min( check );
+            }
         }
+        //every proc must have the same parameter mu
+        boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
 
         int size = mu.size();
-        if( proc_number == 0 )
+        if( proc_number == master_proc )
         {
             std::cout << "  -- start with mu = [ ";
             for ( int i=0; i<size-1; i++ ) std::cout<<mu( i )<<" ";
@@ -2164,8 +2209,6 @@ CRB<TruthModelType>::offline()
     auto u = M_model->functionSpace()->element();
     auto udu = M_model->functionSpace()->element();
 
-    M_mode_number=1;
-
     LOG(INFO) << "[CRB::offline] starting offline adaptive loop\n";
 
     bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
@@ -2217,6 +2260,8 @@ CRB<TruthModelType>::offline()
 
     while ( M_maxerror > M_tolerance && M_N < M_iter_max  )
     {
+
+        M_mode_number=1;
 
         std::string pslogname = (boost::format("N-%1%") %M_N ).str();
 
@@ -2316,17 +2361,22 @@ CRB<TruthModelType>::offline()
 
             pod_ptrtype POD = pod_ptrtype( new pod_type(  ) );
 
-
-            if ( M_mode_number == 1 )
+            if ( seek_mu_in_complement ) // M_mode_number == 1 )
             {
                 //in this case, it's the first time that we add mu
                 POD->setNm( M_Nm );
             }
-
             else
             {
-                //in this case, mu has been chosen twice (at least)
-                //so we add the M_mode_number^th mode in the basis
+                //in this case we have to count mu occurrences in WMmu (mode_number)
+                //to add the mode_number^th mode in the basis
+                M_mode_number=1;
+                BOOST_FOREACH( auto _mu, *M_WNmu )
+                {
+                    if( mu == _mu )
+                        M_mode_number++;
+                }
+
                 POD->setNm( M_mode_number*M_Nm );
                 int size = mu.size();
                 LOG(INFO)<<"... CRB M_mode_number = "<<M_mode_number<<"\n";
@@ -2343,12 +2393,13 @@ CRB<TruthModelType>::offline()
 
                 if ( M_mode_number>=nb_mode_max-1 )
                 {
-                    std::cout<<"Error : we access to "<<M_mode_number<<"^th mode"<<std::endl;
-                    std::cout<<"parameter choosen : [ ";
-
-                    for ( int i=0; i<size-1; i++ ) std::cout<<mu[i]<<" , ";
-
-                    std::cout<<mu[ size-1 ]<<" ] "<<std::endl;
+                    if( proc_number == master_proc )
+                    {
+                        std::cout<<"Error : we access to "<<M_mode_number<<"^th mode"<<std::endl;
+                        std::cout<<"parameter choosen : [ ";
+                        for ( int i=0; i<size-1; i++ ) std::cout<<mu[i]<<" , ";
+                        std::cout<<mu[ size-1 ]<<" ] "<<std::endl;
+                    }
                     throw std::logic_error( "[CRB::offline] ERROR during the construction of the reduced basis, one parameter has been choosen too many times" );
                 }
             }
@@ -2794,23 +2845,30 @@ CRB<TruthModelType>::offline()
         {
             //M_maxerror=M_iter_max-M_N;
 
-            bool already_exist;
-            do
+            if( proc_number == master_proc )
             {
-                //initialization
-                already_exist=false;
-                //pick randomly an element
-                mu = M_Dmu->element();
-                //make sure that the new mu is not already is M_WNmu
-                BOOST_FOREACH( auto _mu, *M_WNmu )
+                bool already_exist;
+                do
                 {
-                    if( mu == _mu )
-                        already_exist=true;
+                    //initialization
+                    already_exist=false;
+                    //pick randomly an element
+                    bool broadcast=false;
+                    mu = M_Dmu->element( broadcast );
+                    //make sure that the new mu is not already is M_WNmu
+                    BOOST_FOREACH( auto _mu, *M_WNmu )
+                    {
+                        if( mu == _mu )
+                            already_exist=true;
+                    }
                 }
-            }
-            while( already_exist );
+                while( already_exist );
 
+            }
+
+            boost::mpi::broadcast( Environment::worldComm() , M_current_mu , master_proc );
             M_current_mu = mu;
+
         }
         else if ( use_predefined_WNmu )
         {
@@ -2823,15 +2881,11 @@ CRB<TruthModelType>::offline()
         }
         else
         {
-            boost::tie( M_maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
-
-            M_index.push_back( index );
+            //boost::tie( M_maxerror, mu, index , delta_pr , delta_du ) = maxErrorBounds( M_N );
+            boost::tie( M_maxerror, mu , delta_pr , delta_du ) = maxErrorBounds( M_N );
             M_current_mu = mu;
 
-            int count = std::count( M_index.begin(),M_index.end(),index );
-            M_mode_number = count;
-
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            if( proc_number == master_proc )
                 std::cout << "  -- max error bounds computed in " << timer2.elapsed() << "s\n";
 
             timer2.restart();
@@ -2860,10 +2914,6 @@ CRB<TruthModelType>::offline()
 
     if( proc_number == 0 )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
-    LOG(INFO) << " index choosen : ";
-    BOOST_FOREACH( auto id, M_index )
-    LOG(INFO)<<id<<" ";
-    LOG(INFO)<<"\n";
     bool visualize_basis = this->vm()["crb.visualize-basis"].template as<bool>() ;
 
 #if 0
@@ -4265,6 +4315,161 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     return matrix_info;
 }
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+template<typename TruthModelType>
+typename CRB<TruthModelType>::matrix_info_tuple
+CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
+                                        std::vector< double > & output_vector , int K, bool print_rb_matrix) const
+{
+    cl_int err;
+    cl_double dzero = 0.0;
+    std::vector< cl::Platform > platformList;
+    std::vector< cl::Device > deviceList;
+    std::vector< cl::Device > gpuList;
+
+    LOG( INFO ) << "[CRB::fixedPointPrimalCL] Checking for OpenCL support\n";
+
+    /* Get available OpenCL platforms */
+    cl::Platform::get(&platformList);
+    LOG( INFO ) << "[CRB::fixedPointPrimalCL] Platform count is: " << platformList.size() << std::endl;
+    err = platformList.size()!=0 ? CL_SUCCESS : -1;
+    OPENCL_CHECK_ERR(err, "cl::Platform::get: No OpenCL Platform available");
+
+    /* Gather available GPUs on the current node */
+    for(size_t k = 0; k < platformList.size(); k++)
+    {
+        std::string platformVendor;
+        platformList[k].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
+        std::cout << "Platform " << k << " is by: " << platformVendor << "\n";
+
+        platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
+        gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
+        deviceList.clear();
+    }
+
+    /* revert back to classical implementation */
+    /* if no GPU is available */
+    if(gpuList.size() == 0)
+    {
+        LOG( INFO ) << "[CRB::fixedPointPrimalCL] Reverting to classic implementation\n";
+        fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
+    }
+
+    // TODO
+    // Check if there are several MPI processes on the same node
+    // if so, check that there are enough GPUs or split them
+
+    cl::Context context(gpuList[0],
+                        NULL,
+                        NULL,
+                        NULL,
+                        &err);
+    OPENCL_CHECK_ERR(err, "Could not create OpenCL Context");
+
+    cl::CommandQueue queue(context, gpuList[0], 0, &err);
+    OPENCL_CHECK_ERR(err, "Could not create main queue");
+
+    // TODO Typechecking of matrices
+    // TODO Check whether its better to pass the matrices row-major or column-major
+
+    /* Get beta factors */
+    /* beta_vector_type is vector<vector<double> > */
+    int time_index=0;
+    double time = 1e30;
+    beta_vector_type betaAqm;
+    beta_vector_type betaMqm;
+    std::vector<beta_vector_type> betaFqm;
+
+    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+
+    /* create buffers on the GPU */
+    cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * M_model->Qa() * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    for( size_type q = 0; q < M_model->Qa(); ++q )
+    {
+        queue.enqueueWriteBuffer(Aq, CL_FALSE,
+                                q * N * N * sizeof(double),
+                                N * N * sizeof(double),
+                                M_Aqm_pr[q][0].block( 0,0,N,N ).data(),
+                                NULL, NULL);
+    }
+
+    cl::Buffer Fq(context, CL_MEM_READ_ONLY, N * M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+    {
+        queue.enqueueWriteBuffer(Fq, CL_FALSE,
+                                q * N * sizeof(double),
+                                N * sizeof(double),
+                                M_Fqm_pr[q][0].head( N ).data(),
+                                NULL, NULL);
+    }
+
+    cl::Buffer betaAq(context, CL_MEM_READ_WRITE, M_model->Qa() * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueWriteBuffer(betaAq, CL_FALSE,
+                            0, M_model->Qa() * sizeof(double),
+                            betaAqm[0].data(),
+                            NULL, NULL);
+
+    cl::Buffer betaFq(context, CL_MEM_READ_WRITE, M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueWriteBuffer(betaFq, CL_FALSE,
+                            0, M_model->Ql( 0 ) * sizeof(double),
+                            betaFqm[0][0].data(),
+                            NULL, NULL);
+
+    cl::Buffer A(context, CL_MEM_READ_WRITE, N * N * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueFillBuffer<double>(A, dzero, 0, N * N * sizeof(double), NULL, NULL);
+    cl::Buffer F(context, CL_MEM_READ_WRITE, N * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
+
+    std::ifstream file("crb.cl");
+    err = file.is_open() ? CL_SUCCESS : -1;
+    OPENCL_CHECK_ERR(err, "Could not open .cl file");
+
+    std::string prog(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
+    cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
+    cl::Program program(context, source, &err);
+    OPENCL_CHECK_ERR(err, "Could not init program");
+    err = program.build();
+    OPENCL_CHECK_ERR(err, "Could not build kernel");
+
+    cl::Kernel kernel(program, "VMProd");
+    /*
+    err = kernel.setArg(0, cl_v);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl.v");
+    err = kernel.setArg(1, cl_a);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl_a");
+    err = kernel.setArg(2, cl_b);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl_b");
+    err = kernel.setArg(3, sizeof(int), (void *)(&nrows));
+    OPENCL_CHECK_ERR(err, "Could not add argument: nrows");
+    */
+
+    cl::Event event;
+    err = queue.enqueueNDRangeKernel(
+            kernel,
+            cl::NullRange,
+            cl::NDRange(N),
+            cl::NDRange(1, 1),
+            NULL,
+            &event);
+    OPENCL_CHECK_ERR(err, "Could not launch kernel");
+    event.wait();
+
+    double condition_number = 0;
+    double determinant = 0;
+
+    auto matrix_info = boost::make_tuple(condition_number,determinant);
+
+    return matrix_info;
+}
+#endif
+
+
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN, std::vector< vectorN_type > & uNdu,
@@ -4295,7 +4500,13 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
             time_for_output = number_of_time_step * time_step;
         }
     }
+
+
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
+    auto matrix_info = fixedPointPrimalCL( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+#else
     auto matrix_info = fixedPointPrimal( N, mu , uN , uNold, output_vector, K , print_rb_matrix) ;
+#endif
 
     int size=output_vector.size();
     double o =output_vector[size-1];
@@ -4642,6 +4853,9 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 {
     bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
 
+    int proc = Environment::worldComm().globalRank();
+    int master_proc = Environment::worldComm().masterRank();
+
     std::vector< vectorN_type > uN;
     std::vector< vectorN_type > uNdu;
     std::vector< vectorN_type > uNold;
@@ -4660,8 +4874,15 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         {
             parameter_type mu ( M_Dmu );
             size_type id;
-            boost::tie ( mu, id ) = M_Xi->max();
-            return boost::make_tuple( 1e5, M_Xi->at( id ), id , delta_pr, delta_du);
+            if( proc == master_proc )
+                boost::tie ( mu, id ) = M_Xi->max( false );
+
+            //each proc must have the same mu
+            boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
+
+            return boost::make_tuple( 1e5, mu , delta_pr, delta_du);
+
+            //return boost::make_tuple( 1e5, M_Xi->at( id ), id , delta_pr, delta_du);
         }
 
         else
@@ -4690,7 +4911,6 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         {
             err.resize( M_WNmu_complement->size() );
             check_err.resize( M_WNmu_complement->size() );
-
 
             for ( size_type k = 0; k < M_WNmu_complement->size(); ++k )
             {
@@ -4752,7 +4972,6 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         mu = M_WNmu_complement->at( index );
         _index = M_WNmu_complement->indexInSuperSampling( index );
     }
-
     else
     {
         LOG(INFO) << "[maxErrorBounds] N=" << N << " max Error = " << maxerr << " at index = " << index << "\n";
@@ -4760,12 +4979,32 @@ CRB<TruthModelType>::maxErrorBounds( size_type N ) const
         _index = index;
     }
 
-    int proc_number = this->worldComm().globalRank();
-    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc_number<<" delta_pr : "<<delta_pr<<" - delta_du : "<<delta_du<<" at index : "<<_index<<std::endl;
+    //do communications to have global max
+    int world_size = Environment::worldComm().globalSize();
+    std::vector<double> max_world( world_size );
+    mpi::all_gather( Environment::worldComm().globalComm(),
+                     maxerr,
+                     max_world );
+    auto it_max = std::max_element( max_world.begin() , max_world.end() );
+    int proc_having_good_mu = it_max - max_world.begin();
+
+    auto tuple = boost::make_tuple( mu , delta_pr , delta_du );
+
+    boost::mpi::broadcast( Environment::worldComm() , tuple , proc_having_good_mu );
+
+    mu = tuple.template get<0>();
+    delta_pr = tuple.template get<1>();
+    delta_du = tuple.template get<2>();
+    mu.check();
+    //now all proc have same maxerr
+    maxerr = *it_max;
+
+
+    if( proc == master_proc )
+        std::cout<< std::setprecision(15)<<"[CRB maxerror] proc "<< proc<<" delta_pr : "<<delta_pr<<" - delta_du : "<<delta_du<<" at index : "<<_index<<std::endl;
     lb( N, mu, uN, uNdu , uNold ,uNduold );
 
-    return boost::make_tuple( maxerr, mu , _index , delta_pr, delta_du);
+    return boost::make_tuple( maxerr, mu , delta_pr, delta_du);
 
 
 }
