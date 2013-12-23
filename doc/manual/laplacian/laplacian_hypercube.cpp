@@ -33,13 +33,13 @@ int main(int argc, char**argv )
     //# marker3 #
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
-                  _expr=-expr<6>( lap,vars)*id(v),_quad=_Q<10>());
+                  _expr=-expr<6>( lap,vars)*id(v));
                   //_expr=id(v));
 
 
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) ,_quad=_Q<10>());
+                  _expr=gradt(u)*trans(grad(v)),_verbose=true);
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
           _expr=expr( g, vars ) );
     if ( Environment::numberOfProcessors() == 1 )
@@ -47,7 +47,7 @@ int main(int argc, char**argv )
 
     auto b = form2( _trial=Vh, _test=Vh);
     b = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) ,_quad=_Q<10>());
+                  _expr=gradt(u)*trans(grad(v)) ,_verbose=true);
     if ( Environment::numberOfProcessors() == 1 )
         b.matrixPtr()->printMatlab("B.m");
     auto c = form2( _trial=Vh, _test=Vh);
@@ -60,9 +60,9 @@ int main(int argc, char**argv )
     auto m = form1( _test=Vh );
     m = integrate(_range=elements(mesh), _expr=expr( g,vars)*id(v) );
     c.solve(_rhs=m,_solution=v );
-    auto l2proj = normL2( _range=elements(mesh), _expr=idv(v)-expr<6>( g, vars ),_quad=_Q<10>() );
+    auto l2proj = normL2( _range=elements(mesh), _expr=idv(v)-expr<6>( g, vars ) );
     d.solve(_rhs=m,_solution=v );
-    auto h1proj = normL2( _range=elements(mesh), _expr=idv(v)-expr<6>( g, vars ),_quad=_Q<10>() );
+    auto h1proj = normL2( _range=elements(mesh), _expr=idv(v)-expr<6>( g, vars ) );
 
     if ( Environment::worldComm().isMasterRank() )
     {
@@ -74,7 +74,7 @@ int main(int argc, char**argv )
     //# endmarker3 #
 
     v = project( _space=Vh, _range=elements(mesh), _expr=expr(g,vars));
-    auto interpl2 = normL2( _range=elements(mesh), _expr=idv(v)-expr<6>( g, vars ),_quad=_Q<10>() );
+    auto interpl2 = normL2( _range=elements(mesh), _expr=idv(v)-expr<6>( g, vars ));
 
     if ( Environment::worldComm().isMasterRank() )
     {
@@ -82,8 +82,8 @@ int main(int argc, char**argv )
         std::cout << "b(u,u) : " << b(u,u) <<"\n";
     }
 
-    auto l2 = normL2( _range=elements(mesh), _expr=idv(u)-expr<6>( g, vars ),_quad=_Q<10>() );
-    auto semih1 = normL2( _range=elements(mesh), _expr=gradv(u)-expr<1,2,6>( GiNaC::grad(g,vars), vars ),_quad=_Q<10>() );
+    auto l2 = normL2( _range=elements(mesh), _expr=idv(u)-expr<6>( g, vars ));
+    auto semih1 = normL2( _range=elements(mesh), _expr=gradv(u)-expr<1,2,6>( GiNaC::grad(g,vars), vars ));
     if ( Environment::worldComm().isMasterRank() )
     {
         std::cout << "interpL2 : " << interpl2 << "\n";
