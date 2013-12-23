@@ -500,7 +500,7 @@ void SolverNonLinearPetsc<T>::init ()
         ierr = SNESSetFromOptions( M_snes );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
-#if 0
+#if 1
         // if the non linear solver type is define by the user in the code
         switch ( this->getType() )
         {

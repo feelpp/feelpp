@@ -745,7 +745,7 @@ struct ExpressionOrder
 #else
     // this is a very rough approximation
     static const int value = ( ExprT::imorder )?( ExprT::imorder*nOrderGeo ):( nOrderGeo );
-    static const int value_1 = ExprT::imorder;
+    static const int value_1 = ExprT::imorder+(the_element_type::is_hypercube?nOrderGeo:0);
 #endif
 
 

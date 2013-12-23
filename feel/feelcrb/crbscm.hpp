@@ -651,7 +651,8 @@ CRBSCM<TruthModelType>::offlineSCM()
     M_model->computeAffineDecomposition();
 
     // random sampling
-    M_Xi->randomize( M_vm["crb.scm.sampling-size"].template as<int>() );
+    bool all_procs_have_same_sampling=true;
+    M_Xi->randomize( M_vm["crb.scm.sampling-size"].template as<int>() , all_procs_have_same_sampling );
     //M_Xi->logEquidistribute( M_vm["crb.scm.sampling-size"].template as<int>() );
     M_C->setSuperSampling( M_Xi );
     parameter_type mu( M_Dmu );

@@ -388,19 +388,23 @@ public:
             }
 
 
+            //here we can be interested by computing FEM and CRB solutions
+            //so it is important that every proc has the same sampling (for FEM solution)
+            bool all_proc_have_same_sampling=true;
+
             switch ( run_sampling_type )
             {
             default:
             case SamplingMode::RANDOM:
-                Sampling->randomize( run_sampling_size  );
+                Sampling->randomize( run_sampling_size , all_proc_have_same_sampling );
                 break;
 
             case SamplingMode::EQUIDISTRIBUTED:
-                Sampling->equidistribute( run_sampling_size  );
+                Sampling->equidistribute( run_sampling_size , all_proc_have_same_sampling );
                 break;
 
             case SamplingMode::LOGEQUIDISTRIBUTED:
-                Sampling->logEquidistribute( run_sampling_size  );
+                Sampling->logEquidistribute( run_sampling_size , all_proc_have_same_sampling );
                 break;
             }
 
@@ -522,7 +526,8 @@ public:
 
             if (option(_name="crb.cvg-study").template as<bool>() && compute_fem )
             {
-                int Nmax = crb->dimension();
+                //int Nmax = crb->dimension();
+                int Nmax = option("crb.dimension-max").template as<int>();
                 vector_sampling_for_primal_efficiency_under_1.resize(Nmax);
                 for(int N=0; N<Nmax; N++)
                 {
@@ -904,7 +909,8 @@ public:
                                     LOG(INFO) << "start convergence study...\n";
                                     std::map<int, boost::tuple<double,double,double,double,double,double,double> > conver;
 
-                                    int Nmax = crb->dimension();
+                                    //int Nmax = crb->dimension();
+                                    int Nmax = option("crb.dimension-max").template as<int>();
                                     for( int N = 1; N <= Nmax ; N++ )
                                     {
                                         auto o= crb->run( mu,  online_tol , N, print_rb_matrix);
@@ -1444,7 +1450,8 @@ private:
         std::vector< double > percent;
 
         // number of elements in the RB
-        int N = crb->dimension();
+        int N = option("crb.dimension-max").template as<int>();
+        //int N = crb->dimension();
         memory.resize( N );
         percent.resize( N );
         if( file_read )
@@ -1550,7 +1557,8 @@ private:
 
     void initializeConvergenceCrbMap( int sampling_size )
     {
-        auto N = crb->dimension();
+        //auto N = crb->dimension();
+        int N = option("crb.dimension-max").template as<int>();
         M_mapConvCRB["L2"] = std::vector<vectorN_type>(N);
         M_mapConvCRB["H1"] = std::vector<vectorN_type>(N);
         M_mapConvCRB["OutputError"] = std::vector<vectorN_type>(N);//true error
@@ -1693,7 +1701,8 @@ private:
 
     void doTheCrbConvergenceStat( int sampling_size )
     {
-        auto N = crb->dimension();
+        //auto N = crb->dimension();
+        int N = option("crb.dimension-max").template as<int>();
         //std::list<std::string> list_error_type;
         std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("OutputError")("OutputEstimatedError")
             ("SolutionError")("SolutionDualError")("PrimalResidualNorm")("DualResidualNorm")("SolutionErrorEstimated")
@@ -1708,6 +1717,55 @@ private:
         std::vector< Eigen::MatrixXf::Index > index_min_vector_output;
         Eigen::MatrixXf::Index index_max;
         Eigen::MatrixXf::Index index_min;
+
+
+        /********
+         some example for the case where sampling is distributed over all procs :
+         for a given error_name:
+
+         for master proc we need to gather information:
+         std::vector< vector_cgv_type > all_convergence( world_size );
+         std::vector< int > all_sampling_size( world_size );
+
+         mpi::gather( Environment::worldComm().globalComm(),
+         M_mapConvCRB[error_name],
+         all_convergence ,
+         master_proc );
+
+         mpi::gather( Environment::worldComm().globalComm(),
+         sampling_size,
+         all_sampling_size ,
+         master_proc );
+
+         for(int p=0; p<total_proc; p++)
+           global_sampling_size+=all_sampling_size[p];
+
+         vector_cgv_type global_convergence( N );
+         for(int n=0; n<N; n++)
+           global_convergence.resize( global_sampling_size );
+
+         //we need now to assemble global_convergence
+         for(int p=0; p<total_proc; p++)
+         {
+           for(int n=0; n<N; n++)
+           {
+             global_convergence[n].segment( start , all_sampling_size[p] ) = all_convergence[p][n];
+           }
+           start+=all_sampling_size[p];
+         }
+
+         and all stat will be performed on global_convergence vector
+
+         and concerning slaves procs :
+         mpi::gather( Environment::worldComm().globalComm(),
+         M_mapConvCRB[error_name],
+         master_proc );
+
+         mpi::gather( Environment::worldComm().globalComm(),
+         sampling_size,
+         master_proc );
+
+        ******/
 
         BOOST_FOREACH( auto error_name, list_error_type)
         {

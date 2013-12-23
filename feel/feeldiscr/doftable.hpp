@@ -1059,7 +1059,7 @@ public:
     pointIdToDofRelation(std::string fname="") const;
 private:
     template<typename, typename > friend class DofFromElement;
-    template<typename, typename > friend class DofFromMortar;
+    template<typename, typename, typename > friend class DofFromMortar;
     template<typename, typename > friend class DofFromBoundary;
     template<typename, typename > friend class DofFromPeriodic;
 
@@ -1202,7 +1202,9 @@ private:
     void generatePeriodicDofPoints( mesh_type& M, periodic_element_list_type const& periodic_elements, dof_points_type& periodic_dof_points );
 
 
-
+private:
+void generateDofPoints( mesh_type& M, mpl::bool_<true> );
+void generateDofPoints( mesh_type& M, mpl::bool_<false> );
 private:
 
     mesh_type* M_mesh;
@@ -1923,7 +1925,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                                                     << " mortar : " << mfe.nLocalDof
                                                     << " fe : " << M_fe->nLocalDof;
 
-    DofFromMortar<self_type,mortar_fe_type> dfe_mortar( this, mfe );
+    DofFromMortar<self_type,mortar_fe_type,fe_type> dfe_mortar( this, mfe, *M_fe );
     for ( ; it_elt!=en_elt; ++it_elt )
     {
         if ( !this->isElementDone( it_elt->id() ) )
@@ -2102,6 +2104,17 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M )
+{
+    generateDofPoints( M, mpl::bool_<is_mortar>() );
+}
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+void
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, mpl::bool_<true> )
+{
+}
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+void
+DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, mpl::bool_<false> )
 {
     if ( !M_dof_points.empty() )
         return;

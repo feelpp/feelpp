@@ -655,7 +655,7 @@ Heat1D::initModel()
     LOG(INFO) << "Number of dof " << Xh->nLocalDof() << "\n";
 
     // right hand side
-    auto f0 = integrate( markedfaces( mesh,mesh->markerName( "left" ) ), id( v ) );
+    auto f0 = integrate( markedfaces( mesh, "left" ), id( v ) );
     auto f1 = integrate( elements( mesh ), id( v ) );
     auto f0free = functionalLinearFree( _space=Xh , _expr=f0 , _backend=backend );
     auto f1free = functionalLinearFree( _space=Xh , _expr=f1 , _backend=backend );
@@ -672,7 +672,7 @@ Heat1D::initModel()
     M_Fqm_free[1][0][0]=l0free;
 
     auto a0 = integrate( elements( mesh ), 0.1*( gradt( u )*trans( grad( v ) ) ) )
-        + integrate( markedfaces( mesh,mesh->markerName( "right" ) ), id( u )*idt( v ) );
+        + integrate( markedfaces( mesh,"right" ), id( u )*idt( v ) );
     auto a0free = opLinearFree( _domainSpace=Xh , _imageSpace=Xh , _expr=a0 , _backend=backend );
     a0free->setName("A0");
     M_Aqm_free[0][0]=a0free;
