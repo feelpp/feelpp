@@ -856,7 +856,14 @@ public:
             std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
     void updateGhostGlobalDof( std::map<size_type,boost::tuple<size_type,size_type> > const& setInterProcessDofNotPresent );
 
+    void buildGhostDofMapExtended( mesh_type& mesh );
+
 #endif
+    bool buildDofTableMPIExtended() const { return M_buildDofTableMPIExtended; }
+    void setBuildDofTableMPIExtended( bool b ) { M_buildDofTableMPIExtended = b; }
+
+
+
     /**
      * \return the dictionnary for the global dof
      */
@@ -1200,6 +1207,8 @@ private:
     }
     void generateDofPoints( mesh_type& M );
     void generatePeriodicDofPoints( mesh_type& M, periodic_element_list_type const& periodic_elements, dof_points_type& periodic_dof_points );
+    void generateDofPointsExtendedGhostMap( mesh_type& M );
+
 
 
 private:
@@ -1266,6 +1275,8 @@ private:
     vector_indices_type M_locglobOnCluster_indices;
     vector_indices_type M_locglobOnCluster_signs;
 
+    bool M_buildDofTableMPIExtended;
+
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
@@ -1287,7 +1298,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     map_gdof(),
     M_face_sign(),
     M_dof_indices(),
-    M_periodicity( periodicity )
+    M_periodicity( periodicity ),
+    M_buildDofTableMPIExtended( false )
 {
     VLOG(2) << "[dof] is_periodic = " << is_periodic << "\n";
     size_type start_next_free_dof = 0;
@@ -1314,7 +1326,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
     map_gdof(),
     M_face_sign(),
     M_dof_indices(),
-    M_periodicity( periodicity )
+    M_periodicity( periodicity ),
+    M_buildDofTableMPIExtended( false )
 {
 }
 
@@ -1332,7 +1345,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
     map_gdof( dof2.map_gdof ),
     M_face_sign( dof2.M_face_sign ),
     M_dof_indices( dof2.M_dof_indices ),
-    M_periodicity( dof2.M_periodicity )
+    M_periodicity( dof2.M_periodicity ),
+    M_buildDofTableMPIExtended( dof2.M_buildDofTableMPIExtended )
 {
 }
 
@@ -1528,6 +1542,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
             VLOG(2) << "[build] call buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
             this->buildGhostDofMap( M );
             VLOG(2) << "[build] callFINISH buildGhostDofMap () with god rank " << this->worldComm().godRank()  << "\n";
+
+            if ( this->buildDofTableMPIExtended() )
+                this->buildGhostDofMapExtended( M );
+
         }
         else
         {
