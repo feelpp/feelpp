@@ -1429,7 +1429,7 @@ Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::
 
                             // warning ! the last condition is a temporary solution
                             if ( neighbor_id != invalid_size_type_value
-                                 && neighbor_process_id == proc_id )
+                                 /*&& neighbor_process_id == proc_id*/ )
                             {
 
                                 neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
