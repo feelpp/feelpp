@@ -462,14 +462,15 @@ struct InitializeSpace
     InitializeSpace( MeshPtrType const& mesh,
                      PeriodicityType const& periodicity,
                      std::vector<Dof> const& dofindices,
-                     std::vector<WorldComm> const & worldsComm )
+                     std::vector<WorldComm> const & worldsComm,
+                     std::vector<bool> extendedDofTable )
         :
         M_cursor( 0 ),
         M_worldsComm( worldsComm ),
         M_mesh( mesh ),
         M_dofindices( dofindices ),
-        M_periodicity( periodicity )
-
+        M_periodicity( periodicity ),
+        M_extendedDofTable( extendedDofTable )
     {}
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
@@ -481,7 +482,8 @@ struct InitializeSpace
     {
         auto p = *fusion::find<typename T::periodicity_0_type>(M_periodicity);
         x = boost::shared_ptr<T>( new T( M_mesh, M_dofindices, p,
-                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ) ) );
+                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++M_cursor;// warning M_cursor < nb color
@@ -494,7 +496,8 @@ struct InitializeSpace
         // look for T::mesh_ptrtype in MeshPtrType
         auto m = *fusion::find<typename T::mesh_ptrtype>(M_mesh);
         x = boost::shared_ptr<T>( new T( m, M_dofindices, p,
-                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ) ) );
+                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++M_cursor;// warning M_cursor < nb color
@@ -504,6 +507,7 @@ struct InitializeSpace
     MeshPtrType M_mesh;
     std::vector<Dof> const& M_dofindices;
     PeriodicityType M_periodicity;
+    std::vector<bool> M_extendedDofTable;
 };
 template<typename DofType>
 struct updateDataMapProcess
@@ -3491,10 +3495,13 @@ public:
     FunctionSpace( mesh_ptrtype const& mesh,
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
+                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
+                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
         :
         M_worldsComm( _worldsComm ),
-        M_worldComm( new WorldComm( _worldsComm[0] ) )
+        M_worldComm( new WorldComm( _worldsComm[0] ) ),
+        M_extendedDofTableComposite( extendedDofTable ),
+        M_extendedDofTable( extendedDofTable[0] )
     {
         this->init( mesh, mesh_components, periodicity );
     }
@@ -3502,10 +3509,13 @@ public:
     FunctionSpace( mesh_ptrtype const& mesh,
                    std::vector<Dof > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
+                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
+                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
         :
         M_worldsComm( _worldsComm ),
-        M_worldComm( new WorldComm( _worldsComm[0] ) )
+        M_worldComm( new WorldComm( _worldsComm[0] ) ),
+        M_extendedDofTableComposite( extendedDofTable ),
+        M_extendedDofTable( extendedDofTable[0] )
     {
         this->init( mesh, 0, dofindices, periodicity );
     }
@@ -3557,19 +3567,21 @@ public:
                                        ( worldscomm, *, Environment::worldsComm(nSpaces) )
                                        ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
                                        ( periodicity,*,periodicity_type() )
+                                       ( extended_doftable,*,std::vector<bool>(nSpaces,false) )
                                      )
                                    )
     {
-        return NewImpl( mesh, worldscomm, components, periodicity );
+        return NewImpl( mesh, worldscomm, components, periodicity, extended_doftable );
     }
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  std::vector<WorldComm> const& worldsComm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                                 periodicity_type periodicity = periodicity_type() )
+                                 periodicity_type periodicity = periodicity_type(),
+                                 std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
     {
 
-        return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm ) );
+        return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm, extendedDofTable ) );
     }
 
 #endif
@@ -3974,6 +3986,13 @@ public:
         return M_dofOnOff;
     }
 
+    /**
+     * \return true if need to build extended DofTable
+     */
+    std::vector<bool> extendedDofTableComposite() const { return M_extendedDofTableComposite; }
+    bool extendedDofTable() const { return M_extendedDofTable; }
+
+
     //! \return true if mortar, false otherwise
     constexpr bool isMortar() const { return is_mortar; }
 
@@ -4189,6 +4208,8 @@ public:
         M_comp_space( __fe.M_comp_space ),
         M_dof( __fe.M_dof ),
         M_dofOnOff( __fe.M_dofOnOff ),
+        M_extendedDofTableComposite( __fe.M_extendedDofTableComposite ),
+        M_extendedDofTable( __fe.M_extendedDofTable ),
         M_rt( __fe.M_rt )
     {
         DVLOG(2) << "copying FunctionSpace\n";
@@ -4300,6 +4321,10 @@ protected:
     //! Degrees of freedom (only init wiht mpi)
     dof_ptrtype M_dofOnOff;
 
+    //! build the extended dof table in //
+    std::vector<bool> M_extendedDofTableComposite;
+    bool M_extendedDofTable;
+
     /** region tree associated with the mesh */
     mutable boost::optional<region_tree_ptrtype> M_rt;
 
@@ -4371,6 +4396,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     M_ref_fe = basis_ptrtype( new basis_type );
 
     M_dof = dof_ptrtype( new dof_type( M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] ) );
+
+    M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
 
     DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
     M_dof->setDofIndices( dofindices );
@@ -6641,10 +6668,11 @@ expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
 template<int Order,typename MeshType>
 inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>>>
-Pch( boost::shared_ptr<MeshType> mesh )
+Pch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
-                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
+                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                                                                               _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 /**
@@ -6654,10 +6682,11 @@ Pch( boost::shared_ptr<MeshType> mesh )
 template<int Order,typename MeshType>
 inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>, mortars<Mortar>>>
-Moch( boost::shared_ptr<MeshType> mesh )
+Moch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>, mortars<Mortar>>::New( _mesh=mesh,
-                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
+                                                                                                                                _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                                                                                                _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 /**
@@ -6669,10 +6698,11 @@ Moch( boost::shared_ptr<MeshType> mesh )
 template<int Order,typename MeshType>
 inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>>
-Pdh( boost::shared_ptr<MeshType> mesh )
+Pdh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
-                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
+                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                                                     _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 /**
@@ -6684,10 +6714,11 @@ Pdh( boost::shared_ptr<MeshType> mesh )
 template<int Order,typename MeshType>
 inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>>
-Odh( boost::shared_ptr<MeshType> mesh )
+Odh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( _mesh=mesh,
-                                                                                       _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
+                                                                                       _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                                                       _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 /**
@@ -6699,10 +6730,11 @@ Odh( boost::shared_ptr<MeshType> mesh )
 template<int Order,typename MeshType>
 inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>>
-Pchv( boost::shared_ptr<MeshType> mesh )
+Pchv( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( _mesh=mesh,
-                                                                          _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
+                                                                          _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                                          _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 /**
@@ -6712,10 +6744,13 @@ Pchv( boost::shared_ptr<MeshType> mesh )
 template<int Order,typename MeshType>
 inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>>
-THch( boost::shared_ptr<MeshType> mesh )
+                                                                                   THch( boost::shared_ptr<MeshType> mesh,
+                                                                                         std::vector<bool> buildExtendedDofTable = std::vector<bool>( 2,false ) )
 {
+    CHECK( buildExtendedDofTable.size() == 2 ) << " vector activation for extended dof table must be equal to 2 but here " << buildExtendedDofTable.size() << "\n";
     return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( _mesh=mesh,
-                                                                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ) );
+                                                                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ),
+                                                                                                   _extended_doftable=buildExtendedDofTable );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
