@@ -2097,12 +2097,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
                 continue;
             }
-            if ( it->isInterProcessDomain() )
-            {
-                std::cout << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
-                LOG(WARNING) << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
-                continue;
-            }
 
             if ( it->isConnectedTo1() )
             {
@@ -2502,13 +2496,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
                 continue;
             }
-            if ( elt_it->isInterProcessDomain() )
-            {
-                std::cout << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
-                LOG(WARNING) << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
-                continue;
-            }
-
 
             const size_type idEltRange = elt_it->id();
             size_type idEltTest = idEltRange;
@@ -2726,12 +2713,6 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             if ( elt_it->isGhostFace() )
             {
                 LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
-                continue;
-            }
-            if ( elt_it->isInterProcessDomain() )
-            {
-                std::cout << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
-                LOG(WARNING) << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
                 continue;
             }
 
@@ -3673,12 +3654,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
                 LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
                 continue;
             }
-            if ( it->isInterProcessDomain() )
-            {
-                std::cout << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
-                LOG(WARNING) << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
-                continue;
-            }
+
             if ( it->isConnectedTo1() )
             {
                 FEELPP_ASSERT( it->isOnBoundary() == false   )
