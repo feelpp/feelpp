@@ -1057,6 +1057,9 @@ public:
     {
         M_dof_points.clear();
         this->generateDofPoints(M);
+
+        if ( this->worldComm().localSize()>1 && this->buildDofTableMPIExtended() )
+            this->generateDofPointsExtendedGhostMap(M);
     }
 
     /**
