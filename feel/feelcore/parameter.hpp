@@ -172,6 +172,9 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( quadptloc )
 
+    BOOST_PARAMETER_NAME( extended_doftable )
+
+
 
 // orders
     BOOST_PARAMETER_NAME( order_u )
