@@ -64,6 +64,8 @@ namespace Feel
 namespace ublas = boost::numeric::ublas;
 namespace fs = boost::filesystem;
 
+enum TSState { TS_UNITIALIZED = 0, TS_RUNNING, TS_STOPPED };
+
 class TSBase
 {
     friend class boost::serialization::access;
@@ -82,6 +84,7 @@ public:
         M_Ti( 0.0 ),
         M_Tf( 1.0 ),
         M_dt( 1.0 ),
+        M_state( TS_UNITIALIZED ),
         M_n_restart( 0 ),
         M_restart( false ),
         M_restartPath( "" ),
@@ -103,6 +106,7 @@ public:
         M_Ti( vm[prefixvm( prefix, "bdf.time-initial" )].as<double>() ),
         M_Tf( vm[prefixvm( prefix, "bdf.time-final" )].as<double>() ),
         M_dt( vm[prefixvm( prefix, "bdf.time-step" )].as<double>() ),
+        M_state( TS_UNITIALIZED ),
         M_n_restart( 0 ),
         M_restart( vm[prefixvm( prefix, "bdf.restart" )].as<bool>() ),
         M_restartPath( vm[prefixvm( prefix, "bdf.restart.path" )].as<std::string>() ),
@@ -124,6 +128,7 @@ public:
         M_Ti( 0. ),
         M_Tf( 1.0 ),
         M_dt( 1.0 ),
+        M_state( TS_UNITIALIZED ),
         M_n_restart( 0 ),
         M_restart( false ),
         M_restartPath( "" ),
@@ -145,6 +150,7 @@ public:
         M_Ti( b.M_Ti ),
         M_Tf( b.M_Tf ),
         M_dt( b.M_dt ),
+        M_state( b.M_state ),
         M_n_restart( b.M_n_restart ),
         M_restart( b.M_restart ),
         M_restartPath( b.M_restartPath ),
@@ -172,6 +178,7 @@ public:
             M_dt = b.M_dt;
             M_iterations_between_order_change = b.M_iterations_between_order_change;
             M_n_restart = b.M_n_restart;
+            M_state = b.M_state;
             M_restart = b.M_restart;
             M_restartPath = b.M_restartPath;
             M_restartAtLastSave = b.M_restartAtLastSave;
@@ -240,12 +247,6 @@ public:
         return M_dt;
     }
 
-    //! return the BDF strategy
-    BDFStragegy strategy() const
-    {
-        return M_strategy;
-    }
-
     //! return the number of iterations between order change
     int numberOfIterationsBetweenOrderChange() const
     {
@@ -291,7 +292,7 @@ public:
     //! return the real time in seconds spent in the iteration
     double realTimePerIteration() const
     {
-        FEELPP_ASSERT( state() == BDF_RUNNING ).error( "invalid BDF state" );
+        CHECK( state() == TS_RUNNING ) << "invalid Time Stepping state, it should be " << TS_RUNNING << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         return M_real_time_per_iteration;
     }
@@ -305,7 +306,7 @@ public:
     //! start the bdf
     double start()
     {
-        M_state = BDF_RUNNING;
+        M_state = TS_RUNNING;
         M_timer.restart();
         M_iteration = 1;
         M_time = M_Ti+this->timeStep();
@@ -318,7 +319,7 @@ public:
     //! restart the bdf
     double restart()
     {
-        M_state = BDF_RUNNING;
+        M_state = TS_RUNNING;
         M_timer.restart();
         M_time = M_Ti+this->timeStep();
         M_last_iteration_since_order_change = 1;
@@ -348,7 +349,7 @@ public:
         {
             if ( M_time > M_Tf )
             {
-                M_state = BDF_STOPPED;
+                M_state = TS_STOPPED;
                 finished=true;
             }
         }
@@ -357,7 +358,7 @@ public:
         {
             if ( M_time < M_Tf )
             {
-                M_state = BDF_STOPPED;
+                M_state = TS_STOPPED;
                 finished=true;
             }
         }
@@ -373,7 +374,7 @@ public:
      */
     virtual double next() const
     {
-        FEELPP_ASSERT( state() == BDF_RUNNING ).error( "invalid BDF state" );
+        CHECK( state() == TS_RUNNING ) << "invalid Time Stepping state, it should be " << TS_RUNNING << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         M_timer.restart();
         M_time += M_dt;
@@ -416,7 +417,7 @@ public:
 
     }
     //! return the state of the BDF
-    BDFState state() const
+    TSState state() const
     {
         return M_state;
     }
@@ -466,10 +467,6 @@ public:
     void setTimeFinal( double T )
     {
         M_Tf = T;
-    }
-    void setStrategy( int strategy )
-    {
-        M_strategy = ( BDFStragegy )strategy;
     }
     void setSteady( bool steady = true )
     {
@@ -536,6 +533,10 @@ protected:
     //! timestep
     double M_dt;
 
+    //! state of the time stepping algorithm
+    mutable TSState M_state;
+
+    //! restart
     int M_n_restart;
 
     //! do a restart

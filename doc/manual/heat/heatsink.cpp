@@ -22,7 +22,20 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <feel/feel.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feeldiscr/pch.hpp>
+
+#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/ppoperators.hpp>
+
 
 Feel::gmsh_ptrtype makefin( double hsize, double width, double deep , double L );
 
