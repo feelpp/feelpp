@@ -34,6 +34,8 @@
 #include <boost/timer.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
+
+#include <feel/feelvf/detail/clean.hpp>
 #include <feel/feelvf/block.hpp>
 
 
@@ -4132,29 +4134,6 @@ integrate_impl( Elts const& elts,
 /// \cond DETAIL
 namespace detail
 {
-template<typename TheArgs, typename Tag>
-struct clean_type
-{
-    typedef typename boost::remove_pointer<
-    typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<TheArgs, Tag>::type
-    >::type
-    >::type
-    >::type type;
-};
-template<typename TheArgs, typename Tag, typename Default>
-struct clean2_type
-{
-    typedef typename boost::remove_pointer<
-    typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<TheArgs, Tag, Default>::type
-    >::type
-    >::type
-    >::type type;
-};
-
 template<typename Args>
 struct integrate_type
 {
@@ -4411,7 +4390,7 @@ BOOST_PARAMETER_FUNCTION(
 
 
 } // feel
-#include <feel/feelvf/integratoron.hpp>
+
 
 
 #endif /* __Integrator_H */

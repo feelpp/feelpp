@@ -36,13 +36,19 @@
 #include <sstream>
 #include <list>
 #include <map>
+
+#include <boost/preprocessor/tuple/elem.hpp>
+
 #include <feel/feelalg/glas.hpp>
 //#include <boost/parameter/keyword.hpp>
 //#include <boost/parameter/preprocessor.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
+#include <feel/feelfilters/detail/mesh.hpp>
 
-#include <boost/preprocessor/tuple/elem.hpp>
+
 
 
 

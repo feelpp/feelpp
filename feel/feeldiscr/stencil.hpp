@@ -629,7 +629,7 @@ void stencilManagerPrint();
 extern BlocksStencilPattern default_block_pattern;
 
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
+    ( typename Feel::detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
     stencil,                                       // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required                                  // 4. one required parameter, and
@@ -654,8 +654,8 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     Feel::detail::ignore_unused_variable_warning( args );
-    typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
-    typedef typename detail::compute_stencil_type<Args>::type stencil_type;
+    typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
+    typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
 
     // we look into the spaces dictionary for existing graph
     auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) );
@@ -949,7 +949,7 @@ Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::
  Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
-                      detail::compute_graph1<self_type>( this, hints ) );
+                      Feel::detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
 
@@ -958,7 +958,7 @@ typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
-                      detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
+                      Feel::detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
     return M_graph;
 }
 
@@ -967,7 +967,7 @@ typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X2->functionSpaces(),
-                      detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
+                      Feel::detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
     return M_graph;
 }
 
@@ -990,7 +990,7 @@ typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
-                      detail::compute_graph1<self_type>( this, hints ) );
+                      Feel::detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
 
@@ -999,7 +999,7 @@ typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
-                      detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
+                      Feel::detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
     return M_graph;
 }
 
@@ -1008,7 +1008,7 @@ typename Stencil<X1,X2,RangeItTestType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X2->functionSpaces(),
-                      detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
+                      Feel::detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
     return M_graph;
 }
 

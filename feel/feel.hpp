@@ -62,7 +62,7 @@ using GiNaC::symbol;
 using GiNaC::ex;
 }
 
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/loadmeshx.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/geotool.hpp>
