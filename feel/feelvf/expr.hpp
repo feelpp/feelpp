@@ -45,6 +45,7 @@
 #include <boost/static_assert.hpp>
 #include <boost/foreach.hpp>
 #include <boost/fusion/sequence.hpp>
+#include <boost/fusion/container/map.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/multi_array.hpp>
 
@@ -53,6 +54,8 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelpoly/policy.hpp>
 #include <feel/feelpoly/context.hpp>
+
+#include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 
 namespace Feel
@@ -2988,5 +2991,9 @@ basis( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
 
 /// \endcond
 } // vf
+
+
+using namespace vf;
+
 } // feel
 #endif /* __Expr_H */
