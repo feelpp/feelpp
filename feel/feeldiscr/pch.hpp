@@ -42,10 +42,11 @@ namespace Feel {
 template<int Order,typename MeshType>
 inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>>>
-Pch( boost::shared_ptr<MeshType> mesh )
+Pch( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
-                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
+                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
+                                                                                                               _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }
 
 
