@@ -232,7 +232,7 @@ DofFromPeriodic<DofTableType,FEType>::addVertexPeriodicDof( element_type const& 
 
     size_type iElAd = __face.ad_first();
     FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[periodic]invalid face/element in face" );
-    detail::ignore_unused_variable_warning( iElAd );
+    Feel::detail::ignore_unused_variable_warning( iElAd );
 
     // local id of the face in its adjacent element
     uint16_type iFaEl = __face.pos_first();
@@ -243,7 +243,7 @@ DofFromPeriodic<DofTableType,FEType>::addVertexPeriodicDof( element_type const& 
     {
         // local vertex number (in element)
         uint16_type iVeEl = element_type::fToP( iFaEl, iVeFa );
-        detail::ignore_unused_variable_warning( iVeEl );
+        Feel::detail::ignore_unused_variable_warning( iVeEl );
 
         FEELPP_ASSERT( iVeEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
@@ -344,7 +344,7 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
     // id of the element adjacent to the face
     // \warning NEED TO INVESTIGATE THIS
     size_type iElAd = __face.ad_first();
-    detail::ignore_unused_variable_warning( iElAd );
+    Feel::detail::ignore_unused_variable_warning( iElAd );
     FEELPP_ASSERT( iElAd != invalid_size_type_value )( __face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
     // local id of the face in its adjacent element
@@ -359,7 +359,7 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
     {
         // local edge number (in element)
         uint16_type iEdEl = element_type::fToE( iFaEl, iEdFa );
-        detail::ignore_unused_variable_warning( iEdEl );
+        Feel::detail::ignore_unused_variable_warning( iEdEl );
         FEELPP_ASSERT( iEdEl != invalid_uint16_type_value ).error( "invalid local dof" );
 
         // Loop number of Dof per edge

@@ -34,13 +34,13 @@ namespace Feel
 namespace detail{
 class mortar_base {};
 }
-class Mortar : public detail::mortar_base
+class Mortar : public Feel::detail::mortar_base
 {
 public:
     static const bool is_mortar = true;
 
 };
-class NoMortar : public detail::mortar_base
+class NoMortar : public Feel::detail::mortar_base
 {
 public:
     static const bool is_mortar = false;

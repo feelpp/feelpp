@@ -6,6 +6,7 @@
        Date: 2009-01-23
 
   Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -42,7 +43,7 @@ namespace Feel
  * @see
  */
 template<typename A0>
-class DiscontinuousInterfaces : public detail::continuity_base
+class DiscontinuousInterfaces : public Feel::detail::continuity_base
 {
 public:
 

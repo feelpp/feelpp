@@ -569,9 +569,6 @@ private:
     bool M_use_scm;
 };
 
-po::options_description crbSCMOptions( std::string const& prefix = "" );
-
-
 
 template<typename TruthModelType>
 std::vector<boost::tuple<double,double,double> >
@@ -1863,4 +1860,3 @@ template<typename T> const unsigned int version<Feel::CRBSCM<T> >::value;
 }
 }
 #endif /* __CRBSCM_H */
-

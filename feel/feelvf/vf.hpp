@@ -42,50 +42,11 @@
 /**
  * \brief allow automatic type naming of complex expression
  */
-#define AUTO( a, b ) __typeof__( b ) a = (b);
+#define AUTO( a, b ) auto a = (b);
 
-namespace Feel
-{
-//namespace blas = boost::numeric::bindings::blas;
-//namespace traits = boost::numeric::bindings::traits;
-namespace fusion = boost::fusion;
-
-
-namespace vf
-{
-namespace detail
-{
-
-/// \cond detail
-template<int Index> struct gmc
-{
-    static const int value = Index;
-    typedef mpl::void_ reference_element_type;
-} ;
-
-template<typename Geo_t>
-struct ExtractGm
-{
-    typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,mpl::identity<vf::detail::gmc<0> >,mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-
-    static gmc_ptrtype get( Geo_t const& geom )
-    {
-        return fusion::at_key<key_type>( geom ).get();
-    }
-    static Geo_t clone( Geo_t const& geom )
-    {
-        Geo_t geom2( geom );
-        fusion::at_key<key_type>( geom2 )  = fusion::at_key<key_type>( geom )->clone();
-        return geom2;
-    }
-};
-/// \endcond
-}
-}
-}
 #include <feel/feelcore/feel.hpp>
+
+#include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/expr.hpp>
 
 #include <feel/feelvf/ppoperators.hpp>
@@ -111,6 +72,7 @@ struct ExtractGm
 
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integratoron.hpp>
 //#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelvf/evaluator.hpp>
