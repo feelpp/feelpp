@@ -1420,6 +1420,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
         do
         {
+
             boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
 
             if ( ! M_model->isSteady() )
@@ -2280,34 +2281,38 @@ CRB<TruthModelType>::offline()
         u.setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
         udu.setName( ( boost::format( "fem-dual-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
 
-        if ( M_model->isSteady() && ! M_use_newton )
+#if !defined(NDEBUG)
+        mu.check();
+#endif
+
+        if ( M_model->isSteady()  )
         {
 
-            u = offlineFixedPointPrimal( mu );//, A  );
-            if( solve_dual_problem )
-                udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
-        }
+            if( ! M_use_newton )
+            {
+                u = offlineFixedPointPrimal( mu );//, A  );
+                if( solve_dual_problem )
+                    udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
+            }
+            else
+            {
+                u.zero();
 
-        if ( M_model->isSteady() && M_use_newton )
-        {
-            mu.check();
-            u.zero();
+                timer2.restart();
+                LOG(INFO) << "[CRB::offline] solving primal" << "\n";
+                u = M_model->solve( mu );
+                if( proc_number == this->worldComm().masterRank() )
+                    LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s";
+                timer2.restart();
+            }
+        }//steady
 
-            timer2.restart();
-            LOG(INFO) << "[CRB::offline] solving primal" << "\n";
-            u = M_model->solve( mu );
-            if( proc_number == this->worldComm().masterRank() )
-                LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s";
-            timer2.restart();
-        }
-
-
-        if( ! M_model->isSteady() )
+        else
         {
             u = offlineFixedPointPrimal( mu  );
             if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
                 udu = offlineFixedPointDual( mu , dual_initial_field );
-        }
+        }//transient
 
 
         if( ! use_predefined_WNmu )
@@ -2866,7 +2871,7 @@ CRB<TruthModelType>::offline()
 
             }
 
-            boost::mpi::broadcast( Environment::worldComm() , M_current_mu , master_proc );
+            boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
             M_current_mu = mu;
 
         }
