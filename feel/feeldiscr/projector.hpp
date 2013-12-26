@@ -99,7 +99,7 @@ public :
 
     Projector( domain_space_ptrtype     domainSpace,
                dual_image_space_ptrtype dualImageSpace,
-               backend_ptrtype backend = backend(_rebuild=true),
+               backend_ptrtype backend = Feel::backend(_rebuild=true),
                ProjectorType proj_type=L2,
                double epsilon = 0.01,
                double gamma = 20,
@@ -440,7 +440,7 @@ template<typename TDomainSpace, typename TDualImageSpace>
 boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            boost::shared_ptr<TDualImageSpace> const& imagespace,
-           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = backend(_rebuild=true),
+           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Feel::backend(_rebuild=true),
            ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK)
 {
     typedef Projector<TDomainSpace, TDualImageSpace > Proj_type;
@@ -458,7 +458,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_
                           ( optional
                             ( type, (ProjectorType), L2 )
                             ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, backend(_rebuild=true) )
+                            ( backend, *, Feel::backend(_rebuild=true) )
                           ) )
 {
     return projector( domainSpace,imageSpace, backend, type, 0.01, penaldir );
