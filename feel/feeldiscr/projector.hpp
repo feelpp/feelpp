@@ -30,6 +30,7 @@
 #define _PROJECTOR_HPP_
 
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -99,15 +100,15 @@ public :
 
     Projector( domain_space_ptrtype     domainSpace,
                dual_image_space_ptrtype dualImageSpace,
-               backend_ptrtype backend = backend(_rebuild=true),
+               backend_ptrtype abackend = backend(_rebuild=true),
                ProjectorType proj_type=L2,
                double epsilon = 0.01,
                double gamma = 20,
                DirichletType dirichlet_type = WEAK
              )
         :
-        ol_type( domainSpace, dualImageSpace, backend ),
-        M_backend( backend ),
+        ol_type( domainSpace, dualImageSpace, abackend ),
+        M_backend( abackend ),
         M_epsilon( epsilon ),
         M_gamma( gamma ),
         M_proj_type( proj_type ),
@@ -440,11 +441,11 @@ template<typename TDomainSpace, typename TDualImageSpace>
 boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            boost::shared_ptr<TDualImageSpace> const& imagespace,
-           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = backend(_rebuild=true),
+           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& abackend = backend(_rebuild=true),
            ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK)
 {
     typedef Projector<TDomainSpace, TDualImageSpace > Proj_type;
-    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, epsilon, gamma, dirichlet_type ) );
+    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) );
     return proj;
 }
 
