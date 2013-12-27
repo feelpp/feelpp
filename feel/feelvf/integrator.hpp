@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,27 +28,25 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-20
  */
-#ifndef __Integrators_H
-#define __Integrators_H 1
+#ifndef FEELPP_INTEGRATORS_HPP
+#define FEELPP_INTEGRATORS_HPP 1
+
 #include <cxxabi.h>
 #include <typeinfo>
 #include <boost/timer.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/parameter.hpp>
-
-#include <feel/feelvf/detail/clean.hpp>
-#include <feel/feelvf/block.hpp>
-
 
 #include <Eigen/Eigen>
 
-
-//#include <boost/numeric/bindings/traits/traits.hpp>
-//#include <boost/numeric/bindings/traits/sparse_traits.hpp>
-//#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/parameter.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/quadmapped.hpp>
+
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/detail/clean.hpp>
+#include <feel/feelvf/block.hpp>
+
 #include <feel/feelvf/formcontextbase.hpp>
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
@@ -4369,4 +4368,4 @@ BOOST_PARAMETER_FUNCTION(
 
 
 
-#endif /* __Integrator_H */
+#endif /* FEELPP_INTEGRATORS_HPP */

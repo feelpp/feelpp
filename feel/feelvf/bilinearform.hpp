@@ -48,6 +48,8 @@
 #include <feel/feelalg/vectorublas.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/stencil.hpp>
+
+#include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/block.hpp>
 #include <feel/feelvf/fec.hpp>
 #include <feel/feelvf/formcontextbase.hpp>
