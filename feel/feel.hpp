@@ -48,7 +48,7 @@
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feeldiscr/bdf.hpp>
 
 #include <feel/feeldiscr/projector.hpp>
 
@@ -62,7 +62,7 @@ using GiNaC::symbol;
 using GiNaC::ex;
 }
 
-#include <feel/feelfilters/loadmeshx.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/geotool.hpp>

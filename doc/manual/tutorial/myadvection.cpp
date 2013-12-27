@@ -23,7 +23,12 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/operations.hpp>
+
 using namespace Feel;
 
 /**

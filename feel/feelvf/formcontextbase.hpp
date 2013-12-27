@@ -29,6 +29,8 @@
 #ifndef FEELPP_FORMCONTEXTBASE_HPP
 #define FEELPP_FORMCONTEXTBASE_HPP 1
 
+#include <feel/feelvf/detail/gmc.hpp>
+
 namespace Feel
 {
 namespace vf

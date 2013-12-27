@@ -49,7 +49,7 @@
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/expr.hpp>
 
-#include <feel/feelvf/ppoperators.hpp>
+#include <feel/feelvf/operations.hpp>
 
 #include <feel/feelvf/operators.hpp>
 //#include <feel/feelvf/operators2.hpp>
