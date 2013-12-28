@@ -29,6 +29,7 @@
 #if !defined(FEELPP_ODH_HPP)
 #define FEELPP_ODH_HPP 1
 
+#include <feel/feelpoly/orthonormalpolynomialset.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel {
@@ -40,7 +41,7 @@ namespace Feel {
 template<int Order,typename MeshType>
 inline
 boost::shared_ptr<FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>>
-Odh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false );
+Odh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
     return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( _mesh=mesh,
                                                                                        _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
