@@ -68,6 +68,7 @@ using GiNaC::ex;
 }
 
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/unitsegment.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/unitcube.hpp>
