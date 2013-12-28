@@ -87,7 +87,6 @@ public :
         //mass matrix
         auto m = form2( _test=Xh, _trial=Xh);
         m = integrate( _range= elements( mesh ), _expr= idt( u )* id( v ) );
-        a += m;
         //Rhs
         auto f = form1( Xh );
         f = integrate( _range=markedfaces( mesh,"Dirichlet" ), _expr= mu0 * id( v ) );
@@ -110,7 +109,7 @@ public :
         //check that we obtain the same result in sequential or in parallel
         double l2_inner_prod = m( solution, solution );
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout<<"l2_inner_prod : "<<l2_inner_prod<<std::endl;
+            std::cout<<"l2_inner_prod : "<<std::setprecision(16) <<l2_inner_prod<<std::endl;
     }
 };
 
