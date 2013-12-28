@@ -3,7 +3,7 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2013-12-24
+       Date: 2013-12-27
 
   Copyright (C) 2013 Feel++ Consortium
 
@@ -22,26 +22,19 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file unitsquare.hpp
+   \file periodicentities.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2013-12-24
- */
-#if !defined(FEELPP_UNITSQUARE_HPP)
-#define FEELPP_UNITSQUARE_HPP 1
+   \date 2013-12-27
+*/
+#if !defined(FEELPP_PERIODICENTITIES_HPP)
+#define FEELPP_PERIODICENTITIES_HPP 1
 
-#include <feel/feelcore/feel.hpp>
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelfilters/periodicentities.hpp>
+#include <map>
 
 namespace Feel {
 
-/**
- * build a mesh of the unit square [0,1]^2 using triangles
- */
-boost::shared_ptr<Mesh<Simplex<2>>>
-unitSquare( double h = option(_name="gmsh.hsize").as<double>(),
-            PeriodicEntities pe = PeriodicEntities() );
+class PeriodicEntities: public std::map<int,std::pair<int,int> > {};
 
 }
 
-#endif /* FEELPP_UNITSQUARE_HPP */
+#endif /* FEELPP_PERIODICENTITIES_HPP */
