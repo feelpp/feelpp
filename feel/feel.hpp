@@ -41,6 +41,11 @@
 #include <feel/feelalg/backend.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/odh.hpp>
+#include <feel/feeldiscr/thch.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
 
@@ -63,6 +68,13 @@ using GiNaC::ex;
 }
 
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/unitsegment.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/unitcube.hpp>
+#include <feel/feelfilters/unitcircle.hpp>
+#include <feel/feelfilters/unitsphere.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/geotool.hpp>

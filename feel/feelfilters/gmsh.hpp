@@ -43,6 +43,7 @@
 #include <feel/feelcore/singleton.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
+#include <feel/feelfilters/periodicentities.hpp>
 
 namespace Feel
 {
@@ -51,8 +52,6 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
-class PeriodicEntities: public std::map<int,std::pair<int,int> > {};
-
 /**
  * \class Gmsh
  * \brief Gmsh Mesh Generator
