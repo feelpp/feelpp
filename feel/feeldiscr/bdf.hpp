@@ -1454,6 +1454,7 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setSaveInFile( save );
     thebdf->setSaveFreq( freq );
     thebdf->setRankProcInNameOfFiles( rank_proc_in_files_name );
+    thebdf->start();
     return thebdf;
 }
 
