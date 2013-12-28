@@ -4447,8 +4447,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     M_mesh = __m;
 
     // todo : check worldsComm size and M_functionspaces are the same!
-    fusion::for_each( M_functionspaces, Feel::detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
-                                                                                                 dofindices, this->worldsComm() ) );
+    fusion::for_each( M_functionspaces,
+                      Feel::detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
+                                                                                    dofindices,
+                                                                                    this->worldsComm(),
+                                                                                    this->extendedDofTableComposite() ) );
 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
