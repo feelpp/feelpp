@@ -26,29 +26,23 @@
    \date 2013-12-28
 */
 
-#define USE_BOOST_TEST 1
+//#define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_bdf2
 #include <testsuite/testsuite.hpp>
 #endif
 
-#include <feel/feel.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/operations.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
-
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description testbdf2( "bdf2 test options" );
-    testbdf2.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.05 ), "mesh size" )
-        ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
-        ;
-    return testbdf2.add( Feel::feel_options().add( Feel::bdf_options( "test_bdf2" ) ) );
-}
-
 
 inline
 AboutData
@@ -66,116 +60,71 @@ makeAbout()
 
 }
 
-template<int Dim, int Order>
+template<int Dim>
 class Test:
-    public Simget,
-    public boost::enable_shared_from_this< Test<Dim,Order> >
+    public Simget
 {
-
 public :
-
-    typedef Mesh<Simplex<Dim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef FunctionSpace<mesh_type,bases<Lagrange<Order> >, Periodicity <NoPeriodicity> > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-
-    typedef double value_type;
-
-    /*basis*/
-    typedef bases<Lagrange<Order, Scalar> > basis_type;
-    typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
-
-
-    Test()
-        :
-        Simget(),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() )
-    {
-    }
 
     void run()
     {
-        auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                  _usenames=true,
-                                                  _shape=shape,
-                                                  _order=Order,
-                                                  _dim=Dim,
-                                                  _h=meshSize ) );
+        auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
+                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % option(_name="gmsh.domain.shape").template as<std::string>() % Dim ).str() ,
+                                                  _dim=Dim ) );
+
 
         auto Xh = Pch<1>( mesh );
         auto u = Xh->element();
         auto v = Xh->element();
         auto solution = Xh->element();
-        auto A = backend()->newMatrix( Xh , Xh );
-        auto D = backend()->newMatrix( Xh , Xh );
-        auto M = backend()->newMatrix( Xh , Xh );
-        auto F = backend()->newVector( Xh );
-        auto Rhs = backend()->newVector( Xh );
+        auto mybdf = bdf( _space=Xh, _name="mybdf" );
         double mu0=0.5;
         //stifness matrix
-        form2( _test=Xh, _trial=Xh, _matrix=A)  = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
+        auto a = form2( _test=Xh, _trial=Xh );
+        a = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) + mybdf->polyDerivCoefficient(0)*idt(u)*id(u));
         //we have a robin condition
-        form2( _test=Xh, _trial=Xh, _matrix=A) += integrate( _range= markedfaces( mesh, "Dirichlet" ), _expr= mu0 * idt( u )*id( v ) );
+        a += integrate( _range= markedfaces( mesh, "Dirichlet" ), _expr= mu0 * idt( u )*id( v ) );
         //mass matrix
-        form2( _test=Xh, _trial=Xh, _matrix=M)  = integrate( _range= elements( mesh ), _expr= idt( u )* id( v ) );
+        auto m = form2( _test=Xh, _trial=Xh);
+        m = integrate( _range= elements( mesh ), _expr= idt( u )* id( v ) );
+        a += m;
         //Rhs
-        form1( Xh , F )  = integrate( _range=markedfaces( mesh,"Dirichlet" ), _expr= mu0 * id( v ) ) ;
+        auto f = form1( Xh );
+        f = integrate( _range=markedfaces( mesh,"Dirichlet" ), _expr= mu0 * id( v ) );
 
-        A->close();
-        F->close();
-        M->close();
+        auto ft = form1(_test=Xh);
 
         double bdf_coeff;
         auto vec_bdf_poly = backend()->newVector( Xh );
+        mybdf->start(solution);
 
-        bdf_ptrtype mybdf;
-        mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
-        for ( mybdf->start(solution);  mybdf->isFinished() == false; mybdf->next() )
+        for ( ;  mybdf->isFinished() == false; mybdf->next(solution) )
         {
-            bdf_coeff = mybdf->polyDerivCoefficient( 0 );
-
             auto bdf_poly = mybdf->polyDeriv();
-
-            *D = *A;
-            *Rhs = *F;
-            D->addMatrix( bdf_coeff, M );
-            *vec_bdf_poly = bdf_poly;
-            Rhs->addVector( *vec_bdf_poly, *M );
-
-            D->close();
-            Rhs->close();
-
-            backend()->solve( _matrix=D, _solution=solution, _rhs=Rhs);
-
-            mybdf->shiftRight(solution);
+            ft.zero();
+            ft = integrate( _range=elements(mesh), _expr=idv(bdf_poly)*id(u) );
+            ft += f;
+            a.solve( _solution=solution, _rhs=ft );
         }
 
         //check that we obtain the same result in sequential or in parallel
-        double energy = M->energy( solution, solution );
+        double l2_inner_prod = m( solution, solution );
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout<<"energy : "<<energy<<std::endl;
+            std::cout<<"l2_inner_prod : "<<l2_inner_prod<<std::endl;
     }
-
-private :
-    double meshSize;
-    std::string shape;
 };
 
 
 
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
 BOOST_AUTO_TEST_SUITE( bdf2 )
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {
-    //Test<2,1> test ( new Test<2,1>() );
-    boost::shared_ptr<Test<2,1> > test ( new Test<2,1>() );
-    test->run();
+    Test<2> test;
+    test.run();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -184,9 +133,8 @@ int main(int argc, char** argv )
 {
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=feel_options() );
-    boost::shared_ptr<Test<2,1> > test ( new Test<2,1>() );
-    //Test<2,1> test ( new Test<2,1>() );
-    test->run();
+    Test<2>  test;
+    test.run();
 }
 #endif
 
