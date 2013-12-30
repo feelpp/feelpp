@@ -312,7 +312,8 @@ public:
         M_time = M_Ti+this->timeStep();
         // warning: this needs to be fixed wrt restart
         M_last_iteration_since_order_change = 1;
-        M_order_cur = 1;
+        //M_order_cur = 1;
+        M_order_cur = M_order;
         return M_Ti;
     }
 
@@ -480,7 +481,7 @@ public:
     {
         M_restart=doRestart;
     }
-    void setRestartPath( std::string s )
+    void setRestartPath( std::string const& s )
     {
         M_restartPath=s;
     }
