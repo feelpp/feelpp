@@ -3,9 +3,10 @@
   This file is part of the Feel library
 
   Author(s): Stephane Veys <stephane.veys@imag.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-28
 
-  Copyright (C) 2011 - 2014 Feel++ Consortium
+  Copyright (C) 2011-2014 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,12 +21,6 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file test_bdf2.cpp
-   \author Stephane Veys <stephane.veys@imag.fr>
-   \date 2013-12-28
-*/
-
 //#define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_bdf2
@@ -37,9 +32,12 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/ginac.hpp>
+#include <feel/feelvf/on.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
@@ -56,6 +54,7 @@ makeAbout()
                      "Copyright (c) 2013 Feel++ Consortium" );
 
     about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
@@ -73,44 +72,91 @@ public :
                                                   _dim=Dim ) );
 
 
-        auto Xh = Pch<1>( mesh );
+        auto Xh = Pch<2>( mesh );
         auto u = Xh->element();
+        auto ue = Xh->element();
         auto v = Xh->element();
         auto solution = Xh->element();
         auto mybdf = bdf( _space=Xh, _name="mybdf" );
-        double mu0=0.5;
-        //stifness matrix
-        auto a = form2( _test=Xh, _trial=Xh );
+
+        auto g=option(_name="functions.g").as<std::string>();
+        auto vars = Symbols{"x","y","t","alpha","beta"};
+        auto eg = parse(g,vars);
+        auto fg = -laplacian( eg, {vars[0],vars[1]} )+diff( eg,  {vars[2]});
+        LOG(INFO) << "fg= " << fg;
+
+        auto fe = expr( fg, vars );
+        auto ue_g = expr( eg, vars );
+
+        //stiffness matrix
+        auto a = form2( _test=Xh, _trial=Xh ), at=form2(_test=Xh, _trial=Xh);
         a = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) + mybdf->polyDerivCoefficient(0)*idt(u)*id(u));
-        //we have a robin condition
-        a += integrate( _range= markedfaces( mesh, "Dirichlet" ), _expr= mu0 * idt( u )*id( v ) );
-        //mass matrix
-        auto m = form2( _test=Xh, _trial=Xh);
-        m = integrate( _range= elements( mesh ), _expr= idt( u )* id( v ) );
-        //Rhs
-        auto f = form1( Xh );
-        f = integrate( _range=markedfaces( mesh,"Dirichlet" ), _expr= mu0 * id( v ) );
 
-        auto ft = form1(_test=Xh);
+        auto e = exporter(_mesh=mesh);
 
-        double bdf_coeff;
-        auto vec_bdf_poly = backend()->newVector( Xh );
-        mybdf->start(solution);
-
-        for ( ;  mybdf->isFinished() == false; mybdf->next(solution) )
+        // initialize bdf with with known values prior to mybdf->initialTime()
+        // (initialTime included)
+        for( auto time : mybdf->priorTimes() )
         {
-            auto bdf_poly = mybdf->polyDeriv();
-            ft.zero();
-            ft = integrate( _range=elements(mesh), _expr=idv(bdf_poly)*id(u) );
-            ft += f;
-            a.solve( _solution=solution, _rhs=ft );
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                std::cout << "Initialize prior times (from timeInitial()) : " << time.second << "s index: " << time.first << "\n";
+            }
+            ue_g.expression().setParameterValues( {
+                    {"t", time.second},
+                    {"alpha", option(_name="parameters.alpha").template as<double>()},
+                    {"beta", option(_name="parameters.beta").template as<double>()} } );
+            ue = project( _space=Xh, _expr=ue_g );
+            mybdf->setUnknown( time.first, ue );
         }
 
-        //check that we obtain the same result in sequential or in parallel
-        double l2_inner_prod = m( solution, solution );
+        fe.expression().setParameterValues( {
+                {"t", mybdf->timeInitial()},
+                {"alpha", option(_name="parameters.alpha").template as<double>()},
+                {"beta", option(_name="parameters.beta").template as<double>()} } );
+
+        solution = project( _space=Xh, _expr=ue_g );
+        ue = project( _space=Xh, _expr=ue_g );
+        // compute max error which should be 0
+        auto error = vf::project( _space=Xh, _expr=idv(ue)-idv(solution) );
+        e->step(0)->add("exact",ue);
+        e->step(0)->add("solution",solution);
+        e->step(0)->add("error",error);
+        e->save();
+        double maxerror = error.linftyNorm();
         if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout<<"l2_inner_prod : "<<std::setprecision(16) <<l2_inner_prod<<std::endl;
-    }
+        {
+            std::cout << "max error at time " << mybdf->timeInitial() << "s :" << std::setprecision(16) << maxerror << "\n";
+        }
+
+        auto ft = form1(_test=Xh);
+        for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(solution) )
+        {
+            // update time value in expression
+            ue_g.expression().setParameterValues( {{"t", mybdf->time()}} );
+            fe.expression().setParameterValues( {{"t", mybdf->time()}} );
+
+            auto bdf_poly = mybdf->polyDeriv();
+            ft = integrate( _range=elements(mesh), _expr=(fe+idv(bdf_poly))*id(u) );
+            at = a;
+            at += on(_range=boundaryfaces(mesh),_element=solution,_rhs=ft,_expr=ue_g);
+            at.solve( _solution=solution, _rhs=ft );
+
+            // project onto space for error estimation
+            ue = project( _space=Xh, _expr=ue_g );
+
+            // compute max error which should be 0
+            auto error = vf::project( _space=Xh, _expr=idv(ue)-idv(solution) );
+            double maxerror = error.linftyNorm();
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "max error at time " << mybdf->time() << "s :" << std::setprecision(16) << maxerror << "\n";
+            e->step(mybdf->time())->add("exact",ue);
+            e->step(mybdf->time())->add("solution",solution);
+            e->step(mybdf->time())->add("error",error);
+            e->save();
+        }
+
+   }
 };
 
 
