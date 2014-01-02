@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-17
  */
-#ifndef __Expr_H
-#define __Expr_H 1
+#ifndef FEELPP_EXPR_HPP
+#define FEELPP_EXPR_HPP 1
 
 #undef max
 #include <boost/version.hpp>
@@ -3008,4 +3008,4 @@ basis( std::map<size_type,std::vector<boost::shared_ptr<Elem> > > const& v )
 using namespace vf;
 
 } // feel
-#endif /* __Expr_H */
+#endif /* FEELPP_EXPR_HPP */
