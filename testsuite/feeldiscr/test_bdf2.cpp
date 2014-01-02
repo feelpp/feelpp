@@ -102,7 +102,7 @@ public :
             {
                 std::cout << "Initialize prior times (from timeInitial()) : " << time.second << "s index: " << time.first << "\n";
             }
-            ue_g.expression().setParameterValues( {
+            ue_g.setParameterValues( {
                     {"t", time.second},
                     {"alpha", option(_name="parameters.alpha").template as<double>()},
                     {"beta", option(_name="parameters.beta").template as<double>()} } );
@@ -110,7 +110,7 @@ public :
             mybdf->setUnknown( time.first, ue );
         }
 
-        fe.expression().setParameterValues( {
+        fe.setParameterValues( {
                 {"t", mybdf->timeInitial()},
                 {"alpha", option(_name="parameters.alpha").template as<double>()},
                 {"beta", option(_name="parameters.beta").template as<double>()} } );
@@ -133,8 +133,8 @@ public :
         for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(solution) )
         {
             // update time value in expression
-            ue_g.expression().setParameterValues( {{"t", mybdf->time()}} );
-            fe.expression().setParameterValues( {{"t", mybdf->time()}} );
+            ue_g.setParameterValues( {{"t", mybdf->time()}} );
+            fe.setParameterValues( {{"t", mybdf->time()}} );
 
             auto bdf_poly = mybdf->polyDeriv();
             ft = integrate( _range=elements(mesh), _expr=(fe+idv(bdf_poly))*id(u) );

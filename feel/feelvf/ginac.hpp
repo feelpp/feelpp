@@ -45,7 +45,6 @@ matrix div( matrix const& f, std::vector<symbol> const& l );
 matrix laplacian( matrix const& f, std::vector<symbol> const& l );
 
 ex diff(ex const& f, symbol const& l, const int n);
-ex diff(std::string const& f, symbol const& l, const int n);
 matrix diff(matrix const& f, symbol const& l, const int n);
 
 ex substitute(ex const& f, symbol const& l, const double val );
@@ -144,7 +143,6 @@ typedef Feel::Singleton<GinacExprManagerDeleterImpl> GinacExprManagerDeleter;
 
 namespace vf
 {
-
 /// \cond detail
 /**
  * \class Ginac
@@ -154,7 +152,7 @@ namespace vf
  * @see
  */
 template<int Order = 2>
-class GinacEx
+class GinacEx : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -558,7 +556,7 @@ expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string 
 }
 
 template<int M=1, int N=1, int Order = 2>
-class GinacMatrix
+class GinacMatrix : public Feel::vf::GiNaCBase
 {
 public:
 
