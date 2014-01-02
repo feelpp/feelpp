@@ -46,7 +46,8 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
@@ -238,7 +239,7 @@ struct test_integration_internal_faces_lf : public Application
         auto F = backend->newVector( Xh );
         auto _F_ = integrate( internalfaces( mesh ),
                 trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() ) );
-        form1( _test=Xh, _vector=F, _init=true ) = _F_; 
+        form1( _test=Xh, _vector=F, _init=true ) = _F_;
         //  integrate( internalfaces( mesh ),
         //        //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
         //        trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() )

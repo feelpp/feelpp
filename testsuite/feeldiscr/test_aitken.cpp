@@ -38,30 +38,15 @@
 
 #include <feel/feelalg/aitken.hpp>
 
-/** include function space class */
 #include <feel/feeldiscr/functionspace.hpp>
-
-/** include helper function to define \f$P_0\f$ functions associated with regions  */
 #include <feel/feeldiscr/region.hpp>
-
-/** include integration methods */
-#include <feel/feelpoly/im.hpp>
-
-/** include gmsh mesh importer */
-#include <feel/feelfilters/gmsh.hpp>
-
-/** include exporter factory class */
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
-
-/** include  polynomialset header */
-#include <feel/feelpoly/polynomialset.hpp>
-
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
-
 #include <feel/feeldiscr/operatorinterpolation.hpp>
-
 #include <feel/feelfilters/geotool.hpp>
+
 /** use Feel namespace */
 using namespace Feel;
 using namespace Feel::vf;

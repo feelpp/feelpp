@@ -6,6 +6,7 @@
        Date: 2008-06-12
 
   Copyright (C) 2008 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,7 +30,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/options.hpp>
 #include <feel/feelcore/application.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feeldiscr/tsbase.hpp>
 
 Feel::AboutData
 makeAbout()
@@ -67,14 +68,14 @@ public:
         for ( bdf.start(); bdf.isFinished() == false; bdf.next() )
         {
             bdf.shiftRight();
-            BdfBaseMetadata meta( bdf );
+            TSBaseMetadata meta( bdf );
             meta.save();
             meta.load();
         }
 
     }
 private:
-    BdfBase bdf;
+    TSBase bdf;
 };
 int main( int argc, char** argv )
 {

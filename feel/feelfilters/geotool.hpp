@@ -28,8 +28,8 @@
  */
 
 
-#ifndef __geotool_H
-#define __geotool_H 1
+#ifndef FEELPP_GEOTOOL_HPP
+#define FEELPP_GEOTOOL_HPP 1
 
 #include <iostream>
 #include <string>
@@ -45,6 +45,7 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/importergmsh.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
 
@@ -1813,4 +1814,4 @@ createMeshFromGeoFile( std::string geofile,std::string name,double meshSize,int 
 }//GeoTool
 
 } //Feel
-#endif /* __geotool_H */
+#endif /* FEELPP_GEOTOOL_HPP */
