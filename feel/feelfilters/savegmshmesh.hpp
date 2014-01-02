@@ -29,7 +29,7 @@
 #if !defined(FEELPP_SAVEGMSHMESH_HPP)
 #define FEELPP_SAVEGMSHMESH_HPP 1
 
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/exportergmsh.hpp>
 #include <feel/feelfilters/detail/meshfromgeoentity.hpp>
 
 namespace Feel {

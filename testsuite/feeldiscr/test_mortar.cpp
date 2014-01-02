@@ -41,8 +41,11 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/moch.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/thch.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
