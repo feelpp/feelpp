@@ -244,7 +244,7 @@ LaplacianLM<Dim, Order>::run()
                        integrate( _range=elements( mesh ), _expr=mean*id( nu ) )
                      );
 
-    if ( this->vm().count( "export-matlab" ) )
+    if ( this->vm().count( "export-matlab" ) && Environment::numberOfProcessors() == 1 )
     {
         M->printMatlab( "M.m" );
         F->printMatlab( "F.m" );

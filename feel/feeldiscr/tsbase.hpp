@@ -57,6 +57,7 @@
 #include <boost/parameter.hpp>
 
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/typetraits.hpp>
 
 
 namespace Feel
