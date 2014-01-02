@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2007-06-11
 
-  Copyright (C) 2007-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,15 +21,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file thermalfin.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2007-06-11
- */
 #include <feel/feel.hpp>
-
-
-Feel::gmsh_ptrtype makefin( double hsize );
 
 inline
 Feel::po::options_description
@@ -37,9 +29,6 @@ makeOptions()
 {
     Feel::po::options_description thermalfinoptions( "Thermalfin options" );
     thermalfinoptions.add_options()
-    // mesh parameters
-    ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
-
     // physical coeff
     ( "k0", Feel::po::value<double>()->default_value( 1 ), "k0 diffusion parameter" )
     ( "k1", Feel::po::value<double>()->default_value( 1 ), "k1 diffusion parameter" )
@@ -50,9 +39,6 @@ makeOptions()
 
     ( "N", Feel::po::value<int>()->default_value( 1 ), "number of samples withing parameter space" )
 
-    // export
-    ( "export", "export results(ensight, data file(1D)" )
-    ( "export-matlab", "export matrix and vectors in matlab" )
     ;
     return thermalfinoptions.add( Feel::feel_options() );
 }
@@ -62,10 +48,10 @@ makeAbout()
 {
     Feel::AboutData about( "thermalfin" ,
                            "thermalfin" ,
-                           "0.2",
-                           "nD(n=1,2,3) Thermalfin on simplices or simplex products",
+                           "0.3",
+                           "Heat transfer in a 2D thermal fin",
                            Feel::AboutData::License_GPL,
-                           "Copyright (c) 2006-2011 Universite Joseph Fourier" );
+                           "Copyright (c) 2010-2014 Feel++ Consortium" );
 
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
@@ -79,152 +65,48 @@ namespace Feel
  * Thermal fin application
  *
  */
-class ThermalFin
-    :
-public Application
+class ThermalFin : public Application
 {
-    typedef Application super;
 public:
-
-#define Entity Simplex
-
-    // -- TYPEDEFS --
-    static const uint16_type Dim = 2;
-    static const uint16_type Order = 1;
-    static const uint16_type imOrder = 2*Order;
-
-    typedef double value_type;
-
-    typedef Backend<value_type> backend_type;
-    typedef boost::shared_ptr<backend_type> backend_ptrtype;
-
-
-    /*matrix*/
-    typedef backend_type::sparse_matrix_type sparse_matrix_type;
-    typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
-    typedef backend_type::vector_type vector_type;
-    typedef backend_type::vector_ptrtype vector_ptrtype;
-
-    /*mesh*/
-    typedef Entity<2> entity_type;
-    typedef Mesh<entity_type> mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0, Scalar> >, Discontinuous > p0_space_type;
-    typedef p0_space_type::element_type p0_element_type;
-
-    /*basis*/
-    typedef bases<Lagrange<Order, Scalar> > basis_type;
-
-    /*space*/
-    typedef FunctionSpace<mesh_type, basis_type, value_type> space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-    typedef space_type::element_type element_type;
-
-    /* export */
-    typedef Exporter<mesh_type> export_type;
-
-
-    ThermalFin()
-        :
-        super(),
-        M_backend( backend_type::build( this->vm() ) ),
-        meshSize( this->vm()["hsize"].as<double>() ),
-        exporter( export_type::New( this->vm(), this->about().appName() ) )
-    {
-        this->changeRepository( boost::format( "%1%/%2%/%3%/" )
-                                % this->about().appName()
-                                % entity_type::name()
-                                % this->vm()["hsize"].as<double>()
-                              );
-        using namespace Feel::vf;
-
-
-        /*
-         * First we create the mesh
-         */
-        mesh = createGMSHMesh( _mesh=new mesh_type,
-                               _desc=::makefin( this->vm()["hsize"].as<double>() ),
-                               _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                               _partitions=this->comm().size() );
-
-        /*
-         * The function space and some associate elements are then defined
-         */
-        Xh = space_type::New( mesh );
-        element_type u( Xh, "u" );
-        element_type v( Xh, "v" );
-
-        Fcst = M_backend->newVector( Xh );
-
-
-        form1( Xh, Fcst, _init=true )  = integrate( markedfaces( mesh,1 ), id( v ) );
-
-        if ( this->vm().count( "export-matlab" ) )
-            Fcst->printMatlab( "F.m" );
-
-
-        /*
-         * Construction of the left hand side
-         */
-        Dcst = M_backend->newMatrix( Xh, Xh );
-
-        form2( Xh, Xh, Dcst, _init=true ) = integrate( markedelements( mesh,1 ), ( gradt( u )*trans( grad( v ) ) ) );
-
-        Dcst->close();
-
-        if ( this->vm().count( "export-matlab" ) )
-            Dcst->printMatlab( "Dcst" );
-
-    }
-
-    /**
-     * create the mesh using mesh size \c meshSize
-     */
-    mesh_ptrtype createMesh( double meshSize );
 
     /**
      * run the convergence test
      */
     void run();
-
-private:
-
-    /**
-     * export results to ensight format (enabled by  --export cmd line options)
-     */
-    void exportResults( element_type& u );
-
-private:
-
-    backend_ptrtype M_backend;
-
-    double meshSize;
-
-    mesh_ptrtype mesh;
-    space_ptrtype Xh;
-
-    sparse_matrix_ptrtype Dcst;
-    vector_ptrtype Fcst;
-
-    boost::shared_ptr<export_type> exporter;
-
 }; // ThermalFin
 
 
 void
 ThermalFin::run()
 {
-    if ( this->vm().count( "help" ) )
-    {
-        std::cout << this->optionsDescription() << "\n";
-        return;
-    }
+    Environment::changeRepository( boost::format( "%1%/%2%/" )
+                                   % Environment::about().appName()
+                                   % option( _name="gmsh.hsize" ).as<double>() );
 
-    using namespace Feel::vf;
+    /*
+     * First we create the mesh
+     */
+    auto mesh = loadMesh( _mesh=new mesh_type );
 
-    element_type u( Xh, "u" );
-    element_type v( Xh, "v" );
+    /*
+     * The function space and some associate elements are then defined
+     */
+    auto Xh = Pch<2>( mesh );
+    auto u = Xh->element();
+    auto v = Xh->element();
+
+    // flux a bottom of fin
+    auto f = form1( Xh );
+    f = integrate( markedfaces( mesh,1 ), id( v ) );
+
+    /*
+     * Construction of the left hand side
+     */
+    Dcst = M_backend->newMatrix( Xh, Xh );
+
+    form2( Xh, Xh, Dcst ) = integrate( markedelements( mesh,1 ), ( gradt( u )*trans( grad( v ) ) ) );
+
+    Dcst->close();
 
     double Bimin = this->vm()["Bimin"].as<double>();
     double Bimax = this->vm()["Bimax"].as<double>();
@@ -232,27 +114,21 @@ ThermalFin::run()
 
     for ( int i = 0; i < N; ++i )
     {
-        /*
-         * Construction of the left hand side
-         */
-        sparse_matrix_ptrtype D( M_backend->newMatrix( Xh, Xh ) );
-
-
-        //D->addMatrix( 1.0, *Dcst );
 
         int Nb = 2;
-        ublas::matrix<double> k( Nb, Nb );
+        Eigen::MatrixXd k( Nb, Nb );
         k( 0 , 0 ) = this->vm()["k0"].as<double>();
         k( 1 , 0 ) = this->vm()["k1"].as<double>();
         k( 0 , 1 ) = this->vm()["k2"].as<double>();
         k( 1 , 1 ) = this->vm()["k3"].as<double>();
 
+        auto a = form2( Xh, Xh );
         for ( int r = 0; r < Nb; ++r )
             for ( int c = 0; c < Nb; ++c )
             {
 
-                form2( Xh, Xh, D ) += integrate( markedelements( mesh,Nb*c+r+1 ),
-                                                 k( r,c )*gradt( u )*trans( grad( v ) ) );
+                a += integrate( markedelements( mesh,Nb*c+r+1 ),
+                                k( r,c )*gradt( u )*trans( grad( v ) ) );
             }
 
         double Bi;
@@ -265,14 +141,10 @@ ThermalFin::run()
 
         LOG(INFO) << "Bi = " << Bi << "\n";
 
-        form2( Xh, Xh, D ) += integrate( markedfaces( mesh,2 ), Bi*idt( u )*id( v ) );
+        a += integrate( markedfaces( mesh,2 ), Bi*idt( u )*id( v ) );
 
-        D->close();
 
-        if ( this->vm().count( "export-matlab" ) )
-            D->printMatlab( "D" );
-
-        M_backend->solve( _matrix=D, _solution=u, _rhs=Fcst );
+        a.solve( _solution=u, _rhs=Fcst );
 
         double moy_u = ( integrate( markedfaces( mesh,1 ), idv( u ) ).evaluate()( 0,0 ) /
                          integrate( markedfaces( mesh,1 ), constant( 1.0 ) ).evaluate()( 0,0 ) );
@@ -283,28 +155,17 @@ ThermalFin::run()
                   << std::setw( 5 ) << k( 1,1 ) << " "
                   << std::setw( 5 ) << Bi << " "
                   << std::setw( 10 ) << moy_u << "\n";
-        this->exportResults( u );
+
+        e->step( i )->setMesh( U.functionSpace()->mesh() );
+        e->step( i )->add( "Temperature", U );
+        e->save();
+
 
 
 
     }
 } // ThermalFin::run
 
-
-
-void
-ThermalFin::exportResults( element_type& U )
-{
-    if ( this->vm().count( "export" ) )
-    {
-        exporter->step( 1. )->setMesh( U.functionSpace()->mesh() );
-        exporter->step( 1. )->add( "ProcessId",
-                                   regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
-        exporter->step( 1. )->add( "Temperature", U );
-        exporter->save();
-
-    }
-} // ThermalFin::export
 } // Feel
 
 
