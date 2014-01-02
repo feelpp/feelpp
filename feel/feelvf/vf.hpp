@@ -72,7 +72,7 @@
 
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/integrator.hpp>
-#include <feel/feelvf/integratoron.hpp>
+#include <feel/feelvf/on.hpp>
 //#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelvf/evaluator.hpp>

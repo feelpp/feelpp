@@ -208,10 +208,6 @@ ex diff(ex const& f, symbol const& l, const int n)
     return f.diff( l,n );
 }
 
-ex diff(std::string const& f, symbol const& l, const int n)
-{
-    return parse(f,l).diff( l,n );
-}
 
 matrix diff(matrix const& f, symbol const& l, const int n)
 {

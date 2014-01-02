@@ -62,6 +62,7 @@ namespace Feel
 {
 namespace vf
 {
+class GiNaCBase {};
 
 /// \cond detail
 typedef node<double>::type node_type;
@@ -480,6 +481,17 @@ public:
     typename Lambda<TheExpr>::type
     operator()( TheExpr const& e  ) const { return expr(M_expr(e)); }
 
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
+        }
+    void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<true> )
+        {
+            M_expr.setParameterValues( mp );
+        }
+    void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<false> )
+        {
+        }
 
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,boost::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
