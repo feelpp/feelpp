@@ -13,12 +13,13 @@
      operations, rewrite of some internals
    - improved Ginac(symbolic calculus) support
    - updated documentation to reflect Homebrew(MacOSX) support and the more
-     stringent requirement that g++ must be at least 4.6 and clang 3.2
+     stringent requirements on the compilers that g++ must be at least 4.6 and
+     clang 3.2
 
    \subsection features0960 Features
 
    - Feel++ is now fully supported on Mac OS X systems >= 10.9 (Mavericks) using
-     Homebrew (and soon MacPorts)
+     Homebrew and MacPorts
    - Feel++ supports creating sequential function spaces out of parallel meshes
    - Feel++ supports creating local interpolation operators in subdomains
    - Feel++ provides an implementation of the empirical interpolation method (eim)
