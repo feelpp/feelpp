@@ -128,61 +128,60 @@ public :
 
     /** Face Quadrature Discussion **/
 
-
-    std::vector<weights_type> const& allfweights() const
+    std::vector<std::map<uint16_type,weights_type> > const& allfweights() const
     {
         return M_w_face;
     }
 
-    std::vector<nodes_type> const& allfpoints() const
+    std::vector<std::map<uint16_type,nodes_type > > const& allfpoints() const
     {
         return M_n_face;
     }
 
-
     /**
      * \return all quadrature weights of face f
      */
-    weights_type const& weights( uint16_type __f ) const
+    weights_type const& weights( uint16_type __f, uint16_type __p = 1 ) const
     {
         if ( __f == uint16_type( -1 ) )
             return M_w;
 
-        return M_w_face[__f];
+        DCHECK( M_w_face[__f].find(__p) != M_w_face[__f].end() ) << "invalid permutation :" << __p << "\n";
+        return M_w_face[__f].find(__p)->second;
     }
 
     /**
      * \return all quadrature coordinates of the q-th node of face f
      */
-    nodes_type const& fpoints( uint16_type __f ) const
+    nodes_type const& fpoints( uint16_type __f, uint16_type __p = 1 ) const
     {
         if ( __f == uint16_type( -1 ) )
             return this->points();
 
-        return M_n_face[__f];
+        DCHECK( M_n_face[__f].find(__p) != M_n_face[__f].end() ) << "invalid permutation :" << __p << "\n";
+        return M_n_face[__f].find(__p)->second;
     }
 
 
     /**
      * \return quadrature weight of the q-th node of face f
      */
-    value_type  weight( uint16_type __f,  uint32_type q ) const
+    value_type  weight( uint16_type __f,  uint32_type q, uint16_type __p = 1 ) const
     {
-        return M_w_face[__f][q];
+        DCHECK( M_w_face[__f].find(__p) != M_w_face[__f].end() ) << "invalid permutation :" << __p << "\n";
+        return M_w_face[__f].find(__p)->second[q];
     }
     /**
      * \return quadrature coordinates of the q-th node of face f
      */
-    ublas::matrix_column<nodes_type const>  fpoint( uint16_type __f, uint32_type __q ) const
+    ublas::matrix_column<nodes_type const>  fpoint( uint16_type __f, uint32_type __q, uint16_type __p = 1 ) const
     {
-        return ublas::column( M_n_face[__f], __q );
+        DCHECK( M_n_face[__f].find(__p) != M_n_face[__f].end() ) << "invalid permutation :" << __p << "\n";
+        return ublas::column( M_n_face[__f].find(__p)->second, __q );
     }
 
 
     //  quadrature_data_type data() const { return boost::make_tuple( this->M_n, this->M_w ); }
-
-    //size_type nFaces() const { return M_n_face.size(); }
-    //size_type nPointsOnFace( int __face = 0 ) const { return M_n_face[__face].size2(); }
 
     weights_type const& weights() const
     {
@@ -197,9 +196,10 @@ public :
     {
         return M_n_face.size();
     }
-    size_type nPointsOnFace( int __face = 0 ) const
+    size_type nPointsOnFace( uint16_type __face = 0, uint16_type __p = 1 ) const
     {
-        return M_n_face[__face].size2();
+        DCHECK( M_n_face[__face].find(__p) != M_n_face[__face].end() ) << "invalid permutation :" << __p << "\n";
+        return M_n_face[__face].find(__p)->second.size2();
     }
 
     /**
@@ -527,19 +527,23 @@ protected:
                             boost::shared_ptr<IM> const& /*__qr_face*/,
                             mpl::bool_<false> )
     {
+
+        typedef typename Elem::permutation_type permutation_type;
+        DCHECK(permutation_type::N_PERMUTATIONS==2) << " number of permutation must be equal to 2 here\n";
         BOOST_STATIC_ASSERT( Elem::nDim == 1 );
+
         M_n_face.resize( Elem::numTopologicalFaces );
         M_w_face.resize( Elem::numTopologicalFaces );
 
-        M_n_face[0].resize( Elem::nDim, 1 );
-        M_w_face[0].resize( 1 );
-        M_n_face[0]( 0, 0 ) = -1;
-        M_w_face[0]( 0 ) = 1;
+        M_n_face[0][permutation_type::IDENTITY].resize( Elem::nDim, 1 );
+        M_w_face[0][permutation_type::IDENTITY].resize( 1 );
+        M_n_face[0][permutation_type::IDENTITY]( 0, 0 ) = -1;
+        M_w_face[0][permutation_type::IDENTITY]( 0 ) = 1;
 
-        M_n_face[1].resize( Elem::nDim, 1 );
-        M_w_face[1].resize( 1 );
-        M_n_face[1]( 0, 0 ) = 1;
-        M_w_face[1]( 0 ) = 1;
+        M_n_face[1][permutation_type::IDENTITY].resize( Elem::nDim, 1 );
+        M_w_face[1][permutation_type::IDENTITY].resize( 1 );
+        M_n_face[1][permutation_type::IDENTITY]( 0, 0 ) = 1;
+        M_w_face[1][permutation_type::IDENTITY]( 0 ) = 1;
 
     }
 
@@ -553,8 +557,8 @@ protected:
 
     weights_type M_w;
 
-    std::vector<weights_type> M_w_face;
-    std::vector<nodes_type> M_n_face;
+    std::vector<std::map<uint16_type,weights_type> > M_w_face;
+    std::vector<std::map<uint16_type,nodes_type > > M_n_face;
 
     vector_type M_prod;
     mutable vector_type M_exprq;
@@ -572,6 +576,7 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
     M_n_face.resize( Elem::numTopologicalFaces );
     M_w_face.resize( Elem::numTopologicalFaces );
 
+    typedef typename Elem::permutation_type permutation_type;
     // FIXME: we don't handle the case where faces are not of the
     // same type like for prism or pyramids. In that case geopc
     // should be defined per face
@@ -581,43 +586,51 @@ PointSetQuadrature<Convex,Integration_Degree,T>::constructQROnFace( Elem const& 
 
     for ( uint16_type __f = 0; __f < Elem::numTopologicalFaces; ++__f )
     {
-        typedef typename Elem::topological_face_type  element_type;
-        element_type ref_convex_face = ref_convex.topologicalFace( __f );
-        DVLOG(2) << "[quadpt] ref_convex_face "  << __f << "=" << ref_convex_face.points() << "\n";
-        //toPython( ref_convex_face );
+        for ( permutation_type __p( permutation_type::IDENTITY );
+              __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                typedef typename Elem::topological_face_type element_type;
+                // get ref convex of face with a permutation given
+                element_type ref_convex_face = ref_convex.topologicalFace( __f, __p.value() );
+                DVLOG(2) << "[quadpt] ref_convex_face "  << __f << "=" << ref_convex_face.points() << "\n";
+                //toPython( ref_convex_face );
 
-        typename GM::template Context<vm::JACOBIAN|vm::POINT|vm::KB,element_type> __c( __gm->boundaryMap(),
-                ref_convex_face,
-                __geopc );
-        __c.update( ref_convex_face );
-        DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xref" << __c.xRefs() << "\n";
-        DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
+                typename GM::template Context<vm::JACOBIAN|vm::POINT|vm::KB,element_type> __c( __gm->boundaryMap(),
+                                                                                               ref_convex_face,
+                                                                                               __geopc );
+                __c.update( ref_convex_face );
+                DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xref" << __c.xRefs() << "\n";
+                DVLOG(2) << "[quadpt] ref_convex_face "  << __f << " xreal" << __c.xReal() << "\n";
 
-        value_type __len = 0.0;
-        M_n_face[__f].resize( Elem::nDim, __qr_face->nPoints() );
-        M_w_face[__f].resize( __qr_face->nPoints() );
-        DVLOG(2) << "[PointSetQuadrature::constructQROnFace] npoints on face "
-                      << __f << " : "
-                      << __qr_face->nPoints() << "\n";
-        // transform the quad nodes on the boundary _reference_
-        // element to the face of the reference element face
+                value_type __len = 0.0;
+                M_n_face[__f][__p.value()].resize( Elem::nDim, __qr_face->nPoints() );
+                M_w_face[__f][__p.value()].resize( __qr_face->nPoints() );
 
-        for ( uint16_type __ip = 0; __ip < __qr_face->nPoints(); ++__ip )
-        {
-            ublas::column( M_n_face[__f], __ip ) = __c.xReal( __ip );
+                DVLOG(2) << "[PointSetQuadrature::constructQROnFace] npoints on face "
+                         << __f << " : "
+                         << __qr_face->nPoints() << "\n";
+                // transform the quad nodes on the boundary _reference_
+                // element to the face of the reference element face
 
-            // w = w_face * ||B*n|| * J
-            M_w_face[ __f]( __ip ) = __qr_face->weight( __ip )*__c.J( __ip );
+                for ( uint16_type __ip = 0; __ip < __qr_face->nPoints(); ++__ip )
+                {
+                    ublas::column( M_n_face[__f][__p.value()], __ip ) = __c.xReal( __ip );
 
-            __len += M_w_face[ __f]( __ip );
-            DVLOG(2) << "face " << __f << " ip = " << __ip << "       J =" << __c.J( __ip ) << "\n";
-            DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << __qr_face->weight( __ip ) << "\n";
-            DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << M_w_face[ __f]( __ip ) << "\n";
-            //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
-            //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
-        }
+                    // w = w_face * ||B*n|| * J
+                    M_w_face[ __f][__p.value()]( __ip ) = __qr_face->weight( __ip )*__c.J( __ip );
 
-        DVLOG(2) << "length = " << __len << "\n";
+                    __len += M_w_face[ __f][__p.value()]( __ip );
+
+
+                    DVLOG(2) << "face " << __f << " ip = " << __ip << "       J =" << __c.J( __ip ) << "\n";
+                    DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << __qr_face->weight( __ip ) << "\n";
+                    DVLOG(2) << "face " << __f << " ip = " << __ip << "  weight =" << M_w_face[ __f][__p.value()]( __ip ) << "\n";
+                    //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x  ref =" << __c.xRef( __ip ) << "\n";
+                    //            DVLOG(2) << "face " << __f << " ip = " << __ip << "  x real =" << __c.xReal( __ip ) << "\n";
+                }
+
+                DVLOG(2) << "length = " << __len << "\n";
+            }
     }
 }
 

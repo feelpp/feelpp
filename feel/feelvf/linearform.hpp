@@ -840,6 +840,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     M_threshold( threshold )
 {
 
+    if ( !this->M_X->worldComm().isActive() ) return;
+
     for ( uint16_type __i = 0; __i < M_X->qDim(); ++__i )
     {
         M_lb.push_back( Block( __i, 0,
@@ -869,6 +871,8 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( space_ptrtype const
     M_do_threshold( do_threshold ),
     M_threshold( threshold )
 {
+    if ( !this->M_X->worldComm().isActive() ) return;
+
     if ( init )
         M_F->zero();
 }

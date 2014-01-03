@@ -173,7 +173,11 @@ public:
 /**
  * destructor
  */
-    ~Mesh2D() {}
+    ~Mesh2D()
+        {
+            VLOG(1) << "Mesh2D destructor";
+            this->clear();
+        }
 
 //@}
 
@@ -303,10 +307,12 @@ public:
  */
     virtual void clear()
         {
+            VLOG(1) << "Deleting Mesh2D...\n";
+
             this->elements().clear();
             this->points().clear();
             this->faces().clear();
-            FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+            CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
         }
 
 

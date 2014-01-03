@@ -362,6 +362,7 @@ void compile_ex(const ex& expr, const symbol& sym1, const symbol& sym2, FUNCP_2P
 
 void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::string filename)
 {
+
 	lst replacements;
 	for (std::size_t count=0; count<syms.nops(); ++count) {
 		std::ostringstream s;
@@ -377,9 +378,14 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 	std::ofstream ofs;
 	std::string unique_filename = filename;
 
-    boost::mpi::communicator world;
+    bool doCompile=true;
+    if ( filename.empty() )
+    {
+        boost::mpi::communicator world;
+        if( world.rank() != 0 ) doCompile=false;
+    }
 
-    if( world.rank() == 0 )
+    if ( doCompile )
     {
         global_excompiler.create_src_file(unique_filename, ofs);
 
@@ -396,8 +402,13 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
 
         global_excompiler.compile_src_file(unique_filename, filename.empty());
     }
-    world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
-    boost::mpi::broadcast( world, unique_filename, 0);
+
+    if ( filename.empty() )
+    {
+        boost::mpi::communicator world;
+        world.barrier(); // Waiting for proc 0 to ensure the compilation step is OK
+        boost::mpi::broadcast( world, unique_filename, 0);
+    }
 
 	// This is not standard compliant! ... no conversion between
 	// pointer-to-functions and pointer-to-objects ...

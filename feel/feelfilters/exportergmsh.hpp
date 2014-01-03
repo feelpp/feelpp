@@ -153,11 +153,11 @@ public:
     void gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype mesh ) const;
 
     void gmshSaveNodesStart( std::ostream& out, mesh_ptrtype mesh, size_type nGlobPt, bool parametric = false ) const;
-    void gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, size_type indexPtStart, bool parametric = false ) const;
+    void gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, bool parametric = false ) const;
     void gmshSaveNodesEnd( std::ostream& out, mesh_ptrtype mesh, bool parametric = false ) const;
 
     void gmshSaveElementsStart( std::ostream& out,size_type nGlobElt ) const;
-    void gmshSaveElements( std::ostream& out, mesh_ptrtype __mesh, size_type indexEltStart, size_type indexPtStart ) const;
+    void gmshSaveElements( std::ostream& out, mesh_ptrtype __mesh, size_type indexEltStart ) const;
     void gmshSaveElementsEnd( std::ostream& out ) const;
 
     void gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const;
@@ -165,13 +165,23 @@ public:
     void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step ) const;
 
 
-    void gmshSaveOneElementAsMesh( std::string const& filename, typename mesh_type::element_type::super const& elt ) const;
+    template<typename ConvexType=typename mesh_type::shape_type>
+    void gmshSaveOneElementAsMesh( std::string const& filename,
+                                   typename mesh_type::element_type::super const& elt,
+                                   PointSet<ConvexType,typename MeshType::value_type> const& ptset
+                                   //=PointSet<ConvexType/*typename mesh_type::shape_type*/,typename MeshType::value_type>()
+                                   ) const;
+
+    template<typename ConvexRefType, typename ConvexPtSetType>
+    void gmshSaveOneElementAsMesh( std::string const& filename,
+                                   Reference<ConvexRefType,ConvexRefType::nDim,ConvexRefType::nOrder,ConvexRefType::nRealDim >  const& elt,
+                                   PointSet<ConvexPtSetType,typename MeshType::value_type> const& ptset ) const;
 
     //@}
 
 private:
 
-    boost::tuple<size_type,size_type > numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const;
+    size_type numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const;
 
     boost::tuple<size_type,size_type> numberOfGlobalEltAndIndex( mesh_ptrtype mesh ) const;
 

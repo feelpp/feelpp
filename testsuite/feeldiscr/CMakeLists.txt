@@ -9,6 +9,7 @@ feelpp_add_test( element_serialize )
 feelpp_add_test( evaluator )
 
 feelpp_add_test( functionallinearfree )
+feelpp_add_test( fspace_context )
 feelpp_add_test( geomap )
 
 feelpp_add_test( lambda )
@@ -22,6 +23,8 @@ feelpp_add_test( on_inside )
 
 feelpp_add_test( operatorlinearfree )
 feelpp_add_test( project )
+feelpp_add_test( rbspace )
+feelpp_add_test( rbspacevector )
 feelpp_add_test( spaces )
 feelpp_add_test( stencil )
 feelpp_add_test( submesh )

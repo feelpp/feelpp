@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2009-01-20
 
-  Copyright (C) 2009 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2009 Universite Joseph Fourier (Grenoble I)
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ namespace Feel
 
 namespace parameter = boost::parameter;
 
-
+BOOST_PARAMETER_TEMPLATE_KEYWORD( model_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( mesh_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( expansion_type )
 BOOST_PARAMETER_TEMPLATE_KEYWORD( bases_list )

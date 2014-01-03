@@ -449,9 +449,18 @@ private:
             std::set<size_type> idsFind;
             const bool test_related_to_trial = _M_X1->mesh()->isSubMeshFrom( _M_X2->mesh() );
             const bool trial_related_to_test = _M_X2->mesh()->isSubMeshFrom( _M_X1->mesh() );
+            const bool trial_sibling_of_test = _M_X2->mesh()->isSiblingOf( _M_X1->mesh() );
             if ( test_related_to_trial )
             {
-                const size_type domain_eid = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid )).element0().id();
+                auto const& theface = _M_X2->mesh()->face(_M_X1->mesh()->subMeshToMesh( test_eid ));
+                size_type domain_eid = invalid_size_type_value;
+                if ( !theface.element0().isGhostCell() )
+                    domain_eid = theface.element0().id();
+                else if ( theface.isConnectedTo1() && !theface.element1().isGhostCell() )
+                    domain_eid = theface.element1().id();
+                else
+                    CHECK(false) << " error : maybe the faces is not on partition or invalid connection\n";
+
                 DVLOG(2) << "[test_related_to_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
                 if ( domain_eid != invalid_size_type_value ) idsFind.insert( domain_eid );
             }
@@ -465,13 +474,30 @@ private:
                     }
                 DVLOG(2) << "[trial_related_to_test<1>] test element id: "  << test_eid << " idsFind.size() "<< idsFind.size() << "\n";
             }
+            else if ( trial_sibling_of_test )
+            {
+                DVLOG(1) << "test_eid = " << test_eid;
+                size_type id_in_sibling = _M_X2->mesh()->meshToSubMesh( _M_X1->mesh(), test_eid );
+                DVLOG(1) << "id_in_sibling = " << id_in_sibling;
+                size_type domain_eid = invalid_size_type_value;
+                if ( id_in_sibling!=invalid_size_type_value)
+                {
+                    domain_eid = _M_X2->mesh()->face(id_in_sibling).element0().id();
+                    DVLOG(1) << "[test_sibling_of_trial<1>] test element id: "  << test_eid << " trial element id : " << domain_eid << "\n";
+                    idsFind.insert( domain_eid );
+                }
+            }
             else
             {
                 CHECK ( false ) << "[trial_related_to_test<1>] : test and trial mesh can not be the same here\n";
             }
             return idsFind;
         }
-
+    std::set<size_type> trialElementId( size_type test_eid, mpl::int_<2> /**/ )
+    {
+        CHECK ( false ) << "[trial_related_to_test<2>] : submesh relation with codim=2 is not implement\n";
+        return std::set<size_type>();
+    }
 
 
 public :
@@ -550,8 +576,8 @@ struct compute_stencil_type
 }
 
 class StencilManagerImpl:
-    public std::map<boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
-    boost::shared_ptr<FunctionSpaceBase>,
+    public std::map<boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
+    boost::weak_ptr<FunctionSpaceBase>,
     size_type,
     std::vector<size_type>,
     bool >, boost::shared_ptr<GraphCSR> >,
@@ -559,8 +585,8 @@ public boost::noncopyable
 {
 public:
     typedef boost::shared_ptr<GraphCSR> graph_ptrtype;
-    typedef boost::tuple<boost::shared_ptr<FunctionSpaceBase>,
-            boost::shared_ptr<FunctionSpaceBase>,
+    typedef boost::tuple<boost::weak_ptr<FunctionSpaceBase>,
+            boost::weak_ptr<FunctionSpaceBase>,
             size_type,
             std::vector<size_type>,
             bool > key_type;
@@ -628,7 +654,8 @@ BOOST_PARAMETER_FUNCTION(
         {
             auto g = git_trans->second->transpose(close);
             //auto g = git_trans->second->transpose();
-            StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = g;
+            stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), g );
+
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g, range ) );
             //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             return s;
@@ -638,7 +665,7 @@ BOOST_PARAMETER_FUNCTION(
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, close, range ) );
-            if ( range.isNullRange() ) StencilManager::instance().operator[]( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) ) = s->graph();
+            if ( range.isNullRange() ) stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), s->graph() );
             return s;
         }
     }
@@ -1286,9 +1313,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     static const uint16_type nDimDiffBetweenTestTrial = ( nDimTest > nDimTrial )? nDimTest-nDimTrial : nDimTrial-nDimTest;
     for ( ; elem_it != elem_en; ++elem_it )
     {
-#if !defined(NDEBUG)
-        DVLOG(2) << "[Stencil::computePatter] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
-#endif /* NDEBUG */
+        DVLOG(4) << "[Stencil::computePattern] element " << elem_it->id() << " on proc " << elem_it->processId() << "\n";
+
         const auto & elem = *elem_it;
 
         auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
@@ -1349,7 +1375,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                     row.get<0>() = theproc ;
                     row.get<1>() = il1;
 #endif
-                    DVLOG(2) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
+                    DVLOG(4) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
                     if ( do_less )
                     {

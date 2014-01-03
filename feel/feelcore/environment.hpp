@@ -220,11 +220,13 @@ public:
      * return the worldcomm (static)
      */
     static WorldComm& worldComm() { return *S_worldcomm; }
+    static WorldComm& worldCommSeq() { return *S_worldcommSeq; }
 
     /**
      * return n sub world communicators
      */
     static std::vector<WorldComm> const&  worldsComm( int n );
+    static std::vector<WorldComm> const&  worldsCommSeq( int n );
 
     static std::vector<WorldComm> const&  worldsCommGroupBySubspace( int n );
 
@@ -402,6 +404,8 @@ private:
     static boost::signals2::signal<void()> S_deleteObservers;
 
     static boost::shared_ptr<WorldComm> S_worldcomm;
+    static boost::shared_ptr<WorldComm> S_worldcommSeq;
+
 };
 } // detail
 

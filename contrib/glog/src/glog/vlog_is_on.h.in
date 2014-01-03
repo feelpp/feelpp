@@ -72,7 +72,7 @@
 # endif
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(_LIBCPP_VERSION)
 // We emit an anonymous static int* variable at every VLOG_IS_ON(n) site.
 // (Normally) the first time every VLOG_IS_ON(n) site is hit,
 // we determine what variable will dynamically control logging at this site:
