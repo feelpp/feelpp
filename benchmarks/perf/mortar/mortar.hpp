@@ -54,15 +54,15 @@
 namespace Feel
 {
 /**
- * \class Mortar
+ * \class MortarBench
  *
- * Mortar Solver using continuous approximation spaces
+ * MortarBench Solver using continuous approximation spaces
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=2 or 3)
  */
 template<int Dim, int Order1, int Order2>
-class Mortar
+class MortarBench
     :
 public Simget
 {
@@ -122,9 +122,9 @@ public:
     /**
      * Constructor
      */
-    Mortar( std::string const& basis_name, Feel::po::variables_map const& vm, AboutData const& ad )
+    MortarBench( std::string const& basis_name, Feel::po::variables_map const& vm, AboutData const& ad )
         :
-        super( vm, ad ),
+        super(),
         M_basis_name( basis_name )
     {}
 
@@ -150,11 +150,11 @@ private:
     // marker for interfaces
     // int gamma1;
     // int gamma2;
-}; // Mortar
+}; // MortarBench
 
 template<int Dim, int Order1, int Order2>
 void
-Mortar<Dim, Order1, Order2>::run()
+MortarBench<Dim, Order1, Order2>::run()
 {
     using namespace Feel::vf;
 
@@ -403,9 +403,9 @@ Mortar<Dim, Order1, Order2>::run()
     M_stats.put( "t.transpose.B2t",t.elapsed() );
     t.restart();
 
-    auto myb = Blocks<3,3>()<< D1 << B12 << B1t
-               << B21 << D2 << B2t
-               << B1 << B2  << BLL ;
+    auto myb = Blocks<3,3,value_type>()<< D1 << B12 << B1t
+                                       << B21 << D2 << B2t
+                                       << B1 << B2  << BLL ;
 
     auto AbB = backend->newBlockMatrix( myb );
     AbB->close();
@@ -489,7 +489,7 @@ Mortar<Dim, Order1, Order2>::run()
     std::cout<<"hsize= " << M_meshSize<< std::endl;
     // this->exportResults(u1,u2,mu);
 
-} // Mortar::run
+} // MortarBench::run
 } // Feel
 
 #endif // __FEELPP_BENCH_MORTAR_HPP
