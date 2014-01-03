@@ -102,6 +102,10 @@ public:
     {
         return M_localComm;
     }
+    communicator_type const& selfComm() const
+    {
+        return this->subWorldCommSeq();
+    }
 
     int globalSize() const
     {
@@ -167,6 +171,12 @@ public:
         return M_masterRank;
     }
 
+    bool isMasterRank() const
+    {
+        return ( this->globalRank() ==  this->masterRank() );
+    }
+
+
     WorldComm subWorldComm() const;
     WorldComm subWorldComm( int color ) const;
     WorldComm subWorldComm( std::vector<int> const& colormap ) ;
@@ -174,12 +184,17 @@ public:
     WorldComm const& masterWorld( int n );
     int numberOfSubWorlds() const;
 
-    WorldComm subWorldCommSeq() const;
+    WorldComm const& subWorldCommSeq() const;
 
 
     bool isActive() const
     {
-        return M_isActive[this->godRank()];
+        return this->isActive(this->godRank());
+    }
+
+    bool isActive( int rank ) const
+    {
+        return M_isActive[rank];
     }
 
     std::vector<int> const& activityOnWorld() const
@@ -214,8 +229,13 @@ public:
 
 private :
 
+    void initSubWorldCommSeq();
+
+private :
+
     communicator_type M_localComm;
     communicator_type M_godComm;
+    boost::shared_ptr<WorldComm> M_subWorldCommSeq;
 
     std::vector<int> M_mapColorWorld;
     std::vector<int> M_mapLocalRankToGlobalRank;

@@ -116,11 +116,12 @@ public:
         M_shape( Shape ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_npids( 1 ),
-        M_pid( 0 ),
-        M_pidInPartition( 0 ),
+        M_pid( invalid_uint16_type_value ),
+        M_pidInPartition( invalid_uint16_type_value ),
         M_neighor_pids(),
         M_idInOthersPartitions(),
-        M_elist()
+        M_elist(),
+        M_elistGhost()
     {}
 
     explicit GeoEntity( size_type i,
@@ -135,11 +136,12 @@ public:
         M_shape( shape ),
         M_boundaryEntityDimension( invalid_uint16_type_value ),
         M_npids( 1 ),
-        M_pid( 0 ),
-        M_pidInPartition( 0 ),
+        M_pid( invalid_uint16_type_value ),
+        M_pidInPartition( invalid_uint16_type_value ),
         M_neighor_pids(),
         M_idInOthersPartitions(),
-        M_elist()
+        M_elist(),
+        M_elistGhost()
     {}
 
     GeoEntity( GeoEntity const& __me )
@@ -155,7 +157,8 @@ public:
         M_pidInPartition( __me.M_pidInPartition ),
         M_neighor_pids( __me.M_neighor_pids ),
         M_idInOthersPartitions( __me.M_idInOthersPartitions ),
-        M_elist( __me.M_elist )
+        M_elist( __me.M_elist ),
+        M_elistGhost( __me.M_elistGhost )
     {}
 
     GeoEntity& operator=( GeoEntity const& __me )
@@ -173,6 +176,7 @@ public:
             M_neighor_pids = __me.M_neighor_pids;
             M_idInOthersPartitions = __me.M_idInOthersPartitions;
             M_elist = __me.M_elist;
+            M_elistGhost = __me.M_elistGhost;
         }
 
         return *this;
@@ -526,6 +530,13 @@ public:
     {
         return M_neighor_pids;
     }
+    /**
+     * clear the neighbor partition ids container
+     */
+    void clearNeighborPartitionIds()
+    {
+        M_neighor_pids.clear();
+    }
 
     /**
      * set id in a partition pid of the entity
@@ -540,6 +551,7 @@ public:
      */
     size_type idInOthersPartitions( uint16_type pid ) const
     {
+        DCHECK( M_idInOthersPartitions.find( pid )!=M_idInOthersPartitions.end() ) << " id is unknow for this pid " << pid << "\n";
         return M_idInOthersPartitions.find( pid )->second;
     }
 
@@ -550,13 +562,12 @@ public:
     {
         return M_idInOthersPartitions;
     }
-
     /**
-     * \return idInOthersPartitions map
+     * clear id in others partitions container
      */
-    std::map<uint16_type, size_type> & idInOthersPartitions()
+    void clearIdInOthersPartitions()
     {
-        return M_idInOthersPartitions;
+        M_idInOthersPartitions.clear();
     }
 
     /**
@@ -630,6 +641,15 @@ public:
         M_neighor_pids = npids;
     }
 
+    void addNeighborPartitionId( int p )
+    {
+        if ( std::find( M_neighor_pids.begin(), M_neighor_pids.end(), p) == M_neighor_pids.end() )
+        {
+            M_neighor_pids.push_back(p);
+            ++M_npids;
+        }
+    }
+
     //@}
 
     /** @name  Methods
@@ -695,14 +715,14 @@ public:
      */
     self_type& addElementGhost( int proc, size_type e  )
     {
-        M_elistGhost.insert( boost::make_tuple( proc,e ) );
+        M_elistGhost[proc].insert(e);
         return *this;
     }
 
     /**
      * \return the number of ghost elements whom the point belongs to
      */
-    size_type numberOfElementsGhost() const
+    size_type numberOfProcGhost() const
     {
         return M_elistGhost.size();
     }
@@ -710,13 +730,14 @@ public:
     /**
      * \return the set of ids of ghost elements whom the point belongs to
      */
-    std::set<boost::tuple<int,size_type> > const& elementsGhost() const
+    std::map<int,std::set<size_type> > const& elementsGhost() const
     {
         return M_elistGhost;
     }
-    std::set<boost::tuple<int,size_type> >& elementsGhost()
+
+    void clearElementsGhost()
     {
-        return M_elistGhost;
+        M_elistGhost.clear();
     }
 
     //@}
@@ -775,8 +796,8 @@ private:
 
     //! element list to which the point belongs
     std::set<size_type> M_elist;
-    //! element list to which the point belongs
-    std::set<boost::tuple<int,size_type> > M_elistGhost;
+    //! ghost elements which share the entity
+    std::map<int,std::set<size_type > > M_elistGhost;
 
 };
 

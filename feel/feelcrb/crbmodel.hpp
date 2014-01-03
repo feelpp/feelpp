@@ -107,6 +107,11 @@ public:
     typedef typename model_type::functionspace_type functionspace_type;
     typedef typename model_type::functionspace_ptrtype functionspace_ptrtype;
 
+    //! reduced basis function space type
+    typedef typename model_type::rbfunctionspace_type rbfunctionspace_type;
+    typedef typename model_type::rbfunctionspace_ptrtype rbfunctionspace_ptrtype;
+
+
     //! element of the functionspace type
     typedef typename model_type::element_type element_type;
     typedef typename model_type::element_ptrtype element_ptrtype;
@@ -202,6 +207,8 @@ public:
         M_mode( mode ),
         M_model( new model_type( vm ) ),
         M_backend( backend_type::build( vm ) ),
+        M_backend_primal( backend_type::build( vm , "backend-primal" ) ),
+        M_backend_dual( backend_type::build( vm , "backend-dual" ) ),
         M_B()
     {
         this->init();
@@ -222,6 +229,8 @@ public:
         M_mode( CRBModelMode::PFEM ),
         M_model( model ),
         M_backend( backend_type::build( model->vm ) ),
+        M_backend_primal( backend_type::build( model->vm , "backend-primal" ) ),
+        M_backend_dual( backend_type::build( model->vm , "backend-dual") ),
         M_B()
     {
         this->init();
@@ -239,6 +248,8 @@ public:
         M_mode( mode ),
         M_model( model ),
         M_backend( backend_type::build( Environment::vm() ) ),
+        M_backend_primal( backend_type::build( Environment::vm() , "backend-primal" ) ),
+        M_backend_dual( backend_type::build( Environment::vm() , "backend-dual" ) ),
         M_B()
     {
         this->init();
@@ -259,6 +270,8 @@ public:
         M_mode( o.M_mode ),
         M_model(  o.M_model ),
         M_backend( o.M_backend ),
+        M_backend_primal( o.M_backend_primal ),
+        M_backend_dual( o.M_backend_dual ),
         M_B( o.M_B )
     {
         this->init();
@@ -271,15 +284,22 @@ public:
     //! initialize the model (mesh, function space, operators, matrices, ...)
     FEELPP_DONT_INLINE void init()
     {
+
         if ( M_is_initialized )
             return;
 
-        M_preconditioner = preconditioner(_pc=(PreconditionerType) M_backend->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
-                                          _backend= M_backend,
-                                          _pcfactormatsolverpackage=(MatSolverPackageType) M_backend->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
-                                          _worldcomm=M_backend->comm(),
-                                          _prefix=M_backend->prefix() ,
-                                          _rebuild=true);
+        M_preconditioner_primal = preconditioner(_pc=(PreconditionerType) M_backend_primal->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                                 _backend= M_backend_primal,
+                                                 _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_primal->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                                 _worldcomm=M_backend_primal->comm(),
+                                                 _prefix=M_backend_primal->prefix() ,
+                                                 _rebuild=true);
+        M_preconditioner_dual = preconditioner(_pc=(PreconditionerType) M_backend_dual->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                               _backend= M_backend_dual,
+                                               _pcfactormatsolverpackage=(MatSolverPackageType) M_backend_dual->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                               _worldcomm=M_backend_dual->comm(),
+                                               _prefix=M_backend_dual->prefix() ,
+                                               _rebuild=true);
         M_is_initialized=true;
 
         if( ! M_model->isInitialized() )
@@ -321,6 +341,8 @@ public:
             M_Mqm = o.M_Mqm;
             M_model = o.M_model;
             M_backend = o.M_backend;
+            M_backend_primal = o.M_backend_primal;
+            M_backend_dual = o.M_backend_dual;
             M_B = o.M_B;
         }
 
@@ -410,6 +432,12 @@ public:
     functionspace_ptrtype  functionSpace() const
     {
         return M_model->functionSpace();
+    }
+
+    //!  Returns the reduced basis function space
+    rbfunctionspace_ptrtype  rBFunctionSpace() const
+    {
+        return M_model->rBFunctionSpace();
     }
 
     //! return the number of \f$\mu\f$ independent terms for the bilinear form
@@ -1557,6 +1585,8 @@ private:
     model_ptrtype M_model;
 
     backend_ptrtype M_backend;
+    backend_ptrtype M_backend_primal;
+    backend_ptrtype M_backend_dual;
 
     // ! matrix associated with inner product
     sparse_matrix_ptrtype M_B;
@@ -1589,7 +1619,8 @@ private:
     void assembleInitialGuessV( initial_guess_type & initial_guess, mpl::bool_<false> );
     element_type u,v;
 
-    preconditioner_ptrtype M_preconditioner;
+    preconditioner_ptrtype M_preconditioner_primal;
+    preconditioner_ptrtype M_preconditioner_dual;
 
 };
 
@@ -2185,7 +2216,8 @@ CRBModel<TruthModelType>::solveFemUsingOfflineEim( parameter_type const& mu )
             A->addMatrix( bdf_coeff, M );
             Rhs->addVector( *vec_bdf_poly, *M );
         }
-        M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs );
+        M_preconditioner_primal->setMatrix( A );
+        M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
         mybdf->shiftRight(u);
     }
 
@@ -2258,9 +2290,12 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
                 Rhs->addVector( *vec_bdf_poly, *M );
             }
             uold = u;
-            M_preconditioner->setMatrix( A );
-            M_backend->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner);
-            norm = this->computeNormL2( uold , u );
+            M_preconditioner_primal->setMatrix( A );
+            M_backend_primal->solve( _matrix=A , _solution=u, _rhs=Rhs , _prec=M_preconditioner_primal);
+            if( option(_name="crb.use-linear-model").template as<bool>() )
+                norm = 0;
+            else
+                norm = this->computeNormL2( uold , u );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
         mybdf->shiftRight(u);
@@ -2320,14 +2355,14 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
     {
         boost::tie( M, A, F) = this->update( mu , mybdf->timeInitial() );
         *Rhs=*F[output_index];
-        M_preconditioner->setMatrix( M );
-        M_backend->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner );
+        M_preconditioner_dual->setMatrix( M );
+        M_backend_dual->solve( _matrix=M, _solution=dual_initial_field, _rhs=Rhs, _prec=M_preconditioner_dual );
         udu=*dual_initial_field;
     }
 
 
-    int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
-    double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+    int max_fixedpoint_iterations  = option(_name="crb.max-fixedpoint-iterations").template as<int>();
+    double increment_fixedpoint_tol  = option(_name="crb.increment-fixedpoint-tol").template as<double>();
     for( mybdf->start(udu); !mybdf->isFinished(); mybdf->next() )
     {
         iter=0;
@@ -2347,6 +2382,7 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
             else
             {
                 *Rhs = *F[output_index];
+                Rhs->close();
                 Rhs->scale( -1 );
             }
 
@@ -2356,9 +2392,13 @@ CRBModel<TruthModelType>::solveFemDualUsingAffineDecompositionFixedPoint( parame
                 A->transpose( Adu );
 
             uold = udu;
-            M_preconditioner->setMatrix( Adu );
-            M_backend->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner);
-            norm = this->computeNormL2( uold , udu );
+            M_preconditioner_dual->setMatrix( Adu );
+            M_backend_dual->solve( _matrix=Adu , _solution=udu, _rhs=Rhs , _prec=M_preconditioner_dual);
+
+            if( option(_name="crb.use-linear-model").template as<bool>() )
+                norm = 0;
+            else
+                norm = this->computeNormL2( uold , udu );
             iter++;
         } while( norm > increment_fixedpoint_tol && iter<max_fixedpoint_iterations );
         mybdf->shiftRight(udu);

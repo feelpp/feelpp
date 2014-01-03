@@ -2,7 +2,7 @@
 namespace Feel {
     /** \page Building Building Feel++
 \author Christophe Prud'homme
-\author Baptiste Morin
+\author Alexandre Ancel
 
 \tableofcontents
 
@@ -11,11 +11,11 @@ namespace Feel {
 \section Archive Getting the source via an archive
 \feel is distributed as a tarball once in a while. The tarballs are available
 at<br>
-<center><a href="http://code.google.com/p/feelpp/">http://code.google.com/p/feelpp/</a></center><br>
+<center><a href="https://github.com/feelpp/feelpp/releases">https://github.com/feelpp/feelpp/releases</a></center><br>
 Download the latest tarball.
 \verbatim
-  tar -xzf feelpp-0.92.0.tar.gz
-  cd feel-0.92.0
+  tar -xzf feelpp-0.96.0.tar.gz
+  cd feelpp-0.96.0
 \endverbatim
 
 <a href="#" class="top">top</a>
@@ -53,11 +53,11 @@ compilation and installation of the \feel librairies.<br>
 This is the list of all the librairies you must have installed on your
 computer, and the \lstinline|*-dev| packages for some of them. <br>
 Required packages :
-\li g++ (4.4, 4.5, 4.6, 4.7 or higher) OR Clang (3.1 or later)
+\li g++ (4.6, 4.7 or higher) OR Clang (3.2 or later)
 \li MPI : openmpi (preferred) or mpich
-\li Boost (1.39 or later)
-\li Petsc (2.3.3 or later)
-\li Cmake (2.6 or later)
+\li Boost >= 1.49
+\li Petsc >= 3.2
+\li Cmake >= 2.8.7
 \li Gmsh (can be found at <a href="http://www.geuz.org/gmsh">http://www.geuz.org/gmsh</a>)
 \li Libxml2
 
@@ -65,7 +65,6 @@ Optional packages :
 \li Superlu
 \li Suitesparse(umfpack)
 \li Metis: scoth with the metis interface (preferred), metis (non-free)
-\li Trilinos (8.0.8 or later)
 \li Google perftools
 \li Paraview, this is not stricly required to run \feel programs but it is somehow
   necessary for visualisation. (can be found at <a href="http://www.paraview.org">http://www.paraview.org</a>)
@@ -109,27 +108,72 @@ order to know what is going on with \feel on Ubuntu
 \feel is also working on Mac operating systems. The way to make it work is quite different.
 
 \subsection Compilers Compilers
-In order to \feel and <tt>cmake</tt> work properly, you have to install differents compilers :
-\li Gcc <br>
-  The first step is to install the latest version of Xcode. If your computer is
-  recent, you can install it with your DVD that came with your machine (not the
-  OS DVD, but the applications one). You don't have to install the complete
-  Xcode (you can uncheck iOS SDK for example, it's not necessary here and
-  requiers a lot of memory). Xcode will provide your computer all basic tools to
-  compile such as gcc 4.2. It's the first step, you'll see later how to easily
-  install gcc 4.5 or later using MacPorts.
-\li Fortran <br>
-  To build the Makefiles, <tt>cmake</tt> will need a Fortran compiler. To make it works, please go to <a href="http://hpc.sourceforge.net/">SourceForge.net</a> and download <tt>gfortran-snwleo-intel-bin.tar.gz</tt> which is the fortran compiler only (from now, don't download the complete install with gcc 4.6 because Feel needs gcc 4.5 or later). To install it, go to the directory where you have downloaded the file and type in a command-line
+In order to make \feel and <tt>cmake</tt> work properly, you first have to install \lia Xcode for Gcc/clang. <br />
+If your computer is recent, you can install it with your DVD that came with your machine (not the
+OS DVD, but the applications one). You don't have to install the complete Xcode (you can uncheck iOS SDK for example,
+it's not necessary here and requires a lot of memory). You can also install Xcode through the App Store.
+Xcode will provide your computer all the basic tools to compile, such as gcc and clang.
+It's the first step, you'll see later how to easily install the necessary tools to build \feel.
+
+\subsection PMS Package management systems
+Currently, building \feel is only available through <a href="http://brew.sh">Homebrew</a>. A <a href="http://www.macports.org/install.php">MacPorts</a> version is present in the source tree of \feel, but support is currently experimental.
+
+\subsection Homebrew Homebrew
+<b>Introduction</b> : Homebrew is a free/open source software introduced to simplify the installation of other free/open source softwares on the MacOS X ecosystem. It is distributed under the <a href="https://github.com/mxcl/homebrew/blob/master/Library/Homebrew/LICENSE">BSD 2 Clause (NetBSD) license</a>. For more information, visit their <a href="http://brew.sh">website</a>.
+
+<b>Installation</b> : To install the latest version of Homebrew, simply visit their <a href="http://brew.sh">website</a> and follow the instructions. Each new package Homebrew installs is built into an intermediate place called the Cellar (usually /usr/local/Cellar) and then the packages are symlinked into /usr/local (default).
+
+<b>Key commands</b> : Homebrew base command is <tt>brew</tt>. Here is a list of useful commands to use Homebrew:
+\li <tt>brew doctor</tt>: Check if the system has any problem with the current installation of brew,
+\li <tt>brew install mypackage</tt>: This action installs the package mypackage,
+\li <tt>brew install [--devel|--HEAD] mypackage</tt>: These action respectively installs either the development version or the HEAD version of the package mypackage, if such versions are specified in the Formula file,
+\li <tt>brew uninstall mypackage</tt>: This action uninstalls the package mypackage.
+
+<b>Formula</b> : A Formula is a <a href="https://www.ruby-lang.org">Ruby</a> script describing to Homebrew how to install a package. \feel uses specific Formulae that you can get in the \feel github repository: <a href="https://github.com/feelpp/homebrew-science">feelpp/homebrew-science</a>.
+
+\subsection HomebrewFeel Homebrew and Feel++
+In order to build \feel from Homebrew, you have to do the following steps:
 \verbatim
-  sudo tar -xvf gfortran-snwleo-intel-bin.tar -C /
+# Install Homebrew:
+ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go)"
+# Check that everything is ok or fix warnings/errors if necessary:
+brew doctor
+# Get the Formulae specific to Feel++ on the github of feelpp:
+brew tap feelpp/science
+# Install Feel++:
+brew install feelpp
 \endverbatim
 
+or in a more detailed way:
+\verbatim
+# Install Homebrew:
+ruby -e "$(curl -fsSL https://raw.github.com/feelpp/homebrew/go)"
+# Check that everything is ok or fix warnings/errors if necessary:
+brew doctor
+# Get the Formulae specific to Feel++ on the github of feelpp:
+brew tap feelpp/science
+# Install openmpi with c++11 support:
+brew install open-mpi --c++11
+# Install boost:
+brew install boost --without-python --without-single --without-static --with-mpi --c++11
+# Install Ann, Petsc, Gmsh and HDF5:
+brew install ann && brew install petsc && brew install gmsh && brew install hdf5
+# Install Feel++:
+brew install feelpp
+\endverbatim
+
+And you should be set to use \feel on MacOS X.
+
+<a href="#" class="top">top</a>
+<hr>
+
+<!--
 \subsection MacPorts MacPorts
 <b>Introduction</b> : MacPorts is an open-source community projet which aims to design an easy-to-use system for compiling, installing and upgrading open-source softwares on Mac OS X operating system. It is distributed under <a href="http://opensource.org/licenses/bsd-license.php">BSD License</a> and facilitate the access to thousands of ports (softwares) without installing or compiling open-source softwares.  MacPorts provides a single software tree which includes the latest stable releases of approximately 8050 ports targeting the current Mac OS X release (10.6 or 10.5). If you want more information, please visite their <a href="http://www.macports.org/">website</a>.
 
 <b>Installation</b> : To install the latest version of MacPorts, please go to
 <a href="http://www.macports.org/install.php">Installing MacPorts</a> page and follow the instructions. The simplest way is to download the <tt>dmg</tt> disk image corresponding to your version of Mac OS X. It is recommended that you install X11 (X Window System) which is normally used to display X11 applications.<br>
-If you have installed with the package installer (<tt>MacPorts-1.x.x.dmg</tt>) that means MacPorts will be installed in <tt>/opt/local</tt>. From now on we will suppose that macports has been installed in <tt>/opt/local</tt> which is the default MacPorts location. Note that from now on, all tools installed by MacPorts will be installed in <tt>/opt/local/bin</tt> or <tt>/opt/local/sbin</tt> for example (that's here you'll find gcc4.5 or later e.g <tt>/opt/local/bin/g++-mp-4.5</tt> once being installed).
+If you have installed with the package installer (<tt>MacPorts-1.x.x.dmg</tt>) that means MacPorts will be installed in <tt>/opt/local</tt>. From now on we will suppose that macports has been installed in <tt>/opt/local</tt> which is the default MacPorts location. Note that from now on, all tools installed by MacPorts will be installed in <tt>/opt/local/bin</tt> or <tt>/opt/local/sbin</tt> for example (that's here you'll find gcc4.6 or later e.g <tt>/opt/local/bin/g++-mp-4.6</tt> once being installed).
 
 <b>Key commands</b> : In your command-line, the software MacPorts is called by the command <tt>port</tt>. Here is a list of key commands for using MacPorts, if you want more informations please go to <a href="http://guide.macports.org/#using.port">MacPorts Commands</a>.
 \li <tt>sudo port -v selfupdate</tt> This action should be used regularly to update the local tree with the global MacPorts ports. The option <tt>-v</tt> enables verbose which generates verbose messages.
@@ -162,7 +206,7 @@ You should have an output like this :
 Reading port index in $<$your path to feel top directory$>$/ports/macosx/macports
 Adding port science/feel++
 Adding port science/gmsh
-Adding port science/petsc 
+Adding port science/petsc
 
 Total number of ports parsed:   3
 Ports successfully parsed:      3
@@ -223,8 +267,9 @@ with MacPorts, <tt>cmake</tt> will find them by itself once they have been insta
 
 <a href="#" class="top">top</a>
 <hr>
+-->
 \section Compiling Compiling Feel++
-Feel build system uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using gcc4.5 (or a higher version) or clang++ as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.5</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
+Feel build system uses <a href="http://www.cmake.org"><tt>cmake</tt></a> as its build system. Check that \cmake is using gcc4.6 (or a higher version) or clang++ as C++ compiler (you can use the option <tt>CMAKE_CXX_COMPILER=<path>/g++-4.6</tt> where the <tt>path</tt> depends on your OS, it's probably <tt>/usr/bin</tt> or
 <tt>/opt/local/bin</tt> but you can also change it with the command <tt>ccmake</tt>
 and press <tt>t</tt> for advanced options).
 \feel, using <tt>cmake</tt>, can be built either in source and out of source and different
@@ -249,27 +294,18 @@ where <tt>feel</tt> is the top directory where the source have been downloaded. 
 you can customize the build type:
 \verbatim
   # Choose g++ release
-  cmake -CMAKE_CXX_COMPILER=/usr/bin/g++-4.5
+  cmake -CMAKE_CXX_COMPILER=/usr/bin/g++
   # Debug build type (-g...)
   cmake -D CMAKE_BUILD_TYPE=Debug
   # Release build type (-O3...)
   cmake -D CMAKE_BUILD_TYPE=Release
   ...
 \endverbatim
-Once Cmake has made its work, you are now able to compile the library with
+Once Cmake has done its work, you are now able to compile the library with
 \verbatim
   make
 \endverbatim
 <b>Important</b> : from now, all commands should be type in <tt>feel.opt</tt> or its subdirectories.
-
-\subsection Manual Compiling the Feel++ manual
-The manual is edited with LaTeX  so you need to have installed the LaTeX distribution on your computer. LaTeX is a high-quality typesetting system, it includes features designed for the production of technical and scientific documentation. There are several ways to make it work, for example you can go on <a href="http://www.tug.org/mactex/">MacTeX website</a> and follow the instructions to install the distribution. If the command <tt>make check</tt> in <tt>feel.opt/</tt> has been run before, the tutorial should be already compiled and ready. The steps are as follows to build the Feel tutorial
-\verbatim
-  cd feel.opt/doc/manual
-  make feelpp-manual_pdf
-\endverbatim
-The directory <tt>doc/manual</tt> contains all examples used in the tutorial. You will see how it works in the following parts.
-
 
 */
 }

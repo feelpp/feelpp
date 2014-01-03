@@ -27,6 +27,9 @@
 
 FIND_PACKAGE(GFLAGS)
 
+option(FEELPP_FINDINSYSTEM_GLOG "start by search glog in system" OFF)
+
+if (FEELPP_FINDINSYSTEM_GLOG)
 # try installed version
 FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   /usr/include/feel
@@ -45,6 +48,7 @@ FIND_PATH(GLOG_INCLUDE_DIR glog/logging.h
   )
 
 message(STATUS "Glog first pass: ${GLOG_INCLUDE_DIR}")
+endif(FEELPP_FINDINSYSTEM_GLOG)
 
 
 if (NOT GLOG_INCLUDE_DIR )
@@ -66,15 +70,28 @@ if ( EXISTS ${CMAKE_SOURCE_DIR}/contrib/glog/ )
   if ( (${CMAKE_SOURCE_DIR}/contrib/glog/src/glog/logging.h.in IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h) OR
       ( ${CMAKE_SOURCE_DIR}/contrib/glog/src/logging.cc IS_NEWER_THAN ${CMAKE_BINARY_DIR}/contrib/glog/include/glog/logging.h ) )
     message(STATUS "Installing glog in ${CMAKE_BINARY_DIR}/contrib/glog...")
-    execute_process(
-      COMMAND make -k -j${NProcs2} install
-      WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
-      OUTPUT_QUIET
-      )
+    if ( APPLE AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" )
+      execute_process(
+        COMMAND make -k -j${NProcs2} install CXXFLAGS=-stdlib=libc++
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+        #OUTPUT_QUIET
+        OUTPUT_FILE "glog-install"
+        )
+    else()
+      execute_process(
+        COMMAND make -k -j${NProcs2} install
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/contrib/glog-compile
+        OUTPUT_FILE "glog-install"
+        #OUTPUT_QUIET
+        )
+    endif()
   endif()
 endif()
 
-FIND_LIBRARY(GLOG_LIBRARY  NAMES feelpp_glog   )
+if (FEELPP_FINDINSYSTEM_GLOG)
+  FIND_LIBRARY(GLOG_LIBRARY  NAMES feelpp_glog   )
+endif(FEELPP_FINDINSYSTEM_GLOG)
+
 FIND_LIBRARY(GLOG_LIBRARY
   NAMES feelpp_glog
   PATHS

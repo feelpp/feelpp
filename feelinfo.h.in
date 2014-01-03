@@ -7,8 +7,11 @@
 /* full blown version */
 #cmakedefine FEELPP_VERSION @FEELPP_VERSION@
 
-/* extra version information: date, cvs, ... */
-#cmakedefine01 FEELPP_VERSION_EXTRA @FEELPP_VERSION_EXTRA@ //
+/* metadata version information: git ... */
+#cmakedefine01 FEELPP_VERSION_METADATA @FEELPP_VERSION_METADATA@ //
+
+/* prerelease version information: -alpha.1, -beta.1 -rc.1, ... */
+#cmakedefine01 FEELPP_VERSION_PRERELEASE @FEELPP_VERSION_PRERELEASE@ //
 
 /* major version number */
 #cmakedefine01 FEELPP_VERSION_MAJOR @FEELPP_VERSION_MAJOR@ //
@@ -30,4 +33,3 @@
 
 /* define data dir for feel installation */
 #cmakedefine FEELPP_DATADIR @FEELPP_DATADIR@
-

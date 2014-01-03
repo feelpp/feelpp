@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- Mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
   This file is part of the Feel library
 
@@ -337,6 +337,11 @@ public:
         void update( Geo_t const&, uint16_type )
         {
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+        }
+
 
         value_type
         evalij( uint16_type /*i*/, uint16_type /*j*/ ) const
@@ -530,6 +535,11 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             M_tensor_expr.update( geom, face );
+        }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_tensor_expr.updateContext( ctx );
         }
 
 
@@ -1116,6 +1126,11 @@ public:
         {
             M_tensor_expr.update( geom, face );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_tensor_expr.updateContext( ctx );
+        }
 
 
         value_type
@@ -1260,7 +1275,13 @@ public:
     {
         return M_constant;
     }
+
     constexpr value_type evaluate( bool ) const
+    {
+        return M_constant;
+    }
+
+    constexpr value_type evaluate( bool, WorldComm const& ) const
     {
         return M_constant;
     }
@@ -1328,6 +1349,10 @@ public:
         {
         }
         void update( Geo_t const&, uint16_type )
+        {
+        }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
         {
         }
 
@@ -1699,6 +1724,11 @@ public:
         {
             M_t_expr.update( geom, face );
         }
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_t_expr.updateContext( ctx );
+        }
 
         value_type
         evalij( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2 ) const
@@ -1859,6 +1889,12 @@ public:
         void update( Geo_t const& geom, uint16_type face )
         {
             M_t_expr.update( geom, face );
+        }
+
+        template<typename CTX>
+        void updateContext( CTX const& ctx )
+        {
+            M_t_expr.updateContext( ctx );
         }
 
         value_type

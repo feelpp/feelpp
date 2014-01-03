@@ -57,6 +57,7 @@ extern const char* FEELPP_GMSH_FORMAT_VERSION;
 
 namespace Feel
 {
+class PeriodicEntities: public std::map<int,std::pair<int,int> > {};
 
 /**
  * \class Gmsh
@@ -190,6 +191,8 @@ public:
         {
             return M_name;
         }
+
+    PeriodicEntities const& periodic() const { return M_periodic; }
 
     /**
      * \return bounding box
@@ -553,6 +556,10 @@ public:
             M_recombine = _recombine;
         }
 
+    void setPeriodic( PeriodicEntities const& p )
+        {
+            M_periodic = p;
+        }
     //@}
 
     /** \name  Methods
@@ -689,6 +696,8 @@ protected:
     int M_refine_levels;
 
     bool M_substructuring;
+
+    PeriodicEntities M_periodic;
 };
 
 ///! \typedef gmsh_type Gmsh
@@ -731,6 +740,8 @@ struct meshFromGeoEntity
                                mpl::identity< Mesh< Simplex< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >,
                                mpl::identity< Mesh< Hypercube< GeoShape::nDim,GeoShape::nOrder,GeoShape::nRealDim> > >
                                >::type::type type;
+
+    typedef PointSet<GeoShape, typename type::value_type> pointset_type;
 };
 
 
@@ -766,31 +777,37 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
     auto const enedge = mesh->endEdgeOnBoundary();
     for ( ; itedge!=enedge ; ++itedge )
     {
-        if (itedge->processId()!=myrank || itedge->numberOfElementsGhost()==0 ) continue;
+        if (itedge->processId()!=myrank || itedge->numberOfProcGhost()==0 ) continue;
 
         auto const theedgeid = itedge->id();
 
         std::set<size_type> ghostFaceIdFoundOnBoundary;
 
-        auto iteltghost = itedge->elementsGhost().begin();
-        auto const eneltghost = itedge->elementsGhost().end();
-        for ( ; iteltghost!=eneltghost ; ++iteltghost )
+        auto itprocghost=itedge->elementsGhost().begin();
+        auto const enprocghost=itedge->elementsGhost().end();
+        for ( ; itprocghost!=enprocghost ; ++itprocghost)
         {
-            auto const& eltGhost = mesh->element(iteltghost->template get<1>(),iteltghost->template get<0>());
-            for ( uint16_type f = 0 ; f < mesh_type::element_type::numTopologicalFaces ; ++f )
+            auto iteltghost = itprocghost->second.begin();
+            auto const eneltghost = itprocghost->second.end();
+            for ( ; iteltghost!=eneltghost ; ++iteltghost )
             {
-                auto const& theface = eltGhost.face(f);
-                if ( theface.isOnBoundary() )
+                auto const& eltGhost = mesh->element(*iteltghost,itprocghost->first);
+                for ( uint16_type f = 0 ; f < mesh_type::element_type::numTopologicalFaces ; ++f )
                 {
-                    bool findEdge=false;
-                    for ( uint16_type e = 0; e < mesh_type::face_type::numEdges && !findEdge ; ++e )
+                    auto const& theface = eltGhost.face(f);
+                    if ( theface.isOnBoundary() )
                     {
-                        if ( theface.edge(e).id() == theedgeid) { findEdge=true; ghostFaceIdFoundOnBoundary.insert(theface.id());}
+                        bool findEdge=false;
+                        for ( uint16_type e = 0; e < mesh_type::face_type::numEdges && !findEdge ; ++e )
+                        {
+                            if ( theface.edge(e).id() == theedgeid) { findEdge=true; ghostFaceIdFoundOnBoundary.insert(theface.id());}
+                        }
                     }
                 }
             }
-        }
+        } // for ( ; itprocghost!=enprocghost ; ++itprocghost)
 
+        // if 2 faces are find then the edge must be straigten
         if (ghostFaceIdFoundOnBoundary.size()==2) edgeIdFoundToUpdate.insert(theedgeid);
 
     } // for ( ; itedge!=enedge ; ++itedge )
@@ -1045,6 +1062,8 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( geoentity, * )
       ( filename, * ) ) // 4. one required parameter, and
+    ( optional
+      ( pointset, *, typename Feel::detail::meshFromGeoEntity<Args>::pointset_type() ) )
     )
 {
     typedef typename Feel::detail::meshFromGeoEntity<Args>::type _mesh_type;
@@ -1054,7 +1073,7 @@ BOOST_PARAMETER_FUNCTION(
 #elif BOOST_FILESYSTEM_VERSION == 2
     ExporterGmsh<_mesh_type,1> exporter( fs::path( filename ).stem(), 1, Environment::worldComm().subWorldCommSeq() );
 #endif
-    exporter.gmshSaveOneElementAsMesh( filename, geoentity );
+    exporter.gmshSaveOneElementAsMesh( filename, geoentity, pointset );
 }
 
 
@@ -1094,6 +1113,7 @@ BOOST_PARAMETER_FUNCTION(
       ( update,          *( boost::is_integral<mpl::_> ), MESH_RENUMBER|MESH_UPDATE_EDGES|MESH_UPDATE_FACES|MESH_CHECK )
       ( force_rebuild,   *( boost::is_integral<mpl::_> ), 0 )
       ( physical_are_elementary_regions,           *,false )
+      ( periodic,        *, PeriodicEntities() )
       ( rebuild_partitions,	(bool), option(_name="gmsh.partition").template as<bool>() )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, desc->prefix()+".msh" )
       ( worldcomm,      *, Environment::worldComm() )
@@ -1120,6 +1140,7 @@ BOOST_PARAMETER_FUNCTION(
         desc->setRefinementLevels( refine );
         desc->setFileFormat( (GMSH_FORMAT)format );
         desc->setStructuredMesh( structured );
+        desc->setPeriodic( periodic );
 
         std::string fname;
         bool generated_or_modified;
@@ -1419,7 +1440,8 @@ boost::shared_ptr<Mesh<Simplex<1> > > unitSegment( double h = option(_name="gmsh
 /**
  * build a mesh of the unit square [0,1]^2 using triangles
  */
-boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").as<double>() );
+boost::shared_ptr<Mesh<Simplex<2> > > unitSquare( double h = option(_name="gmsh.hsize").as<double>(),
+                                                  PeriodicEntities pe = PeriodicEntities() );
 
 /**
  * build a mesh of the unit circle using triangles

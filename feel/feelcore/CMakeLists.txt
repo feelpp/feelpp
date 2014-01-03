@@ -22,6 +22,7 @@
 #
 #
 set(SRC
+  hdf5.cpp
   info.cpp
   feel.cpp
   application.cpp
@@ -38,6 +39,3 @@ set(SRC
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelcore "${SRC};${HDR}")
-
-
-

@@ -68,12 +68,12 @@ We multiply the first equation by a test function \f$v\in H^1(\Omega)\f$ and we 
 \int_\Omega \mu \nabla \mathbf u : \nabla \mathbf v
 -\int_{\partial\Omega} \frac{\partial \mathbf u}{\partial \mathbf n} \cdot \mathbf v
 \right)
-+\int_\Omega ( \nabla\cdot(p \mathbf v) - \mathbf v \nabla\cdot p )
++\int_\Omega ( \nabla\cdot(p \mathbf v) - \mathbf p \nabla\cdot v )
 =\int_\Omega \mathbf f \cdot \mathbf v \;.
 \end{aligned}
 \right)
 \f$</center><br>
-where $n$ denotes a normal vector on the boundary.<br>
+where \f$n\f$ denotes a normal vector on the boundary.<br>
 The divergence theorem (or Gauss's theorem) gives,
 <br><center>\f$
 \begin{aligned}
@@ -96,13 +96,23 @@ Finally, we deduce from the equations and after rearranging the integrals the va
 +\int_\Omega \left( \nabla\cdot\mathbf u q - p \nabla\cdot\mathbf v \right)
 +
     \int_{\partial\Omega} \left( p \mathbf n -
-    \underbrace{\frac{\partial \mathbf u}{\partial \mathbf n}}_{=0} \right)
+   \frac{\partial \mathbf u}{\partial \mathbf n} \right)
      \cdot \mathbf v
 =\int_\Omega \mathbf f \cdot \mathbf v
 \end{aligned}
 \right)
 \f$</center><br>
-We have an equation which can be rewritten as find \f$(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega) \f$ such that for all \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$
+Let us assume now that \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$, the variationnal formulation leads to:
+Find \f$(\mathbf u,p)\in [H_g^1(\Omega)]^d\times L_0^2(\Omega) \f$ such that for all \f$(\mathbf v,q) \in [H_0^1(\Omega)]^d \times L_0^2(\Omega)\f$
+<br><center>\f$
+\begin{aligned}
+\int_\Omega \mu \nabla \mathbf u :\nabla \mathbf v
++\int_\Omega \left( \nabla\cdot\mathbf u q - p \nabla\cdot\mathbf v \right)
+=\int_\Omega \mathbf f \cdot \mathbf v
+\end{aligned}
+\right)
+\f$</center><br>
+Or equivalently:
 <br><center>\f$
 \begin{aligned}
   a((\mathbf u,p),(\mathbf v,q)) = l((\mathbf v,q))
@@ -146,6 +156,7 @@ int main(int argc, char**argv )
     // create the mesh
     auto mesh = loadMesh(_mesh=new Mesh<Simplex< 2 > > );
 
+
     // function space
     auto Vh = THch<2>( mesh );
 
@@ -160,19 +171,34 @@ int main(int argc, char**argv )
                   _expr=trace(gradt(u)*trans(grad(u))) );
 
     a+= integrate(_range=elements(mesh),
-                  _expr=-div(u)*idt(p)+divt(u)*id(p));
+                  _expr=-div(u)*idt(p)-divt(u)*id(p));
+
+    auto syms = symbols<2>();
+    auto u1 = parse( option(_name="functions.alpha").as<std::string>(), syms );
+    auto u2 = parse( option(_name="functions.beta").as<std::string>(), syms );
+    matrix u_exact = matrix(2,1);
+    u_exact = u1,u2;
+    auto p_exact = parse( option(_name="functions.gamma").as<std::string>(), syms );
+	auto f = -laplacian( u_exact, syms ) + grad( p_exact, syms ).transpose();
+    LOG(INFO) << "rhs : " << f;
 
     // right hand side
     auto l = form1( _test=Vh );
-
-    // boundary condition
-    a+=on(_range=markedfaces(mesh,"inlet"), _rhs=l, _element=u,
-          _expr=vec(Py()*(1-Py()),cst(0.)));
-    a+=on(_range=markedfaces(mesh,"wall"), _rhs=l, _element=u,
-          _expr=vec(cst(0.),cst(0.)));
+    l = integrate(_range=elements(mesh),
+                  _expr=trans(expr<2,1,5>( f, syms ))*id(u));
+    a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
+          _expr=expr<2,1,5>(u_exact,syms));
 
     // solve a(u,v)=l(v)
     a.solve(_rhs=l,_solution=U);
+    //# endmarker_main #
+
+    double mean_p = mean(_range=elements(mesh),_expr=idv(p))(0,0);
+    double mean_p_exact = mean(_range=elements(mesh),_expr=expr(p_exact,syms))(0,0);
+    double l2error_u = normL2( _range=elements(mesh), _expr=idv(u)-expr<2,1,5>( u_exact, syms ) );
+    double l2error_p = normL2( _range=elements(mesh), _expr=idv(p)-mean_p-(expr( p_exact, syms )-mean_p_exact) );
+    LOG(INFO) << "L2 error norm u: " << l2error_u;
+    LOG(INFO) << "L2 error norm p: " << l2error_p;
 
     // save results
     auto e = exporter( _mesh=mesh );
@@ -181,4 +207,3 @@ int main(int argc, char**argv )
     e->save();
 }
 /// [marker_main]
-

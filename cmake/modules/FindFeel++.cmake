@@ -7,7 +7,11 @@
 #should check the version of gcc for -std=c++0x ou -std=c++11
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x" )
 IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+IF(APPLE)
+  set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libc++ -ftemplate-depth=1024" )
+ELSE()
   set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++11 -stdlib=libstdc++" )
+ENDIF()
 ENDIF()
 
 LIST(REMOVE_DUPLICATES CMAKE_CXX_FLAGS)
@@ -144,6 +148,19 @@ else (APPLE)
 endif (APPLE)
 SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
 
+# HDF5
+FIND_PACKAGE(HDF5)
+if ( HDF5_FOUND AND HDF5_IS_PARALLEL )
+  message(STATUS "HDF5 - Headers ${HDF5_INCLUDE_DIRS}" )
+  message(STATUS "HDF5 - Libraries ${HDF5_LIBRARIES}" )
+  include_directories( ${HDF5_INCLUDE_DIRS} )
+  SET(FEELPP_LIBRARIES ${HDF5_LIBRARIES} ${FEELPP_LIBRARIES})
+  set(FEELPP_HAS_HDF5 1)
+  SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} HDF5" )
+ELSEIF ( HDF5_LIBRARY AND NOT HDF5_IS_PARALLEL )
+  MESSAGE(STATUS "HDF5 is found but is not parallel, HDF5 is not enabled in Feel++")
+endif()
+# Boost
 FIND_PACKAGE(Boost COMPONENTS date_time filesystem system program_options unit_test_framework signals  ${FEELPP_BOOST_MPI} regex  serialization)
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
@@ -180,9 +197,11 @@ endif (BOOST_ENABLE_TEST_DYN_LINK)
 # BOOST_SCOPED_ENUM macros whose behavior differs in both case and would
 # generate different c++ codes and undefined references at link time.
 # in a short future, this should not be necessary anymore
-ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
-IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
-  ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+IF(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR NOT APPLE)
+    ADD_DEFINITIONS(-DBOOST_NO_SCOPED_ENUMS)
+    IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
+      ADD_DEFINITIONS(-DBOOST_NO_CXX11_SCOPED_ENUMS)
+    endif()
 endif()
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR}   ${BOOST_INCLUDE_PATH})
@@ -447,6 +466,8 @@ FIND_LIBRARY(ML_LIBRARY
   ml
   PATHS
   $ENV{PETSC_DIR}/lib
+  $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib
+  /opt/local/lib/petsc/lib
   )
 message(STATUS "ML: ${ML_LIBRARY}" )
 IF ( ML_LIBRARY )
@@ -636,7 +657,10 @@ endif()
 FIND_PACKAGE(VTK)
 if ( VTK_FOUND )
   set(FEELPP_HAS_VTK 1)
-  SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+   if ( NOT FEELPP_ENABLE_OPENGL )
+     SET(VTK_LIBRARIES "-lvtkRendering -lvtkGraphics -lvtkImaging  -lvtkFiltering -lvtkCommon -lvtksys" )
+  endif()
+  MESSAGE(STATUS "Use VTK_LIBRARIES ${VTK_LIBRARIES}")
   INCLUDE_DIRECTORIES(${VTK_INCLUDE_DIRS})
   MARK_AS_ADVANCED( VTK_DIR )
   SET(FEELPP_LIBRARIES ${VTK_LIBRARIES} ${FEELPP_LIBRARIES})

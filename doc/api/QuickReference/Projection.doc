@@ -23,7 +23,7 @@ project( _space=<nodal function space in which the interpolant lives>
          _expr=<expression to be interpolated>, .... )
 \endcode
 
-Here are some examples
+Here are some examples:
 
 \code
 typedef FunctionSpace<Mesh<Simplex<$d$>,
@@ -39,10 +39,10 @@ auto dy_coord = project( _space=Xhv, _range=elements(mesh), _expr=dyv(coord) );
 
 \section ProjectionProjector  Projection Operator
 
-A projection operator is available that supports
+A projection operator is available that supports:
 
- - \f $L_2$ \f projection
- - \f $H_1$ \f projection
+ - \f$L_2\f$ projection
+ - \f$H_1\f$ projection
 
 \section ProjectionExpression  Project Specific Expressions
 

@@ -76,6 +76,8 @@ public:
     {
         return false;
     }
+    size_type partition1( size_type /*p*/ ) const { return invalid_size_type_value; }
+    size_type partition2( size_type /*p*/ ) const { return invalid_size_type_value; }
 private:
     friend class boost::serialization::access;
     template<class Archive>
@@ -174,6 +176,10 @@ public:
     {
         return boost::get<3>( M_element0 );
     }
+    size_type partition1( size_type p ) const
+    {
+        return p;
+    }
 
     size_type ad_second() const
     {
@@ -186,6 +192,10 @@ public:
     size_type proc_second() const
     {
         return boost::get<3>( M_element1 );
+    }
+    size_type partition2( size_type p ) const
+    {
+        return ( p==boost::get<3>( M_element0 ) )? boost::get<3>( M_element1 ) : boost::get<3>( M_element0 );
     }
 
     element_connectivity_type const& connection0() const
@@ -501,13 +511,15 @@ public:
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<SubFace::nDim>, mpl::int_<0> >, mpl::identity<self_type>, mpl::identity<typename SubFace::template Element<self_type>::type> >::type::type element_type;
     typedef self_type point_type;
 
+    typedef typename super::matrix_node_type matrix_node_type;
+
     static const uint16_type numLocalVertices = super::numVertices;
 
     GeoElement0D()
         :
         super(),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
 
@@ -515,15 +527,15 @@ public:
     GeoElement0D( size_type id, bool boundary = false )
         :
         super( id, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     //! Declares item id and if it is on boundary, and provides coordinate
@@ -531,8 +543,8 @@ public:
     GeoElement0D( size_type id, Real x, Real y, Real z, bool boundary = false )
         :
         super( id, x, y, z, boundary ),
-        super2(),
-        M_facept()
+        super2()
+        //M_facept()
     {}
 
     template<typename SF>
@@ -578,6 +590,22 @@ public:
         return super::processId();
     }
 
+    /**
+     * \return process id
+     */
+    size_type partition1() const
+    {
+        return super2::partition1( super::processId() );
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition2() const
+    {
+        return super2::partition2( super::processId() );
+    }
+
     bool isGhostFace() const
     {
         return super2::isGhostFace( super::processId()  );
@@ -620,16 +648,47 @@ public:
      */
     geo0d_type const& point( uint16_type /*i*/ ) const
     {
-        return M_facept;
+        return *( static_cast<geo0d_type *>( M_facept ) );
+        //return M_facept;
     }
 
     /**
      * set the geometrical point associated to the face
      */
-    //void setPoint( uint16_type /*i*/, GeoElement0D<Dim,SubFaceOfNone,T> const& e ) { M_facept = e; }
     void setPoint( uint16_type /*i*/, geo0d_type const& e )
     {
-        M_facept = e;
+        //M_facept = e;
+        M_facept= const_cast<geo0d_type *>( &e );
+    }
+
+    matrix_node_type /*const&*/ G() const
+    {
+        return this->G( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone>::value>() );
+    }
+
+    matrix_node_type /*const&*/ G( mpl::bool_<true> /**/ ) const
+    {
+        return super::G();
+    }
+
+    matrix_node_type /*const&*/ G( mpl::bool_<false> /**/ ) const
+    {
+        return M_facept->G();
+    }
+
+    matrix_node_type /*const&*/ vertices() const
+    {
+        return this->vertices( mpl::bool_<boost::is_same<SubFace,SubFaceOfNone>::value>() );
+    }
+
+    matrix_node_type /*const&*/ vertices( mpl::bool_<true> /**/ ) const
+    {
+        return super::vertices();
+    }
+
+    matrix_node_type /*const&*/ vertices( mpl::bool_<false> /**/ ) const
+    {
+        return M_facept->vertices();
     }
 
     /**
@@ -676,7 +735,7 @@ public:
     }
 
 //private:
-    geo0d_type M_facept;
+    geo0d_type* M_facept;
 
 private:
 
@@ -691,6 +750,10 @@ private:
 
 };
 
+template<uint16_type Dim,
+         typename SubFace,
+         typename T>
+const uint16_type GeoElement0D<Dim,SubFace,T>::numLocalVertices;
 
 
 
@@ -847,6 +910,22 @@ public:
     uint16_type processId() const
     {
         return super::processId();
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition1() const
+    {
+        return super2::partition1( super::processId() );
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition2() const
+    {
+        return super2::partition2( super::processId() );
     }
 
     void setMap( uint8_type k_1, uint8_type k_2 )
@@ -1149,6 +1228,23 @@ public:
     {
         return super::processId();
     }
+
+    /**
+     * \return process id
+     */
+    size_type partition1() const
+    {
+        return super2::partition1( super::processId() );
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition2() const
+    {
+        return super2::partition2( super::processId() );
+    }
+
 
 
 
@@ -1486,6 +1582,23 @@ public:
     {
         return super::processId();
     }
+
+    /**
+     * \return process id
+     */
+    size_type partition1() const
+    {
+        return super2::partition1( super::processId() );
+    }
+
+    /**
+     * \return process id
+     */
+    size_type partition2() const
+    {
+        return super2::partition2( super::processId() );
+    }
+
 
     size_type ad_first() const
     {
