@@ -328,8 +328,8 @@ public:
     {
         static constexpr uint16_type TheOrder = (nOrder > 1)?nOrder-1:0;
         typedef typename mpl::if_<mpl::less_equal<mpl::int_<nOrder>, mpl::int_<1> >,
-                                  mpl::identity<CrouzeixRaviart<Dim, 0, RealDim, PolySetType, T, Simplex, TheTAG> >,
-                                  mpl::identity<CrouzeixRaviart<Dim, TheOrder, RealDim, PolySetType, T, Simplex, TheTag> > >::type::type type;
+                                  mpl::identity<CrouzeixRaviart<nDim, RealDim, PolySetType, T, Convex, TheTAG> >,
+                                  mpl::identity<CrouzeixRaviart<nDim, RealDim, PolySetType, T, Convex, TheTAG> > >::type::type type;
 
     };
 
