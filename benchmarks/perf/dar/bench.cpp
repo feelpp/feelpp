@@ -184,6 +184,6 @@ int main( int argc, char** argv )
     //benchmark.add( new DAR<1, 1, Continuous, Hypercube>( benchmark.vm(), benchmark.about() ) );
     benchmark.add( new DAR<2, 1, Continuous, Simplex>( benchmark.vm(), benchmark.about() ) );
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.integrate" ) );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.integrate" ), ALL );
 }
 
