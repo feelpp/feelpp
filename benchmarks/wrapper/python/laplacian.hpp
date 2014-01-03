@@ -46,6 +46,7 @@
 #include <feel/feelpoly/im.hpp>
 
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
@@ -448,9 +449,6 @@ Laplacian<Dim, Order, RDim, Entity>::exportResults( element_type& U, element_typ
         LOG(INFO)  << "exportResults starts\n";
 
         exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
-
-        exporter->step( 0 )->add( "pid",
-                                  regionProcess( boost::shared_ptr<p0_space_type>( new p0_space_type( U.functionSpace()->mesh() ) ) ) );
         exporter->step( 0 )->add( "u", U );
         exporter->step( 0 )->add( "exact", v );
 
