@@ -162,7 +162,11 @@ Application::initMPI( int argc, char** argv, MPI_Comm comm )
     if ( !mpi::environment::initialized() )
     {
         MPI_Init ( &argc, &argv );
+#if MPI_VERSION >= 2
+        MPI_Comm_set_errhandler( MPI_COMM_WORLD, MPI_ERRORS_RETURN );
+#else
         MPI_Errhandler_set( MPI_COMM_WORLD, MPI_ERRORS_RETURN );
+#endif
     }
 
     M_comm = Environment::worldComm();

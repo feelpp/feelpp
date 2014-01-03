@@ -171,6 +171,8 @@ int main( int argc, char** argv )
                            .add(crbOptions())
                            .add(make${CRB_MODEL_LONG_NAME}Options())
                            .add(eimOptions())
+                           .add(backend_options(\"backend-primal\"))
+                           .add(backend_options(\"backend-dual\"))
                            .add(bdf_options(\"${CRB_MODEL_LONG_NAME}\")),
                            _about=make${CRB_MODEL_LONG_NAME}About( \"${CRB_MODEL_SHORT_NAME}\" ) )\;
 

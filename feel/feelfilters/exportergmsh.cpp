@@ -154,18 +154,16 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 
                     gmshSavePhysicalNames( out, __step->mesh() );
 
-                    auto nPointAndIndex = numberOfGlobalPtAndIndex( __step->mesh() );
-                    auto nGlobPoint = nPointAndIndex.template get<0>();
-                    auto indexPointStart = nPointAndIndex.template get<1>();
+                    size_type nGlobPoint = numberOfGlobalPtAndIndex( __step->mesh() );
                     gmshSaveNodesStart( out, __step->mesh(), nGlobPoint );
-                    gmshSaveNodes( out,__step->mesh(),indexPointStart );
+                    gmshSaveNodes( out,__step->mesh() );
                     gmshSaveNodesEnd( out, __step->mesh() );
 
                     auto nEltAndIndex = numberOfGlobalEltAndIndex( __step->mesh() );
                     auto nGlobElement = nEltAndIndex.template get<0>();
                     auto indexElementStart = nEltAndIndex.template get<1>();
                     gmshSaveElementsStart( out, nGlobElement );
-                    gmshSaveElements( out, __step->mesh(), indexElementStart, indexPointStart );
+                    gmshSaveElements( out, __step->mesh(), indexElementStart );
                     gmshSaveElementsEnd( out );
                 }
 
@@ -203,9 +201,7 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
 
     //-----------------------------------------------------------------//
 
-    auto nPointAndIndex = numberOfGlobalPtAndIndex( mesh );
-    auto nGlobPoint = nPointAndIndex.template get<0>();
-    auto indexPointStart = nPointAndIndex.template get<1>();
+    size_type nGlobPoint = numberOfGlobalPtAndIndex( mesh );
 
     if (  this->worldComm().rank() == 0 )
     {
@@ -219,7 +215,7 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
         if ( therank == this->worldComm().rank() )
         {
             std::ofstream out( filename.c_str(), std::ios::app );
-            gmshSaveNodes( out, mesh, indexPointStart, parametric );
+            gmshSaveNodes( out, mesh, parametric );
             out.close();
         }
 
@@ -251,7 +247,7 @@ ExporterGmsh<MeshType,N>::saveMesh( std::string const& filename, mesh_ptrtype me
         if ( therank == this->worldComm().rank() )
         {
             std::ofstream out( filename.c_str(), std::ios::app );
-            gmshSaveElements( out, mesh, indexElementStart, indexPointStart );
+            gmshSaveElements( out, mesh, indexElementStart );
             out.close();
         }
 
@@ -279,6 +275,8 @@ template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype mesh ) const
 {
+    if ( mesh->markerNames().size() == 0 ) return;
+
     // save Physical Names
     out << "$PhysicalNames\n";
     out << mesh->markerNames().size() << "\n";
@@ -294,17 +292,34 @@ ExporterGmsh<MeshType,N>::gmshSavePhysicalNames( std::ostream& out, mesh_ptrtype
 }
 
 template<typename MeshType, int N>
-boost::tuple<size_type,size_type>
+size_type
 ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
 {
-    auto local_numberPoints = mesh->numPoints();
-    auto global_numberPoints=local_numberPoints;
+    size_type nPointToWriteOnProcess=0;
+
+    auto itPt = mesh->beginPointWithProcessId();
+    auto const enPt = mesh->endPointWithProcessId();
+    for ( ; itPt!=enPt ; ++itPt )
+    {
+        if ( itPt->isLinkedToOtherPartitions() )
+        {
+            // add if the processId() is the min rank
+            if (itPt->processId() < *std::min_element( itPt->neighborPartitionIds().begin(),itPt->neighborPartitionIds().end() ) )
+                ++nPointToWriteOnProcess;
+        }
+        else ++nPointToWriteOnProcess;
+    }
+
+    //size_type local_numberPoints = mesh->numPoints();
+    size_type local_numberPoints = nPointToWriteOnProcess;
+    size_type global_numberPoints=0;//local_numberPoints;
 
     mpi::all_reduce( this->worldComm(),
                      local_numberPoints,
                      global_numberPoints,
                      std::plus<size_type>() );
 
+#if 0
     std::vector<size_type> all_localnumberPoint;
 
     mpi::all_gather( this->worldComm(),
@@ -316,7 +331,9 @@ ExporterGmsh<MeshType,N>::numberOfGlobalPtAndIndex( mesh_ptrtype mesh ) const
     for ( int i=0; i<this->worldComm().rank(); ++i )
         indexPtStart+=all_localnumberPoint[i];
 
-    return boost::make_tuple( global_numberPoints,indexPtStart );
+    return boost::make_tuple( global_numberPoints,indexPtStart);
+#endif
+    return global_numberPoints;
 }
 
 template<typename MeshType, int N>
@@ -345,15 +362,22 @@ ExporterGmsh<MeshType,N>::gmshSaveNodesEnd( std::ostream& out, mesh_ptrtype mesh
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, size_type indexPtStart, bool parametric ) const
+ExporterGmsh<MeshType,N>::gmshSaveNodes( std::ostream& out, mesh_ptrtype mesh, bool parametric ) const
 {
-
-    point_const_iterator pt_it = mesh->beginPoint();
-    point_const_iterator pt_en = mesh->endPoint();
+    auto pt_it = mesh->beginPointWithProcessId();
+    auto const pt_en = mesh->endPointWithProcessId();
 
     for ( ; pt_it!=pt_en ; ++pt_it )
     {
-        out << pt_it->id()+indexPtStart
+        if ( pt_it->isLinkedToOtherPartitions() )
+        {
+            // add if the processId() is the min rank
+            if ( pt_it->processId() > *std::min_element( pt_it->neighborPartitionIds().begin(),pt_it->neighborPartitionIds().end() ) )
+                continue;
+        }
+
+        // warning add 1 to the id in order to be sure that all gmsh id >0
+        out << pt_it->id()+1
             << " "  << std::setw( 20 ) << std::setprecision( 16 ) << pt_it->node()[0];
 
         if ( mesh_type::nRealDim >= 2 )
@@ -436,7 +460,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementsEnd( std::ostream& out ) const
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh, size_type indexEltStart, size_type indexPtStart ) const
+ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh, size_type indexEltStart ) const
 {
 
     //auto allmarkedfaces = markedfaces( mesh );
@@ -481,7 +505,11 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
         // node-number-list
         for ( uint16_type p=0; p<face_type::numPoints; ++p )
-            out << " " << face_it->point( ordering_face.fromGmshId( p ) ).id()+indexPtStart;
+        {
+            //DCHECK( mapPointsId.find(face_it->point( ordering_face.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
+            //out << " " << mapPointsId.find(face_it->point( ordering_face.fromGmshId( p ) ).id())->second;
+            out << " " << face_it->point( ordering_face.fromGmshId( p ) ).id()+1;
+        }
 
         out<<"\n";
     } // faces
@@ -517,8 +545,10 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
         for ( uint16_type p=0; p<element_type::numPoints; ++p )
         {
+            //DCHECK ( mapPointsId.find(elt_it->point( ordering.fromGmshId( p ) ).id()) != mapPointsId.end() ) << "invalid point id\n";
             //std::cout << "index " << p << " -> " << ordering.fromGmshId(p) << " -> " << elt_it->point( ordering.fromGmshId(p) ).id()+1 << " : " << elt_it->point( ordering.fromGmshId(p) ).node() << "\n";
-            out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+indexPtStart;
+            //out << " " << mapPointsId.find(elt_it->point( ordering.fromGmshId( p ) ).id())->second;
+            out << " " << elt_it->point( ordering.fromGmshId( p ) ).id()+1;
         }
 
         out<<"\n";
@@ -777,19 +807,40 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
 
 template<typename MeshType, int N>
+template<typename ConvexType>
 void
-ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename, typename mesh_type::element_type::super const& elt ) const
+ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
+                                                    typename mesh_type::element_type::super const& elt,
+                                                    PointSet<ConvexType,typename MeshType::value_type> const& ptset ) const
 {
-    std::ofstream out( filename.c_str(), std::ios::app );
-
+    std::ofstream out( filename.c_str(), std::ios::out );
     gmshSaveFormat( out );
 
+    const uint32_type nPointInPtSet = ptset.nPoints();
+
     out << "$Nodes\n";
-    out << elt.nPoints() << "\n";//number points
+    out << ptset.nPoints()+elt.nPoints() << "\n";//number points
+
+    for ( uint32_type i = 0; i < nPointInPtSet; ++i )
+    {
+        auto const thepoint = ptset.point(i);
+        out << i+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(0);
+        if ( thepoint.size() >= 2 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(1);
+        else
+            out << " 0";
+        if ( thepoint.size() >= 3 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(2);
+        else
+            out << " 0";
+        out << "\n";
+    }
+
 
     for ( int i = 0; i < elt.nPoints(); ++i )
     {
-        out << i+1
+        out << nPointInPtSet+i+1
             << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i).node()[0];
         if ( mesh_type::nRealDim >= 2 )
             out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i).node()[1];
@@ -804,12 +855,18 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
 
     out << "$EndNodes\n";
 
+    out << "$Elements\n"
+        << nPointInPtSet+1 << "\n";// number element
+    for ( uint32_type i = 0; i < nPointInPtSet; ++i )
+    {
+        out << i+1 << " " << GMSH_ENTITY::GMSH_POINT
+            << " 2 0 " << i << " " // add elementary tag as feel id
+            << i+1 << "\n";
+    }
+
     typedef typename MeshType::element_type element_type;
     GmshOrdering<element_type> ordering;
-
-    out << "$Elements\n"
-        << "1\n";// number element
-    out << "1 "; // id element
+    out << nPointInPtSet+1 << " "; // id element
     out << ordering.type();
 
     if ( FEELPP_GMSH_FORMAT_VERSION==std::string( "2.1" ) )
@@ -831,13 +888,86 @@ ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
 
     for ( uint16_type p=0; p<element_type::numPoints; ++p )
     {
-        out << " " << ordering.fromGmshId( p ) + 1;
+        out << " " << nPointInPtSet +ordering.fromGmshId( p ) + 1;
     }
 
     out<<"\n";
     out << "$EndElements\n";
     out.close();
 
+}
+
+template<typename MeshType, int N>
+template<typename ConvexRefType, typename ConvexPtSetType>
+void
+ExporterGmsh<MeshType,N>::gmshSaveOneElementAsMesh( std::string const& filename,
+                                                    Reference<ConvexRefType,ConvexRefType::nDim,ConvexRefType::nOrder,ConvexRefType::nRealDim >  const& elt,
+                                                    PointSet<ConvexPtSetType,typename MeshType::value_type> const& ptset ) const
+{
+    std::ofstream out( filename.c_str(), std::ios::out );
+    gmshSaveFormat( out );
+
+    const uint32_type nPointInPtSet = ptset.nPoints();
+
+    out << "$Nodes\n";
+    out << ptset.nPoints()+elt.nPoints() << "\n";//number points
+
+    for ( uint32_type i = 0; i < nPointInPtSet; ++i )
+    {
+        auto const thepoint = ptset.point(i);
+        out << i+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(0);
+        if ( thepoint.size() >= 2 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(1);
+        else
+            out << " 0";
+        if ( thepoint.size() >= 3 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << thepoint(2);
+        else
+            out << " 0";
+        out << "\n";
+    }
+
+    for ( int i = 0; i < elt.nPoints(); ++i )
+    {
+        out << nPointInPtSet+i+1
+            << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(0);
+        if ( mesh_type::nRealDim >= 2 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(1);
+        else
+            out << " 0";
+        if ( mesh_type::nRealDim >= 3 )
+            out << " "  << std::setw( 20 ) << std::setprecision( 16 ) << elt.point(i)(2);
+        else
+            out << " 0";
+        out << "\n";
+    }
+    out << "$EndNodes\n";
+
+
+    out << "$Elements\n"
+        << nPointInPtSet+1 <<"\n";// number element
+
+    for ( uint32_type i = 0; i < nPointInPtSet; ++i )
+    {
+        out << i+1 << " " << GMSH_ENTITY::GMSH_POINT
+            << " 2 0 " << i << " " // add elementary tag as feel id
+            << i+1 << "\n";
+    }
+
+    typedef typename MeshType::element_type element_type;
+    GmshOrdering<element_type> ordering;
+    out << nPointInPtSet+1 << " "; // id element
+    out << ordering.type();
+    out << " 2 0 0 ";
+    for ( uint16_type p=0; p<element_type::numPoints; ++p )
+    {
+        out << " " << nPointInPtSet + ordering.fromGmshId( p ) + 1;
+    }
+    out<<"\n";
+    out << "$EndElements\n";
+
+    out.close();
 }
 
 

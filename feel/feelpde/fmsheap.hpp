@@ -29,6 +29,8 @@
 #ifndef __FMS_Heap_H
 #define __FMS_Heap_H 1
 
+#include <utility>
+
 namespace Feel
 {
 namespace details

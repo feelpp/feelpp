@@ -25,3 +25,5 @@ set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 
 feelpp_add_application(doc_bratu SRCS bratu.cpp LABEL doc)
 feelpp_add_application(doc_nonlinearpow SRCS nonlinearpow.cpp LABEL doc)
+feelpp_add_application(doc_steadynavierstokes SRCS navierstokes.cpp LABEL doc)
+feelpp_add_application(doc_drivencavity SRCS driven_cavity.cpp LABEL doc)

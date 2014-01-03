@@ -483,9 +483,16 @@
                 if ( is_zero::update_and_eval_right )                   \
                     M_right.update( geom, face );                           \
             }                                                           \
-                              \
-                value_type                                              \
-                evalij( uint16_type i, uint16_type j ) const        \
+            template<typename CTX>                                      \
+                void updateContext( CTX const& ctx )                    \
+            {                                                           \
+                M_left.updateContext( ctx );                           \
+                M_right.updateContext( ctx );                          \
+            }                                                           \
+                                                                        \
+                                                                        \
+            value_type                                                  \
+            evalij( uint16_type i, uint16_type j ) const                \
             {                                                           \
                 return M_left.evalij(i,j) VF_OP_SYMBOL( O ) M_right.evalij(i,j); \
             }                                                           \
