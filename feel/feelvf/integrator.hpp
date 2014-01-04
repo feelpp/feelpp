@@ -2098,6 +2098,10 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
                 continue;
             }
+            // if is a interprocess faces, only integrate in one process
+            if ( it->isInterProcessDomain() && it->partition1() > it->partition2() )
+                continue;
+
 
             if ( it->isConnectedTo1() )
             {
@@ -2497,6 +2501,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
                 continue;
             }
+            // if is a interprocess faces, only integrate in one process
+            if ( elt_it->isInterProcessDomain() && elt_it->partition1() > elt_it->partition2() )
+                continue;
 
             const size_type idEltRange = elt_it->id();
             size_type idEltTest = idEltRange;
@@ -2716,6 +2723,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
                 continue;
             }
+            // if is a interprocess faces, only integrate in one process
+            if ( elt_it->isInterProcessDomain() && elt_it->partition1() > elt_it->partition2() )
+                continue;
 
             const size_type idEltRange = elt_it->id();
             size_type idEltTest = idEltRange;
@@ -3655,6 +3665,9 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
                 LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
                 continue;
             }
+            // if is a interprocess faces, only integrate in one process
+            if ( it->isInterProcessDomain() && it->partition1() > it->partition2() )
+                continue;
 
             if ( it->isConnectedTo1() )
             {
