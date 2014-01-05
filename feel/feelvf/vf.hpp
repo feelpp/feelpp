@@ -71,7 +71,13 @@
 //#include <feel/feelvf/integral.hpp>
 
 #include <feel/feelvf/form.hpp>
-#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/mean.hpp>
+#include <feel/feelvf/measure.hpp>
+#include <feel/feelvf/norml2.hpp>
+#include <feel/feelvf/norml2squared.hpp>
+#include <feel/feelvf/normh1.hpp>
+#include <feel/feelvf/normsemih1.hpp>
 #include <feel/feelvf/on.hpp>
 //#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/projectors.hpp>

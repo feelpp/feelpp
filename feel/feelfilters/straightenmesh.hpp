@@ -38,7 +38,7 @@
 #include <feel/feelfilters/detail/mesh.hpp>
 #include <feel/feelvf/geometricdata.hpp>
 #include <feel/feelvf/operators.hpp>
-#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integrate.hpp>
 #include <feel/feelvf/projectors.hpp>
 
 namespace Feel { namespace detail {
