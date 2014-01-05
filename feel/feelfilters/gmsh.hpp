@@ -476,7 +476,7 @@ public:
     //! \return Return the current Gmsh object.
     void setGeoParameter( std::string const& _name, double _value )
         {
-            M_geoParamMap.at( _name ) = boost::lexical_cast<std::string>( _value );
+            M_geoParamMap[ _name ] = boost::lexical_cast<std::string>( _value );
         }
 
     //! \brief Modify geo gmsh geometry parameters from a map of parameters.
@@ -488,7 +488,7 @@ public:
             if( _update )
             {
                 for( const auto& iter : geomap)
-                    M_geoParamMap.at(iter.first) = iter.second;
+                    M_geoParamMap[iter.first] = iter.second;
             }
             else
                 M_geoParamMap = geomap;
