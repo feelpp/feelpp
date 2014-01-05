@@ -25,7 +25,7 @@
 #define FEELPP_MEASURE_HPP 1
 
 #include <feel/feelvf/expr.hpp>
-#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integrate.hpp>
 
 namespace Feel {
 
@@ -40,6 +40,7 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
+      ( expr,   *, cst(1.0))
       ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
       ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
       ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
@@ -51,7 +52,7 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
+    double meas = integrate( _range=range, _expr=expr, _quad=quad, _quad1=quad1, _geomap=geomap,
                              _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
                              _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
     DLOG(INFO) << "[mean] measure = " << meas << "\n";
