@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <prudhomme@unistra.fr>
    \date 2014-01-04
  */
-#ifndef FEELPP_INTEGRATE_HPP
-#define FEELPP_INTEGRATE_HPP 1
+#ifndef FEELPP_VF_INTEGRATE_HPP
+#define FEELPP_VF_INTEGRATE_HPP 1
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/integrator.hpp>
