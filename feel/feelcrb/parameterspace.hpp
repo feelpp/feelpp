@@ -206,10 +206,28 @@ public:
 
     typedef Element element_type;
     typedef boost::shared_ptr<Element> element_ptrtype;
-    element_type element()  { return parameterspace_type::logRandom( this->shared_from_this(), true ); }
-    element_type element( bool broadcast )
+    element_type element( bool broadcast = true )
     {
-        return parameterspace_type::logRandom( this->shared_from_this(), broadcast );
+        //first, pick a random element, then
+        //look if there is negative elements and if not
+        //pick a log-random element
+        auto element = parameterspace_type::random( this->shared_from_this(), broadcast );
+        auto mu_min = parameterspace_type::min();
+        //auto mu_min = min_element.template get<0>();
+        int size = mu_min.size();
+        bool apply_log=true;
+        for(int i=0; i<size; i++)
+        {
+            if( mu_min(i) < 0 )
+                apply_log=false;
+        }
+
+        if( apply_log )
+        {
+            element = parameterspace_type::logRandom( this->shared_from_this(), broadcast );
+        }
+
+        return element;
     }
     element_ptrtype elementPtr()  { element_ptrtype e( new element_type( this->shared_from_this() ) ); *e=element(); return e; }
     bool check() const
@@ -321,6 +339,16 @@ public:
                 int tag=0;
                 int shift=0;
 
+                auto min = this->min();
+                auto mu_min = min.template get<0>();
+                int size = mu_min.size();
+                bool apply_log=true;
+                for(int i=0; i<size; i++)
+                {
+                    if( mu_min(i) < 0 )
+                        apply_log=false;
+                }
+
                 // fill with log Random elements from the parameter space
                 //only with one proc and then send a part of the sampling to each other proc
                 if( proc == master_proc )
@@ -329,7 +357,11 @@ public:
                     std::vector<Element> temporary_sampling;
                     bool already_exist;
                     // first element
-                    auto mu = parameterspace_type::logRandom( M_space, false );
+                    auto mu = parameterspace_type::random( M_space, false );
+                    if( apply_log )
+                    {
+                        mu = parameterspace_type::logRandom( M_space , false );
+                    }
                     if( all_procs_have_same_sampling )
                         super::push_back( mu );
                     else
@@ -342,7 +374,14 @@ public:
                         do
                         {
                             already_exist=false;
-                            mu = parameterspace_type::logRandom( M_space, false );
+                            if( apply_log )
+                            {
+                                mu = parameterspace_type::logRandom( M_space, false );
+                            }
+                            else
+                            {
+                                mu = parameterspace_type::random( M_space, false );
+                            }
                             BOOST_FOREACH( auto _mu, *this )
                             {
                                 if( mu == _mu )
@@ -1288,7 +1327,7 @@ public:
      */
     static element_type random( parameterspace_ptrtype space, bool broadcast = true )
         {
-            std::srand( static_cast<unsigned>( std::time( 0 ) ) );
+            //std::srand( static_cast<unsigned>( std::time( 0 ) ) );
             element_type mur( space );
             if ( broadcast )
             {
@@ -1305,7 +1344,7 @@ public:
             //mur.setRandom()/RAND_MAX;
             //std::cout << "mur= " << mur << "\n";
             element_type mu( space );
-            mu.array() = space->min()+mur.array()*( space->max()-space->min() );
+            mu.array() = space->min().array()+mur.array()*( space->max().array()-space->min().array() );
             if ( broadcast )
                 mu.check();
             return mu;
