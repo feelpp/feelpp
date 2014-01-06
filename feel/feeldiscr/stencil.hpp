@@ -1468,9 +1468,10 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                             size_type neighbor_process_id = elem.neighbor( ms ).second;
 
                             // warning ! the last condition is a temporary solution
-                            if ( neighbor_id != invalid_size_type_value
-                                 /*&& neighbor_process_id == proc_id*/ )
+                            if ( neighbor_id != invalid_size_type_value )
                             {
+                                if ( neighbor_process_id != proc_id )
+                                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() && _M_X2->dof()->buildDofTableMPIExtended() ) << "DofTableMPIExtended is not build!";
 
                                 neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
                                                                                      neighbor_process_id ) );
@@ -1510,13 +1511,20 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     {
         auto rangeExtended = this->rangeExtendedIterator<0,0>( mpl::bool_<hasNotFindRangeExtended>() );
         auto iDimRangeExtended = rangeExtended.template get<0>();
-        if ( iDimRangeExtended == ElementsType::MESH_FACES )
+        if ( iDimRangeExtended == ElementsType::MESH_ELEMENTS )
+        {
+            CHECK( false ) << "a range with MESH_ELEMENTS is not implement";
+        }
+        else if ( iDimRangeExtended == ElementsType::MESH_FACES )
         {
             auto faceExtended_it = rangeExtended.template get<1>();
             auto faceExtended_en = rangeExtended.template get<2>();
             for ( ; faceExtended_it != faceExtended_en ;++faceExtended_it )
             {
                 if ( !faceExtended_it->isConnectedTo0() || !faceExtended_it->isConnectedTo1() ) continue;
+
+                if ( faceExtended_it->isInterProcessDomain() )
+                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() && _M_X2->dof()->buildDofTableMPIExtended() ) << "DofTableMPIExtended is not build!";
 
                 auto const& elt0 = faceExtended_it->element0();
                 auto const& elt1 = faceExtended_it->element1();
