@@ -1080,11 +1080,11 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     if ( this->interpolationType().searchWithCommunication())
     {
         // Attention : marche que si les 2 worldcomms qui s'emboite (mon cas)
-        std::vector<int> localMeshRankToWorldCommFusion_domain(nProc_col);
+        std::vector<rank_type> localMeshRankToWorldCommFusion_domain(nProc_col);
         mpi::all_gather( this->domainSpace()->mesh()->worldComm().localComm(),
                          this->worldCommFusion().globalRank(),
                          localMeshRankToWorldCommFusion_domain );
-        std::vector<int> localMeshRankToWorldCommFusion_image(nProc_row);
+        std::vector<rank_type> localMeshRankToWorldCommFusion_image(nProc_row);
         mpi::all_gather( this->dualImageSpace()->mesh()->worldComm().localComm(),
                          this->worldCommFusion().globalRank(),
                          localMeshRankToWorldCommFusion_image );
