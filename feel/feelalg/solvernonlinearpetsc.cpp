@@ -586,13 +586,13 @@ void SolverNonLinearPetsc<T>::init ()
 
         // Set user-specified  solver and preconditioner types
         this->setPetscKspSolverType();
-        this->setPetscPreconditionerType();
+        //this->setPetscPreconditionerType();
         //this->setPetscConstantNullSpace();
         // sets the software that is used to perform the factorization
-        PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
+        //PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
 
-        if ( this->M_preconditioner /*&& this->preconditionerType()==PreconditionerType::SHELL_PRECOND*/ )
+        if ( this->M_preconditioner )
         {
             PCSetType( M_pc, PCSHELL );
             PCShellSetContext( M_pc,( void* )this->M_preconditioner.get() );
@@ -600,6 +600,12 @@ void SolverNonLinearPetsc<T>::init ()
             //Re-Use the shell functions from petsc_linear_solver
             PCShellSetSetUp( M_pc,__feel_petsc_preconditioner_setup );
             PCShellSetApply( M_pc,__feel_petsc_preconditioner_apply );
+        }
+        else
+        {
+            this->setPetscPreconditionerType();
+            // sets the software that is used to perform the factorization
+            PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
         }
 
         if ( Environment::vm(_name="snes-monitor",_prefix=this->prefix()).template as<bool>() )
