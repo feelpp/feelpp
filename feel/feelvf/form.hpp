@@ -38,6 +38,7 @@
 
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
+#include <feel/feelvf/integrate.hpp>
 
 namespace Feel
 {
