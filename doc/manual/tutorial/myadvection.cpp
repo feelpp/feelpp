@@ -28,7 +28,7 @@
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/form.hpp>
-#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integrate.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/matvec.hpp>

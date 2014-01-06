@@ -30,6 +30,7 @@
 #include <feel/feelvf/form.hpp>
 #include <feel/feelvf/operators.hpp>
 #include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/mean.hpp>
 
 inline
 Feel::po::options_description
