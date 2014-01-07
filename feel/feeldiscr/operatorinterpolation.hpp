@@ -2227,8 +2227,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     if ( this->interpolationType().searchWithCommunication() && !locTool->hasComputedBarycentersWorld() )
         locTool->computeBarycentersWorld();
 
-    // build the vector of barycenter only if search with comm
-    std::vector<typename image_mesh_type::node_type> vecBarycenter(nProc_domain);
+    // build the vector of barycenter (computed from kdtree point) only if search with comm
+    std::vector<boost::tuple<bool,typename image_mesh_type::node_type> > vecBarycenter(nProc_domain);
     if (this->interpolationType().searchWithCommunication())
         vecBarycenter = locTool->barycentersWorld();
 
@@ -2267,7 +2267,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                 distanceMin=INT_MAX;
                                 for ( int proc=0 ; proc<nProc_domain; ++proc)
                                 {
-                                    auto const& bary = vecBarycenter[proc];
+                                    // if no point in kdtree, ignore this process
+                                    if ( !vecBarycenter[proc].template get<0>() ) continue;
+
+                                    auto const& bary = vecBarycenter[proc].template get<1>();
                                     /**/               distanceSquare  = std::pow(imagePoint(0)-bary(0),2);
                                     if (bary.size()>1) distanceSquare += std::pow(imagePoint(1)-bary(1),2);
                                     if (bary.size()>2) distanceSquare += std::pow(imagePoint(2)-bary(2),2);
