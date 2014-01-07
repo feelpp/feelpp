@@ -220,10 +220,6 @@ struct test_integration_circle: public Application
         value_type v0y = integrate( _range=elements( mesh ), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_OPT).evaluate()( 0, 0 );
         value_type v0z = integrate( _range=elements( mesh ), _expr=mycst, _geomap=GeomapStrategyType::GEOMAP_HO ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "v0=" << v0 << "\n" );
-        std::cout <<  "boundaryelements : " << integrate( _range=boundaryelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate() << "\n" ;
-        std::cout <<  "internalelements : " << integrate( _range=internalelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate() << "\n" ;
-        BOOST_TEST_MESSAGE( "boundaryelements" << integrate( _range=boundaryelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate() << "\n" );
-        BOOST_TEST_MESSAGE( "internalelements" << integrate( _range=internalelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate() << "\n" );
         value_type v00 = ( integrate( _range=boundaryelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate()( 0, 0 )+
                            integrate( _range=internalelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate()( 0, 0 ) );
         BOOST_TEST_MESSAGE( "v00=" << v00 << "\n" );
