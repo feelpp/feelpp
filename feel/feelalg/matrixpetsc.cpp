@@ -2635,6 +2635,8 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
                            Vector<value_type> const& __u,
                            bool transpose ) const
 {
+    int ierr = 0;
+
     this->close();
 
     PetscScalar e;
@@ -2646,16 +2648,18 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
         VectorPetscMPI<value_type> z( this->mapRowPtr() );
 
         if ( !transpose )
-            MatMult( this->mat(), u.vec(), z.vec() );
+            ierr = MatMult( this->mat(), u.vec(), z.vec() );
         else
-            MatMultTranspose( this->mat(), u.vec(), z.vec() );
+            ierr = MatMultTranspose( this->mat(), u.vec(), z.vec() );
+        CHKERRABORT( this->comm(),ierr );
 
-        VecDot( v.vec(), z.vec(), &e );
+        ierr = VecDot( v.vec(), z.vec(), &e );
+        CHKERRABORT( this->comm(),ierr );
     }
 
     else
     {
-        VectorPetscMPI<value_type> u( this->mapRowPtr() );
+        VectorPetscMPI<value_type> u( this->mapColPtr() );
         {
             //size_type s = u.localSize();
             size_type s = u.map().nLocalDofWithGhost();
@@ -2680,12 +2684,13 @@ MatrixPetscMPI<T>::energy( Vector<value_type> const& __v,
         v.close();
 
         if ( !transpose )
-            MatMult( this->mat(), u.vec() , z.vec() );
-
+            ierr = MatMult( this->mat(), u.vec() , z.vec() );
         else
-            MatMultTranspose( this->mat(), u.vec(), z.vec() );
+            ierr = MatMultTranspose( this->mat(), u.vec(), z.vec() );
+        CHKERRABORT( this->comm(),ierr );
 
-        VecDot( v.vec(), z.vec(), &e );
+        ierr = VecDot( v.vec(), z.vec(), &e );
+        CHKERRABORT( this->comm(),ierr );
     }
 
     return e;
