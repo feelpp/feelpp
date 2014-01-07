@@ -4,7 +4,7 @@ feelpp_add_test( aitken NO_MPI_TEST )
 feelpp_add_test( bdf )
 feelpp_add_test( bdf2 )
 
-feelpp_add_test( disc )
+feelpp_add_test( disc NO_MPI_TEST )
 feelpp_add_test( element )
 feelpp_add_test( elementminmax )
 feelpp_add_test( element_serialize NO_MPI_TEST )
