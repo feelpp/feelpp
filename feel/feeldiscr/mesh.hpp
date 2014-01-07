@@ -1181,7 +1181,7 @@ public:
 
         bool hasComputedBarycentersWorld() { return M_barycentersWorld; }
 
-        std::vector<node_type> const& barycentersWorld() const
+        std::vector<boost::tuple<bool,node_type> > const& barycentersWorld() const
         {
             CHECK( M_barycentersWorld ) << " you must call computeBarycentersWorld() before barycentersWorld() \n";
             return M_barycentersWorld.get();
@@ -1317,7 +1317,7 @@ public:
         ref_convex1_type M_refelem1;
 
         node_type M_barycenter;
-        boost::optional<std::vector<node_type> > M_barycentersWorld;
+        boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
 
     };
 
