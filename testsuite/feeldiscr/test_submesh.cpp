@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     t.restart();
     auto opI4=opInterpolation( _domainSpace=Zh,
                                _imageSpace=Xh,
-                               _range=elements( mesh ) );
+                               _range=boundaryelements( mesh ) );
     auto u5 = Xh->element();
     opI4->apply( u3, u5 );
 
@@ -362,7 +362,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     auto d = form1( _test=Xh );
     d = integrate( _range=elements(mesh), _expr=idv(w)*id(v) );
     double mass4 = d( v );
-    BOOST_CHECK_CLOSE( mass4, .25, 1e-13 );
+    BOOST_CHECK_CLOSE( mass4, .25, 1e-12 );
     BOOST_TEST_MESSAGE( "time linear form (non opt) : " << t.elapsed() << "s\n" );
     BOOST_TEST_MESSAGE( "Test submesh3 "  << T::value << "D done" );
     } // if (Environment::worldComm().size() == 1)
