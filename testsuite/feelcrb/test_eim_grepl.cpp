@@ -164,7 +164,7 @@ public:
                           _element=u,
                           _space=this->functionSpace(),
                           _parameter=mu,
-                          _expr=1/sqrt( (Px()-mu(0))*(Px()-mu(0)) + (Py()-mu(1))*(Py()-mu(1)) ),
+                          _expr=1/sqrt( (Px()-cst_ref(mu(0)))*(Px()-cst_ref(mu(0))) + (Py()-cst_ref(mu(1)))*(Py()-cst_ref(mu(1))) ),
                           _sampling=Pset,
                           _name="q" );
             BOOST_CHECK( e );
