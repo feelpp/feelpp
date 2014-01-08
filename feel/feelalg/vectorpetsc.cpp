@@ -545,9 +545,18 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
 
         if ( !V )
         {
-            VectorPetsc<T> tmp( V_in.mapPtr(), true );
-            dynamic_cast<Vector<T>&>( tmp ) = V_in;
-            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
+            if ( this->comm().size()>1 )
+            {
+                VectorPetscMPI<T> tmp( V_in.mapPtr() );
+                dynamic_cast<Vector<T>&>( tmp ) = V_in;
+                ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
+            }
+            else
+            {
+                VectorPetsc<T> tmp( V_in.mapPtr() );
+                dynamic_cast<Vector<T>&>( tmp ) = V_in;
+                ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
+            }
         }
         else
         {
