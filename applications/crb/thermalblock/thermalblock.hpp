@@ -82,7 +82,7 @@ makeThermalBlockOptions()
     ( "beta.Alast", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for last A" )
     ( "beta.F0.0", Feel::po::value<std::string>()->default_value( "" ), "expression of beta coefficients for F0" )
     ;
-    return thermalblockoptions.add( Feel::feel_options() );
+    return thermalblockoptions.add( Feel::feel_options() ).add( backend_options("backendl2") );
 }
 
 /**
@@ -252,6 +252,8 @@ public:
         std::vector< std::vector<std::vector<vector_ptrtype> > >
         > affine_decomposition_type;
 
+    typedef Preconditioner<double> preconditioner_type;
+    typedef boost::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
     /**
      * Constructor
@@ -262,11 +264,20 @@ public:
         :
         M_vm ( vm ),
         M_backend( backend_type::build( vm ) ),
+        M_backendl2( backend_type::build( vm , "backendl2" ) ),
         meshSize( vm["hsize"].as<double>() ),
         gamma_dir( vm["gamma_dir"].as<double>() ),
         M_Dmu( new parameterspace_type ),
         timers()
-    {}
+    {
+        M_preconditionerl2 = preconditioner(_pc=(PreconditionerType) M_backendl2->pcEnumType(), // by default : lu in seq or wirh mumps, else gasm in parallel
+                                            _backend= M_backendl2,
+                                            _pcfactormatsolverpackage=(MatSolverPackageType) M_backendl2->matSolverPackageEnumType(),// mumps if is installed ( by defaut )
+                                            _worldcomm=M_backendl2->comm(),
+                                            _prefix=M_backendl2->prefix() ,
+                                            _rebuild=true);
+
+    }
 
     //! initialisation of the model and definition of parameters values
     void initModel();
@@ -582,9 +593,12 @@ private:
 
     //! linear algebra backend
     backend_ptrtype M_backend;
+    backend_ptrtype M_backendl2;
 
     //! mesh characteristic size
     double meshSize;
+
+    preconditioner_ptrtype M_preconditionerl2;
 
     value_type gamma_dir;
 
@@ -950,6 +964,8 @@ ThermalBlock::initModel()
     //form2( Xh, Xh, M, _init=true ) =
     //    integrate( elements( mmesh ), id( u )*idt( v ) + grad( u )*trans( gradt( u ) ) );
 
+    M_preconditionerl2->setMatrix( M );
+
     initDataStructureForBetaCoeff();
     if( M_use_ginac )
         buildGinacExpressions();
@@ -1021,7 +1037,7 @@ void
 ThermalBlock::l2solve( vector_ptrtype& u, vector_ptrtype const& f )
 {
     //std::cout << "l2solve(u,f)\n";
-    M_backend->solve( _matrix=M,  _solution=u, _rhs=f );
+    M_backendl2->solve( _matrix=M,  _solution=u, _rhs=f , _prec=M_preconditionerl2 );
     //std::cout << "l2solve(u,f) done\n";
 }
 
