@@ -70,9 +70,9 @@ int main( int argc,  char** argv )
 
     BoundingBox<> bb( true );
 
-    for ( size_type __i = 0; __i < aMesh->numElements(); ++__i )
+    for ( auto const& elt : elements(aMesh) )
     {
-        bb.make( aMesh->element( __i ).G() );
+        bb.make( elt.G() );
 
         for ( unsigned k=0; k < min.size(); ++k )
         {
@@ -80,7 +80,7 @@ int main( int argc,  char** argv )
             bb.max[k]+=EPS;
         }
 
-        __rt.addBox( bb.min, bb.max, __i );
+        __rt.addBox( bb.min, bb.max, elt.id() );
     }
 
     __rt.dump();
