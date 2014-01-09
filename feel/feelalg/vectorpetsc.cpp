@@ -775,6 +775,7 @@ void
 VectorPetscMPI<T>::set( size_type i, const value_type& value )
 {
     //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    if ( this->map().dofGlobalProcessIsGhost(i) ) return;
 
     int ierr=0;
     int i_val = static_cast<int>( i );
