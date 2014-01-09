@@ -302,7 +302,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 // update points info
                 for ( uint16_type p = 0; p < new_face.nPoints(); ++p )
                 {
-                    new_face.setPoint( p, newMesh->point( new_node_numbers[oldElem.point( oldElem.fToP( s,p ) ).id()] ) );
+                    //new_face.setPoint( p, newMesh->point( new_node_numbers[oldElem.point( oldElem.fToP( s,p ) ).id()] ) );
+                    new_face.setPoint( p, newMesh->point( new_node_numbers[ old_face.point(p).id()] ) );
                 }
 
                 new_face.setId( n_new_faces++ );
