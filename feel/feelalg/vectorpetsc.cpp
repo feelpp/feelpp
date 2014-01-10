@@ -539,6 +539,7 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
         const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
 
         CHECK ( A != 0 ) << "Invalid PETSc matrix\n";
+        this->close();
         A->close();
         int ierr=0;
 
@@ -775,7 +776,7 @@ void
 VectorPetscMPI<T>::set( size_type i, const value_type& value )
 {
     //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
-    if ( this->map().dofGlobalProcessIsGhost(i) ) return;
+    //if ( this->map().dofGlobalProcessIsGhost(i) ) return;
 
     int ierr=0;
     int i_val = static_cast<int>( i );
