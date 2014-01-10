@@ -19,36 +19,36 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::
 ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                   periodicity_type __periodicity)
     :
-    _M_functionspace( __functionspace ),
-    _M_periodicity(__periodicity),
-    _M_neighbors(),
-    _M_coords( __functionspace->dof()->nDof() ),
-    _M_translation( __periodicity.translation() ),
-    firstDof( _M_functionspace->dof()->firstDofGlobalCluster() )
+    M_functionspace( __functionspace ),
+    M_periodicity(__periodicity),
+    M_neighbors(),
+    M_coords( __functionspace->dof()->nDof() ),
+    M_translation( __periodicity.translation() ),
+    firstDof( M_functionspace->dof()->firstDofGlobalCluster() )
 {
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
-    auto it = _M_functionspace->mesh()->beginElementWithProcessId();
-    auto en = _M_functionspace->mesh()->endElementWithProcessId();
+    auto it = M_functionspace->mesh()->beginElementWithProcessId();
+    auto en = M_functionspace->mesh()->endElementWithProcessId();
 
     for ( ; it!=en ; ++it )
         {
             std::vector<size_type> indices( ndofv );
-            for ( uint16_type __j = 0; __j < ndofv;++__j )
+            for ( uint16_type j = 0; j < ndofv;++j )
                 {
-                  size_type index = _M_functionspace->dof()->localToGlobal(*it, __j, 0).index();
+                  size_type index = M_functionspace->dof()->localToGlobal(*it, j, 0).index();
 
-                  if (_M_functionspace->dof()->dofGlobalProcessIsGhost( index ))
-                    _M_ghostClusterToProc[ procToClust( index ) ] = index;
+                  if (M_functionspace->dof()->dofGlobalProcessIsGhost( index ))
+                    M_ghostClusterToProc[ processorToCluster( index ) ] = index;
 
-                    indices[__j] = index;
+                    indices[j] = index;
                     for ( uint16_type c = 0; c < Dim; ++c )
-                      _M_coords[index][c] = _M_functionspace->dof()->dofPoint( index ).template get<0>()[c];
+                      M_coords[index][c] = M_functionspace->dof()->dofPoint( index ).template get<0>()[c];
                 }
-            for ( uint16_type __j = 0; __j < ndofv;++__j )
-                for ( uint16_type __k = __j+1; __k < ndofv;++__k )
+            for ( uint16_type j = 0; j < ndofv;++j )
+                for ( uint16_type k = j+1; k < ndofv;++k )
                     {
-                      _M_neighbors[indices[__j]].insert( indices[__k] );
-                      _M_neighbors[indices[__k]].insert( indices[__j] );
+                      M_neighbors[indices[j]].insert( indices[k] );
+                      M_neighbors[indices[k]].insert( indices[j] );
                     }
         }
 
@@ -65,16 +65,16 @@ reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& th
     return ;
 
   /* make the sum of the DONE(=2) + FAR(=0)
-     the sum is then communicate through all the process ( close() ) */
-  auto checkDONE = backend()->newVector(_M_functionspace);
-  for (size_type k = 0 ; k < _M_functionspace->nLocalDof() ; ++k)
+     the sum is then communicated through all the processors ( close() ) */
+  auto checkDONE = backend()->newVector(M_functionspace);
+  for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
     checkDONE->add(k, status(k) == DONE ? 1 : 0);
 
-  // communications are done here. The sum of the values and ghost values is done
+  // communications are done here. The sum of the real values and ghost values is done
   // thus if a dof has been set to DONE, even on a ghost value, checkDONE is 1
   checkDONE->close();
 
-  for (size_type k = 0 ; k < _M_functionspace->nLocalDof() ; ++k)
+  for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
     {
       if ( (*checkDONE)(k) )
         done.insert( k );
@@ -93,28 +93,28 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 {
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
-    auto __v = vf::project(_M_functionspace, elements(_M_functionspace->mesh()), idv(phi) );
+    auto __v = vf::project(M_functionspace, elements(M_functionspace->mesh()), idv(phi) );
 
-    auto it = _M_functionspace->mesh()->beginElementWithProcessId();
-    auto en = _M_functionspace->mesh()->endElementWithProcessId();
+    auto it = M_functionspace->mesh()->beginElementWithProcessId();
+    auto en = M_functionspace->mesh()->endElementWithProcessId();
 
     // acquire interface (=done) cells
     // the chosen approach assumes monotonicity of the FE-function in the
     // element, thus valid only for P1 elements
 
     std::set<size_type> done;
-    auto status = vf::project( _M_functionspace, elements(_M_functionspace->mesh()), vf::cst(FAR) );
+    auto status = vf::project( M_functionspace, elements(M_functionspace->mesh()), vf::cst(FAR) );
 
     /* VD, sometime, I need to give myself the elements which are already done, thus use marker2*/
     if (useMarker2AsDoneMarker)
         {
-            auto it_marked = _M_functionspace->mesh()->elementsWithMarker2(1, _M_functionspace->mesh()->worldComm().localRank()).first;
-            auto en_marked = _M_functionspace->mesh()->elementsWithMarker2(1, _M_functionspace->mesh()->worldComm().localRank()).second;
+            auto it_marked = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank()).first;
+            auto en_marked = M_functionspace->mesh()->elementsWithMarker2(1, M_functionspace->mesh()->worldComm().localRank()).second;
 
             for ( ; it_marked!=en_marked ; ++it_marked )
-                    for ( uint16_type __j = 0; __j < ndofv; ++__j )
+                    for ( uint16_type j = 0; j < ndofv; ++j )
                         {
-                            size_type index = _M_functionspace->dof()->localToGlobal(*it, __j, 0).index();
+                            size_type index = M_functionspace->dof()->localToGlobal(*it, j, 0).index();
                             done.insert( index );
                             status[index] = DONE;
                         }
@@ -126,10 +126,10 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
                     uint16_type nPlus = 0;
                     uint16_type nMinus = 0;
                     std::vector<size_type> indices( ndofv );
-                    for ( uint16_type __j = 0; __j < ndofv;++__j )
+                    for ( uint16_type j = 0; j < ndofv;++j )
                         {
-                            size_type index = _M_functionspace->dof()->localToGlobal(*it, __j, 0).index();
-                            indices[__j] = index;
+                            size_type index = M_functionspace->dof()->localToGlobal(*it, j, 0).index();
+                            indices[j] = index;
                             if ( phi[index] < 0.0 )
                                 ++nMinus;
                             else if ( phi[index] > 0.0 )
@@ -138,10 +138,10 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
                     //if the element has nodes with positive and negative values
                     //mark as done
                     if ( nPlus != ndofv && nMinus != ndofv )
-                            for ( uint16_type __j = 0; __j < ndofv; ++__j )
+                            for ( uint16_type j = 0; j < ndofv; ++j )
                                 {
-                                    done.insert( indices[__j] );
-                                    status[indices[__j]] = DONE;
+                                    done.insert( indices[j] );
+                                    status[indices[j]] = DONE;
                                 }
                 }
         }
@@ -166,14 +166,14 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
           CHECK( status( entry.second ) == CLOSE ) 
             << "on proc " << Environment::worldComm().rank()
             << " the entry at ldof "<< entry.second
-            << " and entry at cdof "<< procToClust( entry.second )
+            << " and entry at cdof "<< processorToCluster( entry.second )
             << " is marked as " << status( entry.first ) <<std::endl ;
       };
 #endif
 
 
 #if defined( FM_EXPORT )
-    auto ex = exporter(_mesh=_M_functionspace->mesh(), _name="fastmarchin");
+    auto ex = exporter(_mesh=M_functionspace->mesh(), _name="fastmarchin");
 #endif
 
     size_type sumAllSizes=1;
@@ -199,7 +199,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
         size_type newIdOnCluster = 0;
         // extract the global on cluster index of the point accepted
         if ( theHeap.front() == newAccepted )
-          newIdOnCluster = procToClust(newAccepted.second);
+          newIdOnCluster = processorToCluster(newAccepted.second);
 
 
         // propagate the global id on cluster of the new accepted to all the proc
@@ -210,14 +210,14 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
         bool dofIsPresentOnProcess = false;
 
         size_type newIdOnProc;
-        if ( _M_functionspace->dof()->dofGlobalClusterIsOnProc( newIdOnCluster ) )
+        if ( M_functionspace->dof()->dofGlobalClusterIsOnProc( newIdOnCluster ) )
           {
-            newIdOnProc = clustToProc(newIdOnCluster);
+            newIdOnProc = clusterToProcessor(newIdOnCluster);
             dofIsPresentOnProcess=true;
           }
-        else if ( _M_ghostClusterToProc.count( newIdOnCluster ) )
+        else if ( M_ghostClusterToProc.count( newIdOnCluster ) )
           {
-            newIdOnProc = _M_ghostClusterToProc[newIdOnCluster];
+            newIdOnProc = M_ghostClusterToProc[newIdOnCluster];
             dofIsPresentOnProcess=true;
           }
 
@@ -232,7 +232,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
             fmsHeapUpdate( newIdOnProc, __v, status, theHeap );
 
-            if (_M_periodicity.isPeriodic())
+            if (M_periodicity.isPeriodic())
               updatePeriodicPoint(newAccepted, __v, status, theHeap);
 
           }
@@ -263,7 +263,7 @@ fmsHeapUpdate( size_type idDone,
                Feel::details::FmsHeap<value_type>& theHeap ) const
 {
     // nbr : neighbours of the node just done
-    std::set<size_type> const & nbrs = _M_neighbors.find(idDone)->second;
+    std::set<size_type> const & nbrs = M_neighbors.find(idDone)->second;
 
     std::vector<size_type> ids( 1, idDone );
     for ( auto n0it = nbrs.begin(); n0it != nbrs.end(); ++n0it )
@@ -308,27 +308,27 @@ updatePeriodicPoint(typename Feel::details::FmsHeap<value_type>::heap_entry_type
 
     uint16_type newIdx = newAccepted.second;
 
-    for (int __c = 0 ; __c<Dim; __c++)
+    for (int c = 0 ; c<Dim; c++)
         {
-            pt_tofindPlus [__c] = _M_coords[newIdx][__c] + _M_translation[__c];
-            pt_tofindMinus[__c] = _M_coords[newIdx][__c] - _M_translation[__c];
+            pt_tofindPlus [c] = M_coords[newIdx][c] + M_translation[c];
+            pt_tofindMinus[c] = M_coords[newIdx][c] - M_translation[c];
         }
 
     int foundPlusMinus = 0;
     size_type id_found;
 
-    if (_M_functionspace->findPoint(pt_tofindPlus, id_found, pt_found))
+    if (M_functionspace->findPoint(pt_tofindPlus, id_found, pt_found))
         foundPlusMinus = 1;
-    else if (_M_functionspace->findPoint(pt_tofindMinus, id_found, pt_found))
+    else if (M_functionspace->findPoint(pt_tofindMinus, id_found, pt_found))
         foundPlusMinus = -1;
 
     if (foundPlusMinus)
-      for (int __k = 0; __k < ndofv; ++__k)
+      for (int k = 0; k < ndofv; ++k)
         {
-          size_type index_k = _M_functionspace->dof()->localToGlobal(id_found, __k, 0).index();
+          size_type index_k = M_functionspace->dof()->localToGlobal(id_found, k, 0).index();
           value_type diff_position=0;
-          for (int __c = 0; __c < Dim; __c++)
-            diff_position += std::abs(_M_coords[index_k][__c] - (_M_coords[newIdx][__c] + foundPlusMinus * _M_translation[__c] ) );
+          for (int c = 0; c < Dim; c++)
+            diff_position += std::abs(M_coords[index_k][c] - (M_coords[newIdx][c] + foundPlusMinus * M_translation[c] ) );
           if ( diff_position < 1e-9 )
             {
               //set the value of phi at the point
@@ -358,12 +358,9 @@ fmsDistRec( std::vector<size_type> & ids,
             value_type phiOld,
             element_type const& status ) const
 {
-    /*
-      VD :
-      search for all DONE neighbors
+    /*search for all DONE neighbors
       recalculate phi with all the neighbors
-      returns the smallest phi
-    */
+      returns the smallest phi  */
 
     /* the method fmsDistN computes the distance function for a given CLOSE 
        using the DONE neighbors in the same element
@@ -376,7 +373,7 @@ fmsDistRec( std::vector<size_type> & ids,
 
     value_type phiNew(phiOld);
 
-    std::set<size_type> const & nbrs = _M_neighbors.find(idClose)->second;
+    std::set<size_type> const & nbrs = M_neighbors.find(idClose)->second;
     for (auto nit = nbrs.begin(); nit != nbrs.end(); ++nit )
         {
 
@@ -391,8 +388,8 @@ fmsDistRec( std::vector<size_type> & ids,
             if ( !unique ) // points must be unique
                 continue;
 
-            if ( _M_neighbors.find(ids[0])->second.find(*nit) ==
-                 _M_neighbors.find(ids[0])->second.end() )
+            if ( M_neighbors.find(ids[0])->second.find(*nit) ==
+                 M_neighbors.find(ids[0])->second.end() )
                 continue;
 
             // one neighbor more
@@ -437,7 +434,7 @@ fmsDistN( std::vector<size_type> const & ids,
     value_type eps = type_traits<value_type>::epsilon();
     for ( uint32_type i=0; i<nPts; ++i )
         {
-            basis[i] = _M_coords[ids[i+1]] - _M_coords[ids[0]];
+            basis[i] = M_coords[ids[i+1]] - M_coords[ids[0]];
             for ( uint32_type j=0; j<i; j++ )
                 {
                     q[i][j] = dot( basis[i], basis[j] );
@@ -468,7 +465,7 @@ fmsDistN( std::vector<size_type> const & ids,
 
     // verify gradient to new value comes through convex hull of points used
     // to construct it
-    point_type dx( _M_coords[ids[nPts]] - _M_coords[ids[0]] );
+    point_type dx( M_coords[ids[nPts]] - M_coords[ids[0]] );
     std::vector<value_type> lambda( nPts, 0.0 );
     lambda[nPts-1] = dot( dx , basis[nPts-1] ) / dot( grad, basis[nPts-1] );
     value_type lambdaTot = 0.0;

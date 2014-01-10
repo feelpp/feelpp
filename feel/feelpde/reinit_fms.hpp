@@ -102,11 +102,11 @@ private:
     /* The map indexes are the global indexes on the PROC and the set contains the global indexes on the CLUSTER of its neigbors */
     typedef std::map<size_type, std::set<size_type> > neighbors_type;
 
-    inline size_type clustToProc( size_type dof )
-    { return _M_functionspace->dof()->mapGlobalClusterToGlobalProcess( dof - firstDof ); }
+    inline size_type clusterToProcessor( size_type dof )
+    { return M_functionspace->dof()->mapGlobalClusterToGlobalProcess( dof - firstDof ); }
 
-    inline size_type procToClust( size_type dof )
-    { return _M_functionspace->dof()->mapGlobalProcessToGlobalCluster( dof ); }
+    inline size_type processorToCluster( size_type dof )
+    { return M_functionspace->dof()->mapGlobalProcessToGlobalCluster( dof ); }
 
     void reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& theHeap, element_type& status, std::set<size_type>& done );
 
@@ -131,12 +131,12 @@ private:
         return a*a < b*b ? a : b;
     }
 
-    functionspace_ptrtype const& _M_functionspace;
-    periodicity_type _M_periodicity;
-    neighbors_type _M_neighbors;
-    std::map< size_type, size_type> _M_ghostClusterToProc;
-    std::vector<point_type> _M_coords;
-    vf::node_type _M_translation;
+    functionspace_ptrtype const& M_functionspace;
+    periodicity_type M_periodicity;
+    neighbors_type M_neighbors;
+    std::map< size_type, size_type> M_ghostClusterToProc;
+    std::vector<point_type> M_coords;
+    vf::node_type M_translation;
     const size_type firstDof;
 
 };
