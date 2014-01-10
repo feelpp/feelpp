@@ -50,13 +50,13 @@ public:
 
     void push( heap_entry_type in )
     {
-        _M_heap.push_back( in );
-        push_heap( _M_heap.begin(), _M_heap.end(), farther );
+        M_heap.push_back( in );
+        push_heap( M_heap.begin(), M_heap.end(), farther );
     }
 
     void change( heap_entry_type in )
     {
-        for ( auto it=_M_heap.begin(); it != _M_heap.end(); ++it )
+        for ( auto it=M_heap.begin(); it != M_heap.end(); ++it )
             {
                 // if the entry at index exists,
                 // this phi_entry take the min value between |phi_entry| and |phi_min|
@@ -65,8 +65,8 @@ public:
                         if ( farther( *it, in ) )
                             {
                                 *it = in;
-                                make_heap( _M_heap.begin(),
-                                           _M_heap.end(),
+                                make_heap( M_heap.begin(),
+                                           M_heap.end(),
                                            farther );
                             }
                         return;
@@ -78,10 +78,10 @@ public:
 
     heap_entry_type pop()
     {
-        // assert _M_heap.size() > 0
-        heap_entry_type out = *(_M_heap.begin());
-        pop_heap( _M_heap.begin(), _M_heap.end(), farther );
-        _M_heap.pop_back();
+        // assert M_heap.size() > 0
+        heap_entry_type out = *(M_heap.begin());
+        pop_heap( M_heap.begin(), M_heap.end(), farther );
+        M_heap.pop_back();
         return out;
     }
 
@@ -90,46 +90,33 @@ public:
        if the heap is empty, return an element having a huge value of phi, so that, compared to other heap entries it will never be accepted */
     heap_entry_type front()
     {
-        if ( _M_heap.empty() )
+        if ( M_heap.empty() )
             return std::make_pair(maxValue, 0 );
-        return _M_heap.front();
+        return M_heap.front();
     }
 
     bool checkExistingEntry(uint16_type index)
     {
-        for (auto it = _M_heap.begin(); it != _M_heap.end(); ++it )
+        for (auto it = M_heap.begin(); it != M_heap.end(); ++it )
                 if (it->second == index)
                     return true;
         return false;
     }
 
-    // useless
-    // // if the entry index is present, return its index location
-    // // else return -1
-    // int findIndexEntry( uint16_type entry )
-    // {
-    //     for (auto it = _M_heap.begin(); it != _M_heap.end(); ++it )
-    //         if (it->second == entry)
-    //             return (it - _M_heap.begin());
-    //     return -1;
-    // }
-
-
     /* remove from the heap the entry having the specific value index*/
     bool removeFromHeap(uint16_type index)
     {
         bool removed = false;
-
-        for (auto it = _M_heap.begin(); it != _M_heap.end(); ++it )
-                if (it->second == index)
-                    {
-                        _M_heap.erase(it);
-                        removed = true;
-                        break;
-                    }
-
+        for (auto it = M_heap.begin(); it != M_heap.end(); ++it )
+            if (it->second == index)
+                {
+                    M_heap.erase(it);
+                    removed = true;
+                    break;
+                }
         return removed;
     }
+
 
     static heap_entry_type min(heap_entry_type a, heap_entry_type b)
     {
@@ -139,17 +126,9 @@ public:
 
     size_type size() const
     {
-        return _M_heap.size();
+        return M_heap.size();
     }
 
-#if 0
-    //used to debug (needed to iterate through the heap
-    typename std::vector<heap_entry_type>::iterator begin()
-    {return _M_heap.begin();}
-
-    typename std::vector<heap_entry_type>::iterator end()
-    {return _M_heap.end();}
-#endif
 
 private:
 
@@ -166,8 +145,7 @@ private:
         return aa > bb;
     }
 
-    std::vector<heap_entry_type> _M_heap;
-    //    std::list<heap_entry_type> _M_heap;
+    std::vector<heap_entry_type> M_heap;
 };
 
 } // namespace details
