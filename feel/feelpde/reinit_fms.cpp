@@ -64,7 +64,8 @@ reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& th
   if (Environment::worldComm().size() == 1)
     return ;
 
-  // todo : store the vector and only put to 0 here
+  /* make the sum of the DONE(=2) + FAR(=0)
+     the sum is then communicate through all the process ( close() ) */
   auto checkDONE = backend()->newVector(_M_functionspace);
   for (size_type k = 0 ; k < _M_functionspace->nLocalDof() ; ++k)
     checkDONE->add(k, status(k) == DONE ? 1 : 0);
@@ -74,19 +75,14 @@ reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& th
   checkDONE->close();
 
   for (size_type k = 0 ; k < _M_functionspace->nLocalDof() ; ++k)
-    if ( (*checkDONE)(k) )
-      done.insert( k );
+    {
+      if ( (*checkDONE)(k) )
+        done.insert( k );
 
-  auto statusGlob = backend()->newVector(_M_functionspace);
-  for (size_type k = 0 ; k < _M_functionspace->nLocalDof() ; ++k)
-    if ( (*checkDONE)(k) )
-      statusGlob->set(k, DONE);
-    else
-      statusGlob->set(k, FAR);
+      status.set(k, status(k) > 1e-7 ? DONE : FAR);
+    }
 
-  statusGlob->close();
-  status = *statusGlob;
-
+  //  status = *checkDONE;
 }
 
 
