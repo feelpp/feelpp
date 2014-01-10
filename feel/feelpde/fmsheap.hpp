@@ -1,4 +1,4 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4 
 
   This file is part of the Feel library
 
@@ -29,8 +29,6 @@
 #ifndef __FMS_Heap_H
 #define __FMS_Heap_H 1
 
-#include <utility>
-
 namespace Feel
 {
 namespace details
@@ -49,13 +47,13 @@ public:
 
     void push( heap_entry_type in )
     {
-        M_heap.push_back( in );
-        push_heap( M_heap.begin(), M_heap.end(), farther );
+        _M_heap.push_back( in );
+        push_heap( _M_heap.begin(), _M_heap.end(), farther );
     }
 
     void change( heap_entry_type in )
     {
-        for ( heapvect_iter it=M_heap.begin(); it != M_heap.end(); ++it )
+        for ( auto it=_M_heap.begin(); it != _M_heap.end(); ++it )
             {
                 // if the entry at index exists,
                 // this phi_entry take the min value between |phi_entry| and |phi_min|
@@ -64,8 +62,8 @@ public:
                         if ( farther( *it, in ) )
                             {
                                 *it = in;
-                                make_heap( M_heap.begin(),
-                                           M_heap.end(),
+                                make_heap( _M_heap.begin(),
+                                           _M_heap.end(),
                                            farther );
                             }
                         return;
@@ -77,30 +75,52 @@ public:
 
     heap_entry_type pop()
     {
-        // assert M_heap.size() > 0
-        heap_entry_type out = *(M_heap.begin());
-        pop_heap( M_heap.begin(), M_heap.end(), farther );
-        M_heap.pop_back();
+        // assert _M_heap.size() > 0
+        heap_entry_type out = *(_M_heap.begin());
+        pop_heap( _M_heap.begin(), _M_heap.end(), farther );
+        _M_heap.pop_back();
         return out;
     }
 
 
+    /* returns the front element, which is the one having the smallest phi
+       if the heap is empty, return an element having a huge value of phi, so that, compared to other heap entries it will never be accepted */
+    heap_entry_type front()
+    {
+        if ( _M_heap.empty() )
+            return std::make_pair(std::numeric_limits<value_type>::max(), 0 );
+        return _M_heap.front();
+    }
+
     bool checkExistingEntry(uint16_type index)
     {
-        for (heapvect_iter it = M_heap.begin(); it != M_heap.end(); ++it )
+        for (auto it = _M_heap.begin(); it != _M_heap.end(); ++it )
                 if (it->second == index)
                     return true;
         return false;
     }
 
+    // useless
+    // // if the entry index is present, return its index location
+    // // else return -1
+    // int findIndexEntry( uint16_type entry )
+    // {
+    //     for (auto it = _M_heap.begin(); it != _M_heap.end(); ++it )
+    //         if (it->second == entry)
+    //             return (it - _M_heap.begin());
+    //     return -1;
+    // }
+
+
+    /* remove from the heap the entry having the specific value index*/
     bool removeFromHeap(uint16_type index)
     {
         bool removed = false;
 
-        for (heapvect_iter it = M_heap.begin(); it != M_heap.end(); ++it )
+        for (auto it = _M_heap.begin(); it != _M_heap.end(); ++it )
                 if (it->second == index)
                     {
-                        M_heap.erase(it);
+                        _M_heap.erase(it);
                         removed = true;
                         break;
                     }
@@ -108,17 +128,29 @@ public:
         return removed;
     }
 
+    static heap_entry_type min(heap_entry_type a, heap_entry_type b)
+    {
+        return std::abs(a.first < b.first) ? a : b;
+    }
+
 
     size_type size() const
     {
-        return M_heap.size();
+        return _M_heap.size();
     }
+
+#if 0
+    //used to debug (needed to iterate through the heap
+    typename std::vector<heap_entry_type>::iterator begin()
+    {return _M_heap.begin();}
+
+    typename std::vector<heap_entry_type>::iterator end()
+    {return _M_heap.end();}
+#endif
 
 private:
 
     typedef std::vector<heap_entry_type> heapvect_type;
-    typedef typename heapvect_type::iterator heapvect_iter;
-    typedef typename heapvect_type::const_iterator heapvect_constiter;
 
     static bool farther( heap_entry_type a, heap_entry_type b )
     {
@@ -130,7 +162,8 @@ private:
         return aa > bb;
     }
 
-    std::vector<heap_entry_type> M_heap;
+    std::vector<heap_entry_type> _M_heap;
+    //    std::list<heap_entry_type> _M_heap;
 };
 
 } // namespace details
@@ -138,3 +171,4 @@ private:
 } // namespace Feel
 
 #endif /* __FMS_Heap_H */
+
