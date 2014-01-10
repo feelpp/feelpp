@@ -45,6 +45,9 @@ public:
     //         pair < phi_value,  index >
     typedef std::pair<value_type, uint16_type> heap_entry_type;
 
+    /* constructor */
+    FmsHeap() : maxValue( std::numeric_limits<value_type>::max() ) {}
+
     void push( heap_entry_type in )
     {
         _M_heap.push_back( in );
@@ -88,7 +91,7 @@ public:
     heap_entry_type front()
     {
         if ( _M_heap.empty() )
-            return std::make_pair(std::numeric_limits<value_type>::max(), 0 );
+            return std::make_pair(maxValue, 0 );
         return _M_heap.front();
     }
 
@@ -151,6 +154,7 @@ public:
 private:
 
     typedef std::vector<heap_entry_type> heapvect_type;
+    const value_type maxValue;
 
     static bool farther( heap_entry_type a, heap_entry_type b )
     {
