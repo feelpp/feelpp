@@ -215,10 +215,7 @@ void SolverLinearPetsc<T>::init ()
 
         // Set user-specified  solver and preconditioner types
         this->setPetscSolverType();
-        this->setPetscPreconditionerType();
         this->setPetscConstantNullSpace();
-        // sets the software that is used to perform the factorization
-        PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
 
 
         // Set the options from user-input
@@ -300,7 +297,12 @@ void SolverLinearPetsc<T>::init ()
             KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
         }
 
-
+    }
+    else
+    {
+        this->setPetscPreconditionerType();
+        // sets the software that is used to perform the factorization
+        PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
     }
 }
 
