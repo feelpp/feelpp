@@ -330,7 +330,7 @@ private:
 
     // search in other world (MPI communication)
     std::list<boost::tuple<size_type,uint16_type> >
-    updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<int>,std::vector<int>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
+    updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
                                               std::vector< std::vector<size_type> > const& memmapGdof,
                                               std::vector< std::vector<uint16_type> > const& memmapComp,
                                               std::vector<std::vector<typename image_mesh_type::node_type> > const& pointsSearched,
@@ -1076,7 +1076,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------------------------------------------------------
 
     //std::vector<boost::tuple<int,int,int,int> > worldcommFusionProperties;
-    boost::tuple<std::vector<int>,std::vector<int>,std::vector<boost::tuple<int,int> > > worldcommFusionProperties;
+    boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > worldcommFusionProperties;
     if ( this->interpolationType().searchWithCommunication())
     {
         // Attention : marche que si les 2 worldcomms qui s'emboite (mon cas)
@@ -1259,7 +1259,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            else FinishMPIsearch=true;
        }
 
-   //std::cout << "\n FINISH SEARCH!!!!!!!!! " << std::endl;
    if ( doExtrapolationAtStart && this->interpolationType().searchWithCommunication() ) locTool->setExtrapolation(true);
 
    if ( doExtrapolationAtStart && nbLocalisationFail>0 )
@@ -1734,7 +1733,7 @@ OperatorInterpolation<DomainSpaceType,
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 std::list<boost::tuple<size_type,uint16_type> >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
-                      IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<int>,std::vector<int>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
+                      IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
                                                                                            std::vector< std::vector<size_type> > const& memmapGdof,
                                                                                            std::vector< std::vector<uint16_type> > const& memmapComp,
                                                                                            std::vector<std::vector<typename image_mesh_type::node_type> > const& pointsSearched,
