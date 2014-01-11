@@ -47,6 +47,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/im.hpp>
