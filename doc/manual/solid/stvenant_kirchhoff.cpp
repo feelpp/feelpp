@@ -254,7 +254,7 @@ StVenantKirchhoff<Dim, Order>::updateJacobian( const vector_ptrtype& X, sparse_m
     element_type v( M_Xh, "V" );
     u = *X;
 
-    if ( !J ) J=M_backend()->newMatrix( M_Xh, M_Xh );
+    if ( !J ) J= backend()->newMatrix( M_Xh, M_Xh );
 
     form2( _test=M_Xh, _trial=M_Xh, _matrix=J ) =
         integrate( elements( mesh ),
