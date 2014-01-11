@@ -31,13 +31,12 @@ void run()
 
     auto Xh = Pch<1>(mesh);
 
-
-    auto thefms = fms( Xh, elements(mesh) );
+    auto thefms = fms( Xh );
 
     auto phio = Xh->element();
     phio = vf::project(Xh, elements(mesh), h() );
     phio +=vf::project(Xh, boundaryfaces(mesh), -idv(phio) - h()/100. );
-    auto phi = thefms->operator()(phio);
+    auto phi = thefms->march(phio);
 
     auto exp = exporter(_mesh=mesh, _name="disttowalls");
     exp->step(0)->add("phi", phi);
