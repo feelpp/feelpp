@@ -443,7 +443,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                         {
                             // update NeighborPartition for this points
                             auto ptToUpdate = newMesh->pointIterator( new_node_numbers[oldPoint.id()] );
-                            newMesh->points().modify( ptToUpdate, detail::UpdateNeighborPartition( proc ) );
+                            newMesh->points().modify( ptToUpdate, Feel::detail::UpdateNeighborPartition( proc ) );
                         }
 
                         // Define this element's connectivity on the new mesh
@@ -773,7 +773,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                         {
                             // update NeighborPartition for this points
                             auto ptToUpdate = newMesh->pointIterator( new_node_numbers[oldPoint.id()] );
-                            newMesh->points().modify( ptToUpdate, detail::UpdateNeighborPartition( proc ) );
+                            newMesh->points().modify( ptToUpdate, Feel::detail::UpdateNeighborPartition( proc ) );
                         }
 
                         // Define this element's connectivity on the new mesh
@@ -978,7 +978,7 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
     //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
     //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
 
-    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
+    createSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
     cSmT.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     auto m = cSmT.build();
     Context c( ctx );
@@ -1000,7 +1000,7 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
     //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
     //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
 
-    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range, wc,updateComponentsMesh );
+    createSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range, wc,updateComponentsMesh );
     cSmT.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     auto m = cSmT.build();
     Context c( ctx );
