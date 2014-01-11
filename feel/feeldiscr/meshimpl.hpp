@@ -3262,9 +3262,9 @@ Mesh<Shape, T, Tag>::Localization::computeBarycentersWorld()
 {
     LOG(INFO) << "computeBarycentersWorld : run mpi::all_gather\n";
     auto mesh = M_mesh.lock();
-    M_barycentersWorld = std::vector<node_type>( mesh->worldComm().localSize() );
+    M_barycentersWorld = std::vector<boost::tuple<bool,node_type> >( mesh->worldComm().localSize() );
     mpi::all_gather( mesh->worldComm().localComm(),
-                     this->barycenter(),
+                     boost::make_tuple( this->kdtree()->nPoints() > 0 , this->barycenter() ),
                      *M_barycentersWorld );
 }
 

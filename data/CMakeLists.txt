@@ -35,6 +35,11 @@ if (EXISTS $ENV{HOME})
       get_filename_component(filename ${file} NAME )
       add_custom_command(TARGET feel_mesh_data
         COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{HOME}/feel/geo )
+      if(DEFINED ENV{FEELPP_WORKDIR})
+        file(MAKE_DIRECTORY $ENV{FEELPP_WORKDIR}/feel/geo)
+        add_custom_command(TARGET feel_mesh_data
+          COMMAND ${CMAKE_COMMAND} -E copy  ${file} $ENV{FEELPP_WORKDIR}/geo )
+      endif()
       add_dependencies(feel_mesh_data copy_mesh_data_${filename} )
     endforeach()
   endforeach()

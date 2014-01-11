@@ -392,6 +392,18 @@ public:
      */
     void checkC( size_type K ) const;
 
+    /**
+     * check if eigen value and eigen vector given are solution
+     * of the generalized eigenvalue problem
+     * A w = \lambda B w
+     * where w is an eigenvector and \lambda is an eigenvalue
+     * \param A : matrix
+     * \param B : matrix
+     * \param eigenvector : eigenvector (like w)
+     * \param eigenvalue : eigenvalue (like \lambda)
+     */
+    void checkEigenVectorEigenValue( sparse_matrix_ptrtype const& A, sparse_matrix_ptrtype const& B, vector_ptrtype const& eigenvector, double eigenvalue ) const;
+
     boost::tuple<value_type,value_type> ex( parameter_type const& mu ) const;
 
     /**
@@ -625,6 +637,11 @@ CRBSCM<TruthModelType>::offlineNoSCM()
 #endif
     LOG( INFO )<<"eigenvalue ( min ) for mu_ref : "<<eigen_value;
 
+    if( option(_name="crb.scm.check-eigenvector").template as<bool>() )
+    {
+        auto eigen_vector = modes.begin()->second.template get<2>();
+        checkEigenVectorEigenValue( sym, inner_prod, eigen_vector, eigen_value );
+    }
     //store the eigen value in M_C_eigenvalues
     M_C_eigenvalues[0] = modes.begin()->second.template get<0>();
 
@@ -833,6 +850,12 @@ CRBSCM<TruthModelType>::offlineSCM()
         M_C_eigenvalues[index] = modes.begin()->second.template get<0>();
         typedef std::pair<size_type,value_type> key_t;
 
+        if( option(_name="crb.scm.check-eigenvector").template as<bool>() )
+        {
+            auto eigenvalue = modes.begin()->second.template get<0>();
+            checkEigenVectorEigenValue( symmMatrix, B, eigenvector, eigenvalue );
+        }
+
         //BOOST_FOREACH( key_t eig, M_C_eigenvalues )
 	    //std::cout << "[fe eig] stored/map eig=" << eig.second <<" ( " << eig.first << " ) " << "\n";
 
@@ -927,6 +950,26 @@ CRBSCM<TruthModelType>::offlineSCM()
     saveDB();
     return ckconv;
 }
+
+template<typename TruthModelType>
+void
+CRBSCM<TruthModelType>::checkEigenVectorEigenValue( sparse_matrix_ptrtype const& A, sparse_matrix_ptrtype const& B, vector_ptrtype const& eigenvector, double eigenvalue ) const
+{
+    auto backend = backend_type::build( BACKEND_PETSC );
+    auto Xh = M_model->functionSpace() ;
+    auto Aw =  backend->newVector( Xh );
+    auto Bw =  backend->newVector( Xh );
+    A->multVector( eigenvector, Aw );
+    B->multVector( eigenvector, Bw );
+    //we should have Aw = eigen_value Bw
+    Bw->scale( eigenvalue );
+    double energyAwAw = A->energy( Aw , Aw );
+    double energyAwBw = A->energy( Aw , Bw );
+    double energyBwBw = A->energy( Bw , Bw );
+    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-12 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
+    CHECK( math::abs(energyAwAw - energyAwBw) <  1e-12 )<<"eigen vector and/or eigen value not satisfy generalized eigenvalue problem : math::abs(energyAwAw - energyAwBw) = "<<math::abs(energyAwAw - energyAwBw)<<std::endl;
+}
+
 template<typename TruthModelType>
 void
 CRBSCM<TruthModelType>::checkC( size_type K ) const
