@@ -470,6 +470,16 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case GAMG_PRECOND:
+        ierr = PCSetType( pc,( char* ) PCGAMG );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        // crash without this
+        ierr = PCSetFromOptions( pc );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        break;
+
+
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
                   << preconditioner_type       << std::endl
@@ -709,6 +719,9 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
             std::string prefixFeelBase = prefixvm(prefixSplit,"lsc");
             std::string prefixPetscBase = "fieldsplit_1_lsc";
             configurePCWithPetscCommandLineOption( prefixFeelBase,prefixPetscBase );
+
+            ierr = PCSetFromOptions( subpc );
+            CHKERRABORT( worldComm.globalComm(),ierr );
         }
 
         ierr = PCSetUp( subpc );

@@ -129,6 +129,7 @@ enum PreconditionerType {IDENTITY_PRECOND =0,
                          SHELL_PRECOND,
                          FIELDSPLIT_PRECOND,
                          ML_PRECOND,
+                         GAMG_PRECOND,
                          INVALID_PRECONDITIONER
                         };
 
