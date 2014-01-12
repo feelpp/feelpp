@@ -70,19 +70,19 @@ public:
             // sort by employee::operator<
             multi_index::ordered_unique<multi_index::identity<edge_type> >,
             // sort by less<int> on marker
-            multi_index::ordered_non_unique<multi_index::tag<detail::by_marker>,
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_marker>,
                                             multi_index::const_mem_fun<edge_type,
                                                                        Marker1 const&,
                                                                        &edge_type::marker> >,
 
             // sort by less<int> on processId
-            multi_index::ordered_non_unique<multi_index::tag<detail::by_pid>,
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_pid>,
                                             multi_index::const_mem_fun<edge_type,
                                                                        uint16_type,
                                                                        &edge_type::processId> >,
 
             // sort by less<int> on boundary
-            multi_index::ordered_non_unique<multi_index::tag<detail::by_location>,
+            multi_index::ordered_non_unique<multi_index::tag<Feel::detail::by_location>,
                                             multi_index::const_mem_fun<edge_type,
                                                                        bool,
                                                                        &edge_type::isOnBoundary> >
@@ -92,16 +92,16 @@ public:
 
     typedef typename edges_type::iterator edge_iterator;
     typedef typename edges_type::const_iterator edge_const_iterator;
-    typedef typename edges_type::template index<detail::by_marker>::type marker_edges;
+    typedef typename edges_type::template index<Feel::detail::by_marker>::type marker_edges;
 
     typedef typename marker_edges::iterator marker_edge_iterator;
     typedef typename marker_edges::const_iterator marker_edge_const_iterator;
 
-    typedef typename edges_type::template index<detail::by_pid>::type pid_edges;
+    typedef typename edges_type::template index<Feel::detail::by_pid>::type pid_edges;
     typedef typename pid_edges::iterator pid_edge_iterator;
     typedef typename pid_edges::const_iterator pid_edge_const_iterator;
 
-    typedef typename edges_type::template index<detail::by_location>::type location_edges;
+    typedef typename edges_type::template index<Feel::detail::by_location>::type location_edges;
     typedef typename location_edges::iterator location_edge_iterator;
     typedef typename location_edges::const_iterator location_edge_const_iterator;
 
@@ -214,26 +214,26 @@ public:
     std::pair<marker_edge_iterator, marker_edge_iterator>
     edgesWithMarker( size_type m, size_type p ) const
     {
-        //return M_edges.template get<detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
-        return M_edges.template get<detail::by_marker>().equal_range( Marker1( m ) );
+        //return M_edges.template get<Feel::detail::by_marker>().equal_range( boost::make_tuple( Marker1( m ), p ) );
+        return M_edges.template get<Feel::detail::by_marker>().equal_range( Marker1( m ) );
     }
 
 
     marker_edge_iterator beginEdgeWithMarker( size_type m )
     {
-        return M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
+        return M_edges.template get<Feel::detail::by_marker>().lower_bound( Marker1( m ) );
     }
     marker_edge_const_iterator beginEdgeWithMarker( size_type m ) const
     {
-        return M_edges.template get<detail::by_marker>().lower_bound( Marker1( m ) );
+        return M_edges.template get<Feel::detail::by_marker>().lower_bound( Marker1( m ) );
     }
     marker_edge_iterator endEdgeWithMarker( size_type m )
     {
-        return M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
+        return M_edges.template get<Feel::detail::by_marker>().upper_bound( Marker1( m ) );
     }
     marker_edge_const_iterator endEdgeWithMarker( size_type m ) const
     {
-        return M_edges.template get<detail::by_marker>().upper_bound( Marker1( m ) );
+        return M_edges.template get<Feel::detail::by_marker>().upper_bound( Marker1( m ) );
     }
 
     /**
@@ -269,7 +269,7 @@ public:
     marker_edges &
     edgesByMarker()
     {
-        return M_edges.template get<detail::by_marker>();
+        return M_edges.template get<Feel::detail::by_marker>();
     }
 
     /**
@@ -281,7 +281,7 @@ public:
     marker_edges const&
     edgesByMarker() const
     {
-        return M_edges.template get<detail::by_marker>();
+        return M_edges.template get<Feel::detail::by_marker>();
     }
     /**
      * get the edges container using the location view
@@ -292,7 +292,7 @@ public:
     location_edges &
     edgesByLocation()
     {
-        return M_edges.template get<detail::by_location>();
+        return M_edges.template get<Feel::detail::by_location>();
     }
 
     /**
@@ -304,7 +304,7 @@ public:
     location_edges const&
     edgesByLocation() const
     {
-        return M_edges.template get<detail::by_location>();
+        return M_edges.template get<Feel::detail::by_location>();
     }
 
     /**
@@ -314,7 +314,7 @@ public:
      */
     location_edge_iterator beginInternalEdge()
     {
-        return M_edges.template get<detail::by_location>().lower_bound( INTERNAL );
+        return M_edges.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
     }
     /**
      * get the end() iterator on all the internal edges
@@ -323,7 +323,7 @@ public:
      */
     location_edge_iterator endInternalEdge()
     {
-        return M_edges.template get<detail::by_location>().upper_bound( INTERNAL );
+        return M_edges.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
     }
 
     /**
@@ -333,7 +333,7 @@ public:
      */
     location_edge_const_iterator beginInternalEdge() const
     {
-        return M_edges.template get<detail::by_location>().lower_bound( INTERNAL );
+        return M_edges.template get<Feel::detail::by_location>().lower_bound( INTERNAL );
     }
 
     /**
@@ -343,7 +343,7 @@ public:
      */
     location_edge_const_iterator endInternalEdge() const
     {
-        return M_edges.template get<detail::by_location>().upper_bound( INTERNAL );
+        return M_edges.template get<Feel::detail::by_location>().upper_bound( INTERNAL );
     }
 
     /**
@@ -353,7 +353,7 @@ public:
      */
     location_edge_iterator beginEdgeOnBoundary()
     {
-        return M_edges.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_edges.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
     }
     /**
      * get the end() iterator on all the boundary edges
@@ -362,7 +362,7 @@ public:
      */
     location_edge_iterator endEdgeOnBoundary()
     {
-        return M_edges.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_edges.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
     /**
@@ -372,7 +372,7 @@ public:
      */
     location_edge_const_iterator beginEdgeOnBoundary() const
     {
-        return M_edges.template get<detail::by_location>().lower_bound( ON_BOUNDARY );
+        return M_edges.template get<Feel::detail::by_location>().lower_bound( ON_BOUNDARY );
     }
 
     /**
@@ -382,7 +382,7 @@ public:
      */
     location_edge_const_iterator endEdgeOnBoundary() const
     {
-        return M_edges.template get<detail::by_location>().upper_bound( ON_BOUNDARY );
+        return M_edges.template get<Feel::detail::by_location>().upper_bound( ON_BOUNDARY );
     }
 
     /**
@@ -392,7 +392,7 @@ public:
     std::pair<pid_edge_iterator, pid_edge_iterator>
     edgesWithProcessId( size_type p ) const
     {
-        return M_edges.template get<detail::by_pid>().equal_range( p );
+        return M_edges.template get<Feel::detail::by_pid>().equal_range( p );
     }
 
     //@}

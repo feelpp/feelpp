@@ -34,33 +34,6 @@
 
 namespace Feel
 {
-po::options_description
-solvereigen_options( std::string const& prefix )
-{
-    std::string _prefix = prefix;
-    boost::algorithm::trim( _prefix );
-
-    if ( !_prefix.empty() && !boost::algorithm::ends_with( _prefix, "-" ) )
-        _prefix += "-";
-
-
-    //int nev,                  // number of requested eigenpairs
-    //int ncv,                  // number of basis vectors
-    //const double tol,         // solver tolerance
-    //const unsigned int m_its) // maximum number of iterations
-    po::options_description _options( "Solver EigenValue Slepc -- " + prefix + " solver options" );
-    _options.add_options()
-    // solver options
-    ( ( _prefix+"solvereigen.solver-type" ).c_str(), Feel::po::value<int>()->default_value( KRYLOVSCHUR ), "type of eigenvalue solver" )
-    ( ( _prefix+"solvereigen.problem-type" ).c_str(), Feel::po::value<int>()->default_value( NHEP ), "type of eigenvalue problem" )
-    ( ( _prefix+"solvereigen.position" ).c_str(), Feel::po::value<int>()->default_value( LARGEST_MAGNITUDE ), "eigenvalue solver position in spectrum: LARGEST_MAGNITUDE=0, SMALLEST_MAGNITUDE=1, LARGEST_REAL=2, SMALLEST_REAL=3, LARGEST_IMAGINARY=4, SMALLEST_IMAGINARY=5" )
-    ( ( _prefix+"solvereigen.nev" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "number of requested eigenpairs" )
-    ( ( _prefix+"solvereigen.ncv" ).c_str(), Feel::po::value<int>()->default_value( 3 ), "number of basis vectors" )
-    ( ( _prefix+"solvereigen.tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-10 ), "solver tolerance" )
-    ( ( _prefix+"solvereigen.maxiter" ).c_str(), Feel::po::value<int>()->default_value( 10000 ), "maximum number of iterations" );
-
-    return _options;
-}
 template <typename T>
 SolverEigen<T>::SolverEigen()
     :

@@ -31,7 +31,9 @@
    \date 2013-02-11
    This program show how to create a mesh and export results.
  */
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/exporter.hpp>
 using namespace Feel;
 
 /**

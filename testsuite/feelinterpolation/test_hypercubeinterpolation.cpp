@@ -34,7 +34,8 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/operatortrace.hpp>
 #include <feel/feeldiscr/region.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>

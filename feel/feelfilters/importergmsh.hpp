@@ -37,6 +37,7 @@
 #include <algorithm>
 
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/importer.hpp>
 #include <feel/feelfilters/gmshenums.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -44,6 +45,7 @@
 // Gmsh
 #include <GModel.h>
 #include <MElement.h>
+#undef sign
 
 // from Gmsh
 void SwapBytes(char *array, int size, int n);

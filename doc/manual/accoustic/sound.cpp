@@ -36,7 +36,7 @@
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelpoly/im.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
@@ -57,10 +57,6 @@ makeOptions()
     ( "kc2", Feel::po::value<double>()->default_value( 1 ), "k/c parameter" )
     ( "sigma", Feel::po::value<double>()->default_value( 20 ), "shift parameter for the eigenvalue problem" )
     ( "hsize", Feel::po::value<double>()->default_value( 0.5 ), "first h value to start convergence" )
-
-    ( "export", "export results(ensight, data file(1D)" )
-    ( "export-mesh-only", "export mesh only in ensight format" )
-    ( "export-matlab", "export matrix and vectors in matlab" )
     ;
     return soundoptions.add( Feel::feel_options() );
 }
@@ -237,12 +233,12 @@ Sound<Dim, Order>::run()
     t.restart();
 
 
-    int maxit = this->vm()["solvereigen-maxiter"].template as<int>();
-    int tol = this->vm()["solvereigen-tol"].template as<double>();
+    int maxit = this->vm()["solvereigen.maxiter"].template as<int>();
+    int tol = this->vm()["solvereigen.tol"].template as<double>();
 
-    int nev = this->vm()["solvereigen-nev"].template as<int>();
+    int nev = this->vm()["solvereigen.nev"].template as<int>();
 
-    int ncv = this->vm()["solvereigen-ncv"].template as<int>();;
+    int ncv = this->vm()["solvereigen.ncv"].template as<int>();;
 
     double eigen_real, eigen_imag;
 
@@ -260,7 +256,7 @@ Sound<Dim, Order>::run()
               _ncv=ncv,
               _maxit=maxit,
               _tolerance=tol,
-              _spectrum=( PositionOfSpectrum )this->vm()["solvereigen-position"].template as<int>() );
+              _spectrum=( PositionOfSpectrum )this->vm()["solvereigen.position"].template as<int>() );
 
     element_type mode( Xh, "mode" );
 
@@ -281,12 +277,8 @@ Sound<Dim, Order>::run()
 
     exporter->step( 0. )->setMesh( u.functionSpace()->mesh() );
 
-    if ( !this->vm().count( "export-mesh-only" ) )
-    {
-        exporter->step( 0. )->add( "p", u );
-        exporter->step( 0. )->add( "mode", mode );
-    }
-
+    exporter->step( 0. )->add( "p", u );
+    exporter->step( 0. )->add( "mode", mode );
     exporter->save();
 } // Sound::run
 } // Feel
