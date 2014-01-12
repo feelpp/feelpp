@@ -28,6 +28,7 @@
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/savegmshmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/geotool.hpp>
 #include <feel/feelfilters/img2msh.hpp>
