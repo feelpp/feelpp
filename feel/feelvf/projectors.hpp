@@ -34,6 +34,9 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
+#include <feel/feelvf/detail/clean.hpp>
+#include <feel/feelvf/expr.hpp>
+
 namespace Feel
 {
 namespace vf

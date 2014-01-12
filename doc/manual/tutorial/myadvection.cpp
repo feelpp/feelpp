@@ -23,7 +23,18 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/matvec.hpp>
+#include <feel/feelvf/on.hpp>
+
+
 using namespace Feel;
 
 /**

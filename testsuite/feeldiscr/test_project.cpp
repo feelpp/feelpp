@@ -42,7 +42,9 @@
 
 
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 

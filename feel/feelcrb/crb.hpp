@@ -59,15 +59,20 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/serialization.hpp>
+
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/expansion.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+
+#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crbscm.hpp>
-#include <feel/feelcore/serialization.hpp>
-#include <feel/feelcrb/pod.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
-#include <feel/feelfilters/exporter.hpp>
-
 #include <feel/feelcrb/crbelementsdb.hpp>
+#include <feel/feelcrb/pod.hpp>
+
+#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelcore/pslogger.hpp>
 
@@ -89,17 +94,6 @@
 namespace Feel
 {
 /**
- * CRBErrorType
- * Determine the type of error estimation used
- * - CRB_RESIDUAL : use the residual error estimation without algorithm SCM
- * - CRB_RESIDUAL_SCM : use the residual error estimation and also algorithm SCM
- * - CRB_NO_RESIDUAL : in this case we don't compute error estimation
- * - CRB_EMPIRICAL : compute |S_n - S_{n-1}| where S_n is the output obtained by using a reduced basis with n elements
- */
-enum CRBErrorType { CRB_RESIDUAL = 0, CRB_RESIDUAL_SCM=1, CRB_NO_RESIDUAL=2 , CRB_EMPIRICAL=3};
-
-/**
- * \class CRB
  * \brief Certifed Reduced Basis class
  *
  * Implements the certified reduced basis method

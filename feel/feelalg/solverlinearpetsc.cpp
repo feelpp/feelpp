@@ -291,18 +291,18 @@ void SolverLinearPetsc<T>::init ()
 
             VLOG(2) << "preconditioner set as "  << pc_type << "\n";
         }
+        else
+        {
+            this->setPetscPreconditionerType();
+            // sets the software that is used to perform the factorization
+            PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
+        }
 
         if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
         {
             KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
         }
 
-    }
-    else
-    {
-        this->setPetscPreconditionerType();
-        // sets the software that is used to perform the factorization
-        PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
     }
 }
 
