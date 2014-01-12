@@ -148,7 +148,8 @@ template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 
   Feel defines a number of types that are used in the library.
 
-  -# \c Real 64 bits real number type
+  -# \c real32_type 32 bits real number type
+  -# \c real64_type 64 bits real number type
 
   \section ints Integers
 
@@ -174,7 +175,19 @@ template <class T> inline void ignore_unused_variable_warning( const T& ) { }
 
   Feel defines a number of useful aliases for integers
   -# \c dim_type an alias to uint16_type used to identify dimensions
+  -# \c rank_type an alias to uint16_type used for mpi process ranks
   -# \c size_type an alias to size_t used as indices for arrays, vectors or matrices
+
+  Feel++ defines also some invalid number associated to each unsigned integer
+  types. it usually serves to identify a situation where something went
+  wrong. The invalid value corresponds to the maximum value of the unsigned type.
+  -# invalid_uint8_type_value
+  -# invalid_uint16_type_value
+  -# invalid_uint32_type_value
+  -# invalid_uint64_type_value
+  -# invalid_dim_type_value
+  -# invalid_rank_type_value
+  -# invalid_size_type_value
 
 */
 
@@ -351,10 +364,16 @@ const uint32_type invalid_uint32_type_value = uint32_type( -1 );
  */
 const uint64_type invalid_uint64_type_value = uint64_type( -1 );
 #endif  // BOOST_NO_INT64_T
+
 /**
  * Invalid dim type value
  */
 const dim_type invalid_dim_type_value = dim_type( -1 );
+
+/**
+ * Invalid dim type value
+ */
+const rank_type invalid_rank_type_value = rank_type( -1 );
 
 
 /**

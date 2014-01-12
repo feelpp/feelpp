@@ -40,25 +40,14 @@
 
 #include <feel/feelalg/backend.hpp>
 
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/pchv.hpp>
-#include <feel/feeldiscr/pdh.hpp>
-#include <feel/feeldiscr/odh.hpp>
-#include <feel/feeldiscr/thch.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
 
 #include <feel/feelvf/vf.hpp>
 
-#include <feel/feeldiscr/operatorlinear.hpp>
 
 #include <feel/feelts/ts.hpp>
-
-#include <feel/feeldiscr/projector.hpp>
-
-#include <feel/feeldiscr/operatorinterpolation.hpp>
-#include <feel/feeldiscr/operatorlagrangep1.hpp>
+#include <feel/feeldiscr/discr.hpp>
 
 #include <ginac/ginac.h>
 namespace Feel
@@ -67,17 +56,6 @@ using GiNaC::symbol;
 using GiNaC::ex;
 }
 
-#include <feel/feelfilters/loadmesh.hpp>
-#include <feel/feelfilters/domain.hpp>
-#include <feel/feelfilters/unitsegment.hpp>
-#include <feel/feelfilters/unitsquare.hpp>
-#include <feel/feelfilters/unitcube.hpp>
-#include <feel/feelfilters/unitcircle.hpp>
-#include <feel/feelfilters/unitsphere.hpp>
-#include <feel/feelfilters/unithypercube.hpp>
-
-
-#include <feel/feelfilters/exporter.hpp>
-#include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/filters.hpp>
 
 #endif /* FEELPP_FEEL_HPP */
