@@ -991,11 +991,11 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
         }
 
     auto worldCommFusion = this->map().worldComm()+vecInput.map().worldComm();
-    std::vector<int> globalRankToFusionRank_this(this->map().worldComm().globalSize());
+    std::vector<rank_type> globalRankToFusionRank_this(this->map().worldComm().globalSize());
     mpi::all_gather( this->map().worldComm().globalComm(),
                      worldCommFusion.globalRank(),
                      globalRankToFusionRank_this );
-    std::vector<int> globalRankToFusionRank_input(vecInput.map().worldComm().globalSize());
+    std::vector<rank_type> globalRankToFusionRank_input(vecInput.map().worldComm().globalSize());
     mpi::all_gather( vecInput.map().worldComm().globalComm(),
                      worldCommFusion.globalRank(),
                      globalRankToFusionRank_input );

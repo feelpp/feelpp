@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-09-18
 
-  Copyright (C) 2012 Feel++ Consortium
+  Copyright (C) 2012-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,11 @@
 #include <feel/feelalg/backend.hpp>
 
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/odh.hpp>
+#include <feel/feeldiscr/thch.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>
 
@@ -48,7 +53,7 @@
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelts/ts.hpp>
 
 #include <feel/feeldiscr/projector.hpp>
 
@@ -62,7 +67,15 @@ using GiNaC::symbol;
 using GiNaC::ex;
 }
 
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/unitsegment.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/unitcube.hpp>
+#include <feel/feelfilters/unitcircle.hpp>
+#include <feel/feelfilters/unitsphere.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelfilters/geotool.hpp>

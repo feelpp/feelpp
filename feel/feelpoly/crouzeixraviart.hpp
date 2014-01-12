@@ -323,6 +323,16 @@ public:
     static const uint16_type nbPtsPerVolume = 0;
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
+
+    struct SSpace
+    {
+        static constexpr uint16_type TheOrder = (nOrder > 1)?nOrder-1:0;
+        typedef typename mpl::if_<mpl::less_equal<mpl::int_<nOrder>, mpl::int_<1> >,
+                                  mpl::identity<CrouzeixRaviart<nDim, RealDim, PolySetType, T, Convex, TheTAG> >,
+                                  mpl::identity<CrouzeixRaviart<nDim, RealDim, PolySetType, T, Convex, TheTAG> > >::type::type type;
+
+    };
+
     //@}
 
     /** @name Constructors, destructor

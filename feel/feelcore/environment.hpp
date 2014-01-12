@@ -243,7 +243,7 @@ public:
     /**
      * return the rank in global mpi communicator
      */
-    static int rank() { return S_worldcomm->globalRank(); }
+    static rank_type rank() { return S_worldcomm->globalRank(); }
 
     /**
      * return variables_map

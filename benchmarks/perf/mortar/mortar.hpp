@@ -33,14 +33,16 @@
 
 #include <boost/any.hpp>
 #include <boost/utility.hpp>
-#include <google/profiler.h>
+
+//#include <google/profiler.h>
 
 #include <feel/options.hpp>
 #include <feel/feelcore/simget.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
@@ -53,15 +55,15 @@
 namespace Feel
 {
 /**
- * \class Mortar
+ * \class MortarBench
  *
- * Mortar Solver using continuous approximation spaces
+ * MortarBench Solver using continuous approximation spaces
  * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
  *
  * \tparam Dim the geometric dimension of the problem (e.g. Dim=2 or 3)
  */
 template<int Dim, int Order1, int Order2>
-class Mortar
+class MortarBench
     :
 public Simget
 {
@@ -121,9 +123,9 @@ public:
     /**
      * Constructor
      */
-    Mortar( std::string const& basis_name, Feel::po::variables_map const& vm, AboutData const& ad )
+    MortarBench( std::string const& basis_name, Feel::po::variables_map const& vm, AboutData const& ad )
         :
-        super( vm, ad ),
+        super(),
         M_basis_name( basis_name )
     {}
 
@@ -149,11 +151,11 @@ private:
     // marker for interfaces
     // int gamma1;
     // int gamma2;
-}; // Mortar
+}; // MortarBench
 
 template<int Dim, int Order1, int Order2>
 void
-Mortar<Dim, Order1, Order2>::run()
+MortarBench<Dim, Order1, Order2>::run()
 {
     using namespace Feel::vf;
 
@@ -166,7 +168,7 @@ Mortar<Dim, Order1, Order2>::run()
                                 % meshSize() );
     }
 
-    backend_ptrtype backend =  backend_type::build( this->vm() ) ;
+    //backend_ptrtype backend =  backend_type::build( this->vm() ) ;
 
 #if defined(KOVASZNAY)
     double x1min = -0.5, x1max=1;
@@ -244,16 +246,16 @@ Mortar<Dim, Order1, Order2>::run()
     }
 
     auto Xh1 = space1_type::New( mesh1 );
-    auto u1 = Xh1->element();
-    auto v1 = Xh1->element();
+    auto u1 = Xh1->elementPtr();
+    auto v1 = Xh1->elementPtr();
 
     auto trace_mesh = mesh1->trace( markedfaces( mesh1,gamma1 ) );
     lagmult_space_ptrtype Lh1 = lagmult_space_type::New( trace_mesh );
-    auto mu = Lh1->element();
+    auto mu = Lh1->elementPtr();
     auto nu = Lh1->element();
 
     auto Xh2 = space2_type::New( mesh2 );
-    auto u2 = Xh2->element();
+    auto u2 = Xh2->elementPtr();
     auto v2 = Xh2->element();
 
     M_stats.put( "h",M_meshSize );
@@ -274,7 +276,7 @@ Mortar<Dim, Order1, Order2>::run()
     value_type penaldir = this->vm()["penaldir"].template as<double>();
     value_type coeff = this->vm()["coeff"].template as<double>();
 
-    auto F1 = backend->newVector( Xh1 );
+    auto F1 = backend()->newVector( Xh1 );
     form1( _test=Xh1, _vector=F1, _init=true ) =
         integrate( elements( mesh1 ), f*id( v1 ) );
 
@@ -287,7 +289,7 @@ Mortar<Dim, Order1, Order2>::run()
 
     F1->close();
 
-    auto D1 = backend->newMatrix( Xh1, Xh1 );
+    auto D1 = backend()->newMatrix( Xh1, Xh1 );
 
     form2( _trial=Xh1, _test=Xh1, _matrix=D1, _init=true ) =
         integrate( elements( mesh1 ), coeff*gradt( u1 )*trans( grad( v1 ) ) );
@@ -303,7 +305,7 @@ Mortar<Dim, Order1, Order2>::run()
 
     D1->close();
 
-    auto B1 = backend->newMatrix( Xh1, Lh1 );
+    auto B1 = backend()->newMatrix( Xh1, Lh1 );
 
     LOG(INFO) << "init_B1 starts\n";
     t.restart();
@@ -321,7 +323,7 @@ Mortar<Dim, Order1, Order2>::run()
     M_stats.put( "t.assembly.B1",t.elapsed() );
     t.restart();
 
-    auto F2 = backend->newVector( Xh2 );
+    auto F2 = backend()->newVector( Xh2 );
     form1( _test=Xh2, _vector=F2, _init=true ) =
         integrate( elements( mesh2 ), f*id( v2 ) );
 
@@ -336,7 +338,7 @@ Mortar<Dim, Order1, Order2>::run()
     M_stats.put( "t.assembly.F2",t.elapsed() );
     t.restart();
 
-    auto D2 = backend->newMatrix( Xh2, Xh2 );
+    auto D2 = backend()->newMatrix( Xh2, Xh2 );
 
     form2( _trial=Xh2, _test=Xh2, _matrix=D2, _init=true ) =
         integrate( elements( mesh2 ), coeff*gradt( u2 )*trans( grad( v2 ) ) );
@@ -353,7 +355,7 @@ Mortar<Dim, Order1, Order2>::run()
     D2->close();
     M_stats.put( "t.assembly.D2",t.elapsed() );
     t.restart();
-    auto B2 = backend->newMatrix( Xh2, Lh1 );
+    auto B2 = backend()->newMatrix( Xh2, Lh1 );
     form2( _trial=Xh2, _test=Lh1, _matrix=B2, _init=true );
     M_stats.put( "t.init.B2",t.elapsed() );
     t.restart();
@@ -364,7 +366,7 @@ Mortar<Dim, Order1, Order2>::run()
     M_stats.put( "t.assembly.B2",t.elapsed() );
     t.restart();
 
-    auto B12 = backend->newMatrix( Xh2, Xh1 );
+    auto B12 = backend()->newMatrix( Xh2, Xh1 );
 
 
     form2( _trial=Xh2, _test=Xh1, _matrix=B12, _init=true );
@@ -372,21 +374,21 @@ Mortar<Dim, Order1, Order2>::run()
     M_stats.put( "t.init.B12",t.elapsed() );
     t.restart();
 
-    auto B21 = backend->newMatrix( Xh1, Xh2 );
+    auto B21 = backend()->newMatrix( Xh1, Xh2 );
     form2( _trial=Xh1, _test=Xh2, _matrix=B21, _init=true );
     B21->close();
     M_stats.put( "t.init.B21",t.elapsed() );
     t.restart();
 
-    auto FL = backend->newVector( Lh1 );
+    auto FL = backend()->newVector( Lh1 );
     form1( _test=Lh1, _vector=FL, _init=true );
     M_stats.put( "t.init.FL",t.elapsed() );
     t.restart();
 
-    auto BLL = backend->newZeroMatrix( Lh1, Lh1 );
+    auto BLL = backend()->newZeroMatrix( Lh1, Lh1 );
     M_stats.put( "t.init.BLL",t.elapsed() );
     t.restart();
-    auto B1t = backend->newMatrix( Lh1, Xh1 );
+    auto B1t = backend()->newMatrix( Lh1, Xh1 );
     form2( _trial=Lh1, _test=Xh1, _matrix=B1t, _init=true );
     M_stats.put( "t.init.B1t",t.elapsed() );
     t.restart();
@@ -394,7 +396,7 @@ Mortar<Dim, Order1, Order2>::run()
     M_stats.put( "t.transpose.B1t",t.elapsed() );
     t.restart();
 
-    auto B2t = backend->newMatrix( Lh1, Xh2 );
+    auto B2t = backend()->newMatrix( Lh1, Xh2 );
     form2( _trial=Lh1, _test=Xh2, _matrix=B2t, _init=true );
     M_stats.put( "t.init.B2t",t.elapsed() );
     t.restart();
@@ -402,26 +404,33 @@ Mortar<Dim, Order1, Order2>::run()
     M_stats.put( "t.transpose.B2t",t.elapsed() );
     t.restart();
 
-    auto myb = Blocks<3,3>()<< D1 << B12 << B1t
-               << B21 << D2 << B2t
-               << B1 << B2  << BLL ;
+    BlocksBaseSparseMatrix<double> myblockMat(3,3);
+    myblockMat(0,0) = D1;
+    myblockMat(0,1) = B12;
+    myblockMat(0,2) = B1t;
+    myblockMat(1,0) = B21;
+    myblockMat(1,1) = D2;
+    myblockMat(1,2) = B2t;
+    myblockMat(2,0) = B1;
+    myblockMat(2,1) = B2;
+    myblockMat(2,2) = BLL;
 
-    auto AbB = backend->newBlockMatrix( myb );
+    auto AbB = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
     AbB->close();
     M_stats.put( "t.assembly.A",t.elapsed() );
     t.restart();
 
-    auto FbB = backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
-    auto UbB = backend->newVector( F1->size()+F2->size()+FL->size(),F1->size()+F2->size()+FL->size() );
+    BlocksBaseVector<double> myblockVec(3);
+    myblockVec(0,0) = F1;
+    myblockVec(1,0) = F2;
+    myblockVec(2,0) = FL;
+    auto FbB = backend()->newBlockVector(_block=myblockVec, _copy_values=true);
 
-    for ( size_type i = 0 ; i < F1->size(); ++ i )
-        FbB->set( i, ( *F1 )( i ) );
-
-    for ( size_type i = 0 ; i < F2->size(); ++ i )
-        FbB->set( F1->size()+i, ( *F2 )( i ) );
-
-    for ( size_type i = 0 ; i < FL->size(); ++ i )
-        FbB->set( F1->size()+F2->size()+i, ( *FL )( i ) );
+    BlocksBaseVector<double> myblockVecSol(3);
+    myblockVecSol(0,0) = u1;
+    myblockVecSol(1,0) = u2;
+    myblockVecSol(2,0) = mu;
+    auto UbB = backend()->newBlockVector(_block=myblockVecSol, _copy_values=false);
 
     M_stats.put( "t.assembly.F",t.elapsed() );
     t.restart();
@@ -434,24 +443,13 @@ Mortar<Dim, Order1, Order2>::run()
     LOG(INFO) << "solve starts\n";
 
 
-
-    backend->solve( _matrix=AbB,
-                    _solution=UbB,
-                    _rhs=FbB,
-                    _pcfactormatsolverpackage="umfpack" );
+    backend()->solve( _matrix=AbB,_solution=UbB,_rhs=FbB );
 
     M_stats.put( "t.solver.solve",t.elapsed() );
     t.restart();
 
-
-    for ( size_type i = 0 ; i < u1.size(); ++ i )
-        u1.set( i, ( *UbB )( i ) );
-
-    for ( size_type i = 0 ; i < u2.size(); ++ i )
-        u2.set( i, ( *UbB )( u1.size()+i ) );
-
-    for ( size_type i = 0 ; i < mu.size(); ++ i )
-        mu.set( i, ( *UbB )( u1.size()+u2.size()+i ) );
+    // necessary to retrieve u1, u2 and mu
+    myblockVecSol.localize(UbB);
 
     double L2error12 =integrate( elements( mesh1 ),
                                  ( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
@@ -488,7 +486,7 @@ Mortar<Dim, Order1, Order2>::run()
     std::cout<<"hsize= " << M_meshSize<< std::endl;
     // this->exportResults(u1,u2,mu);
 
-} // Mortar::run
+} // MortarBench::run
 } // Feel
 
 #endif // __FEELPP_BENCH_MORTAR_HPP

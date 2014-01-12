@@ -82,7 +82,7 @@ struct periodicity_base {};
  * @see
  */
 template<typename T = double >
-class Periodic : public detail::periodicity_base
+class Periodic : public Feel::detail::periodicity_base
 {
 public:
 
@@ -174,7 +174,7 @@ private:
  * @author Christophe Prud'homme
  * @see
  */
-class NoPeriodicity : public detail:: periodicity_base
+class NoPeriodicity : public Feel::detail::periodicity_base
 {
 public:
 

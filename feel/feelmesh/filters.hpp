@@ -679,7 +679,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       allelements( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::allelements( mesh, is_ptr_or_shared_ptr() );
+    return Feel::detail::allelements( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -694,7 +694,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       elements( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::elements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::elements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
     //return elements( mesh, flag, is_ptr_or_shared_ptr() );
 }
 
@@ -711,7 +711,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 boundaryelements( MeshType const& mesh, uint16_type entity_min_dim = 0, uint16_type entity_max_dim = 2 )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::boundaryelements( mesh, entity_min_dim, entity_max_dim, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::boundaryelements( mesh, entity_min_dim, entity_max_dim, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
@@ -729,7 +729,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       internalelements( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::internalelements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::internalelements( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -745,7 +745,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 markedelements( MeshType const& mesh, std::string const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedelements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markedelements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -761,7 +761,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 markedelements( MeshType const& mesh, const char* flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedelements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markedelements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -774,7 +774,7 @@ markedelements( MeshType const& mesh, boost::any const& flag )
 
     flag_type theflag = mesh->markerId( flag );
     VLOG(2) << "[markedelements] flag: " << theflag << "\n";
-    return detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -791,7 +791,7 @@ markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& f
     {
         flag_type theflag = mesh->markerId( *it );
         VLOG(2) << "[markedelements] flag: " << theflag << "\n";
-        list_elements.push_back( detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_elements.push_back( Feel::detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
     }
     return list_elements;
 }
@@ -810,7 +810,7 @@ markedelements( MeshType const& mesh, std::list<std::string> const& flag )
     {
         flag_type theflag = mesh->markerId( *it );
         VLOG(2) << "[markedelements] flag: " << theflag << "\n";
-        list_elements.push_back( detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_elements.push_back( Feel::detail::markedelements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
     }
     return list_elements;
 }
@@ -828,7 +828,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       marked2elements( MeshType const& mesh, flag_type flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::marked2elements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::marked2elements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -844,7 +844,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       marked2elements( MeshType const& mesh, std::string const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::marked2elements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::marked2elements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 template<typename MeshType>
 std::list<boost::tuple<mpl::size_t<MESH_ELEMENTS>,
@@ -860,7 +860,7 @@ marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
     {
         flag_type theflag = mesh->markerId( *it );
         VLOG(2) << "[markedelements] flag: " << theflag << "\n";
-        list_elements.push_back( detail::marked2elements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_elements.push_back( Feel::detail::marked2elements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
     }
     return list_elements;
 }
@@ -878,7 +878,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       marked3elements( MeshType const& mesh, flag_type flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::marked3elements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::marked3elements( mesh, flag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -894,7 +894,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       marked3elements( MeshType const& mesh, std::string const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::marked3elements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::marked3elements( mesh, mesh->markerName( flag ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -911,7 +911,7 @@ marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
     {
         flag_type theflag = mesh->markerId( *it );
         VLOG(2) << "[markedelements] flag: " << theflag << "\n";
-        list_elements.push_back( detail::marked3elements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_elements.push_back( Feel::detail::marked3elements( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
     }
     return list_elements;
 }
@@ -928,7 +928,7 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
       idedelements( MeshType const& mesh, flag_type flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::idedelements( mesh, flag, is_ptr_or_shared_ptr() );
+    return Feel::detail::idedelements( mesh, flag, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -949,7 +949,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
       faces( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::faces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::faces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -964,7 +964,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
       idedfaces( MeshType const& mesh, size_type id )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::idedfaces( mesh, id, is_ptr_or_shared_ptr() );
+    return Feel::detail::idedfaces( mesh, id, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -985,7 +985,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
       markedfaces( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markedfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -1008,7 +1008,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                    std::string const&__marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedfaces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markedfaces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -1019,7 +1019,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                    const char*__marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedfaces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markedfaces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -1032,7 +1032,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
     flag_type theflag = mesh->markerId( __marker );
     VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-    return detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 
 }
 
@@ -1051,7 +1051,7 @@ markedfaces( MeshType const& mesh,
     {
         flag_type theflag = mesh->markerId( *it );
         VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_faces.push_back( detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_faces.push_back( Feel::detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
     }
     return list_faces;
 }
@@ -1071,7 +1071,7 @@ markedfaces( MeshType const& mesh,
     {
         flag_type theflag = mesh->markerId( *it );
         VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_faces.push_back( detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_faces.push_back( Feel::detail::markedfaces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
     }
     return list_faces;
 }
@@ -1084,7 +1084,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                     flag_type __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::marked2faces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::marked2faces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -1102,7 +1102,7 @@ marked2faces( MeshType const& mesh,
     {
         flag_type theflag = mesh->markerId( *it );
         VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_faces.push_back( detail::marked2faces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_faces.push_back( Feel::detail::marked2faces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
     }
     return list_faces;
 }
@@ -1115,7 +1115,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                     flag_type __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::marked3faces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::marked3faces( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
@@ -1127,7 +1127,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                     std::string const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::marked2faces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::marked2faces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -1138,7 +1138,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
                     std::string const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::marked3faces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::marked3faces( mesh, mesh->markerName( __marker ), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -1156,7 +1156,7 @@ marked3faces( MeshType const& mesh,
     {
         flag_type theflag = mesh->markerId( *it );
         VLOG(2) << "[markedfaces] flag: " << theflag << "\n";
-        list_faces.push_back( detail::marked3faces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
+        list_faces.push_back( Feel::detail::marked3faces( mesh, theflag, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() ) );
     }
     return list_faces;
 }
@@ -1174,7 +1174,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
       boundaryfaces( MeshType const& mesh  )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::boundaryfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::boundaryfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
@@ -1191,7 +1191,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
       internalfaces( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::internalfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::internalfaces( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -1207,7 +1207,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
       interprocessfaces( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::interprocessfaces( mesh, invalid_size_type_value, is_ptr_or_shared_ptr() );
+    return Feel::detail::interprocessfaces( mesh, invalid_size_type_value, is_ptr_or_shared_ptr() );
 }
 
 
@@ -1224,7 +1224,7 @@ boost::tuple<mpl::size_t<MESH_FACES>,
 interprocessfaces( MeshType const& mesh, size_type neighbor_pid )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::interprocessfaces( mesh, neighbor_pid, is_ptr_or_shared_ptr() );
+    return Feel::detail::interprocessfaces( mesh, neighbor_pid, is_ptr_or_shared_ptr() );
 }
 
 
@@ -1246,7 +1246,7 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
       edges( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::edges( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::edges( mesh, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 
@@ -1270,7 +1270,7 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
                    flag_type __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markededges( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markededges( mesh, __marker, meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -1281,7 +1281,7 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
                    std::string const& __marker )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markededges( mesh, mesh->markerName(__marker), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
+    return Feel::detail::markededges( mesh, mesh->markerName(__marker), meshrank( mesh, is_ptr_or_shared_ptr() ), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -1297,7 +1297,7 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
       boundaryedges( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::boundaryedges( mesh, is_ptr_or_shared_ptr() );
+    return Feel::detail::boundaryedges( mesh, is_ptr_or_shared_ptr() );
 }
 
 
@@ -1314,7 +1314,7 @@ boost::tuple<mpl::size_t<MESH_EDGES>,
       internaledges( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::internaledges( mesh, is_ptr_or_shared_ptr() );
+    return Feel::detail::internaledges( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -1329,7 +1329,7 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
       points( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::points( mesh, is_ptr_or_shared_ptr() );
+    return Feel::detail::points( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -1344,7 +1344,7 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
       markedpoints( MeshType const& mesh, size_type flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedpoints( mesh, flag, is_ptr_or_shared_ptr() );
+    return Feel::detail::markedpoints( mesh, flag, is_ptr_or_shared_ptr() );
 }
 
 template<typename MeshType>
@@ -1354,7 +1354,7 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 markedpoints( MeshType const& mesh, std::string const& flag )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::markedpoints( mesh, mesh->markerName(flag), is_ptr_or_shared_ptr() );
+    return Feel::detail::markedpoints( mesh, mesh->markerName(flag), is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -1369,7 +1369,7 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
       boundarypoints( MeshType const& mesh )
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
-    return detail::boundarypoints( mesh, is_ptr_or_shared_ptr() );
+    return Feel::detail::boundarypoints( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**
@@ -1385,7 +1385,7 @@ boost::tuple<mpl::size_t<MESH_POINTS>,
 {
     typedef typename mpl::or_<is_shared_ptr<MeshType>, boost::is_pointer<MeshType> >::type is_ptr_or_shared_ptr;
 
-    return detail::internalpoints( mesh, is_ptr_or_shared_ptr() );
+    return Feel::detail::internalpoints( mesh, is_ptr_or_shared_ptr() );
 }
 
 /**

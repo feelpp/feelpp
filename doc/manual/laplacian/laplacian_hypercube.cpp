@@ -1,6 +1,6 @@
 // -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 #include <feel/feel.hpp>
-#include <feel/feelvf/on.hpp>
+
 
 int main(int argc, char**argv )
 {
@@ -25,21 +25,22 @@ int main(int argc, char**argv )
     auto g = option(_name="functions.g").as<std::string>();
     auto vars = Symbols{"x","y"};
     auto lap = GiNaC::laplacian(g,vars);
+    double intg = integrate( _range=elements(mesh), _expr=expr<6>( g, vars ) ).evaluate()(0,0);
     if ( Environment::worldComm().isMasterRank() )
     {
         std::cout << "lap : " << lap <<"\n";
-        std::cout << "integral : " << integrate( _range=elements(mesh), _expr=expr<6>( g, vars ) ).evaluate() <<  "\n";
+        std::cout << "integral : " << intg <<  "\n";
     }
     //# marker3 #
     auto l = form1( _test=Vh );
     l = integrate(_range=elements(mesh),
                   _expr=-expr<6>( lap,vars)*id(v));
-                  //_expr=id(v));
+    //_expr=id(v));
 
 
     auto a = form2( _trial=Vh, _test=Vh);
     a = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)),_verbose=true);
+                  _expr=gradt(u)*trans(grad(v)));
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
           _expr=expr( g, vars ) );
     if ( Environment::numberOfProcessors() == 1 )
@@ -47,7 +48,7 @@ int main(int argc, char**argv )
 
     auto b = form2( _trial=Vh, _test=Vh);
     b = integrate(_range=elements(mesh),
-                  _expr=gradt(u)*trans(grad(v)) ,_verbose=true);
+                  _expr=gradt(u)*trans(grad(v)) );
     if ( Environment::numberOfProcessors() == 1 )
         b.matrixPtr()->printMatlab("B.m");
     auto c = form2( _trial=Vh, _test=Vh);
@@ -75,11 +76,12 @@ int main(int argc, char**argv )
 
     v = project( _space=Vh, _range=elements(mesh), _expr=expr(g,vars));
     auto interpl2 = normL2( _range=elements(mesh), _expr=idv(v)-expr<6>( g, vars ));
-
+    double bvv = b(v,v);
+    double buu = b(u,u);
     if ( Environment::worldComm().isMasterRank() )
     {
-        std::cout << "b(v,v) : " << b(v,v) <<"\n";
-        std::cout << "b(u,u) : " << b(u,u) <<"\n";
+        std::cout << "b(v,v) : " << bvv <<"\n";
+        std::cout << "b(u,u) : " << buu <<"\n";
     }
 
     auto l2 = normL2( _range=elements(mesh), _expr=idv(u)-expr<6>( g, vars ));

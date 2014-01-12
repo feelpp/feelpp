@@ -54,6 +54,10 @@ using boost::unit_test::test_suite;
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/im.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
+#include <feel/feelfilters/straightenmesh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelvf/vf.hpp>
 

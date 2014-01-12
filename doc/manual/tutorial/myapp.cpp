@@ -29,7 +29,8 @@
    \date 2013-02-07
  */
 
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+
 using namespace Feel;
 
 /**
