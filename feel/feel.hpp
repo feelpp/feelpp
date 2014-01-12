@@ -5,7 +5,7 @@
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2012-09-18
 
-  Copyright (C) 2012 Feel++ Consortium
+  Copyright (C) 2012-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@
 
 #include <feel/feeldiscr/operatorlinear.hpp>
 
-#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelts/ts.hpp>
 
 #include <feel/feeldiscr/projector.hpp>
 
