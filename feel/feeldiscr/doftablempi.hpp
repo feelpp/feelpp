@@ -370,7 +370,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                                                        mpl::int_<fe_type::nDofPerVertex> >::type::value;
                 int pointGetLocDof = locDof / nDofPerVertexTemp;
 
-                boost::tie( IdProcessOfGhost, idFaceInPartition ) = detail::updateDofOnVertices<mesh_type>(mesh,*face_it, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, pointGetLocDof,
+                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnVertices<mesh_type>(mesh,*face_it, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, pointGetLocDof,
                                                                                                            procRecvData );
             }
             else if ( nDim == 3 && locDof < (face_type::numVertices*fe_type::nDofPerVertex + face_type::numEdges*fe_type::nDofPerEdge) )
@@ -381,7 +381,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                                                      mpl::int_<fe_type::nDofPerEdge> >::type::value;
                 int edgeGetLocDof = locDofInEgde / nDofPerEdgeTemp;
 
-                boost::tie( IdProcessOfGhost, idFaceInPartition ) = detail::updateDofOnEdges<mesh_type>(mesh,*face_it, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, edgeGetLocDof,
+                boost::tie( IdProcessOfGhost, idFaceInPartition ) = Feel::detail::updateDofOnEdges<mesh_type>(mesh,*face_it, myRank, IdProcessOfGhost, idFaceInPartition, eltOnProc, edgeGetLocDof,
                                                                                                         procRecvData);
             }
             else
@@ -1988,7 +1988,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostInterProcessD
                 std::set<boost::tuple<int,size_type> > multiProcessRes;
                 if ( locDof < face_type::numVertices*fe_type::nDofPerVertex)
                 {
-                    detail::searchPartitionAroundNode( myRank, nodeDofRecv, eltOnProc, memoryIdsFaces, multiProcessRes );
+                        Feel::detail::searchPartitionAroundNode( myRank, nodeDofRecv, eltOnProc, memoryIdsFaces, multiProcessRes );
                 }
                 else if ( nDim == 3 && locDof < (face_type::numVertices*fe_type::nDofPerVertex + face_type::numEdges*fe_type::nDofPerEdge) )
                 {
@@ -2000,7 +2000,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildGhostInterProcessD
 
                     int edgeGetLocDof = locDofInEgde / nDofPerEdgeTemp;
 
-                    detail::searchPartitionAroundEdge<mesh_type>( myRank, theface, edgeGetLocDof, eltOnProc, memoryIdsFaces, multiProcessRes );
+                    Feel::detail::searchPartitionAroundEdge<mesh_type>( myRank, theface, edgeGetLocDof, eltOnProc, memoryIdsFaces, multiProcessRes );
                 }
                 //if (proc==0 ) std::cout << "myRank " << myRank << " multiProcessRes.size() " << multiProcessRes.size() << " " << nodeDofRecv << std::endl;
                 //------------------------------------------------------------------------------//

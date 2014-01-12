@@ -27,5 +27,5 @@ SET( SRC
   ginac.cpp
   )
 
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
+file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)
 feel_append_src(feelvf "${SRC};${HDR}")

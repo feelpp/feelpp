@@ -25,10 +25,8 @@
  \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
  \date 16-06-2011
  */
-#include <feel/feelcore/feel.hpp>
-#include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelvf/vf.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/integrator.hpp>
 
 int main( int argc, char** argv )
 {

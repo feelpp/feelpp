@@ -46,7 +46,9 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
 
@@ -223,7 +225,7 @@ struct test_integration_circle: public Application
         value_type v00 = ( integrate( _range=boundaryelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate()( 0, 0 )+
                            integrate( _range=internalelements( mesh ), _expr=mycst, _quad=_Q<10>() ).evaluate()( 0, 0 ) );
         BOOST_TEST_MESSAGE( "v00=" << v00 << "\n" );
-        
+
         BOOST_TEST_MESSAGE( "[circle] v0 0 = " << integrate( boundaryfaces( mesh ),  N(), _Q<4>() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "[circle] v0 1 = " << integrate( boundaryfaces( mesh ),  vec( idf( f_Nx() ), idf( f_Ny() ) ), _Q<4>() ).evaluate() << "\n" );
         BOOST_TEST_MESSAGE( "[circle] v0 2 = " << integrate( boundaryfaces( mesh ),
