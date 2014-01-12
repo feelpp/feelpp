@@ -45,7 +45,8 @@ expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
     auto res = b[0].functionSpace()->element();
     res.zero();
     if ( ( M == -1 ) || M > c.size() ) M = c.size() ;
-    CHECK( (c.size() <= M) && (b.size() <= M) )
+    //CHECK( (c.size() <= M) && (b.size() <= M) )
+    CHECK( (c.size() <= M) )
         << "Invalid coefficient or basis function elements "
         << "M=" << M << " coeff: " << b.size() << " elements: " << c.size();
     for( int i = 0; i < M; ++i )
