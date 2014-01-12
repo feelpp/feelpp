@@ -5,7 +5,8 @@
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/region.hpp>
 #include <feel/feelpoly/im.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelalg/solvereigen.hpp>

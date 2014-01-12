@@ -29,9 +29,9 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelvf/vf.hpp>
 #include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
 
 template<typename MeshType>
 void myexport( std::string const& name, boost::shared_ptr<MeshType> mesh )

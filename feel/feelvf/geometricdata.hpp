@@ -43,10 +43,12 @@
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
 
-namespace Feel
-{
-namespace vf
-{
+
+#include <feel/feelvf/expr.hpp>
+
+
+namespace Feel { namespace vf {
+
 /// \cond detail
 # /* Information about C operators */
 #
