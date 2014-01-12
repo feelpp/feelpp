@@ -54,11 +54,7 @@ public:
      */
     //@{
 
-    //    enum status_type { DONE=0, CLOSE=1, FAR=2 };
-
-    static const int DONE=2;
-    static const int CLOSE=1;
-    static const int FAR=0;
+    enum status_type {FAR=0, CLOSE=1, DONE=2};
 
     typedef ReinitializerFMS<FunctionSpaceType, periodicity_type> self_type;
     typedef boost::shared_ptr< self_type > self_ptrtype;
