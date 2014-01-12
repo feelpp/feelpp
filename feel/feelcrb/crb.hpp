@@ -6474,24 +6474,21 @@ void
 CRB<TruthModelType>::printErrorsDuringRbConstruction( void )
 {
 
-    if( M_rbconv_contains_primal_and_dual_contributions )
+    std::ofstream conv;
+    std::string file_name = "crb-offline-error.dat";
+    typedef convergence_type::left_map::const_iterator iterator;
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
-        typedef convergence_type::left_map::const_iterator iterator;
-        LOG(INFO)<<"\nMax error during offline stage\n";
-        for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  maxerror : "<<it->second.template get<0>()<<"\n";
+        conv.open(file_name, std::ios::app);
+        conv << "NbBasis" << "\t" << "output" << "\t" << "primal" << "\t" << "dual\n";
 
-        LOG(INFO)<<"\nPrimal contribution\n";
         for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  delta_pr : "<<it->second.template get<1>()<<"\n";
-
-        LOG(INFO)<<"\nDual contribution\n";
-        for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
-        LOG(INFO)<<"\n";
+            conv<<it->first<<"\t"<<it->second.template get<0>()<<"\t"<<it->second.template get<1>()<<"\t"<<it->second.template get<2>()<<"\n";
+        //for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
+        //    LOG(INFO)<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
     }
-    else
-        throw std::logic_error( "[CRB::printErrorsDuringRbConstruction] ERROR, the database is too old to print the error during offline step, use the option rebuild-database = true" );
+    conv.close();
 
 }
 
@@ -7737,7 +7734,7 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::printErrorDuringOfflineStep()
 {
-  bool print = this->vm()["crb.print-error-during-rb-construction"].template as<bool>();
+    bool print = option(_name="crb.print-error-during-rb-construction").template as<bool>();
     return print;
 }
 
