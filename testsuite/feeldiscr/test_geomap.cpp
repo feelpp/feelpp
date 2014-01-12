@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -32,8 +33,8 @@
 
 #include <feel/feelcore/debug.hpp>
 #include <feel/feelfilters/gmsh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporterensight.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
 #include <feel/feelfilters/gmshhypercubedomain.hpp>
 #include <feel/feelfilters/gmshsimplexdomain.hpp>
 #include <feel/feelpoly/geomap.hpp>

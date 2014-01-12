@@ -283,9 +283,9 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Lagrange
     :
-    public FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts >
+    public FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts >
 {
-    typedef FiniteElement<detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts > super;
+    typedef FiniteElement<Feel::detail::OrthonormalPolynomialSet<N, O, RealDim, PolySetType, T, TheTAG, Convex>, details::LagrangeDual, Pts > super;
 public:
 
     BOOST_STATIC_ASSERT( ( boost::is_same<PolySetType<N>, Scalar<N> >::value ||
