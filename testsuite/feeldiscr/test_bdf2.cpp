@@ -28,7 +28,7 @@
 #endif
 
 #include <feel/feelalg/backend.hpp>
-#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelts/bdf.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
@@ -79,7 +79,7 @@ public :
         auto solution = Xh->element();
         auto mybdf = bdf( _space=Xh, _name="mybdf" );
 
-        auto g=option(_name="functions.g").as<std::string>();
+        auto g=option(_name="functions.g").template as<std::string>();
         auto vars = Symbols{"x","y","t","alpha","beta"};
         auto eg = parse(g,vars);
         auto fg = -laplacian( eg, {vars[0],vars[1]} )+diff( eg,  {vars[2]});
