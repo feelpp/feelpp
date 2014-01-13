@@ -55,7 +55,7 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
 }
 
 template<typename FunctionSpaceType, typename periodicity_type>
-void 
+void
 ReinitializerFMS<FunctionSpaceType, periodicity_type>::
 reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& theHeap, element_type& status, std::set<size_type>& done )
 {
@@ -151,6 +151,12 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     // //communicate the DONE list between all the proc
     reduceDonePoints(__v, theHeap, status, done );
 
+    if (done.empty())
+        {
+            LOG(INFO)<<"no cell crossed by the level set found. Returning original function\n"<<std::endl;
+            return __v;
+        }
+
     // initialize close distances in heap and mark close points in status array
     for ( auto dit = done.begin(); dit != done.end(); ++dit )
       fmsHeapUpdate( *dit, __v, status, theHeap );
@@ -161,9 +167,9 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 #if 0
     // for debug purpuses only
     auto checkHeap = [&] ()
-      {  
+        {
         for (auto entry : theHeap )
-          CHECK( status( entry.second ) == CLOSE ) 
+          CHECK( status( entry.second ) == CLOSE )
             << "on proc " << Environment::worldComm().rank()
             << " the entry at ldof "<< entry.second
             << " and entry at cdof "<< processorToCluster( entry.second )
@@ -222,7 +228,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
           }
 
         if (dofIsPresentOnProcess)
-          {              
+          {
 
             theHeap.removeFromHeap( newIdOnProc );
 
@@ -241,7 +247,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
                                       theHeap.size(),
                                       std::plus<size_type>() );
 
-#if defined( FM_EXPORT )        
+#if defined( FM_EXPORT )
         ++count_iteration;
         ex->step(count_iteration)->add("v", __v);
         ex->step(count_iteration)->add("status", status);
@@ -362,9 +368,9 @@ fmsDistRec( std::vector<size_type> & ids,
       recalculate phi with all the neighbors
       returns the smallest phi  */
 
-    /* the method fmsDistN computes the distance function for a given CLOSE 
+    /* the method fmsDistN computes the distance function for a given CLOSE
        using the DONE neighbors in the same element
-       thus, first it has to search for the ids of the neighbors DONE 
+       thus, first it has to search for the ids of the neighbors DONE
        being in the same element */
 
     // only allows for getting at maximum 2 nodes in 2d and 3 nodes in 3d
