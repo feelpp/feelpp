@@ -66,6 +66,7 @@ namespace ublas = boost::numeric::ublas;
 namespace fs = boost::filesystem;
 
 enum TSState { TS_UNITIALIZED = 0, TS_RUNNING, TS_STOPPED };
+enum TSStragegy { TS_STRATEGY_DT_CONSTANT,TS_STRATEGY_DT_ADAPTATIVE};
 
 class TSBase
 {
@@ -452,6 +453,12 @@ public:
     WorldComm const& worldComm() const
     {
         return M_worldComm;
+    }
+
+    TSStragegy strategy() const
+    {
+        //return M_strategy;
+        return TSStragegy::TS_STRATEGY_DT_CONSTANT;
     }
 
     void setOrder( int order )
