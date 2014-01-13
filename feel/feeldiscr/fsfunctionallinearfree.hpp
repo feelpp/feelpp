@@ -72,6 +72,8 @@ public:
         M_expr( expr )
     {}
 
+    virtual ~FsFunctionalLinearFree() {}
+
     //return the expression
     expr_type expr()
     {

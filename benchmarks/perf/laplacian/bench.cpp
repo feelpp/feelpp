@@ -148,7 +148,7 @@ int main( int argc, char** argv )
 
     Environment::changeRepository( boost::format( "%1%/%2%" )
                                    % makeAbout().appName()
-                                   % option(_name="testcase").template as<std::string>() );
+                                   % option(_name="testcase").as<std::string>() );
     Application benchmark;
 
     if ( benchmark.vm().count( "help" ) )
