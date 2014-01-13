@@ -304,11 +304,15 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
             ierr = PCFieldSplitSetSchurFactType( pc,theSchurFactType );
             CHKERRABORT( worldComm.globalComm(),ierr );
 
-            PCFieldSplitSchurPreType theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_A11;
+            PCFieldSplitSchurPreType theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
             std::string t3 = Environment::vm(_name="fieldsplit-schur-precondition",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
             if (t3 == "self")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
             if (t3 == "user")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_USER;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
             if (t3 == "a11")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_A11;
+#else
+            if (t3 == "a11")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_DIAG;
+#endif
             ierr = PCFieldSplitSchurPrecondition( pc, theSchurPrecond, NULL );
             CHKERRABORT( worldComm.globalComm(),ierr );
         }
