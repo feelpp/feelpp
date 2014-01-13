@@ -887,6 +887,18 @@ std::ostream& operator << ( std::ostream& os, const MatrixSparse<T>& m )
     return os;
 }
 
+namespace detail
+{
+template <class MatrixType>
+struct is_matrix_ptr : mpl::false_ {};
+
+template <class MatrixType>
+struct is_matrix_ptr<boost::shared_ptr<MatrixType> >
+        :
+        boost::is_base_of<MatrixSparse<typename MatrixType::value_type>,
+        MatrixType>
+{};
+}
 } // Feel
 
 #endif // #ifndef __sparse_matrix_h__

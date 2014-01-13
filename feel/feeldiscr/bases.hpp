@@ -56,23 +56,23 @@ struct periodic_base {};
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct bases
         :
-    public detail::bases_base,
-    public mpl::if_<boost::is_same<A1,mpl::void_>,
-        boost::fusion::vector<A0>,
-        typename mpl::if_<boost::is_same<A2,mpl::void_>,
-        boost::fusion::vector<A0,A1>,
-        typename mpl::if_<boost::is_same<A3,mpl::void_>,
-        boost::fusion::vector<A0,A1,A2>,
-        typename mpl::if_<boost::is_same<A4,mpl::void_>,
-        boost::fusion::vector<A0,A1,A2,A3>,
-        boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type
+        public Feel::detail::bases_base,
+        public mpl::if_<boost::is_same<A1,mpl::void_>,
+                        boost::fusion::vector<A0>,
+                        typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                          boost::fusion::vector<A0,A1>,
+                                          typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                            boost::fusion::vector<A0,A1,A2>,
+                                                            typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                              boost::fusion::vector<A0,A1,A2,A3>,
+                                                                              boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type
 {
 };
 
 template <class BasisFusionVectorType>
 struct bases2
     :
-        public detail::bases_base,
+        public Feel::detail::bases_base,
         public BasisFusionVectorType
 {
 };
@@ -100,16 +100,16 @@ public:
 template<typename... Args>
 struct bases
     :
-    public detail::bases_base,
-    public fusion::result_of::as_vector<typename fusion::result_of::accumulate<fusion::vector<Args...>, fusion::vector<>, ChangeBasisTag >::type>::type
+        public Feel::detail::bases_base,
+        public fusion::result_of::as_vector<typename fusion::result_of::accumulate<fusion::vector<Args...>, fusion::vector<>, ChangeBasisTag >::type>::type
 {};
 
 
 template<typename... Args>
 struct meshes
     :
-    public detail::meshes_base,
-    public boost::fusion::vector<Args...>
+        public Feel::detail::meshes_base,
+        public boost::fusion::vector<Args...>
 {
     typedef boost::fusion::vector<Args...> super;
     typedef meshes<Args...> this_type;
@@ -120,9 +120,9 @@ struct meshes
 template<typename... Args>
 struct mortars
     :
-    public detail::mortars_base,
-    public detail::mortar_base,
-    public boost::fusion::vector<Args...>
+        public Feel::detail::mortars_base,
+        public Feel::detail::mortar_base,
+        public boost::fusion::vector<Args...>
 {
     typedef boost::fusion::vector<Args...> super;
     typedef mortars<Args...> this_type;
@@ -133,9 +133,9 @@ struct mortars
 template<typename... Args>
 struct Periodicity
     :
-    public detail::periodic_base,
-    public detail::periodicity_base,
-    public boost::fusion::vector<Args...>
+        public Feel::detail::periodic_base,
+        public Feel::detail::periodicity_base,
+        public boost::fusion::vector<Args...>
 {
     typedef boost::fusion::vector<Args...> super;
     typedef Periodicity<Args...> this_type;
@@ -168,44 +168,44 @@ struct void_basis : public mpl::void_
 template <class A0=void_basis, class A1=void_basis, class A2=void_basis, class A3=void_basis, class A4=void_basis>
 struct bases
         :
-    public detail::bases_base,
-    public mpl::if_<boost::is_same<A1,void_basis>,
-        boost::fusion::vector<typename A0::template ChangeTag<0>::type >,
-      typename mpl::if_<boost::is_same<A2,void_basis>,
-      boost::fusion::vector<typename A0::template ChangeTag<0>::type,
-            typename A1::template ChangeTag<1>::type >,
-                     typename mpl::if_<boost::is_same<A3,void_basis>,
-                     boost::fusion::vector<typename A0::template ChangeTag<0>::type,
-                           typename A1::template ChangeTag<1>::type,
-                                    typename A2::template ChangeTag<2>::type >,
-                                       typename mpl::if_<boost::is_same<A4,void_basis>,
-                                       boost::fusion::vector<typename A0::template ChangeTag<0>::type,
-                                              typename A1::template ChangeTag<1>::type,
-                                                       typename A2::template ChangeTag<2>::type,
-                                                                typename A3::template ChangeTag<3>::type >,
-                                                                boost::fusion::vector<typename A0::template ChangeTag<0>::type,
-                                                                       typename A1::template ChangeTag<1>::type,
-                                                                                typename A2::template ChangeTag<2>::type,
-                                                                                         typename A3::template ChangeTag<3>::type,
-                                                                                                  typename A4::template ChangeTag<4>::type > >::type>::type>::type>::type
+        public Feel::detail::bases_base,
+        public mpl::if_<boost::is_same<A1,void_basis>,
+                        boost::fusion::vector<typename A0::template ChangeTag<0>::type >,
+                        typename mpl::if_<boost::is_same<A2,void_basis>,
+                                          boost::fusion::vector<typename A0::template ChangeTag<0>::type,
+                                                                typename A1::template ChangeTag<1>::type >,
+                                          typename mpl::if_<boost::is_same<A3,void_basis>,
+                                                            boost::fusion::vector<typename A0::template ChangeTag<0>::type,
+                                                                                  typename A1::template ChangeTag<1>::type,
+                                                                                  typename A2::template ChangeTag<2>::type >,
+                                                            typename mpl::if_<boost::is_same<A4,void_basis>,
+                                                                              boost::fusion::vector<typename A0::template ChangeTag<0>::type,
+                                                                                                    typename A1::template ChangeTag<1>::type,
+                                                                                                    typename A2::template ChangeTag<2>::type,
+                                                                                                    typename A3::template ChangeTag<3>::type >,
+                                                                              boost::fusion::vector<typename A0::template ChangeTag<0>::type,
+                                                                                                    typename A1::template ChangeTag<1>::type,
+                                                                                                    typename A2::template ChangeTag<2>::type,
+                                                                                                    typename A3::template ChangeTag<3>::type,
+                                                                                                    typename A4::template ChangeTag<4>::type > >::type>::type>::type>::type
 {
 };
 
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct meshes
         :
-    public detail::meshes_base,
-    public mpl::if_<boost::is_same<A0,mpl::void_>,
-                    boost::fusion::vector<>,
-                    typename mpl::if_<boost::is_same<A1,mpl::void_>,
-                                      boost::fusion::vector<A0>,
-                                      typename mpl::if_<boost::is_same<A2,mpl::void_>,
-                                                        boost::fusion::vector<A0,A1>,
-                                                        typename mpl::if_<boost::is_same<A3,mpl::void_>,
-                                                                          boost::fusion::vector<A0,A1,A2>,
-                                                                          typename mpl::if_<boost::is_same<A4,mpl::void_>,
-                                                                                            boost::fusion::vector<A0,A1,A2,A3>,
-                                                                                            boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
+        public Feel::detail::meshes_base,
+        public mpl::if_<boost::is_same<A0,mpl::void_>,
+                        boost::fusion::vector<>,
+                        typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                          boost::fusion::vector<A0>,
+                                          typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                            boost::fusion::vector<A0,A1>,
+                                                            typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                              boost::fusion::vector<A0,A1,A2>,
+                                                                              typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                                boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                                boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
 
 {
     typedef typename mpl::if_<boost::is_same<A0,mpl::void_>,
@@ -226,19 +226,19 @@ struct meshes
 
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct mortars
-        :
-    public detail::mortars_base,
-    public mpl::if_<boost::is_same<A0,mpl::void_>,
-                    boost::fusion::vector<>,
-                    typename mpl::if_<boost::is_same<A1,mpl::void_>,
-                                      boost::fusion::vector<A0>,
-                                      typename mpl::if_<boost::is_same<A2,mpl::void_>,
-                                                        boost::fusion::vector<A0,A1>,
-                                                        typename mpl::if_<boost::is_same<A3,mpl::void_>,
-                                                                          boost::fusion::vector<A0,A1,A2>,
-                                                                          typename mpl::if_<boost::is_same<A4,mpl::void_>,
-                                                                                            boost::fusion::vector<A0,A1,A2,A3>,
-                                                                                            boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
+    :
+        public Feel::detail::mortars_base,
+        public mpl::if_<boost::is_same<A0,mpl::void_>,
+                        boost::fusion::vector<>,
+                        typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                          boost::fusion::vector<A0>,
+                                          typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                            boost::fusion::vector<A0,A1>,
+                                                            typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                              boost::fusion::vector<A0,A1,A2>,
+                                                                              typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                                boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                                boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
 
 {
     typedef typename mpl::if_<boost::is_same<A0,mpl::void_>,
@@ -259,20 +259,20 @@ struct mortars
 
 template <class A0=mpl::void_, class A1=mpl::void_, class A2=mpl::void_, class A3=mpl::void_, class A4=mpl::void_>
 struct Periodicity
-        :
-    public detail::periodic_base,
-    public detail::periodicity_base,
-    public mpl::if_<boost::is_same<A0,mpl::void_>,
-                    boost::fusion::vector<>,
-                    typename mpl::if_<boost::is_same<A1,mpl::void_>,
-                                      boost::fusion::vector<A0>,
-                                      typename mpl::if_<boost::is_same<A2,mpl::void_>,
-                                                        boost::fusion::vector<A0,A1>,
-                                                        typename mpl::if_<boost::is_same<A3,mpl::void_>,
-                                                                          boost::fusion::vector<A0,A1,A2>,
-                                                                          typename mpl::if_<boost::is_same<A4,mpl::void_>,
-                                                                                            boost::fusion::vector<A0,A1,A2,A3>,
-                                                                                            boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
+    :
+        public Feel::detail::periodic_base,
+        public Feel::detail::periodicity_base,
+        public mpl::if_<boost::is_same<A0,mpl::void_>,
+                        boost::fusion::vector<>,
+                        typename mpl::if_<boost::is_same<A1,mpl::void_>,
+                                          boost::fusion::vector<A0>,
+                                          typename mpl::if_<boost::is_same<A2,mpl::void_>,
+                                                            boost::fusion::vector<A0,A1>,
+                                                            typename mpl::if_<boost::is_same<A3,mpl::void_>,
+                                                                              boost::fusion::vector<A0,A1,A2>,
+                                                                              typename mpl::if_<boost::is_same<A4,mpl::void_>,
+                                                                                                boost::fusion::vector<A0,A1,A2,A3>,
+                                                                                                boost::fusion::vector<A0,A1,A2,A3,A4> >::type>::type>::type>::type>::type
 
 {
     typedef typename mpl::if_<boost::is_same<A0,mpl::void_>,

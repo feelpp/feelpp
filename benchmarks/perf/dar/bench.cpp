@@ -173,7 +173,15 @@ int main( int argc, char** argv )
 {
 
     using namespace Feel;
-    Application benchmark( argc, argv, makeAbout(), makeOptions() );
+    Environment env( _argc=argc, _argv=argv,
+                     _desc=makeOptions(),
+                     _about=makeAbout() );
+
+    Environment::changeRepository( boost::format( "%1%" )
+                                   % makeAbout().appName() );
+
+
+    Application benchmark;
 
     if ( benchmark.vm().count( "help" ) )
     {
@@ -184,6 +192,6 @@ int main( int argc, char** argv )
     //benchmark.add( new DAR<1, 1, Continuous, Hypercube>( benchmark.vm(), benchmark.about() ) );
     benchmark.add( new DAR<2, 1, Continuous, Simplex>( benchmark.vm(), benchmark.about() ) );
     benchmark.run();
-    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.integrate" ) );
+    benchmark.printStats( std::cout, boost::assign::list_of( "e.l2" )( "n.space" )( "t.init" )( "t.assembly.vector" )( "t.assembly.matrix" )( "t.solver" )( "t.integrate" ), Application::ALL );
 }
 

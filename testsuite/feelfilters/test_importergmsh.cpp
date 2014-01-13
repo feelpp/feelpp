@@ -44,7 +44,12 @@ using boost::unit_test::test_suite;
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/savegmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/geo.hpp>
+#include <feel/feelfilters/loadgmshmesh.hpp>
+#include <feel/feelfilters/convert2msh.hpp>
 #include <feel/feelvf/vf.hpp>
 
 
@@ -278,7 +283,7 @@ BOOST_AUTO_TEST_CASE( meditimport )
 
     mesh_ptrtype mesh,meshimp;
     mesh = createGMSHMesh( _mesh=new mesh_type,
-                           _desc=mshconvert( "Cylref.mesh" ),
+                           _desc=convert2msh( "Cylref.mesh" ),
                            _physical_are_elementary_regions=true,
                            _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES );
     mesh->addMarkerName("inlet",1,2);

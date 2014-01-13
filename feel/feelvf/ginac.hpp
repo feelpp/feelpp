@@ -35,36 +35,41 @@
 namespace GiNaC
 {
 
-    matrix grad( ex const& f, std::vector<symbol> const& l );
-    ex laplacian( ex const& f, std::vector<symbol> const& l );
-    matrix grad( std::string const& s, std::vector<symbol> const& l );
-    ex laplacian( std::string const& s, std::vector<symbol> const& l );
+matrix grad( ex const& f, std::vector<symbol> const& l );
+ex laplacian( ex const& f, std::vector<symbol> const& l );
+matrix grad( std::string const& s, std::vector<symbol> const& l );
+ex laplacian( std::string const& s, std::vector<symbol> const& l );
 
-    matrix grad( matrix const& f, std::vector<symbol> const& l );
-    matrix div( matrix const& f, std::vector<symbol> const& l );
-    matrix laplacian( matrix const& f, std::vector<symbol> const& l );
+matrix grad( matrix const& f, std::vector<symbol> const& l );
+matrix div( matrix const& f, std::vector<symbol> const& l );
+matrix laplacian( matrix const& f, std::vector<symbol> const& l );
 
-    ex diff(ex const& f, symbol const& l, const int n);
-    matrix diff(matrix const& f, symbol const& l, const int n);
+ex diff(ex const& f, symbol const& l, const int n);
+matrix diff(matrix const& f, symbol const& l, const int n);
 
-    ex substitute(ex const& f, symbol const& l, const double val );
-    ex substitute(ex const& f, symbol const& l, ex const & g );
+ex substitute(ex const& f, symbol const& l, const double val );
+ex substitute(ex const& f, symbol const& l, ex const & g );
 
-    matrix substitute(matrix const& f, symbol const& l, const double val );
-    matrix substitute(matrix const& f, symbol const& l, ex const & g );
+matrix substitute(matrix const& f, symbol const& l, const double val );
+matrix substitute(matrix const& f, symbol const& l, ex const & g );
 
-    //ex parse( std::string const& str, std::vector<symbol> const& syms );
-    ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
+//ex parse( std::string const& str, std::vector<symbol> const& syms );
+ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
 
 } // GiNaC
 
 namespace Feel
 {
-using  GiNaC::matrix;
-using  GiNaC::symbol;
-using  GiNaC::lst;
-using  GiNaC::ex;
-using  GiNaC::parser;
+using GiNaC::matrix;
+using GiNaC::symbol;
+using GiNaC::lst;
+using GiNaC::ex;
+using GiNaC::parser;
+using GiNaC::diff;
+using GiNaC::laplacian;
+using GiNaC::grad;
+using GiNaC::div;
+using GiNaC::parse;
 
 template<int Dim> inline std::vector<symbol> symbols() { return {symbol("x")}; }
 template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
@@ -138,7 +143,6 @@ typedef Feel::Singleton<GinacExprManagerDeleterImpl> GinacExprManagerDeleter;
 
 namespace vf
 {
-
 /// \cond detail
 /**
  * \class Ginac
@@ -148,7 +152,7 @@ namespace vf
  * @see
  */
 template<int Order = 2>
-class GinacEx
+class GinacEx : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -552,7 +556,7 @@ expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string 
 }
 
 template<int M=1, int N=1, int Order = 2>
-class GinacMatrix
+class GinacMatrix : public Feel::vf::GiNaCBase
 {
 public:
 

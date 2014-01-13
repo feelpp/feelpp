@@ -3,9 +3,10 @@
   This file is part of the Feel library
 
   Author(s): Stephane Veys <stephane.veys@imag.fr>
+             Christophe Prud'homme <christophe.prudhomme@feelpp.org>
        Date: 2013-12-28
 
-  Copyright (C) 2011 - 2014 Feel++ Consortium
+  Copyright (C) 2011-2014 Feel++ Consortium
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,35 +21,26 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file test_bdf2.cpp
-   \author Stephane Veys <stephane.veys@imag.fr>
-   \date 2013-12-28
-*/
-
-#define USE_BOOST_TEST 1
+//#define USE_BOOST_TEST 1
 #if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_bdf2
 #include <testsuite/testsuite.hpp>
 #endif
 
-#include <feel/feel.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelts/bdf.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/ginac.hpp>
+#include <feel/feelvf/on.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
-
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description testbdf2( "bdf2 test options" );
-    testbdf2.add_options()
-        ( "hsize", po::value<double>()->default_value( 0.05 ), "mesh size" )
-        ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
-        ;
-    return testbdf2.add( Feel::feel_options().add( Feel::bdf_options( "test_bdf2" ) ) );
-}
-
 
 inline
 AboutData
@@ -62,120 +54,122 @@ makeAbout()
                      "Copyright (c) 2013 Feel++ Consortium" );
 
     about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
+    about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
 }
 
-template<int Dim, int Order>
+template<int Dim>
 class Test:
-    public Simget,
-    public boost::enable_shared_from_this< Test<Dim,Order> >
+    public Simget
 {
-
 public :
-
-    typedef Mesh<Simplex<Dim> > mesh_type;
-    typedef boost::shared_ptr<mesh_type> mesh_ptrtype;
-    typedef FunctionSpace<mesh_type,bases<Lagrange<Order> >, Periodicity <NoPeriodicity> > space_type;
-    typedef boost::shared_ptr<space_type> space_ptrtype;
-
-    typedef double value_type;
-
-    /*basis*/
-    typedef bases<Lagrange<Order, Scalar> > basis_type;
-    typedef Bdf<space_type>  bdf_type;
-    typedef boost::shared_ptr<bdf_type> bdf_ptrtype;
-
-
-    Test()
-        :
-        Simget(),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() )
-    {
-    }
 
     void run()
     {
-        auto mesh = createGMSHMesh( _mesh=new mesh_type,
-                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % shape % Dim ).str() ,
-                                                  _usenames=true,
-                                                  _shape=shape,
-                                                  _order=Order,
-                                                  _dim=Dim,
-                                                  _h=meshSize ) );
+        auto mesh = createGMSHMesh( _mesh=new Mesh<Simplex<Dim,1>>,
+                                    _desc=domain( _name=( boost::format( "%1%-%2%" ) % option(_name="gmsh.domain.shape").template as<std::string>() % Dim ).str() ,
+                                                  _dim=Dim ) );
 
-        auto Xh = Pch<1>( mesh );
+
+        auto Xh = Pch<2>( mesh );
         auto u = Xh->element();
+        auto ue = Xh->element();
         auto v = Xh->element();
         auto solution = Xh->element();
-        auto A = backend()->newMatrix( Xh , Xh );
-        auto D = backend()->newMatrix( Xh , Xh );
-        auto M = backend()->newMatrix( Xh , Xh );
-        auto F = backend()->newVector( Xh );
-        auto Rhs = backend()->newVector( Xh );
-        double mu0=0.5;
-        //stifness matrix
-        form2( _test=Xh, _trial=Xh, _matrix=A)  = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) );
-        //we have a robin condition
-        form2( _test=Xh, _trial=Xh, _matrix=A) += integrate( _range= markedfaces( mesh, "Dirichlet" ), _expr= mu0 * idt( u )*id( v ) );
-        //mass matrix
-        form2( _test=Xh, _trial=Xh, _matrix=M)  = integrate( _range= elements( mesh ), _expr= idt( u )* id( v ) );
-        //Rhs
-        form1( Xh , F )  = integrate( _range=markedfaces( mesh,"Dirichlet" ), _expr= mu0 * id( v ) ) ;
+        auto mybdf = bdf( _space=Xh, _name="mybdf" );
 
-        A->close();
-        F->close();
-        M->close();
+        auto g=option(_name="functions.g").template as<std::string>();
+        auto vars = Symbols{"x","y","t","alpha","beta"};
+        auto eg = parse(g,vars);
+        auto fg = -laplacian( eg, {vars[0],vars[1]} )+diff( eg,  {vars[2]});
+        LOG(INFO) << "fg= " << fg;
 
-        double bdf_coeff;
-        auto vec_bdf_poly = backend()->newVector( Xh );
+        auto fe = expr( fg, vars );
+        auto ue_g = expr( eg, vars );
 
-        bdf_ptrtype mybdf;
-        mybdf = bdf( _space=Xh, _vm=this->vm() , _name="mybdf" );
-        for ( mybdf->start(solution);  mybdf->isFinished() == false; mybdf->next() )
+        //stiffness matrix
+        auto a = form2( _test=Xh, _trial=Xh ), at=form2(_test=Xh, _trial=Xh);
+        a = integrate( _range= elements( mesh ), _expr= gradt( u )*trans( grad( v ) ) + mybdf->polyDerivCoefficient(0)*idt(u)*id(u));
+
+        auto e = exporter(_mesh=mesh);
+
+        // initialize bdf with with known values prior to mybdf->initialTime()
+        // (initialTime included)
+        for( auto time : mybdf->priorTimes() )
         {
-            bdf_coeff = mybdf->polyDerivCoefficient( 0 );
-
-            auto bdf_poly = mybdf->polyDeriv();
-
-            *D = *A;
-            *Rhs = *F;
-            D->addMatrix( bdf_coeff, M );
-            *vec_bdf_poly = bdf_poly;
-            Rhs->addVector( *vec_bdf_poly, *M );
-
-            D->close();
-            Rhs->close();
-
-            backend()->solve( _matrix=D, _solution=solution, _rhs=Rhs);
-
-            mybdf->shiftRight(solution);
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+            {
+                std::cout << "Initialize prior times (from timeInitial()) : " << time.second << "s index: " << time.first << "\n";
+            }
+            ue_g.setParameterValues( {
+                    {"t", time.second},
+                    {"alpha", option(_name="parameters.alpha").template as<double>()},
+                    {"beta", option(_name="parameters.beta").template as<double>()} } );
+            ue = project( _space=Xh, _expr=ue_g );
+            mybdf->setUnknown( time.first, ue );
         }
 
-        //check that we obtain the same result in sequential or in parallel
-        double energy = M->energy( solution, solution );
-        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            std::cout<<"energy : "<<energy<<std::endl;
-    }
+        fe.setParameterValues( {
+                {"t", mybdf->timeInitial()},
+                {"alpha", option(_name="parameters.alpha").template as<double>()},
+                {"beta", option(_name="parameters.beta").template as<double>()} } );
 
-private :
-    double meshSize;
-    std::string shape;
+        solution = project( _space=Xh, _expr=ue_g );
+        ue = project( _space=Xh, _expr=ue_g );
+        // compute max error which should be 0
+        auto error = vf::project( _space=Xh, _expr=idv(ue)-idv(solution) );
+        e->step(0)->add("exact",ue);
+        e->step(0)->add("solution",solution);
+        e->step(0)->add("error",error);
+        e->save();
+        double maxerror = error.linftyNorm();
+        if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+        {
+            std::cout << "max error at time " << mybdf->timeInitial() << "s :" << std::setprecision(16) << maxerror << "\n";
+        }
+
+        auto ft = form1(_test=Xh);
+        for ( mybdf->start();  mybdf->isFinished() == false; mybdf->next(solution) )
+        {
+            // update time value in expression
+            ue_g.setParameterValues( {{"t", mybdf->time()}} );
+            fe.setParameterValues( {{"t", mybdf->time()}} );
+
+            auto bdf_poly = mybdf->polyDeriv();
+            ft = integrate( _range=elements(mesh), _expr=(fe+idv(bdf_poly))*id(u) );
+            at = a;
+            at += on(_range=boundaryfaces(mesh),_element=solution,_rhs=ft,_expr=ue_g);
+            at.solve( _solution=solution, _rhs=ft );
+
+            // project onto space for error estimation
+            ue = project( _space=Xh, _expr=ue_g );
+
+            // compute max error which should be 0
+            auto error = vf::project( _space=Xh, _expr=idv(ue)-idv(solution) );
+            double maxerror = error.linftyNorm();
+            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
+                std::cout << "max error at time " << mybdf->time() << "s :" << std::setprecision(16) << maxerror << "\n";
+            e->step(mybdf->time())->add("exact",ue);
+            e->step(mybdf->time())->add("solution",solution);
+            e->step(mybdf->time())->add("error",error);
+            e->save();
+        }
+
+   }
 };
 
 
 
 
 #if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() );
+FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), feel_options() );
 BOOST_AUTO_TEST_SUITE( bdf2 )
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {
-    //Test<2,1> test ( new Test<2,1>() );
-    boost::shared_ptr<Test<2,1> > test ( new Test<2,1>() );
-    test->run();
+    Test<2> test;
+    test.run();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
@@ -184,9 +178,8 @@ int main(int argc, char** argv )
 {
     Feel::Environment env( _argc=argc, _argv=argv,
                            _desc=feel_options() );
-    boost::shared_ptr<Test<2,1> > test ( new Test<2,1>() );
-    //Test<2,1> test ( new Test<2,1>() );
-    test->run();
+    Test<2>  test;
+    test.run();
 }
 #endif
 

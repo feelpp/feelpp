@@ -188,7 +188,8 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         if ( t == "none" ) PCGASMSetType( pc, PC_GASM_NONE );
 
         int levels = Environment::vm(_name="pc-gasm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
-        PCGASMSetOverlap( pc, levels );
+        ierr = PCGASMSetOverlap( pc, levels );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 #endif
     }
     if ( std::string(pctype) == "asm" )
@@ -200,8 +201,8 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         if ( t == "none" ) PCASMSetType( pc, PC_ASM_NONE );
 
         int levels = Environment::vm(_name="pc-asm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
-        PCASMSetOverlap( pc, levels );
-
+        ierr = PCASMSetOverlap( pc, levels );
+        CHKERRABORT( worldComm.globalComm(),ierr );
     }
     if ( std::string(pctype) == "lu" )
     {
@@ -209,7 +210,8 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         VLOG(2) << "mat solver package: " << t << "\n";
         google::FlushLogFiles(google::INFO);
         // set factor package
-        PCFactorSetMatSolverPackage( pc, t.c_str() );
+        ierr = PCFactorSetMatSolverPackage( pc, t.c_str() );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 
     }
     if ( std::string(pctype) == "ilu" )
@@ -380,7 +382,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         // In serial, just set the LU preconditioner type
         //if (Feel::n_processors() == 1)
         // do be changed in parallel
-        if ( worldComm.globalSize() == 1 || matSolverPackage_type == MATSOLVER_MUMPS)
+        if ( worldComm.globalSize() == 1 || matSolverPackage_type == MATSOLVER_MUMPS || matSolverPackage_type == MATSOLVER_PASTIX )
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( worldComm.globalComm(),ierr );
@@ -467,6 +469,16 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         ierr = PCSetType( pc,( char* ) PCML );
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
+
+    case GAMG_PRECOND:
+        ierr = PCSetType( pc,( char* ) PCGAMG );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        // crash without this
+        ierr = PCSetFromOptions( pc );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        break;
+
 
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
@@ -707,6 +719,9 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
             std::string prefixFeelBase = prefixvm(prefixSplit,"lsc");
             std::string prefixPetscBase = "fieldsplit_1_lsc";
             configurePCWithPetscCommandLineOption( prefixFeelBase,prefixPetscBase );
+
+            ierr = PCSetFromOptions( subpc );
+            CHKERRABORT( worldComm.globalComm(),ierr );
         }
 
         ierr = PCSetUp( subpc );

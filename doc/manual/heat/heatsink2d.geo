@@ -1,0 +1,34 @@
+// -*- mode: c++ -*-
+hsize=0.1; //mm
+L=20; // mm
+width=0.5; //mm
+Point (1) = {0, 0, 0,   hsize  };
+Point (2) = {1, 0, 0,   hsize  };
+Point (3) = {1, 1, 0,   hsize  };
+Point (4) = { width , 1, 0,   hsize  };
+Point (5) = {0, 1, 0,   hsize  };
+Point (6) = { width , 0.5+L, 0,   hsize  };
+Point (7) = {0, 0.5+L, 0,   hsize  };
+Line (1) = {1, 2};
+Line (2) = {2, 3};
+Line (3) = {3, 4};
+Line (4) = {4, 5};
+Line (5) = {4, 6};
+Line (6) = {6, 7};
+Line (7) = {7, 5};
+Line (8) = {5, 1};
+Line Loop (9) = {1, 2, 3, 4, 8};
+Line Loop (10) = {5, 6, 7, -4};
+Plane Surface (9) = {9};
+Plane Surface (10) = {10};
+// physical entities
+Physical Line ("gamma1") = {5};
+Physical Line ("gamma2") = {6};
+Physical Line ("gamma3") = {4};
+Physical Line ("gamma4") = {1};
+Physical Line ("gamma5") = {3};
+Physical Line ("gamma6") = {7};
+Physical Line ("gamma7") = {2};
+Physical Line ("gamma8") = {8};
+Physical Surface ("spreader") = {9};
+Physical Surface ("fin") = {10};

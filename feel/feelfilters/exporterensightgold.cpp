@@ -687,10 +687,13 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
             typename mesh_type::marker_element_const_iterator elt_it;
             typename mesh_type::marker_element_const_iterator elt_en;
-            boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
-                                                                               __var->second.worldComm().localRank() ); // important localRank!!!!
+            elt_it = __mesh->elementsByMarker().begin();
+            elt_en = __mesh->elementsByMarker().end();
 
             Feel::detail::MeshPoints<float> mp( __step->mesh().get(), elt_it, elt_en, true, true );
+            //boost::tie( elt_it, elt_en ) = __step->mesh()->elementsWithMarker( p_it->first,
+            //__var->second.worldComm().localRank() ); // important localRank!!!!
+
             size_type __field_size = mp.ids.size();
             if ( __var->second.is_vectorial )
                 __field_size *= 3;
@@ -702,27 +705,34 @@ ExporterEnsightGold<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype 
 
             for ( ; elt_it != elt_en; ++elt_it )
             {
-                for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
+                if ( !elt_it->isGhostCell() )
                 {
-                    for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
+                    for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
                     {
-                        size_type ptid = mp.old2new[elt_it->point( p ).id()]-1;
-                        size_type global_node_id = mp.ids.size()*c + ptid ;
-                        DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
-                                                                     << " local pt:" << p
-                                                                     << " mesh numPoints: " << __step->mesh()->numPoints();
-                        DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
-
-                        if ( c < __var->second.nComponents )
+                        for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
                         {
-                            size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->id(),p, c ) );
+                            size_type ptid = mp.old2new[elt_it->point( p ).id()]-1;
+                            size_type global_node_id = mp.ids.size()*c + ptid ;
+                            DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt_it->id()
+                                                                         << " local pt:" << p
+                                                                         << " mesh numPoints: " << __step->mesh()->numPoints();
+                            DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
-                            __field[global_node_id] = __var->second.globalValue( dof_id );
+                            if ( c < __var->second.nComponents )
+                            {
+                                size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal( elt_it->id(),p, c ) );
+
+                                __field[global_node_id] = __var->second.globalValue( dof_id );
+                            }
+
+                            else
+                                __field[global_node_id] = 0;
                         }
-
-                        else
-                            __field[global_node_id] = 0;
                     }
+                }
+                else // ghost cell
+                {
+
                 }
             }
             CHECK( __field.size() == mp.ids.size() ) << "Invalid field size, observed: " << __field.size() << " expected: " << mp.ids.size() << "\n";
@@ -973,9 +983,13 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         //    typename mesh_type::element_const_iterator elt_en = __mesh->endElement();
         typename mesh_type::marker_element_const_iterator elt_it;// = __mesh->beginElementWithMarker(p_it->first);
         typename mesh_type::marker_element_const_iterator elt_en;// = __mesh->endElementWithMarker(p_it->first);
+
+        elt_it = __mesh->elementsByMarker().begin();
+        elt_en = __mesh->elementsByMarker().end();
+        Feel::detail::MeshPoints<float> mp( __mesh, elt_it, elt_en, true,true );
+
         boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
                                                                    __mesh->worldComm().localRank() ); // important localRank!!!!
-        Feel::detail::MeshPoints<float> mp( __mesh, elt_it, elt_en, true,true );
 
         strcpy( buffer, "part" );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
@@ -994,7 +1008,7 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         __out.write( ( char * ) & mp.ids.front(), mp.ids.size() * sizeof( int ) );
         __out.write( ( char * ) mp.coords.data(), mp.coords.size() * sizeof( float ) );
 
-        // elements
+        // local elements
         strcpy( buffer, this->elementType().c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
@@ -1031,6 +1045,51 @@ ExporterEnsightGold<MeshType,N>::visit( mesh_type* __mesh )
         }
         __out.write( ( char * ) &idelem.front() , __ne*__mesh->numLocalVertices()*sizeof( int ) );
 
+        if ( Environment::numberOfProcessors() > 1 )
+        {
+            std::string ghost_t = "g_" + this->elementType();
+            // ghosts elements
+            strcpy( buffer, ghost_t.c_str() );
+            __out.write( ( char * ) & buffer, sizeof( buffer ) );
+
+            boost::tie( elt_it, elt_en ) = __mesh->elementsWithMarker( p_it->first,
+                                                                       __mesh->worldComm().localRank() ); // important localRank!!!!
+            int __ne = __mesh->numElements() - std::distance( elt_it, elt_en );
+            LOG(INFO) << "number of ghost cells: " << __ne;
+
+            __out.write( ( char * ) &__ne, sizeof( int ) );
+
+            idelem.resize( __ne );
+            elt_it = __mesh->elementsByMarker().begin();
+            elt_en = __mesh->elementsByMarker().end();
+            size_type e = 0;
+            for ( ; elt_it != elt_en; ++elt_it )
+            {
+                if ( elt_it->isGhostCell() )
+                {
+                    idelem[e] = 1;
+                    ++e;
+                }
+            }
+            CHECK( e == __ne ) << "Invalid number of ghosts cells: " << e << " != " << __ne;
+            __out.write( ( char * ) & idelem.front(), idelem.size() * sizeof( int ) );
+
+            elt_it = __mesh->elementsByMarker().begin();
+            idelem.resize( __ne*__mesh->numLocalVertices() );
+            for ( size_type e=0 ; elt_it != elt_en; ++elt_it )
+            {
+                if ( elt_it->isGhostCell() )
+                {
+                    for ( size_type j = 0; j < __mesh->numLocalVertices(); j++ )
+                    {
+                        // ensight id start at 1
+                        idelem[e*__mesh->numLocalVertices()+j] = mp.old2new[elt_it->point( j ).id()];
+                    }
+                    ++e;
+                }
+            }
+            __out.write( ( char * ) &idelem.front() , __ne*__mesh->numLocalVertices()*sizeof( int ) );
+        }
     }
     if ( this->useSingleTransientFile() )
     {

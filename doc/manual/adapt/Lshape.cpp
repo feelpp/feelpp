@@ -26,6 +26,7 @@
    \date 2012-05-07
  */
 #include <feel/feel.hpp>
+#include <feel/feeldiscr/elementdiv.hpp>
 #include <feel/feelmesh/meshadaptation.hpp>
 
 /** use Feel namespace */
@@ -234,7 +235,7 @@ LShape<Dim>::zz_estimator(const element_type& U, const mesh_ptrtype& mesh)
     p0_space_ptrtype P0h = p0_space_type::New( mesh );
     p1vec_space_ptrtype P1hvec = p1vec_space_type::New( mesh );
 
-    auto GhUh = element_div( vf::sum( P1hvec, trans(gradv(U))*vf::meas()), vf::sum( P1hvec, vf::meas()*vf::one()) );
+    auto GhUh = div( vf::sum( P1hvec, trans(gradv(U))*vf::meas()), vf::sum( P1hvec, vf::meas()*vf::one()) );
     auto eta_k_U = integrate(elements(mesh), trans(idv(GhUh) - trans(gradv(U)))*(idv(GhUh) - trans(gradv(U))), _Q<10>() ).broken(P0h).sqrt();
 
     auto h=vf::project(P0h, elements(mesh), vf::h() );

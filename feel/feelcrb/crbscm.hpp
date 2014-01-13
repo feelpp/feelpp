@@ -581,10 +581,6 @@ private:
     bool M_use_scm;
 };
 
-po::options_description crbSCMOptions( std::string const& prefix = "" );
-
-
-
 template<typename TruthModelType>
 std::vector<boost::tuple<double,double,double> >
 CRBSCM<TruthModelType>::offline()
@@ -640,11 +636,13 @@ CRBSCM<TruthModelType>::offlineNoSCM()
 #endif
     LOG( INFO )<<"eigenvalue ( min ) for mu_ref : "<<eigen_value;
 
+#if 0
     if( option(_name="crb.scm.check-eigenvector").template as<bool>() )
     {
         auto eigen_vector = modes.begin()->second.template get<2>();
         checkEigenVectorEigenValue( sym, inner_prod, eigen_vector, eigen_value );
     }
+#endif
     //store the eigen value in M_C_eigenvalues
     M_C_eigenvalues[0] = modes.begin()->second.template get<0>();
 
@@ -1906,4 +1904,3 @@ template<typename T> const unsigned int version<Feel::CRBSCM<T> >::value;
 }
 }
 #endif /* __CRBSCM_H */
-
