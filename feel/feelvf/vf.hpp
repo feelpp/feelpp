@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2012-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-17
  */
-#ifndef __VF_H
-#define __VF_H 1
+#ifndef FEELPP_VF_HPP
+#define FEELPP_VF_HPP 1
 
 //#include <boost/numeric/bindings/traits/traits.hpp>
 //#include <boost/numeric/bindings/traits/ublas_vector.hpp>
@@ -42,53 +43,14 @@
 /**
  * \brief allow automatic type naming of complex expression
  */
-#define AUTO( a, b ) __typeof__( b ) a = (b);
+#define AUTO( a, b ) auto a = (b);
 
-namespace Feel
-{
-//namespace blas = boost::numeric::bindings::blas;
-//namespace traits = boost::numeric::bindings::traits;
-namespace fusion = boost::fusion;
-
-
-namespace vf
-{
-namespace detail
-{
-
-/// \cond detail
-template<int Index> struct gmc
-{
-    static const int value = Index;
-    typedef mpl::void_ reference_element_type;
-} ;
-
-template<typename Geo_t>
-struct ExtractGm
-{
-    typedef typename mpl::if_<fusion::result_of::has_key<Geo_t,vf::detail::gmc<0> >,mpl::identity<vf::detail::gmc<0> >,mpl::identity<vf::detail::gmc<1> > >::type::type key_type;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-    typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
-
-    static gmc_ptrtype get( Geo_t const& geom )
-    {
-        return fusion::at_key<key_type>( geom ).get();
-    }
-    static Geo_t clone( Geo_t const& geom )
-    {
-        Geo_t geom2( geom );
-        fusion::at_key<key_type>( geom2 )  = fusion::at_key<key_type>( geom )->clone();
-        return geom2;
-    }
-};
-/// \endcond
-}
-}
-}
 #include <feel/feelcore/feel.hpp>
+
+#include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/expr.hpp>
 
-#include <feel/feelvf/ppoperators.hpp>
+#include <feel/feelvf/operations.hpp>
 
 #include <feel/feelvf/operators.hpp>
 //#include <feel/feelvf/operators2.hpp>
@@ -110,7 +72,14 @@ struct ExtractGm
 //#include <feel/feelvf/integral.hpp>
 
 #include <feel/feelvf/form.hpp>
-#include <feel/feelvf/integrator.hpp>
+#include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/mean.hpp>
+#include <feel/feelvf/measure.hpp>
+#include <feel/feelvf/norml2.hpp>
+#include <feel/feelvf/norml2squared.hpp>
+#include <feel/feelvf/normh1.hpp>
+#include <feel/feelvf/normsemih1.hpp>
+#include <feel/feelvf/on.hpp>
 //#include <feel/feelvf/integratordirac.hpp>
 #include <feel/feelvf/projectors.hpp>
 #include <feel/feelvf/evaluator.hpp>
