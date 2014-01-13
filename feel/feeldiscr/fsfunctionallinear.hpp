@@ -76,6 +76,9 @@ public:
     {
     }
 
+
+    virtual ~FsFunctionalLinear() {}
+
     void setName( std::string name ) { M_name = name; }
     std::string name() const { return M_name ; }
 

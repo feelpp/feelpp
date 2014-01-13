@@ -30,6 +30,8 @@
 #define FEELPP_LOADGMSHMESH_HPP 1
 
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/detail/mesh.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
 
 namespace Feel {
 /**

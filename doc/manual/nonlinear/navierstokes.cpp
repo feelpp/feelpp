@@ -184,9 +184,9 @@ Steady_Ns::Steady_Ns( )
     :
     super( ),
     M_backend( backend_type::build( this->vm() ) ),
-    meshSize( this->vm()["hsize"].template as<double>() ),
-    mu( this->vm()["mu"].template as<value_type>() ),
-    penalbc( this->vm()["bccoeff"].template as<value_type>() ),
+    meshSize( this->vm()["hsize"].as<double>() ),
+    mu( this->vm()["mu"].as<value_type>() ),
+    penalbc( this->vm()["bccoeff"].as<value_type>() ),
     exporter( Exporter<mesh_type>::New( this->vm(), this->about().appName() ) )
 {
 
@@ -231,13 +231,13 @@ void Steady_Ns::run()
         {
             auto U = Vh->element( "(u,p)" );
             auto V = Vh->element( "(v,q)" );
-            auto u = U.template element<0>( "u" );
-            auto v = V.template element<0>( "u" );
-            auto p = U.template element<1>( "p" );
-            auto q = V.template element<1>( "p" );
+            auto u = U.element<0>( "u" );
+            auto v = V.element<0>( "u" );
+            auto p = U.element<1>( "p" );
+            auto q = V.element<1>( "p" );
 #if 1
-            auto lambda = U.template element<2>();
-            auto nu = V.template element<2>();
+            auto lambda = U.element<2>();
+            auto nu = V.element<2>();
 #endif
             auto mu=0.035;
 
@@ -295,13 +295,13 @@ void Steady_Ns::run()
         {
             auto U = Vh->element( "(u,p)" );
             auto V = Vh->element( "(v,q)" );
-            auto u = U.template element<0>( "u" );
-            auto v = V.template element<0>( "u" );
-            auto p = U.template element<1>( "p" );
-            auto q = V.template element<1>( "p" );
+            auto u = U.element<0>( "u" );
+            auto v = V.element<0>( "u" );
+            auto p = U.element<1>( "p" );
+            auto q = V.element<1>( "p" );
 #if 1
-            auto lambda = U.template element<2>();
-            auto nu = V.template element<2>();
+            auto lambda = U.element<2>();
+            auto nu = V.element<2>();
 #endif
 
 
@@ -380,13 +380,13 @@ void Steady_Ns::run()
 
     auto U = Vh->element( "(u,p)" );
     auto V = Vh->element( "(v,q)" );
-    auto u = U.template element<0>( "u" );
-    auto v = V.template element<0>( "u" );
-    auto p = U.template element<1>( "p" );
-    auto q = V.template element<1>( "p" );
+    auto u = U.element<0>( "u" );
+    auto v = V.element<0>( "u" );
+    auto p = U.element<1>( "p" );
+    auto q = V.element<1>( "p" );
 #if 1
-    auto lambda = U.template element<2>();
-    auto nu = V.template element<2>();
+    auto lambda = U.element<2>();
+    auto nu = V.element<2>();
 #endif
 
 
@@ -466,8 +466,8 @@ void Steady_Ns::run()
           {
               exporter->step( 0 )->setMesh( U.functionSpace()->mesh() );
               exporter->step( 0 )->addRegions();
-              exporter->step( 0 )->add( "u", U.template element<0>() );
-              exporter->step( 0 )->add( "p", U.template element<1>() );
+              exporter->step( 0 )->add( "u", U.element<0>() );
+              exporter->step( 0 )->add( "p", U.element<1>() );
               exporter->step( 0 )->add( "u_exact", v);
               exporter->step( 0 )->add( "p_exact", q );
               exporter->save();

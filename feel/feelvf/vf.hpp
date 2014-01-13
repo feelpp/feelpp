@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2012-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-17
  */
-#ifndef __VF_H
-#define __VF_H 1
+#ifndef FEELPP_VF_HPP
+#define FEELPP_VF_HPP 1
 
 //#include <boost/numeric/bindings/traits/traits.hpp>
 //#include <boost/numeric/bindings/traits/ublas_vector.hpp>
