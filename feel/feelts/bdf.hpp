@@ -59,7 +59,7 @@
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/glas.hpp>
-#include <feel/feeldiscr/tsbase.hpp>
+#include <feel/feelts/tsbase.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 
 namespace Feel
