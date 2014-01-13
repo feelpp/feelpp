@@ -59,15 +59,20 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/serialization.hpp>
+
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/expansion.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+
+#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crbscm.hpp>
-#include <feel/feelcore/serialization.hpp>
-#include <feel/feelcrb/pod.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
-#include <feel/feelfilters/exporter.hpp>
-
 #include <feel/feelcrb/crbelementsdb.hpp>
+#include <feel/feelcrb/pod.hpp>
+
+#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelcore/pslogger.hpp>
 
@@ -89,17 +94,6 @@
 namespace Feel
 {
 /**
- * CRBErrorType
- * Determine the type of error estimation used
- * - CRB_RESIDUAL : use the residual error estimation without algorithm SCM
- * - CRB_RESIDUAL_SCM : use the residual error estimation and also algorithm SCM
- * - CRB_NO_RESIDUAL : in this case we don't compute error estimation
- * - CRB_EMPIRICAL : compute |S_n - S_{n-1}| where S_n is the output obtained by using a reduced basis with n elements
- */
-enum CRBErrorType { CRB_RESIDUAL = 0, CRB_RESIDUAL_SCM=1, CRB_NO_RESIDUAL=2 , CRB_EMPIRICAL=3};
-
-/**
- * \class CRB
  * \brief Certifed Reduced Basis class
  *
  * Implements the certified reduced basis method
@@ -6480,24 +6474,21 @@ void
 CRB<TruthModelType>::printErrorsDuringRbConstruction( void )
 {
 
-    if( M_rbconv_contains_primal_and_dual_contributions )
+    std::ofstream conv;
+    std::string file_name = "crb-offline-error.dat";
+    typedef convergence_type::left_map::const_iterator iterator;
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
-        typedef convergence_type::left_map::const_iterator iterator;
-        LOG(INFO)<<"\nMax error during offline stage\n";
-        for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  maxerror : "<<it->second.template get<0>()<<"\n";
+        conv.open(file_name, std::ios::app);
+        conv << "NbBasis" << "\t" << "output" << "\t" << "primal" << "\t" << "dual\n";
 
-        LOG(INFO)<<"\nPrimal contribution\n";
         for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  delta_pr : "<<it->second.template get<1>()<<"\n";
-
-        LOG(INFO)<<"\nDual contribution\n";
-        for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
-        LOG(INFO)<<"\n";
+            conv<<it->first<<"\t"<<it->second.template get<0>()<<"\t"<<it->second.template get<1>()<<"\t"<<it->second.template get<2>()<<"\n";
+        //for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
+        //    LOG(INFO)<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
     }
-    else
-        throw std::logic_error( "[CRB::printErrorsDuringRbConstruction] ERROR, the database is too old to print the error during offline step, use the option rebuild-database = true" );
+    conv.close();
 
 }
 
@@ -7743,7 +7734,7 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::printErrorDuringOfflineStep()
 {
-  bool print = this->vm()["crb.print-error-during-rb-construction"].template as<bool>();
+    bool print = option(_name="crb.print-error-during-rb-construction").template as<bool>();
     return print;
 }
 

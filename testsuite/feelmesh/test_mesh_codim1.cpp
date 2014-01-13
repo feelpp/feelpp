@@ -44,6 +44,7 @@
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/importergmsh.hpp>
 
 namespace Feel
 {

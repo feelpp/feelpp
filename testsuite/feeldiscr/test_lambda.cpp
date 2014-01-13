@@ -48,8 +48,9 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pch.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelvf/vf.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
