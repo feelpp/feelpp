@@ -21,13 +21,34 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#ifndef FEELPP_FEELVF_PRODUCTS_HPP
-#define FEELPP_FEELVF_PRODUCTS_HPP 1
+#ifndef FEELPP_FEELVF_NORM2_HPP
+#define FEELPP_FEELVF_NORM2_HPP 1
 
-#warning This file includes at least one deprecated or antiquated header \
-    Please include <feel/feelvf/inner.hpp> and/or <feel/feelvf/cross.hpp> instead.
-
+#include <feel/feelvf/stdmathfunctors.hpp>
 #include <feel/feelvf/inner.hpp>
-#include <feel/feelvf/cross.hpp>
 
-#endif /* FEELPP_FEELVF_PRODUCTS_HPP */
+namespace Feel
+{
+namespace vf
+{
+/**
+ * Norm-2 of the expression \p v
+ *
+ * \note it handles scalar, vectorial or matricial cases
+ *
+ * \return the norm 2 of the expression \f$\sqrt{\operatorname{tr}(v^T * v)}\f$
+ */
+template<typename ExprT>
+inline
+auto
+norm2( ExprT v ) -> decltype( inner( v, v, mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() ) )
+{
+    return inner( v, v, mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+}
+
+
+} // vf
+
+
+} // Feel
+#endif /* FEELPP_FEELVF_NORM2_HPP */
