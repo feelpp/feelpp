@@ -2241,10 +2241,11 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
             <<  dof_id << ", " <<  firstDof() << ", " <<  lastDof() << ", " <<  nLocalDofWithGhost()
             << ", " << boost::get<1>( M_dof_points[dof_id] )
             << ", " <<  boost::get<0>( M_dof_points[dof_id] ) ;
-        CHECK( dof_done[dof_id] == true )
-            << "invalid dof point"
-            << dof_id << ", " <<  nLocalDofWithGhost() << ", " <<  firstDof() << ", "
-            <<  lastDof() << ", " <<  fe_type::nDim << ", " <<  fe_type::nLocalDof;
+        if ( !buildDofTableMPIExtended() )
+            CHECK( dof_done[dof_id] == true )
+                << "invalid dof point"
+                << dof_id << ", " <<  nLocalDofWithGhost() << ", " <<  firstDof() << ", "
+                <<  lastDof() << ", " <<  fe_type::nDim << ", " <<  fe_type::nLocalDof;
     }
 
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates done\n";
