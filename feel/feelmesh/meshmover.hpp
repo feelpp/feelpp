@@ -232,6 +232,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     }
     if ( imesh->worldComm().localSize() > 1 && u.functionSpace()->dof()->buildDofTableMPIExtended() )
     {
+        std::set<size_type> eltGhostDone;
         auto face_it = imesh->interProcessFaces().first;
         auto const face_en = imesh->interProcessFaces().second;
         for ( ; face_it!=face_en ; ++face_it )
@@ -240,6 +241,9 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
             auto const& elt1 = face_it->element1();
             const bool elt0isGhost = elt0.isGhostCell();
             auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+            if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() ) continue;
+
             auto it_eltOffProc = imesh->elementIterator( eltOffProc.id(),eltOffProc.processId() );
 
             __c->update( eltOffProc );
@@ -257,7 +261,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 if ( points_done.find( eltOffProc.point( l ).id() ) == points_done.end() )
                 {
                     //std::cout << "Pt: " << thedof << "Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
-                    imesh->elements().modify( it_eltOffProc,//&elt0isGhost,//it_elt,
+                    imesh->elements().modify( it_eltOffProc,
                                               lambda::bind( &element_type::applyDisplacement,
                                                             lambda::_1,
                                                             l,
@@ -267,13 +271,14 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
                 }
                 else
                 {
-                    imesh->elements().modify( it_eltOffProc,//&elt0isGhost,//it_elt,
+                    imesh->elements().modify( it_eltOffProc,
                                               lambda::bind( &element_type::applyDisplacementG,
                                                             lambda::_1,
                                                             l,
                                                             val ) );
                 }
             }
+            eltGhostDone.insert( eltOffProc.id() );
         }
     } // if ( imesh->worldComm().localSize() > 1 && u.functionSpace()->dof()->buildDofTableMPIExtended() )
 
