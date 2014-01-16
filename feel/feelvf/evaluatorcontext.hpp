@@ -77,11 +77,13 @@ public:
 
     EvaluatorContext( context_type const& ctx,
                       expression_type const& __expr,
+                      int max_points_used,
                       GeomapStrategyType geomap_strategy,
                       bool mpi_communications )
         :
         M_ctx( ctx ),
         M_expr( __expr ),
+        M_max_points_used( max_points_used ),
         M_geomap_strategy( geomap_strategy ),
         M_mpi_communications( mpi_communications )
     {
@@ -93,6 +95,7 @@ public:
         :
         M_ctx( __vfi.M_ctx ),
         M_expr( __vfi.M_expr ),
+        M_max_points_used( __vfi.M_max_points_used ),
         M_geomap_strategy( __vfi.M_geomap_strategy ),
         M_mpi_communications( __vfi.M_mpi_communications )
     {
@@ -145,6 +148,7 @@ private:
 
     context_type M_ctx;
     expression_type const&  M_expr;
+    int M_max_points_used;
     GeomapStrategyType M_geomap_strategy;
     bool M_mpi_communications;
 };
@@ -153,6 +157,7 @@ template<typename CTX, typename ExprT>
 typename EvaluatorContext<CTX, ExprT>::element_type
 EvaluatorContext<CTX, ExprT>::operator()() const
 {
+
     //rank of the current processor
     int proc_number = Environment::worldComm().globalRank();
 
@@ -174,12 +179,18 @@ EvaluatorContext<CTX, ExprT>::operator()() const
     //in case of scalar unknown, shape::M should be 1
     //CHECK( shape::M == 1 ) << "Invalid expression shape " << shape::M << " should be 1";
 
+    int max_size = 0;
     int npoints = M_ctx.nPoints();
-    element_type __globalv( npoints*shape::M*shape::N );
+    if( M_max_points_used > 0 )
+        max_size = M_max_points_used;
+    else
+        max_size = npoints;
+
+    element_type __globalv( max_size*shape::M*shape::N );
     __globalv.setZero();
 
     //local version of __v on each proc
-    element_type __localv( npoints*shape::M*shape::N );
+    element_type __localv( max_size*shape::M*shape::N );
     __localv.setZero();
 
     if ( !M_ctx.empty() )
@@ -206,21 +217,25 @@ EvaluatorContext<CTX, ExprT>::operator()() const
             //else
             //    LOG( INFO ) << "we have a FEM context";
             int global_p = it->first;
-            tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
 
-            //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
-
-
-            for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
+            if( global_p < max_size )
             {
-                for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                tensor_expr.updateContext( Xh->contextBasis( ctx, M_ctx ) );
+
+                //LOG( INFO ) << "Xh->contextBasis returns a context of type \n"<< typeid( decltype( Xh->contextBasis( ctx, M_ctx ) )  ).name();
+
+                for ( uint16_type c2 = 0; c2 < shape::N; ++c2 )
                 {
-                //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
-                __localv(global_p*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, 0 );
-                //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
+                    for ( uint16_type c1 = 0; c1 < shape::M; ++c1 )
+                    {
+                        //__localv(shape::M*p+c1) = tensor_expr.evalq( c1, 0, 0 );
+                        __localv(global_p*shape::M*shape::N+c1+c2*shape::M) = tensor_expr.evalq( c1, c2, 0 );
+                        //LOG( INFO ) << "__localv("<<shape::M*p+c1<<") = "<<tensor_expr.evalq( c1, 0, 0 )<<" and global p = "<<global_p;
+                    }
                 }
-            }
-        }
+            }//only if globalp < max_size
+
+        }//loop over local points
     }
 
 
@@ -259,11 +274,12 @@ template<typename Ctx, typename ExprT>
 typename details::EvaluatorContext<Ctx, Expr<ExprT> >::element_type
 evaluatecontext_impl( Ctx const& ctx,
                       Expr<ExprT> const& __expr,
+                      int max_points_used = -1,
                       GeomapStrategyType geomap = GeomapStrategyType::GEOMAP_HO,
                       bool mpi_communications = true )
 {
     typedef details::EvaluatorContext<Ctx, Expr<ExprT> > proj_t;
-    proj_t p( ctx, __expr, geomap , mpi_communications );
+    proj_t p( ctx, __expr, max_points_used, geomap , mpi_communications );
     return p();
 }
 
@@ -290,13 +306,14 @@ BOOST_PARAMETER_FUNCTION(
     ) // 4. one required parameter, and
 
     ( optional
+      ( max_points_used, (int), -1 )
       ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
       ( mpi_communications, (bool), true )
     )
 )
 {
     //LOG(INFO) << "evaluate expression..." << std::endl;
-    return evaluatecontext_impl( context, expr, geomap , mpi_communications );
+    return evaluatecontext_impl( context, expr, max_points_used, geomap , mpi_communications );
     //LOG(INFO) << "evaluate expression done." << std::endl;
 }
 
