@@ -155,12 +155,6 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     // //communicate the DONE list between all the proc
     reduceDonePoints(__v, theHeap, status, done );
 
-    if (done.empty())
-        {
-            LOG(INFO)<<"no cell crossed by the level set found. Returning original function\n"<<std::endl;
-            return __v;
-        }
-
     // initialize close distances in heap and mark close points in status array
     for ( auto dit = done.begin(); dit != done.end(); ++dit )
       fmsHeapUpdate( *dit, __v, status, theHeap );
@@ -186,7 +180,9 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     auto ex = exporter(_mesh=M_functionspace->mesh(), _name="fastmarchin");
 #endif
 
-    size_type sumAllSizes=1;
+    size_type sumAllSizes= mpi::all_reduce(Environment::worldComm().globalComm(),
+                                           theHeap.size(),
+                                           std::plus<size_type>() );
 
     // marching loop
     // continue since all the Heap are not at 0
