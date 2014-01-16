@@ -1608,7 +1608,8 @@ public:
         auto mesh = this->functionSpace()->mesh();
         auto pi_g = vf::project( _space=this->functionSpace(), _expr=M_expr );
         auto diff = pi_g - eim_expansion;
-        return diff.linftyNorm();
+        auto linf = normLinf( _range=elements( mesh ), _pset=_Q<5>(), _expr=idv(diff) );
+        return linf.template get<0>();
     }
 
     double interpolationError( solution_type const& T , parameter_type const& mu ) const
