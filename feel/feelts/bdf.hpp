@@ -144,7 +144,9 @@ public:
         :
         super( b ),
         M_space( b.M_space ),
-        M_unknowns( b.M_unknowns )
+        M_unknowns( b.M_unknowns ),
+        M_alpha( b.M_alpha ),
+        M_beta( b.M_beta )
     {}
 
     ~Bdf();
@@ -263,6 +265,9 @@ private:
         ar & boost::serialization::base_object<TSBase>( *this );
     }
 
+    //! compute BDF coefficients
+    void computeCoefficients();
+
 private:
 
     //! space
@@ -296,6 +301,7 @@ Bdf<SpaceType>::Bdf( po::variables_map const& vm,
         M_unknowns[__i] = unknown_type( new element_type( M_space ) );
         M_unknowns[__i]->zero();
     }
+    computeCoefficients();
 
 }
 
@@ -315,16 +321,13 @@ Bdf<SpaceType>::Bdf( space_ptrtype const& __space,
         M_unknowns[__i] = unknown_type( new element_type( M_space ) );
         M_unknowns[__i]->zero();
     }
-
+    computeCoefficients();
 }
 
 template <typename SpaceType>
 void
-Bdf<SpaceType>::init()
+Bdf<SpaceType>::computeCoefficients()
 {
-    super::init();
-
-
     for ( int i = 0; i < BDF_MAX_ORDER; ++i )
     {
         M_alpha[ i ].resize( i+2 );
@@ -373,7 +376,12 @@ Bdf<SpaceType>::init()
             M_beta[i][ 3 ] = -1.;
         }
     }
-
+}
+template <typename SpaceType>
+void
+Bdf<SpaceType>::init()
+{
+    super::init();
 
     if ( this->isRestart() )
     {
@@ -657,7 +665,6 @@ BOOST_PARAMETER_FUNCTION(
     thebdf->setSaveInFile( save );
     thebdf->setSaveFreq( freq );
     thebdf->setRankProcInNameOfFiles( rank_proc_in_files_name );
-    thebdf->start();
     return thebdf;
 }
 

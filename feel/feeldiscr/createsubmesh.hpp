@@ -217,6 +217,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 pt.setProcessId( proc_id );
                 pt.clearElementsGhost();
                 pt.clearNeighborPartitionIds();
+                pt.setOnBoundary(false);
 
                 // Add this node to the new mesh
                 newMesh->addPoint ( pt );
@@ -424,6 +425,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                             pt.setProcessIdInPartition( proc_id );
                             pt.setProcessId( invalid_uint16_type_value );
                             pt.clearNeighborPartitionIds();
+                            pt.setOnBoundary(false);
 
                             // Add this node to the new mesh
                             newMesh->addPoint ( pt );
@@ -594,6 +596,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                 pt.setProcessIdInPartition( proc_id );
                 pt.setProcessId( proc_id );
                 pt.clearNeighborPartitionIds();
+                pt.setOnBoundary(false);
 
                 // Add this node to the new mesh
                 newMesh->addPoint( pt );
@@ -754,6 +757,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                             pt.setProcessId( invalid_uint16_type_value );
                             pt.clearElementsGhost();
                             pt.clearNeighborPartitionIds();
+                            pt.setOnBoundary(false);
 
                             // Add this node to the new mesh
                             newMesh->addPoint ( pt );
