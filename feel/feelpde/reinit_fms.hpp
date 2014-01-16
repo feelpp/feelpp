@@ -134,6 +134,7 @@ private:
     std::vector<point_type> M_coords;
     vf::node_type M_translation;
     const size_type firstDof;
+    const uint16_type ndofOnCluster;
 
 };
 

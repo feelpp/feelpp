@@ -24,9 +24,13 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
     M_neighbors(),
     M_coords( __functionspace->dof()->nDof() ),
     M_translation( __periodicity.translation() ),
-    firstDof( M_functionspace->dof()->firstDofGlobalCluster() )
+    firstDof( M_functionspace->dof()->firstDofGlobalCluster() ),
+    ndofOnCluster( mpi::all_reduce(Environment::worldComm().globalComm(),
+                                     __functionspace->dof()->nDof(),
+                                   std::plus<uint16_type>() ) )
 {
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
+
     auto it = M_functionspace->mesh()->beginElementWithProcessId();
     auto en = M_functionspace->mesh()->endElementWithProcessId();
 
@@ -247,8 +251,11 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
                                       theHeap.size(),
                                       std::plus<size_type>() );
 
+        // avoid infinite loop if a heap is not cleaned correctly for any reason
+        CHECK(++count_iteration < ndofOnCluster)<<"something is wrong in fastmarching loop. The march should converge in less than ndofOnCluster = "
+                                                <<ndofOnCluster<<" iterations and still has not converged in "<<count_iteration<<" iterations"<<std::endl;
+
 #if defined( FM_EXPORT )
-        ++count_iteration;
         ex->step(count_iteration)->add("v", __v);
         ex->step(count_iteration)->add("status", status);
         ex->save();
