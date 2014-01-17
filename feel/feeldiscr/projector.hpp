@@ -30,6 +30,7 @@
 #define _PROJECTOR_HPP_
 
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/operatorlinear.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -99,22 +100,22 @@ public :
 
     Projector( domain_space_ptrtype     domainSpace,
                dual_image_space_ptrtype dualImageSpace,
-               backend_ptrtype backend = Backend<double>::build( BACKEND_PETSC ),
+               backend_ptrtype abackend = Feel::backend(_rebuild=true),
                ProjectorType proj_type=L2,
                double epsilon = 0.01,
                double gamma = 20,
                DirichletType dirichlet_type = WEAK
              )
         :
-        ol_type( domainSpace, dualImageSpace, backend ),
-        M_backend( backend ),
+        ol_type( domainSpace, dualImageSpace, abackend ),
+        M_backend( abackend ),
         M_epsilon( epsilon ),
         M_gamma( gamma ),
         M_proj_type( proj_type ),
         M_dir( dirichlet_type )
 
     {
-        M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace, _pattern=Pattern::EXTENDED ) ;
+        M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace ) ;
         initMatrix();
     }
 
@@ -190,7 +191,7 @@ public :
 
         ie->close();
 
-        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace(), _pattern=Pattern::EXTENDED );
+        M_matrixFull = M_backend->newMatrix( _trial=this->domainSpace(), _test=this->dualImageSpace() );
         auto bilinearForm = form2( _trial=this->domainSpace(), _test=this->dualImageSpace(), _matrix=M_matrixFull );
 
         if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
@@ -440,11 +441,11 @@ template<typename TDomainSpace, typename TDualImageSpace>
 boost::shared_ptr< Projector<TDomainSpace, TDualImageSpace> >
 projector( boost::shared_ptr<TDomainSpace> const& domainspace,
            boost::shared_ptr<TDualImageSpace> const& imagespace,
-           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& backend = Backend<double>::build( BACKEND_PETSC ),
+           typename Projector<TDomainSpace, TDualImageSpace>::backend_ptrtype const& abackend = Feel::backend(_rebuild=true),
            ProjectorType proj_type=L2, double epsilon=0.01, double gamma = 20, DirichletType dirichlet_type = WEAK)
 {
     typedef Projector<TDomainSpace, TDualImageSpace > Proj_type;
-    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, backend, proj_type, epsilon, gamma, dirichlet_type ) );
+    boost::shared_ptr<Proj_type> proj( new Proj_type( domainspace, imagespace, abackend, proj_type, epsilon, gamma, dirichlet_type ) );
     return proj;
 }
 
@@ -458,7 +459,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::projector_args<Args>::return_
                           ( optional
                             ( type, (ProjectorType), L2 )
                             ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, Backend<double>::build( BACKEND_PETSC ) )
+                            ( backend, *, Feel::backend(_rebuild=true) )
                           ) )
 {
     return projector( domainSpace,imageSpace, backend, type, 0.01, penaldir );
@@ -473,7 +474,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::lift_args<Args>::lift_return_
                           ( optional
                             ( type, (DirichletType), WEAK )
                             ( penaldir, *( boost::is_arithmetic<mpl::_> ), 20. )
-                            ( backend, *, Backend<double>::build( BACKEND_PETSC ) )
+                            ( backend, *, backend(_rebuild=true) )
                             ) )
 {
     return projector( domainSpace, domainSpace, backend, ProjectorType::LIFT, 0.01 , penaldir, type );

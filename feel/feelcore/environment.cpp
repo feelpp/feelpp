@@ -203,7 +203,7 @@ Environment::processGenericOptions()
 //         parseAndStoreOptions( po::command_line_parser( args ) );
 //     }
 
-    //if ( worldComm().rank() == 0 )
+    if ( worldComm().isMasterRank() )
     {
 
         if ( S_vm.count( "feelinfo" ) )

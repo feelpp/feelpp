@@ -59,15 +59,20 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/parameter.hpp>
+#include <feel/feelcore/serialization.hpp>
+
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/expansion.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+
+#include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/crbscm.hpp>
-#include <feel/feelcore/serialization.hpp>
-#include <feel/feelcrb/pod.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
-#include <feel/feelfilters/exporter.hpp>
-
 #include <feel/feelcrb/crbelementsdb.hpp>
+#include <feel/feelcrb/pod.hpp>
+
+#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelcore/pslogger.hpp>
 
@@ -76,6 +81,12 @@
 #include "HARTS.h"
 #if defined(HARTS_HAS_OPENCL)
 #include "CL/cl.hpp"
+
+#define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
+   if( err != CL_SUCCESS ) {                                                                                        \
+       std::cerr << "OpenCL error (" << err << ") in file '" << __FILE__ << " in line " << __LINE__ << ": " << name << std::endl;    \
+       exit(EXIT_FAILURE);                                                                                          \
+   } } while (0)
 #endif
 #endif
 
@@ -83,17 +94,6 @@
 namespace Feel
 {
 /**
- * CRBErrorType
- * Determine the type of error estimation used
- * - CRB_RESIDUAL : use the residual error estimation without algorithm SCM
- * - CRB_RESIDUAL_SCM : use the residual error estimation and also algorithm SCM
- * - CRB_NO_RESIDUAL : in this case we don't compute error estimation
- * - CRB_EMPIRICAL : compute |S_n - S_{n-1}| where S_n is the output obtained by using a reduced basis with n elements
- */
-enum CRBErrorType { CRB_RESIDUAL = 0, CRB_RESIDUAL_SCM=1, CRB_NO_RESIDUAL=2 , CRB_EMPIRICAL=3};
-
-/**
- * \class CRB
  * \brief Certifed Reduced Basis class
  *
  * Implements the certified reduced basis method
@@ -795,6 +795,7 @@ public:
     matrix_info_tuple fixedPointPrimal( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
     /*
      * fixed point ( primal problem ) - ONLINE step with OpenCL
      * \param N : dimension of the reduced basis
@@ -807,6 +808,7 @@ public:
      */
     matrix_info_tuple fixedPointPrimalCL( size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector, int K=0, bool print_rb_matrix=false) const;
+#endif
 
     /*
      * fixed point ( dual problem ) - ONLINE step
@@ -1412,6 +1414,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
         do
         {
+
             boost::tie( M, Apr, F) = M_model->update( mu , u, M_bdf_primal->time() );
 
             if ( ! M_model->isSteady() )
@@ -2272,34 +2275,38 @@ CRB<TruthModelType>::offline()
         u.setName( ( boost::format( "fem-primal-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
         udu.setName( ( boost::format( "fem-dual-N%1%-proc%2%" ) % (M_N)  % proc_number ).str() );
 
-        if ( M_model->isSteady() && ! M_use_newton )
+#if !defined(NDEBUG)
+        mu.check();
+#endif
+
+        if ( M_model->isSteady()  )
         {
 
-            u = offlineFixedPointPrimal( mu );//, A  );
-            if( solve_dual_problem )
-                udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
-        }
+            if( ! M_use_newton )
+            {
+                u = offlineFixedPointPrimal( mu );//, A  );
+                if( solve_dual_problem )
+                    udu = offlineFixedPointDual( mu , dual_initial_field );//,  A , u );
+            }
+            else
+            {
+                u.zero();
 
-        if ( M_model->isSteady() && M_use_newton )
-        {
-            mu.check();
-            u.zero();
+                timer2.restart();
+                LOG(INFO) << "[CRB::offline] solving primal" << "\n";
+                u = M_model->solve( mu );
+                if( proc_number == this->worldComm().masterRank() )
+                    LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s";
+                timer2.restart();
+            }
+        }//steady
 
-            timer2.restart();
-            LOG(INFO) << "[CRB::offline] solving primal" << "\n";
-            u = M_model->solve( mu );
-            if( proc_number == this->worldComm().masterRank() )
-                LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s";
-            timer2.restart();
-        }
-
-
-        if( ! M_model->isSteady() )
+        else
         {
             u = offlineFixedPointPrimal( mu  );
             if ( solve_dual_problem || M_error_type==CRB_RESIDUAL || M_error_type == CRB_RESIDUAL_SCM )
                 udu = offlineFixedPointDual( mu , dual_initial_field );
-        }
+        }//transient
 
 
         if( ! use_predefined_WNmu )
@@ -2858,7 +2865,7 @@ CRB<TruthModelType>::offline()
 
             }
 
-            boost::mpi::broadcast( Environment::worldComm() , M_current_mu , master_proc );
+            boost::mpi::broadcast( Environment::worldComm() , mu , master_proc );
             M_current_mu = mu;
 
         }
@@ -4307,11 +4314,151 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     return matrix_info;
 }
 
+#if defined(FEELPP_HAS_HARTS) && defined(HARTS_HAS_OPENCL)
 template<typename TruthModelType>
 typename CRB<TruthModelType>::matrix_info_tuple
 CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu, std::vector< vectorN_type > & uN,  std::vector<vectorN_type> & uNold,
                                         std::vector< double > & output_vector , int K, bool print_rb_matrix) const
 {
+    cl_int err;
+    cl_double dzero = 0.0;
+    std::vector< cl::Platform > platformList;
+    std::vector< cl::Device > deviceList;
+    std::vector< cl::Device > gpuList;
+
+    LOG( INFO ) << "[CRB::fixedPointPrimalCL] Checking for OpenCL support\n";
+
+    /* Get available OpenCL platforms */
+    cl::Platform::get(&platformList);
+    LOG( INFO ) << "[CRB::fixedPointPrimalCL] Platform count is: " << platformList.size() << std::endl;
+    err = platformList.size()!=0 ? CL_SUCCESS : -1;
+    OPENCL_CHECK_ERR(err, "cl::Platform::get: No OpenCL Platform available");
+
+    /* Gather available GPUs on the current node */
+    for(size_t k = 0; k < platformList.size(); k++)
+    {
+        std::string platformVendor;
+        platformList[k].getInfo((cl_platform_info)CL_PLATFORM_VENDOR, &platformVendor);
+        std::cout << "Platform " << k << " is by: " << platformVendor << "\n";
+
+        platformList[k].getDevices(CL_DEVICE_TYPE_GPU, &deviceList);
+        gpuList.insert(gpuList.end(), deviceList.begin(), deviceList.end());
+        deviceList.clear();
+    }
+
+    /* revert back to classical implementation */
+    /* if no GPU is available */
+    if(gpuList.size() == 0)
+    {
+        LOG( INFO ) << "[CRB::fixedPointPrimalCL] Reverting to classic implementation\n";
+        fixedPointPrimal(N, mu, uN, uNold, output_vector, K, print_rb_matrix);
+    }
+
+    // TODO
+    // Check if there are several MPI processes on the same node
+    // if so, check that there are enough GPUs or split them
+
+    cl::Context context(gpuList[0],
+                        NULL,
+                        NULL,
+                        NULL,
+                        &err);
+    OPENCL_CHECK_ERR(err, "Could not create OpenCL Context");
+
+    cl::CommandQueue queue(context, gpuList[0], 0, &err);
+    OPENCL_CHECK_ERR(err, "Could not create main queue");
+
+    // TODO Typechecking of matrices
+    // TODO Check whether its better to pass the matrices row-major or column-major
+
+    /* Get beta factors */
+    /* beta_vector_type is vector<vector<double> > */
+    int time_index=0;
+    double time = 1e30;
+    beta_vector_type betaAqm;
+    beta_vector_type betaMqm;
+    std::vector<beta_vector_type> betaFqm;
+
+    boost::tie( betaMqm, betaAqm, betaFqm ) = M_model->computeBetaQm( this->expansion( uN[time_index] , N , M_model->rBFunctionSpace()->primalRB() ), mu ,time );
+
+    /* create buffers on the GPU */
+    cl::Buffer Aq(context, CL_MEM_READ_ONLY, N * N * M_model->Qa() * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    for( size_type q = 0; q < M_model->Qa(); ++q )
+    {
+        queue.enqueueWriteBuffer(Aq, CL_FALSE,
+                                q * N * N * sizeof(double),
+                                N * N * sizeof(double),
+                                M_Aqm_pr[q][0].block( 0,0,N,N ).data(),
+                                NULL, NULL);
+    }
+
+    cl::Buffer Fq(context, CL_MEM_READ_ONLY, N * M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+    {
+        queue.enqueueWriteBuffer(Fq, CL_FALSE,
+                                q * N * sizeof(double),
+                                N * sizeof(double),
+                                M_Fqm_pr[q][0].head( N ).data(),
+                                NULL, NULL);
+    }
+
+    cl::Buffer betaAq(context, CL_MEM_READ_WRITE, M_model->Qa() * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueWriteBuffer(betaAq, CL_FALSE,
+                            0, M_model->Qa() * sizeof(double),
+                            betaAqm[0].data(),
+                            NULL, NULL);
+
+    cl::Buffer betaFq(context, CL_MEM_READ_WRITE, M_model->Ql( 0 ) * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueWriteBuffer(betaFq, CL_FALSE,
+                            0, M_model->Ql( 0 ) * sizeof(double),
+                            betaFqm[0][0].data(),
+                            NULL, NULL);
+
+    cl::Buffer A(context, CL_MEM_READ_WRITE, N * N * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueFillBuffer<double>(A, dzero, 0, N * N * sizeof(double), NULL, NULL);
+    cl::Buffer F(context, CL_MEM_READ_WRITE, N * sizeof(double), NULL, &err);
+    OPENCL_CHECK_ERR(err, "Could not allocate buffer");
+    queue.enqueueFillBuffer<double>(F, dzero, 0, N * sizeof(double), NULL, NULL);
+
+    std::ifstream file("crb.cl");
+    err = file.is_open() ? CL_SUCCESS : -1;
+    OPENCL_CHECK_ERR(err, "Could not open .cl file");
+
+    std::string prog(std::istreambuf_iterator<char>(file), (std::istreambuf_iterator<char>()));
+    cl::Program::Sources source(1, std::make_pair(prog.c_str(), prog.length()+1));
+    cl::Program program(context, source, &err);
+    OPENCL_CHECK_ERR(err, "Could not init program");
+    err = program.build();
+    OPENCL_CHECK_ERR(err, "Could not build kernel");
+
+    cl::Kernel kernel(program, "VMProd");
+    /*
+    err = kernel.setArg(0, cl_v);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl.v");
+    err = kernel.setArg(1, cl_a);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl_a");
+    err = kernel.setArg(2, cl_b);
+    OPENCL_CHECK_ERR(err, "Could not add argument: cl_b");
+    err = kernel.setArg(3, sizeof(int), (void *)(&nrows));
+    OPENCL_CHECK_ERR(err, "Could not add argument: nrows");
+    */
+
+    cl::Event event;
+    err = queue.enqueueNDRangeKernel(
+            kernel,
+            cl::NullRange,
+            cl::NDRange(N),
+            cl::NDRange(1, 1),
+            NULL,
+            &event);
+    OPENCL_CHECK_ERR(err, "Could not launch kernel");
+    event.wait();
+
     double condition_number = 0;
     double determinant = 0;
 
@@ -4319,6 +4466,7 @@ CRB<TruthModelType>::fixedPointPrimalCL(  size_type N, parameter_type const& mu,
 
     return matrix_info;
 }
+#endif
 
 
 template<typename TruthModelType>
@@ -6326,24 +6474,21 @@ void
 CRB<TruthModelType>::printErrorsDuringRbConstruction( void )
 {
 
-    if( M_rbconv_contains_primal_and_dual_contributions )
+    std::ofstream conv;
+    std::string file_name = "crb-offline-error.dat";
+    typedef convergence_type::left_map::const_iterator iterator;
+
+    if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
     {
-        typedef convergence_type::left_map::const_iterator iterator;
-        LOG(INFO)<<"\nMax error during offline stage\n";
-        for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  maxerror : "<<it->second.template get<0>()<<"\n";
+        conv.open(file_name, std::ios::app);
+        conv << "NbBasis" << "\t" << "output" << "\t" << "primal" << "\t" << "dual\n";
 
-        LOG(INFO)<<"\nPrimal contribution\n";
         for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  delta_pr : "<<it->second.template get<1>()<<"\n";
-
-        LOG(INFO)<<"\nDual contribution\n";
-        for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
-            LOG(INFO)<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
-        LOG(INFO)<<"\n";
+            conv<<it->first<<"\t"<<it->second.template get<0>()<<"\t"<<it->second.template get<1>()<<"\t"<<it->second.template get<2>()<<"\n";
+        //for(iterator it = M_rbconv.left.begin(); it != M_rbconv.left.end(); ++it)
+        //    LOG(INFO)<<"N : "<<it->first<<"  -  delta_du : "<<it->second.template get<2>()<<"\n";
     }
-    else
-        throw std::logic_error( "[CRB::printErrorsDuringRbConstruction] ERROR, the database is too old to print the error during offline step, use the option rebuild-database = true" );
+    conv.close();
 
 }
 
@@ -7589,7 +7734,7 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::printErrorDuringOfflineStep()
 {
-  bool print = this->vm()["crb.print-error-during-rb-construction"].template as<bool>();
+    bool print = option(_name="crb.print-error-during-rb-construction").template as<bool>();
     return print;
 }
 

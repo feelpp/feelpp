@@ -2,7 +2,9 @@ set_directory_properties(PROPERTIES LABEL testdiscr )
 
 feelpp_add_test( aitken NO_MPI_TEST )
 feelpp_add_test( bdf )
-feelpp_add_test( disc )
+feelpp_add_test( bdf2 CFG test_bdf2.cfg )
+
+feelpp_add_test( disc NO_MPI_TEST )
 feelpp_add_test( element )
 feelpp_add_test( elementminmax )
 feelpp_add_test( element_serialize NO_MPI_TEST )
@@ -33,5 +35,6 @@ feelpp_add_test( vect_comp )
 feelpp_add_test( wire_basket )
 
 # feelpp_add_test( hypercubeinterpolation )
-feelpp_add_test( mortar )
+#feelpp_add_test( mortar )
+feelpp_add_test( mortar NO_MPI_TEST)
 

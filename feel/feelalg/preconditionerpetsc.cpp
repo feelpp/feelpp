@@ -188,7 +188,8 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         if ( t == "none" ) PCGASMSetType( pc, PC_GASM_NONE );
 
         int levels = Environment::vm(_name="pc-gasm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
-        PCGASMSetOverlap( pc, levels );
+        ierr = PCGASMSetOverlap( pc, levels );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 #endif
     }
     if ( std::string(pctype) == "asm" )
@@ -200,8 +201,8 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         if ( t == "none" ) PCASMSetType( pc, PC_ASM_NONE );
 
         int levels = Environment::vm(_name="pc-asm-overlap",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
-        PCASMSetOverlap( pc, levels );
-
+        ierr = PCASMSetOverlap( pc, levels );
+        CHKERRABORT( worldComm.globalComm(),ierr );
     }
     if ( std::string(pctype) == "lu" )
     {
@@ -209,7 +210,8 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         VLOG(2) << "mat solver package: " << t << "\n";
         google::FlushLogFiles(google::INFO);
         // set factor package
-        PCFactorSetMatSolverPackage( pc, t.c_str() );
+        ierr = PCFactorSetMatSolverPackage( pc, t.c_str() );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 
     }
     if ( std::string(pctype) == "ilu" )
@@ -278,10 +280,45 @@ configurePC( PC& pc, WorldComm const& worldComm, std::string sub = "", std::stri
         CHKERRABORT( worldComm.globalComm(),ierr );
 
     }
+    if ( std::string(pctype) == "fieldsplit" )
+    {
+        PCCompositeType theFieldSplitType = PC_COMPOSITE_SCHUR;
+        std::string t = Environment::vm(_name="fieldsplit-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+        if ( t == "schur" ) theFieldSplitType = PC_COMPOSITE_SCHUR;
+        if ( t == "additive" ) theFieldSplitType = PC_COMPOSITE_ADDITIVE;
+        if ( t == "multiplicative" ) theFieldSplitType = PC_COMPOSITE_MULTIPLICATIVE;
+        if ( t == "symmetric-multiplicative" ) theFieldSplitType = PC_COMPOSITE_SYMMETRIC_MULTIPLICATIVE;
+        if ( t == "special" ) theFieldSplitType = PC_COMPOSITE_SPECIAL;
+        ierr = PCFieldSplitSetType( pc, theFieldSplitType );
+        CHKERRABORT( worldComm.globalComm(),ierr );
 
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
+        if ( t == "schur" )
+        {
+            PCFieldSplitSchurFactType theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
+            std::string t2 = Environment::vm(_name="fieldsplit-schur-fact-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+            if (t2 == "diag")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_DIAG;
+            if (t2 == "lower")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_LOWER;
+            if (t2 == "upper")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_UPPER;
+            if (t2 == "full")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
+            ierr = PCFieldSplitSetSchurFactType( pc,theSchurFactType );
+            CHKERRABORT( worldComm.globalComm(),ierr );
 
-    if ( Environment::vm(_name="pc-view",_sub=sub,_prefix=prefix).as<bool>() )
-        PCView( pc, PETSC_VIEWER_STDOUT_SELF );
+            PCFieldSplitSchurPreType theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
+            std::string t3 = Environment::vm(_name="fieldsplit-schur-precondition",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<std::string>();
+            if (t3 == "self")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_SELF;
+            if (t3 == "user")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_USER;
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
+            if (t3 == "a11")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_A11;
+#else
+            if (t3 == "a11")  theSchurPrecond = PC_FIELDSPLIT_SCHUR_PRE_DIAG;
+#endif
+            ierr = PCFieldSplitSchurPrecondition( pc, theSchurPrecond, NULL );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+        }
+#endif
+
+    }
 
     VLOG(2) << "configuring PC " << pctype << " done\n";
     google::FlushLogFiles(google::INFO);
@@ -349,7 +386,7 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         // In serial, just set the LU preconditioner type
         //if (Feel::n_processors() == 1)
         // do be changed in parallel
-        if ( worldComm.globalSize() == 1 || matSolverPackage_type == MATSOLVER_MUMPS)
+        if ( worldComm.globalSize() == 1 || matSolverPackage_type == MATSOLVER_MUMPS || matSolverPackage_type == MATSOLVER_PASTIX )
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( worldComm.globalComm(),ierr );
@@ -437,6 +474,16 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
         CHKERRABORT( worldComm.globalComm(),ierr );
         break;
 
+    case GAMG_PRECOND:
+        ierr = PCSetType( pc,( char* ) PCGAMG );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+        // crash without this
+        ierr = PCSetFromOptions( pc );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        break;
+
+
     default:
         std::cerr << "ERROR:  Unsupported PETSC Preconditioner: "
                   << preconditioner_type       << std::endl
@@ -454,17 +501,21 @@ void PreconditionerPetsc<T>::setPetscPreconditionerType ( const PreconditionerTy
     }
 
 #endif
-    // before configurePC else pc-view doesn't work really
-    if ( preconditioner_type == FIELDSPLIT_PRECOND )
-        setPetscFieldSplitPreconditionerType( pc, worldComm, name );
 
+    // configure main preconditioner
     configurePC( pc, worldComm, "", name );
 
+    // configure sub pc/ksp
     if ( preconditioner_type == ASM_PRECOND ||
          preconditioner_type == GASM_PRECOND ||
          preconditioner_type == BLOCK_JACOBI_PRECOND )
         setPetscSubpreconditionerType( pc, worldComm, name );
+    else if ( preconditioner_type == FIELDSPLIT_PRECOND )
+        setPetscFieldSplitPreconditionerType( pc, worldComm, name );
 
+    // prepare PC to use
+    ierr = PCSetUp( pc );
+    CHKERRABORT( worldComm.globalComm(),ierr );
 }
 
 
@@ -538,10 +589,65 @@ void PreconditionerPetsc<T>::setPetscSubpreconditionerType( PC& pc, std::string 
             VLOG(2) << "sub pc " << i << "\n";
             google::FlushLogFiles(google::INFO);
             configurePC( subpc, worldComm, "sub", prefix );
+
+            ierr = PCSetUp( subpc );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+
+            if ( Environment::vm(_name="pc-view",_sub="sub",_prefix=prefix).template as<bool>() )
+            {
+                ierr = PCView( subpc, PETSC_VIEWER_STDOUT_SELF );
+                CHKERRABORT( worldComm.globalComm(),ierr );
+            }
+
         }
     }
 }
 
+
+
+void
+configurePCWithPetscCommandLineOption( std::string prefixFeelBase, std::string prefixPetscBase )
+{
+    // For catching PETSc error return codes
+    int ierr = 0;
+
+    std::string pctype = option(_name="pc-type",_prefix=prefixFeelBase ).as<std::string>();
+
+    std::string option_pc_type = "-"+prefixPetscBase+"_pc_type";
+    ierr = PetscOptionsClearValue( option_pc_type.c_str() );
+    ierr = PetscOptionsInsertString( (option_pc_type+" "+pctype).c_str() );
+
+    if ( pctype=="lu" )
+    {
+        std::string PCFMSPtype =  option(_name="pc-factor-mat-solver-package-type",_prefix=prefixFeelBase).as<std::string>();
+        std::string option_pc_factor_mat_solver_package = "-"+prefixPetscBase+"_pc_factor_mat_solver_package";
+        ierr = PetscOptionsClearValue( option_pc_factor_mat_solver_package.c_str() );
+        ierr = PetscOptionsInsertString( (option_pc_factor_mat_solver_package+" "+PCFMSPtype).c_str() );
+    }
+    if ( pctype=="gasm" )
+    {
+        int gasmoverlap = option(_name="pc-gasm-overlap",_prefix=prefixFeelBase).as<int>();
+
+        std::string option_pc_gasm_overlap = "-"+prefixPetscBase+"_pc_gasm_overlap";
+        std::string optionval_pc_gasm_overlap = ( boost::format( "%1% %2%") %option_pc_gasm_overlap %gasmoverlap ).str();
+        ierr = PetscOptionsClearValue( option_pc_gasm_overlap.c_str() );
+        ierr = PetscOptionsInsertString( optionval_pc_gasm_overlap.c_str() );
+
+        std::string option_sub_pc_type = "-"+prefixPetscBase+"_sub_pc_type";
+        std::string subpctype =  option(_name="pc-type",_sub="sub",_prefix=prefixFeelBase).as<std::string>();
+        ierr = PetscOptionsClearValue( option_sub_pc_type.c_str() );
+        ierr = PetscOptionsInsertString( (option_sub_pc_type+" "+subpctype).c_str() );
+
+        if (subpctype=="lu")
+        {
+            std::string option_sub_pc_factor_mat_solver_package = "-"+prefixPetscBase+"_sub_pc_factor_mat_solver_package";
+            std::string t = option(_name="pc-factor-mat-solver-package-type",_sub="sub",_prefix=prefixFeelBase).as<std::string>();
+            ierr = PetscOptionsClearValue( option_sub_pc_factor_mat_solver_package.c_str() );
+            ierr = PetscOptionsInsertString( (option_sub_pc_factor_mat_solver_package+" "+t).c_str() );
+        }
+    }
+
+}
 
 template <typename T>
 void
@@ -551,33 +657,6 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
 {
     // For catching PETSc error return codes
     int ierr = 0;
-
-    PCCompositeType theFieldSplitType = PC_COMPOSITE_SCHUR;
-    std::string t = Environment::vm(_name="fieldsplit-type",_prefix=prefix,_worldcomm=worldComm).template as<std::string>();
-    if ( t == "schur" ) theFieldSplitType = PC_COMPOSITE_SCHUR;
-    if ( t == "additive" ) theFieldSplitType = PC_COMPOSITE_ADDITIVE;
-    if ( t == "multiplicative" ) theFieldSplitType = PC_COMPOSITE_MULTIPLICATIVE;
-    if ( t == "symmetric-multiplicative" ) theFieldSplitType = PC_COMPOSITE_SYMMETRIC_MULTIPLICATIVE;
-    if ( t == "special" ) theFieldSplitType = PC_COMPOSITE_SPECIAL;
-
-    ierr = PCFieldSplitSetType( pc, theFieldSplitType );
-    CHKERRABORT( worldComm.globalComm(),ierr );
-
-    if ( t == "schur" )
-    {
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
-        PCFieldSplitSchurFactType theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
-        std::string t2 = Environment::vm(_name="fieldsplit-schur-fact-type",_prefix=prefix,_worldcomm=worldComm).template as<std::string>();
-        if (t2 == "diag")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_DIAG;
-        if (t2 == "lower")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_LOWER;
-        if (t2 == "upper")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_UPPER;
-        if (t2 == "full")  theSchurFactType = PC_FIELDSPLIT_SCHUR_FACT_FULL;
-
-        ierr = PCFieldSplitSetSchurFactType( pc,theSchurFactType );
-        CHKERRABORT( worldComm.globalComm(),ierr );
-#endif
-    }
-
 
     // call necessary before PCFieldSplitGetSubKSP
     ierr = PCSetUp( pc );
@@ -633,9 +712,30 @@ PreconditionerPetsc<T>::setPetscFieldSplitPreconditionerType( PC& pc,
         ierr = PCGetType( subpc, &thesubpctype );
         CHKERRABORT( worldComm.globalComm(),ierr );
         if ( std::string( thesubpctype ) == "block_jacobi" || std::string( thesubpctype ) == "bjacobi" ||
-             std::string( thesubpctype ) == "asm" ||
-             std::string( thesubpctype ) == "gasm" )
-        setPetscSubpreconditionerType( subpc, worldComm, prefixSplit );
+             std::string( thesubpctype ) == "asm" || std::string( thesubpctype ) == "gasm" )
+        {
+            setPetscSubpreconditionerType( subpc, worldComm, prefixSplit );
+        }
+        else if ( std::string(thesubpctype) == "lsc" )
+        {
+            CHECK( i==1 ) << "lsc must be use with only field 1, not " << i << "\n";
+
+            std::string prefixFeelBase = prefixvm(prefixSplit,"lsc");
+            std::string prefixPetscBase = "fieldsplit_1_lsc";
+            configurePCWithPetscCommandLineOption( prefixFeelBase,prefixPetscBase );
+
+            ierr = PCSetFromOptions( subpc );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+        }
+
+        ierr = PCSetUp( subpc );
+        CHKERRABORT( worldComm.globalComm(),ierr );
+
+        if ( Environment::vm(_name="pc-view",_prefix=prefixSplit).template as<bool>() )
+        {
+            ierr = PCView( subpc, PETSC_VIEWER_STDOUT_WORLD );
+            CHKERRABORT( worldComm.globalComm(),ierr );
+        }
 
     }
 
@@ -741,47 +841,12 @@ PreconditionerPetsc<T>::setPetscMGLevelsPreconditionerType( PC& pc,
 #else
 
         std::string mgLevelsKSPtype =  Environment::vm(_name="ksp-type",_prefix=prefixMGLevels).template as<std::string>();
-        std::string mgLevelsPCtype =  Environment::vm(_name="pc-type",_prefix=prefixMGLevels).template as<std::string>();
-
         std::string option_ksp_type = ( boost::format( "-mg_levels_%1%_ksp_type") %k ).str();
-        std::string option_pc_type = ( boost::format( "-mg_levels_%1%_pc_type") %k ).str();
-
         ierr = PetscOptionsClearValue( option_ksp_type.c_str() );
         ierr = PetscOptionsInsertString( (option_ksp_type+" "+mgLevelsKSPtype).c_str() );
 
-        ierr = PetscOptionsClearValue( option_pc_type.c_str() );
-        ierr = PetscOptionsInsertString( (option_pc_type+" "+mgLevelsPCtype).c_str() );
-
-        if (mgLevelsPCtype=="lu")
-        {
-            std::string mgLevelsPCFMSPtype =  Environment::vm(_name="pc-factor-mat-solver-package-type",_prefix=prefixMGLevels).template as<std::string>();
-            std::string option_pc_factor_mat_solver_package = ( boost::format( "-mg_levels_%1%_pc_factor_mat_solver_package") %k ).str();
-            ierr = PetscOptionsClearValue( option_pc_factor_mat_solver_package.c_str() );
-            ierr = PetscOptionsInsertString( (option_pc_factor_mat_solver_package+" "+mgLevelsPCFMSPtype).c_str() );
-        }
-        if (mgLevelsPCtype=="gasm")
-        {
-            int gasmoverlap = Environment::vm(_name="pc-gasm-overlap",_prefix=prefixMGLevels).template as<int>();
-
-            std::string option_pc_gasm_overlap = ( boost::format( "-mg_levels_%1%_pc_gasm_overlap") %k ).str();
-            std::string optionval_pc_gasm_overlap = ( boost::format( "-mg_levels_%1%_pc_gasm_overlap %2%") %k %gasmoverlap ).str();
-            ierr = PetscOptionsClearValue( option_pc_gasm_overlap.c_str() );
-            ierr = PetscOptionsInsertString( optionval_pc_gasm_overlap.c_str() );
-
-            std::string option_sub_pc_type = ( boost::format( "-mg_levels_%1%_sub_pc_type") %k ).str();
-            std::string subpctype =  Environment::vm(_name="pc-type",_sub="sub",_prefix=prefixMGLevels).template as<std::string>();
-            ierr = PetscOptionsClearValue( option_sub_pc_type.c_str() );
-            ierr = PetscOptionsInsertString( (option_sub_pc_type+" "+subpctype).c_str() );
-
-            if (subpctype=="lu")
-            {
-                std::string option_sub_pc_factor_mat_solver_package = ( boost::format( "-mg_levels_%1%_sub_pc_factor_mat_solver_package") %k ).str();
-                std::string t =  Environment::vm(_name="pc-factor-mat-solver-package-type",_sub="sub",_prefix=prefixMGLevels).template as<std::string>();
-                ierr = PetscOptionsClearValue( option_sub_pc_factor_mat_solver_package.c_str() );
-                ierr = PetscOptionsInsertString( (option_sub_pc_factor_mat_solver_package+" "+t).c_str() );
-            }
-
-        }
+        std::string prefixPetscBase =  ( boost::format( "mg_levels_%1%") %k ).str();
+        configurePCWithPetscCommandLineOption( prefixMGLevels,prefixPetscBase );
 
 #endif
     }

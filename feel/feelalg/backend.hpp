@@ -90,7 +90,7 @@ boost::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
 template<typename T>
 boost::shared_ptr<DataMap> datamap( T const& t )
 {
-    return datamap( t, detail::is_shared_ptr<T>() );
+    return datamap( t, Feel::detail::is_shared_ptr<T>() );
 }
 
 template<typename T>
@@ -109,9 +109,9 @@ T& ref( T& t, mpl::false_ )
     return t;
 }
 template<typename T>
-auto ref( T& t ) -> decltype( ref( t, detail::is_shared_ptr<T>() ) )
+auto ref( T& t ) -> decltype( ref( t, Feel::detail::is_shared_ptr<T>() ) )
 {
-    return ref( t, detail::is_shared_ptr<T>() );
+    return ref( t, Feel::detail::is_shared_ptr<T>() );
 }
 
 
@@ -919,7 +919,7 @@ public:
 
         //new
         _sol->close();
-        detail::ref( solution ) = *_sol;
+        Feel::detail::ref( solution ) = *_sol;
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::solve end" );
@@ -1009,16 +1009,16 @@ public:
                                  _maxit=maxit );
         this->setSolverType( _pc=pc, _ksp=ksp,
                              _pcfactormatsolverpackage = pcfactormatsolverpackage );
-        vector_ptrtype _sol( this->newVector( detail::datamap( solution ) ) );
+        vector_ptrtype _sol( this->newVector( Feel::detail::datamap( solution ) ) );
         // initialize
-        *_sol = detail::ref( solution );
+        *_sol = Feel::detail::ref( solution );
         this->setTranspose( transpose );
         solve_return_type ret;
 
         // this is done with nonlinerarsolver
         if ( !residual )
         {
-            residual = this->newVector( ( detail::datamap( solution ) ) );
+            residual = this->newVector( ( Feel::detail::datamap( solution ) ) );
             //this->nlSolver()->residual( _sol, residual );
         }
 
@@ -1037,8 +1037,8 @@ public:
 
         //new
         _sol->close();
-        detail::ref( solution ) = *_sol;
-        detail::ref( solution ).close();
+        Feel::detail::ref( solution ) = *_sol;
+        Feel::detail::ref( solution ).close();
         if ( verbose )
         {
             Environment::logMemoryUsage( "backend::nlSolve end" );
@@ -1189,8 +1189,8 @@ struct BackendManagerDeleterImpl
 {
     void operator()() const
         {
-            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << detail::BackendManager::instance().size() << "\n";
-            detail::BackendManager::instance().clear();
+            VLOG(2) << "[BackendManagerDeleter] clear BackendManager Singleton: " << Feel::detail::BackendManager::instance().size() << "\n";
+            Feel::detail::BackendManager::instance().clear();
             VLOG(2) << "[BackendManagerDeleter] clear BackendManager done\n";
         }
 };
@@ -1215,16 +1215,16 @@ BOOST_PARAMETER_FUNCTION(
     static bool observed=false;
     if ( !observed )
     {
-        Environment::addDeleteObserver( detail::BackendManagerDeleter::instance() );
+        Environment::addDeleteObserver( Feel::detail::BackendManagerDeleter::instance() );
         observed = true;
     }
 
 
     Feel::detail::ignore_unused_variable_warning( args );
 
-    auto git = detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
+    auto git = Feel::detail::BackendManager::instance().find( boost::make_tuple( kind, name, worldcomm.globalSize() ) );
 
-    if (  git != detail::BackendManager::instance().end() && ( rebuild == false ) )
+    if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == false ) )
     {
         VLOG(2) << "[backend] found backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
         return git->second;
@@ -1232,7 +1232,7 @@ BOOST_PARAMETER_FUNCTION(
 
     else
     {
-        if (  git != detail::BackendManager::instance().end() && ( rebuild == true ) )
+        if (  git != Feel::detail::BackendManager::instance().end() && ( rebuild == true ) )
             git->second->clear();
 
         VLOG(2) << "[backend] building backend name=" << name << " kind=" << kind << " rebuild=" << rebuild << " worldcomm.globalSize()=" << worldcomm.globalSize() << "\n";
@@ -1245,7 +1245,7 @@ BOOST_PARAMETER_FUNCTION(
         else
             b = Feel::backend_type::build( vm, name, worldcomm );
         VLOG(2) << "storing backend in singleton" << "\n";
-        detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
+        Feel::detail::BackendManager::instance().operator[]( boost::make_tuple( kind, name, worldcomm.globalSize() ) ) = b;
         return b;
     }
 

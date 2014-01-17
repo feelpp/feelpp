@@ -46,7 +46,8 @@
 #include <feel/feeldiscr/region.hpp>
 
 #include <feel/feelpoly/im.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelpoly/polynomialset.hpp>
 #include <feel/feelvf/vf.hpp>
 
@@ -302,7 +303,7 @@ TestMixed<Dim,Order>::run()
         //D->printMatlab( "Db.m" );
         D->multVector( U, Q );
         res = inner_product( Q, P );
-        BOOST_CHECK_CLOSE( res, Dim*meas, 5e-13 );
+        BOOST_CHECK_CLOSE( res, Dim*meas, 1e-12 );
         BOOST_TEST_MESSAGE( "[Db(p,u)] res = " << res << " (must be equal to " << Dim*meas << ")\n" );
 
         vector_ptrtype F( M_backend->newVector( Yh ) );

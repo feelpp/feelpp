@@ -35,7 +35,7 @@
 
 
 #include <feel/feelalg/solvereigen.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feeldiscr/bdf.hpp>
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feeldiscr/operatorlinearfree.hpp>
@@ -658,6 +658,9 @@ public:
     }
     offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 )
     {
+#if !defined(NDEBUG)
+        mu.check();
+#endif
         auto all_beta = this->computeBetaQm(  T , mu , time );
 
         offline_merge_type offline_merge;
@@ -2274,6 +2277,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
 
     int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
     double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+
     for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
     {
         iter=0;

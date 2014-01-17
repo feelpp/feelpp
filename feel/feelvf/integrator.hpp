@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2010 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2010-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -27,25 +28,25 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-20
  */
-#ifndef __Integrators_H
-#define __Integrators_H 1
+#ifndef FEELPP_INTEGRATORS_HPP
+#define FEELPP_INTEGRATORS_HPP 1
+
 #include <cxxabi.h>
 #include <typeinfo>
 #include <boost/timer.hpp>
-#include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/parameter.hpp>
-#include <feel/feelvf/block.hpp>
-
 
 #include <Eigen/Eigen>
 
-
-//#include <boost/numeric/bindings/traits/traits.hpp>
-//#include <boost/numeric/bindings/traits/sparse_traits.hpp>
-//#include <boost/numeric/bindings/traits/ublas_sparse.hpp>
+#include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/parameter.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelpoly/quadmapped.hpp>
+
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/detail/clean.hpp>
+#include <feel/feelvf/block.hpp>
+
 #include <feel/feelvf/formcontextbase.hpp>
 #include <feel/feelvf/bilinearform.hpp>
 #include <feel/feelvf/linearform.hpp>
@@ -2097,12 +2098,10 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
                 continue;
             }
-            if ( it->isInterProcessDomain() )
-            {
-                std::cout << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
-                LOG(WARNING) << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
+            // if is a interprocess faces, only integrate in one process
+            if ( it->isInterProcessDomain() && it->partition1() > it->partition2() )
                 continue;
-            }
+
 
             if ( it->isConnectedTo1() )
             {
@@ -2502,13 +2501,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
                 continue;
             }
-            if ( elt_it->isInterProcessDomain() )
-            {
-                std::cout << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
-                LOG(WARNING) << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
+            // if is a interprocess faces, only integrate in one process
+            if ( elt_it->isInterProcessDomain() && elt_it->partition1() > elt_it->partition2() )
                 continue;
-            }
-
 
             const size_type idEltRange = elt_it->id();
             size_type idEltTest = idEltRange;
@@ -2728,12 +2723,9 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
                 continue;
             }
-            if ( elt_it->isInterProcessDomain() )
-            {
-                std::cout << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
-                LOG(WARNING) << "WARNING : face id : " << elt_it->id() << " is on inter process domain : TODO!!!\n";
+            // if is a interprocess faces, only integrate in one process
+            if ( elt_it->isInterProcessDomain() && elt_it->partition1() > elt_it->partition2() )
                 continue;
-            }
 
             const size_type idEltRange = elt_it->id();
             size_type idEltTest = idEltRange;
@@ -3673,12 +3665,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_FACES> ) const
                 LOG(WARNING) << "face id : " << it->id() << " is a ghost face";
                 continue;
             }
-            if ( it->isInterProcessDomain() )
-            {
-                std::cout << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
-                LOG(WARNING) << "WARNING : face id : " << it->id() << " is on inter process domain : TODO!!!\n";
+            // if is a interprocess faces, only integrate in one process
+            if ( it->isInterProcessDomain() && it->partition1() > it->partition2() )
                 continue;
-            }
+
             if ( it->isConnectedTo1() )
             {
                 FEELPP_ASSERT( it->isOnBoundary() == false   )
@@ -4087,25 +4077,6 @@ integrate( Elts const& elts,
                                                                                boost::mpl::int_<10> >::type::value \
 /**/
 
-#if 0
-/**
- * integrate an expression \c expr over a set of convexes \c elts
- * using an automatic integration rule .
- */
-template<typename Elts, typename ExprT>
-Expr<Integrator<Elts, _Q< ExpressionOrder<Elts,ExprT>::value >, ExprT, _Q< ExpressionOrder<Elts,ExprT>::value > > >
-integrate( Elts const& elts,
-           ExprT const& expr,
-           GeomapStrategyType gt = GeomapStrategyType::GEOMAP_HO )
-{
-
-    DLOG(INFO) << "[integrate] order to integrate = " << ExpressionOrder<Elts,ExprT>::value << "\n";
-    _Q< ExpressionOrder<Elts,ExprT>::value > quad;
-    return integrate_impl( elts, quad, expr, gt, quad );
-
-}
-#endif
-
 /**
  * integrate an expression \c expr over a set of convexes \c elts
  * using the integration rule \c im .
@@ -4132,33 +4103,10 @@ integrate_impl( Elts const& elts,
 /// \cond DETAIL
 namespace detail
 {
-template<typename TheArgs, typename Tag>
-struct clean_type
-{
-    typedef typename boost::remove_pointer<
-    typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<TheArgs, Tag>::type
-    >::type
-    >::type
-    >::type type;
-};
-template<typename TheArgs, typename Tag, typename Default>
-struct clean2_type
-{
-    typedef typename boost::remove_pointer<
-    typename boost::remove_const<
-    typename boost::remove_reference<
-    typename parameter::binding<TheArgs, Tag, Default>::type
-    >::type
-    >::type
-    >::type type;
-};
-
 template<typename Args>
 struct integrate_type
 {
-    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
     typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
     //typedef _Q< ExpressionOrder<_range_type,_expr_type>::value > the_quad_type;
     typedef typename clean2_type<Args,tag::quad, _Q< ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
@@ -4167,251 +4115,17 @@ struct integrate_type
 
     typedef boost::shared_ptr<QuadPtLocalization<_range_type,_quad_type,_expr_type > > _quadptloc_ptrtype;
 };
-}
+} // detail
+
 /// \endcond
 
-/**
- *
- * \brief projection/interpolation of an expresion onto a noal functionspace
- *
- * \arg space the function space to project onto
- * \arg range the range of mesh elements to apply the projection (the remaining parts are set to 0)
- * \arg expr the expression to project
- * \arg geomap the type of geomap to use (make sense only using high order meshes)
- * \arg sum sum the multiple nodal  contributions  if applicable (false by default)
- */
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::integrate_type<Args>::expr_type ), // return type
-    integrate,    // 2. function name
 
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-      ( quadptloc, *, typename vf::detail::integrate_type<Args>::_quadptloc_ptrtype() )
-    )
-)
-{
-
-    auto ret =  integrate_impl( range, quad, expr, geomap, quad1, use_tbb, use_harts, grainsize, partitioner, quadptloc );
-
-    if ( verbose )
-    {
-        std::cout << " -- integrate: size(range) = " << std::distance( ret.expression().beginElement(),
-                  ret.expression().endElement() ) << "\n";
-        std::cout << " -- integrate: quad = " << ret.expression().im().nPoints() << "\n";
-        std::cout << " -- integrate: quad1 = " << ret.expression().im2().nPoints() << "\n";
-        //std::cout << " -- integrate: geomap = " << geomap << "\n";
-    }
-
-    return ret;
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    normL2,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
-{
-    double a = integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    return math::sqrt( a );
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    normL2Squared,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
-{
-    return integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
-                      _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                      _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    normH1,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-      ( grad_expr, *)
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
-{
-    double a = integrate( _range=range, _expr=inner(expr,expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    double b = integrate( _range=range, _expr=grad_expr*trans(grad_expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    return math::sqrt( a + b );
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    normSemiH1,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( grad_expr, *)
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
-{
-    double a = integrate( _range=range, _expr=grad_expr*trans(grad_expr), _quad=quad, _geomap=geomap,
-                          _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                          _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    return math::sqrt( a );
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( typename vf::detail::integrate_type<Args>::expr_type::expression_type::matrix_type ), // return type
-    mean,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-      ( expr,   * )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-      ( parallel,   *( boost::is_integral<mpl::_> ), 1 )
-      ( worldcomm,       (WorldComm), Environment::worldComm() )
-    )
-)
-{
-    double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
-                             _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                             _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm )( 0, 0 );
-    DLOG(INFO) << "[mean] nelements = " << nelements(range) << "\n";
-    DLOG(INFO) << "[mean] measure = " << meas << "\n";
-    CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
-    auto eint = integrate( _range=range, _expr=expr, _quad=quad, _geomap=geomap,
-                           _quad1=quad1, _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                           _partitioner=partitioner, _verbose=verbose ).evaluate( parallel,worldcomm );
-    DLOG(INFO) << "[mean] integral = " << eint << "\n";
-    DLOG(INFO) << "[mean] mean = " << eint/meas << "\n";
-    return eint/meas;
-}
-
-BOOST_PARAMETER_FUNCTION(
-    ( double ), // return type
-    measure,    // 2. function name
-
-    tag,           // 3. namespace of tag types
-
-    ( required
-      ( range, *  )
-    ) // 4. one required parameter, and
-
-    ( optional
-      ( quad,   *, typename vf::detail::integrate_type<Args>::_quad_type() )
-      ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-      ( quad1,   *, typename vf::detail::integrate_type<Args>::_quad1_type() )
-      ( use_tbb,   ( bool ), false )
-      ( use_harts,   ( bool ), false )
-      ( grainsize,   ( int ), 100 )
-      ( partitioner,   *, "auto" )
-      ( verbose,   ( bool ), false )
-    )
-)
-{
-    double meas = integrate( _range=range, _expr=cst(1.0), _quad=quad, _quad1=quad1, _geomap=geomap,
-                             _use_tbb=use_tbb, _use_harts=use_harts, _grainsize=grainsize,
-                             _partitioner=partitioner, _verbose=verbose ).evaluate()( 0, 0 );
-    DLOG(INFO) << "[mean] measure = " << meas << "\n";
-    CHECK( math::abs(meas) > 1e-13 ) << "Invalid domain measure : " << meas << ", domain range: " << nelements( range ) << "\n";
-    return meas;
-}
 
 } // vf
 
 
 } // feel
-#include <feel/feelvf/integratoron.hpp>
 
 
-#endif /* __Integrator_H */
+
+#endif /* FEELPP_INTEGRATORS_HPP */

@@ -658,6 +658,16 @@ public:
         return M_F;
     }
 
+    vector_type& vector()
+    {
+        return *M_F;
+    }
+
+    vector_type const& vector() const
+    {
+        return *M_F;
+    }
+
     list_block_type const& blockList() const
     {
         return M_lb;

@@ -36,9 +36,12 @@ int main(int argc, char**argv )
     }
     a.solve(_rhs=l,_solution=u);
     //# endmarker3 #
-    Vh->dof()->pointIdToDofRelation( "feelpp2msh.m" );
-    u.printMatlab( "ug.m", true );
-    u.printMatlab( "uf.m", false );
+    if ( Environment::numberOfProcessors() == 1 )
+    {
+        Vh->dof()->pointIdToDofRelation( "feelpp2msh.m" );
+        u.printMatlab( "ug.m", true );
+        u.printMatlab( "uf.m", false );
+    }
     //# marker4 #
     auto e = exporter( _mesh=mesh );
 

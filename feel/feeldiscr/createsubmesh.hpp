@@ -82,7 +82,8 @@ public :
         M_listRange(),
         M_smd( new smd_type( inputMesh ) ),
         M_worldComm( wc ),
-        M_updateComponentsMesh( updateComponentsMesh )
+        M_updateComponentsMesh( updateComponentsMesh ),
+        M_subMeshIsOnBoundaryFaces( true )
         {
             M_listRange.push_back( range );
         }
@@ -93,7 +94,8 @@ public :
         M_listRange( range ),
         M_smd( new smd_type( inputMesh ) ),
         M_worldComm( wc ),
-        M_updateComponentsMesh( updateComponentsMesh )
+        M_updateComponentsMesh( updateComponentsMesh ),
+        M_subMeshIsOnBoundaryFaces( true )
         {}
 
 
@@ -108,6 +110,9 @@ public :
 
     size_type updateComponentsMesh() const { return M_updateComponentsMesh; }
 
+    bool subMeshIsOnBoundaryFaces() const { return M_subMeshIsOnBoundaryFaces; }
+    void subMeshIsOnBoundaryFaces( bool b ) { M_subMeshIsOnBoundaryFaces=b; }
+
 private:
 
     mesh_ptrtype build( mpl::int_<MESH_ELEMENTS> /**/ );
@@ -120,6 +125,7 @@ private:
     smd_ptrtype M_smd;
     WorldComm M_worldComm;
     size_type M_updateComponentsMesh;
+    bool M_subMeshIsOnBoundaryFaces;
 };
 
 template <typename MeshType,typename IteratorRange,int TheTag>
@@ -146,6 +152,9 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     // on the new_mesh.
     std::map<size_type,size_type> new_node_numbers;
     std::map<size_type, size_type> new_vertex;
+
+    Context c( this->updateComponentsMesh() );
+    const bool renumberPoint = c.test( MESH_RENUMBER );
 
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
@@ -197,15 +206,18 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
             if ( new_node_numbers.find( old_point.id() ) == new_node_numbers.end() )
             {
-                new_node_numbers[old_point.id()] = n_new_nodes;
+                const size_type newPtId = (renumberPoint)? n_new_nodes : old_point.id();
+                new_node_numbers[old_point.id()] = newPtId;
 
                 DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] insert point " << oldElem.point( n ) << "\n";
 
                 point_type pt( old_point );
-                pt.setId( n_new_nodes );
+                pt.setId( newPtId );
                 pt.setProcessIdInPartition( proc_id );
                 pt.setProcessId( proc_id );
                 pt.clearElementsGhost();
+                pt.clearNeighborPartitionIds();
+                pt.setOnBoundary(false);
 
                 // Add this node to the new mesh
                 newMesh->addPoint ( pt );
@@ -221,7 +233,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                     new_vertex[old_point.id()]=1;
                 }
 
-                if (old_point.numberOfProcGhost()>0 && nProc > 1 )
+                if ( old_point.numberOfProcGhost() > 0 && nProc > 1 )
                 {
                     auto itprocghost=old_point.elementsGhost().begin();
                     auto const enprocghost=old_point.elementsGhost().end();
@@ -242,7 +254,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             } // if ( new_node_numbers.find( old_point.id() ) == new_node_numbers.end() )
 
             // Define this element's connectivity on the new mesh
-            CHECK ( new_node_numbers[old_point.id()] < newMesh->numPoints() ) <<  "invalid connectivity";
+            if ( renumberPoint )
+                CHECK ( new_node_numbers[old_point.id()] < newMesh->numPoints() ) <<  "invalid connectivity";
 
             DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_point.id()
                           << ") as point new(" << new_node_numbers[old_point.id()]
@@ -290,7 +303,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 // update points info
                 for ( uint16_type p = 0; p < new_face.nPoints(); ++p )
                 {
-                    new_face.setPoint( p, newMesh->point( new_node_numbers[oldElem.point( oldElem.fToP( s,p ) ).id()] ) );
+                    //new_face.setPoint( p, newMesh->point( new_node_numbers[oldElem.point( oldElem.fToP( s,p ) ).id()] ) );
+                    new_face.setPoint( p, newMesh->point( new_node_numbers[ old_face.point(p).id()] ) );
                 }
 
                 new_face.setId( n_new_faces++ );
@@ -356,8 +370,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                 {
                     idEltInNewMesh = itFindId->second;
                     auto eltToUpdate = newMesh->elementIterator( idEltInNewMesh );
-                    newMesh->elements().modify( eltToUpdate, detail::UpdateNeighborPartition( proc ) );
-                    //newMesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( proc, idEltAsked ) );
+                    newMesh->elements().modify( eltToUpdate, Feel::detail::UpdateNeighborPartition( proc ) );
+                    //newMesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( proc, idEltAsked ) );
                 }
                 // send response
                 newMesh->worldComm().localComm().send( proc, cpt, idEltInNewMesh );
@@ -397,18 +411,21 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                     // Loop over the nodes on this element.
                     for ( unsigned int n=0; n < oldElem.nPoints(); n++ )
                     {
-                        //FEELPP_ASSERT (oldElem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
-                        if ( new_node_numbers.find( oldElem.point( n ).id() ) == new_node_numbers.end() )
+                        auto const& oldPoint = oldElem.point( n );
+                        if ( new_node_numbers.find( oldPoint.id() ) == new_node_numbers.end() )
                         {
-                            new_node_numbers[oldElem.point( n ).id()] = n_new_nodes;
+                            const size_type newPtId = (renumberPoint)? n_new_nodes : oldPoint.id();
+                            new_node_numbers[oldPoint.id()] = newPtId;
 
                             DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] insert point " << oldElem.point( n ) << "\n";
 
                             point_type pt( oldElem.point( n ) );
-                            pt.setId( n_new_nodes );
+                            pt.setId( newPtId );
                             pt.clearElementsGhost();
                             pt.setProcessIdInPartition( proc_id );
                             pt.setProcessId( invalid_uint16_type_value );
+                            pt.clearNeighborPartitionIds();
+                            pt.setOnBoundary(false);
 
                             // Add this node to the new mesh
                             newMesh->addPoint ( pt );
@@ -420,19 +437,26 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                             if ( n < element_type::numVertices )
                             {
-                                CHECK( new_vertex.find(oldElem.point( n ).id()) == new_vertex.end() ) << "already seen this point?";
-                                new_vertex[oldElem.point( n ).id()]=1;
+                                CHECK( new_vertex.find(oldPoint.id()) == new_vertex.end() ) << "already seen this point?";
+                                new_vertex[oldPoint.id()]=1;
                             }
+                        }
+                        else if ( newMesh->point( new_node_numbers[oldPoint.id()] ).processId() != invalid_uint16_type_value  )
+                        {
+                            // update NeighborPartition for this points
+                            auto ptToUpdate = newMesh->pointIterator( new_node_numbers[oldPoint.id()] );
+                            newMesh->points().modify( ptToUpdate, Feel::detail::UpdateNeighborPartition( proc ) );
                         }
 
                         // Define this element's connectivity on the new mesh
-                        CHECK ( new_node_numbers[oldElem.point( n ).id()] < newMesh->numPoints() ) << "invalid connectivity";
+                        if ( renumberPoint )
+                            CHECK ( new_node_numbers[oldPoint.id()] < newMesh->numPoints() ) << "invalid connectivity";
 
-                        DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << oldElem.point( n ).id()
-                                 << ") as point new(" << new_node_numbers[oldElem.point( n ).id()]
+                        DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << oldPoint.id()
+                                 << ") as point new(" << new_node_numbers[oldPoint.id()]
                                  << ") in element " << newElem.id() << "\n";
 
-                        newElem.setPoint( n, newMesh->point( new_node_numbers[oldElem.point( n ).id()] ) );
+                        newElem.setPoint( n, newMesh->point( new_node_numbers[oldPoint.id()] ) );
 
                     } // for (unsigned int n=0 ... )
 
@@ -449,7 +473,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
                     // update id elt in other partition
                     auto eltToUpdate = newMesh->elementIterator( e.id(),  proc );
-                    newMesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( proc, idEltAsked ) );
+                    newMesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( proc, idEltAsked ) );
                     //} // if (new_element_id.find(oldElem.id())==new_element_id.end() )
 
                 } //  if (idEltAsked != invalid_size_type_value)
@@ -510,6 +534,9 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
     std::map<size_type,size_type> new_node_numbers;
     std::map<size_type,size_type> new_vertex;
 
+    Context c( this->updateComponentsMesh() );
+    const bool renumberPoint = c.test( MESH_RENUMBER );
+
     // the number of nodes on the new mesh, will be incremented
     unsigned int n_new_nodes = 0;
     unsigned int n_new_elem  = 0;
@@ -536,6 +563,9 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
         auto const& oldElem = *it;
         DVLOG(2) << "[Mesh<Shape,T>::createSubmesh]   + face : " << it->id() << "\n";
 
+        if ( nProc > 1 && this->subMeshIsOnBoundaryFaces() )
+            CHECK( oldElem.isOnBoundary() ) << "error : use mpi optimzation subMeshIsOnBoundaryFaces but an internal face is added";
+
         // copy element so that we can modify it
         new_element_type newElem;// = oldElem;
 
@@ -559,15 +589,18 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
             if ( new_node_numbers.find(oldPoint.id()) == new_node_numbers.end() )
             {
-                new_node_numbers[oldPoint.id()] = n_new_nodes;
+                const size_type newPtId = (renumberPoint)? n_new_nodes : oldPoint.id();
+                new_node_numbers[oldPoint.id()] = newPtId;
 
                 DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] insert point " << oldPoint << "\n";
 
                 typename mesh_faces_type::point_type pt( oldPoint );
-                pt.setId( n_new_nodes );
+                pt.setId( newPtId );
                 pt.clearElementsGhost();
                 pt.setProcessIdInPartition( proc_id );
                 pt.setProcessId( proc_id );
+                pt.clearNeighborPartitionIds();
+                pt.setOnBoundary(false);
 
                 // Add this node to the new mesh
                 newMesh->addPoint( pt );
@@ -583,9 +616,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                     new_vertex[oldPoint.id()]=1;
                 }
 
-                if (oldPoint.numberOfProcGhost()>0)
+                if ( nProc > 1 && oldPoint.numberOfProcGhost() > 0 )
                 {
-
                     auto itprocghost = oldPoint.elementsGhost().begin();
                     auto const enprocghost = oldPoint.elementsGhost().end();
                     for ( ; itprocghost!=enprocghost ; ++itprocghost )
@@ -600,8 +632,10 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                              for ( unsigned int s=0; s<ghostElt.numTopologicalFaces; s++ )
                              {
                                  auto const& ghostFace = ghostElt.face( s );
-                                 if (ghostFace.isInterProcessDomain()) continue;
-
+                                 // reduce mpi comm if possible
+                                 if ( this->subMeshIsOnBoundaryFaces() && !ghostFace.isOnBoundary() )
+                                     continue;
+                                 // store ghost faces to find in other process
                                  ghostCellsFind[procIdGhost].insert(boost::make_tuple( ghostFace.id(),
                                                                                        ghostFace.idInOthersPartitions(ghostElt.processId())) );
                              }
@@ -675,8 +709,9 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                 if ( itFindId != new_element_id.end() )
                 {
                     idEltInNewMesh = itFindId->second;
+                    // update NeighborPartition for this elt
                     auto eltToUpdate = newMesh->elementIterator( idEltInNewMesh );
-                    newMesh->elements().modify( eltToUpdate, detail::UpdateNeighborPartition( proc ) );
+                    newMesh->elements().modify( eltToUpdate, Feel::detail::UpdateNeighborPartition( proc ) );
                 }
                 // send response
                 newMesh->worldComm().localComm().send( proc, cpt, idEltInNewMesh );
@@ -695,14 +730,14 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                 {
                     auto const& old_elem = M_mesh->face( mapMsg[proc][cpt] );
 
-                    CHECK( new_element_id.find(old_elem.id())==new_element_id.end() ) << "this element is present on the new mesh\n";
+                    //CHECK( new_element_id.find(old_elem.id())==new_element_id.end() ) << "this element is already present on the new mesh\n";
 
                     // create a new elem
                     new_element_type newElem;
                     // partitioning update
                     newElem.setProcessIdInPartition( old_elem.pidInPartition() );
                     newElem.setNumberOfPartitions( 2 );
-                    CHECK( proc==old_elem.processId() ) << "invalid process id\n";
+                    //CHECK( proc==old_elem.processId() ) << "invalid process id\n";
                     newElem.setProcessId( proc );
                     //newElem.clearIdInOthersPartitions();
                     std::vector<int> newNeighborPartitionIds(1);
@@ -713,18 +748,20 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                     for ( unsigned int n=0; n < old_elem.nPoints(); n++ )
                     {
                         auto const& oldPoint = old_elem.point( n );
-                        //FEELPP_ASSERT (old_elem.point( n ).id() < new_node_numbers.size()).error( "invalid point id()" );
                         if ( new_node_numbers.find(oldPoint.id()) == new_node_numbers.end() )
                         {
-                            new_node_numbers[oldPoint.id()] = n_new_nodes;
+                            const size_type newPtId = (renumberPoint)? n_new_nodes : oldPoint.id();
+                            new_node_numbers[oldPoint.id()] = newPtId;
 
                             DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] insert point " << oldPoint << "\n";
 
                             typename mesh_faces_type::point_type pt( oldPoint );
-                            pt.setId( n_new_nodes );
+                            pt.setId( newPtId );
                             pt.setProcessIdInPartition( proc_id );
                             pt.setProcessId( invalid_uint16_type_value );
                             pt.clearElementsGhost();
+                            pt.clearNeighborPartitionIds();
+                            pt.setOnBoundary(false);
 
                             // Add this node to the new mesh
                             newMesh->addPoint ( pt );
@@ -740,9 +777,16 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                                 new_vertex[oldPoint.id()]=1;
                             }
                         }
+                        else if ( newMesh->point( new_node_numbers[oldPoint.id()] ).processId() != invalid_uint16_type_value  )
+                        {
+                            // update NeighborPartition for this points
+                            auto ptToUpdate = newMesh->pointIterator( new_node_numbers[oldPoint.id()] );
+                            newMesh->points().modify( ptToUpdate, Feel::detail::UpdateNeighborPartition( proc ) );
+                        }
 
                         // Define this element's connectivity on the new mesh
-                        CHECK ( new_node_numbers[old_elem.point( n ).id()] < newMesh->numPoints() ) << "invalid connectivity";
+                        if ( renumberPoint )
+                            CHECK ( new_node_numbers[old_elem.point( n ).id()] < newMesh->numPoints() ) << "invalid connectivity";
 
                         DVLOG(2) << "[Mesh<Shape,T>::createSubmesh] adding point old(" << old_elem.point( n ).id()
                                  << ") as point new(" << new_node_numbers[old_elem.point( n ).id()]
@@ -764,7 +808,7 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
                     // save idEltAsked;
                     auto eltToUpdate = newMesh->elementIterator( e.id(),  proc );
-                    newMesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( proc, idEltAsked ) );
+                    newMesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( proc, idEltAsked ) );
                 } //  if (idEltAsked != invalid_size_type_value)
 
             }
@@ -932,16 +976,18 @@ struct submeshrangetype
 };
 }
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
-typename createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
+typename createSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
 createSubmesh( boost::shared_ptr<MeshType> inputMesh,
                IteratorRange const& range,
                size_type ctx = EXTRACTION_KEEP_MESH_RELATION,
-               size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
+               size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+               bool subMeshIsOnBoundaryFaces = true )
 {
     //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
     //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
 
-    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
+    createSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range,inputMesh->worldComm(),updateComponentsMesh );
+    cSmT.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     auto m = cSmT.build();
     Context c( ctx );
     if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )
@@ -950,18 +996,20 @@ createSubmesh( boost::shared_ptr<MeshType> inputMesh,
 }
 
 template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
-typename createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
+typename createSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
 createSubmesh( boost::shared_ptr<MeshType> inputMesh,
                IteratorRange const& range,
                WorldComm wc,
                size_type ctx = EXTRACTION_KEEP_MESH_RELATION,
-               size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
+               size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
+               bool subMeshIsOnBoundaryFaces = true )
 
 {
     //DVLOG(2) << "[createSubmesh] extracting " << range.template get<0>() << " nb elements :"
     //<< std::distance(range.template get<1>(),range.template get<2>()) << "\n";
 
-    createSubmeshTool<MeshType,typename detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range, wc,updateComponentsMesh );
+    createSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag> cSmT( inputMesh,range, wc,updateComponentsMesh );
+    cSmT.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     auto m = cSmT.build();
     Context c( ctx );
     if ( c.test( EXTRACTION_KEEP_MESH_RELATION ) )

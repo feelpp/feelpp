@@ -330,7 +330,7 @@ private:
 
     // search in other world (MPI communication)
     std::list<boost::tuple<size_type,uint16_type> >
-    updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<int>,std::vector<int>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
+    updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
                                               std::vector< std::vector<size_type> > const& memmapGdof,
                                               std::vector< std::vector<uint16_type> > const& memmapComp,
                                               std::vector<std::vector<typename image_mesh_type::node_type> > const& pointsSearched,
@@ -1076,15 +1076,15 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     //-----------------------------------------------------------------------------------------
 
     //std::vector<boost::tuple<int,int,int,int> > worldcommFusionProperties;
-    boost::tuple<std::vector<int>,std::vector<int>,std::vector<boost::tuple<int,int> > > worldcommFusionProperties;
+    boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > worldcommFusionProperties;
     if ( this->interpolationType().searchWithCommunication())
     {
         // Attention : marche que si les 2 worldcomms qui s'emboite (mon cas)
-        std::vector<int> localMeshRankToWorldCommFusion_domain(nProc_col);
+        std::vector<rank_type> localMeshRankToWorldCommFusion_domain(nProc_col);
         mpi::all_gather( this->domainSpace()->mesh()->worldComm().localComm(),
                          this->worldCommFusion().globalRank(),
                          localMeshRankToWorldCommFusion_domain );
-        std::vector<int> localMeshRankToWorldCommFusion_image(nProc_row);
+        std::vector<rank_type> localMeshRankToWorldCommFusion_image(nProc_row);
         mpi::all_gather( this->dualImageSpace()->mesh()->worldComm().localComm(),
                          this->worldCommFusion().globalRank(),
                          localMeshRankToWorldCommFusion_image );
@@ -1259,7 +1259,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
            else FinishMPIsearch=true;
        }
 
-   //std::cout << "\n FINISH SEARCH!!!!!!!!! " << std::endl;
    if ( doExtrapolationAtStart && this->interpolationType().searchWithCommunication() ) locTool->setExtrapolation(true);
 
    if ( doExtrapolationAtStart && nbLocalisationFail>0 )
@@ -1734,7 +1733,7 @@ OperatorInterpolation<DomainSpaceType,
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
 std::list<boost::tuple<size_type,uint16_type> >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
-                      IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<int>,std::vector<int>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
+                      IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
                                                                                            std::vector< std::vector<size_type> > const& memmapGdof,
                                                                                            std::vector< std::vector<uint16_type> > const& memmapComp,
                                                                                            std::vector<std::vector<typename image_mesh_type::node_type> > const& pointsSearched,
@@ -2227,8 +2226,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
     if ( this->interpolationType().searchWithCommunication() && !locTool->hasComputedBarycentersWorld() )
         locTool->computeBarycentersWorld();
 
-    // build the vector of barycenter only if search with comm
-    std::vector<typename image_mesh_type::node_type> vecBarycenter(nProc_domain);
+    // build the vector of barycenter (computed from kdtree point) only if search with comm
+    std::vector<boost::tuple<bool,typename image_mesh_type::node_type> > vecBarycenter(nProc_domain);
     if (this->interpolationType().searchWithCommunication())
         vecBarycenter = locTool->barycentersWorld();
 
@@ -2267,7 +2266,10 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                 distanceMin=INT_MAX;
                                 for ( int proc=0 ; proc<nProc_domain; ++proc)
                                 {
-                                    auto const& bary = vecBarycenter[proc];
+                                    // if no point in kdtree, ignore this process
+                                    if ( !vecBarycenter[proc].template get<0>() ) continue;
+
+                                    auto const& bary = vecBarycenter[proc].template get<1>();
                                     /**/               distanceSquare  = std::pow(imagePoint(0)-bary(0),2);
                                     if (bary.size()>1) distanceSquare += std::pow(imagePoint(1)-bary(1),2);
                                     if (bary.size()>2) distanceSquare += std::pow(imagePoint(2)-bary(2),2);

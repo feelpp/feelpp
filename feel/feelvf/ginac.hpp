@@ -32,39 +32,46 @@
 #include <ginac/ginac.h>
 #include <boost/parameter/preprocessor.hpp>
 
+#include <boost/foreach.hpp>
+#include <boost/range/algorithm/for_each.hpp>
+
 namespace GiNaC
 {
+matrix grad( ex const& f, std::vector<symbol> const& l );
+ex laplacian( ex const& f, std::vector<symbol> const& l );
+matrix grad( std::string const& s, std::vector<symbol> const& l );
+ex laplacian( std::string const& s, std::vector<symbol> const& l );
 
-    matrix grad( ex const& f, std::vector<symbol> const& l );
-    ex laplacian( ex const& f, std::vector<symbol> const& l );
-    matrix grad( std::string const& s, std::vector<symbol> const& l );
-    ex laplacian( std::string const& s, std::vector<symbol> const& l );
+matrix grad( matrix const& f, std::vector<symbol> const& l );
+matrix div( matrix const& f, std::vector<symbol> const& l );
+matrix laplacian( matrix const& f, std::vector<symbol> const& l );
 
-    matrix grad( matrix const& f, std::vector<symbol> const& l );
-    matrix div( matrix const& f, std::vector<symbol> const& l );
-    matrix laplacian( matrix const& f, std::vector<symbol> const& l );
+ex diff(ex const& f, symbol const& l, const int n);
+matrix diff(matrix const& f, symbol const& l, const int n);
 
-    ex diff(ex const& f, symbol const& l, const int n);
-    matrix diff(matrix const& f, symbol const& l, const int n);
+ex substitute(ex const& f, symbol const& l, const double val );
+ex substitute(ex const& f, symbol const& l, ex const & g );
 
-    ex substitute(ex const& f, symbol const& l, const double val );
-    ex substitute(ex const& f, symbol const& l, ex const & g );
+matrix substitute(matrix const& f, symbol const& l, const double val );
+matrix substitute(matrix const& f, symbol const& l, ex const & g );
 
-    matrix substitute(matrix const& f, symbol const& l, const double val );
-    matrix substitute(matrix const& f, symbol const& l, ex const & g );
-
-    //ex parse( std::string const& str, std::vector<symbol> const& syms );
-    ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
+//ex parse( std::string const& str, std::vector<symbol> const& syms );
+ex parse( std::string const& str, std::vector<symbol> const& syms, std::vector<symbol> const& params = std::vector<symbol>());
 
 } // GiNaC
 
 namespace Feel
 {
-using  GiNaC::matrix;
-using  GiNaC::symbol;
-using  GiNaC::lst;
-using  GiNaC::ex;
-using  GiNaC::parser;
+using GiNaC::matrix;
+using GiNaC::symbol;
+using GiNaC::lst;
+using GiNaC::ex;
+using GiNaC::parser;
+using GiNaC::diff;
+using GiNaC::laplacian;
+using GiNaC::grad;
+using GiNaC::div;
+using GiNaC::parse;
 
 template<int Dim> inline std::vector<symbol> symbols() { return {symbol("x")}; }
 template<> inline std::vector<symbol> symbols<1>() { return {symbol("x")}; }
@@ -79,6 +86,7 @@ symbols( std::initializer_list<std::string> l )
     std::for_each( l.begin(), l.end(), [&s] ( std::string const& sym ) { s.push_back( symbol(sym) ); } );
     return s;
 }
+
 inline
 std::vector<symbol>
 symbols( std::vector<std::string> l )
@@ -88,11 +96,8 @@ symbols( std::vector<std::string> l )
     return s;
 }
 
-
-
 class Symbols : public std::vector<symbol>
 {
-
 public:
     Symbols():std::vector<symbol>(symbols({"x","y","z", "t"})) {}
     Symbols(std::initializer_list<std::string> s ):std::vector<symbol>(symbols(s)) {}
@@ -134,11 +139,128 @@ struct GinacExprManagerDeleterImpl
         }
 };
 typedef Feel::Singleton<GinacExprManagerDeleterImpl> GinacExprManagerDeleter;
+} // Feel namespace
 
+
+namespace GiNaC
+{
+    /**
+    * \brief Parse a string expression
+    *
+    * \param str the string to parse
+    * \param seps symbols separator
+    * \param params parameters
+    *
+    * ### Format
+    * The string format is: "GiNaC::ex,GiNaC::symbol,GiNaC::symbol,..."
+    *
+    * ### example :
+    * ```auto a = parse("sqrt(x*y),x,y")```
+    *
+    * \return a pair containing the GiNaC expression, and a vector of GiNaC symbols.
+    */
+    inline
+    std::pair< ex, std::vector<symbol> >
+    parse( std::string const& str, std::string const& seps=",", std::vector<symbol> const& params = std::vector<symbol>())
+    {
+        using namespace Feel;
+        using GiNaC::symbol;
+        using GiNaC::lst;
+        using GiNaC::ex;
+        using GiNaC::parser;
+        using GiNaC::symtab;
+        using GiNaC::parse_error;
+
+        LOG(INFO) << "Parsing " << str << " using GiNaC";
+        std::vector<std::string> fields;
+        boost::split( fields, str, boost::is_any_of(seps), boost::token_compress_on );
+        int fsize = fields.size();
+        CHECK( fsize  > 0 ) << "bad expression format";
+        std::string strexpr( fields[0] );
+        std::vector<std::string> strsyms;
+        if(fsize==1)
+            strsyms.push_back("0"); // no symbols means constant expression
+        else
+            for( auto it=fields.begin()+1; it!=fields.end(); ++it )
+                strsyms.push_back( *it );
+        std::vector<symbol> syms = Symbols{ strsyms };
+
+        LOG(INFO) << "Number of symbols " << syms.size() << "\n";
+        for(int i =0; i < syms.size();++i)
+            LOG(INFO) <<" - symbol : "  << syms[i].get_name();
+
+        LOG(INFO) << "Number of params " << params.size() << "\n";
+        for(int i =0; i < params.size();++i)
+            LOG(INFO) <<" - param : "  << params[i].get_name();
+
+        symtab table;
+        LOG(INFO) <<"Inserting symbols in symbol table";
+
+        table["x"]=syms[0];
+        if ( syms.size() == 2 )
+            {
+                table["y"]=syms[1];
+            }
+        if ( syms.size() == 3 )
+            {
+                table["y"]=syms[1];
+                table["z"]=syms[2];
+            }
+        std::vector<symbol> total_syms;
+        boost::for_each( syms, [&table, &total_syms]( symbol const& param )
+                         {
+                             total_syms.push_back(symbol(param));
+                             LOG(INFO) << "adding param: " << param << std::endl;
+                             table[param.get_name()] = param;
+                         } );
+
+        LOG(INFO) <<"Inserting params and in symbol table";
+
+        boost::for_each( params, [&table, &total_syms]( symbol const& param )
+                         {
+                             total_syms.push_back(symbol(param));
+                             LOG(INFO) << "adding param: " << param << std::endl;
+                             table[param.get_name()] = param;
+                         } );
+
+        LOG(INFO) <<"Defining parser";
+        parser reader(table ,option(_name="ginac.strict-parser").as<bool>()); // true to ensure that no more symbols are added
+
+        LOG(INFO) <<"parse expression\n";
+        ex e; // = reader(str);
+        try
+            {
+                e = reader(strexpr);
+            }
+        catch (std::invalid_argument& err)
+            {
+                reader.strict = false;
+                e =reader(strexpr);
+
+                std::cerr << "GiNaC error parsing " << e << " : " << err.what() << std::endl;
+                exit(1);
+            }
+        catch ( ... )
+            {
+                std::cerr << "Exception of unknown type!\n";
+            }
+
+        LOG(INFO) << "e=" << e << "\n";
+        return std::make_pair(e,syms);
+    }
+} // GiNaC namespace
+
+// Feel::vf
+namespace Feel
+{
+using GiNaC::matrix;
+using GiNaC::symbol;
+using GiNaC::lst;
+using GiNaC::ex;
+using GiNaC::parser;
 
 namespace vf
 {
-
 /// \cond detail
 /**
  * \class Ginac
@@ -148,7 +270,7 @@ namespace vf
  * @see
  */
 template<int Order = 2>
-class GinacEx
+class GinacEx : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -304,6 +426,7 @@ public:
 
     void setParameterFromOption()
         {
+            using namespace GiNaC;
             std::map<std::string,value_type> m;
             for( auto const& s : M_syms )
             {
@@ -321,6 +444,21 @@ public:
                     }
                     catch(...)
                     {}
+
+//                    try
+//                    {
+//                        expression_type e( option( _name=s.get_name() ).template as<std::string>(), 0 );
+//                        if( is_a<numeric>(e) )
+//                        {
+//                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
+//                        }
+//                        else
+//                        {
+//                            ;
+//                        }
+//                    }
+//                    catch(...)
+//                    {}
                 }
             }
             this->setParameterValues( m );
@@ -509,6 +647,16 @@ public:
 
 };
 
+    value_type
+    evaluate( bool parallel = true, WorldComm const& worldcomm = Environment::worldComm() ) const
+    {
+        if(GiNaC::is_a<GiNaC::numeric>(M_fun))
+            return GiNaC::ex_to<GiNaC::numeric>(M_fun).to_double();
+        else
+            CHECK(GiNaC::is_a<GiNaC::numeric>(M_fun)) << "GiNaC expression is not a value type. Can't evaluate !";
+            return 0;
+    }
+
 private:
 mutable expression_type  M_fun;
 std::vector<GiNaC::symbol> M_syms;
@@ -551,8 +699,41 @@ expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string 
     return Expr< GinacEx<Order> >(  GinacEx<Order>( parse(s,lsym), lsym, filename) );
 }
 
+/**
+* @brief Create an Feel++ expression from a GiNaC expression as a string
+*
+* @param s          String containing the ginac expression and symbols
+* @param filename   Shared file
+*
+* @return Feel++ Expression
+*/
+inline
+Expr< GinacEx<2> > expr( std::string const& s, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    return Expr< GinacEx<2> >(  GinacEx<2>( g.first, g.second, filename) );
+}
+
+/**
+* @brief Create an Feel++ expression from a GiNaC expression as a string
+*
+* @tparam Order     Expression order
+* @param s          String containing the ginac expression and symbols
+* @param filename   Shared file
+*
+* @return Feel++ Expression
+*/
+template<int Order>
+inline
+Expr< GinacEx<Order> >
+expr( std::string const& s, std::string filename="" )
+{
+    std::pair< ex, std::vector<GiNaC::symbol> > g = GiNaC::parse(s);
+    return Expr< GinacEx<Order> >(  GinacEx<Order>( g.first, g.second, filename) );
+}
+
 template<int M=1, int N=1, int Order = 2>
-class GinacMatrix
+class GinacMatrix : public Feel::vf::GiNaCBase
 {
 public:
 
@@ -979,7 +1160,7 @@ expr( GiNaC::ex const& f, std::vector<GiNaC::symbol> const& lsym, std::string fi
     return Expr< GinacMatrix<M,N,Order> >(  GinacMatrix<M,N,Order>( f, lsym, filename ) );
 }
 
-
 } // vf
-    } // Feel
+} // Feel
+
 #endif /* __Ginac_H */

@@ -82,10 +82,10 @@ struct test_submesh: public Application
     void operator()()
     {
         location_element_const_iterator it,en;
-        boost::tie( it,en ) = mesh->boundaryElements( 0 );
+        boost::tie( it,en ) = mesh->boundaryElements( mesh->worldComm().localRank() );
         mesh_ptrtype meshbdy( new mesh_type );
         meshbdy = createSubmesh( mesh, boundaryelements( mesh ) );
-        BOOST_CHECK_EQUAL( meshbdy->numElements(), std::distance( it, en ) );
+        BOOST_CHECK_EQUAL( nelements(elements(meshbdy),false), std::distance( it, en ) );
         //saveGMSHMesh( _mesh=meshbdy, _filename=shape+"_sub.msh" );
         using namespace Feel::vf;
         double intm1 = integrate( elements( meshbdy ), cst( 1. ) ).evaluate()( 0,0 );
@@ -104,9 +104,9 @@ struct test_submesh: public Application
 
 
         mesh_ptrtype meshint( new mesh_type );
-        boost::tie( it,en ) = mesh->internalElements( 0 );
+        boost::tie( it,en ) = mesh->internalElements( mesh->worldComm().localRank() );
         meshint = createSubmesh( mesh, internalelements(mesh) );
-        BOOST_CHECK_EQUAL( meshint->numElements(), std::distance( it, en ) );
+        BOOST_CHECK_EQUAL( nelements(elements(meshint),false), std::distance( it, en ) );
         //saveGMSHMesh( _mesh=meshbdy, _filename="meshbdy" );
 
         using namespace Feel::vf;
@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
     t.restart();
     auto opI4=opInterpolation( _domainSpace=Zh,
                                _imageSpace=Xh,
-                               _range=elements( mesh ) );
+                               _range=boundaryelements( mesh ) );
     auto u5 = Xh->element();
     opI4->apply( u3, u5 );
 
@@ -304,12 +304,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
 {
     using namespace Feel;
     BOOST_TEST_MESSAGE( "Test submesh3 " << T::value << "D" );
-    auto mesh = unitHypercube<T::value>();
+    double meshSize = ( T::value==3 )? 0.5 : 0.1;
+    auto mesh = unitHypercube<T::value>(meshSize);
     auto Xh = Pch<1>( mesh );
     auto v = Xh->element();
     v = project( _space=Xh, _range=elements(mesh), _expr=cst(1.) );
 
-    LOG(INFO) << "optimized version\n";
+    BOOST_TEST_MESSAGE("optimized version");
     // with optimization
     auto mesh2 = createSubmesh( mesh, elements( mesh ) );
     auto Yh = Pch<2>( mesh2 );
@@ -324,10 +325,20 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     BOOST_CHECK_CLOSE( mass1, .25, 4e-13 );
     BOOST_TEST_MESSAGE( "time mass matrix : " << t.elapsed() << "s\n" );
 
-    LOG(INFO) << "non optimized version\n";     google::FlushLogFiles(google::GLOG_INFO);
-    // with optimization
+    t.restart();
+    auto c = form1( _test=Xh );
+    c = integrate( _range=elements(mesh), _expr=idv(u)*id(v) );
+    double mass3 = c( v );
+    BOOST_CHECK_CLOSE( mass3, .25, 1e-12 );
+    BOOST_TEST_MESSAGE( "time linear form (opt) : " << t.elapsed() << "s\n" );
+
+    if (Environment::worldComm().size() == 1)
+    {
+    BOOST_TEST_MESSAGE("non optimized version");
+    // without optimization
     auto mesh3 = createSubmesh( mesh, allelements( mesh ), 0 );
-    LOG(INFO) << "mesh generated\n";     google::FlushLogFiles(google::GLOG_INFO);
+    BOOST_TEST_MESSAGE( "mesh generated" );
+    //LOG(INFO) << "mesh generated\n";     google::FlushLogFiles(google::GLOG_INFO);
     BOOST_CHECK_EQUAL( mesh->numElements(), mesh3->numElements() );
     auto Zh = Pch<2>( mesh3 );
     LOG(INFO) << "space generated\n";     google::FlushLogFiles(google::GLOG_INFO);
@@ -348,19 +359,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     //BOOST_CHECK_CLOSE( mass1, mass2, 1e-14 );
 
     t.restart();
-    auto c = form1( _test=Xh );
-    c = integrate( _range=elements(mesh), _expr=idv(u)*id(v) );
-    double mass3 = c( v );
-    BOOST_CHECK_CLOSE( mass3, .25, 1e-12 );
-    BOOST_TEST_MESSAGE( "time linear form (opt) : " << t.elapsed() << "s\n" );
-
-    t.restart();
     auto d = form1( _test=Xh );
     d = integrate( _range=elements(mesh), _expr=idv(w)*id(v) );
     double mass4 = d( v );
-    BOOST_CHECK_CLOSE( mass4, .25, 1e-13 );
+    BOOST_CHECK_CLOSE( mass4, .25, 1e-12 );
     BOOST_TEST_MESSAGE( "time linear form (non opt) : " << t.elapsed() << "s\n" );
     BOOST_TEST_MESSAGE( "Test submesh3 "  << T::value << "D done" );
+    } // if (Environment::worldComm().size() == 1)
+
 }
 BOOST_AUTO_TEST_SUITE_END()
 

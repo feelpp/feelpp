@@ -55,8 +55,12 @@ int main(int argc, char**argv )
                                   _email="feelpp-devel@feelpp.org"));
 
     auto mesh = unitSquare();
-    auto Vh = Odh<1>( mesh );
+    //auto mesh = unitCube();
+
+    //auto Vh = Odh<1>( mesh );
+    auto Vh = Pdh<1>( mesh, true );
     auto Xh = Pch<1>( mesh );
+
     auto u = Vh->element();
     auto v = Vh->element();
 

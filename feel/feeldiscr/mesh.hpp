@@ -1194,7 +1194,7 @@ public:
 
         bool hasComputedBarycentersWorld() { return M_barycentersWorld; }
 
-        std::vector<node_type> const& barycentersWorld() const
+        std::vector<boost::tuple<bool,node_type> > const& barycentersWorld() const
         {
             CHECK( M_barycentersWorld ) << " you must call computeBarycentersWorld() before barycentersWorld() \n";
             return M_barycentersWorld.get();
@@ -1330,7 +1330,7 @@ public:
         ref_convex1_type M_refelem1;
 
         node_type M_barycenter;
-        boost::optional<std::vector<node_type> > M_barycentersWorld;
+        boost::optional<std::vector<boost::tuple<bool,node_type> > > M_barycentersWorld;
 
     };
 
@@ -1915,7 +1915,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
             for ( int k=0;k<nbDataToTreat;++k )
             {
                 auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
-                new_mesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( procToRecv, dataToRecv[k]/*idEltAsked*/ ) );
+                new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, dataToRecv[k]/*idEltAsked*/ ) );
             }
         }
 
@@ -1988,7 +1988,7 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 new_mesh->worldComm().localComm().recv(procToRecv, k, idEltAsked);
 
                 auto eltToUpdate = new_mesh->elementIterator( memoryMpiMsg[procToRecv][k]/*e.id()*/,  procToRecv );
-                new_mesh->elements().modify( eltToUpdate, detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
+                new_mesh->elements().modify( eltToUpdate, Feel::detail::updateIdInOthersPartitions( procToRecv, idEltAsked ) );
             }
         }
 

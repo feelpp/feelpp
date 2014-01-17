@@ -851,35 +851,7 @@ const bool meshs112ts = Gmsh::Factory::type::instance().registerProduct( "hyperc
 
 
 
-boost::shared_ptr<Mesh<Simplex<1> > >
-unitSegment( double h )
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<1> >,
-                          _desc=domain( _name="segment",
-                                        _shape="hypercube",
-                                        _dim=1,
-                                        _h=h ) );
-}
 
-boost::shared_ptr<Mesh<Simplex<2> > >
-unitSquare( double h, PeriodicEntities pe )
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<2> >,
-                          _desc=domain( _name="square",
-                                        _shape="hypercube",
-                                        _dim=2,
-                                        _h=h),
-                          _periodic = pe );
-}
 
-boost::shared_ptr<Mesh<Simplex<3> > >
-unitCube( double h )
-{
-    return createGMSHMesh(_mesh=new Mesh<Simplex<3> >,
-                          _desc=domain( _name="cube",
-                                        _shape="hypercube",
-                                        _dim=3,
-                                        _h= h ) );
-}
 
 } // Feel

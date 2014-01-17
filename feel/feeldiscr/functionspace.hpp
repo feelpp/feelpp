@@ -462,14 +462,15 @@ struct InitializeSpace
     InitializeSpace( MeshPtrType const& mesh,
                      PeriodicityType const& periodicity,
                      std::vector<Dof> const& dofindices,
-                     std::vector<WorldComm> const & worldsComm )
+                     std::vector<WorldComm> const & worldsComm,
+                     std::vector<bool> extendedDofTable )
         :
         M_cursor( 0 ),
         M_worldsComm( worldsComm ),
         M_mesh( mesh ),
         M_dofindices( dofindices ),
-        M_periodicity( periodicity )
-
+        M_periodicity( periodicity ),
+        M_extendedDofTable( extendedDofTable )
     {}
     template <typename T>
     void operator()( boost::shared_ptr<T> & x ) const
@@ -481,7 +482,8 @@ struct InitializeSpace
     {
         auto p = *fusion::find<typename T::periodicity_0_type>(M_periodicity);
         x = boost::shared_ptr<T>( new T( M_mesh, M_dofindices, p,
-                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ) ) );
+                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++M_cursor;// warning M_cursor < nb color
@@ -494,7 +496,8 @@ struct InitializeSpace
         // look for T::mesh_ptrtype in MeshPtrType
         auto m = *fusion::find<typename T::mesh_ptrtype>(M_mesh);
         x = boost::shared_ptr<T>( new T( m, M_dofindices, p,
-                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ) ) );
+                                         std::vector<WorldComm>( 1,M_worldsComm[M_cursor] ),
+                                         std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
         FEELPP_ASSERT( x ).error( "invalid function space" );
 
         ++M_cursor;// warning M_cursor < nb color
@@ -504,6 +507,7 @@ struct InitializeSpace
     MeshPtrType M_mesh;
     std::vector<Dof> const& M_dofindices;
     PeriodicityType M_periodicity;
+    std::vector<bool> M_extendedDofTable;
 };
 template<typename DofType>
 struct updateDataMapProcess
@@ -1341,10 +1345,10 @@ struct Order
 
 typedef parameter::parameters<
     parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
-    , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<detail::bases_base,_> >
+    , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<Feel::detail::bases_base,_> >
     , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
-    , parameter::optional<parameter::deduced<tag::mortar_type>, boost::is_base_and_derived<detail::mortar_base,_> >
-    , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<detail::periodicity_base,_> >
+    , parameter::optional<parameter::deduced<tag::mortar_type>, boost::is_base_and_derived<Feel::detail::mortar_base,_> >
+    , parameter::optional<parameter::deduced<tag::periodicity_type>, boost::is_base_and_derived<Feel::detail::periodicity_base,_> >
     > functionspace_signature;
 
 
@@ -1377,7 +1381,7 @@ public:
     typedef typename parameter::binding<args, tag::value_type, double>::type value_type;
     typedef typename parameter::binding<args, tag::mortar_type, mortars<NoMortar> >::type mortar_list;
     typedef typename parameter::binding<args, tag::periodicity_type, Periodicity<NoPeriodicity> >::type periodicity_type;
-    typedef typename parameter::binding<args, tag::bases_list, detail::bases<Lagrange<1,Scalar> > >::type bases_list;
+    typedef typename parameter::binding<args, tag::bases_list, Feel::detail::bases<Lagrange<1,Scalar> > >::type bases_list;
 
     BOOST_MPL_ASSERT_NOT( ( boost::is_same<mpl::at<bases_list,mpl::int_<0> >, mpl::void_> ) );
 
@@ -1417,7 +1421,7 @@ public:
         typedef typename fusion::result_of::at_c<meshes_list_noref, pos::value >::type _mesh_type;
 
         typedef FunctionSpace<typename boost::remove_reference<_mesh_type>::type,
-                              detail::bases<BasisType>,value_type,
+                              Feel::detail::bases<BasisType>,value_type,
                               Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type >,
                               mortar_list> _type;
         typedef boost::shared_ptr<_type> type;
@@ -1433,7 +1437,7 @@ public:
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
 
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
 //mpl::identity<typename mpl::transform<meshes_list, ChangeMesh<mpl::_1,BasisType>, mpl::back_inserter<fusion::vector<> > >::type > >::type::type type;
@@ -1446,7 +1450,7 @@ public:
         typedef typename BasisType::component_basis_type component_basis_type;
         //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
-                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
+                                  mpl::identity<mpl::identity<boost::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
                                   mpl::identity<ChangeMesh<component_basis_type> > >::type::type::type type;
     };
 
@@ -1460,9 +1464,9 @@ public:
         typedef typename BasisType::component_basis_type type;
     };
 
-    typedef detail::bases2<typename mpl::transform<bases_list,
-                                                   GetComponentBasis<mpl::_1>,
-                                                   mpl::back_inserter<fusion::vector<> > >::type> component_basis_vector_type;
+    typedef Feel::detail::bases2<typename mpl::transform<bases_list,
+                                                         GetComponentBasis<mpl::_1>,
+                                                         mpl::back_inserter<fusion::vector<> > >::type> component_basis_vector_type;
 
 
 
@@ -1783,7 +1787,7 @@ public:
                 //DVLOG(2) << "Context size: " << this->size() << "\n";
 
                 if ( nprocs > 1 )
-                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
                 else
                     global_found_pt[ 0 ] = found_pt[ 0 ];
 
@@ -1791,7 +1795,7 @@ public:
             else
             {
                 if ( nprocs > 1 )
-                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+                    mpi::all_reduce( M_Xh->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
 
             }//not found case
 
@@ -1878,7 +1882,7 @@ public:
     template<typename T = double,  typename Cont = VectorUblas<T> >
     class Element
         :
-    public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >
+        public Cont,boost::addable<Element<T,Cont> >, boost::subtractable<Element<T,Cont> >, FunctionSpaceBase::ElementBase
     {
     public:
         typedef T value_type;
@@ -2353,7 +2357,7 @@ public:
          * data structure that stores the interpolated values of the
          * element at a set of points
          */
-        typedef detail::ID<value_type,nComponents1,nComponents2> id_type;
+        typedef Feel::detail::ID<value_type,nComponents1,nComponents2> id_type;
 
 
         /**
@@ -2564,10 +2568,10 @@ public:
         //! gradient interpolation tool
         //@{
 
-        typedef detail::DD<value_type, nComponents1, nRealDim> grad_type;
-        typedef detail::D<value_type,0,nComponents1, 1> dx_type;
-        typedef detail::D<value_type,1,nComponents1, 1> dy_type;
-        typedef detail::D<value_type,2,nComponents1, 1> dz_type;
+        typedef Feel::detail::DD<value_type, nComponents1, nRealDim> grad_type;
+        typedef Feel::detail::D<value_type,0,nComponents1, 1> dx_type;
+        typedef Feel::detail::D<value_type,1,nComponents1, 1> dy_type;
+        typedef Feel::detail::D<value_type,2,nComponents1, 1> dz_type;
 
         template<typename ContextType>
         boost::array<typename array_type::index, 1>
@@ -2708,7 +2712,7 @@ public:
 
         //@}
 
-        typedef detail::Div<value_type> div_type;
+        typedef Feel::detail::Div<value_type> div_type;
 
         template<typename ContextType>
         boost::array<typename array_type::index, 1>
@@ -2742,10 +2746,10 @@ public:
         void
         divInterpolate( matrix_node_type __ptsReal, div_array_type& v ) const;
 
-        typedef detail::Curl<value_type,-1,nRealDim> curl_type;
-        typedef detail::Curl<value_type,0,1> curlx_type;
-        typedef detail::Curl<value_type,1,1> curly_type;
-        typedef detail::Curl<value_type,2,1> curlz_type;
+        typedef Feel::detail::Curl<value_type,-1,nRealDim> curl_type;
+        typedef Feel::detail::Curl<value_type,0,1> curlx_type;
+        typedef Feel::detail::Curl<value_type,1,1> curly_type;
+        typedef Feel::detail::Curl<value_type,2,1> curlz_type;
 
         template<typename ContextType>
         curl_type
@@ -2896,7 +2900,7 @@ public:
         void
         hessInterpolate( matrix_node_type __ptsReal, hess_array_type& v ) const;
 
-        typedef detail::H<value_type,nRealDim,nRealDim> hess_type;
+        typedef Feel::detail::H<value_type,nRealDim,nRealDim> hess_type;
 
         template<typename ContextType>
         hess_type
@@ -2990,7 +2994,7 @@ public:
 
             size_type nbdof_start =  fusion::accumulate( this->functionSpaces(),
                                      size_type( 0 ),
-                                     detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
+                                     Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
 
             typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
             DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -3013,7 +3017,7 @@ public:
 
                     if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
 
-                    fusion::for_each( *M_containersOffProcess, detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
+                    fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
                 }
 
 #endif
@@ -3027,14 +3031,14 @@ public:
                 // initialize if not the case
                 if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
 
-                fusion::for_each( *M_containersOffProcess, detail::InitializeContainersOff<i,functionspace_type>( this->functionSpace() ) );
+                fusion::for_each( *M_containersOffProcess, Feel::detail::InitializeContainersOff<i,functionspace_type>( this->functionSpace() ) );
 
 #if defined(FEELPP_ENABLE_MPI_MODE)
 
                 // update M_containersOffProcess<i> : recv
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
-                    fusion::for_each( *M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
+                    fusion::for_each( *M_containersOffProcess, Feel::detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
                 }
 
 #endif
@@ -3056,7 +3060,7 @@ public:
         {
             size_type nbdof_start =  fusion::accumulate( M_functionspace->functionSpaces(),
                                      size_type( 0 ),
-                                     detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
+                                     Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(), false, 0, i ) );
             typename mpl::at_c<functionspace_vector_type,i>::type space( M_functionspace->template functionSpace<i>() );
 
             DVLOG(2) << "Element <" << i << ">::start :  "<< nbdof_start << "\n";
@@ -3080,7 +3084,7 @@ public:
 
                     if ( !M_containersOffProcess ) M_containersOffProcess = boost::in_place();
 
-                    fusion::for_each( *M_containersOffProcess, detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
+                    fusion::for_each( *M_containersOffProcess, Feel::detail::SendContainersOn<i,functionspace_type>( this->functionSpace(), dataToSend ) );
                 }
 
 #endif
@@ -3097,7 +3101,7 @@ public:
                 // update M_containersOffProcess<i> : recv
                 if ( this->worldComm().globalSize()>1 && updateOffViews && !this->functionSpace()->hasEntriesForAllSpaces() )
                 {
-                    fusion::for_each( *M_containersOffProcess, detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
+                    fusion::for_each( *M_containersOffProcess, Feel::detail::RecvContainersOff<i,functionspace_type>( this->functionSpace() ) );
                 }
 
 #endif
@@ -3498,10 +3502,13 @@ public:
     FunctionSpace( mesh_ptrtype const& mesh,
                    size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                    periodicity_type  periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
+                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
+                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
         :
         M_worldsComm( _worldsComm ),
-        M_worldComm( new WorldComm( _worldsComm[0] ) )
+        M_worldComm( new WorldComm( _worldsComm[0] ) ),
+        M_extendedDofTableComposite( extendedDofTable ),
+        M_extendedDofTable( extendedDofTable[0] )
     {
         this->init( mesh, mesh_components, periodicity );
     }
@@ -3509,10 +3516,13 @@ public:
     FunctionSpace( mesh_ptrtype const& mesh,
                    std::vector<Dof > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
-                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces) )
+                   std::vector<WorldComm> const& _worldsComm = Environment::worldsComm(nSpaces),
+                   std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
         :
         M_worldsComm( _worldsComm ),
-        M_worldComm( new WorldComm( _worldsComm[0] ) )
+        M_worldComm( new WorldComm( _worldsComm[0] ) ),
+        M_extendedDofTableComposite( extendedDofTable ),
+        M_extendedDofTable( extendedDofTable[0] )
     {
         this->init( mesh, 0, dofindices, periodicity );
     }
@@ -3564,19 +3574,21 @@ public:
                                        ( worldscomm, *, Environment::worldsComm(nSpaces) )
                                        ( components, ( size_type ), MESH_RENUMBER | MESH_CHECK )
                                        ( periodicity,*,periodicity_type() )
+                                       ( extended_doftable,*,std::vector<bool>(nSpaces,false) )
                                      )
                                    )
     {
-        return NewImpl( mesh, worldscomm, components, periodicity );
+        return NewImpl( mesh, worldscomm, components, periodicity, extended_doftable );
     }
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  std::vector<WorldComm> const& worldsComm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
-                                 periodicity_type periodicity = periodicity_type() )
+                                 periodicity_type periodicity = periodicity_type(),
+                                 std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
     {
 
-        return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm ) );
+        return pointer_type( new functionspace_type( __m, mesh_components, periodicity, worldsComm, extendedDofTable ) );
     }
 
 #endif
@@ -3754,37 +3766,37 @@ public:
      */
     size_type nDofStart( size_type i = /*invalid_size_type_value*/0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NbDof( 0, i ) );
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NbDof( 0, i ) );
         return start;
     }
 
     size_type nLocalDofStart( size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(),true,0,i ) );
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(),true,0,i ) );
         return start;
     }
 
     size_type nLocalDofWithGhostStart( size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(),true,0,i ) );
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm(),true,0,i ) );
         return start;
     }
 
     size_type nLocalDofWithoutGhostStart( size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >( this->worldsComm(),true,0,i ) );
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<false> >( this->worldsComm(),true,0,i ) );
         return start;
     }
 
     size_type nLocalDofWithGhostOnProcStart( const int proc, size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm(),true,0,i ) );
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm(),true,0,i ) );
         return start;
     }
 
     size_type nLocalDofWithoutGhostOnProcStart( const int proc, size_type i = 0 ) const
     {
-        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm(),true,0,i ) );
+        size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm(),true,0,i ) );
         return start;
     }
 
@@ -3857,7 +3869,7 @@ public:
     }
     std::string basisName( mpl::bool_<true> ) const
     {
-        return  fusion::accumulate( this->functionSpaces(), std::string(), detail::BasisName() );
+        return  fusion::accumulate( this->functionSpaces(), std::string(), Feel::detail::BasisName() );
     }
     std::string basisName( mpl::bool_<false> ) const
     {
@@ -3876,7 +3888,7 @@ public:
     }
     std::vector<int> basisOrder( mpl::bool_<true> ) const
     {
-        return  fusion::accumulate( this->functionSpaces(), std::vector<int>(), detail::BasisOrder() );
+        return  fusion::accumulate( this->functionSpaces(), std::vector<int>(), Feel::detail::BasisOrder() );
     }
     std::vector<int> basisOrder( mpl::bool_<false> ) const
     {
@@ -3981,6 +3993,13 @@ public:
         return M_dofOnOff;
     }
 
+    /**
+     * \return true if need to build extended DofTable
+     */
+    std::vector<bool> extendedDofTableComposite() const { return M_extendedDofTableComposite; }
+    bool extendedDofTable() const { return M_extendedDofTable; }
+
+
     //! \return true if mortar, false otherwise
     constexpr bool isMortar() const { return is_mortar; }
 
@@ -4006,9 +4025,9 @@ public:
             auto initial = boost::make_tuple( cptSpaces,start,is );
 
             // get start for each proc ->( proc0 : 0 ), (proc1 : sumdofproc0 ), (proc2 : sumdofproc0+sumdofproc1 ) ....
-            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), detail::computeStartOfFieldSplit() ).template get<1>();
+            auto startSplit = boost::fusion::fold( functionSpaces(), boost::make_tuple(0,0), Feel::detail::computeStartOfFieldSplit() ).template get<1>();
             // compute split
-            auto result = boost::fusion::fold( functionSpaces(), initial,  detail::computeNDofForEachSpace(startSplit) );
+            auto result = boost::fusion::fold( functionSpaces(), initial,  Feel::detail::computeNDofForEachSpace(startSplit) );
             is = result.template get<2>();
 
 
@@ -4196,6 +4215,8 @@ public:
         M_comp_space( __fe.M_comp_space ),
         M_dof( __fe.M_dof ),
         M_dofOnOff( __fe.M_dofOnOff ),
+        M_extendedDofTableComposite( __fe.M_extendedDofTableComposite ),
+        M_extendedDofTable( __fe.M_extendedDofTable ),
         M_rt( __fe.M_rt )
     {
         DVLOG(2) << "copying FunctionSpace\n";
@@ -4307,6 +4328,10 @@ protected:
     //! Degrees of freedom (only init wiht mpi)
     dof_ptrtype M_dofOnOff;
 
+    //! build the extended dof table in //
+    std::vector<bool> M_extendedDofTableComposite;
+    bool M_extendedDofTable;
+
     /** region tree associated with the mesh */
     mutable boost::optional<region_tree_ptrtype> M_rt;
 
@@ -4379,6 +4404,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_dof = dof_ptrtype( new dof_type( M_ref_fe, fusion::at_c<0>(periodicity), this->worldsComm()[0] ) );
 
+    M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
+
     DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
     M_dof->setDofIndices( dofindices );
     DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
@@ -4427,8 +4454,11 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     M_mesh = __m;
 
     // todo : check worldsComm size and M_functionspaces are the same!
-    fusion::for_each( M_functionspaces, detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
-                                                                                                 dofindices, this->worldsComm() ) );
+    fusion::for_each( M_functionspaces,
+                      Feel::detail::InitializeSpace<mesh_ptrtype,periodicity_type>( __m, periodicity,
+                                                                                    dofindices,
+                                                                                    this->worldsComm(),
+                                                                                    this->extendedDofTableComposite() ) );
 
 #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
     M_dof = dof_ptrtype( new dof_type( this->nDof(), this->nLocalDof() ) );
@@ -4438,7 +4468,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     proc_dist_map_type emptyMap;
     procDistMap = fusion::accumulate( M_functionspaces,
                                       emptyMap,
-                                      detail::searchIndicesBySpace<proc_dist_map_type>() );
+                                      Feel::detail::searchIndicesBySpace<proc_dist_map_type>() );
     M_dofOnOff = M_dof;
 #else // new version with MPI
 
@@ -4449,7 +4479,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                 // construction with same partionment for all subspaces
                 // and each processors has entries for all subspaces
                 DVLOG(2) << "init(<composite>) type hasEntriesForAllSpaces\n";
-                // build usefull data for detail::updateDataMapProcessStandard
+                // build usefull data for Feel::detail::updateDataMapProcessStandard
                 const int worldsize = this->worldComm().globalSize();
                 std::vector<size_type> startDofGlobalCluster(worldsize);
                 std::vector<size_type> nLocalDofWithoutGhostWorld(worldsize),nLocalDofWithGhostWorld(worldsize);
@@ -4466,7 +4496,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                     }
 
                 // build datamap
-                auto dofInitTool=detail::updateDataMapProcessStandard<dof_type>( this->worldsComm(), this->worldComm(),
+                auto dofInitTool=Feel::detail::updateDataMapProcessStandard<dof_type>( this->worldsComm(), this->worldComm(),
                                                                                  this->nSubFunctionSpace()-1,
                                                                                  startDofGlobalCluster,
                                                                                  nLocalDofWithoutGhostWorld,
@@ -4497,7 +4527,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                 //mixSpaceWorldComm.showMe();
 
                 // update DofTable for the mixedSpace (we have 2 dofTables : On and OnOff)
-                auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
+                auto dofInitTool=Feel::detail::updateDataMapProcess<dof_type>( this->worldsComm(), mixSpaceWorldComm, this->nSubFunctionSpace()-1 );
                 fusion::for_each( M_functionspaces, dofInitTool );
                 // finish update datamap
                 M_dof = dofInitTool.dataMap();
@@ -4511,8 +4541,8 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     else // sequential
     {
-        // update DofTable for the mixedSpace (here On is not build properly but OnOff yes and On=OnOff, see detail::updateDataMapProcess)
-        auto dofInitTool=detail::updateDataMapProcess<dof_type>( this->worldsComm(), this->worldComm(), this->nSubFunctionSpace()-1 );
+        // update DofTable for the mixedSpace (here On is not build properly but OnOff yes and On=OnOff, see Feel::detail::updateDataMapProcess)
+        auto dofInitTool=Feel::detail::updateDataMapProcess<dof_type>( this->worldsComm(), this->worldComm(), this->nSubFunctionSpace()-1 );
         fusion::for_each( M_functionspaces, dofInitTool );
         M_dof = dofInitTool.dataMapOnOff();
         M_dof->setNDof( this->nDof() );
@@ -4528,7 +4558,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NbDof() );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NbDof() );
     DVLOG(2) << "calling nDof(<composite>) end\n";
     return ndof;
 }
@@ -4545,7 +4575,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4563,7 +4593,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<true> >( this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4580,7 +4610,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<true> >( proc, this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4597,7 +4627,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDof<mpl::bool_<false> >( this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDof<mpl::bool_<false> >( this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4614,7 +4644,7 @@ size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
-    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
+    size_type ndof =  fusion::accumulate( M_functionspaces, size_type( 0 ), Feel::detail::NLocalDofOnProc<mpl::bool_<false> >( proc, this->worldsComm() ) );
     DVLOG(2) << "calling nLocalDof(<composite>) end\n";
     return ndof;
 }
@@ -4637,7 +4667,7 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::rebuildDofPoints( mpl::bool_<true> )
 {
-    fusion::for_each( M_functionspaces, detail::rebuildDofPointsTool() );
+    fusion::for_each( M_functionspaces, Feel::detail::rebuildDofPointsTool() );
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
@@ -4950,7 +4980,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         if ( nprocs > 1 )
         {
             //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
         }
 
 #else
@@ -4980,7 +5010,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::operator()( node_type const&
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
         }
 
 #endif /* FEELPP_HAS_MPI */
@@ -5212,7 +5242,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
         }
 
 #else
@@ -5241,7 +5271,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad( node_type const& __x )
         if ( functionSpace()->mesh()->comm().size() > 1 )
         {
             //mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, std::plus<std::vector<int> >() );
-            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, detail::vector_plus<int>() );
+            mpi::all_reduce( functionSpace()->mesh()->comm(), found_pt, global_found_pt, Feel::detail::vector_plus<int>() );
         }
 
 #endif /* FEELPP_HAS_MPI */
@@ -6514,7 +6544,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hessInterpolate( matrix_node
 
 template<typename T,int M,int N>
 std::ostream&
-operator<<( std::ostream& os, detail::ID<T,M,N> const& id )
+operator<<( std::ostream& os, Feel::detail::ID<T,M,N> const& id )
 {
     const size_type* shape =  id.M_id.shape();
 
@@ -6536,195 +6566,27 @@ operator<<( std::ostream& os, detail::ID<T,M,N> const& id )
     return os;
 }
 
-/**
- * Computes the element wise product of two vectors and eventually in parallel
- * \param v1 vector (eventually distributed)
- * \param v2 vector (eventually distributed)
- *
- * \return the element wise product of \p v1 and \p v2
- */
-template <typename ElementType>
-ElementType
-element_product( ElementType const& v1, ElementType const& v2 )
-{
-    FEELPP_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces" );
 
-    typedef typename type_traits<typename ElementType::value_type>::real_type real_type;
-
-    ElementType _t( v1.functionSpace() );
-    size_type s = v1.localSize();
-    size_type start = v1.firstLocalIndex();
-
-    for ( size_type i = 0; i < s; ++i )
-        _t.operator()( start+i ) = v1.operator()( start + i )* v2.operator()( start + i );
-
-    return _t;
-}
 
 /**
- * Computes the element wise division of two vectors and eventually in parallel
- * \param v1 vector (eventually distributed)
- * \param v2 vector (eventually distributed)
- *
- * \return the element wise division product of \p v1 and \p v2
+   TODO: write the documentation
  */
-template <typename ElementType>
-ElementType
-element_div( ElementType const& v1, ElementType const& v2 )
-{
-    FEELPP_ASSERT( v1.functionSpace() == v2.functionSpace() ).error( "incompatible function spaces" );
-
-    typedef typename type_traits<typename ElementType::value_type>::real_type real_type;
-
-    ElementType _t( v1.functionSpace() );
-    size_type s = v1.localSize();
-    size_type start = v1.firstLocalIndex();
-
-    for ( size_type i = 0; i < s; ++i )
-        _t.operator()( start+i ) = v1.operator()( start + i )/v2.operator()( start + i );
-
-    return _t;
-}
-
-template<typename MeshType>
-auto
-measurePointElements( boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<MeshType::nOrder,Scalar> > > >& _space ) -> decltype( _space->element() )
-{
-    auto _fn = _space->element( "measurePointElements" );
-    _fn.setZero();
-    std::vector<bool> ptdone( _space->mesh()->numPoints(), false );
-    auto elit = _space->mesh()->beginElement();
-    auto elen = _space->mesh()->endElement();
-
-    for ( ; elit != elen; ++ elit )
-    {
-        for ( int p = 0; p < elit->numPoints; ++p )
-        {
-            if ( ptdone[elit->point( p ).id()] == false )
-            {
-                BOOST_FOREACH( auto pt, elit->point( p ).elements() )
-                {
-                    _fn.plus_assign( elit->id(), p, 0, elit->measure() );
-                }
-                ptdone[elit->point( p ).id()] = true;
-            }
-        }
-    }
-
-    return _fn;
-}
-
 template<typename EltType>
 typename fusion::result_of::accumulate<typename EltType::functionspace_type::functionspace_vector_type,
                                        fusion::vector<>,
-                                       detail::CreateElementVector<EltType> >::type
+                                       Feel::detail::CreateElementVector<EltType> >::type
 subelements( EltType const& e, std::vector<std::string> const& n )
 {
-    return fusion::accumulate( e.functionSpaces(), fusion::vector<>(), detail::CreateElementVector<EltType>( e, n ) );
+    return fusion::accumulate( e.functionSpaces(), fusion::vector<>(), Feel::detail::CreateElementVector<EltType>( e, n ) );
 }
-
-template<typename ElementType, typename CoeffType>
-ElementType
-expansion( std::vector<ElementType> const& b, CoeffType const& c, int M = -1 )
-{
-    auto res = b[0].functionSpace()->element();
-    res.zero();
-    if ( M == -1 ) M = c.size() ;
-    //LOG_ASSERT( b.size() == c.size() ) << " b.size=" << b.size() << " c.size=" << c.size() << "\n";
-    for( int i = 0; i < M; ++i )
-    {
-        res.add( c[i], b[i] );
-    }
-
-    return res;
-}
-
 /**
- * \fn Pch<k,MeshType>
- *
- * build a function space of continuous function which are piecewise polynomial
- * of degree (total or in each variable) less than k.
+   iostream operator to print some information about the function space \p Xh
+   \code
+   auto Xh = Pch<2>(mesh);
+   // Xh is a pointer
+   std::cout << "Xh:" << *Xh << "\n";
+   \endcode
  */
-template<int Order,typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>>>
-Pch( boost::shared_ptr<MeshType> mesh )
-{
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>>::New( _mesh=mesh,
-                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
-}
-
-/**
- * build a function space of continuous function which are piecewise polynomial
- * of degree (total or in each variable) less than k.
- */
-template<int Order,typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>,Periodicity <NoPeriodicity>, mortars<Mortar>>>
-Moch( boost::shared_ptr<MeshType> mesh )
-{
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Continuous>>, Periodicity <NoPeriodicity>, mortars<Mortar>>::New( _mesh=mesh,
-                                                                                                               _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
-}
-
-/**
- * \fn Pdh<k,MeshType>
- *
- * build a function space of discontinuous function which are piecewise polynomial
- * of degree (total or in each variable) less than k.
- */
-template<int Order,typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>>
-Pdh( boost::shared_ptr<MeshType> mesh )
-{
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
-                                                                                     _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
-}
-
-/**
- * \fn Odh<k,MeshType>
- *
- * build a function space of discontinuous function which are piecewise polynomial
- * of degree and L2 Orthonormal
- */
-template<int Order,typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>>
-Odh( boost::shared_ptr<MeshType> mesh )
-{
-    return FunctionSpace<MeshType,bases<OrthonormalPolynomialSet<Order,Scalar>>>::New( _mesh=mesh,
-                                                                                       _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
-}
-
-/**
- * \fn Pchv<k,MeshType>
- *
- * build a function space of continuous function which are piecewise polynomial
- * of degree (total or in each variable) less than k.
- */
-template<int Order,typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>>
-Pchv( boost::shared_ptr<MeshType> mesh )
-{
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Vectorial>>>::New( _mesh=mesh,
-                                                                          _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ) );
-}
-
-/**
- * \fn Tch<k,MeshType>
- *
- */
-template<int Order,typename MeshType>
-inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>>
-THch( boost::shared_ptr<MeshType> mesh )
-{
-    return FunctionSpace<MeshType,bases<Lagrange<Order+1,Vectorial>,Lagrange<Order,Scalar>>>::New( _mesh=mesh,
-                                                                                                   _worldscomm=std::vector<WorldComm>( 2,mesh->worldComm() ) );
-}
-
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 std::ostream&
 operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
@@ -6732,6 +6594,18 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
     os << "Number of Dof: Global=" << Xh.nDof() << " , Local=" << Xh.nLocalDof();
     return os;
 }
+
+
+namespace detail
+{
+
+template<typename FuncSpaceType>
+struct is_function_space_ptr : mpl::false_ {};
+
+template<typename FuncSpaceType>
+struct is_function_space_ptr<boost::shared_ptr<FuncSpaceType> > : mpl::true_ {};
+} // detail
+
 } // Feel
 
 

@@ -230,6 +230,58 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
             }
         }
     }
+    if ( imesh->worldComm().localSize() > 1 && u.functionSpace()->dof()->buildDofTableMPIExtended() )
+    {
+        std::set<size_type> eltGhostDone;
+        auto face_it = imesh->interProcessFaces().first;
+        auto const face_en = imesh->interProcessFaces().second;
+        for ( ; face_it!=face_en ; ++face_it )
+        {
+            auto const& elt0 = face_it->element0();
+            auto const& elt1 = face_it->element1();
+            const bool elt0isGhost = elt0.isGhostCell();
+            auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+            if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() ) continue;
+
+            auto it_eltOffProc = imesh->elementIterator( eltOffProc.id(),eltOffProc.processId() );
+
+            __c->update( eltOffProc );
+            __ctx->update( __c );
+            std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m_type::Zero() );
+            u.id( *__ctx, uvalues );
+
+            for ( uint16_type l =0; l < nptsperelem; ++l )
+            {
+                for ( uint16_type comp = 0; comp < fe_type::nComponents; ++comp )
+                {
+                    val[ comp ] = uvalues[l]( comp,0 );
+                }
+
+                if ( points_done.find( eltOffProc.point( l ).id() ) == points_done.end() )
+                {
+                    //std::cout << "Pt: " << thedof << "Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
+                    imesh->elements().modify( it_eltOffProc,
+                                              lambda::bind( &element_type::applyDisplacement,
+                                                            lambda::_1,
+                                                            l,
+                                                            val ) );
+                    points_done[eltOffProc.point( l ).id()] = true;
+                    //std::cout << "Pt: " << thedof << " Moved Elem " << it_elt->id() << " G=" << it_elt->G() << "\n";
+                }
+                else
+                {
+                    imesh->elements().modify( it_eltOffProc,
+                                              lambda::bind( &element_type::applyDisplacementG,
+                                                            lambda::_1,
+                                                            l,
+                                                            val ) );
+                }
+            }
+            eltGhostDone.insert( eltOffProc.id() );
+        }
+    } // if ( imesh->worldComm().localSize() > 1 && u.functionSpace()->dof()->buildDofTableMPIExtended() )
+
 
     imesh->gm()->initCache( imesh.get() );
     imesh->gm1()->initCache( imesh.get() );

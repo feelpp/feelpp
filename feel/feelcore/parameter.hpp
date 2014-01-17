@@ -174,6 +174,9 @@ BOOST_PARAMETER_NAME( options )
 
     BOOST_PARAMETER_NAME( quadptloc )
 
+    BOOST_PARAMETER_NAME( extended_doftable )
+
+
 
 // orders
     BOOST_PARAMETER_NAME( order_u )
@@ -210,6 +213,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( domainSpace )
     BOOST_PARAMETER_NAME( imageSpace )
     BOOST_PARAMETER_NAME( range )
+    BOOST_PARAMETER_NAME( range_extended )
     BOOST_PARAMETER_NAME( element )
     BOOST_PARAMETER_NAME( parameter )
     BOOST_PARAMETER_NAME( sampling )
@@ -260,6 +264,8 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( home )
     BOOST_PARAMETER_NAME( bugs )
     BOOST_PARAMETER_NAME( version )
+
+    BOOST_PARAMETER_NAME( max_points_used )
 } // Feel
 
 
