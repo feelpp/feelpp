@@ -174,7 +174,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate, T, order_types )
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
     auto c_m = form2(_test=Mh, _trial=Vh);
     BOOST_TEST_MESSAGE( "integrate" );
-    c_m = integrate(_range=elements(mesh),_expr=idt(v)*id(l));
+    c_m = integrate(_range=internalelements(mesh),_expr=idt(v)*id(l));
+    c_m += integrate(_range=boundaryelements(mesh),_expr=idt(v));
     c_m.matrixPtr()->printMatlab( "C_m.m" );
 
 }
