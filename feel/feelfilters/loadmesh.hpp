@@ -60,6 +60,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( filename, *( boost::is_convertible<mpl::_,std::string> ), option(_name="gmsh.filename").template as<std::string>() )
+      ( desc, *, nullptr )  // geo() can't be used here as default !!
       ( h,              *( boost::is_arithmetic<mpl::_> ), option(_name="gmsh.hsize").template as<double>() )
       ( straighten,          (bool), option(_name="gmsh.straighten").template as<bool>() )
       ( refine,          *( boost::is_integral<mpl::_> ), option(_name="gmsh.refine").template as<int>() )
@@ -94,9 +95,10 @@ BOOST_PARAMETER_FUNCTION(
     if ( mesh_name.extension() == ".geo" )
     {
         return createGMSHMesh( _mesh=mesh,
-                               _desc=geo( _filename=mesh_name.string(),
-                                          _h=h,_depends=depends,
-                                          _worldcomm=worldcomm ),
+                               _desc=( (desc==nullptr)? geo( _filename=mesh_name.string(),
+                                                             _h=h,
+                                                             _depends=depends,
+                                                             _worldcomm=worldcomm ) : desc ),
                                _h=h,
                                _straighten=straighten,
                                _refine=refine,
