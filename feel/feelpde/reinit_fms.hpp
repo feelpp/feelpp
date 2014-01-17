@@ -54,7 +54,7 @@ public:
      */
     //@{
 
-    enum status_type { FAR=0, CLOSE=1, DONE=2 };
+    enum status_type {FAR=0, CLOSE=1, DONE=2};
 
     typedef ReinitializerFMS<FunctionSpaceType, periodicity_type> self_type;
     typedef boost::shared_ptr< self_type > self_ptrtype;
@@ -134,6 +134,7 @@ private:
     std::vector<point_type> M_coords;
     vf::node_type M_translation;
     const size_type firstDof;
+    const uint16_type ndofOnCluster;
 
 };
 

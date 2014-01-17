@@ -595,7 +595,12 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
-
+    betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu , double time=0 )
+    {
+        auto solution = M_model->functionSpace()->element();
+        solution = *T;
+        return computeBetaQm( solution , mu , time );
+    }
     betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 )
     {
         return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time );
