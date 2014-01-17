@@ -732,14 +732,31 @@ public:
     boost::tuple<double,matrix_info_tuple> lb( size_type N, parameter_type const& mu, std::vector< vectorN_type >& uN, std::vector< vectorN_type >& uNdu ,
                                                std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix=false, int K=0 ) const;
 
+
     /*
-     * update the jacobian
+     * update the jacobian ( offline step )
+     * \param X : solution
+     * \param J : jacobian
+     * \param mu : current parameter
+     */
+    void offlineUpdateJacobian( const vector_ptrtype & X, sparse_matrix_ptrtype & J , const parameter_type & mu) ;
+
+    /*
+     * update the jacobian (online step )
      * \param map_X : solution
      * \param map_J : jacobian
      * \param mu : current parameter
      * \param N : dimension of the reduced basis
      */
     void updateJacobian( const map_dense_vector_type& map_X, map_dense_matrix_type& map_J , const parameter_type & mu , int N) const ;
+
+    /*
+     * update the residual ( offline step )
+     * \param X : solution
+     * \param R : residual
+     * \param mu : current parameter
+     */
+    void offlineUpdateResidual( const vector_ptrtype & X,  vector_ptrtype& R , const parameter_type & mu) ;
 
     /*
      * update the residual
@@ -759,6 +776,12 @@ public:
     void computeProjectionInitialGuess( const parameter_type & mu, int N , vectorN_type& initial_guess ) const ;
 
     /*
+     * newton for primal problem ( offline step )
+     * \param mu : current parameter
+     */
+    element_type offlineNewtonPrimal( parameter_type const& mu ) ;
+
+    /*
      * newton algorithm to solve non linear problem
      * \param N : dimension of the reduced basis
      * \param mu : current parameter
@@ -770,15 +793,12 @@ public:
     /*
      * fixed point for primal problem ( offline step )
      * \param mu : current parameter
-     * \param A : matrix of the bilinear form (fill the matrix)
      */
     element_type offlineFixedPointPrimal( parameter_type const& mu );//, sparse_matrix_ptrtype & A ) ;
 
     /*
      * \param mu : current parameter
      * \param dual_initial_field : to be filled
-     * \param A : matrix of the primal problem, needed only to check dual properties
-     * \param u : solution of the primal problem, needed only to check dual properties
      */
     element_type offlineFixedPointDual( parameter_type const& mu , element_ptrtype & dual_initial_field );//, const sparse_matrix_ptrtype & A, const element_type & u ) ;
 
@@ -1685,6 +1705,68 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
     return udu;
 }//offline fixed point
 
+template<typename TruthModelType>
+typename CRB<TruthModelType>::element_type
+CRB<TruthModelType>::offlineNewtonPrimal( parameter_type const& mu )
+{
+    sparse_matrix_ptrtype J = M_model->newMatrix();
+    vector_ptrtype R = M_model->newVector();
+
+    auto initialguess = M_model->functionSpace()->elementPtr();
+    initialguess = M_model->assembleInitialGuess( mu ) ;
+    M_backend_primal->nlSolver()->jacobian = boost::bind( &self_type::offlineUpdateJacobian,
+                                                          boost::ref( *this ), _1, _2, mu );
+    M_backend_primal->nlSolver()->residual = boost::bind( &self_type::offlineUpdateResidual,
+                                                          boost::ref( *this ), _1, _2, mu );
+
+    auto solution = M_model->functionSpace()->element();
+    solution = *initialguess;
+    M_backend_primal->nlSolve(_jacobian=J, _solution=solution, _residual=R);
+
+    return solution;
+
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::offlineUpdateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype & J , const parameter_type & mu)
+{
+    J->zero();
+    auto U = M_model->functionSpace()->element();
+    U=*X;
+    std::vector< std::vector<sparse_matrix_ptrtype> > Jqm;
+    boost::tie( boost::tuples::ignore , Jqm, boost::tuples::ignore ) = M_model->computeAffineDecomposition();
+    beta_vector_type betaJqm;
+    boost::tie( boost::tuples::ignore, betaJqm, boost::tuples::ignore ) = M_model->computeBetaQm( X , mu , 0 );
+    for ( size_type q = 0; q < M_model->Qa(); ++q )
+    {
+        for(int m=0; m<M_model->mMaxA(q); m++)
+        {
+            J->addMatrix( betaJqm[q][m], Jqm[q][m] );
+        }
+    }
+    //std::cout<<"norme de J : "<<J->l1Norm()<<std::endl;
+}
+
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::offlineUpdateResidual( const vector_ptrtype& X, vector_ptrtype& R , const parameter_type & mu )
+{
+    R->zero();
+    auto U = M_model->functionSpace()->element();
+    U=*X;
+    std::vector< std::vector< std::vector<vector_ptrtype> > > Rqm;
+    boost::tie( boost::tuples::ignore , boost::tuples::ignore, Rqm ) = M_model->computeAffineDecomposition();
+    std::vector< beta_vector_type > betaRqm;
+    boost::tie( boost::tuples::ignore, boost::tuples::ignore, betaRqm ) = M_model->computeBetaQm( X , mu , 0 );
+    for ( size_type q = 0; q < M_model->Ql( 0 ); ++q )
+    {
+        for(int m=0; m<M_model->mMaxF(0,q); m++)
+            R->add( betaRqm[0][q][m] , *Rqm[0][q][m] );
+    }
+    //std::cout<<"norme de R : "<<R->l2Norm()<<std::endl;
+}
+
 
 
 template<typename TruthModelType>
@@ -2290,13 +2372,14 @@ CRB<TruthModelType>::offline()
             }
             else
             {
-                u.zero();
-
                 timer2.restart();
-                LOG(INFO) << "[CRB::offline] solving primal" << "\n";
-                u = M_model->solve( mu );
-                if( proc_number == this->worldComm().masterRank() )
-                    LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s";
+                //auto o = M_model->solve( mu );
+                u = offlineNewtonPrimal( mu );
+                //double normeo = o.l2Norm();
+                //double normeu = u.l2Norm();
+                //std::cout<<"norm o : "<<normeo<<std::endl;
+                //std::cout<<"norm u : "<<normeu<<std::endl;
+                LOG(INFO) << "  -- primal problem solved in " << timer2.elapsed() << "s";
                 timer2.restart();
             }
         }//steady
@@ -3834,6 +3917,7 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
 
     initial_guess = Mass.lu().solve( F );
 }
+
 
 template<typename TruthModelType>
 void
