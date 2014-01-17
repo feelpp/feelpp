@@ -54,7 +54,8 @@ int main(int argc, char**argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    auto mesh = unitSquare();
+    //auto mesh = unitSquare();
+    auto mesh = loadMesh( _mesh=new Mesh<Hypercube<2>> );
     //auto mesh = unitCube();
 
     //auto Vh = Odh<1>( mesh );
