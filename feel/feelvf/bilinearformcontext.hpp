@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2010-04-27
  */
-#ifndef __BilinearFormContext_H
-#define __BilinearFormContext_H 1
+#ifndef FEELPP_BILINEARFORMCONTEXT_HPP
+#define FEELPP_BILINEARFORMCONTEXT_HPP 1
 
 namespace Feel
 {
@@ -39,8 +39,8 @@ namespace detail
 // Context
 //
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::Context( form_type& __form,
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::Context( form_type& __form,
         map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const & gmcExpr,
@@ -53,20 +53,20 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_trial_dof( __form.trialSpace()->dof().get() ),
 
 
-    M_test_pc( new test_precompute_type( M_form.testSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( im ) ),
-    M_trial_pc( new trial_precompute_type( M_form.trialSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
+    M_trial_pc( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
     M_trial_pc_face( precomputeTrialBasisAtPoints( im ) ),
 
     M_test_gmc( _gmcTest ),
     M_trial_gmc( _gmcTrial ),
 
     M_test_fec( fusion::transform( _gmcTest,
-                                    vf::detail::FEContextInit<0,form_context_type>( __form.testSpace()->fe(),
+                                    vf::detail::FEContextInit<0,form_context_type>( __form.testFiniteElement<UseMortar>(),
                                             *this ) ) ),
     M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) ) ),
     M_trial_fec( getMap( M_test_fec, fusion::transform( _gmcTrial,
-                          vf::detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(),
+                          vf::detail::FEContextInit<1,form_context_type>( __form.trialFiniteElement<UseMortar>(),
                                   *this ) ) ) ),
     M_trial_fec0( getMapL( M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_trial_fec ) ) ) ),
 
@@ -80,13 +80,19 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
     M_integrator( im )
 {
+    if ( UseMortar )
+    {
+
+        LOG(INFO) << "mortar phi: ndof" <<M_test_pc->fePtr()->nbDof();
+        M_test_pc->print();
+    }
     M_eval_expr00->init( im );
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 template<typename IM2>
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::Context( form_type& __form,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::Context( form_type& __form,
         map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const & _gmcExpr,
@@ -99,17 +105,17 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_test_dof( __form.testSpace()->dof().get() ),
     M_trial_dof( __form.trialSpace()->dof().get() ),
 
-    M_test_pc( new test_precompute_type( M_form.testSpace()->fe(), im2.points() ) ),
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), im2.points() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
-    M_trial_pc( new trial_precompute_type( M_form.trialSpace()->fe(), im2.points() ) ),
+    M_trial_pc( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), im2.points() ) ),
     M_trial_pc_face( precomputeTrialBasisAtPoints( im2 ) ),
 
     M_test_gmc( _gmcTest ),
     M_trial_gmc( _gmcTrial ),
 
-    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testSpace()->fe(), *this ) ) ),
+    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testFiniteElement<UseMortar>(), *this ) ) ),
     M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) ) ),
-    M_trial_fec( getMap( M_test_fec, fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(), *this ) ) ) ),
+    M_trial_fec( getMap( M_test_fec, fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialFiniteElement<UseMortar>(), *this ) ) ) ),
     M_trial_fec0( getMapL( M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_trial_fec ) ) ) ),
     M_rep(),
     M_rep_2(),
@@ -124,9 +130,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 template<typename IM2,typename IMTest,typename IMTrial>
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::Context( form_type& __form,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::Context( form_type& __form,
         map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const & _gmcExpr,
@@ -138,17 +144,17 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_test_dof( __form.testSpace()->dof().get() ),
     M_trial_dof( __form.trialSpace()->dof().get() ),
 
-    M_test_pc( new test_precompute_type( M_form.testSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( imTest ) ),
-    M_trial_pc( new trial_precompute_type( M_form.trialSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
+    M_trial_pc( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
     M_trial_pc_face( precomputeTrialBasisAtPoints( imTrial ) ),
 
     M_test_gmc( _gmcTest ),
     M_trial_gmc( _gmcTrial ),
 
-    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testSpace()->fe(), *this ) ) ),
+    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testFiniteElement<UseMortar>(), *this ) ) ),
     M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) ) ),
-    M_trial_fec( getMap( M_test_fec, fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(), *this ) ) ) ),
+    M_trial_fec( getMap( M_test_fec, fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialFiniteElement<UseMortar>(), *this ) ) ) ),
     M_trial_fec0( getMapL( M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_trial_fec ) ) ) ),
     M_rep(),
     M_rep_2(),
@@ -163,9 +169,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 template</*typename IM2, */typename IMTest,typename IMTrial>
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::Context( form_type& __form,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::Context( form_type& __form,
         map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const & _gmcExpr,
@@ -177,22 +183,22 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_test_dof( __form.testSpace()->dof().get() ),
     M_trial_dof( __form.trialSpace()->dof().get() ),
 
-    M_test_pc( new test_precompute_type( M_form.testSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( imTest ) ),
-    M_trial_pc( new trial_precompute_type( M_form.trialSpace()->fe(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
+    M_trial_pc( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTrial )->pc()->nodes() ) ),
     M_trial_pc_face( precomputeTrialBasisAtPoints( imTrial ) ),
 
-    /*M_test_pc( new test_precompute_type( M_form.testSpace()->fe(), im2.points() ) ),
+    /*M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), im2.points() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
-    M_trial_pc( new trial_precompute_type( M_form.trialSpace()->fe(), im2.points() ) ),
+    M_trial_pc( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), im2.points() ) ),
     M_trial_pc_face( precomputeTrialBasisAtPoints( im2 ) ),*/
 
     M_test_gmc( _gmcTest ),
     M_trial_gmc( _gmcTrial ),
 
-    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testSpace()->fe(), *this ) ) ),
+    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testFiniteElement<UseMortar>(), *this ) ) ),
     M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) ) ),
-    M_trial_fec( getMap( M_test_fec, fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(), *this ) ) ) ),
+    M_trial_fec( getMap( M_test_fec, fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialFiniteElement<UseMortar>(), *this ) ) ) ),
     M_trial_fec0( getMapL( M_test_fec0, fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_trial_fec ) ) ) ),
     M_rep(),
     M_rep_2(),
@@ -207,9 +213,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 template<typename IM2>
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::Context( form_type& __form,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::Context( form_type& __form,
         map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const & _gmcExpr,
@@ -223,18 +229,18 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_test_dof( __form.testSpace()->dof().get() ),
     M_trial_dof( __form.trialSpace()->dof().get() ),
 
-    M_test_pc( new test_precompute_type( M_form.testSpace()->fe(), im2.points() ) ),
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), im2.points() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
-    M_trial_pc( new trial_precompute_type( M_form.trialSpace()->fe(), im2.points() ) ),
+    M_trial_pc( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), im2.points() ) ),
     M_trial_pc_face( precomputeTrialBasisAtPoints( im2 ) ),
 
     M_test_gmc( _gmcTest ),
     M_trial_gmc( _gmcTrial ),
 
-    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testSpace()->fe(), *this ) ) ),
+    M_test_fec( fusion::transform( _gmcTest, vf::detail::FEContextInit<0,form_context_type>( __form.testFiniteElement<UseMortar>(), *this ) ) ),
     M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) ) ),
     M_test_fec1( fusion::make_map<test_gmc1 >( fusion::at_key<test_gmc1 >( M_test_fec ) ) ),
-    M_trial_fec( fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialSpace()->fe(), *this ) ) ),
+    M_trial_fec( fusion::transform( _gmcTrial, vf::detail::FEContextInit<1,form_context_type>( __form.trialFiniteElement<UseMortar>(), *this ) ) ),
     M_trial_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_trial_fec ) ) ),
     M_trial_fec1( fusion::make_map<trial_gmc1 >( fusion::at_key<trial_gmc1 >( M_trial_fec ) ) ),
     M_rep(),
@@ -257,9 +263,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::update( map_test_geometric_mapping_context_type const& _gmcTest,
                                                                                                                       map_trial_geometric_mapping_context_type const& _gmcTrial,
                                                                                                                       map_geometric_mapping_expr_context_type const& _gmcExpr )
 {
@@ -268,9 +274,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmcExpr ) );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::update( map_test_geometric_mapping_context_type const& _gmcTest,
                                                                                                                       map_trial_geometric_mapping_context_type const& _gmcTrial,
                                                                                                                       map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                                       mpl::bool_<false> )
@@ -282,9 +288,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_eval_expr00->update( _gmcExpr, M_test_fec0, M_trial_fec0 );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::update( map_test_geometric_mapping_context_type const& _gmcTest,
                                                                                                                       map_trial_geometric_mapping_context_type const& _gmcTrial,
                                                                                                                       map_geometric_mapping_expr_context_type const& _gmcExpr,
                                                                                                                       mpl::bool_<true> )
@@ -294,9 +300,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_eval_expr00->update( _gmcExpr, M_test_fec0, M_test_fec0 );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::update( map_test_geometric_mapping_context_type const& _gmcTest,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::update( map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const& _gmcExpr,
         mpl::int_<2> )
@@ -326,9 +332,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const& _gmcExpr,
         std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad )
@@ -342,9 +348,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     M_integrator.update( *fusion::at_key<gmc<0> >( _gmcExpr ), indexLocalToQuad );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const& _gmcExpr,
         mpl::bool_<false> )
@@ -356,9 +362,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprCon
     M_eval_expr00->update( _gmcExpr, M_test_fec0, M_trial_fec0 );
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::updateInCaseOfInterpolate( map_test_geometric_mapping_context_type const& _gmcTest,
         map_trial_geometric_mapping_context_type const& _gmcTrial,
         map_geometric_mapping_expr_context_type const& _gmcExpr,
         mpl::bool_<true> )
@@ -371,9 +377,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::integrate( mpl::int_<1> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::integrate( mpl::int_<1> )
 {
 
     typedef test_geometric_mapping_context_type gmc_type;
@@ -383,8 +389,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
-#if !defined(NDEBUG)
     test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( M_test_gmc );
+#if !defined(NDEBUG)
     DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
 #endif /* NDEBUG */
 
@@ -433,18 +439,29 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
         else
         {
-            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-                {
-                    M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
-                }
+            LOG(INFO) << "local Assembly for element " << _gmc.id()
+                      << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( _gmc.id() );
+            if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( _gmc.id() ) )
+                for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                    for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                    {
+                        M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
+                    }
+            else
+            {
+                for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                    for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+                    {
+                        M_mortar_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
+                    }
+            }
         }
     }
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::integrate( mpl::int_<2> )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::integrate( mpl::int_<2> )
 {
     //geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( M_gmc );
     typedef test_geometric_mapping_context_type gmc_type;
@@ -480,9 +497,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         }
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::integrateInCaseOfInterpolate( mpl::int_<1>,
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::integrateInCaseOfInterpolate( mpl::int_<1>,
         std::vector<boost::tuple<size_type,size_type> > const& indexLocalToQuad,
         bool isFirstExperience )
 {
@@ -494,29 +511,47 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                           INVALID_TENSOR_SHAPE_SHOULD_BE_RANK_0,
                           ( mpl::int_<shape::M>, mpl::int_<shape::N> ) );
 
-#if !defined(NDEBUG)
+
     test_geometric_mapping_context_type const& _gmc = *fusion::at_key<gmc<0> >( M_test_gmc );
     DVLOG(2) << "[BilinearForm::integrate] local assembly in element " << _gmc.id() << "\n";
-#endif /* NDEBUG */
 
-    if ( isFirstExperience )
-        for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-            {
-                M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
-            }
+    if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( _gmc.id() ) )
+    {
+        if ( isFirstExperience )
+            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                {
+                    M_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                }
 
+        else
+            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
+                {
+                    M_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                }
+    }
     else
-        for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-            for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
-            {
-                M_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
-            }
+    {
+        if ( isFirstExperience )
+            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+                {
+                    M_mortar_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                }
+
+        else
+            for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
+                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+                {
+                    M_mortar_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
+                }
+    }
 }
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::assemble( size_type elt_0 )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::assemble( size_type elt_0 )
 {
     size_type row_start = M_lb.front().globalRowStart();
     size_type col_start = M_lb.front().globalColumnStart();
@@ -561,27 +596,49 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         DCHECK( trial_eid != invalid_size_type_value )
             << "this case should have been taken care of earlier before the assembly process\n";
 
-        M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
-        M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
-
-
-        if ( test_dof_type::is_modal || trial_dof_type::is_modal )
+        LOG(INFO) << "local Assembly for element " << elt_0
+                  << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( elt_0 );
+        if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( elt_0 ) )
         {
-            M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
-            M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
-            M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
-        }
+            M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+            M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
 
-        M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
-                           M_local_cols.data(), M_local_cols.size(),
-                           M_rep.data() );
+
+            if ( test_dof_type::is_modal || trial_dof_type::is_modal )
+            {
+                M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
+                M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
+                M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
+            }
+
+            M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
+                              M_local_cols.data(), M_local_cols.size(),
+                              M_rep.data() );
+        }
+        else
+        {
+            M_mortar_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;
+            M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid ).array() + col_start;
+
+
+            if ( test_dof_type::is_modal || trial_dof_type::is_modal )
+            {
+                M_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 );
+                M_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid );
+                M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
+            }
+
+            M_form.addMatrix( M_mortar_local_rows.data(), M_mortar_local_rows.size(),
+                              M_local_cols.data(), M_local_cols.size(),
+                              M_mortar_rep.data() );
+        }
     }
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::assemble( size_type elt_0, size_type elt_1  )
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::assemble( size_type elt_0, size_type elt_1  )
 {
     size_type row_start = M_lb.front().globalRowStart();
     size_type col_start = M_lb.front().globalColumnStart();
@@ -609,9 +666,9 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 }
 
 template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,bool UseMortar>
 void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext>::assembleInCaseOfInterpolate()
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar>::assembleInCaseOfInterpolate()
 {
     size_type row_start = M_lb.front().globalRowStart();
     size_type col_start = M_lb.front().globalColumnStart();
@@ -619,26 +676,52 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     auto eltTest = fusion::at_key<gmc<0> >( M_test_gmc )->id();
     auto eltTrial = fusion::at_key<gmc<0> >( M_trial_gmc )->id();
 
-    M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTest ).array() + row_start;
-    M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrial ).array() + col_start;
+    if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( eltTest ) )
+    {
+        M_local_rows.array() = M_test_dof->localToGlobalIndices( eltTest ).array() + row_start;
+        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrial ).array() + col_start;
 
 #if 0
-    bool do_less = ( ( M_form.isPatternDefault() &&
-                       ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
-                     !M_form.isPatternCoupled() );
+        bool do_less = ( ( M_form.isPatternDefault() &&
+                           ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
+                         !M_form.isPatternCoupled() );
 #endif
 
-    if ( test_dof_type::is_modal || trial_dof_type::is_modal )
-    {
-        M_local_rowsigns = M_test_dof->localToGlobalSigns( eltTest );
-        M_local_colsigns = M_trial_dof->localToGlobalSigns( eltTrial );
-        M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
+        if ( test_dof_type::is_modal || trial_dof_type::is_modal )
+        {
+            M_local_rowsigns = M_test_dof->localToGlobalSigns( eltTest );
+            M_local_colsigns = M_trial_dof->localToGlobalSigns( eltTrial );
+            M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
+        }
+
+        M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
+                          M_local_cols.data(), M_local_cols.size(),
+                          M_rep.data() );
+
     }
+    else
+    {
+        M_mortar_local_rows.array() = M_test_dof->localToGlobalIndices( eltTest ).array() + row_start;
+        M_local_cols.array() = M_trial_dof->localToGlobalIndices( eltTrial ).array() + col_start;
 
-    M_form.addMatrix( M_local_rows.data(), M_local_rows.size(),
-                       M_local_cols.data(), M_local_cols.size(),
-                       M_rep.data() );
+#if 0
+        bool do_less = ( ( M_form.isPatternDefault() &&
+                           ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
+                         !M_form.isPatternCoupled() );
+#endif
 
+        if ( test_dof_type::is_modal || trial_dof_type::is_modal )
+        {
+            M_local_rowsigns = M_test_dof->localToGlobalSigns( eltTest );
+            M_local_colsigns = M_trial_dof->localToGlobalSigns( eltTrial );
+            M_rep.array() *= ( M_local_rowsigns*M_local_colsigns.transpose() ).array().template cast<value_type>();
+        }
+
+        M_form.addMatrix( M_mortar_local_rows.data(), M_mortar_local_rows.size(),
+                          M_local_cols.data(), M_local_cols.size(),
+                          M_mortar_rep.data() );
+
+    }
 }
 
 

@@ -85,6 +85,8 @@ public:
 
     typedef SpaceType space_type;
     typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    typedef space_type test_space_type;
+    typedef space_type trial_space_type;
 
     typedef typename space_type::value_type value_type;
     typedef typename space_type::real_type real_type;
