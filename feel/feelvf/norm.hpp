@@ -49,36 +49,6 @@ outer_prod( ExprL l, ExprR r ) -> decltype( l * trans( r ) )
 }
 
 /**
- * inner product of the left and right expressions
- *
- * \note it handles scalar, vectorial and matricial  expressions
- *
- * \return the inner product \f$\operatorname{tr}(l^T * r)\f$
- */
-template<typename ExprL, typename ExprR>
-inline
-auto
-inner_prod( ExprL l, ExprR r ) -> decltype( trace( trans( l ) * r ) )
-{
-    return trace( trans( l ) * r );
-}
-#if 0
-/**
- * dot product of the left and right expressions
- *
- * \note it handles vectorial expressions
- *
- * \return the dot product \f$(l \cdot r)\f$
- */
-template<typename ExprL, typename ExprR>
-inline
-auto
-dot( ExprL l, ExprR r ) -> decltype( trans( l ) * r )
-{
-    return trans( l ) * r;
-}
-#endif
-/**
  * double dot product of the left and right expressions
  *
  * \note it handles matricial(rank 2 tensors) expressions
@@ -93,20 +63,6 @@ ddot( ExprL l, ExprR r ) -> decltype( trace( trans( l ) * r ) )
     return trace( trans( l ) * r );
 }
 
-/**
- * Norm-2 of the expression \p v
- *
- * \note it handles scalar, vectorial or matricial cases
- *
- * \return the norm 2 of the expression \f$\sqrt{\operatorname{tr}(v^T * v)}\f$
- */
-template<typename ExprT>
-inline
-auto
-norm2( ExprT v ) -> decltype( sqrt(  inner_prod( v, v ) ) )
-{
-    return sqrt(  inner_prod( v, v ) );
-}
 
 } // vf
 

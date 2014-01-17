@@ -60,8 +60,10 @@
 #include <feel/feelvf/trace.hpp>
 #include <feel/feelvf/det.hpp>
 #include <feel/feelvf/symm.hpp>
-#include <feel/feelvf/products.hpp>
+#include <feel/feelvf/inner.hpp>
+#include <feel/feelvf/cross.hpp>
 #include <feel/feelvf/norm.hpp>
+#include <feel/feelvf/norm2.hpp>
 #include <feel/feelvf/ones.hpp>
 #include <feel/feelvf/inv.hpp>
 #include <feel/feelvf/twovalued.hpp>
