@@ -36,6 +36,7 @@
 
 #include <set>
 
+#include <boost/smart_ptr/make_shared.hpp>
 #include <boost/parameter.hpp>
 #include <boost/fusion/support/pair.hpp>
 #include <boost/fusion/container.hpp>
@@ -271,21 +272,46 @@ public:
             mpl::identity<ublas::row_major>,
             mpl::identity<ublas::column_major> >::type::type layout_type;
 
-    template<int _N = 0>
-    struct test_precompute
+    template<typename SpaceType, bool UseMortar = false>
+    struct finite_element
     {
-        //typedef typename space_1_type::basis_0_type::template precompute<_N>::type type;
-        typedef typename space_1_type::basis_0_type::PreCompute type;
-        typedef boost::shared_ptr<type> ptrtype;
-    };
-    template<int _N = 0>
-    struct trial_precompute
-    {
-        //typedef typename space_2_type::basis_0_type::template precompute<_N>::type type;
-        typedef typename space_2_type::basis_0_type::PreCompute type;
+        typedef  typename mpl::if_<mpl::bool_<UseMortar&&SpaceType::is_mortar>,
+                                   mpl::identity<typename SpaceType::mortar_fe_type>,
+                                   mpl::identity<typename SpaceType::fe_type> >::type::type type;
         typedef boost::shared_ptr<type> ptrtype;
     };
 
+    template<int _N = 0, bool UseMortar = false>
+    struct test_precompute
+    {
+        //typedef typename space_1_type::basis_0_type::template precompute<_N>::type type;
+        typedef typename finite_element<space_1_type,UseMortar>::type::PreCompute type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
+    template<int _N = 0, bool UseMortar = false>
+    struct trial_precompute
+    {
+        //typedef typename space_2_type::basis_0_type::template precompute<_N>::type type;
+        //typedef typename space_2_type::basis_0_type::PreCompute type;
+        typedef typename finite_element<space_2_type,UseMortar>::type::PreCompute type;
+        typedef boost::shared_ptr<type> ptrtype;
+    };
+
+
+    // return test finite element
+    template<bool UseMortar=false>
+    typename finite_element<FE1,UseMortar>::ptrtype
+    testFiniteElement() const
+        {
+            return boost::make_shared<typename finite_element<FE1,UseMortar>::type>();
+        }
+    // return trial finite element
+    template<bool UseMortar=false>
+    typename finite_element<FE2,UseMortar>::ptrtype
+    trialFiniteElement() const
+        {
+            return boost::make_shared<typename finite_element<FE2,UseMortar>::type>();
+        }
     //@}
 
 
@@ -310,7 +336,8 @@ public:
              typename ExprT,
              typename IM,
              typename GeomapExprContext = GeomapTestContext,
-             typename GeomapTrialContext = GeomapTestContext
+             typename GeomapTrialContext = GeomapTestContext,
+             bool UseMortar = false
              >
     class Context //: public FormContextBase<GeomapTestContext,IM,GeomapExprContext>
     {
@@ -320,7 +347,7 @@ public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 
-        typedef Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext> form_context_type;
+        typedef Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortar> form_context_type;
         typedef BilinearForm<FE1, FE2, ElemContType> form_type;
         typedef typename FE1::dof_type dof_1_type;
         typedef typename FE2::dof_type dof_2_type;
@@ -365,12 +392,14 @@ public:
 
         typedef ExprT expression_type;
 
-        typedef typename test_precompute<>::type test_precompute_type;
-        typedef typename test_precompute<>::ptrtype test_precompute_ptrtype;
-        typedef typename trial_precompute<>::type trial_precompute_type;
-        typedef typename trial_precompute<>::ptrtype trial_precompute_ptrtype;
+        typedef typename test_precompute<0,UseMortar>::type test_precompute_type;
+        typedef typename test_precompute<0,UseMortar>::ptrtype test_precompute_ptrtype;
+        typedef typename trial_precompute<0,UseMortar>::type trial_precompute_type;
+        typedef typename trial_precompute<0,UseMortar>::ptrtype trial_precompute_ptrtype;
 
-        typedef typename FE2::fe_type trial_fe_type;
+        typedef typename mpl::if_<mpl::bool_<UseMortar&&FE2::is_mortar>,
+                                  mpl::identity<typename FE2::mortar_fe_type>,
+                                  mpl::identity<typename FE2::fe_type> >::type::type trial_fe_type;
         typedef boost::shared_ptr<trial_fe_type> trial_fe_ptrtype;
         typedef typename trial_fe_type::template Context< trial_geometric_mapping_context_type::context,
                 trial_fe_type,
@@ -385,7 +414,9 @@ public:
         typedef fusion::map<fusion::pair<gmc<0>, trial_fecontext_ptrtype> > map_left_trial_fecontext_type;
         typedef fusion::map<fusion::pair<trial_gmc1, trial_fecontext_ptrtype> > map_right_trial_fecontext_type;
 
-        typedef typename FE1::fe_type test_fe_type;
+        typedef typename mpl::if_<mpl::bool_<UseMortar&&FE1::is_mortar>,
+                                  mpl::identity<typename FE1::mortar_fe_type>,
+                                  mpl::identity<typename FE1::fe_type> >::type::type test_fe_type;
         typedef boost::shared_ptr<test_fe_type> test_fe_ptrtype;
         typedef typename test_fe_type::template Context< test_geometric_mapping_context_type::context,
                 test_fe_type,
@@ -431,21 +462,25 @@ public:
         typedef typename FE2::dof_type trial_dof_type;
         static const int nDofPerElementTest = FE1::dof_type::nDofPerElement;
         static const int nDofPerElementTrial = FE2::dof_type::nDofPerElement;
-        static const int nDofPerComponentTest = FE1::dof_type::fe_type::nLocalDof;
-        static const int nDofPerComponentTrial = FE2::dof_type::fe_type::nLocalDof;
+        static const int nDofPerComponentTest = test_fe_type::nLocalDof;
+        static const int nDofPerComponentTrial = trial_fe_type::nLocalDof;
         static const int local_mat_traits = mpl::if_<mpl::equal_to<mpl::int_<nDofPerElementTrial>,mpl::int_<1> >,
                          mpl::int_<Eigen::ColMajor>,
                          mpl::int_<Eigen::RowMajor> >::type::value;
         typedef Eigen::Matrix<value_type, nDofPerElementTest, nDofPerElementTrial,local_mat_traits> local_matrix_type;
+        typedef Eigen::Matrix<value_type, nDofPerElementTest-1, nDofPerElementTrial,local_mat_traits> mortar_local_matrix_type;
         typedef Eigen::Matrix<value_type, 2*nDofPerElementTest, 2*nDofPerElementTrial,Eigen::RowMajor> local2_matrix_type;
         typedef Eigen::Matrix<value_type, nDofPerComponentTest, nDofPerComponentTrial,local_mat_traits> c_local_matrix_type;
+        typedef Eigen::Matrix<value_type, nDofPerComponentTest-1, nDofPerComponentTrial,local_mat_traits> c_mortar_local_matrix_type;
         typedef Eigen::Matrix<value_type, 2*nDofPerComponentTest, 2*nDofPerComponentTrial,Eigen::RowMajor> c_local2_matrix_type;
         typedef Eigen::Matrix<int, nDofPerElementTest, 1> local_row_type;
+        typedef Eigen::Matrix<int, nDofPerElementTest-1, 1> mortar_local_row_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTest, 1> local2_row_type;
         typedef Eigen::Matrix<int, nDofPerElementTrial, 1> local_col_type;
         typedef Eigen::Matrix<int, 2*nDofPerElementTrial, 1> local2_col_type;
 
         typedef Eigen::Matrix<int, nDofPerComponentTest, 1> c_local_row_type;
+        typedef Eigen::Matrix<int, nDofPerComponentTest-1, 1> c_mortar_local_row_type;
         typedef Eigen::Matrix<int, 2*nDofPerComponentTest, 1> c_local2_row_type;
         typedef Eigen::Matrix<int, nDofPerComponentTrial, 1> c_local_col_type;
         typedef Eigen::Matrix<int, 2*nDofPerComponentTrial, 1> c_local2_col_type;
@@ -681,6 +716,7 @@ public:
 
         void assembleInCaseOfInterpolate();
 
+
         /**
          * precompute the basis function associated with the test and
          * trial space at a set of points
@@ -688,15 +724,15 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( Pts const& pts )
         {
-            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts ) );
-            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), pts ) );
+            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts ) );
+            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), pts ) );
         }
 
         template<typename PtsTest,typename PtsTrial>
         void precomputeBasisAtPoints( PtsTest const& pts1,PtsTrial const& pts2  )
         {
-            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts1 ) );
-            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), pts2 ) );
+            M_test_pc = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts1 ) );
+            M_trial_pc = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), pts2 ) );
         }
 
 
@@ -708,10 +744,10 @@ public:
         template<typename Pts>
         void precomputeBasisAtPoints( uint16_type __f, permutation_1_type const& __p, Pts const& pts )
         {
-            M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts ) );
+            M_test_pc_face[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts ) );
             //FEELPP_ASSERT( M_test_pc_face.find(__f )->second )( __f ).error( "invalid test precompute type" );
 
-            M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), pts ) );
+            M_trial_pc_face[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), pts ) );
             //FEELPP_ASSERT( M_trial_pc_face.find(__f )->second )( __f ).error( "invalid trial precompute type" );
         }
 
@@ -746,8 +782,8 @@ public:
                 for ( permutation_type __p( permutation_type::IDENTITY );
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    //testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), ppts[__f].find( __p )->second ) );
-                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testSpace()->fe(), pts.fpoints( __f,__p.value() ) ) );
+                    //testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), ppts[__f].find( __p )->second ) );
+                    testpc[__f][__p] = test_precompute_ptrtype( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), pts.fpoints( __f,__p.value() ) ) );
                 }
             }
 
@@ -785,8 +821,8 @@ public:
                 for ( permutation_type __p( permutation_type::IDENTITY );
                         __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
                 {
-                    //trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), ppts[__f].find( __p )->second ) );
-                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialSpace()->fe(), pts.fpoints(__f, __p.value() ) ) );
+                    //trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), ppts[__f].find( __p )->second ) );
+                    trialpc[__f][__p] = trial_precompute_ptrtype( new trial_precompute_type( M_form.trialFiniteElement<UseMortar>(), pts.fpoints(__f, __p.value() ) ) );
                 }
             }
 
@@ -882,8 +918,10 @@ public:
 
 
         local_matrix_type M_rep;
+        mortar_local_matrix_type M_mortar_rep;
         local2_matrix_type M_rep_2;
         local_row_type M_local_rows;
+        mortar_local_row_type M_mortar_local_rows;
         local2_row_type M_local_rows_2;
         local_col_type M_local_cols;
         local2_col_type M_local_cols_2;
@@ -893,8 +931,10 @@ public:
         local2_col_type M_local_colsigns_2;
 
         c_local_matrix_type M_c_rep;
+        c_mortar_local_matrix_type M_c_mortar_rep;
         c_local2_matrix_type M_c_rep_2;
         c_local_row_type M_c_local_rows;
+        c_mortar_local_row_type M_c_mortar_local_rows;
         c_local2_row_type M_c_local_rows_2;
         c_local_col_type M_c_local_cols;
         c_local2_col_type M_c_local_cols_2;
