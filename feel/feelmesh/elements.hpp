@@ -393,11 +393,11 @@ public:
 
     bool isBoundaryElement( element_type const & e ) const
     {
-        return M_elements.find( e )->isOnBoundary();
+        return elementIterator(e.id())->isOnBoundary();
     }
     bool isBoundaryElement( size_type const & id ) const
     {
-        return M_elements.find( element_type( id ) )->isOnBoundary();
+        return elementIterator(id)->isOnBoundary();
     }
 
     element_iterator elementIterator( size_type i ) const

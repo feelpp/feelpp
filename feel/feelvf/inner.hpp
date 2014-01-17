@@ -272,7 +272,15 @@ public:
         }
 
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1> ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1>, mpl::false_ ) const
+        {
+            //if ( Type == 1 )
+            {
+                return ( M_l_tensor_expr.evalijq( i,j,q ).adjoint()*M_r_tensor_expr.evalijq( i,j,q ) ).trace();
+            }
+        }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q, mpl::bool_<1>, mpl::true_ ) const
         {
             //if ( Type == 1 )
             {

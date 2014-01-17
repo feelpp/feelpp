@@ -1588,6 +1588,9 @@ public:
     typedef basis_type reference_element_type;
     typedef boost::shared_ptr<reference_element_type> reference_element_ptrtype;
     typedef reference_element_type fe_type;
+    typedef typename mpl::if_<mpl::bool_<is_composite>,
+                              mpl::identity<fe_type>,
+                              mpl::identity<typename basis_0_type::SSpace::type> >::type::type mortar_fe_type;
     typedef reference_element_ptrtype fe_ptrtype;
     typedef typename mpl::if_<mpl::bool_<is_composite>,
             mpl::identity<boost::none_t>,
