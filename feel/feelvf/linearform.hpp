@@ -85,6 +85,8 @@ public:
 
     typedef SpaceType space_type;
     typedef boost::shared_ptr<SpaceType> space_ptrtype;
+    typedef space_type test_space_type;
+    typedef space_type trial_space_type;
 
     typedef typename space_type::value_type value_type;
     typedef typename space_type::real_type real_type;
@@ -656,6 +658,16 @@ public:
     vector_ptrtype vectorPtr()
     {
         return M_F;
+    }
+
+    vector_type& vector()
+    {
+        return *M_F;
+    }
+
+    vector_type const& vector() const
+    {
+        return *M_F;
     }
 
     list_block_type const& blockList() const

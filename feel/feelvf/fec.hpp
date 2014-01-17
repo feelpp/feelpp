@@ -41,8 +41,11 @@ struct FEContextInit
 {
     // 0 : test, 1 : trial
     static const uint16_type type = Type;
+    typedef typename FormContextType::test_fe_type test_fe_type;
+    typedef typename FormContextType::trial_fe_type trial_fe_type;
 
-    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fe_type>, mpl::identity<typename FormContextType::trial_fe_type> >::type::type fe_type;
+
+    typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<test_fe_type>, mpl::identity<trial_fe_type> >::type::type fe_type;
     typedef boost::shared_ptr<fe_type> fe_ptrtype;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<type>, mpl::int_<0> >, mpl::identity<typename FormContextType::test_fecontext_type>,mpl::identity<typename FormContextType::trial_fecontext_type> >::type::type fecontext_type;
     typedef boost::shared_ptr<fecontext_type> fecontext_ptrtype;

@@ -29,6 +29,8 @@
 #ifndef FEELPP_VF_NORML2_HPP
 #define FEELPP_VF_NORML2_HPP 1
 
+#include <feel/feelvf/inner.hpp>
+
 namespace Feel {
 
 BOOST_PARAMETER_FUNCTION(

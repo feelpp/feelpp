@@ -799,7 +799,16 @@ public:
 
 private:
     template<typename FormType>
-    void assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool hasRelation  ) const;
+    void assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool hasRelation  ) const
+        {
+            assemble( __form, mpl::int_<MESH_ELEMENTS>() /**/, mpl::bool_<true>() /**/, hasRelation,
+                      mpl::bool_<FormType::test_space_type::is_mortar||FormType::trial_space_type::is_mortar>()  );
+        }
+    template<typename FormType>
+    void assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool hasRelation, mpl::false_  ) const;
+    template<typename FormType>
+    void assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool hasRelation, mpl::true_  ) const;
+
     template<typename FormType>
     void assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<false> /**/, bool hasRelation ) const;
 
@@ -809,18 +818,55 @@ private:
     void assemble( FormType& __form, mpl::int_<MESH_FACES> /**/, mpl::bool_<false> /**/, bool hasRelation ) const;
 
     template<typename FE1,typename FE2,typename ElemContType>
-    void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
+    void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
+        {
+            LOG(INFO) << "Intergrator::assembleWithRelationDifferentMeshType mortar case:" << FE1::is_mortar||FE2::is_mortar;
+            assembleWithRelationDifferentMeshType( __form, mpl::int_<MESH_ELEMENTS>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
+        }
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::false_ ) const;
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::true_ ) const;
+
     template<typename FE,typename VectorType,typename ElemContType>
     void assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
     template<typename FE1,typename FE2,typename ElemContType>
-    void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
+    void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
+        {
+            LOG(INFO) << "Intergrator::assembleWithRelationDifferentMeshType mortar case:" << FE1::is_mortar||FE2::is_mortar;
+            assembleWithRelationDifferentMeshType( __form, mpl::int_<MESH_FACES>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
+        }
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/, mpl::false_ ) const;
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleWithRelationDifferentMeshType( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/, mpl::true_ ) const;
     template<typename FE,typename VectorType,typename ElemContType>
     void assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
 
     template<typename FE1,typename FE2,typename ElemContType>
-    void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
+    void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
+        {
+            LOG(INFO) << "Intergrator::assembleInCaseOfInterpolate :" << FE1::is_mortar||FE2::is_mortar;
+            assembleInCaseOfInterpolate( __form, mpl::int_<MESH_ELEMENTS>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
+        }
+
+    // bilinear interpolation case (no relation)
     template<typename FE1,typename FE2,typename ElemContType>
-    void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const;
+    void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
+        {
+            LOG(INFO) << "Intergrator::assembleInCaseOfInterpolate mortar case:" << FE1::is_mortar||FE2::is_mortar;
+            assembleInCaseOfInterpolate( __form, mpl::int_<MESH_FACES>(), mpl::bool_<FE1::is_mortar||FE2::is_mortar>() );
+        }
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleInCaseOfInterpolate( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::false_ ) const;
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleInCaseOfInterpolate( vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::true_ ) const;
+
+
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/, mpl::false_ ) const;
+    template<typename FE1,typename FE2,typename ElemContType>
+    void assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_FACES> /**/, mpl::true_ ) const;
     template<typename FE,typename VectorType,typename ElemContType>
     void assembleInCaseOfInterpolate(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const;
     template<typename FE,typename VectorType,typename ElemContType>
@@ -949,7 +995,7 @@ Integrator<Elements, Im, Expr, Im2>::assemble( boost::shared_ptr<Elem1> const& _
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FormType>
 void
-Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/ ) const
+Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> /**/, bool /*hasRelation*/, mpl::false_ ) const
 {
     boost::timer __timer;
     LOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true>\n";
@@ -1226,6 +1272,324 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FormType>
 void
+Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/,
+                                               mpl::bool_<true> /**/, bool /*hasRelation*/, mpl::true_ ) const
+{
+    boost::timer __timer;
+    LOG(INFO) << "[integrator::assemble FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<true> mortar case\n";
+
+#if defined(FEELPP_HAS_TBB)
+
+    //std::cout << "Integrator Uses TBB: " << M_use_tbb << "\n";
+    if ( !M_use_tbb )
+#else
+        if ( 1 )
+#endif
+        {
+            //
+            // some typedefs
+            //
+            typedef typename eval::gm_type gm_type;
+            typedef typename eval::gm1_type gm1_type;
+            typedef typename eval::gmc_type gmc_type;
+            typedef typename eval::gmc1_type gmc1_type;
+            typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
+            typedef boost::shared_ptr<gmc1_type> gmc1_ptrtype;
+
+            typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+            typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_ptrtype> > map_gmc1_type;
+            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type> form_context_type;
+            typedef typename FormType::template Context<map_gmc_type, expression_type, im_type,map_gmc_type,map_gmc_type,true> form_mortar_context_type;
+            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type> form1_context_type;
+            typedef typename FormType::template Context<map_gmc1_type, expression_type, im2_type,map_gmc1_type,map_gmc1_type,true> form1_mortar_context_type;
+            //typedef vf::detail::FormContextBase<map_gmc_type,im_type> fcb_type;
+            typedef form_context_type fcb_type;
+            typedef form_mortar_context_type mortar_fcb_type;
+            typedef form1_context_type fcb1_type;
+            typedef form1_mortar_context_type mortar_fcb1_type;
+            typedef fcb_type* focb_ptrtype;
+            typedef mortar_fcb_type* mortar_focb_ptrtype;
+            typedef fcb1_type* focb1_ptrtype;
+            typedef mortar_fcb1_type* mortar_focb1_ptrtype;
+
+            //
+            // Precompute some data in the reference element for
+            // geometric mapping and reference finite element
+            //
+            typename eval::gmpc_ptrtype __geopc( new typename eval::gmpc_type( __form.gm(), this->im().points() ) );
+            typename eval::gmpc1_ptrtype __geopc1( new typename eval::gmpc1_type( __form.gm1(), this->im2().points() ) );
+
+
+            for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+            {
+                element_iterator it = lit->template get<1>();
+                element_iterator en = lit->template get<2>();
+                DLOG(INFO) << "integrating over " << std::distance( it, en )  << " elements\n";
+
+                // check that we have elements to iterate over
+                if ( it == en )
+                    continue;
+
+                size_type idEltTestInit = it->id();
+                if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                    idEltTestInit = it->mesh()->subMeshToMesh( idEltTestInit );
+                else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                    idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltTestInit );
+
+                auto const& eltTestInit = __form.testSpace()->mesh()->element( idEltTestInit );
+
+
+                gmc_ptrtype __c( new gmc_type( __form.gm(), eltTestInit, __geopc ) );
+                gmc1_ptrtype __c1( new gmc1_type( __form.gm1(), eltTestInit, __geopc1 ) );
+
+
+                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+                map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+
+                focb_ptrtype formc( new form_context_type( __form,
+                                                           mapgmc,
+                                                           mapgmc,
+                                                           mapgmc,
+                                                           this->expression(),
+                                                           this->im() ) );
+                mortar_focb_ptrtype formcm( new form_mortar_context_type( __form,
+                                                                           mapgmc,
+                                                                           mapgmc,
+                                                                           mapgmc,
+                                                                           this->expression(),
+                                                                           this->im() ) );
+                focb1_ptrtype formc1( new form1_context_type( __form,
+                                                              mapgmc1,
+                                                              mapgmc1,
+                                                              mapgmc1,
+                                                              this->expression(),
+                                                              this->im2() ) );
+                mortar_focb1_ptrtype formc1m( new form1_mortar_context_type( __form,
+                                                                             mapgmc1,
+                                                                             mapgmc1,
+                                                                             mapgmc1,
+                                                                             this->expression(),
+                                                                             this->im2() ) );
+
+                //int nelt = std::distance( this->beginElement(), this->endElement() );
+                boost::timer ti0,ti1, ti2, ti3;
+
+                //double t0 = 0, t1 = 0,t2 = 0,t3 = 0;
+                //
+                // start the real intensive job:
+                // -# iterate over all elements to integrate over
+                // -# construct the associated geometric mapping with the reference element
+                // -# loop over quadrature loop and assemble the local matrix associated with the bilinear form
+                // -# assemble the local contribution in the global representation of the bilinear form
+                //
+                for ( ; it != en; ++it )
+                {
+                    size_type idElt = it->id();
+                    if ( it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() ) )
+                        idElt = it->mesh()->subMeshToMesh( idElt );
+                    else if ( __form.testSpace()->mesh()->isSubMeshFrom( it->mesh() ) )
+                        idElt = __form.testSpace()->mesh()->meshToSubMesh( idElt );
+
+                    auto const& eltTest = __form.testSpace()->mesh()->element( idElt );
+
+                    if ( formc->isZero( idElt ) )
+                        continue;
+
+                    switch ( M_gt )
+                    {
+                    default:
+                    case GeomapStrategyType::GEOMAP_HO:
+                    {
+                        //ti0.restart();
+                        __c->update( eltTest );
+                        //t0+=ti0.elapsed();
+#if 0
+                        std::cout << "Element: " << it->id() << "\n"
+                                  << " o - points : " << it->G() << "\n"
+                                  << " o - quadrature :\n"
+                                  << "     ref : " << this->im().points() << "\n"
+                                  << "     real : " << __c->xReal() << "\n";
+#endif
+                        //ti1.restart();
+                        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+
+                        if ( eltTest.isOnBoundary() )
+                        {
+                            formcm->update( mapgmc,mapgmc,mapgmc );
+                            formcm->integrate();
+                            formcm->assemble();
+                        }
+                        else
+                        {
+                            formc->update( mapgmc,mapgmc,mapgmc );
+                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
+                            //t1+=ti1.elapsed();
+
+                            //ti2.restart();
+                            formc->integrate();
+                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
+                            //t2+=ti2.elapsed();
+
+                            //ti3.restart();
+                            formc->assemble();
+                            //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
+                            //t3+=ti3.elapsed();
+                        }
+                    }
+                    break;
+
+                    case GeomapStrategyType::GEOMAP_O1:
+                    {
+                        //ti0.restart();
+                        __c1->update( eltTest );
+                        //t0+=ti0.elapsed();
+#if 0
+                        DLOG(INFO) << "Element: " << it->id() << "\n"
+                                      << " o - points : " << it->G() << "\n"
+                                      << " o - quadrature :\n"
+                                      << "     ref : " << this->im().points() << "\n"
+                                      << "     real : " << __c->xReal() << "\n";
+#endif
+                        //ti1.restart();
+                        map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+
+                        if ( eltTest.isOnBoundary() )
+                        {
+                            formc1m->update( mapgmc,mapgmc,mapgmc );
+                            formc1m->integrate();
+                            formc1m->assemble();
+                        }
+                        else
+                        {
+                            formc1->update( mapgmc1,mapgmc1,mapgmc1 );
+                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
+                            //t1+=ti1.elapsed();
+
+                            //ti2.restart();
+                            formc1->integrate();
+                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
+                            //t2+=ti2.elapsed();
+
+                            //ti3.restart();
+                            formc1->assemble();
+                            //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
+                            //t3+=ti3.elapsed();
+                        }
+                    }
+                    break;
+
+                    case GeomapStrategyType::GEOMAP_OPT:
+                    {
+                        if ( it->isOnBoundary() )
+                        {
+                            //ti0.restart();
+                            __c->update( eltTest );
+                            //t0+=ti0.elapsed();
+#if 0
+                            DLOG(INFO) << "Element: " << it->id() << "\n"
+                                          << " o - points : " << it->G() << "\n"
+                                          << " o - quadrature :\n"
+                                          << "     ref : " << this->im().points() << "\n"
+                                          << "     real : " << __c->xReal() << "\n";
+#endif
+                            //ti1.restart();
+                            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+                            formcm->update( mapgmc,mapgmc,mapgmc );
+
+                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
+                            //t1+=ti1.elapsed();
+
+                            //ti2.restart();
+                            formcm->integrate();
+                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
+                            //t2+=ti2.elapsed();
+
+                            //ti3.restart();
+                            formcm->assemble();
+                            //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
+                            //t3+=ti3.elapsed();
+                        }
+
+                        else
+                        {
+                            //ti0.restart();
+                            __c1->update( eltTest );
+                            //t0+=ti0.elapsed();
+#if 0
+                            DLOG(INFO) << "Element: " << it->id() << "\n"
+                                          << " o - points : " << it->G() << "\n"
+                                          << " o - quadrature :\n"
+                                          << "     ref : " << this->im().points() << "\n"
+                                          << "     real : " << __c->xReal() << "\n";
+#endif
+                            //ti1.restart();
+                            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
+                            formc1->update( mapgmc1,mapgmc1,mapgmc1 );
+
+                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
+                            //t1+=ti1.elapsed();
+
+                            //ti2.restart();
+                            formc1->integrate();
+                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
+                            //t2+=ti2.elapsed();
+
+                            //ti3.restart();
+                            formc1->assemble();
+                            //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
+                            //t3+=ti3.elapsed();
+                        }
+                    }
+                    break;
+                    }
+                } // end loop on elements
+                delete formc;
+                delete formc1;
+                delete formcm;
+                delete formc1m;
+            }// end loop on list of elements
+#if 0
+            DLOG(INFO) << "[elements] Overall geometric mapping update time : " << ( t0+t1+t2 ) << " per element:" << ( t0+t1+t2 )/std::distance( this->beginElement(), this->endElement() ) << "\n";
+            DLOG(INFO) << "[elements] Overall geometric mapping update time : " << t0 << "\n";
+            DLOG(INFO) << "[elements] Overall form update time : " << t1 << "\n";
+            DLOG(INFO) << "[elements] Overall local assembly time : " << t2 << "\n";
+            DLOG(INFO) << "[elements] Overall global assembly time : " << t3 << "\n";
+#endif
+            DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
+
+
+        }
+
+#if defined( FEELPP_HAS_TBB )
+
+        else
+        {
+            element_iterator it = this->beginElement();
+            element_iterator en = this->endElement();
+
+            if ( it == en )
+                return;
+
+            std::vector<boost::reference_wrapper<const typename eval::element_type> > _v;
+
+            for ( auto _it = it; _it != en; ++_it )
+                _v.push_back( boost::cref( *_it ) );
+
+            //tbb::blocked_range<decltype(_v.begin())> r( _v.begin(), _v.end(), M_grainsize );
+            tbb::blocked_range<decltype( _v.begin() )> r( _v.begin(), _v.end(), std::distance( it, en ) );
+            Context<FormType,expression_type, im_type, typename eval::the_element_type> thecontext ( __form,
+                                                                                                     this->expression(),
+                                                                                                     this->im(),
+                                                                                                     *it );
+            tbb::parallel_for( r,  thecontext );
+        }
+
+#endif // FEELPP_HAS_TBB
+}
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename FormType>
+void
 Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_ELEMENTS> /**/, mpl::bool_<false> /**/, bool hasRelation ) const
 {
     if ( hasRelation )
@@ -1385,7 +1749,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
-                                                                           mpl::int_<MESH_ELEMENTS> /**/ ) const
+                                                                           mpl::int_<MESH_ELEMENTS> /**/, mpl::false_ ) const
 {
     LOG(INFO) << "[integrator::assembleWithRelationDifferentMeshType] vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS>\n";
 
@@ -1614,6 +1978,267 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename FE1,typename FE2,typename ElemContType>
+void
+Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+                                                                           mpl::int_<MESH_ELEMENTS> /**/, mpl::true_ ) const
+{
+    LOG(INFO) << "[integrator::assembleWithRelationDifferentMeshType(ELEMENTS)] mortar case\n";
+
+    // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename eval::gm1_type gm1_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
+    typedef typename gm1_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc1_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef boost::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm1_expr_type::precompute_type pc1_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef typename gm1_expr_type::precompute_ptrtype pc1_expr_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_expr_ptrtype> > map_gmc1_expr_type;
+
+    // typedef on form (trial and test):
+    typedef vf::detail::BilinearForm<FE1,FE2,ElemContType> FormType;
+    // test
+    typedef typename FormType::gm_1_type gm_formTest_type;
+    typedef typename FormType::gm1_1_type gm1_formTest_type;
+    typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
+    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm1_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc1_formTest_type;
+    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef boost::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
+    typedef typename gm_formTest_type::precompute_type pc_formTest_type;
+    typedef typename gm1_formTest_type::precompute_type pc1_formTest_type;
+    typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
+    typedef typename gm1_formTest_type::precompute_ptrtype pc1_formTest_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_formTest_ptrtype> > map_gmc1_formTest_type;
+
+    // trial
+    typedef typename FormType::gm_2_type gm_formTrial_type;
+    typedef typename FormType::gm1_2_type gm1_formTrial_type;
+    typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
+    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
+    typedef typename gm1_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc1_formTrial_type;
+    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef boost::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
+    typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
+    typedef typename gm1_formTrial_type::precompute_type pc1_formTrial_type;
+    typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
+    typedef typename gm1_formTrial_type::precompute_ptrtype pc1_formTrial_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_formTrial_ptrtype> > map_gmc1_formTrial_type;
+
+    //static const bool gmTestIsGmExpr = boost::is_same<gm_expr_type,gm_formTest_type>::type::value;
+    //static const bool gmTrialIsGmExpr = boost::is_same<gm_expr_type,gm_formTrial_type>::type::value;
+    static const uint16_type nDimTest = gm_formTest_type::nDim;
+    static const uint16_type nDimTrial = gm_formTrial_type::nDim;
+    static const uint16_type nDimRange = gm_expr_type::nDim;
+    static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
+    static const uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im1_range_type;
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_formtest_type;
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im1_formtest_type;
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_formtrial_type;
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im1_formtrial_type;
+
+    im_range_type imRange;
+    im1_range_type im1Range;
+    im_formtest_type imTest;
+    im_formtrial_type imTrial;
+
+
+    // typedef on formcontext
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, im1_range_type, map_gmc1_expr_type, map_gmc1_formTrial_type> form1_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, im1_range_type, map_gmc1_expr_type, map_gmc1_formTrial_type,true> form1_mortar_context_type;
+    typedef form_context_type fcb_type;
+    typedef form_mortar_context_type mortar_fcb_type;
+    typedef form1_context_type fcb1_type;
+    typedef form1_mortar_context_type mortar_fcb1_type;
+    typedef fcb_type* focb_ptrtype;
+    typedef mortar_fcb_type* mortar_focb_ptrtype;
+    typedef fcb1_type* focb1_ptrtype;
+    typedef mortar_fcb1_type* mortar_focb1_ptrtype;
+
+    //-----------------------------------------------//
+
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        {
+            auto elt_it = lit->template get<1>();
+            auto const elt_en = lit->template get<2>();
+            DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
+
+            // check that we have elements to iterate over
+            if ( elt_it == elt_en )
+                continue;
+
+            const bool rangeIsSubMeshFromTest = elt_it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+            const bool rangeIsSubMeshFromTrial = elt_it->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
+            const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+            const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+
+            const size_type idEltRangeInit = elt_it->id();
+            size_type idEltTestInit  = idEltRangeInit;
+            if ( rangeIsSubMeshFromTest )
+                idEltTestInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+            else if ( testIsSubMeshFromRange )
+                idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
+            size_type idEltTrialInit = idEltRangeInit;
+            if ( rangeIsSubMeshFromTrial )
+                idEltTrialInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+            else if ( trialIsSubMeshFromRange )
+                idEltTrialInit = __form.trialSpace()->mesh()->meshToSubMesh( idEltRangeInit );
+            //-----------------------------------------------//
+            pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
+            pc1_expr_ptrtype geopc1Expr( new pc1_expr_type( elt_it->gm1(), im1Range.points() ) );
+            gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
+            gmc1_expr_ptrtype gmc1Expr( new gmc1_expr_type( elt_it->gm1(),*elt_it, geopc1Expr ) );
+            //-----------------------------------------------//
+            auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType< typename FormType::space_1_type,im_formtest_type,
+                                                                              gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
+                                                                                                                idEltTestInit, gmcExpr, mpl::int_<gmTestRangeRelation>() );
+            auto gmcFormTrial = detail::buildGmcWithRelationDifferentMeshType< typename FormType::space_2_type,im_formtrial_type,
+                                                                               gmc_formTrial_type,gmc_expr_type>( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
+                                                                                                                  idEltTrialInit, gmcExpr, mpl::int_<gmTrialRangeRelation>() );
+            //-----------------------------------------------//
+            map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
+            map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+            map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+            //-----------------------------------------------//
+            focb_ptrtype formc( new form_context_type( __form,
+                                                       mapgmcFormTest,
+                                                       mapgmcFormTrial,
+                                                       mapgmcExpr,
+                                                       this->expression(),
+                                                       imRange,imTest,imTrial ) );
+            mortar_focb_ptrtype formcm( new form_mortar_context_type( __form,
+                                                                      mapgmcFormTest,
+                                                                      mapgmcFormTrial,
+                                                                      mapgmcExpr,
+                                                                      this->expression(),
+                                                                      imRange,imTest,imTrial ) );
+
+            //-----------------------------------------------//
+
+            for ( ; elt_it != elt_en; ++elt_it )
+                {
+                    const size_type idEltRange = elt_it->id();
+                    size_type idEltTest = idEltRange;
+                    if ( rangeIsSubMeshFromTest )
+                        idEltTest = elt_it->mesh()->subMeshToMesh( idEltRange );
+                    else if ( testIsSubMeshFromRange )
+                        idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
+                    size_type idEltTrial = idEltRange;
+                    if ( rangeIsSubMeshFromTrial )
+                        idEltTrial = elt_it->mesh()->subMeshToMesh( idEltRange );
+                    else if ( trialIsSubMeshFromRange )
+                        idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltRange );
+
+#if 0
+                    if ( formc->isZero( eltTest.element0() /*idElt*/ ) )
+                        continue;
+#endif
+                    LOG(INFO) << "elt "  << elt_it->id() << " bdy = " << elt_it->isOnBoundary();
+                    switch ( M_gt )
+                    {
+                    default:
+                    case GeomapStrategyType::GEOMAP_HO:
+                    {
+                        gmcExpr->update(*elt_it);
+                        detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_1_type,im_formtest_type,
+                                                                       gmc_formTest_type,gmc_expr_type>(__form.testSpace(), gmcFormTest, gmcExpr,
+                                                                                                        idEltTest, mpl::int_<gmTestRangeRelation>() );
+                        detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_2_type,im_formtrial_type,
+                                                                       gmc_formTrial_type,gmc_expr_type>(__form.trialSpace(), gmcFormTrial, gmcExpr,
+                                                                                                         idEltTrial, mpl::int_<gmTrialRangeRelation>() );
+                        if ( elt_it->isOnBoundary()  )
+                        {
+                            formcm->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr );
+                            formcm->integrate();
+                            formcm->assemble();
+                        }
+                        else
+                        {
+                            formc->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr );
+                            formc->integrate();
+                            formc->assemble();
+                        }
+                    }
+                    break;
+
+                    case GeomapStrategyType::GEOMAP_O1:
+                    {
+                        CHECK ( false ) << "[assembleWithRelationDifferentMeshType<BiLinearForm,MESH_ELEMENTS>] : GEOMAP_O1 not implement\n";
+                    }
+                    break;
+
+                    case GeomapStrategyType::GEOMAP_OPT:
+                    {
+                        if ( ( rangeIsSubMeshFromTest && __form.testSpace()->mesh()->face( idEltTest ).isOnBoundary() ) ||
+                             ( rangeIsSubMeshFromTrial && __form.trialSpace()->mesh()->face( idEltTrial ).isOnBoundary() ) )
+                        {
+                            gmcExpr->update(*elt_it);
+                            detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_1_type,im_formtest_type,
+                                                                           gmc_formTest_type,gmc_expr_type>(__form.testSpace(), gmcFormTest, gmcExpr,
+                                                                                                            idEltTest, mpl::int_<gmTestRangeRelation>() );
+                            detail::updateGmcWithRelationDifferentMeshType<typename FormType::space_2_type,im_formtrial_type,
+                                                                           gmc_formTrial_type,gmc_expr_type>(__form.trialSpace(), gmcFormTrial, gmcExpr,
+                                                                                                             idEltTrial, mpl::int_<gmTrialRangeRelation>() );
+
+                            if ( elt_it->isOnBoundary()  )
+                            {
+                                formcm->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr );
+                                formcm->integrate();
+                                formcm->assemble();
+                            }
+                            else
+                            {
+                                formc->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr );
+                                formc->integrate();
+                                formc->assemble();
+                            }
+                        }
+                        else
+                        {
+                            CHECK ( false ) << "[assembleWithRelationDifferentMeshType<BiLinearForm,MESH_ELEMENTS>] : GEOMAP_O1 not implement\n";
+                        }
+                    }
+                    break;
+
+                    }
+                } // end loop on elements
+            delete formc;
+            //delete formc1;
+        } // end loop on list of elements
+}
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_ELEMENTS> /**/ ) const
@@ -1625,7 +2250,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
-                                                                 mpl::int_<MESH_ELEMENTS> /**/ ) const
+                                                                 mpl::int_<MESH_ELEMENTS> /**/, mpl::false_ ) const
 {
     LOG(INFO) << "[integrator::assembleInCaseOfInterpolate] vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form, mpl::int_<MESH_ELEMENTS>\n";
 
@@ -1759,6 +2384,201 @@ Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::Bil
                 }
 
                 formc->assembleInCaseOfInterpolate();
+
+            }
+        }
+    } // if (!M_QPL->hasPrecomputeBF())
+    else
+    {
+        auto const& resQPL = M_QPL->getPrecompute(__form);
+        auto resQPL_it = resQPL.begin();
+        auto const resQPL_en = resQPL.end();
+        for ( ; resQPL_it != resQPL_en ; ++resQPL_it)
+        {
+            auto resQPLloc_it = resQPL_it->begin();
+            auto const resQPLloc_en = resQPL_it->end();
+            bool isFirstExperience = true;
+            for ( ; resQPLloc_it != resQPLloc_en ; ++resQPLloc_it)
+            {
+                map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( resQPLloc_it->template get<2>()/*gmcFormTest*/ ) );
+                map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( resQPLloc_it->template get<3>()/*gmcFormTrial*/ ) );
+                map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( resQPLloc_it->template get<1>() ) );
+
+                formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, resQPLloc_it->template get<0>() );
+
+                formc->integrateInCaseOfInterpolate( resQPLloc_it->template get<0>(),isFirstExperience );
+                isFirstExperience = false;
+            }
+
+            formc->assembleInCaseOfInterpolate();
+        }
+
+    } //else !M_QPL->hasPrecomputeBF()
+
+    delete formc;
+
+} // assembleInCaseOfInterpolate
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename FE1,typename FE2,typename ElemContType>
+void
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+                                                                 mpl::int_<MESH_ELEMENTS> /**/, mpl::true_ ) const
+{
+    LOG(INFO) << "[integrator::assembleInCaseOfInterpolate] (elements) mortar case";
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
+
+    // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::POINT|vm::JACOBIAN, typename eval::element_type> gmc_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+
+    // typedef on form (trial and test):
+    typedef vf::detail::BilinearForm<FE1,FE2,ElemContType> FormType;
+    // test
+    typedef typename FormType::gm_1_type gm_formTest_type;
+    typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
+    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
+    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef typename gm_formTest_type::precompute_type pc_formTest_type;
+    typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
+    // trial
+    typedef typename FormType::gm_2_type gm_formTrial_type;
+    typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
+    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
+    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
+    typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
+
+    // typedef on formcontext
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, im_range_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef form_context_type fcb_type;
+    typedef form_mortar_context_type mortar_fcb_type;
+    typedef fcb_type* focb_ptrtype;
+    typedef mortar_fcb_type* mortar_focb_ptrtype;
+
+    //-----------------------------------------------//
+
+    element_iterator elt_it, elt_en;
+    bool findEltForInit = false;
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
+    {
+        elt_it = lit->template get<1>();
+        elt_en = lit->template get<2>();
+
+        // check that we have elements to iterate over
+        if ( elt_it == elt_en )
+            continue;
+        else
+            findEltForInit = true;
+    }
+    if (!findEltForInit) return;
+
+
+    //-----------------------------------------------//
+    im_range_type imRange;
+    pc_expr_ptrtype geopcExpr( new pc_expr_type( elt_it->gm(), imRange.points() ) );
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->gm(),*elt_it, geopcExpr ) );
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
+    //-----------------------------------------------//
+    pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(), __form.testSpace()->fe()->points() ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
+    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+    //-----------------------------------------------//
+    pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
+    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+    //-----------------------------------------------//
+
+    focb_ptrtype formc( new form_context_type( __form,
+                                               mapgmcFormTest,
+                                               mapgmcFormTrial,
+                                               mapgmcExpr,
+                                               this->expression(),
+                                               imRange ) );
+    mortar_focb_ptrtype formcm( new form_mortar_context_type( __form,
+                                                              mapgmcFormTest,
+                                                              mapgmcFormTrial,
+                                                              mapgmcExpr,
+                                                              this->expression(),
+                                                              imRange ) );
+
+    //-----------------------------------------------//
+
+    auto meshTrial = __form.trialSpace()->mesh();
+    auto meshTest = __form.testSpace()->mesh();
+
+    if (!M_QPL)
+    {
+        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts ) );
+        M_QPL->update( meshTest,meshTrial );
+    }
+
+    if (!M_QPL->hasPrecompute())
+    {
+        auto res_it = M_QPL->result().begin();
+        auto const res_en = M_QPL->result().end();
+        for ( ; res_it != res_en ; ++res_it )
+        {
+            auto const idEltTest = res_it->template get<0>();
+            auto const& map = res_it->template get<1>();
+            auto map_it = map.begin();
+            auto const map_en = map.end();
+            for ( ; map_it != map_en ; ++map_it )
+            {
+                auto const idEltTrial = map_it->first;
+                auto const& eltTrial = meshTrial->element( idEltTrial );
+                auto const& eltTest = meshTest->element( idEltTest );
+
+                auto const& ptRefTest = map_it->second.template get<1>();
+                auto const& ptRefTrial = map_it->second.template get<2>();
+                auto const& themapQuad = map_it->second.template get<0>();
+                auto vec_gmcExpr = M_QPL->getUsableDataInFormContext( themapQuad,ptRefTest,ptRefTrial );
+                auto gmcExpr_it = vec_gmcExpr.begin();
+                auto const gmcExpr_en = vec_gmcExpr.end();
+                bool isFirstExperience = true;
+                for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
+                {
+                    geopcFormTest->update( gmcExpr_it->template get<2>() );
+                    geopcFormTrial->update( gmcExpr_it->template get<3>() );
+
+                    gmcFormTest->update( eltTest,geopcFormTest );
+                    gmcFormTrial->update( eltTrial,geopcFormTrial );
+
+                    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+
+                    if ( eltTest.isOnBoundary() )
+                    {
+                        formcm->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
+                        formcm->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                    }
+                    else
+                    {
+                        formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr, gmcExpr_it->template get<0>() );
+                        formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                    }
+                    isFirstExperience = false;
+                }
+                if ( eltTest.isOnBoundary() )
+                {
+                    formcm->assembleInCaseOfInterpolate();
+                }
+                else
+                {
+                    formc->assembleInCaseOfInterpolate();
+                }
 
             }
         }
@@ -2276,7 +3096,7 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
-                                                                           mpl::int_<MESH_FACES> /**/ ) const
+                                                                           mpl::int_<MESH_FACES> /**/, mpl::false_ ) const
 {
 
     // typedef on integral mesh (expr) :
@@ -2555,6 +3375,315 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 }
 
 template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename FE1,typename FE2,typename ElemContType>
+void
+Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+                                                                           mpl::int_<MESH_FACES> /**/, mpl::true_ ) const
+{
+    LOG(INFO) << "assembleWithRelationDifferentMeshType Mortar case";
+    // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename eval::gm1_type gm1_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef typename gm1_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc1_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef boost::shared_ptr<gmc1_expr_type> gmc1_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm1_expr_type::precompute_type pc1_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef typename gm1_expr_type::precompute_ptrtype pc1_expr_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_expr_ptrtype> > map_gmc1_expr_type;
+
+    // typedef on form (trial and test):
+    typedef vf::detail::BilinearForm<FE1,FE2,ElemContType> FormType;
+    // test
+    typedef typename FormType::gm_1_type gm_formTest_type;
+    typedef typename FormType::gm1_1_type gm1_formTest_type;
+    typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
+    static const size_type contextTest = mpl::if_< boost::is_same< mpl::int_< gm_expr_type::nDim >,mpl::int_< gm_formTest_type::nDim > >,
+                                                   mpl::int_<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
+                                                   mpl::int_<expression_type::context|vm::POINT> >::type::value;
+    typedef typename gm_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc_formTest_type;
+    typedef typename gm1_formTest_type::template Context<contextTest,geoelement_formTest_type> gmc1_formTest_type;
+    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef boost::shared_ptr<gmc1_formTest_type> gmc1_formTest_ptrtype;
+    typedef typename gm_formTest_type::precompute_type pc_formTest_type;
+    typedef typename gm1_formTest_type::precompute_type pc1_formTest_type;
+    typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
+    typedef typename gm1_formTest_type::precompute_ptrtype pc1_formTest_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_formTest_ptrtype> > map_gmc1_formTest_type;
+
+    // trial
+    typedef typename FormType::gm_2_type gm_formTrial_type;
+    typedef typename FormType::gm1_2_type gm1_formTrial_type;
+    typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
+    static const size_type contextTrial = mpl::if_< boost::is_same< mpl::int_< gm_expr_type::nDim >,mpl::int_< gm_formTrial_type::nDim > >,
+                                                   mpl::int_<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
+                                                   mpl::int_<expression_type::context|vm::POINT> >::type::value;
+    typedef typename gm_formTrial_type::template Context<contextTrial,geoelement_formTrial_type> gmc_formTrial_type;
+    typedef typename gm1_formTrial_type::template Context<contextTrial,geoelement_formTrial_type> gmc1_formTrial_type;
+    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef boost::shared_ptr<gmc1_formTrial_type> gmc1_formTrial_ptrtype;
+    typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
+    typedef typename gm1_formTrial_type::precompute_type pc1_formTrial_type;
+    typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
+    typedef typename gm1_formTrial_type::precompute_ptrtype pc1_formTrial_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc1_formTrial_ptrtype> > map_gmc1_formTrial_type;
+
+    //-----------------------------------------------------//
+
+    static const uint16_type nDimTest = gm_formTest_type::nDim;
+    static const uint16_type nDimTrial = gm_formTrial_type::nDim;
+    static const uint16_type nDimRange = gm_expr_type::nDim;
+    static const uint16_type gmTestRangeRelation = ( nDimTest > nDimRange )? nDimTest-nDimRange : nDimRange-nDimTest;
+    static const uint16_type gmTrialRangeRelation = ( nDimTrial > nDimRange )? nDimTrial-nDimRange : nDimRange-nDimTrial;
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im2::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im1_range_type;
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_formtest_type;
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTest_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im1_formtest_type;
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_formtrial_type;
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im2::template applyIMGeneral<geoelement_formTrial_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im1_formtrial_type;
+
+    im_range_type imRange;
+    im1_range_type im1Range;
+    im_formtest_type imTest;
+    im_formtrial_type imTrial;
+
+    //-----------------------------------------------------//
+
+    typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
+    typedef typename im_range_type::face_quadrature_type face_im_type;
+    typedef typename im1_range_type::face_quadrature_type face_im1_type;
+    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopc( imRange.nFaces() );
+    std::vector<std::map<permutation_type, pc1_expr_ptrtype> > __geopc1( im1Range.nFaces() );
+    std::vector<face_im_type> face_ims( imRange.nFaces() );
+    std::vector<face_im1_type> face_ims1( im1Range.nFaces() );
+    bool hasInitGeoPc=false;
+
+    //-----------------------------------------------------//
+    // typedef on formcontext
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type, map_gmc_expr_type, map_gmc_formTrial_type,true> form_mortar_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type> form1_context_type;
+    typedef typename FormType::template Context<map_gmc1_formTest_type, expression_type, face_im1_type, map_gmc1_expr_type, map_gmc1_formTrial_type,true> form1_mortar_context_type;
+
+    typedef boost::shared_ptr<form_context_type> form_context_ptrtype;
+    typedef boost::shared_ptr<form_mortar_context_type> form_mortar_context_ptrtype;
+    typedef boost::shared_ptr<form1_context_type> form1_context_ptrtype;
+    typedef boost::shared_ptr<form1_mortar_context_type> form1_mortar_context_ptrtype;
+
+
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+    {
+        auto elt_it = lit->template get<1>();
+        auto const elt_en = lit->template get<2>();
+        DLOG(INFO) << "integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
+
+        // check that we have elements to iterate over
+        if ( (elt_it == elt_en) || (elt_it->isConnectedTo0() == false) )
+            continue;
+
+        //-----------------------------------------------//
+
+        if (!hasInitGeoPc)
+        {
+            for ( uint16_type __f = 0; __f < imRange.nFaces(); ++__f )
+            {
+                face_ims[__f] = imRange.face( __f );
+                face_ims1[__f] = im1Range.face( __f );
+
+                for ( permutation_type __p( permutation_type::IDENTITY );
+                      __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+                {
+                    //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+                    __geopc[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+                    __geopc1[__f][__p] = pc1_expr_ptrtype(  new pc1_expr_type( elt_it->element( 0 ).gm1(), im1Range.fpoints(__f, __p.value() ) ) );
+                }
+            }
+            hasInitGeoPc=true;
+        }
+
+        //-----------------------------------------------//
+
+        const bool rangeIsSubMeshFromTest = elt_it->mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
+        const bool rangeIsSubMeshFromTrial = elt_it->mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
+        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+        const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( elt_it->mesh() );
+
+        const size_type idEltRangeInit = elt_it->id();
+        size_type idEltTestInit  = idEltRangeInit;
+        if ( rangeIsSubMeshFromTest )
+            idEltTestInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+        else if ( testIsSubMeshFromRange )
+            idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
+        size_type idEltTrialInit = idEltRangeInit;
+        if ( rangeIsSubMeshFromTrial )
+            idEltTrialInit = elt_it->mesh()->subMeshToMesh( idEltRangeInit );
+        else if ( trialIsSubMeshFromRange )
+            idEltTrialInit = __form.trialSpace()->mesh()->meshToSubMesh( idEltRangeInit );
+
+        //-----------------------------------------------//
+        // get the geometric mapping associated with element 0
+        uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( elt_it->element( 0 ).gm(), elt_it->element( 0 ), __geopc, __face_id_in_elt_0 ) );
+        //gmc1_expr_ptrtype gmc1Expr0( new gmc1_expr_type( elt_it->element( 0 ).gm1(), elt_it->element( 0 ), __geopc1, __face_id_in_elt_0 ) );
+
+        auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
+                                                                           gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
+                                                                                                             idEltTestInit, gmcExpr0, mpl::int_<gmTestRangeRelation>() );
+
+        auto gmcFormTrial = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_2_type,im_formtrial_type,
+                                                                           gmc_formTrial_type,gmc_expr_type>( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
+                                                                                                              idEltTrialInit, gmcExpr0, mpl::int_<gmTrialRangeRelation>() );
+
+        //-----------------------------------------------//
+
+        map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr0 ) );
+        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+        form_context_ptrtype form;
+        form1_context_ptrtype form1;
+        form_mortar_context_ptrtype mortar_form;
+        form1_mortar_context_ptrtype mortar_form1;
+
+
+        bool isInitConnectionTo0=false;
+        bool isInitConnectionTo1=false;
+
+        // true if connected to another element, false otherwise
+        if ( elt_it->isConnectedTo1() )
+        {
+            CHECK( false ) << "TODO!!!!\n";
+#if 0
+            uint16_type __face_id_in_elt_1 = it->pos_second();
+
+            __c1 = gmc_ptrtype( new gmc_type( __gm, it->element( 1 ), __geopc, __face_id_in_elt_1 ) );
+            __c11 = gmc1_ptrtype( new gmc1_type( __gm1, it->element( 1 ), __geopc1, __face_id_in_elt_1 ) );
+            map2_gmc_type mapgmc2( fusion::make_pair<vf::detail::gmc<0> >( __c0 ),
+                                   fusion::make_pair<vf::detail::gmc<1> >( __c1 ) );
+            map21_gmc_type mapgmc21( fusion::make_pair<vf::detail::gmc<0> >( __c01 ),
+                                     fusion::make_pair<vf::detail::gmc<1> >( __c11 ) );
+
+            form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmc2, mapgmc2, mapgmc2, expression(), face_ims[__face_id_in_elt_0], this->im(), mpl::int_<2>() ) );
+            form21 = form21_context_ptrtype( new form21_context_type( __form, mapgmc21, mapgmc21, mapgmc21, expression(), face_ims2[__face_id_in_elt_0], this->im2(), mpl::int_<2>() ) );
+            isInitConnectionTo1=true;
+#endif
+        }
+        else
+        {
+            form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
+                                                                this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest,imTrial ) );
+            mortar_form = form_mortar_context_ptrtype( new form_mortar_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
+                                                                                     this->expression(), face_ims[__face_id_in_elt_0],
+                                                                                     imRange,imTest,imTrial ) );
+            //form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
+            isInitConnectionTo0=true;
+        }
+
+
+
+        for ( ; elt_it != elt_en; ++elt_it )
+        {
+            if ( elt_it->isGhostFace() )
+            {
+                LOG(WARNING) << "face id : " << elt_it->id() << " is a ghost face";
+                continue;
+            }
+            // if is a interprocess faces, only integrate in one process
+            if ( elt_it->isInterProcessDomain() && elt_it->partition1() > elt_it->partition2() )
+                continue;
+
+            const size_type idEltRange = elt_it->id();
+            size_type idEltTest = idEltRange;
+            if ( rangeIsSubMeshFromTest )
+                idEltTest = elt_it->mesh()->subMeshToMesh( idEltRange );
+            else if ( testIsSubMeshFromRange )
+                idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
+            size_type idEltTrial = idEltRange;
+            if ( rangeIsSubMeshFromTrial )
+                idEltTrial = elt_it->mesh()->subMeshToMesh( idEltRange );
+            else if ( trialIsSubMeshFromRange )
+                idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltRange );
+
+
+            if ( elt_it->isConnectedTo1() )
+            {
+                CHECK ( false ) << "[assembleWithRelationDifferentMeshType<BiLinearForm,MESH_FACES>] : isConnectedTo1 not yet implement\n";
+            }
+            else
+            {
+                __face_id_in_elt_0 = elt_it->pos_first();
+
+                if ( !isInitConnectionTo0 )
+                {
+                    if ( !elt_it->isOnBoundary() )
+                        form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
+                                                                            this->expression(), face_ims[__face_id_in_elt_0],
+                                                                            imRange,imTest,imTrial ) );
+                    else
+                        mortar_form = form_mortar_context_ptrtype( new form_mortar_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
+                                                                                                 this->expression(), face_ims[__face_id_in_elt_0],
+                                                                                                 imRange,imTest,imTrial ) );
+                    //form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
+                    isInitConnectionTo0=true;
+                }
+
+                // update gmc
+                detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference, typename FormType::space_1_type,im_range_type,
+                                                                gmc_formTest_type,gmc_expr_type>(*elt_it,__form.testSpace(), gmcFormTest, gmcExpr0,
+                                                                                                 idEltTest, mpl::int_<gmTestRangeRelation>() );
+
+                detail::updateGmcWithRelationDifferentMeshType2<typename element_iterator::reference,typename FormType::space_2_type,im_range_type,
+                                                                gmc_formTrial_type,gmc_expr_type>(*elt_it,__form.trialSpace(), gmcFormTrial, gmcExpr0,
+                                                                                                  idEltTrial, mpl::int_<gmTrialRangeRelation>() );
+                LOG(INFO) << "elt "  << elt_it->id() << " bdy = " << elt_it->isOnBoundary();
+                if ( elt_it->isOnBoundary() )
+                {
+                    LOG(INFO) << "mortar element";
+                    mortar_form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
+                    mortar_form->integrate();
+                    mortar_form->assemble( /*elt_it->element( 0 ).id()*/ );
+                }
+                else
+                {
+                    LOG(INFO) << "internal element";
+                    form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
+                    form->integrate();
+                    form->assemble( /*elt_it->element( 0 ).id()*/ );
+                }
+            }
+
+        }
+
+    } // for( auto lit = ... )
+
+}
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE,typename VectorType,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::detail::LinearForm<FE,VectorType,ElemContType>& __form, mpl::int_<MESH_FACES> /**/ ) const
@@ -2770,7 +3899,225 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
 template<typename FE1,typename FE2,typename ElemContType>
 void
 Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
-                                                                 mpl::int_<MESH_FACES> /**/ ) const
+                                                                 mpl::int_<MESH_FACES> /**/,
+                                                                 mpl::false_ ) const
+{
+
+    typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Simplex>::type >,
+                              mpl::identity<typename Im::template applyIMGeneral<eval::the_element_type::nDim, expression_value_type, Hypercube>::type >
+                              >::type::type im_range_type;
+
+    // typedef on integral mesh (expr) :
+    typedef typename eval::gm_type gm_expr_type;
+    typedef typename gm_expr_type::template Context<expression_type::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT, typename eval::element_type> gmc_expr_type;
+    typedef boost::shared_ptr<gmc_expr_type> gmc_expr_ptrtype;
+    typedef typename gm_expr_type::precompute_type pc_expr_type;
+    typedef typename gm_expr_type::precompute_ptrtype pc_expr_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_expr_ptrtype> > map_gmc_expr_type;
+
+    //typedef on form (trial and test):
+    typedef vf::detail::BilinearForm<FE1,FE2,ElemContType> FormType;
+    /*typedef typename FormType::gm_type gm_form_type;
+      typedef typename FormType::mesh_element_type geoelement_form_type;
+      typedef typename gm_form_type::template Context<expression_type::context|vm::POINT,geoelement_form_type> gmc_form_type;
+      typedef boost::shared_ptr<gmc_form_type> gmc_form_ptrtype;
+      typedef typename gm_form_type::precompute_type pc_form_type;
+      typedef typename gm_form_type::precompute_ptrtype pc_form_ptrtype;
+      typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_form_ptrtype> > map_gmc_form_type;*/
+
+    typedef typename FormType::gm_1_type gm_formTest_type;
+    typedef typename FormType::mesh_element_1_type geoelement_formTest_type;
+    typedef typename gm_formTest_type::template Context<expression_type::context|vm::POINT,geoelement_formTest_type> gmc_formTest_type;
+    typedef boost::shared_ptr<gmc_formTest_type> gmc_formTest_ptrtype;
+    typedef typename gm_formTest_type::precompute_type pc_formTest_type;
+    typedef typename gm_formTest_type::precompute_ptrtype pc_formTest_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype> > map_gmc_formTest_type;
+    // trial
+    typedef typename FormType::gm_2_type gm_formTrial_type;
+    typedef typename FormType::mesh_element_2_type geoelement_formTrial_type;
+    typedef typename gm_formTrial_type::template Context<expression_type::context|vm::POINT,geoelement_formTrial_type> gmc_formTrial_type;
+    typedef boost::shared_ptr<gmc_formTrial_type> gmc_formTrial_ptrtype;
+    typedef typename gm_formTrial_type::precompute_type pc_formTrial_type;
+    typedef typename gm_formTrial_type::precompute_ptrtype pc_formTrial_ptrtype;
+    typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTrial_ptrtype> > map_gmc_formTrial_type;
+
+
+
+    // typedef on formcontext
+    typedef typename im_range_type::face_quadrature_type face_im_type;
+
+    typedef typename FormType::template Context<map_gmc_formTest_type, expression_type, face_im_type,map_gmc_expr_type, map_gmc_formTrial_type> form_context_type;
+    typedef form_context_type fcb_type;
+    typedef fcb_type* focb_ptrtype;
+
+
+    element_iterator elt_it, elt_en;
+    bool findEltForInit = false;
+    for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len && !findEltForInit; ++lit )
+    {
+        elt_it = lit->template get<1>();
+        elt_en = lit->template get<2>();
+
+        // check that we have elements to iterate over
+        if ( elt_it == elt_en )
+            continue;
+        else
+            findEltForInit = true;
+    }
+    if (!findEltForInit) return;
+
+
+    //QuadMapped<im_type> qm;
+    typedef typename QuadMapped<im_range_type>::permutation_type permutation_type;
+    //typename QuadMapped<im_range_type>::permutation_points_type ppts( qm( im() ) );
+
+    im_range_type imRange;
+    std::vector<std::map<permutation_type, pc_expr_ptrtype> > __geopcExpr( imRange.nFaces() );
+    std::vector<face_im_type> face_ims( imRange.nFaces() );
+
+    for ( uint16_type __f = 0; __f < im().nFaces(); ++__f )
+    {
+        face_ims[__f] = imRange.face( __f );
+
+        for ( permutation_type __p( permutation_type::IDENTITY );
+              __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+        {
+            //FEELPP_ASSERT( ppts[__f].find(__p)->second.size2() != 0 ).warn( "invalid quadrature type" );
+            __geopcExpr[__f][__p] = pc_expr_ptrtype(  new pc_expr_type( elt_it->element( 0 ).gm(), imRange.fpoints(__f, __p.value() ) ) );
+
+        }
+    }
+
+
+    uint16_type __face_id_in_elt_0 = elt_it->pos_first();
+
+    gmc_expr_ptrtype gmcExpr( new gmc_expr_type( elt_it->element( 0 ).gm(),
+                                                 elt_it->element( 0 ),
+                                                 __geopcExpr,
+                                                 __face_id_in_elt_0 ) );
+
+
+    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr ) );
+
+    //-----------------------------------------------//
+
+    pc_formTest_ptrtype geopcFormTest( new pc_formTest_type( __form.gm(),  __form.testSpace()->fe()->points() ) );
+    gmc_formTest_ptrtype gmcFormTest( new gmc_formTest_type( __form.gm(), __form.testSpace()->mesh()->element( 0 ), geopcFormTest ) );
+    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+
+    pc_formTrial_ptrtype geopcFormTrial( new pc_formTrial_type( __form.gmTrial(), __form.trialSpace()->fe()->points() ) );
+    gmc_formTrial_ptrtype gmcFormTrial( new gmc_formTrial_type( __form.gmTrial(), __form.trialSpace()->mesh()->element( 0 ), geopcFormTrial ) );
+    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+
+    //-----------------------------------------------//
+
+    focb_ptrtype formc( new form_context_type( __form,
+                                               mapgmcFormTest,
+                                               mapgmcFormTrial,
+                                               mapgmcExpr,
+                                               this->expression(),
+                                               face_ims[__face_id_in_elt_0],
+                                               imRange ) );
+
+    //-----------------------------------------------//
+
+    auto meshTrial = __form.trialSpace()->mesh();
+    auto meshTest = __form.testSpace()->mesh();
+
+    if (!M_QPL)
+    {
+        M_QPL.reset( new QuadPtLocalization<Elements, Im, Expr >( M_elts ) );
+        M_QPL->update( meshTest,meshTrial );
+    }
+
+    //-----------------------------------------------//
+
+    if (!M_QPL->hasPrecompute())
+    {
+        auto res_it = M_QPL->result().begin();
+        auto res_en = M_QPL->result().end();
+
+        for ( ; res_it != res_en ; ++res_it )
+        {
+            auto const idEltTest = res_it->template get<0>();
+            auto const& map = res_it->template get<1>();
+            auto map_it = map.begin();
+            auto const map_en = map.end();
+
+            for ( ; map_it != map_en ; ++map_it )
+            {
+                auto const idEltTrial = map_it->first;
+                auto const& eltTrial = meshTrial->element( idEltTrial );
+                auto const& eltTest = meshTest->element( idEltTest );
+                auto const& ptRefTest = map_it->second.template get<1>();
+                auto const& ptRefTrial = map_it->second.template get<2>();
+                auto const& themapQuad = map_it->second.template get<0>();
+
+                auto vec_gmcExpr = M_QPL->getUsableDataInFormContext( themapQuad,ptRefTest,ptRefTrial );
+                auto gmcExpr_it = vec_gmcExpr.begin();
+                auto const gmcExpr_en = vec_gmcExpr.end();
+                bool isFirstExperience = true;
+
+                for ( ; gmcExpr_it != gmcExpr_en ; ++gmcExpr_it )
+                {
+                    geopcFormTest->update( gmcExpr_it->template get<2>() );
+                    geopcFormTrial->update( gmcExpr_it->template get<3>() );
+
+                    gmcFormTest->update( eltTest,geopcFormTest );
+                    gmcFormTrial->update( eltTrial,geopcFormTrial );
+                    //std::cout << "eltTest.id() " << eltTest.id() << " eltTest.G() " << eltTest.G()
+                    //          << " eltTrial.id() "<< eltTrial.id() << " eltTrial.G() " << eltTrial.G() << std::endl;
+                    map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
+                    map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
+                    map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr_it->template get<1>() ) );
+                    __face_id_in_elt_0 = gmcExpr_it->template get<1>()->faceId();
+                    formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],gmcExpr_it->template get<0>() );
+
+                    formc->integrateInCaseOfInterpolate( gmcExpr_it->template get<0>(),isFirstExperience );
+                    isFirstExperience = false;
+                }
+
+                formc->assembleInCaseOfInterpolate();
+            }
+
+        }
+    } // if (!M_QPL->hasPrecompute())
+    else
+    {
+        auto const& resQPL = M_QPL->getPrecompute(__form);
+        auto resQPL_it = resQPL.begin();
+        auto const resQPL_en = resQPL.end();
+        for ( ; resQPL_it != resQPL_en ; ++resQPL_it)
+        {
+            auto resQPLloc_it = resQPL_it->begin();
+            auto const resQPLloc_en = resQPL_it->end();
+            bool isFirstExperience = true;
+            for ( ; resQPLloc_it != resQPLloc_en ; ++resQPLloc_it)
+            {
+                map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( resQPLloc_it->template get<2>()/*gmcFormTest*/ ) );
+                map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( resQPLloc_it->template get<3>()/*gmcFormTrial*/ ) );
+                map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( resQPLloc_it->template get<1>() ) );
+                __face_id_in_elt_0 = resQPLloc_it->template get<1>()->faceId();
+                formc->updateInCaseOfInterpolate( mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,face_ims[__face_id_in_elt_0],resQPLloc_it->template get<0>() );
+
+                formc->integrateInCaseOfInterpolate( resQPLloc_it->template get<0>(),isFirstExperience );
+                isFirstExperience = false;
+            }
+
+            formc->assembleInCaseOfInterpolate();
+        }
+    } //else
+
+    delete formc;
+}
+
+template<typename Elements, typename Im, typename Expr, typename Im2>
+template<typename FE1,typename FE2,typename ElemContType>
+void
+Integrator<Elements, Im, Expr, Im2>::assembleInCaseOfInterpolate(vf::detail::BilinearForm<FE1,FE2,ElemContType>& __form,
+                                                                 mpl::int_<MESH_FACES> /**/,
+                                                                 mpl::true_ ) const
 {
 
     typedef typename mpl::if_<mpl::bool_<eval::the_element_type::is_simplex>,
