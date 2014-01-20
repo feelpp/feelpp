@@ -22,6 +22,8 @@ reuse-prec=false
 ksp-rtol=1e-15
 reuse-prec=true #resolution with the same matrix, only rhs change
 
+[eim]
+cvg-study=true
 
 [crb]
 #use-predefined-WNmu=true
@@ -30,7 +32,7 @@ dimension-max=20
 Nm=1
 output-index=1
 error-max=1e-14
-error-type=1
+error-type=2
 orthonormalize-primal=true
 orthonormalize-dual=true
 visualize-basis=false
@@ -39,7 +41,7 @@ seek-mu-in-complement=true
 rebuild-database=true
 solve-dual-problem=true
 print-error-during-rb-construction=false
-cvg-study=true
+cvg-study=false
 show-residual=false
 [crb.check]
 gs=0
