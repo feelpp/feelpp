@@ -26,9 +26,7 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
     M_coords( __functionspace->dof()->nDof() ),
     M_translation( __periodicity.translation() ),
     firstDof( M_functionspace->dof()->firstDofGlobalCluster() ),
-    ndofOnCluster( mpi::all_reduce(Environment::worldComm().globalComm(),
-                                     __functionspace->dof()->nDof(),
-                                   std::plus<uint16_type>() ) )
+    ndofOnCluster( __functionspace->dof()->nDof() )
 {
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
