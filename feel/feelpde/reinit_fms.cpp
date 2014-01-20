@@ -20,6 +20,7 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                   periodicity_type __periodicity)
     :
     M_functionspace( __functionspace ),
+    checkDONE(backend()->newVector(M_functionspace)),
     M_periodicity(__periodicity),
     M_neighbors(),
     M_coords( __functionspace->dof()->nDof() ),
@@ -70,7 +71,8 @@ reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& th
 
   /* make the sum of the DONE(=2) + FAR(=0)
      the sum is then communicated through all the processors ( close() ) */
-  auto checkDONE = backend()->newVector(M_functionspace);
+  checkDONE->zero();
+
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
     checkDONE->add(k, status(k) == DONE ? 1 : 0);
 
