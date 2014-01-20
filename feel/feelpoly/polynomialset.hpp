@@ -808,6 +808,9 @@ public:
             init( M_ref_ele, __pts, mpl::int_<rank>() );
         }
 
+        //! \return the finite element
+        reference_element_ptrtype fePtr() { return M_ref_ele; }
+
         /**
            \return the dimension of the space where the nodes are defined
         */
@@ -895,6 +898,18 @@ public:
             return M_hessian[i][q]( c1,c2 );
         }
 
+        void print()
+            {
+                typedef typename grad_type::index index;
+                const index I = M_ref_ele->nbDof();
+                const index Q = M_nodes.size2();
+
+                for ( index i = 0; i < I; ++i )
+                {
+                    for ( index q = 0; q < Q; ++q )
+                        LOG(INFO) << "Precompute phi[" << i << ", " << q << "]= " << M_phi[i][q](0,0);
+                }
+            }
     private:
 
         void

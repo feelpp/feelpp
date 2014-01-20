@@ -1330,15 +1330,6 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-    const size_type proc_id           = _M_X1->mesh()->comm().rank();
-    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
-    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
-    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
-    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
-    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
-#else // MPI
     const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
@@ -1346,7 +1337,6 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDofGlobalCluster( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDofGlobalCluster( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDofGlobalCluster( proc_id );
-#endif
 
     graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
@@ -1386,6 +1376,8 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
         const auto & elem = *elem_it;
 
         auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
+        //const uint16_type  n1_dof_on_element = element_dof1.size();
+        const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize(elem.id());
 
         auto it_trial=domains_eid_set.begin();
         auto const en_trial=domains_eid_set.end();
@@ -1394,31 +1386,29 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
             const size_type domain_eid = *it_trial;
 
             // Get the global indices of the DOFs with support on this element
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-            M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
-#else // MPI
+// <<<<<<< HEAD
+// #if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
+//             M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
+// #else // MPI
+// =======
+// >>>>>>> develop
             _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
-#endif
+
             // We can be more efficient if we sort the element DOFs
             // into increasing order
             //std::sort(element_dof1.begin(), element_dof1.end());
             std::sort( element_dof2.begin(), element_dof2.end() );
 
-            //const uint16_type  n1_dof_on_element = element_dof1.size();
-            const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
             const uint16_type  n2_dof_on_element = element_dof2.size();
 
             for ( size_type i=0; i<n1_dof_on_element; i++ )
                 //BOOST_FOREACH( auto ig1, M_X1->dof()->getIndices( elem.id() ) )
             {
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
-#else // MPI
                 const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
                 auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
                 // numLocal without ghosts ! very important for the graph with petsc
                 const size_type il1 = _M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
-#endif
+
                 //const size_type ig1 = element_dof1[i];
                 const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
                 const int ncomp1 = i / ndofpercomponent1;
@@ -1435,14 +1425,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                         ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
 #endif
                     graph_type::row_type& row = sparsity_graph->row( ig1 );
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                    bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
-                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
-#else // MPI
                     row.get<0>() = theproc ;
                     row.get<1>() = il1;
-#endif
+
                     DVLOG(4) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
                     if ( do_less )
@@ -1474,14 +1459,15 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                             if ( neighbor_id != invalid_size_type_value )
                             {
                                 if ( neighbor_process_id != proc_id )
-                                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() && _M_X2->dof()->buildDofTableMPIExtended() ) << "DofTableMPIExtended is not build!";
+                                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() &&
+                                           _M_X2->dof()->buildDofTableMPIExtended() )
+                                        << "DofTableMPIExtended is not build!";
 
                                 neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
                                                                                      neighbor_process_id ) );
 
                                 if ( neighbor_id == neighbor->id()  )
                                 {
-                                    //neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
                                     neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
 
                                     if ( do_less )
@@ -1516,7 +1502,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
         auto iDimRangeExtended = rangeExtended.template get<0>();
         if ( iDimRangeExtended == ElementsType::MESH_ELEMENTS )
         {
-            CHECK( false ) << "a range with MESH_ELEMENTS is not implement";
+            CHECK( false ) << "a range with MESH_ELEMENTS is not implemented";
         }
         else if ( iDimRangeExtended == ElementsType::MESH_FACES )
         {
@@ -1527,7 +1513,9 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
                 if ( !faceExtended_it->isConnectedTo0() || !faceExtended_it->isConnectedTo1() ) continue;
 
                 if ( faceExtended_it->isInterProcessDomain() )
-                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() && _M_X2->dof()->buildDofTableMPIExtended() ) << "DofTableMPIExtended is not build!";
+                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() &&
+                           _M_X2->dof()->buildDofTableMPIExtended() )
+                        << "DofTableMPIExtended is not built!";
 
                 auto const& elt0 = faceExtended_it->element0();
                 auto const& elt1 = faceExtended_it->element1();
@@ -1607,16 +1595,6 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( si
 #endif
 namespace detail
 {
-#if 0
-template<typename MeshType>
-struct gmcDefStencil
-{
-    typedef typename MeshType::element_type::gm_type::precompute_type pc_type;
-    typedef typename MeshType::element_type::gm_type::precompute_ptrtype pc_ptrtype;
-    typedef typename MeshType::element_type::gm_type::template Context<vm::POINT, typename MeshType::element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-};
-#endif
 template<typename EltType>
 struct gmcDefStencil
 {

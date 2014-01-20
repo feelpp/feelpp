@@ -1200,6 +1200,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
     // first go through all the faces and set the points of the boundary
     // faces to be on the boundary
     LOG(INFO) << "update boundary points...";
+    LOG(INFO) << "Initially we have " << nelements(boundarypoints(this)) <<  " boundary points";
     for( auto it = this->beginFace(), en = this->endFace(); it != en; ++ it )
     {
         if ( it->isOnBoundary() == true )
@@ -1219,7 +1220,7 @@ Mesh<Shape, T, Tag>::updateOnBoundary()
             }
         }
     }
-    LOG(INFO) << "We have " << nelements(boundarypoints(this)) <<  " boundary points";
+    LOG(INFO) << "We have now " << nelements(boundarypoints(this)) <<  " boundary points";
     LOG(INFO) << "update boundary elements...";
     // loop through faces to set the elements having a face on the boundary
     for ( auto iv = this->beginElement(), en = this->endElement();
