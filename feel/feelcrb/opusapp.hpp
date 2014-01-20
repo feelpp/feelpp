@@ -561,7 +561,6 @@ public:
 
                 if (option(_name="eim.cvg-study").template as<bool>() )
                 {
-                    this->initializeConvergenceEimMap( Sampling->size() );
                     compute_fem=false;
                 }
                 if (option(_name="crb.cvg-study").template as<bool>() )
@@ -1533,28 +1532,6 @@ private:
     }
 
 
-    void initializeConvergenceEimMap( int sampling_size )
-    {
-        auto eim_sc_vector = model->scalarContinuousEim();
-        auto eim_sd_vector = model->scalarDiscontinuousEim();
-
-        for(int i=0; i<eim_sc_vector.size(); i++)
-        {
-            auto eim = eim_sc_vector[i];
-            M_mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
-            for(int j=0; j<eim->mMax(); j++)
-                M_mapConvEIM[eim->name()][j].resize(sampling_size);
-        }
-
-        for(int i=0; i<eim_sd_vector.size(); i++)
-        {
-            auto eim = eim_sd_vector[i];
-            M_mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
-            for(int j=0; j<eim->mMax(); j++)
-                M_mapConvEIM[eim->name()][j].resize(sampling_size);
-        }
-    }
-
     void initializeConvergenceCrbMap( int sampling_size )
     {
         //auto N = crb->dimension();
@@ -1609,24 +1586,34 @@ private:
 
         for(int i=0; i<eim_sc_vector.size(); i++)
         {
-            std::vector<double> l2error;
             auto eim = eim_sc_vector[i];
-            //take two parameters : the mu and the solution of the model
-            l2error = eim->studyConvergence( mu , model_solution );
-
-            for(int j=0; j<l2error.size(); j++)
-                M_mapConvEIM[eim->name()][j][mu_number-1] = l2error[j];
+            std::vector< std::string > all_file_name;
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2estimated.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2ratio.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINF.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINFestimated.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINFratio.dat");
+            eim->studyConvergence( mu , model_solution , all_file_name );
         }
 
         for(int i=0; i<eim_sd_vector.size(); i++)
         {
-            std::vector<double> l2error;
+            std::vector< std::string > all_file_name;
             auto eim = eim_sd_vector[i];
-            l2error = eim->studyConvergence( mu , model_solution );
-
-            for(int j=0; j<l2error.size(); j++)
-                M_mapConvEIM[eim->name()][j][mu_number-1] = l2error[j];
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2estimated.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2ratio.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINF.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINFestimated.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINFratio.dat");
+            eim->studyConvergence( mu , model_solution , all_file_name );
         }
+
+        //std::vector<double> l2error;
+        //for(int j=0; j<l2error.size(); j++)
+        //    M_mapConvEIM[eim->name()][j][mu_number-1] = l2error[j];
+
     }
 
     void doTheEimConvergenceStat( int sampling_size )
@@ -1638,64 +1625,69 @@ private:
         {
             auto eim = eim_sc_vector[i];
 
-            std::ofstream conv;
-            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
+            //load information contained in files
+            std::vector< vectorN_type > L2, L2estimated, L2ratio, LINF, LINFestimated, LINFratio;
+            std::string filename = eim->name()+"-EimConvergenceL2.dat";
+            model->readConvergenceDataFromFile( L2, filename );
+            filename = eim->name()+"-EimConvergenceL2estimated.dat";
+            model->readConvergenceDataFromFile( L2estimated, filename );
+            filename = eim->name()+"-EimConvergenceL2ratio.dat";
+            model->readConvergenceDataFromFile( L2ratio, filename );
+            filename = eim->name()+"-EimConvergenceLINF.dat";
+            model->readConvergenceDataFromFile( LINF, filename );
+            filename = eim->name()+"-EimConvergenceLINFestimated.dat";
+            model->readConvergenceDataFromFile( LINFestimated, filename );
+            filename = eim->name()+"-EimConvergenceLINFratio.dat";
+            model->readConvergenceDataFromFile( LINFratio, filename );
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            {
-                conv.open(file_name, std::ios::app);
-                conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
-            }
-
-            for(int j=0; j<eim->mMax(); j++)
-            {
-                double mean = M_mapConvEIM[eim->name()][j].mean();
-                double variance = 0.0;
-                for( int k=0; k < sampling_size ; k++)
-                {
-                    variance += (M_mapConvEIM[eim->name()][j](k) - mean)*(M_mapConvEIM[eim->name()][j](k) - mean)/sampling_size;
-                }
-
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                {
-                    conv << j+1 << "\t"
-                         << M_mapConvEIM[eim->name()][j].minCoeff() << "\t"
-                         << M_mapConvEIM[eim->name()][j].maxCoeff() << "\t"
-                         << mean << "\t" << variance << "\n";
-                }
-            }
-            conv.close();
+            //write files containing statistics
+            filename = "cvg-eim-"+eim->name()+"-L2-stats.dat";
+            model->writeConvergenceStatistics( L2 , filename);
+            filename = "cvg-eim-"+eim->name()+"-L2estimated-stats.dat";
+            model->writeConvergenceStatistics( L2estimated , filename);
+            filename = "cvg-eim-"+eim->name()+"-L2ratio-stats.dat";
+            model->writeConvergenceStatistics( L2ratio , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINF-stats.dat";
+            model->writeConvergenceStatistics( LINF , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINFestimated-stats.dat";
+            model->writeConvergenceStatistics( LINFestimated , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINFratio-stats.dat";
+            model->writeConvergenceStatistics( LINFratio , filename);
         }
 
         for(int i=0; i<eim_sd_vector.size(); i++)
         {
             auto eim = eim_sd_vector[i];
 
-            std::ofstream conv;
-            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
+            //load information contained in files
+            std::vector< vectorN_type > L2, L2estimated, L2ratio, LINF, LINFestimated, LINFratio;
+            std::string filename = eim->name()+"-EimConvergenceL2.dat";
+            model->readConvergenceDataFromFile( L2, filename );
+            filename = eim->name()+"-EimConvergenceL2estimated.dat";
+            model->readConvergenceDataFromFile( L2estimated, filename );
+            filename = eim->name()+"-EimConvergenceL2ratio.dat";
+            model->readConvergenceDataFromFile( L2ratio, filename );
+            filename = eim->name()+"-EimConvergenceLINF.dat";
+            model->readConvergenceDataFromFile( LINF, filename );
+            filename = eim->name()+"-EimConvergenceLINFestimated.dat";
+            model->readConvergenceDataFromFile( LINFestimated, filename );
+            filename = eim->name()+"-EimConvergenceLINFratio.dat";
+            model->readConvergenceDataFromFile( LINFratio, filename );
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            {
-                conv.open(file_name, std::ios::app);
-                conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
-            }
+            //write files containing statistics
+            filename = "cvg-eim-"+eim->name()+"-L2-stats.dat";
+            model->writeConvergenceStatistics( L2 , filename);
+            filename = "cvg-eim-"+eim->name()+"-L2estimated-stats.dat";
+            model->writeConvergenceStatistics( L2estimated , filename);
+            filename = "cvg-eim-"+eim->name()+"-L2ratio-stats.dat";
+            model->writeConvergenceStatistics( L2ratio , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINF-stats.dat";
+            model->writeConvergenceStatistics( LINF , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINFestimated-stats.dat";
+            model->writeConvergenceStatistics( LINFestimated , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINFratio-stats.dat";
+            model->writeConvergenceStatistics( LINFratio , filename);
 
-            for(int j=0; j<eim->mMax(); j++)
-            {
-                double mean = M_mapConvEIM[eim->name()][j].mean();
-                double variance = 0.0;
-                for( int k=0; k < sampling_size; k++)
-                    variance += (M_mapConvEIM[eim->name()][j](k) - mean)*(M_mapConvEIM[eim->name()][j](k) - mean)/sampling_size;
-
-                if( Environment::worldComm().globalRank()  == Environment::worldComm().masterRank() )
-                {
-                    conv << j+1 << "\t"
-                         << M_mapConvEIM[eim->name()][j].minCoeff() << "\t"
-                         << M_mapConvEIM[eim->name()][j].maxCoeff() << "\t"
-                         << mean << "\t" << variance << "\n";
-                }
-            }
-            conv.close();
         }
     }
 
@@ -2007,8 +1999,6 @@ private:
     crbmodel_ptrtype model;
     crb_ptrtype crb;
 
-    // For EIM convergence study
-    std::map<std::string, std::vector<vectorN_type> > M_mapConvEIM;
     // For CRB convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvCRB;
     // For SCM convergence study
