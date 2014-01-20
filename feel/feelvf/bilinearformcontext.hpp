@@ -438,9 +438,10 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         }
 
         else
+        {
             DVLOG(2) << "local Assembly for element " << _gmc.id()
                      << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( _gmc.id() );
-        if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( _gmc.id() ) )
+            if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( _gmc.id() ) )
                 for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                     for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
                     {
