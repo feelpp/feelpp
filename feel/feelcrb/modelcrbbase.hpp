@@ -280,6 +280,94 @@ public :
     }
 
 
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            Eigen::MatrixXf::Index index_max;
+            Eigen::MatrixXf::Index index_min;
+
+            std::ofstream file;
+            file.open( filename , std::ios::app);
+            file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+            int Nmax = vector.size();
+            for(int n=0; n<Nmax; n++)
+            {
+                double variance=0;
+                int sampling_size = vector[n].size();
+                double mean=vector[n].mean();
+                double max = vector[n].maxCoeff(&index_max);
+                double min = vector[n].minCoeff(&index_min);
+                for(int i=0; i<sampling_size; i++)
+                    variance += (vector[n](i) - mean)*(vector[n](i) - mean)/sampling_size;
+                file<<n<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
+            }
+        }
+    }
+
+    void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+
+            std::vector< std::vector< double > > tmpvector;
+            std::ifstream file ( filename );
+            std::string str;
+            int N;
+            int Nmax=0;
+            double value;
+            if( file )
+            {
+                //first, determine max elements of the RB
+                //because we could have performed several runs
+                //and the size of the RB can vary between two runs
+                while( ! file.eof() )
+                {
+                    file >> N;
+                    if( N > Nmax )
+                        Nmax = N;
+                    for(int n=0; n<N; n++)
+                    {
+                        file >> value;
+                    }
+                }
+
+                vector.resize( Nmax );
+                tmpvector.resize( Nmax );
+                //go to the begining of the file
+                file.clear();
+                file.seekg(0,std::ios::beg);
+
+                while( ! file.eof() )
+                {
+                    file >> N;
+                    for(int n=0; n<N; n++)
+                    {
+                        file >> value;
+                        tmpvector[n].push_back( value );
+                    }
+                }
+
+            }
+            else
+                throw std::logic_error( "[ModelCrbBase::fillVectorFromFile] ERROR loading the file" );
+
+            file.close();
+
+            //now copy std::vector into eigen vector
+            for(int n=0; n<Nmax; n++)
+            {
+                int nbvalues = tmpvector[n].size();
+                vector[n].resize(nbvalues);
+                for(int i=0; i<nbvalues; i++)
+                {
+                    vector[n](i) = tmpvector[n][i];
+                }
+            }
+
+        }//master proc
+    }//end of function
+
 protected :
 
     funs_type M_funs;

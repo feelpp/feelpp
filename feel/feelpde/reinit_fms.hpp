@@ -59,6 +59,9 @@ public:
     typedef ReinitializerFMS<FunctionSpaceType, periodicity_type> self_type;
     typedef boost::shared_ptr< self_type > self_ptrtype;
 
+    typedef Backend<double> backend_type;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
+
     typedef FunctionSpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
@@ -128,6 +131,7 @@ private:
     }
 
     functionspace_ptrtype const& M_functionspace;
+    vector_ptrtype checkDONE;
     periodicity_type M_periodicity;
     neighbors_type M_neighbors;
     std::map< size_type, size_type> M_ghostClusterToProc;
