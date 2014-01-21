@@ -21,11 +21,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file dist2walls.cpp
+   \file dist2wallsoptimized.cpp
    \author Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
    \date 2014-01-21
  */
-
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pch.hpp>
@@ -40,21 +39,53 @@ using namespace Feel::vf;
 
 void run()
 {
-    typedef Mesh< Simplex<DIM> > mesh_type;
+    boost::timer chrono;
 
+    typedef Mesh< Simplex<DIM> > mesh_type;
     auto mesh = loadMesh( _mesh=new mesh_type );
 
     auto Xh = Pch<1>(mesh);
 
+    chrono.restart();
+    // create the fast marching
     auto thefms = fms( Xh );
+    double timeInitFastMarching = chrono.elapsed();
 
+    // first method: let the fm search for the elements crossed by the interface
     auto phio = Xh->element();
     phio = vf::project(Xh, elements(mesh), h() );
     phio +=vf::project(Xh, boundaryfaces(mesh), -idv(phio) - h()/100. );
+
+    chrono.restart();
     auto phi = thefms->march(phio);
+    double timeFmsLocElt = chrono.elapsed();
+
+
+    // second method: give to the fm the elements having the good value to start with
+    auto Xh0 = Pdh<0>(mesh);
+
+    auto phio2 = Xh->element();    
+    phio2 = vf::project(Xh, boundaryelements(mesh), h() );
+    phio2 += vf::project(Xh, boundaryfaces(mesh), -idv(phio2) );
+
+    auto mark = vf::project(Xh0, boundaryelements(mesh), cst(1) );
+    mesh->updateMarker2( mark );
+
+    chrono.restart();
+    auto phi2 = thefms->march(phio2, true);
+    double timeFmsNoLocElt = chrono.elapsed();
+
+    LOG(INFO) << "fast marching initialized in "<<timeInitFastMarching<<"s"<<std::endl;
+    LOG(INFO) << "fast marching locating the elements done in "<<timeFmsLocElt<<"s"<<std::endl;
+    LOG(INFO) << "fast marching when elements DONE are given done in "<<timeFmsNoLocElt<<"s"<<std::endl;
+
 
     auto exp = exporter(_mesh=mesh, _name="disttowalls");
+    exp->step(0)->add("phio", phio);
+    exp->step(0)->add("phio2", phio2);
     exp->step(0)->add("phi", phi);
+    exp->step(0)->add("phi2", phi2);
+    exp->step(0)->add("mark", mark);
     exp->save();
 
 }
