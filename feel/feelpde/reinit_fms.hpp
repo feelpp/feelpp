@@ -72,6 +72,9 @@ public:
     typedef typename mesh_type::element_type geoelement_type;
     static const uint16_type Dim = geoelement_type::nDim;
 
+    typedef Feel::details::FmsHeap<value_type> heap_type;
+    typedef typename heap_type::heap_entry_type heap_entry_type;
+
 
     ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                       periodicity_type __periodicity=NoPeriodicity());
@@ -107,14 +110,16 @@ private:
     inline size_type processorToCluster( size_type dof )
     { return M_functionspace->dof()->mapGlobalProcessToGlobalCluster( dof ); }
 
-    void reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& theHeap, element_type& status, std::set<size_type>& done );
+    void reduceDonePoints(element_type const& __v, heap_type& theHeap, element_type& status, std::set<size_type>& done );
 
-    void updatePeriodicPoint(typename Feel::details::FmsHeap<value_type>::heap_entry_type const& newAccepted, element_type& __v, element_type& status, Feel::details::FmsHeap<value_type>& theHeap) const;
+    void reduceClosePoints(heap_type& theHeap, element_type& status );
+
+    void updatePeriodicPoint(heap_entry_type const& newAccepted, element_type& __v, element_type& status, heap_type& theHeap) const;
 
     void fmsHeapUpdate( size_type idDone,
                         element_type const& __v,
                         element_type& status,
-                        Feel::details::FmsHeap<value_type>& theHeap ) const;
+                        heap_type& theHeap ) const;
 
     value_type fmsDistN( std::vector<size_type> const& ids,
                          element_type const& __v ) const;
@@ -131,7 +136,8 @@ private:
     }
 
     functionspace_ptrtype const& M_functionspace;
-    vector_ptrtype checkDONE;
+    vector_ptrtype checkStatus;
+    vector_ptrtype valueAtClose;
     periodicity_type M_periodicity;
     neighbors_type M_neighbors;
     std::map< size_type, size_type> M_ghostClusterToProc;

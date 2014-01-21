@@ -130,6 +130,16 @@ public:
     }
 
 
+    value_type valueAtIndex( uint16_type index )
+    {
+        for (auto const& heapEntry : M_heap)
+            if (heapEntry.second == index )
+                return heapEntry.first;
+
+        CHECK( false ) << "index: "<<index<<" does not exists in the heap\n";
+    }
+
+
 private:
 
     typedef std::vector<heap_entry_type> heapvect_type;
