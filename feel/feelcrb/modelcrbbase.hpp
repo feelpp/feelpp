@@ -288,7 +288,7 @@ public :
             Eigen::MatrixXf::Index index_min;
 
             std::ofstream file;
-            file.open( filename , std::ios::app);
+            file.open( filename );
             file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
             int Nmax = vector.size();
             for(int n=0; n<Nmax; n++)
@@ -300,7 +300,43 @@ public :
                 double min = vector[n].minCoeff(&index_min);
                 for(int i=0; i<sampling_size; i++)
                     variance += (vector[n](i) - mean)*(vector[n](i) - mean)/sampling_size;
-                file<<n<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
+                file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
+            }
+        }
+    }
+
+    /**
+    * \param : vector1
+    * \param : vector2
+    * look for the index minIdx for which we have min( vector1 )
+    * then compute vector2( minIdx) / vector1( minIdx )
+    * and same thing with max : i.e. vector2( maxIdx ) / vector1( maxIdx )
+    * usefull to compute error estimation efficiency associated to
+    * min/max errors
+    **/
+    void writeVectorsExtremumsRatio( std::vector< vectorN_type > const& error, std::vector< vectorN_type > const& estimated, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+
+            Eigen::MatrixXf::Index index_max;
+            Eigen::MatrixXf::Index index_min;
+
+            std::ofstream file;
+            file.open( filename );
+            file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\n";
+            int Nmax = error.size();
+            int estimatedsize = estimated.size();
+            CHECK( Nmax == estimatedsize ) << "vectors have not the same size ! v1.size() : "<<error.size()<<" and v2.size() : "<<estimated.size()<<"\n";
+            for(int n=0; n<Nmax; n++)
+            {
+                double min_error = error[n].maxCoeff(&index_min);
+                double max_error = error[n].minCoeff(&index_max);
+                double min_estimated = estimated[n](index_min);
+                double max_estimated = estimated[n](index_max);
+                double min_ratio = min_estimated / min_error;
+                double max_ratio = max_estimated / max_error;
+                file << n+1 <<"\t"<< min_ratio <<" \t" << max_ratio<< "\n";
             }
         }
     }
@@ -338,19 +374,24 @@ public :
                 file.clear();
                 file.seekg(0,std::ios::beg);
 
+
+                file >> N;
                 while( ! file.eof() )
                 {
-                    file >> N;
                     for(int n=0; n<N; n++)
                     {
                         file >> value;
                         tmpvector[n].push_back( value );
                     }
+                    file >> N;
                 }
 
             }
             else
-                throw std::logic_error( "[ModelCrbBase::fillVectorFromFile] ERROR loading the file" );
+            {
+                std::cout<<"The file "<<filename<<" was not found "<<std::endl;
+                throw std::logic_error( "[ModelCrbBase::fillVectorFromFile] ERROR loading the file " );
+            }
 
             file.close();
 
