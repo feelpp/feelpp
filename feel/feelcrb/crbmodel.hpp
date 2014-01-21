@@ -1470,6 +1470,21 @@ public:
         return M_model->computeStatistics( vector , name );
     }
 
+    void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string filename )
+    {
+        return M_model->readConvergenceDataFromFile( vector, filename );
+    }
+
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    {
+        return M_model->writeConvergenceStatistics( vector, filename );
+    }
+
+    void writeVectorsExtremumsRatio(std::vector< vectorN_type > const& vector1, std::vector< vectorN_type > const& vector2, std::string filename )
+    {
+        return M_model->writeVectorsExtremumsRatio( vector1, vector2, filename );
+    }
+
     double timeStep()
     {
         return timeStep( mpl::bool_<model_type::is_time_dependent>() );
