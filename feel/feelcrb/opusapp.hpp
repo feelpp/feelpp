@@ -561,11 +561,8 @@ public:
 
                 if (option(_name="eim.cvg-study").template as<bool>() )
                 {
-                    this->initializeConvergenceEimMap( Sampling->size() );
                     compute_fem=false;
                 }
-                if (option(_name="crb.cvg-study").template as<bool>() )
-                    this->initializeConvergenceCrbMap( Sampling->size() );
 
             }
             if( M_mode==CRBModelMode::SCM )
@@ -909,8 +906,40 @@ public:
                                     LOG(INFO) << "start convergence study...\n";
                                     std::map<int, boost::tuple<double,double,double,double,double,double,double> > conver;
 
-                                    //int Nmax = crb->dimension();
+                                    std::ofstream fileL2 ( "CrbConvergenceL2.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileH1 ( "CrbConvergenceH1.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileOutputError ( "CrbConvergenceOutputError.dat",std::ios::out | std::ios::app );
+                                    std::ofstream fileOutputEstimatedError ( "CrbConvergenceOutputErrorEstimated.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileOutputErrorBoundEfficiency ( "CrbConvergenceOutputErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileSolutionErrorBoundEfficiency ("CrbConvergencePrimalSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileSolutionError ("CrbConvergencePrimalSolutionError.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileSolutionErrorEstimated ("CrbConvergencePrimalSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileSolutionDualErrorBoundEfficiency ("CrbConvergenceDualSolutionErrorBoundEfficiency.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileSolutionDualError ("CrbConvergenceDualSolutionError.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileSolutionDualErrorEstimated ("CrbConvergenceDualSolutionErrorEstimated.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream filePrimalResidualNorm ("CrbConvergencePrimalResidualNorm.dat" ,std::ios::out | std::ios::app );
+                                    std::ofstream fileDualResidualNorm ( "CrbConvergenceDualResidualNorm.dat" ,std::ios::out | std::ios::app );
+
+
                                     int Nmax = option("crb.dimension-max").template as<int>();
+                                    if( Environment::worldComm().isMasterRank() )
+                                    {
+                                            fileL2 << Nmax <<"\t";
+                                            fileH1 << Nmax <<"\t";
+                                            fileOutputError << Nmax <<"\t";
+                                            fileOutputEstimatedError << Nmax << "\t";
+                                            fileOutputErrorBoundEfficiency <<  Nmax << "\t";
+                                            fileSolutionErrorBoundEfficiency << Nmax << "\t";
+                                            fileSolutionError << Nmax << "\t";
+                                            fileSolutionErrorEstimated << Nmax << "\t";
+                                            fileSolutionDualErrorBoundEfficiency << Nmax << "\t" ;
+                                            fileSolutionDualError << Nmax << "\t";
+                                            fileSolutionDualErrorEstimated << Nmax << "\t";
+                                            filePrimalResidualNorm << Nmax << "\t";
+                                            fileDualResidualNorm << Nmax << "\t";
+
+                                    }
+                                    std::string str = "\t";
                                     for( int N = 1; N <= Nmax ; N++ )
                                     {
                                         auto o= crb->run( mu,  online_tol , N, print_rb_matrix);
@@ -1081,24 +1110,28 @@ public:
                                         }
                                         conver[N]=boost::make_tuple( rel_err, l2_error, h1_error , relative_estimated_error, condition_number , output_error_bound_efficiency , relative_primal_solution_error_bound_efficiency );
 
-                                        LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
+                                        //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
-                                            std::cout << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<relative_estimated_error<<" "<<condition_number<<std::endl;
-                                        M_mapConvCRB["L2"][N-1](curpar - 1) = l2_error;
-                                        M_mapConvCRB["H1"][N-1](curpar - 1) = h1_error;
-                                        M_mapConvCRB["OutputError"][N-1](curpar - 1) = rel_err;
-                                        M_mapConvCRB["OutputEstimatedError"][N-1](curpar - 1) = output_relative_estimated_error;
-                                        M_mapConvCRB["OutputErrorBoundEfficiency"][N-1](curpar - 1) =  output_error_bound_efficiency;
-                                        M_mapConvCRB["SolutionErrorBoundEfficiency"][N-1](curpar - 1) =  relative_primal_solution_error_bound_efficiency;
-                                        M_mapConvCRB["SolutionError"][N-1](curpar - 1) =  relative_primal_solution_error;
-                                        M_mapConvCRB["SolutionErrorEstimated"][N-1](curpar - 1) =  relative_primal_solution_estimated_error;
-                                        M_mapConvCRB["SolutionDualErrorBoundEfficiency"][N-1](curpar - 1) =  relative_dual_solution_error_bound_efficiency;
-                                        M_mapConvCRB["SolutionDualError"][N-1](curpar - 1) =  relative_dual_solution_error;
-                                        M_mapConvCRB["SolutionDualErrorEstimated"][N-1](curpar - 1) =  relative_dual_solution_estimated_error;
-                                        M_mapConvCRB["PrimalResidualNorm"][N-1](curpar - 1) =  primal_residual_norm;
-                                        M_mapConvCRB["DualResidualNorm"][N-1](curpar - 1) =  dual_residual_norm;
-                                        LOG(INFO) << "N=" << N << " done.\n";
+                                        {
+                                            std::cout << "N=" << N << " " <<"OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
+                                                      <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
 
+                                            if( N == Nmax )
+                                                str="\n";
+                                            fileL2 << l2_error <<str;
+                                            fileH1 << h1_error <<str;
+                                            fileOutputError << rel_err <<str;
+                                            fileOutputEstimatedError << output_relative_estimated_error << str;
+                                            fileOutputErrorBoundEfficiency <<  output_error_bound_efficiency << str;
+                                            fileSolutionErrorBoundEfficiency << relative_primal_solution_error_bound_efficiency << str;
+                                            fileSolutionError << relative_primal_solution_error << str;
+                                            fileSolutionErrorEstimated << relative_primal_solution_estimated_error << str;
+                                            fileSolutionDualErrorBoundEfficiency << relative_dual_solution_error_bound_efficiency << str ;
+                                            fileSolutionDualError << relative_dual_solution_error << str;
+                                            fileSolutionDualErrorEstimated <<  relative_dual_solution_estimated_error << str;
+                                            filePrimalResidualNorm << primal_residual_norm << str;
+                                            fileDualResidualNorm <<  dual_residual_norm << str;
+                                        }
                                         if( option(_name="crb.compute-matrix-information").template as<bool>() )
                                         {
                                             auto matrix_info = o.template get<3>();// conditioning of primal reduced matrix + determinant
@@ -1178,8 +1211,7 @@ public:
                                         }//check residuals computations
 
                                     }//loop over basis functions ( N )
-                                    if( proc_number == Environment::worldComm().masterRank() )
-                                    {
+#if 0
                                         LOG(INFO) << "save in logfile\n";
                                         std::string mu_str;
                                         for ( int i=0; i<mu.size(); i++ )
@@ -1189,7 +1221,7 @@ public:
                                         BOOST_FOREACH( auto en, conver )
                                             conv << en.first << "\t" << en.second.get<0>()  << "\t" << en.second.get<1>() << "\t" << en.second.get<2>() <<
                                             "\t"<< en.second.get<3>() << "\t"<< en.second.get<4>()<< "\t" <<en.second.get<5>()<< "\n";
-                                    }
+#endif
                                 }//end of cvg-study
                             }//case CRB
                             break;
@@ -1533,63 +1565,6 @@ private:
     }
 
 
-    void initializeConvergenceEimMap( int sampling_size )
-    {
-        auto eim_sc_vector = model->scalarContinuousEim();
-        auto eim_sd_vector = model->scalarDiscontinuousEim();
-
-        for(int i=0; i<eim_sc_vector.size(); i++)
-        {
-            auto eim = eim_sc_vector[i];
-            M_mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
-            for(int j=0; j<eim->mMax(); j++)
-                M_mapConvEIM[eim->name()][j].resize(sampling_size);
-        }
-
-        for(int i=0; i<eim_sd_vector.size(); i++)
-        {
-            auto eim = eim_sd_vector[i];
-            M_mapConvEIM[eim->name()] = std::vector<vectorN_type>(eim->mMax());
-            for(int j=0; j<eim->mMax(); j++)
-                M_mapConvEIM[eim->name()][j].resize(sampling_size);
-        }
-    }
-
-    void initializeConvergenceCrbMap( int sampling_size )
-    {
-        //auto N = crb->dimension();
-        int N = option("crb.dimension-max").template as<int>();
-        M_mapConvCRB["L2"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["H1"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["OutputError"] = std::vector<vectorN_type>(N);//true error
-        M_mapConvCRB["OutputEstimatedError"] = std::vector<vectorN_type>(N);//estimated error
-        M_mapConvCRB["OutputErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["SolutionErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["SolutionError"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["SolutionErrorEstimated"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["SolutionDualErrorBoundEfficiency"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["SolutionDualError"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["SolutionDualErrorEstimated"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["PrimalResidualNorm"] = std::vector<vectorN_type>(N);
-        M_mapConvCRB["DualResidualNorm"] = std::vector<vectorN_type>(N);
-
-        for(int j=0; j<N; j++)
-            {
-                M_mapConvCRB["L2"][j].resize(sampling_size);
-                M_mapConvCRB["H1"][j].resize(sampling_size);
-                M_mapConvCRB["OutputError"][j].resize(sampling_size);
-                M_mapConvCRB["OutputEstimatedError"][j].resize(sampling_size);
-                M_mapConvCRB["OutputErrorBoundEfficiency"][j].resize(sampling_size);
-                M_mapConvCRB["SolutionErrorBoundEfficiency"][j].resize(sampling_size);
-                M_mapConvCRB["SolutionError"][j].resize(sampling_size);
-                M_mapConvCRB["SolutionErrorEstimated"][j].resize(sampling_size);
-                M_mapConvCRB["SolutionDualErrorBoundEfficiency"][j].resize(sampling_size);
-                M_mapConvCRB["SolutionDualError"][j].resize(sampling_size);
-                M_mapConvCRB["SolutionDualErrorEstimated"][j].resize(sampling_size);
-                M_mapConvCRB["PrimalResidualNorm"][j].resize( sampling_size );
-                M_mapConvCRB["DualResidualNorm"][j].resize( sampling_size );
-            }
-    }
 
     void initializeConvergenceScmMap( int sampling_size )
     {
@@ -1609,24 +1584,34 @@ private:
 
         for(int i=0; i<eim_sc_vector.size(); i++)
         {
-            std::vector<double> l2error;
             auto eim = eim_sc_vector[i];
-            //take two parameters : the mu and the solution of the model
-            l2error = eim->studyConvergence( mu , model_solution );
-
-            for(int j=0; j<l2error.size(); j++)
-                M_mapConvEIM[eim->name()][j][mu_number-1] = l2error[j];
+            std::vector< std::string > all_file_name;
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2estimated.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2ratio.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINF.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINFestimated.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINFratio.dat");
+            eim->studyConvergence( mu , model_solution , all_file_name );
         }
 
         for(int i=0; i<eim_sd_vector.size(); i++)
         {
-            std::vector<double> l2error;
+            std::vector< std::string > all_file_name;
             auto eim = eim_sd_vector[i];
-            l2error = eim->studyConvergence( mu , model_solution );
-
-            for(int j=0; j<l2error.size(); j++)
-                M_mapConvEIM[eim->name()][j][mu_number-1] = l2error[j];
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2estimated.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceL2ratio.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINF.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINFestimated.dat");
+            all_file_name.push_back( eim->name()+"-EimConvergenceLINFratio.dat");
+            eim->studyConvergence( mu , model_solution , all_file_name );
         }
+
+        //std::vector<double> l2error;
+        //for(int j=0; j<l2error.size(); j++)
+        //    M_mapConvEIM[eim->name()][j][mu_number-1] = l2error[j];
+
     }
 
     void doTheEimConvergenceStat( int sampling_size )
@@ -1638,258 +1623,138 @@ private:
         {
             auto eim = eim_sc_vector[i];
 
-            std::ofstream conv;
-            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
+            //load information contained in files
+            std::vector< vectorN_type > L2, L2estimated, L2ratio, LINF, LINFestimated, LINFratio;
+            std::string filename = eim->name()+"-EimConvergenceL2.dat";
+            model->readConvergenceDataFromFile( L2, filename );
+            filename = eim->name()+"-EimConvergenceL2estimated.dat";
+            model->readConvergenceDataFromFile( L2estimated, filename );
+            filename = eim->name()+"-EimConvergenceL2ratio.dat";
+            model->readConvergenceDataFromFile( L2ratio, filename );
+            filename = eim->name()+"-EimConvergenceLINF.dat";
+            model->readConvergenceDataFromFile( LINF, filename );
+            filename = eim->name()+"-EimConvergenceLINFestimated.dat";
+            model->readConvergenceDataFromFile( LINFestimated, filename );
+            filename = eim->name()+"-EimConvergenceLINFratio.dat";
+            model->readConvergenceDataFromFile( LINFratio, filename );
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            {
-                conv.open(file_name, std::ios::app);
-                conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
-            }
-
-            for(int j=0; j<eim->mMax(); j++)
-            {
-                double mean = M_mapConvEIM[eim->name()][j].mean();
-                double variance = 0.0;
-                for( int k=0; k < sampling_size ; k++)
-                {
-                    variance += (M_mapConvEIM[eim->name()][j](k) - mean)*(M_mapConvEIM[eim->name()][j](k) - mean)/sampling_size;
-                }
-
-                if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-                {
-                    conv << j+1 << "\t"
-                         << M_mapConvEIM[eim->name()][j].minCoeff() << "\t"
-                         << M_mapConvEIM[eim->name()][j].maxCoeff() << "\t"
-                         << mean << "\t" << variance << "\n";
-                }
-            }
-            conv.close();
+            //write files containing statistics
+            filename = "cvg-eim-"+eim->name()+"-L2.dat";
+            model->writeConvergenceStatistics( L2 , filename);
+            filename = "cvg-eim-"+eim->name()+"-L2estimated.dat";
+            model->writeConvergenceStatistics( L2estimated , filename);
+            filename = "cvg-eim-"+eim->name()+"-L2ratio.dat";
+            model->writeConvergenceStatistics( L2ratio , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINF.dat";
+            model->writeConvergenceStatistics( LINF , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINFestimated.dat";
+            model->writeConvergenceStatistics( LINFestimated , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINFratio.dat";
+            model->writeConvergenceStatistics( LINFratio , filename);
         }
 
         for(int i=0; i<eim_sd_vector.size(); i++)
         {
             auto eim = eim_sd_vector[i];
 
-            std::ofstream conv;
-            std::string file_name = "cvg-eim-"+eim->name()+"-stats.dat";
+            //load information contained in files
+            std::vector< vectorN_type > L2, L2estimated, L2ratio, LINF, LINFestimated, LINFratio;
+            std::string filename = eim->name()+"-EimConvergenceL2.dat";
+            model->readConvergenceDataFromFile( L2, filename );
+            filename = eim->name()+"-EimConvergenceL2estimated.dat";
+            model->readConvergenceDataFromFile( L2estimated, filename );
+            filename = eim->name()+"-EimConvergenceL2ratio.dat";
+            model->readConvergenceDataFromFile( L2ratio, filename );
+            filename = eim->name()+"-EimConvergenceLINF.dat";
+            model->readConvergenceDataFromFile( LINF, filename );
+            filename = eim->name()+"-EimConvergenceLINFestimated.dat";
+            model->readConvergenceDataFromFile( LINFestimated, filename );
+            filename = eim->name()+"-EimConvergenceLINFratio.dat";
+            model->readConvergenceDataFromFile( LINFratio, filename );
 
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            {
-                conv.open(file_name, std::ios::app);
-                conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
-            }
+            //write files containing statistics
+            filename = "cvg-eim-"+eim->name()+"-L2.dat";
+            model->writeConvergenceStatistics( L2 , filename);
+            filename = "cvg-eim-"+eim->name()+"-L2estimated.dat";
+            model->writeConvergenceStatistics( L2estimated , filename);
+            filename = "cvg-eim-"+eim->name()+"-L2ratio.dat";
+            model->writeConvergenceStatistics( L2ratio , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINF.dat";
+            model->writeConvergenceStatistics( LINF , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINFestimated.dat";
+            model->writeConvergenceStatistics( LINFestimated , filename);
+            filename = "cvg-eim-"+eim->name()+"-LINFratio.dat";
+            model->writeConvergenceStatistics( LINFratio , filename);
 
-            for(int j=0; j<eim->mMax(); j++)
-            {
-                double mean = M_mapConvEIM[eim->name()][j].mean();
-                double variance = 0.0;
-                for( int k=0; k < sampling_size; k++)
-                    variance += (M_mapConvEIM[eim->name()][j](k) - mean)*(M_mapConvEIM[eim->name()][j](k) - mean)/sampling_size;
-
-                if( Environment::worldComm().globalRank()  == Environment::worldComm().masterRank() )
-                {
-                    conv << j+1 << "\t"
-                         << M_mapConvEIM[eim->name()][j].minCoeff() << "\t"
-                         << M_mapConvEIM[eim->name()][j].maxCoeff() << "\t"
-                         << mean << "\t" << variance << "\n";
-                }
-            }
-            conv.close();
         }
     }
 
     void doTheCrbConvergenceStat( int sampling_size )
     {
-        //auto N = crb->dimension();
         int N = option("crb.dimension-max").template as<int>();
-        //std::list<std::string> list_error_type;
-        std::list<std::string> list_error_type = boost::assign::list_of("L2")("H1")("OutputError")("OutputEstimatedError")
-            ("SolutionError")("SolutionDualError")("PrimalResidualNorm")("DualResidualNorm")("SolutionErrorEstimated")
-            ("SolutionDualErrorEstimated")("SolutionErrorBoundEfficiency")("SolutionDualErrorBoundEfficiency")("OutputErrorBoundEfficiency");
 
+        std::vector< vectorN_type > L2, H1, OutputError, OutputErrorEstimated, OutputErrorBoundEfficiency;
+        std::vector< vectorN_type > PrimalSolutionError, PrimalSolutionErrorEstimated, PrimalSolutionErrorBoundEfficiency;
+        std::vector< vectorN_type > DualSolutionError, DualSolutionErrorEstimated, DualSolutionErrorBoundEfficiency;
 
-        std::vector< Eigen::MatrixXf::Index > index_max_vector_solution_primal;
-        std::vector< Eigen::MatrixXf::Index > index_max_vector_solution_dual;
-        std::vector< Eigen::MatrixXf::Index > index_max_vector_output;
-        std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_primal;
-        std::vector< Eigen::MatrixXf::Index > index_min_vector_solution_dual;
-        std::vector< Eigen::MatrixXf::Index > index_min_vector_output;
-        Eigen::MatrixXf::Index index_max;
-        Eigen::MatrixXf::Index index_min;
+        //load information contained in files
+        std::string filename = "CrbConvergenceL2.dat";
+        model->readConvergenceDataFromFile( L2, filename );
+        filename = "CrbConvergenceH1.dat";
+        model->readConvergenceDataFromFile( H1, filename );
+        filename = "CrbConvergenceOutputError.dat";
+        model->readConvergenceDataFromFile( OutputError, filename );
+        filename = "CrbConvergenceOutputErrorEstimated.dat";
+        model->readConvergenceDataFromFile( OutputErrorEstimated, filename );
+        filename = "CrbConvergenceOutputErrorBoundEfficiency.dat";
+        model->readConvergenceDataFromFile( OutputErrorBoundEfficiency, filename );
+        filename = "CrbConvergencePrimalSolutionError.dat";
+        model->readConvergenceDataFromFile( PrimalSolutionError , filename );
+        filename = "CrbConvergencePrimalSolutionErrorEstimated.dat";
+        model->readConvergenceDataFromFile( PrimalSolutionErrorEstimated , filename );
+        filename = "CrbConvergencePrimalSolutionErrorBoundEfficiency.dat";
+        model->readConvergenceDataFromFile( PrimalSolutionErrorBoundEfficiency , filename );
+        filename = "CrbConvergenceDualSolutionError.dat";
+        model->readConvergenceDataFromFile( DualSolutionError , filename );
+        filename = "CrbConvergenceDualSolutionErrorEstimated.dat";
+        model->readConvergenceDataFromFile( DualSolutionErrorEstimated , filename );
+        filename = "CrbConvergenceDualSolutionErrorBoundEfficiency.dat";
+        model->readConvergenceDataFromFile( DualSolutionErrorBoundEfficiency , filename );
 
+        //write files containing statistics
+        filename = "cvg-crb-L2.dat";
+        model->writeConvergenceStatistics( L2 , filename);
+        filename = "cvg-crb-H1.dat";
+        model->writeConvergenceStatistics( H1 , filename);
+        filename = "cvg-crb-OutputError.dat";
+        model->writeConvergenceStatistics( OutputError , filename);
+        filename = "cvg-crb-OutputErrorEstimated.dat";
+        model->writeConvergenceStatistics( OutputErrorEstimated , filename);
+        filename = "cvg-crb-OutputErrorBoundEfficiency.dat";
+        model->writeConvergenceStatistics( OutputErrorBoundEfficiency , filename);
+        filename = "cvg-crb-PrimalSolutionError.dat";
+        model->writeConvergenceStatistics( PrimalSolutionError , filename);
+        filename = "cvg-crb-PrimalSolutionErrorEstimated.dat";
+        model->writeConvergenceStatistics( PrimalSolutionErrorEstimated , filename);
+        filename = "cvg-crb-PrimalSolutionErrorBoundEfficiency.dat";
+        model->writeConvergenceStatistics( PrimalSolutionErrorBoundEfficiency , filename);
+        filename = "cvg-crb-DualSolutionError.dat";
+        model->writeConvergenceStatistics( DualSolutionError , filename);
+        filename = "cvg-crb-DualSolutionErrorEstimated.dat";
+        model->writeConvergenceStatistics( DualSolutionErrorEstimated , filename);
+        filename = "cvg-crb-DualSolutionErrorBoundEfficiency.dat";
+        model->writeConvergenceStatistics( DualSolutionErrorBoundEfficiency , filename);
 
-        /********
-         some example for the case where sampling is distributed over all procs :
-         for a given error_name:
-
-         for master proc we need to gather information:
-         std::vector< vector_cgv_type > all_convergence( world_size );
-         std::vector< int > all_sampling_size( world_size );
-
-         mpi::gather( Environment::worldComm().globalComm(),
-         M_mapConvCRB[error_name],
-         all_convergence ,
-         master_proc );
-
-         mpi::gather( Environment::worldComm().globalComm(),
-         sampling_size,
-         all_sampling_size ,
-         master_proc );
-
-         for(int p=0; p<total_proc; p++)
-           global_sampling_size+=all_sampling_size[p];
-
-         vector_cgv_type global_convergence( N );
-         for(int n=0; n<N; n++)
-           global_convergence.resize( global_sampling_size );
-
-         //we need now to assemble global_convergence
-         for(int p=0; p<total_proc; p++)
-         {
-           for(int n=0; n<N; n++)
-           {
-             global_convergence[n].segment( start , all_sampling_size[p] ) = all_convergence[p][n];
-           }
-           start+=all_sampling_size[p];
-         }
-
-         and all stat will be performed on global_convergence vector
-
-         and concerning slaves procs :
-         mpi::gather( Environment::worldComm().globalComm(),
-         M_mapConvCRB[error_name],
-         master_proc );
-
-         mpi::gather( Environment::worldComm().globalComm(),
-         sampling_size,
-         master_proc );
-
-        ******/
-
-        BOOST_FOREACH( auto error_name, list_error_type)
-        {
-            std::ofstream conv;
-            std::string file_name = "cvg-crb-"+ error_name +"-stats.dat";
-
-            if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
-            {
-                if( error_name=="SolutionErrorEstimated" || error_name=="SolutionDualErrorEstimated" || error_name=="OutputEstimatedError" ||
-                    error_name=="SolutionErrorBoundEfficiency" || error_name=="SolutionDualErrorBoundEfficiency" || error_name=="OutputErrorBoundEfficiency")
-                {
-                    conv.open(file_name, std::ios::app);
-                    conv << "NbBasis" << "\t" << "Min2" << "\t" << "Max2" << "\t" << "Min" << "\t" << "Max\t" <<"Mean" << "\t"<< "Variance" << "\n";
-                }
-                else
-                {
-                    conv.open(file_name, std::ios::app);
-                    conv << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
-                }
-            }
-
-            for(int j=0; j<N; j++)
-            {
-                double mean = M_mapConvCRB[error_name][j].mean();
-                double variance = 0.0;
-                for( int k=0; k < sampling_size; k++)
-                    variance += (M_mapConvCRB[error_name][j](k) - mean)*(M_mapConvCRB[error_name][j](k) - mean)/sampling_size;
-
-                if( Environment::worldComm().globalRank()  == Environment::worldComm().masterRank() )
-                {
-
-                    if( error_name=="SolutionErrorEstimated" || error_name=="SolutionDualErrorEstimated" || error_name=="OutputEstimatedError" ||
-                        error_name=="SolutionErrorBoundEfficiency" || error_name=="SolutionDualErrorBoundEfficiency" || error_name=="OutputErrorBoundEfficiency")
-                    {
-                        double max2=0;
-                        double min2=0;
-                        if( error_name=="SolutionErrorEstimated" )
-                        {
-                            index_max = index_max_vector_solution_primal[j];
-                            index_min = index_min_vector_solution_primal[j];
-                            max2 = M_mapConvCRB[error_name][j]( index_max );
-                            min2 = M_mapConvCRB[error_name][j]( index_min );
-                        }
-                        if( error_name=="SolutionErrorBoundEfficiency" )
-                        {
-                            index_max = index_max_vector_solution_primal[j];
-                            index_min = index_min_vector_solution_primal[j];
-                            double max_estimated = M_mapConvCRB["SolutionErrorEstimated"][j]( index_max );
-                            double min_estimated = M_mapConvCRB["SolutionErrorEstimated"][j]( index_min );
-                            double max = M_mapConvCRB["SolutionError"][j]( index_max );
-                            double min = M_mapConvCRB["SolutionError"][j]( index_min );
-                            max2 = max_estimated / max;
-                            min2 = min_estimated / min;
-                        }
-                        if( error_name=="SolutionDualErrorEstimated" )
-                        {
-                            index_max = index_max_vector_solution_dual[j];
-                            index_min = index_min_vector_solution_dual[j];
-                            max2 = M_mapConvCRB[error_name][j]( index_max );
-                            min2 = M_mapConvCRB[error_name][j]( index_min );
-                        }
-                        if( error_name=="SolutionDualErrorBoundEfficiency" )
-                        {
-                            index_max = index_max_vector_solution_dual[j];
-                            index_min = index_min_vector_solution_dual[j];
-                            double max_estimated = M_mapConvCRB["SolutionDualErrorEstimated"][j]( index_max );
-                            double min_estimated = M_mapConvCRB["SolutionDualErrorEstimated"][j]( index_min );
-                            double max = M_mapConvCRB["SolutionDualError"][j]( index_max );
-                            double min = M_mapConvCRB["SolutionDualError"][j]( index_min );
-                            max2 = max_estimated / max;
-                            min2 = min_estimated / min;
-                        }
-
-                        if( error_name=="OutputEstimatedError" )
-                        {
-                            index_max = index_max_vector_output[j];
-                            index_min = index_min_vector_output[j];
-                            max2 = M_mapConvCRB[error_name][j]( index_max );
-                            min2 = M_mapConvCRB[error_name][j]( index_min );
-                        }
-                        if( error_name=="OutputErrorBoundEfficiency" )
-                        {
-                            index_max = index_max_vector_output[j];
-                            index_min = index_min_vector_output[j];
-                            double max_estimated = M_mapConvCRB["OutputEstimatedError"][j]( index_max );
-                            double min_estimated = M_mapConvCRB["OutputEstimatedError"][j]( index_min );
-                            double max = M_mapConvCRB["OutputError"][j]( index_max );
-                            double min = M_mapConvCRB["OutputError"][j]( index_min );
-                            max2 = max_estimated / max;
-                            min2 = min_estimated / min;
-                        }
-                        double min = M_mapConvCRB[error_name][j].minCoeff(&index_min) ;
-                        double max = M_mapConvCRB[error_name][j].maxCoeff(&index_max) ;
-                        conv << j+1 << "\t"
-                             << min2 << "\t" << max2 << "\t" << min << "\t" << max << "\t" << mean << "\t" << variance << "\n";
-
-                    }
-                    else
-                    {
-                        conv << j+1 << "\t"
-                             << M_mapConvCRB[error_name][j].minCoeff(&index_min) << "\t"
-                             << M_mapConvCRB[error_name][j].maxCoeff(&index_max) << "\t"
-                             << mean << "\t" << variance << "\n";
-                        if( error_name=="OutputError" )
-                        {
-                            index_max_vector_output.push_back( index_max );
-                            index_min_vector_output.push_back( index_min );
-                        }
-                        if( error_name=="SolutionError")
-                        {
-                            index_max_vector_solution_primal.push_back( index_max );
-                            index_min_vector_solution_primal.push_back( index_min );
-                        }
-                        if( error_name=="SolutionDualError")
-                        {
-                            index_max_vector_solution_dual.push_back( index_max );
-                            index_min_vector_solution_dual.push_back( index_min );
-                        }
-                    }
-                }//master proc
-            }//loop over number of RB elements
-
-            conv.close();
-        }
+        //now we have error and estimated error statistics for all parameters (min max ect ... )
+        //but it is interesting to have also the efficiency associated to parameter that generated the max/min
+        //error on the output or on primal/dual solution
+        //so that what we do here
+        filename = "cvg-crb-OutputErrorBoundEfficiency2.dat";
+        model->writeVectorsExtremumsRatio( OutputError, OutputErrorEstimated, filename );
+        filename = "cvg-crb-PrimalSolutionErrorBoundEfficiency2.dat";
+        model->writeVectorsExtremumsRatio( PrimalSolutionError, PrimalSolutionErrorEstimated, filename );
+        filename = "cvg-crb-DualSolutionErrorBoundEfficiency2.dat";
+        model->writeVectorsExtremumsRatio( DualSolutionError, DualSolutionErrorEstimated, filename );
 
         int Nmax = vector_sampling_for_primal_efficiency_under_1.size();
         for(int N=0; N<Nmax; N++)
@@ -1905,7 +1770,6 @@ private:
             if( vector_sampling_for_dual_efficiency_under_1[N]->size() > 1 )
                 vector_sampling_for_dual_efficiency_under_1[N]->writeOnFile(file_name_dual);
         }
-
 
     }
 
@@ -2007,10 +1871,6 @@ private:
     crbmodel_ptrtype model;
     crb_ptrtype crb;
 
-    // For EIM convergence study
-    std::map<std::string, std::vector<vectorN_type> > M_mapConvEIM;
-    // For CRB convergence study
-    std::map<std::string, std::vector<vectorN_type> > M_mapConvCRB;
     // For SCM convergence study
     std::map<std::string, std::vector<vectorN_type> > M_mapConvSCM;
 
