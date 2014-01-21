@@ -1480,6 +1480,11 @@ public:
         return M_model->writeConvergenceStatistics( vector, filename );
     }
 
+    void writeVectorsExtremumsRatio(std::vector< vectorN_type > const& vector1, std::vector< vectorN_type > const& vector2, std::string filename )
+    {
+        return M_model->writeVectorsExtremumsRatio( vector1, vector2, filename );
+    }
+
     double timeStep()
     {
         return timeStep( mpl::bool_<model_type::is_time_dependent>() );
