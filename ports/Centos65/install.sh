@@ -1,6 +1,6 @@
 #!/bin/bash
 wget http://people.centos.org/tru/devtools-1.1/devtools-1.1.repo -O /etc/yum.repos.d/devtools-1.1.repo
-yum install devtoolset-1.1 cmake28 cmake28-gui openmpi openmpi-devel
+yum install devtoolset-1.1 cmake28 cmake28-gui openmpi openmpi-devel git
 scl enable devtoolset-1.1 bash
 
 #Pour installer ailleurs: changer la variable $workdir (s'assurer d'avoir les droits)
