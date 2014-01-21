@@ -116,20 +116,21 @@ struct extract_all_poly_indices
 template<uint16_type N,
          uint16_type O,
          typename T = double,
-         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
+         template<uint16_type, uint16_type, uint16_type> class Convex = Simplex,
+         uint16_type TheTAG = 0 >
 class NedelecPolynomialSet
     :
-    public Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex>
+    public Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex>
 {
-    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> super;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex> super;
 
 public:
     static const uint16_type Om1 = (O==0)?0:O-1;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, Convex> Pk_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> Pkp1_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, Convex> Pkm1_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, Convex> Pk_s_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, Convex> Pkp1_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, TheTAG, Convex> Pk_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, TheTAG, Convex> Pkp1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, TheTAG, Convex> Pkm1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, TheTAG, Convex> Pk_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, TheTAG, Convex> Pkp1_s_type;
 
     typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
     typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
@@ -426,7 +427,7 @@ private:
  * \class Nedelec
  * \brief Nedelec Finite Element
  *
- * \f$ H(div)\f$  conforming element
+ * \f$ H(curl)\f$  conforming element
  *
  * @author Christophe Prud'homme
  */
@@ -437,14 +438,10 @@ template<uint16_type N,
          uint16_type TheTAG = 0 >
 class Nedelec
     :
-public FiniteElement<NedelecPolynomialSet<N, O, T, Convex>,
-    fem::detail::NedelecDual,
-    PointSetEquiSpaced >,
-public boost::enable_shared_from_this<Nedelec<N,O,T,Convex> >
+    public FiniteElement<NedelecPolynomialSet<N, O, T, Convex>, fem::detail::NedelecDual, PointSetEquiSpaced >,
+    public boost::enable_shared_from_this<Nedelec<N,O,T,Convex> >
 {
-    typedef FiniteElement<NedelecPolynomialSet<N, O, T, Convex>,
-            fem::detail::NedelecDual,
-            PointSetEquiSpaced > super;
+    typedef FiniteElement<NedelecPolynomialSet<N, O, T, Convex>, fem::detail::NedelecDual, PointSetEquiSpaced > super;
 public:
 
     BOOST_STATIC_ASSERT( N > 1 );
@@ -457,13 +454,13 @@ public:
     //static const bool isTransformationEquivalent = false;
     static const bool isTransformationEquivalent = true;
     static const bool isContinuous = true;
+    typedef typename super::value_type value_type;
+    typedef typename super::primal_space_type primal_space_type;
+    typedef typename super::dual_space_type dual_space_type;
     typedef Continuous continuity_type;
     static const uint16_type TAG = TheTAG;
 
     //static const polynomial_transformation_type transformation = POLYNOMIAL_CONTEXT_NEEDS_1ST_PIOLA_TRANSFORMATION;
-    typedef typename super::value_type value_type;
-    typedef typename super::primal_space_type primal_space_type;
-    typedef typename super::dual_space_type dual_space_type;
 
     /**
      * Polynomial Set type: scalar or vectorial
@@ -481,7 +478,6 @@ public:
     typedef typename reference_convex_type::node_type node_type;
     typedef typename reference_convex_type::points_type points_type;
 
-
     static const uint16_type nOrder =  dual_space_type::nOrder;
     static const uint16_type nbPtsPerVertex = 0;
     static const uint16_type nbPtsPerEdge = mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
@@ -494,7 +490,32 @@ public:
     static const uint16_type numPoints = ( reference_convex_type::numGeometricFaces*nbPtsPerFace+
                                            reference_convex_type::numEdges*nbPtsPerEdge );
 
+    // static const uint16_type numPoints = reference_convex_type::numPoints;
+    // static const uint16_type nbPtsPerVertex = reference_convex_type::nbPtsPerVertex;
+    // static const uint16_type nbPtsPerEdge = reference_convex_type::nbPtsPerEdge;
+    // static const uint16_type nbPtsPerFace = reference_convex_type::nbPtsPerFace;
+    // static const uint16_type nbPtsPerVolume = reference_convex_type::nbPtsPerVolume;
+
     static const uint16_type nLocalDof = dual_space_type::nLocalDof;
+
+    template<int subN>
+    struct SubSpace
+    {
+        typedef Nedelec<N-1, O, T, Convex, TheTAG> type;
+    };
+
+    struct SSpace
+    {
+        typedef Nedelec<N, O, T, Convex, TheTAG> type;
+
+    };
+
+    template<uint16_type NewDim>
+    struct ChangeDim
+    {
+        typedef Nedelec<NewDim, O, T, Convex,  TheTAG> type;
+    };
+
     //@}
 
     /** @name Constructors, destructor
@@ -519,11 +540,13 @@ public:
         std::cout << "[N] is_product : " << is_product << "\n";
 #endif
     }
+
     Nedelec( Nedelec const & cr )
         :
         super( cr ),
         M_refconvex()
     {}
+
     ~Nedelec()
     {}
 
@@ -762,8 +785,12 @@ public:
 
     typedef Lagrange<Order,Scalar> component_basis_type;
 
+    static const uint16_type nOrder =  Order;
     static const uint16_type TAG = TheTAG;
 };
+template<uint16_type Order,
+         uint16_type TheTAG>
+const uint16_type Nedelec<Order,TheTAG>::nOrder;
 
 } // Feel
 #endif /* __Nedelec_H */
