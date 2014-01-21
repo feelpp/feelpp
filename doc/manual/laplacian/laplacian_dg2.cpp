@@ -70,6 +70,12 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
+    auto c = form2( _trial=Vh, _test=Vh,
+                    _pattern=size_type(Pattern::EXTENDED) );
+    c =integrate( internalfaces( mesh ),
+                  + trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / measFace() );
+    if ( Environment::numberOfProcessors() == 1 )
+        c.matrixPtr()->printMatlab( "c.m" );
     auto a = form2( _trial=Vh, _test=Vh,
                     _pattern=size_type(Pattern::EXTENDED) );
     a = integrate(_range=elements(mesh),
