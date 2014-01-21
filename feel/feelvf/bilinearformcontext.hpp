@@ -439,8 +439,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
 
         else
         {
-            LOG(INFO) << "local Assembly for element " << _gmc.id()
-                      << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( _gmc.id() );
+            DVLOG(2) << "local Assembly for element " << _gmc.id()
+                     << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( _gmc.id() );
             if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( _gmc.id() ) )
                 for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
                     for ( uint16_type i = 0; i < test_dof_type::nDofPerElement; ++i )
@@ -596,8 +596,8 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
         DCHECK( trial_eid != invalid_size_type_value )
             << "this case should have been taken care of earlier before the assembly process\n";
 
-        LOG(INFO) << "local Assembly for element " << elt_0
-                  << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( elt_0 );
+        DVLOG(2) << "local Assembly for element " << elt_0
+                 << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( elt_0 );
         if ( !UseMortar || !M_test_dof->mesh()->isBoundaryElement( elt_0 ) )
         {
             M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0 ).array() + row_start;

@@ -280,6 +280,135 @@ public :
     }
 
 
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            Eigen::MatrixXf::Index index_max;
+            Eigen::MatrixXf::Index index_min;
+
+            std::ofstream file;
+            file.open( filename );
+            file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
+            int Nmax = vector.size();
+            for(int n=0; n<Nmax; n++)
+            {
+                double variance=0;
+                int sampling_size = vector[n].size();
+                double mean=vector[n].mean();
+                double max = vector[n].maxCoeff(&index_max);
+                double min = vector[n].minCoeff(&index_min);
+                for(int i=0; i<sampling_size; i++)
+                    variance += (vector[n](i) - mean)*(vector[n](i) - mean)/sampling_size;
+                file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
+            }
+        }
+    }
+
+    /**
+    * \param : vector1
+    * \param : vector2
+    * look for the index minIdx for which we have min( vector1 )
+    * then compute vector2( minIdx) / vector1( minIdx )
+    * and same thing with max : i.e. vector2( maxIdx ) / vector1( maxIdx )
+    * usefull to compute error estimation efficiency associated to
+    * min/max errors
+    **/
+    void writeVectorsExtremumsRatio( std::vector< vectorN_type > const& error, std::vector< vectorN_type > const& estimated, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+
+            Eigen::MatrixXf::Index index_max;
+            Eigen::MatrixXf::Index index_min;
+
+            std::ofstream file;
+            file.open( filename );
+            file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\n";
+            int Nmax = error.size();
+            int estimatedsize = estimated.size();
+            CHECK( Nmax == estimatedsize ) << "vectors have not the same size ! v1.size() : "<<error.size()<<" and v2.size() : "<<estimated.size()<<"\n";
+            for(int n=0; n<Nmax; n++)
+            {
+                double min_error = error[n].maxCoeff(&index_min);
+                double max_error = error[n].minCoeff(&index_max);
+                double min_estimated = estimated[n](index_min);
+                double max_estimated = estimated[n](index_max);
+                double min_ratio = min_estimated / min_error;
+                double max_ratio = max_estimated / max_error;
+                file << n+1 <<"\t"<< min_ratio <<" \t" << max_ratio<< "\n";
+            }
+        }
+    }
+
+    void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string filename )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+
+            std::vector< std::vector< double > > tmpvector;
+            std::ifstream file ( filename );
+            std::string str;
+            int N;
+            int Nmax=0;
+            double value;
+            if( file )
+            {
+                //first, determine max elements of the RB
+                //because we could have performed several runs
+                //and the size of the RB can vary between two runs
+                while( ! file.eof() )
+                {
+                    file >> N;
+                    if( N > Nmax )
+                        Nmax = N;
+                    for(int n=0; n<N; n++)
+                    {
+                        file >> value;
+                    }
+                }
+
+                vector.resize( Nmax );
+                tmpvector.resize( Nmax );
+                //go to the begining of the file
+                file.clear();
+                file.seekg(0,std::ios::beg);
+
+
+                file >> N;
+                while( ! file.eof() )
+                {
+                    for(int n=0; n<N; n++)
+                    {
+                        file >> value;
+                        tmpvector[n].push_back( value );
+                    }
+                    file >> N;
+                }
+
+            }
+            else
+            {
+                std::cout<<"The file "<<filename<<" was not found "<<std::endl;
+                throw std::logic_error( "[ModelCrbBase::fillVectorFromFile] ERROR loading the file " );
+            }
+
+            file.close();
+
+            //now copy std::vector into eigen vector
+            for(int n=0; n<Nmax; n++)
+            {
+                int nbvalues = tmpvector[n].size();
+                vector[n].resize(nbvalues);
+                for(int i=0; i<nbvalues; i++)
+                {
+                    vector[n](i) = tmpvector[n][i];
+                }
+            }
+
+        }//master proc
+    }//end of function
+
 protected :
 
     funs_type M_funs;

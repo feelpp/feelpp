@@ -285,7 +285,7 @@ public:
     vector_type beta( parameter_type const& mu, size_type M  ) const { return M_model->beta( mu , M ); }
     vector_type beta( parameter_type const& mu, solution_type const& T, size_type M  ) const {return M_model->beta( mu , T , M ); }
 
-    std::vector<double> studyConvergence( parameter_type const & mu, solution_type & solution ) const;
+    void studyConvergence( parameter_type const & mu, solution_type & solution , std::vector< std::string > all_file_name ) const;
     element_type elementErrorEstimation( parameter_type const & mu, solution_type const& solution , int M ) const ;
     double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const ;
 
@@ -688,42 +688,41 @@ EIM<ModelType>::offline(  )
 }
 
 template<typename ModelType>
-std::vector<double>
-EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & solution) const
+void
+EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & solution , std::vector<std::string> all_file_name ) const
 {
     LOG(INFO) << " Convergence study \n";
     int proc_number =  Environment::worldComm().globalRank();
 
     std::vector<double> l2ErrorVec(M_model->mMax(), 0.0);
 
-    std::string mu_str;
-    for ( int i=0; i<mu.size(); i++ )
-        mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
+    //here are files containing l2error and others quantities for all runs performed
+    int number_of_files=all_file_name.size();
+    std::ofstream fileL2 ( all_file_name[0] ,std::ios::out | std::ios::app );
+    std::ofstream fileL2estimated (  all_file_name[1] , std::ofstream::out | std::ofstream::app );
+    std::ofstream fileL2ratio (  all_file_name[2] , std::ofstream::out | std::ofstream::app );
+    std::ofstream fileLINF (  all_file_name[3] , std::ofstream::out | std::ofstream::app );
+    std::ofstream fileLINFestimated (  all_file_name[4] , std::ofstream::out | std::ofstream::app );
+    std::ofstream fileLINFratio (  all_file_name[5] , std::ofstream::out | std::ofstream::app );
+    std::string head = "#Nbasis \t  L2_error \t L2_estimated \t ratio_l2 \t linf_error \t linf_estimated \t ratio_linf \n";
 
-    std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
-    if( std::ifstream( file_name ) )
-        std::remove( file_name.c_str() );
-
-    std::ofstream conv;
-    if( proc_number == Environment::worldComm().masterRank() )
-        {
-            conv.open(file_name, std::ios::app);
-            conv << "#Nb_basis" << "\t" << "L2_error \t L2_estimated \t ratio_l2 \t linf_error \t linf_estimated \t ratio_linf \t interpolation_error " <<"\n";
-        }
-
-    bool use_expression = option(_name="eim.compute-error-with-truth-expression").template as<bool>();
     int max = M_model->mMax();
+    int Nmax=0;
+    if( Environment::worldComm().isMasterRank() )
+    {
+        Nmax = max-2;
+        fileL2 << Nmax<< "\t";
+        fileL2estimated << Nmax <<"\t";
+        fileL2ratio << Nmax  <<"\t" ;
+        fileLINF << Nmax  <<"\t" ;
+        fileLINFestimated << Nmax  <<"\t" ;
+        fileLINFratio << Nmax  <<"\t" ;
+    }
     for(int N=1; N<max-1; N++)
     {
-
+        std::string str = "\t";
+        if( N == Nmax ) str = "\n";
         double exprl2norm = 0 , diffl2norm = 0 ;
-
-        if( 0 ) //use_expression )
-        {
-            exprl2norm =M_model->expressionL2Norm( solution , mu );
-            auto eim_approximation = this->operator()(mu , solution, N);
-            diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
-        }
 
         exprl2norm =M_model->projExpressionL2Norm( solution , mu );
         auto eim_approximation = this->operator()(mu , solution, N);
@@ -735,7 +734,42 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         //interpolation error : || projection_g - g ||_L2
         double interpolation_error = M_model->interpolationError( solution , mu );
 
+        double absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
+        auto error_estimation_element = this->elementErrorEstimation( mu , solution, N );
+        double absolute_l2_error_estimated = error_estimation_element.l2Norm();
+        double relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
+        double relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
+        double absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
+        //l2ErrorVec[N-1] = relative_l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
+        if( Environment::worldComm().isMasterRank() )
+        {
+            int nmax=max-2;
+            fileL2            << relative_l2_error            <<str;
+            fileL2estimated   << relative_l2_error_estimated  <<str;
+            fileL2ratio       << relative_ratio_l2            <<str;
+            fileLINF          << absolute_linf_error          <<str;
+            fileLINFestimated << absolute_linf_error_estimated<<str;
+            fileLINFratio     << absolute_ratio_linf          <<str;
+        }
+    }//loop over basis functions
+
+    fileL2.close();
+    fileL2estimated.close();
+    fileL2ratio.close();
+    fileLINF.close();
+    fileLINFestimated.close();
+    fileLINFratio.close();
+
 #if 0
+    bool use_expression = option(_name="eim.compute-error-with-truth-expression").template as<bool>();
+
+        if( use_expression )
+        {
+            exprl2norm =M_model->expressionL2Norm( solution , mu );
+            auto eim_approximation = this->operator()(mu , solution, N);
+            diffl2norm = M_model->diffL2Norm( solution , mu , eim_approximation );
+        }
+
         int size = mu.size();
         LOG(INFO)<<" mu = [ ";
         for ( int i=0; i<size-1; i++ ) LOG(INFO)<< mu[i] <<" , ";
@@ -754,23 +788,24 @@ EIM<ModelType>::studyConvergence( parameter_type const & mu , solution_type & so
         LOG(INFO) << "norm_l2_approximation = " << norm_l2_approximation << "\n";
         auto l2_error = math::abs( norm_l2_expression - norm_l2_approximation ) / norm_l2_expression;
         LOG(INFO) << "norm l2 error = " << l2_error << "\n";
+
+    std::string mu_str;
+    for ( int i=0; i<mu.size(); i++ )
+        mu_str= mu_str + ( boost::format( "_%1%" ) %mu(i) ).str() ;
+
+    std::string file_name = "cvg-eim-"+M_model->name()+"-"+mu_str+".dat";
+    if( std::ifstream( file_name ) )
+        std::remove( file_name.c_str() );
+
+    std::ofstream conv;
+    if( proc_number == Environment::worldComm().masterRank() )
+        {
+            conv.open(file_name, std::ios::app);
+            conv << "#Nbasis" << "\t" << "L2_error \t L2_estimated \t ratio_l2 \t linf_error \t linf_estimated \t ratio_linf \t interpolation_error " <<"\n";
+        }
+
 #endif
-        double absolute_linf_error_estimated = this->errorEstimationLinf( mu , solution, N );
-        auto error_estimation_element = this->elementErrorEstimation( mu , solution, N );
-        double absolute_l2_error_estimated = error_estimation_element.l2Norm();
-        double relative_l2_error_estimated = absolute_l2_error_estimated/exprl2norm;
-        double relative_ratio_l2 = math::abs( relative_l2_error_estimated / relative_l2_error );
-        double absolute_ratio_linf = math::abs( absolute_linf_error_estimated / absolute_linf_error );
-        l2ErrorVec[N-1] = relative_l2_error; // /!\ l2ErrorVec[i] represents error with i+1 bases
-        if( proc_number == Environment::worldComm().masterRank() )
-            conv << N << "\t" << relative_l2_error << "\t" << relative_l2_error_estimated <<" \t"
-                 << relative_ratio_l2<<" \t" << absolute_linf_error << "\t" << absolute_linf_error_estimated<<" \t"
-                 << absolute_ratio_linf<<" \t"<< interpolation_error << "\n";
 
-    }//loop over basis functions
-
-    conv.close();
-    return l2ErrorVec;
 }
 
 template<typename SpaceType, typename ModelSpaceType, typename ParameterSpaceType>
@@ -895,7 +930,7 @@ public:
     virtual double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const=0 ;
     virtual node_type interpolationPoint( int position ) const = 0;
 
-    virtual std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const = 0;
+    virtual void studyConvergence( parameter_type const & mu , solution_type & solution, std::vector< std::string > all_file_name ) const = 0;
     virtual void computationalTimeStatistics( std::string appname )  = 0;
     virtual double expressionL2Norm( solution_type const& T , parameter_type const& mu ) const = 0;
     virtual double diffL2Norm( solution_type const& T , parameter_type const& mu , element_type const& eim_expansion ) const = 0;
@@ -1705,7 +1740,7 @@ public:
     vector_type  beta( parameter_type const& mu ) const { return M_eim->beta( mu ); }
     vector_type  beta( parameter_type const& mu, solution_type const& T ) const { return M_eim->beta( mu, T ); }
 
-    std::vector<double> studyConvergence( parameter_type const & mu , solution_type & solution ) const { return M_eim->studyConvergence( mu , solution ) ; }
+    void studyConvergence( parameter_type const & mu , solution_type & solution, std::vector< std::string > all_file_name ) const { return M_eim->studyConvergence( mu , solution , all_file_name ) ; }
     element_type elementErrorEstimation( parameter_type const & mu , solution_type const& solution, int M ) const { return M_eim->elementErrorEstimation(mu , solution, M) ; }
     double errorEstimationLinf( parameter_type const & mu, solution_type const& solution , int M ) const { return M_eim->errorEstimationLinf(mu, solution, M) ; }
     //size_type mMax() const { return M_eim->mMax(); }

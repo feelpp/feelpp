@@ -180,29 +180,24 @@ public:
 
 
 
-#if 1
         CHECK( nDim <3 ) << "nDim must be less than 3 here\n";
         if ( nDim == 2 )
         {
-            ublas::vector<uint16_type> permIdentity(3);           permIdentity(0) =           0 ; permIdentity(1) =           1 ; permIdentity(2) =           2;
-            ublas::vector<uint16_type> permRotAnticlock(3);       permRotAnticlock(0) =       1 ; permRotAnticlock(1) =       2 ; permRotAnticlock(2) =       0;
-            ublas::vector<uint16_type> permRotClockwise(3);       permRotClockwise(0) =       2 ; permRotClockwise(1) =       0 ; permRotClockwise(2) =       1;
-            ublas::vector<uint16_type> permReverseBase(3);        permReverseBase(0) =        0 ; permReverseBase(1) =        2 ; permReverseBase(2) =        1;
-            ublas::vector<uint16_type> permReverseHypothenuse(3); permReverseHypothenuse(0) = 1 ; permReverseHypothenuse(1) = 0 ; permReverseHypothenuse(2) = 2;
-            ublas::vector<uint16_type> permReverseHeight(3);      permReverseHeight(0) =      2 ; permReverseHeight(1) =      1 ; permReverseHeight(2) =      0;
-            std::map<uint16_type, ublas::vector<uint16_type> > permTriangles;
-            permTriangles[triangular_faces_type::IDENTITY] = permIdentity;
-            permTriangles[triangular_faces_type::ROTATION_ANTICLOCK] = permRotAnticlock;
-            permTriangles[triangular_faces_type::ROTATION_CLOCKWISE] = permRotClockwise;
-            permTriangles[triangular_faces_type::REVERSE_BASE] = permReverseBase;
-            permTriangles[triangular_faces_type::REVERSE_HYPOTENUSE] = permReverseHypothenuse;
-            permTriangles[triangular_faces_type::REVERSE_HEIGHT] = permReverseHeight;
+
+            std::map<uint16_type, std::vector<uint16_type> > permTriangles = {
+                {triangular_faces_type::IDENTITY, {0,1,2}},
+                {triangular_faces_type::ROTATION_ANTICLOCK, {1,2,0}},
+                {triangular_faces_type::ROTATION_CLOCKWISE, {2,0,1}},
+                {triangular_faces_type::REVERSE_BASE,{0,2,1}},
+                {triangular_faces_type::REVERSE_HYPOTENUSE,{1,0,2}},
+                {triangular_faces_type::REVERSE_HEIGHT,{2,1,0}}
+            };
 
             DCHECK( permTriangles.find( __p )!=permTriangles.end() ) << "invalid permutation :" << __p << "\n";
 
             for ( int i = 0; i < numVertices; ++i )
             {
-                const int iperm = permTriangles.find( __p )->second( i );
+                const int iperm = permTriangles.find( __p )->second[ i ];
                 ublas::column( M_vertices, iperm ) = e.vertex( element_type::f2p( __f, i ) );
             }
 
@@ -210,42 +205,20 @@ public:
         }
         else if ( nDim == 1 )
         {
-            ublas::vector<uint16_type> permLineIdentity(2); permLineIdentity(0) = 0 ; permLineIdentity(1) = 1;
-            ublas::vector<uint16_type> permLineReverse(2);  permLineReverse(0) =  1 ; permLineReverse(1) =  0;
-            std::map<uint16_type, ublas::vector<uint16_type> > permLines;
-            permLines[line_permutations::IDENTITY] = permLineIdentity;
-            permLines[line_permutations::REVERSE_PERMUTATION] = permLineReverse;
+            std::map<uint16_type, std::vector<uint16_type> > permLines{
+                {line_permutations::IDENTITY, {0,1} },
+                {line_permutations::REVERSE_PERMUTATION, {1,0} } };
 
             DCHECK( permLines.find( __p )!=permLines.end() ) << "invalid permutation :" << __p << "\n";
 
             for ( int i = 0; i < numVertices; ++i )
             {
-                const int iperm = permLines.find( __p )->second( i );
+                const int iperm = permLines.find( __p )->second[ i ];
                 ublas::column( M_vertices, iperm ) = e.vertex( element_type::e2p( __f, i ) );
             }
 
             M_points = make_line_points();
         }
-
-#else
-        for ( int i = 0; i < numVertices; ++i )
-        {
-            if ( real_dimension == 3 )
-                ublas::column( M_vertices, i ) = e.vertex( element_type::f2p( __f, i ) );
-
-            else
-                ublas::column( M_vertices, i ) = e.vertex( element_type::e2p( __f, i ) );
-        }
-
-        for ( int i = 0; i < numPoints; ++i )
-        {
-            if ( real_dimension == 3 )
-                ublas::column( M_points, i ) = e.point( element_type::f2p( __f, i ) );
-
-            else
-                ublas::column( M_points, i ) = e.point( element_type::e2p( __f, i ) );
-        }
-#endif
 
         make_normals();
         computeBarycenters();
