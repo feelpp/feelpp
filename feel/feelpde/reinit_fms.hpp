@@ -54,10 +54,13 @@ public:
      */
     //@{
 
-    enum status_type { FAR=0, CLOSE=1, DONE=2 };
+    enum status_type {FAR=0, CLOSE=1, DONE=2};
 
     typedef ReinitializerFMS<FunctionSpaceType, periodicity_type> self_type;
     typedef boost::shared_ptr< self_type > self_ptrtype;
+
+    typedef Backend<double> backend_type;
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     typedef FunctionSpaceType functionspace_type;
     typedef boost::shared_ptr<functionspace_type> functionspace_ptrtype;
@@ -128,12 +131,14 @@ private:
     }
 
     functionspace_ptrtype const& M_functionspace;
+    vector_ptrtype checkDONE;
     periodicity_type M_periodicity;
     neighbors_type M_neighbors;
     std::map< size_type, size_type> M_ghostClusterToProc;
     std::vector<point_type> M_coords;
     vf::node_type M_translation;
     const size_type firstDof;
+    const uint16_type ndofOnCluster;
 
 };
 

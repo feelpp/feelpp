@@ -744,6 +744,7 @@ public:
             M_im( _im ),
             M_ret( eval::matrix_type::Zero() )
         {
+            M_cpuTime = 0.0;
         }
 
         HartsContextEvaluate( HartsContextEvaluate const& c )
@@ -756,10 +757,15 @@ public:
             M_im( c.M_im ),
             M_ret( c.M_ret )
         {
+            M_cpuTime = 0.0;
         }
 
         void computeCPU(DataArgsType& args)
         {
+            PerfCounterMng<std::string> perf_mng ;
+            perf_mng.init("cpu") ;
+            perf_mng.start("cpu") ;
+
             // DEFINE the range to be iterated on
             std::vector<boost::reference_wrapper<const typename eval::element_type> > * r =
                 args.get("r")->get<std::vector<boost::reference_wrapper<const typename eval::element_type> > >();
@@ -780,11 +786,19 @@ public:
                     }
                 }
             }
+
+            perf_mng.stop("cpu") ;
+            M_cpuTime = perf_mng.getValueInSeconds("cpu");
         }
 
         value_type result() const
         {
             return M_ret;
+        }
+
+        double elapsed()
+        {
+            return M_cpuTime;
         }
 
         gm_ptrtype M_gm;
@@ -793,6 +807,8 @@ public:
         eval_expr_type M_expr;
         im_type M_im;
         value_type M_ret;
+
+        double M_cpuTime;
     };
 #endif // FEELPP_HAS_HARTS
     //@}
@@ -2997,8 +3013,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
                             bool check=true;
                             for ( uint16_type i=0;i<__c01->nPoints() && check;++i )
+                            {
+                                LOG(INFO) << "c0.xreal = " << __c01->xReal(i);
+                                LOG(INFO) << "c1.xreal(" << __p << ") = " << __c11->xReal(i);
                                 for (uint16_type d=0;d<gmc1_type::NDim;++d)
                                     check = check && ( std::abs(__c01->xReal(i)[d] - __c11->xReal(i)[d])<1e-8 );
+                            }
 
                             // if check compute full gmc context with the good permutation
                             if (check) { __c11->update( it->element( 1 ), __face_id_in_elt_1, __p ); findPermutation=true; }
@@ -4544,6 +4564,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #if defined(FEELPP_HAS_HARTS)
     if ( option(_name="parallel.cpu.enable").template as<bool>() )
     {
+        PerfCounterMng<std::string> perf_mng ;
+        perf_mng.init("total") ;
+        perf_mng.start("total") ;
+
         typename eval::matrix_type res( eval::matrix_type::Zero() );
         typedef HartsContextEvaluate<expression_type, im_type, typename eval::the_element_type> harts_context_type;
 
@@ -4607,18 +4631,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             }
         }
 
-        element_iterator it = this->beginElement();
-        element_iterator en = this->endElement();
-
-        if ( it == en )
-        {
-            std::cout << "start=end" << std::endl;
-            return eval::zero();
-        }
-
-
         /* count the number of elements */
-        int nbElts = std::distance(it,en);
+        int nbElts = 0;
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        {
+            nbElts += std::distance(lit->template get<1>(), lit->template get<2>());
+        }
 
         /* create a task and data managers */
         TaskMngType taskMng;
@@ -4645,26 +4663,41 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 
         std::vector<std::vector<boost::reference_wrapper<const typename eval::element_type> > > _v;
 
-        /* build data vector for threads */
-        int i = 0, j = 0, k= 0, nb = 0;
-        auto _it = it;
-        while( _it != en )
+        for(int i = 0; i < nbThread; i++)
         {
-            std::vector<boost::reference_wrapper<const typename eval::element_type> > _v1;
+            std::vector<boost::reference_wrapper<const typename eval::element_type> > v1;
+            v1.reserve(nbEltPerRange + (i < remainderElt ? 1 : 0));
+            _v.push_back(v1);
+        }
 
-            nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
-            for(j = 0; j < nb; j++)
+        std::cout << _v.size() << std::endl;
+
+        /* build data vector for threads */
+        element_iterator it, en;
+        int i = 0, j = 0, k= 0, nb = 0;
+        nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
+
+        //auto lit = M_elts.begin();
+        for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
+        {
+            it = lit->template get<1>();
+            en = lit->template get<2>();
+
+            while( it != en )
             {
-                _v1.push_back( boost::cref( *_it ) );
-                _it++;
+                _v.at(i).push_back( boost::cref( *it ) );
+                it++;
                 k++;
+
+                if(k == nb)
+                {
+                    std::cout << "T" << i << ": nbelem=" << nbElts << " (" << k << ", " << nb << ")" << std::endl;
+                    i++;
+
+                    k = 0;
+                    nb = nbEltPerRange + (i < remainderElt ? 1 : 0);
+                }
             }
-
-            _v.push_back(_v1);
-
-            //std::cout << "T" << i << ": nbelem=" << nbElts << " (" << k << ", " << nb << ")" << std::endl;
-
-            i++;
         }
 
         /* create tasks and associate them data */
@@ -4673,7 +4706,7 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             DataHandlerType * v_handler = dataMng.getNewData();
             v_handler->set<std::vector<boost::reference_wrapper<const typename eval::element_type> > >(&_v[i]);
 
-            harts_context_type * t = new harts_context_type(this->expression(), this->im(), *it);
+            harts_context_type * t = new harts_context_type(this->expression(), this->im(), *(M_elts.begin()->template get<1>()) /* *it */);
             hce.push_back(t);
             TaskType* task = new TaskType(t);
             task->args().add("r", DataHandlerType::R, v_handler);
@@ -4692,6 +4725,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
             res += hce[i]->result();
         }
 
+        for(int i = 0; i < nbThread; i++)
+        {
+            std::cout << "T" << i << ": " << hce[i]->elapsed() << "s" << std::endl;
+        }
+
         // Free memory
         #if 0
         delete threadEnv;
@@ -4703,6 +4741,10 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
         }
         #endif
 
+        perf_mng.stop("total") ;
+
+        std::cout << "Total: " << perf_mng.getValueInSeconds("total") << std::endl;
+
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
     }
@@ -4710,6 +4752,12 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
 #endif // defined(FEELPP_HAS_HARTS)
     if ( 1 )
     {
+#if defined(FEELPP_HAS_HARTS)
+        PerfCounterMng<std::string> perf_mng ;
+        perf_mng.init("total") ;
+        perf_mng.start("total") ;
+#endif
+
         //
         // some typedefs
         //
@@ -4883,6 +4931,11 @@ Integrator<Elements, Im, Expr, Im2>::evaluate( mpl::int_<MESH_ELEMENTS> ) const
                 }
             }
         }
+#if defined(FEELPP_HAS_HARTS)
+        perf_mng.stop("total") ;
+        std::cout << "Total: " << perf_mng.getValueInSeconds("total") << std::endl;
+#endif
+
         DLOG(INFO) << "integrating over elements done in " << __timer.elapsed() << "s\n";
         return res;
     }

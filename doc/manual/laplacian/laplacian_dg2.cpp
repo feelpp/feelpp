@@ -50,7 +50,7 @@ int main(int argc, char**argv )
     /// [marker1]
     using namespace Feel;
 	Environment env( _argc=argc, _argv=argv,
-                     _about=about(_name="laplacian_dg",
+                     _about=about(_name="laplacian_dg2",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
@@ -75,16 +75,8 @@ int main(int argc, char**argv )
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a +=integrate( internalfaces( mesh ),
-                   // - {grad(u)} . [v]
-                   -averaget( gradt( u ) )*jump( id( v ) )
-                   // - [u] . {grad(v)}
-                   -average( grad( v ) )*jumpt( idt( u ) )
-                   // penal*[u] . [v]/h_face
-                   + 50* ( trans( jumpt( idt( u ) ) )*jump( id( v ) ) )/hFace() );
-    a += integrate( boundaryfaces( mesh ),
-                    ( - trans( id( v ) )*( gradt( u )*N() )
-                      - trans( idt( u ) )*( grad( v )*N() )
-                      + 50*trans( idt( u ) )*id( v )/hFace() ) );
+                   + trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / measFace() );
+    a += on( _range=boundaryfaces(mesh), _element=u, _rhs=l, _expr=cst(0.));
 
     a.solve(_rhs=l,_solution=u);
 
@@ -95,6 +87,6 @@ int main(int argc, char**argv )
     e->add( "u", u );
     e->add( "uc", uc );
     e->save();
-    /// [marker1]
+
     return 0;
 }

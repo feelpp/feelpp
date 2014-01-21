@@ -26,9 +26,13 @@ feelpp_add_application( doc_laplacian_full SRCS laplacian_full.cpp LABEL doc NO_
 feelpp_add_application( doc_laplacian_lagrange_multiplier SRCS laplacian_lagrange_multiplier.cpp LABEL doc)
 feelpp_add_application( doc_laplacian_periodic SRCS laplacian_periodic.cpp LABEL doc NO_MPI_TEST )
 feelpp_add_application( doc_laplacian_harmonic SRCS harmonic.cpp LABEL doc  )
-feelpp_add_application( doc_laplacian_dg SRCS laplacian_dg.cpp LABEL doc  )
-feelpp_add_application( doc_laplacian_quad SRCS laplacian_quad.cpp LABEL doc  CFG laplacian_quad.cfg)
+
+feelpp_add_application( doc_laplacian_quad SRCS laplacian_quad.cpp LABEL doc  CFG laplacian_polar.cfg)
 feelpp_add_application( doc_laplacian_with_holes SRCS laplacian_with_holes.cpp LABEL doc  )
+
+# DG examples
+feelpp_add_application( doc_laplacian_dg SRCS laplacian_dg.cpp CFG laplacian_dg.cfg LABEL doc  )
+feelpp_add_application( doc_laplacian_dg2 SRCS laplacian_dg2.cpp CFG laplacian_dg2.cfg LABEL doc  )
 
 feelpp_add_application( doc_laplacian_polar SRCS laplacian_polar.cpp LABEL doc GEO polar.geo  CFG laplacian_polar.cfg DEFS FEELPP_POLAR)
 feelpp_add_application( doc_laplacian_cartesian SRCS laplacian_polar.cpp LABEL doc GEO cartesian.geo CFG laplacian_cartesian.cfg )

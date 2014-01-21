@@ -20,13 +20,18 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
                   periodicity_type __periodicity)
     :
     M_functionspace( __functionspace ),
+    checkDONE(backend()->newVector(M_functionspace)),
     M_periodicity(__periodicity),
     M_neighbors(),
     M_coords( __functionspace->dof()->nDof() ),
     M_translation( __periodicity.translation() ),
-    firstDof( M_functionspace->dof()->firstDofGlobalCluster() )
+    firstDof( M_functionspace->dof()->firstDofGlobalCluster() ),
+    ndofOnCluster( mpi::all_reduce(Environment::worldComm().globalComm(),
+                                     __functionspace->dof()->nDof(),
+                                   std::plus<uint16_type>() ) )
 {
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
+
     auto it = M_functionspace->mesh()->beginElementWithProcessId();
     auto en = M_functionspace->mesh()->endElementWithProcessId();
 
@@ -55,7 +60,7 @@ ReinitializerFMS( functionspace_ptrtype const& __functionspace,
 }
 
 template<typename FunctionSpaceType, typename periodicity_type>
-void 
+void
 ReinitializerFMS<FunctionSpaceType, periodicity_type>::
 reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& theHeap, element_type& status, std::set<size_type>& done )
 {
@@ -66,7 +71,8 @@ reduceDonePoints(element_type const& __v, Feel::details::FmsHeap<value_type>& th
 
   /* make the sum of the DONE(=2) + FAR(=0)
      the sum is then communicated through all the processors ( close() ) */
-  auto checkDONE = backend()->newVector(M_functionspace);
+  checkDONE->zero();
+
   for (size_type k = 0 ; k < M_functionspace->nLocalDof() ; ++k)
     checkDONE->add(k, status(k) == DONE ? 1 : 0);
 
@@ -161,9 +167,9 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 #if 0
     // for debug purpuses only
     auto checkHeap = [&] ()
-      {  
+        {
         for (auto entry : theHeap )
-          CHECK( status( entry.second ) == CLOSE ) 
+          CHECK( status( entry.second ) == CLOSE )
             << "on proc " << Environment::worldComm().rank()
             << " the entry at ldof "<< entry.second
             << " and entry at cdof "<< processorToCluster( entry.second )
@@ -176,7 +182,9 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     auto ex = exporter(_mesh=M_functionspace->mesh(), _name="fastmarchin");
 #endif
 
-    size_type sumAllSizes=1;
+    size_type sumAllSizes= mpi::all_reduce(Environment::worldComm().globalComm(),
+                                           theHeap.size(),
+                                           std::plus<size_type>() );
 
     // marching loop
     // continue since all the Heap are not at 0
@@ -222,7 +230,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
           }
 
         if (dofIsPresentOnProcess)
-          {              
+          {
 
             theHeap.removeFromHeap( newIdOnProc );
 
@@ -241,8 +249,11 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
                                       theHeap.size(),
                                       std::plus<size_type>() );
 
-#if defined( FM_EXPORT )        
-        ++count_iteration;
+        // avoid infinite loop if a heap is not cleaned correctly for any reason
+        CHECK(++count_iteration < ndofOnCluster)<<"something is wrong in fastmarching loop. The march should converge in less than ndofOnCluster = "
+                                                <<ndofOnCluster<<" iterations and still has not converged in "<<count_iteration<<" iterations"<<std::endl;
+
+#if defined( FM_EXPORT )
         ex->step(count_iteration)->add("v", __v);
         ex->step(count_iteration)->add("status", status);
         ex->save();
@@ -362,9 +373,9 @@ fmsDistRec( std::vector<size_type> & ids,
       recalculate phi with all the neighbors
       returns the smallest phi  */
 
-    /* the method fmsDistN computes the distance function for a given CLOSE 
+    /* the method fmsDistN computes the distance function for a given CLOSE
        using the DONE neighbors in the same element
-       thus, first it has to search for the ids of the neighbors DONE 
+       thus, first it has to search for the ids of the neighbors DONE
        being in the same element */
 
     // only allows for getting at maximum 2 nodes in 2d and 3 nodes in 3d
