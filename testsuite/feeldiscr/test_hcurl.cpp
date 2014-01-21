@@ -419,8 +419,8 @@ TestHCurl::exampleProblem1()
     form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=elements(mesh), _expr=trans(f)*id(phi) );
 
     auto M = M_backend->newMatrix( Xh, Xh );
-    //form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(elements(mesh), curlt(u)*curl(phi) + trans(idt(u))*id(phi) );
-    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(_range=elements(mesh), _expr=cst(0.) );
+    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(elements(mesh), trans(curlt(u))*curl(phi) + trans(idt(u))*id(phi) );
+    //form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(_range=elements(mesh), _expr=cst(0.) );
 
     //! solve the system for V
     M_backend->solve( _matrix=M, _solution=u, _rhs=F );
