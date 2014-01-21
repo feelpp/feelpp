@@ -40,41 +40,17 @@
 
 #include <testsuite/testsuite.hpp>
 
-#include <feel/feelcore/application.hpp>
-
-/** include predefined feel command line options */
-#include <feel/options.hpp>
-
-/** include linear algebra backend */
 #include <feel/feelalg/backend.hpp>
-
-#include <feel/feelalg/vector.hpp>
-
-/** include function space class */
-#include <feel/feeldiscr/functionspace.hpp>
-
-/** include helper function to define \f$P_0\f$ functions associated with regions  */
-#include <feel/feeldiscr/region.hpp>
-
-/** include integration methods */
-#include <feel/feelpoly/im.hpp>
-
-/** include gmsh mesh importer */
-#include <feel/feelfilters/gmsh.hpp>
-
-/** include exporter factory class */
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
-
-/** include  polynomialset header */
-#include <feel/feelpoly/polynomialset.hpp>
-#include <feel/feelpoly/lagrange.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/operations.hpp>
+#include <feel/feelvf/on.hpp>
 #include <feel/feelpoly/nedelec.hpp>
-
-/** include  the header for the variational formulation language (vf) aka FEEL++ */
 #include <feel/feelvf/vf.hpp>
-
 #include <feel/feeldiscr/projector.hpp>
-
 
 
 namespace Feel
@@ -343,7 +319,7 @@ public:
 
     //! the basis type of our approximation space
     typedef bases<Nedelec<0> > basis_type;
-    typedef bases<Lagrange<1,Vectorial> > lagrange_basis_type;
+    typedef bases<Lagrange<1,Vectorial> > lagrange_basis_type; //P1 vectorial space
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_type> lagrange_space_type;
@@ -414,6 +390,7 @@ private:
 
 }; //TestHCurl
 
+// Resolve problem curl(curl(u)) + u = f with cross_prod(u,n) = 0 on boundary
 void
 TestHCurl::exampleProblem1()
 {
@@ -429,16 +406,32 @@ TestHCurl::exampleProblem1()
                                                 _xmin=-1,_xmax=1,
                                                 _ymin=-1,_ymax=1 ) );
 
+    // Xh : space build with Nedelec elements
     space_ptrtype Xh = space_type::New( mesh );
+    element_type u( Xh, "u" ); //solution
+    element_type phi( Xh, "v" ); //test function
 
-    auto u_exact = ( 1-Py()*Py() )*unitX() + ( 1-Px()*Px() )*unitY();
-    auto f = ( 3-Py()*Py() )*unitX() + ( 3-Px()*Px() )*unitY();
+    auto u_exact = ( 1-Py()*Py() )*unitX() + ( 1-Px()*Px() )*unitY(); //exact solution (analytical)
+    auto f = ( 3-Py()*Py() )*unitX() + ( 3-Px()*Px() )*unitY(); //f = curl(curl(u_exact)) + u_exact
+
+    //variationnal formulation : curl(curl(u)) + u = f
+    auto F = M_backend->newVector( Xh );
+    form1( _test=Xh, _vector=F, _init=true ) = integrate( _range=elements(mesh), _expr=trans(f)*id(phi) );
+
+    auto M = M_backend->newMatrix( Xh, Xh );
+    form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(elements(mesh), trans(curlt(u))*curl(phi) + trans(idt(u))*id(phi) );
+    //form2( _test=Xh, _trial=Xh, _matrix=M, _init=true) = integrate(_range=elements(mesh), _expr=cst(0.) );
+
+    //! solve the system for V
+    M_backend->solve( _matrix=M, _solution=u, _rhs=F );
+
+    // auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
+    // auto u_hcurl = hcurl->project( _expr=trans( f ) );
+    //auto u_exact_hcurl = hcurl->project( _expr=trans( u_exact ) );
+    //auto error_hcurl = hcurl->project( _expr=trans( u_exact-idv( u_hcurl ) ) );
 
     auto hcurl = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=HCURL );
-    auto u_hcurl = hcurl->project( _expr=trans( f ) );
-    auto u_exact_hcurl = hcurl->project( _expr=trans( u_exact ) );
-    auto error_hcurl = hcurl->project( _expr=trans( u_exact-idv( u_hcurl ) ) );
-
+    auto error_hcurl = hcurl->project( _expr=trans( u_exact - idv(u) ) );
     std::cout << "error Hcurl: " << math::sqrt( hcurl->energy( error_hcurl, error_hcurl ) ) << "\n";
 
     std::string pro1_name = "problem1";
@@ -449,8 +442,7 @@ TestHCurl::exampleProblem1()
                                     % pro1_name ).str() ) );
 
     exporter_pro1->step( 0 )->setMesh( mesh );
-    exporter_pro1->step( 0 )->add( "proj_hcurl_u_exact", u_exact_hcurl );
-    exporter_pro1->step( 0 )->add( "proj_hcurl_u", u_hcurl );
+    exporter_pro1->step( 0 )->add( "solution u", u );
     exporter_pro1->step( 0 )->add( "error", error_hcurl );
     exporter_pro1->save();
 
@@ -475,7 +467,7 @@ TestHCurl::testProjector()
     lagrange_space_ptrtype Yh = lagrange_space_type::New( mesh );
 
     auto E_exact = ( cos( M_PI*Px() )*sin( M_PI*Py() )*unitX()-sin( M_PI*Px() )*cos( M_PI*Py() )*unitY() );
-    auto curl_E_exact = -2.*M_PI*cos( M_PI*Px() )*cos( M_PI*Py() ); // -> z
+    //auto curl_E_exact = -2.*M_PI*cos( M_PI*Px() )*cos( M_PI*Py() ); // -> z
     auto f = ( 2*M_PI*M_PI+1 )*( cos( M_PI*Px() )*sin( M_PI*Py() )*unitX()-sin( M_PI*Px() )*cos( M_PI*Py() )*unitY() );
 
     auto l2 = opProjection( _domainSpace=Yh, _imageSpace=Yh, _type=L2 );
@@ -593,8 +585,7 @@ TestHCurl::shape_functions( gmsh_ptrtype ( *one_element_mesh_desc_fun )( double 
             checkidv[3*i+edgeid] = int_u_t;
 
             BOOST_TEST_MESSAGE( "check linear form on edges\n" );
-            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedfaces( oneelement_mesh, edge ),
-                    trans( T() )*( JinvT() )*id( V_ref ) );
+            form1( _test=Xh, _vector=F, _init=true ) = integrate( markedfaces( oneelement_mesh, edge ), trans( T() )*( JinvT() )*id( V_ref ) );
             auto form_v_t = inner_product( u_vec[i], *F );
 
             if ( edgeid == i )
@@ -678,37 +669,37 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( space )
 
-BOOST_AUTO_TEST_CASE( test_hcurl_N0_ref )
-{
-    BOOST_TEST_MESSAGE( "test_hcurl_N0 on reference element" );
-    Feel::TestHCurl t;
+// BOOST_AUTO_TEST_CASE( test_hcurl_N0_ref )
+// {
+//     BOOST_TEST_MESSAGE( "test_hcurl_N0 on reference element" );
+//     Feel::TestHCurl t;
 
-    t.shape_functions( &Feel::oneelement_geometry_ref );
-    BOOST_TEST_MESSAGE( "test_hcurl_N0 on reference element done" );
-}
-BOOST_AUTO_TEST_CASE( test_hcurl_N0_real )
-{
-    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t;
-    t.shape_functions( &Feel::oneelement_geometry_real_1 );
-    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
-}
-#if 1
-BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
-{
-    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t;
-    t.shape_functions( &Feel::oneelement_geometry_real_2 );
-    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
-}
+//     t.shape_functions( &Feel::oneelement_geometry_ref );
+//     BOOST_TEST_MESSAGE( "test_hcurl_N0 on reference element done" );
+// }
+// BOOST_AUTO_TEST_CASE( test_hcurl_N0_real )
+// {
+//     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
+//     Feel::TestHCurl t;
+//     t.shape_functions( &Feel::oneelement_geometry_real_1 );
+//     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
+// }
+// #if 1
+// BOOST_AUTO_TEST_CASE( test_hcurl_N0_real_2 )
+// {
+//     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
+//     Feel::TestHCurl t;
+//     t.shape_functions( &Feel::oneelement_geometry_real_2 );
+//     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
+// }
 
-BOOST_AUTO_TEST_CASE( test_hcurl_projection )
-{
-    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
-    Feel::TestHCurl t;
-    t.testProjector();
-    BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
-}
+// BOOST_AUTO_TEST_CASE( test_hcurl_projection )
+// {
+//     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element" );
+//     Feel::TestHCurl t;
+//     t.testProjector();
+//     BOOST_TEST_MESSAGE( "test_hcurl_N0 on one real element done" );
+// }
 
 BOOST_AUTO_TEST_CASE( test_hcurl_example_1 )
 {
@@ -717,7 +708,7 @@ BOOST_AUTO_TEST_CASE( test_hcurl_example_1 )
     t.exampleProblem1();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on example 1 done" );
 }
-#endif
+// #endif
 BOOST_AUTO_TEST_SUITE_END()
 #else
 
@@ -730,9 +721,9 @@ main( int argc, char* argv[] )
     Feel::TestHCurl app_hcurl;
 
     // app_hcurl.tangent_operators();
-    app_hcurl.shape_functions();
+    //app_hcurl.shape_functions();
     // app_hcurl.matrix_assembly();
-    // app_hcurl.example_problem();
+    app_hcurl.exampleProblem1();
 }
 
 #endif
