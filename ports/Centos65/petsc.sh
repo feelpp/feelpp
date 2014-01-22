@@ -1,7 +1,7 @@
 #PETSC
 cd $petscDir/src
 wget -c http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.4.3.tar.gz
-tar xzf petsc-3.4.3..tar.gz
+tar xzf petsc-3.4.3.tar.gz
 cd petsc-3.4.3
 ./configure --with-shared-libraries=1 \
   --with-debugging=0 \
