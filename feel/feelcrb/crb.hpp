@@ -63,7 +63,7 @@
 
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/expansion.hpp>
-#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feelts/bdf.hpp>
 
 #include <feel/feelcrb/crbenums.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
@@ -4097,7 +4097,8 @@ CRB<TruthModelType>::fixedPointDual(  size_type N, parameter_type const& mu, std
     double increment = increment_fixedpoint_tol;
     //uNdu[0] = Adu.lu().solve( -Ldu );
 
-    for ( time=time_for_output; time>=time_step; time-=time_step )
+    double tini = M_model->timeInitial();
+    for ( time=time_for_output; math::abs(time - tini) > 1e-9; time-=time_step )
     {
         int fi=0;
         vectorN_type next_uNdu( M_N );
@@ -4267,8 +4268,8 @@ CRB<TruthModelType>::fixedPointPrimal(  size_type N, parameter_type const& mu, s
     double increment = increment_fixedpoint_tol;
 
     computeProjectionInitialGuess( mu , N , uN[0] );
-
-    for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
+    //for ( double time=time_step; time<time_for_output+time_step; time+=time_step )
+    for ( double time=time_step; math::abs(time - time_for_output - time_step) > 1e-9; time+=time_step )
     {
         //computeProjectionInitialGuess( mu , N , uN[time_index] );
 
@@ -5654,14 +5655,29 @@ CRB<TruthModelType>::transientDualResidual( int Ncur,parameter_type const& mu,  
         delta_du =  math::abs( __gamma_du+__Cma_du+__Cmm_du ) ;
 
 #if 0
-    std::cout<<"[transientDualResidual] time "<<time<<std::endl;
-    std::cout<<"Undu = \n"<<Undu<<std::endl;
-    std::cout<<"Unduold = \n"<<Unduold<<std::endl;
-    std::cout<<"__c0_du = "<<__c0_du<<std::endl;
-    std::cout<<"__lambda_du = "<<__lambda_du<<std::endl;
-    std::cout<<"__gamma_du = "<<__gamma_du<<std::endl;
-    std::cout<<"__Cma_du = "<<__Cma_du<<std::endl;
-    std::cout<<"__Cmm_du = "<<__Cmm_du<<std::endl;
+    double UnduNorm = Undu.norm();
+    double UnduoldNorm = Unduold.norm();
+    bool print=false;
+    if ( !boost::math::isfinite( delta_du ) )
+        print=true;
+    if( delta_du > 100 || UnduNorm == 0 )
+        print=true;
+    if( 0 )
+    {
+        if( Environment::worldComm().isMasterRank() )
+        {
+            std::cout<<"[transientDualResidual] time "<<time<<std::endl;
+            std::cout<<"Undu = "<<UnduNorm<<std::endl;
+            std::cout<<"Unduold = "<<UnduoldNorm<<std::endl;
+            std::cout<<"__c0_du = "<<__c0_du<<std::endl;
+            std::cout<<"__lambda_du = "<<__lambda_du<<std::endl;
+            std::cout<<"__gamma_du = "<<__gamma_du<<std::endl;
+            std::cout<<"__Cma_du = "<<__Cma_du<<std::endl;
+            std::cout<<"__Cmm_du = "<<__Cmm_du<<std::endl;
+            std::cout<<"delta du : "<<delta_du<<std::endl;
+            std::cout<<"time step : "<<time_step<<" donc 1/dt*dt = "<<1./( time_step*time_step )<<std::endl;
+        }
+    }
 #endif
 
 
@@ -6203,7 +6219,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
 
     // Primal
     // no need to recompute this term each time
-    if ( Ncur == 1 )
+    if ( Ncur == M_Nm )
     {
         LOG(INFO) << "[offlineResidual] Compute Primal residual data\n";
         LOG(INFO) << "[offlineResidual] C0_pr\n";
@@ -6232,7 +6248,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
                 //M_C0_pr[__q1][__q1] = M_model->scalarProduct( __X, __X );
             }//end of loop __m1
         }//end of loop __q1
-    }// Ncur==1
+    }// Ncur==M_Nm
 
     if( Environment::worldComm().globalRank() == Environment::worldComm().masterRank() )
         std::cout << "     o initialize offlineResidual in " << ti.elapsed() << "s\n";
@@ -6389,7 +6405,7 @@ CRB<TruthModelType>::offlineResidual( int Ncur, mpl::bool_<false> , int number_o
     // compute this only once
     if( solve_dual_problem )
     {
-        if ( Ncur == 1 )
+        if ( Ncur == M_Nm )
         {
             LOG(INFO) << "[offlineResidual] Compute Dual residual data\n";
             LOG(INFO) << "[offlineResidual] C0_du\n";
