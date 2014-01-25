@@ -179,14 +179,13 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
     auto const enListRange = M_listRange.end();
     for ( ; itListRange!=enListRange ; ++itListRange)
     {
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = *itListRange;
-
+    auto it = itListRange->template get<1>();
+    auto const en = itListRange->template get<2>();
 
     for ( ; it != en; ++ it )
     {
         element_type const& oldElem = *it;
-        VLOG(2) << "create sub mesh element from "  << it->id() << "\n";google::FlushLogFiles(google::GLOG_INFO);
+        VLOG(2) << "create sub mesh element from "  << oldElem.id() << "\n";google::FlushLogFiles(google::GLOG_INFO);
         // copy element so that we can modify it
         element_type newElem = oldElem;
 
@@ -273,8 +272,8 @@ createSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
         // Add an equivalent element type to the new_mesh
         auto const& e = newMesh->addElement( newElem );
-        new_element_id[it->id()]= e.id();
-        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), it->id() ) );
+        new_element_id[oldElem.id()]= e.id();
+        M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
 
         // Maybe add faces for this element
         for ( unsigned int s=0; s<oldElem.numTopologicalFaces; s++ )
