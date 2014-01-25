@@ -107,8 +107,8 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
 
     f.updateGlobalValues();
 
-    auto it = f.functionSpace()->mesh()->beginElementWithProcessId( space->mesh()->comm().rank() );
-    auto en = f.functionSpace()->mesh()->endElementWithProcessId( space->mesh()->comm().rank() );
+    auto it = f.functionSpace()->mesh()->beginElementWithProcessId();
+    auto en = f.functionSpace()->mesh()->endElementWithProcessId();
     if ( it==en ) return;
 
     //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
@@ -176,6 +176,51 @@ interpolate( boost::shared_ptr<SpaceType> const& space,
                 }
             }
         }
+
+
+#if 1
+        if ( space->mesh()->worldComm().localSize()>1 )
+        {
+            if ( f.functionSpace()->dof()->buildDofTableMPIExtended() && space->dof()->buildDofTableMPIExtended() )
+            {
+                std::set<size_type> eltGhostDone;
+                auto face_it = f.functionSpace()->mesh()->interProcessFaces().first;
+                auto const face_en = f.functionSpace()->mesh()->interProcessFaces().second;
+                for ( ; face_it!=face_en ; ++face_it )
+                {
+                    auto const& elt0 = face_it->element0();
+                    auto const& elt1 = face_it->element1();
+                    const bool elt0isGhost = elt0.isGhostCell();
+                    auto const& eltOffProc = (elt0isGhost)?elt0:elt1;
+
+                    if ( eltGhostDone.find( eltOffProc.id() ) != eltGhostDone.end() ) continue;
+
+                    __c->update( eltOffProc );
+                    fectx->update( __c, pc );
+                    std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), f_fectx_type::id_type::Zero() );
+                    f.id( *fectx, fvalues );
+
+                    for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
+                    {
+                        const int ncdof = basis_type::is_product?basis_type::nComponents:1;
+
+                        for ( uint16_type comp = 0; comp < ncdof; ++comp )
+                        {
+                            size_type globaldof =  boost::get<0>( __dof->localToGlobal( eltOffProc.id(),l, comp ) );
+
+                            // update only values on the processor
+                            if ( globaldof >= interp.firstLocalIndex() &&
+                                 globaldof < interp.lastLocalIndex() )
+                            {
+                                interp( globaldof ) = fvalues[l]( comp,0 );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+#endif
+
 
         DVLOG(2) << "[interpolate] Same mesh but not same space done\n";
     } // same mesh
