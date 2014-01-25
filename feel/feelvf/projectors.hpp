@@ -220,8 +220,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
-    iterator_type it, en;
-    boost::tie( boost::tuples::ignore, it, en ) = M_range;
+    //iterator_type it, en;
+    //boost::tie( boost::tuples::ignore, it, en ) = M_range;
+    auto it = M_range.template get<1>();
+    auto const en = M_range.template get<2>();
 
     // return if no elements
     if ( it == en )
@@ -250,6 +252,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
     for ( ; it!=en ; ++it )
     {
+        element_type const& curElt = *it;
         switch ( M_geomap_strategy )
         {
         case GeomapStrategyType::GEOMAP_HO:
@@ -264,10 +267,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                     //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                 {
                     if ( sum )
-                        __v.plus_assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+                        __v.plus_assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
 
                     else
-                        __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+                        __v.assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
                 }
             }
         }
@@ -285,10 +288,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                     //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                 {
                     if ( sum )
-                        __v.plus_assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+                        __v.plus_assign( curElt.id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
 
                     else
-                        __v.assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+                        __v.assign( curElt.id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
                 }
             }
         }
@@ -296,7 +299,7 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
 
         case GeomapStrategyType::GEOMAP_OPT:
         {
-            if ( it->isOnBoundary() )
+            if ( curElt.isOnBoundary() )
             {
                 // HO if on boundary
                 __c->update( *it );
@@ -309,10 +312,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                         //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                     {
                         if ( sum )
-                            __v.plus_assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+                            __v.plus_assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
 
                         else
-                            __v.assign( it->id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
+                            __v.assign( curElt.id(), __j, c1, tensor_expr.evalq( c1, 0, __j ) );
                     }
                 }
             }
@@ -329,10 +332,10 @@ Projector<iDim, FunctionSpaceType, Iterator, ExprT>::operator()( const bool sum,
                         //for ( uint16_type c2 = 0; c2 < shape::N;++c2 )
                     {
                         if ( sum )
-                            __v.plus_assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+                            __v.plus_assign( curElt.id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
 
                         else
-                            __v.assign( it->id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
+                            __v.assign( curElt.id(), __j, c1, tensor_expr1.evalq( c1, 0, __j ) );
                     }
                 }
             }
