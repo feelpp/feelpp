@@ -1423,6 +1423,8 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
 
     vector_ptrtype Rhs( M_backend_primal->newVector( M_model->functionSpace() ) );
 
+    bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
+
     for ( M_bdf_primal->start(u),M_bdf_primal_save->start(u);
           !M_bdf_primal->isFinished() , !M_bdf_primal_save->isFinished();
           M_bdf_primal->next() , M_bdf_primal_save->next() )
@@ -1479,13 +1481,19 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         }while( increment_norm > increment_fixedpoint_tol && iteration < max_fixedpoint_iterations );
 
         M_bdf_primal->shiftRight( u );
-
         if ( ! M_model->isSteady() )
         {
-            element_ptrtype projection ( new element_type ( M_model->functionSpace() ) );
-            projectionOnPodSpace ( u , projection, "primal" );
-            *uproj=u;
-            M_bdf_primal_save->shiftRight( *uproj );
+            if(POD_WN )
+            {
+                M_bdf_primal_save->shiftRight( u );
+            }
+            else
+            {
+                element_ptrtype projection ( new element_type ( M_model->functionSpace() ) );
+                projectionOnPodSpace ( u , projection, "primal" );
+                *uproj=u;
+                M_bdf_primal_save->shiftRight( *uproj );
+            }
         }
 
         if( increment_norm > fixedpoint_critical_value )
@@ -1587,6 +1595,8 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
     double bdf_coeff;
 
     auto vec_bdf_poly = M_backend_dual->newVector( M_model->functionSpace() );
+
+    bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
 
     if ( M_model->isSteady() )
         udu.zero() ;
@@ -1691,10 +1701,17 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 
         if ( ! M_model->isSteady() )
         {
-            element_ptrtype projection ( new element_type ( M_model->functionSpace() ) );
-            projectionOnPodSpace ( udu , projection, "dual" );
-            *uproj=udu;
-            M_bdf_dual_save->shiftRight( *uproj );
+            if( POD_WN )
+            {
+                M_bdf_primal_save->shiftRight( udu );
+            }
+            else
+            {
+                element_ptrtype projection ( new element_type ( M_model->functionSpace() ) );
+                projectionOnPodSpace ( udu , projection, "dual" );
+                *uproj=udu;
+                M_bdf_dual_save->shiftRight( *uproj );
+            }
         }
 
         if( increment_norm > fixedpoint_critical_value )
@@ -2574,37 +2591,58 @@ CRB<TruthModelType>::offline()
         M_N+=number_of_added_elements;
 
 
-        double norm_max = option(_name="crb.orthonormality-tol").template as<double>();
-        int max_iter = option(_name="crb.orthonormality-max-iter").template as<int>();
-        if ( orthonormalize_primal )
+        bool POD_WN = option(_name="crb.apply-POD-to-WN").template as<bool>() ;
+        if(  POD_WN &&  ! M_model->isSteady() )
         {
-            double norm = norm_max+1;
-            int iter=0;
-            double old = 10;
-            while( norm >= norm_max && iter < max_iter)
+            pod_ptrtype POD = pod_ptrtype( new pod_type() );
+            POD->setModel( M_model );
+            mode_set_type ModeSet;
+            POD->setNm( M_N );
+            bool use_solutions=false;
+            bool is_primal=true;
+            POD->pod( ModeSet, is_primal, M_model->rBFunctionSpace()->primalRB() , use_solutions );
+            M_model->rBFunctionSpace()->setPrimalBasis( ModeSet );
+            if( solve_dual_problem )
             {
-                norm = orthonormalize( M_N, M_model->rBFunctionSpace()->primalRB(), number_of_added_elements );
-                iter++;
-                //if the norm doesn't change
-                if( math::abs(old-norm) < norm_max )
-                    norm=0;
-                old=norm;
+                ModeSet.clear();
+                POD->pod( ModeSet, false,  M_model->rBFunctionSpace()->dualRB() , use_solutions );
+                M_model->rBFunctionSpace()->setDualBasis( ModeSet );
             }
         }
-        if ( orthonormalize_dual && solve_dual_problem )
+        else
         {
-            double norm = norm_max+1;
-            int iter=0;
-            double old = 10;
-            while( norm >= norm_max && iter < max_iter )
+            double norm_max = option(_name="crb.orthonormality-tol").template as<double>();
+            int max_iter = option(_name="crb.orthonormality-max-iter").template as<int>();
+            if ( orthonormalize_primal )
             {
-                norm = orthonormalize( M_N, M_model->rBFunctionSpace()->dualRB() , number_of_added_elements );
-                iter++;
-                if( math::abs(old-norm) < norm_max )
-                    norm=0;
-                old=norm;
+                double norm = norm_max+1;
+                int iter=0;
+                double old = 10;
+                while( norm >= norm_max && iter < max_iter)
+                {
+                    norm = orthonormalize( M_N, M_model->rBFunctionSpace()->primalRB(), number_of_added_elements );
+                    iter++;
+                    //if the norm doesn't change
+                    if( math::abs(old-norm) < norm_max )
+                        norm=0;
+                    old=norm;
+                }
             }
-        }
+            if ( orthonormalize_dual && solve_dual_problem )
+            {
+                double norm = norm_max+1;
+                int iter=0;
+                double old = 10;
+                while( norm >= norm_max && iter < max_iter )
+                {
+                    norm = orthonormalize( M_N, M_model->rBFunctionSpace()->dualRB() , number_of_added_elements );
+                    iter++;
+                    if( math::abs(old-norm) < norm_max )
+                        norm=0;
+                    old=norm;
+                }
+            }
+        }//orthonormalization
 
         if( ! M_use_newton )
         {
