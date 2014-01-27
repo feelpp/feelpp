@@ -317,6 +317,16 @@ Mesh<Shape, T, Tag>::updateForUse()
         for ( auto itf = ipfRange.first, enf = ipfRange.second ; itf!=enf ; ++itf )
             this->addFaceNeighborSubdomain( itf->partition2() );
     }
+
+    if ( this->worldComm().localSize()>1 )
+    {
+        auto iv = this->beginGhostElement();
+        auto const en = this->endGhostElement();
+        for ( ; iv != en; ++iv )
+            this->addNeighborSubdomain( iv->processId() );
+    }
+
+
 #endif
 
     this->updateNumGlobalElements();
@@ -1935,6 +1945,8 @@ Mesh<Shape, T, Tag>::check() const
     }
 #endif
 }
+
+#if 0
 template<typename Shape, typename T, int Tag>
 void
 Mesh<Shape, T, Tag>::findNeighboringProcessors()
@@ -1994,6 +2006,7 @@ Mesh<Shape, T, Tag>::findNeighboringProcessors()
 
 #endif
 }
+#endif
 
 template<typename Shape, typename T, int Tag>
 void
