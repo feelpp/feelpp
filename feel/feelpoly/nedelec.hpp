@@ -73,14 +73,14 @@ struct times_rotx
         M_p ( p ),
         M_c( c )
     {
-        //std::cout << "component : " << c << std::endl;
+        //VLOG(1) << "component : " << c << std::endl;
     }
     typename ublas::vector<value_type> operator() ( points_type const& __pts ) const
     {
 #if 0
-        std::cout << "times_x(pts) : " << __pts << std::endl;
-        std::cout << "times_x(pts) : " << M_p.evaluate( __pts ) << std::endl;
-        std::cout << "times_x(coeff) : " << M_p.coefficients() << std::endl;
+        VLOG(1) << "times_rotx(pts) : " << __pts << std::endl;
+        VLOG(1) << "times_rotx(pts) : " << M_p.evaluate( __pts ) << std::endl;
+        VLOG(1) << "times_rotx(coeff) : " << M_p.coefficients() << std::endl;
 #endif
 
         // __pts[c] * p( __pts )
@@ -152,36 +152,36 @@ public:
         :
         super()
     {
-        std::cout << "[NPset] nOrder = " << nOrder << "\n";
-        std::cout << "[NPset] O = " << O << "\n";
+        VLOG(1) << "[Nedelec1stKindset] nOrder = " << nOrder << "\n";
+        VLOG(1) << "[Nedelec1stKindset] O = " << O << "\n";
         uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
         uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
         uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
 #if 1
-        std::cout << "[NPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
-        std::cout << "[NPset] dim_Pk   = " << dim_Pk << "\n";
-        std::cout << "[NPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
+        VLOG(1) << "[Nedelec1stKindset] dim_Pkp1 = " << dim_Pkp1 << "\n";
+        VLOG(1) << "[Nedelec1stKindset] dim_Pk   = " << dim_Pk << "\n";
+        VLOG(1) << "[Nedelec1stKindset] dim_Pkm1 = " << dim_Pkm1 << "\n";
 #endif
         // (P_k)^d
         Pkp1_v_type Pkp1_v;
         vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
 #if 1
-        std::cout << "[NPset] Pk_v =" << Pk_v.coeff() << "\n";
+        VLOG(1) << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
 #endif
         // P_k
         Pkp1_s_type Pkp1;
         scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
 #if 1
-        std::cout << "[NPset] Pk =" << Pk.coeff() << "\n";
-        std::cout << "[NPset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
+        VLOG(1) << "[Nedelec1stKindset] Pk =" << Pk.coeff() << "\n";
+        VLOG(1) << "[Nedelec1stKindset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 #endif
 
         // x P_k \ P_{k-1}
         IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
-        //std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
+        //VLOG(1) << "[Nedelec1stKindPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
 
-        //std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
+        //VLOG(1) << "[Nedelec1stKindPset] before xPkc = " << xPkc << "\n";
         for ( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
         {
             for ( int j = 0; j < convex_type::nDim; ++j )
@@ -195,13 +195,13 @@ public:
         }
 
 
-        //std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
+        //VLOG(1) << "[Nedelec1stKindPset] after xPkc = " << xPkc << "\n";
         vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-        //std::cout << "[RTPset] here 1\n";
+        //VLOG(1) << "[Nedelec1stKindPset] here 1\n";
         // (P_k)^d + x P_k
-        //std::cout << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
+        //VLOG(1) << "[Nedelec1stKindPset] Nedelec1stKind Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
         this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
-        //std::cout << "[RTPset] here 2\n";
+        //VLOG(1) << "[Nedelec1stKindPset] here 2\n";
     }
 
 
@@ -272,15 +272,15 @@ public:
         M_fset( primal )
     {
 #if 1
-        std::cout << "Nedelec finite element(dual): \n";
-        std::cout << " o- dim   = " << nDim << "\n";
-        std::cout << " o- order = " << nOrder << "\n";
-        std::cout << " o- numPoints      = " << numPoints << "\n";
-        std::cout << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
-        std::cout << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
-        std::cout << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
-        std::cout << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
-        std::cout << " o- nLocalDof      = " << nLocalDof << "\n";
+        VLOG(1) << "Nedelec finite element(dual): \n";
+        VLOG(1) << " o- dim   = " << nDim << "\n";
+        VLOG(1) << " o- order = " << nOrder << "\n";
+        VLOG(1) << " o- numPoints      = " << numPoints << "\n";
+        VLOG(1) << " o- nbPtsPerVertex = " << ( int )nbPtsPerVertex << "\n";
+        VLOG(1) << " o- nbPtsPerEdge   = " << ( int )nbPtsPerEdge << "\n";
+        VLOG(1) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
+        VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
+        VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
 #endif
 
         // loop on each entity forming the convex of topological
@@ -303,7 +303,7 @@ public:
             }
         }
 
-        //std::cout << "[RT Dual] done 1\n";
+        //VLOG(1) << "[Nedelec1stKind Dual] done 1\n";
         // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
         typedef Functional<primal_space_type> functional_type;
         std::vector<functional_type> fset;
@@ -330,7 +330,7 @@ public:
                     ++e )
             {
                 typedef Feel::functional::DirectionalComponentPointsEvaluation<primal_space_type> dcpe_type;
-                std::cout << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
+                VLOG(1) << "tangent " << e << ":" << M_convex_ref.tangent( e ) << "\n";
                 node_type dir= M_convex_ref.tangent( e )*j[e];
                 //node_type dir= M_convex_ref.tangent(e);
 
@@ -340,7 +340,7 @@ public:
             }
         }
 
-        //std::cout << "[RT Dual] done 2" << std::endl;
+        //VLOG(1) << "[Nedelec1stKind Dual] done 2" << std::endl;
         if ( nOrder-1 > 0 )
         {
             // we need more equations : add interior moment
@@ -353,21 +353,21 @@ public:
 
             vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
 
-            //std::cout << "Pkm1 = " << Pkm1.coeff() << "\n";
-            //std::cout << "Primal = " << primal.coeff() << "\n";
+            VLOG(1) << "Pkm1 = " << Pkm1.coeff() << "\n";
+            VLOG(1) << "Primal = " << primal.coeff() << "\n";
             for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
                 typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
                 //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
-                //std::cout << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
+                VLOG(1) << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
                 fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
             }
         }
 
-        //std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
+        VLOG(1) << "[Nedelec1stKind Dual] done 3, n fset = " << fset.size() << std::endl;
         M_fset.setFunctionalSet( fset );
-        //        std::cout << "[RT DUAL matrix] mat = " << M_fset.rep() << "\n";
-        //std::cout << "[RT Dual] done 4\n";
+        VLOG(1) << "[Nedelec1stKind DUAL matrix] mat = " << M_fset.rep() << "\n";
+        VLOG(1) << "[Nedelec1stKind Dual] done 4\n";
 
     }
 
@@ -384,7 +384,7 @@ public:
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        //std::cout << "RT matrix = " << M_fset( pset ) << std::endl;
+        //VLOG(1) << "Nedelec1stKind matrix = " << M_fset( pset ) << std::endl;
         return M_fset( pset );
     }
 
@@ -528,16 +528,16 @@ public:
         M_refconvex()
     {
 #if 1
-        std::cout << "[N] nPtsPerEdge = " << nbPtsPerEdge << "\n";
-        std::cout << "[N] nPtsPerFace = " << nbPtsPerFace << "\n";
-        std::cout << "[N] numPoints = " << numPoints << "\n";
+        VLOG(1) << "[N] nPtsPerEdge = " << nbPtsPerEdge << "\n";
+        VLOG(1) << "[N] nPtsPerFace = " << nbPtsPerFace << "\n";
+        VLOG(1) << "[N] numPoints = " << numPoints << "\n";
 
-        std::cout << "[N] nDof = " << super::nDof << "\n";
+        VLOG(1) << "[N] nDof = " << super::nDof << "\n";
 
-        std::cout << "[N] coeff : " << this->coeff() << "\n";
-        std::cout << "[N] pts : " << this->points() << "\n";
-        std::cout << "[N] eval at pts : " << this->evaluate( this->points() ) << "\n";
-        std::cout << "[N] is_product : " << is_product << "\n";
+        VLOG(1) << "[N] coeff : " << this->coeff() << "\n";
+        VLOG(1) << "[N] pts : " << this->points() << "\n";
+        VLOG(1) << "[N] eval at pts : " << this->evaluate( this->points() ) << "\n";
+        VLOG(1) << "[N] is_product : " << is_product << "\n";
 #endif
     }
 
@@ -658,16 +658,16 @@ public:
         typename GMContext::gm_type::matrix_type const K = gmc.K( 0 );
         typename GMContext::gm_type::matrix_type JB( K/gmc.J( 0 ) );
 #if 0
-        std::cout << "K= " << gmc.K( 0 ) << "\n";
-        std::cout << "B= " << B << "\n";
-        std::cout << "J= " << gmc.J( 0 ) << "\n";
-        std::cout << "JB= " << JB << "\n";
+        VLOG(1) << "K= " << gmc.K( 0 ) << "\n";
+        VLOG(1) << "B= " << B << "\n";
+        VLOG(1) << "J= " << gmc.J( 0 ) << "\n";
+        VLOG(1) << "JB= " << JB << "\n";
 #endif
         std::fill( phi_t.data(), phi_t.data()+phi_t.num_elements(), value_type( 0 ) );
 
         if ( do_gradient )
         {
-            //std::cout << "compute gradient\n";
+            //VLOG(1) << "compute gradient\n";
             std::fill( g_phi_t.data(), g_phi_t.data()+g_phi_t.num_elements(), value_type( 0 ) );
         }
 
@@ -692,8 +692,8 @@ public:
                         //phi_t[i][l][0][q] =  pc.phi(i,l,0,q);
                         phi_t[i][l][0][q] += JB( l, p ) * pc.phi( i,p,0,q );
                         //phi_t[i][l][0][q] = gmc.J( 0 ) * B( p, l ) * pc.phi(i,p,0,q);
-                        //std::cout << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
-                        //std::cout << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
+                        //VLOG(1) << "pc[" << i << "][" << l << "][" << q << "]=" << pc.phi(i,l,0,q) << "\n";
+                        //VLOG(1) << "phi_t[" << i << "][" << l << "][" << q << "]=" << phi_t[i][l][0][q] << "\n";
                     }
                 }
             }
@@ -714,11 +714,11 @@ public:
                                 g_phi_t[i][p][r][s] += JB( p, q ) * pc.grad( i,q,r,s );
                                 //g_phi_t[i][p][r][s] = pc.grad(i,p,r,s);
 
-                                //std::cout << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
+                                //VLOG(1) << "J G[" << i << "][" << q << "][" << r << "][" << s << "=" << JB( p, q ) * pc.grad(i,q,r,s) << "\n";
                             }
                         }
 
-                        //std::cout << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
+                        //VLOG(1) << "g_phi_t[" << i << "][" << p << "][" << r << "][" << 0 << "=" << g_phi_t[i][p][r][0] << "\n";
 
                     }
                 }
