@@ -1113,7 +1113,7 @@ public:
                                         //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
                                         {
-                                            std::cout << "N=" << N << "SortieModel =  "<< output_fem <<" sortie crb : "<<ocrb<<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
+                                            std::cout << "N=" << N << "Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
                                                       <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
 
                                             if( N == Nmax )
