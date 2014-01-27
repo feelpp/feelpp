@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2011-11-25
  */
-#ifndef __Nedelec_H
-#define __Nedelec_H 1
+#ifndef FEELPP_NEDELEC_HPP
+#define FEELPP_NEDELEC_HPP 1
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/assign/std/vector.hpp> // for 'operator+=()'
@@ -151,36 +151,36 @@ public:
         :
         super()
     {
-        std::cout << "[NPset] nOrder = " << nOrder << "\n";
-        std::cout << "[NPset] O = " << O << "\n";
+        std::cout << "[Nedelec1stKindset] nOrder = " << nOrder << "\n";
+        std::cout << "[Nedelec1stKindset] O = " << O << "\n";
         uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
         uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
         uint16_type dim_Pkm1 = ( nOrder==1 )?0:convex_type::polyDims( nOrder-2 );
 #if 1
-        std::cout << "[NPset] dim_Pkp1 = " << dim_Pkp1 << "\n";
-        std::cout << "[NPset] dim_Pk   = " << dim_Pk << "\n";
-        std::cout << "[NPset] dim_Pkm1 = " << dim_Pkm1 << "\n";
+        std::cout << "[Nedelec1stKindset] dim_Pkp1 = " << dim_Pkp1 << "\n";
+        std::cout << "[Nedelec1stKindset] dim_Pk   = " << dim_Pk << "\n";
+        std::cout << "[Nedelec1stKindset] dim_Pkm1 = " << dim_Pkm1 << "\n";
 #endif
         // (P_k)^d
         Pkp1_v_type Pkp1_v;
         vectorial_polynomialset_type Pk_v( Pkp1_v.polynomialsUpToDimension( dim_Pk ) );
 #if 1
-        std::cout << "[NPset] Pk_v =" << Pk_v.coeff() << "\n";
+        std::cout << "[Nedelec1stKindset] Pk_v =" << Pk_v.coeff() << "\n";
 #endif
         // P_k
         Pkp1_s_type Pkp1;
         scalar_polynomialset_type Pk ( Pkp1.polynomialsUpToDimension( dim_Pk ) );
 #if 1
-        std::cout << "[NPset] Pk =" << Pk.coeff() << "\n";
-        std::cout << "[NPset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
+        std::cout << "[Nedelec1stKindset] Pk =" << Pk.coeff() << "\n";
+        std::cout << "[Nedelec1stKindset] Pk(0) =" << Pk.polynomial( 0 ).coefficients() << "\n";
 #endif
 
         // x P_k \ P_{k-1}
         IMGeneral<convex_type::nDim, 2*nOrder,value_type> im;
-        //std::cout << "[RTPset] im.points() = " << im.points() << std::endl;
+        //std::cout << "[Nedelec1stKindPset] im.points() = " << im.points() << std::endl;
         ublas::matrix<value_type> xPkc( nComponents*( dim_Pk-dim_Pkm1 ),Pk.coeff().size2() );
 
-        //std::cout << "[RTPset] before xPkc = " << xPkc << "\n";
+        //std::cout << "[Nedelec1stKindPset] before xPkc = " << xPkc << "\n";
         for ( int l = dim_Pkm1, i = 0; l < dim_Pk; ++l, ++i )
         {
             for ( int j = 0; j < convex_type::nDim; ++j )
@@ -194,13 +194,13 @@ public:
         }
 
 
-        //std::cout << "[RTPset] after xPkc = " << xPkc << "\n";
+        //std::cout << "[Nedelec1stKindPset] after xPkc = " << xPkc << "\n";
         vectorial_polynomialset_type xPk( typename super::basis_type(), xPkc, true );
-        //std::cout << "[RTPset] here 1\n";
+        //std::cout << "[Nedelec1stKindPset] here 1\n";
         // (P_k)^d + x P_k
-        //std::cout << "[RTPset] RT Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
+        //std::cout << "[Nedelec1stKindPset] Nedelec1stKind Poly coeff = " << unite( Pk_v, xPk ).coeff() << "\n";
         this->setCoefficient( unite( Pk_v, xPk ).coeff(), true );
-        //std::cout << "[RTPset] here 2\n";
+        //std::cout << "[Nedelec1stKindPset] here 2\n";
     }
 
 
@@ -302,7 +302,7 @@ public:
             }
         }
 
-        //std::cout << "[RT Dual] done 1\n";
+        //std::cout << "[Nedelec1stKind Dual] done 1\n";
         // compute  \f$ \ell_e( U ) = (U * n[e]) (edge_pts(e)) \f$
         typedef Functional<primal_space_type> functional_type;
         std::vector<functional_type> fset;
@@ -339,7 +339,7 @@ public:
             }
         }
 
-        //std::cout << "[RT Dual] done 2" << std::endl;
+        //std::cout << "[Nedelec1stKind Dual] done 2" << std::endl;
         if ( nOrder-1 > 0 )
         {
             // we need more equations : add interior moment
@@ -363,10 +363,10 @@ public:
             }
         }
 
-        //std::cout << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
+        //std::cout << "[Nedelec1stKind Dual] done 3, n fset = " << fset.size() << std::endl;
         M_fset.setFunctionalSet( fset );
-        //        std::cout << "[RT DUAL matrix] mat = " << M_fset.rep() << "\n";
-        //std::cout << "[RT Dual] done 4\n";
+        //        std::cout << "[Nedelec1stKind DUAL matrix] mat = " << M_fset.rep() << "\n";
+        //std::cout << "[Nedelec1stKind Dual] done 4\n";
 
     }
 
@@ -383,7 +383,7 @@ public:
 
     matrix_type operator()( primal_space_type const& pset ) const
     {
-        //std::cout << "RT matrix = " << M_fset( pset ) << std::endl;
+        //std::cout << "Nedelec1stKind matrix = " << M_fset( pset ) << std::endl;
         return M_fset( pset );
     }
 
@@ -766,4 +766,4 @@ public:
 };
 
 } // Feel
-#endif /* __Nedelec_H */
+#endif /* FEELPP_NEDELEC_HPP */
