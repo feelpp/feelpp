@@ -8,7 +8,7 @@ namespace Feel
 */
 /** \page GettingStarted Getting Started
    - \subpage CrashCourse
-   - \subpage Building
+   - \subpage BuildingP
    - \subpage DocCmakeLists
    - \subpage FirstApp
 */
