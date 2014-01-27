@@ -410,6 +410,11 @@ public:
         return  M_elements.template get<0>().find( boost::make_tuple( p, i ) );
     };
 
+    element_iterator elementIterator( element_type const& elt ) const
+    {
+        return elementIterator( elt.id(), elt.processId() );
+    };
+
     element_type const& element( size_type i ) const
     {
         return *M_elements.template get<0>().find( boost::make_tuple( this->worldCommElements().localRank(), i ) );
