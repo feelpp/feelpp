@@ -1074,7 +1074,7 @@ public:
 
     bool useWNmu()
     {
-        bool use = this->vm()["crb.run-on-WNmu"].template as<bool>();
+        bool use = option(_name="crb.run-on-WNmu").template as<bool>();
         return use;
     }
 
@@ -1369,7 +1369,7 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
         F[l]=M_model->newVector();
 
     //M_backend_primal = backend_type::build( BACKEND_PETSC );
-    bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
+    bool reuse_prec = option(_name="crb.reuse-prec").template as<bool>() ;
 
     M_bdf_primal = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal" );
     M_bdf_primal_save = bdf( _space=M_model->functionSpace(), _vm=this->vm() , _name="bdf_primal_save" );
@@ -1491,8 +1491,9 @@ CRB<TruthModelType>::offlineFixedPointPrimal(parameter_type const& mu )//, spars
             {
                 element_ptrtype projection ( new element_type ( M_model->functionSpace() ) );
                 projectionOnPodSpace ( u , projection, "primal" );
-                *uproj=u;
-                M_bdf_primal_save->shiftRight( *uproj );
+                auto e = u;
+                e-=*projection;
+                M_bdf_primal_save->shiftRight( e );
             }
         }
 
@@ -1548,7 +1549,7 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
 {
 
     //M_backend_dual = backend_type::build( BACKEND_PETSC );
-    bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
+    bool reuse_prec = option(_name="crb.reuse-prec").template as<bool>() ;
 
     auto udu = M_model->functionSpace()->element();
 
@@ -1709,8 +1710,9 @@ CRB<TruthModelType>::offlineFixedPointDual(parameter_type const& mu, element_ptr
             {
                 element_ptrtype projection ( new element_type ( M_model->functionSpace() ) );
                 projectionOnPodSpace ( udu , projection, "dual" );
-                *uproj=udu;
-                M_bdf_dual_save->shiftRight( *uproj );
+                auto e=udu;
+                e-=*projection;
+                M_bdf_dual_save->shiftRight( e );
             }
         }
 
@@ -1816,10 +1818,10 @@ CRB<TruthModelType>::offline()
     int master_proc = this->worldComm().masterRank();
     M_rbconv_contains_primal_and_dual_contributions = true;
 
-    bool rebuild_database = this->vm()["crb.rebuild-database"].template as<bool>() ;
-    orthonormalize_primal = this->vm()["crb.orthonormalize-primal"].template as<bool>() ;
-    orthonormalize_dual = this->vm()["crb.orthonormalize-dual"].template as<bool>() ;
-    solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+    bool rebuild_database = option(_name="crb.rebuild-database").template as<bool>() ;
+    orthonormalize_primal = option(_name="crb.orthonormalize-primal").template as<bool>() ;
+    orthonormalize_dual = option(_name="crb.orthonormalize-dual").template as<bool>() ;
+    solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>() ;
 
 #if 0
     M_elements_database.setMN( M_N );
@@ -1830,7 +1832,7 @@ CRB<TruthModelType>::offline()
         //M_WN = basis_functions.template get<0>();
         //M_WNdu = basis_functions.template get<1>();
         M_model->rBFunctionSpace()->setBasis( basis_functions );
-        M_database_contains_variance_info = this->vm()["crb.save-information-for-variance"].template as<bool>();
+        M_database_contains_variance_info = option(_name="crb.save-information-for-variance").template as<bool>();
     }
     else
     {
@@ -1838,15 +1840,15 @@ CRB<TruthModelType>::offline()
         CHECK( rebuild_database ) <<" No database for basis functions found. Use option crb.rebuild-database=true to force reconstruction";
     }
 #endif
-    M_use_newton = this->vm()["crb.use-newton"].template as<bool>() ;
+    M_use_newton = option(_name="crb.use-newton").template as<bool>() ;
 
     //if ( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem = false;
 
     if ( ! solve_dual_problem ) orthonormalize_dual=false;
 
-    M_Nm = this->vm()["crb.Nm"].template as<int>() ;
-    bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
+    M_Nm = option(_name="crb.Nm").template as<int>() ;
+    bool seek_mu_in_complement = option(_name="crb.seek-mu-in-complement").template as<bool>() ;
 
     boost::timer ti;
     LOG(INFO)<< "Offline CRB starts, this may take a while until Database is computed...\n";
@@ -2305,12 +2307,12 @@ CRB<TruthModelType>::offline()
 
     LOG(INFO) << "[CRB::offline] starting offline adaptive loop\n";
 
-    bool reuse_prec = this->vm()["crb.reuse-prec"].template as<bool>() ;
+    bool reuse_prec = option(_name="crb.reuse-prec").template as<bool>() ;
 
-    bool use_predefined_WNmu = this->vm()["crb.use-predefined-WNmu"].template as<bool>() ;
+    bool use_predefined_WNmu = option(_name="crb.use-predefined-WNmu").template as<bool>() ;
 
-    int N_log_equi = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>() ;
-    int N_equi = this->vm()["crb.use-equidistributed-WNmu"].template as<int>() ;
+    int N_log_equi = option(_name="crb.use-logEquidistributed-WNmu").template as<int>() ;
+    int N_equi = option(_name="crb.use-equidistributed-WNmu").template as<int>() ;
 
     if( N_log_equi > 0 || N_equi > 0 )
         use_predefined_WNmu = true;
@@ -2944,7 +2946,7 @@ CRB<TruthModelType>::offline()
 
 
 
-        M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
+        M_compute_variance = option(_name="crb.compute-variance").template as<bool>();
         if ( M_database_contains_variance_info )
             throw std::logic_error( "[CRB::offline] ERROR : build variance is not actived" );
         //buildVarianceMatrixPhi( M_N );
@@ -3017,7 +3019,7 @@ CRB<TruthModelType>::offline()
 
         check( M_WNmu->size() );
 
-        if ( this->vm()["crb.check.rb"].template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
+        if ( option(_name="crb.check.rb").template as<int>() == 1 )std::cout << "  -- check reduced basis done in " << timer2.elapsed() << "s\n";
 
         timer2.restart();
         LOG(INFO) << "time: " << timer.elapsed() << "\n";
@@ -3034,7 +3036,7 @@ CRB<TruthModelType>::offline()
 
     if( proc_number == 0 )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
-    bool visualize_basis = this->vm()["crb.visualize-basis"].template as<bool>() ;
+    bool visualize_basis = option(_name="crb.visualize-basis").template as<bool>() ;
 
 #if 0
     if ( visualize_basis )
@@ -3337,7 +3339,7 @@ CRB<TruthModelType>::compareResidualsForTransientProblems( int N, parameter_type
 
     time_index--;
 
-    bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
+    bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>();
     //if( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem=false;
 
@@ -3714,7 +3716,7 @@ void
 CRB<TruthModelType>::check( size_type N ) const
 {
 
-    if ( this->vm()["crb.check.rb"].template as<int>() == 0)
+    if ( option(_name="crb.check.rb").template as<int>() == 0)
         return;
 
     std::cout << "  -- check reduced basis\n";
@@ -4632,7 +4634,7 @@ CRB<TruthModelType>::fixedPoint(  size_type N, parameter_type const& mu, std::ve
 
     int size=output_vector.size();
     double o =output_vector[size-1];
-    bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>();
+    bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>();
     //if( this->worldComm().globalSize() > 1 )
     //    solve_dual_problem=false;
 
@@ -4659,7 +4661,7 @@ CRB<TruthModelType>::lb( size_type N, parameter_type const& mu, std::vector< vec
                          std::vector<vectorN_type> & uNold, std::vector<vectorN_type> & uNduold, bool print_rb_matrix, int K  ) const
 {
 
-    bool save_output_behavior = this->vm()["crb.save-output-behavior"].template as<bool>();
+    bool save_output_behavior = option(_name="crb.save-output-behavior").template as<bool>();
 
     //if K>0 then the time at which we want to evaluate output is defined by
     //time_for_output = K * time_step
@@ -4856,7 +4858,7 @@ CRB<TruthModelType>::delta( size_type N,
         double dual_residual=0;
 
         if ( !M_model->isSteady() ) dual_residual = initialDualResidual( N,mu,uNduold[time_index],dt );
-        bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+        bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>() ;
 
         if( solve_dual_problem )
         {
@@ -4882,11 +4884,11 @@ CRB<TruthModelType>::delta( size_type N,
         }//solve dual problem
 
 
-        bool show_residual = this->vm()["crb.show-residual"].template as<bool>() ;
+        bool show_residual = option(_name="crb.show-residual").template as<bool>() ;
         if( ! M_offline_step && show_residual )
         {
             double sum=0;
-            bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
+            bool seek_mu_in_complement = option(_name="crb.seek-mu-in-complement").template as<bool>() ;
             LOG( INFO ) <<" =========== Residual with "<<N<<" basis functions - seek mu in complement of WNmu : "<<seek_mu_in_complement<<"============ \n";
             time_index=0;
             for ( double time=dt; time<=Tf; time+=dt )
@@ -4973,7 +4975,7 @@ template<typename TruthModelType>
 typename CRB<TruthModelType>::max_error_type
 CRB<TruthModelType>::maxErrorBounds( size_type N ) const
 {
-    bool seek_mu_in_complement = this->vm()["crb.seek-mu-in-complement"].template as<bool>() ;
+    bool seek_mu_in_complement = option(_name="crb.seek-mu-in-complement").template as<bool>() ;
 
     int proc = Environment::worldComm().globalRank();
     int master_proc = Environment::worldComm().masterRank();
@@ -5159,7 +5161,7 @@ CRB<TruthModelType>::orthonormalize( size_type N, wn_type& wn, int Nm )
     DVLOG(2) << "[CRB::orthonormalize] finished ...\n";
     DVLOG(2) << "[CRB::orthonormalize] copying back results in basis\n";
 
-    //if ( this->vm()["crb.check.gs"].template as<int>() )
+    //if ( option(_name="crb.check.gs").template as<int>() )
     //return the norm of the matrix A(i,j)=M_model->scalarProduct( wn[j], wn[i] )
     return checkOrthonormality( N , wn );
 }
@@ -6711,10 +6713,10 @@ typename boost::tuple<double,double, typename CRB<TruthModelType>::solutions_tup
 CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool print_rb_matrix)
 {
 
-    M_compute_variance = this->vm()["crb.compute-variance"].template as<bool>();
+    M_compute_variance = option(_name="crb.compute-variance").template as<bool>();
 
     //int Nwn = M_N;
-    int Nwn_max = vm()["crb.dimension-max"].template as<int>();
+    int Nwn_max = option(_name="crb.dimension-max").template as<int>();
 #if 0
     if (  M_error_type!=CRB_EMPIRICAL )
     {
@@ -6730,7 +6732,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool pri
         std::cout << "Nwn = "<< Nwn << " error = "<< it->second.template get<0>() << " eps=" << eps << "\n";
     }
 
-    if ( this->vm()["crb.check.residual"].template as<bool>() )
+    if ( option(_name="crb.check.residual").template as<bool>() )
     {
         std::vector< std::vector<double> > primal_residual_coefficients = error_estimation.template get<1>();
         std::vector< std::vector<double> > dual_residual_coefficients = error_estimation.template get<2>();
@@ -6781,7 +6783,7 @@ CRB<TruthModelType>::run( parameter_type const& mu, double eps , int N, bool pri
         for(int i=0 ; i<nb_coeff ; i++)
             primal_residual_norm += primal_coefficients[final_time_index][i] ;
 
-        bool solve_dual_problem = this->vm()["crb.solve-dual-problem"].template as<bool>() ;
+        bool solve_dual_problem = option(_name="crb.solve-dual-problem").template as<bool>() ;
         if( solve_dual_problem )
         {
             if ( M_model->isSteady() )
@@ -7814,7 +7816,7 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     ar & BOOST_SERIALIZATION_NVP( M_Jqm_pr );
     ar & BOOST_SERIALIZATION_NVP( M_Rqm_pr );
 
-    if( this->vm()["crb.use-newton"].template as<bool>() != M_use_newton  )
+    if( option(_name="crb.use-newton").template as<bool>() != M_use_newton  )
         {
             if( M_use_newton )
                 throw std::logic_error( "[CRB::loadDB] ERROR in the database used the option use-newton=true and it's not the case in your option" );
@@ -7880,7 +7882,7 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::rebuildDB()
 {
-    bool rebuild = this->vm()["crb.rebuild-database"].template as<bool>();
+    bool rebuild = option(_name="crb.rebuild-database").template as<bool>();
     return rebuild;
 }
 
@@ -7888,7 +7890,7 @@ template<typename TruthModelType>
 bool
 CRB<TruthModelType>::showMuSelection()
 {
-    bool show = this->vm()["crb.show-mu-selection"].template as<bool>();
+    bool show = option(_name="crb.show-mu-selection").template as<bool>();
     return show;
 }
 
