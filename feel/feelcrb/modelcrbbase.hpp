@@ -291,6 +291,7 @@ public :
             file.open( filename );
             file << "NbBasis" << "\t" << "Min" << "\t" << "Max" << "\t" << "Mean" << "\t" << "Variance" << "\n";
             int Nmax = vector.size();
+            std::vector<double> nbruns( Nmax );
             for(int n=0; n<Nmax; n++)
             {
                 double variance=0;
@@ -301,7 +302,15 @@ public :
                 for(int i=0; i<sampling_size; i++)
                     variance += (vector[n](i) - mean)*(vector[n](i) - mean)/sampling_size;
                 file <<n+1<<"\t"<<min<<"\t"<<max<<"\t"<<mean<<"\t"<<variance<<"\n";
+                nbruns[n]=vector[n].size();
             }
+
+            //write information about number of runs
+            for(int n=0; n<Nmax; n++)
+            {
+                file <<"#N = "<<n<<" -- number of runs : "<<nbruns[n]<<"\n";
+            }
+
         }
     }
 
