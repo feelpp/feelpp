@@ -890,6 +890,7 @@ public:
         {
             value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
         template<int PatternContext>
@@ -899,6 +900,7 @@ public:
         {
             value_type res= M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ") evalijq( " << i << "," << j << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -909,6 +911,7 @@ public:
         {
             value_type res= M_tensor_expr.evaliq( i, c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i  << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evaliq( " << i  << "," << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
@@ -917,6 +920,7 @@ public:
         {
             value_type res= M_tensor_expr.evalq( c1, c2, q );
             std::cout << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
+            LOG(INFO) << "[print] " << M_tag << " shape(" << shape::M << "," << shape::N << ")  evalq( " << c1 << "," << c2 << "," << q << ")=" << res << "\n";
             return res;
         }
 
