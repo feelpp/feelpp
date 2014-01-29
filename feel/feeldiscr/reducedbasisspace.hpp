@@ -299,6 +299,15 @@ public :
             M_dual_rb_basis = dual;
         }
 
+    void setPrimalBasis( rb_basis_type const& rb)
+        {
+            M_primal_rb_basis = rb;
+        }
+    void setDualBasis( rb_basis_type const& rb)
+        {
+            M_dual_rb_basis = rb;
+        }
+
     //basis of RB space are elements of FEM function space
     //return value of the N^th basis ( vector ) at index idx
     //idx is the global dof ( fem )
