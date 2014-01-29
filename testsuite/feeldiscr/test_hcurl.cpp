@@ -408,8 +408,8 @@ TestHCurl::exampleProblem1()
 
     // Xh : space build with Nedelec elements
     space_ptrtype Xh = space_type::New( mesh );
-    element_type u( Xh, "u" ); //solution
-    element_type phi( Xh, "v" ); //test function
+    auto u = Xh->element();
+    auto phi = Xh->element();
 
     auto u_exact = ( 1-Py()*Py() )*unitX() + ( 1-Px()*Px() )*unitY(); //exact solution (analytical)
     auto f = ( 3-Py()*Py() )*unitX() + ( 3-Px()*Px() )*unitY(); //f = curl(curl(u_exact)) + u_exact
