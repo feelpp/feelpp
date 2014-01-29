@@ -190,10 +190,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
 
 
     BOOST_TEST_MESSAGE( "test_mortar_integrate_submesh for order : " << T::value );
-    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> > );
+    auto mesh = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
     auto mesh2 = loadMesh( _mesh=new Mesh<Simplex<2,1,2> >, _h=option(_name="gmsh.hsize2").template as<double>() );
-    auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)1),Environment::worldComm() );
-    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)1),Environment::worldComm() );
+    auto testmesh = createSubmesh(mesh, markedfaces(mesh,(boost::any)2),Environment::worldComm() );
+    auto trialmesh = createSubmesh(mesh2, markedfaces(mesh2,(boost::any)4),Environment::worldComm() );
     auto Xh = Pch<T::value>(testmesh);
     auto Vh = Pch<T::value>(trialmesh);
     auto Mh = Moch<T::value>(testmesh);
