@@ -210,6 +210,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef typename element_type::functionspace_type functionspace_type; \
             typedef typename functionspace_type::reference_element_type* fe_ptrtype; \
             typedef typename functionspace_type::reference_element_type fe_type; \
+            typedef typename functionspace_type::mortar_fe_type mortar_fe_type; \
             typedef typename functionspace_type::geoelement_type geoelement_type; \
             typedef typename functionspace_type::gm_type gm_type; \
             typedef typename functionspace_type::value_type value_type; \
@@ -225,13 +226,15 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             template<typename Func>                                     \
                 struct HasTestFunction                                  \
             {                                                           \
-                static const bool result = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , (boost::is_same<Func,fe_type>::value) ); \
+                static const bool result = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), false , \
+                                                         (boost::is_same<Func,fe_type>::value||boost::is_same<Func,mortar_fe_type>::value) ); \
             };                                                          \
                                                                         \
             template<typename Func>                                     \
                 struct HasTrialFunction                                 \
             {                                                           \
-                static const bool result = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), (boost::is_same<Func,fe_type>::value), false ); \
+                static const bool result = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), \
+                                                         (boost::is_same<Func,fe_type>::value||boost::is_same<Func,mortar_fe_type>::value), false ); \
             };                                                          \
                                                                         \
                                                                         \
@@ -313,8 +316,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 };                                                      \
                 static const bool dim_ok  = (VF_OPERATOR_TYPE_COMP(O) < gmc_type::NDim); \
                 static const bool fe_ok  = mpl::if_<mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>, \
-                    mpl::bool_<true>,                                   \
-                    boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, fe_type> >::type::value; \
+                                                    mpl::bool_<true>,   \
+                                                    typename mpl::or_<boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, fe_type>, \
+                                                                      boost::is_same<typename ttt<basis_context_type>::type::reference_element_type, mortar_fe_type> \
+                                                                      >::type >::type::value; \
                 struct is_zero {                                        \
                     /*static const bool value = !(dim_ok && fe_ok);*/   \
                     static const bool value = false;                    \
@@ -363,9 +368,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
                         {                                               \
                             if(!M_same_mesh)                            \
-                                expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
-                            /*update( geom );*/                         \
-                    }                                                   \
+                                    expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
+                        }                                               \
                 tensor( this_type const& expr,                          \
                         Geo_t const& geom,                              \
                         Basis_i_t const& VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TEST( T ), fev  ) ) \
