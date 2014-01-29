@@ -114,17 +114,17 @@ template<uint16_type N,
          template<uint16_type, uint16_type, uint16_type> class Convex = Simplex>
 class RaviartThomasPolynomialSet
     :
-    public Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex>
+    public Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex>
 {
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> super;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> super;
 
 public:
     static const uint16_type Om1 = (O==0)?0:O-1;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O, Vectorial, T, Convex> Pk_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Vectorial, T, Convex> Pkp1_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, Om1, Vectorial, T, Convex> Pkm1_v_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O, Scalar, T, Convex> Pk_s_type;
-    typedef Feel::detail::OrthonormalPolynomialSet<N, N, O+1, Scalar, T, Convex> Pkp1_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Vectorial, T, Convex> Pk_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Vectorial, T, Convex> Pkp1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, Om1, N, Vectorial, T, Convex> Pkm1_v_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O, N, Scalar, T, Convex> Pk_s_type;
+    typedef Feel::detail::OrthonormalPolynomialSet<N, O+1, N, Scalar, T, Convex> Pkp1_s_type;
 
     typedef PolynomialSet<typename super::basis_type,Vectorial> vectorial_polynomialset_type;
     typedef typename vectorial_polynomialset_type::polynomial_type vectorial_polynomial_type;
