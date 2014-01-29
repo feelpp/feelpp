@@ -37,12 +37,12 @@ namespace Feel {
    Given a \p mesh, build a function space of discontinuous function which are
    piecewise polynomial of degree (total or in each variable) less than k.
 */
-template<int Order,typename MeshType>
+template<int Order,template<class, uint16_type, class> class Pts = PointSetEquiSpaced,typename MeshType>
 inline
-boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>>
+boost::shared_ptr<FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>>
 Pdh( boost::shared_ptr<MeshType> mesh, bool buildExtendedDofTable=false )
 {
-    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous>>>::New( _mesh=mesh,
+    return FunctionSpace<MeshType,bases<Lagrange<Order,Scalar,Discontinuous,Pts>>>::New( _mesh=mesh,
                                                                                      _worldscomm=std::vector<WorldComm>( 1,mesh->worldComm() ),
                                                                                      _extended_doftable=std::vector<bool>( 1,buildExtendedDofTable ) );
 }

@@ -2354,7 +2354,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 
             for ( uint16_type c1 = 0; c1 < ncdof; ++c1 )
             {
-                size_type thedof = boost::get<0>( localToGlobal( it_elt->id(), l, c1 ) );
+                size_type thedof = localToGlobal( it_elt->id(), l, c1 ).index();
 
                 if ( ( thedof >= firstDof() ) && ( thedof <= lastDof() ) )
                 {
@@ -2372,6 +2372,19 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                         M_dof_points[thedof] = boost::make_tuple( __c->xReal( l ), firstDof()+thedof, c1 );
                         dof_done[thedof] = true;
                         ++dof_id;
+                    }
+                    else
+                    {
+#if !defined( NDEBUG )
+                        auto dofpointFromGmc = __c->xReal( l);
+                        auto dofpointStored = M_dof_points[thedof].template get<0>();
+                        bool find2=true;
+                        for (uint16_type d=0;d< nRealDim;++d)
+                            {
+                                find2 = find2 && (std::abs( dofpointFromGmc[d]-dofpointStored[d] )<1e-9);
+                            }
+                        CHECK(find2) << " error localToGlobal for "<< l <<" with " << dofpointFromGmc << " and " << dofpointStored <<"\n" ;
+#endif
                     }
                 }
             }
