@@ -904,6 +904,7 @@ public:
                 const index I = M_ref_ele->nbDof();
                 const index Q = M_nodes.size2();
 
+                LOG(INFO) << "Precompute nodes : " << M_nodes;
                 for ( index i = 0; i < I; ++i )
                 {
                     for ( index q = 0; q < Q; ++q )
@@ -2181,6 +2182,19 @@ public:
         //    private:
         Context() {}
 
+        void print()
+            {
+                const uint16_type Q = M_npoints;
+                const uint16_type I = nDof;
+                for ( uint16_type i = 0; i < I; ++i )
+                {
+                    for ( uint16_type q = 0; q < Q; ++q )
+                    {
+                        LOG(INFO) << "M_phi[" << i << "," << q << "]=" << M_phi[i][q];
+                    }
+                }
+
+            }
     private:
 
         boost::optional<precompute_ptrtype> M_pc;
