@@ -339,7 +339,8 @@ protected:
 
     void updateEntitiesCoDimensionOnePermutation()
         {
-            updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
+            //updateEntitiesCoDimensionOnePermutation( mpl::bool_<Shape::nDim==Shape::nRealDim>() );
+            updateEntitiesCoDimensionOnePermutation( mpl::bool_<true>() );
         }
 
     void
