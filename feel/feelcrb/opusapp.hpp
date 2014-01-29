@@ -130,7 +130,7 @@ public:
 
     OpusApp( AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
@@ -138,7 +138,7 @@ public:
 
     OpusApp( AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -146,14 +146,14 @@ public:
 
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() )  ),
         M_mode( ( CRBModelMode )option(_name=_o( this->about().appName(),"run.mode" )).template as<int>() )
         {
             this->init();
         }
     OpusApp( int argc, char** argv, AboutData const& ad, po::options_description const& od, CRBModelMode mode )
         :
-        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ) ),
+        super( ad, opusapp_options( ad.appName() ).add( od ).add( crbOptions() ).add( feel_options() ).add( eimOptions() ).add( podOptions() ) ),
         M_mode( mode )
         {
             this->init();
@@ -1113,7 +1113,7 @@ public:
                                         //LOG(INFO) << "N=" << N << " " << rel_err << " " << l2_error << " " << h1_error << " " <<condition_number<<"\n";
                                         if ( proc_number == Environment::worldComm().masterRank() )
                                         {
-                                            std::cout << "N=" << N << " " <<"OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
+                                            std::cout << "N=" << N << "Output =  "<< output_fem <<" OutputError = "<<rel_err <<" OutputErrorEstimated = "<<relative_estimated_error
                                                       <<"  L2Error = "<< l2_error << "  H1Error = " << h1_error <<std::endl;
 
                                             if( N == Nmax )
