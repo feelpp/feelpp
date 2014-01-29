@@ -464,7 +464,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                 DVLOG(2) << "local Assembly for element " << _gmc.id()
                          << "ntestdof : " << test_dof_type::nDofPerElement-1;
                 for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                    for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+                    for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
                     {
                         M_mortar_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0 );
                         DVLOG(2) << "mortar_rep(" << i << "," << j << ")=" << M_mortar_rep( i, j );
@@ -553,14 +553,14 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     {
         if ( isFirstExperience )
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+                for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
                 {
                     M_mortar_rep( i, j ) = M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
 
         else
             for ( uint16_type j = 0; j < trial_dof_type::nDofPerElement; ++j )
-                for ( uint16_type i = 0; i < test_dof_type::nDofPerElement-1; ++i )
+                for ( uint16_type i = 0; i < uint16_type(test_dof_type::nDofPerElement-1); ++i )
                 {
                     M_mortar_rep( i, j ) += M_integrator( *M_eval_expr00, i, j, 0, 0, indexLocalToQuad );
                 }
