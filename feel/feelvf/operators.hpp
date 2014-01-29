@@ -342,6 +342,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( t.M_did_init ),                         \
+                    M_hasRelationMesh( t.M_hasRelationMesh ),           \
                     M_same_mesh( t.M_same_mesh )                        \
                         {                                               \
                         }                                               \
