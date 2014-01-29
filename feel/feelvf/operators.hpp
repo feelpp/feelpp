@@ -342,6 +342,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( t.M_did_init ),                         \
+                    M_hasRelationMesh( t.M_hasRelationMesh ),           \
                     M_same_mesh( t.M_same_mesh )                        \
                         {                                               \
                         }                                               \
@@ -365,7 +366,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
+                    M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
+                    M_same_mesh( M_hasRelationMesh && isSameGeo )         \
                         {                                               \
                             if(!M_same_mesh)                            \
                                     expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -386,7 +388,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
+                    M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
+                    M_same_mesh( M_hasRelationMesh && isSameGeo )         \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -405,7 +408,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
                     M_zero( ret_type::Zero() ),                         \
                     M_did_init( false ),                                \
-                    M_same_mesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) && isSameGeo ) \
+                    M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
+                    M_same_mesh( M_hasRelationMesh && isSameGeo )         \
                         {                                               \
                             if(!M_same_mesh)                            \
                                 expr.e().functionSpace()->mesh()->tool_localization()->updateForUse(); \
@@ -509,7 +513,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                     else  {                                             \
                         matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<2>()); \
-                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc ); \
+                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, false/*true*/, \
+                                                                                      fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() ); \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<true> )      \
@@ -523,7 +528,10 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     else {                                              \
                         /*std::cout << "\n idv with interp \n";*/       \
                         matrix_node_type __ptsreal = M_expr.e().ptsInContext(*fusion::at_key<key_type>( geom ), mpl::int_<1>()); \
-                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc ); \
+                        auto setOfPts = ( fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value )? \
+                          fusion::at_key<key_type>( geom )->element().face( fusion::at_key<key_type>( geom )->faceId() ).vertices() : \
+                          fusion::at_key<key_type>( geom )->element().vertices(); \
+                        M_expr.e().BOOST_PP_CAT(VF_OPERATOR_SYMBOL( O ),Interpolate)( /**M_ctx,*/ __ptsreal, M_loc, false/*true*/, setOfPts  ); \
                     }                                                   \
                 }                                                       \
                 void update( Geo_t const& geom, mpl::bool_<false> )     \
@@ -711,6 +719,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 ret_type M_zero;                                        \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) M_loc;*/ \
                 bool M_did_init;                                        \
+                const bool M_hasRelationMesh;                           \
                 const bool M_same_mesh;                                 \
             };                                                          \
                                                                         \

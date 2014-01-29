@@ -268,6 +268,21 @@ public:
 #endif
             {}
 
+        /**
+         * \brief return number of elements in the sampling
+         */
+        int nbElements()
+        {
+            return super::size();
+        }
+
+        /**
+         * \brief return the last element in the sampling
+         */
+        element_type lastElement()
+        {
+            return super::back();
+        }
 
         /**
          * \brief create a sampling with elements given by the user
