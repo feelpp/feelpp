@@ -875,7 +875,7 @@ public:
      * well.  This method computes bounding boxes for the
      * elements on each processor and checks for overlaps.
      */
-    void findNeighboringProcessors();
+    //void findNeighboringProcessors();
 
     /**
      * This function checks if the local numbering of the mesh elements
@@ -1353,11 +1353,15 @@ public:
 
     void removeFacesFromBoundary( std::initializer_list<uint16_type> markers );
 
+    typename std::set<rank_type>::const_iterator beginNeighborSubdomains() const { return M_neighbor_processors.begin(); }
+    typename std::set<rank_type>::const_iterator endNeighborSubdomains() const { return M_neighbor_processors.end(); }
+    std::set<rank_type> const& neighborSubdomains() const { return M_neighbor_processors; }
+    void addNeighborSubdomain( rank_type p ) { M_neighbor_processors.insert( p ); }
 
-    typename std::set<size_type>::const_iterator beginFaceNeighborSubdomains() const { return M_face_neighbor_processors.begin(); }
-    typename std::set<size_type>::const_iterator endFaceNeighborSubdomains() const { return M_face_neighbor_processors.end(); }
-    std::set<size_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
-    void addFaceNeighborSubdomain( size_type p ) { M_face_neighbor_processors.insert( p ); }
+    typename std::set<rank_type>::const_iterator beginFaceNeighborSubdomains() const { return M_face_neighbor_processors.begin(); }
+    typename std::set<rank_type>::const_iterator endFaceNeighborSubdomains() const { return M_face_neighbor_processors.end(); }
+    std::set<rank_type> const& faceNeighborSubdomains() const { return M_face_neighbor_processors; }
+    void addFaceNeighborSubdomain( rank_type p ) { M_face_neighbor_processors.insert( p ); }
 
     //@}
 
@@ -1439,8 +1443,9 @@ private:
      * The processors who neighbor the current
      * processor
      */
-    std::vector<uint16_type> M_neighboring_processors;
-    std::set<size_type> M_face_neighbor_processors;
+    //std::vector<uint16_type> M_neighboring_processors;
+    std::set<rank_type> M_neighbor_processors;
+    std::set<rank_type> M_face_neighbor_processors;
 
     //partitioner_ptrtype M_part;
 
@@ -1829,7 +1834,8 @@ Mesh<Shape, T, Tag>::createP1mesh() const
                 // update P1 points info
                 for ( uint16_type p = 0; p < face_type::numVertices; ++p )
                 {
-                    new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
+                    //new_face.setPoint( p, new_mesh->point( new_node_numbers[old_elem.point( old_elem.fToP( s,p ) ).id()] ) );
+                    new_face.setPoint( p, new_mesh->point( new_node_numbers[ old_face.point(p).id()] ) );
                 }
                 // add it to the list of faces
                 new_mesh->addFace( new_face );

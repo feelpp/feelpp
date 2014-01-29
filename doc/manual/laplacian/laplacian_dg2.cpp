@@ -70,12 +70,21 @@ int main(int argc, char**argv )
     l = integrate(_range=elements(mesh),
                   _expr=id(v));
 
+    auto c = form2( _trial=Vh, _test=Vh,
+                    _pattern=size_type(Pattern::EXTENDED) );
+    //int ninternalfaces = nelements(internalfaces(mesh));
+    c =integrate( internalfaces( mesh ),
+                  + trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / measFace() );
+    // \int_Fint [ mean(u) ] \cdot [ mean(v) ] = \int_Fint [ 1/4 ] \cdot [ 1/4 ] / | F |
+    // \int_Fint 1 / |F| = 1 ! = \sum_{F \in Fint} \int_F 1/|F|  = #{F\in Fint}
+    if ( Environment::numberOfProcessors() == 1 )
+        c.matrixPtr()->printMatlab( "c.m" );
     auto a = form2( _trial=Vh, _test=Vh,
                     _pattern=size_type(Pattern::EXTENDED) );
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a +=integrate( internalfaces( mesh ),
-                   + trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / measFace() );
+                   + trans( jumpt( cst(1.0)/4 ) )*jump( cst( 1.0 )/4 ) / (measFace()) );
     a += on( _range=boundaryfaces(mesh), _element=u, _rhs=l, _expr=cst(0.));
 
     a.solve(_rhs=l,_solution=u);

@@ -21,47 +21,57 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-   \file dist2walls.cpp
+   \file dist2curve.cpp
    \author Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
    \date 2014-01-21
  */
 
-
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feeldiscr/pch.hpp>
-#include <feel/feeldiscr/pdh.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feelpde/reinit_fms.hpp>
-
-#define DIM 2
 
 using namespace Feel;
 using namespace Feel::vf;
 
-void run()
+int main( int argc, char** argv )
 {
-    typedef Mesh< Simplex<DIM> > mesh_type;
+    const int dim = 3;
 
-    auto mesh = loadMesh( _mesh=new mesh_type );
+    Feel::Environment env( argc, argv );
 
+    auto mesh = unitHypercube<dim>();
     auto Xh = Pch<1>(mesh);
 
-    auto thefms = fms( Xh );
+    // some ellipse parameters:
+    const double x0=0.6;
+    const double y0=0.5;
+    const double z0 = dim==2 ? 0 : 0.5;
+    const double aAxis = 0.1;
+    const double bAxis = 0.3;
 
-    auto phio = Xh->element();
-    phio = vf::project(Xh, elements(mesh), h() );
-    phio +=vf::project(Xh, boundaryfaces(mesh), -idv(phio) - h()/100. );
-    auto phi = thefms->march(phio);
+    auto X0 = Px() - x0;
+    auto Y0 = Py() - y0;
+    auto Z0 = Pz() - z0;
 
-    auto exp = exporter(_mesh=mesh, _name="disttowalls");
+    // ellipse function (not exactly a distance function)
+    auto ellipseShape = vf::project(Xh, elements(mesh),
+                                    sqrt( (X0/aAxis) * (X0/aAxis)
+                                          + (Y0/bAxis) * (Y0/bAxis)
+                                          + (Z0/bAxis) * (Z0/bAxis) ) - 1 );
+    // interface local projection method
+    auto ilpEllipse = vf::project(Xh, elements(mesh),
+                                  idv(ellipseShape)
+                                  / sqrt( inner( gradv(ellipseShape), gradv(ellipseShape) ) ) );
+
+    auto fm = fms( Xh );
+    auto phi = fm->march( ilpEllipse );
+
+    auto exp = exporter(_mesh=mesh, _name="dist2curve");
+    exp->step(0)->add("ellipseShape", ellipseShape);
+    exp->step(0)->add("ilpEllipse", ilpEllipse);
     exp->step(0)->add("phi", phi);
     exp->save();
 
-}
-
-int main( int argc, char** argv )
-{
-    Feel::Environment env( _argc=argc, _argv=argv );
-    run();
     return 0;
 }

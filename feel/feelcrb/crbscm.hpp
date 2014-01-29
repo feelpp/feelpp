@@ -636,13 +636,13 @@ CRBSCM<TruthModelType>::offlineNoSCM()
 #endif
     LOG( INFO )<<"eigenvalue ( min ) for mu_ref : "<<eigen_value;
 
-#if 0
+
     if( option(_name="crb.scm.check-eigenvector").template as<bool>() )
     {
         auto eigen_vector = modes.begin()->second.template get<2>();
         checkEigenVectorEigenValue( sym, inner_prod, eigen_vector, eigen_value );
     }
-#endif
+
     //store the eigen value in M_C_eigenvalues
     M_C_eigenvalues[0] = modes.begin()->second.template get<0>();
 
