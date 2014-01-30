@@ -125,7 +125,7 @@ public:
         if ( buildMatrix ) M_matrix = M_backend->newMatrix( _trial=domainSpace, _test=dualImageSpace , _pattern=M_pattern );
     }
 
-    ~OperatorLinear() {}
+    virtual ~OperatorLinear() {}
 
     virtual void
     init( domain_space_ptrtype     domainSpace,

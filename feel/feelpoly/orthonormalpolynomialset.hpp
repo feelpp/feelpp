@@ -123,6 +123,11 @@ public:
                                   mpl::identity<OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG,Simplex> > >::type::type type;
 
     };
+    template<int OtherOrder>
+    struct ChangeOrder
+    {
+        typedef OrthonormalPolynomialSet<Dim, OtherOrder, RealDim, PolySetType, T, TheTAG,Simplex> type;
+    };
 
     OrthonormalPolynomialSet()
         :
@@ -298,8 +303,8 @@ public:
     struct apply
     {
         typedef typename mpl::if_<mpl::bool_<Convex::is_simplex>,
-                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Simplex> >,
-                                  mpl::identity<detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
+                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Simplex> >,
+                                  mpl::identity<Feel::detail::OrthonormalPolynomialSet<N,Order,RealDim,PolySetType,T,TheTAG,Hypercube> > >::type::type result_type;
     typedef result_type type;
     };
 

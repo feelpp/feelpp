@@ -4,8 +4,29 @@
 
    \tableofcontents
 
-   \section feelpp0950 Feel++ Release 0.96.0
-   release date 11-15-2013
+   \section feelpp0970 Feel++ Release 0.97.0
+   release date mm-dd-yyyy
+
+   \subsection changes0970 Changes
+
+   - Massive reorganisation of headers and files
+   - Propose an alternative handling of header file: rather than having
+     everything in one header file, include only the necessary header files
+     which reduce compilation times
+
+   \subsection features0970 Features
+
+   - Support for discontinuous galerkin as well as internal face
+     integration in parallel (1D, 2D and 3D)
+   - Support discontinuous integration over a range of element (a subset of
+     faces), see https://github.com/feelpp/feelpp/issues/227
+
+   \subsection issues0970 Noteworthy Issues
+
+   -
+
+   \section feelpp0960 Feel++ Release 0.96.0
+   release date 01-02-2014
 
    \subsection changes0960 Changes
 
@@ -13,12 +34,13 @@
      operations, rewrite of some internals
    - improved Ginac(symbolic calculus) support
    - updated documentation to reflect Homebrew(MacOSX) support and the more
-     stringent requirement that g++ must be at least 4.6 and clang 3.2
+     stringent requirements on the compilers that g++ must be at least 4.6 and
+     clang 3.2
 
    \subsection features0960 Features
 
    - Feel++ is now fully supported on Mac OS X systems >= 10.9 (Mavericks) using
-     Homebrew (and soon MacPorts)
+     Homebrew and MacPorts
    - Feel++ supports creating sequential function spaces out of parallel meshes
    - Feel++ supports creating local interpolation operators in subdomains
    - Feel++ provides an implementation of the empirical interpolation method (eim)

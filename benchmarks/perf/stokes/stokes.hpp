@@ -40,7 +40,7 @@
 
 #include <feel/feeldiscr/functionspace.hpp>
 
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelpoly/lagrange.hpp>
 #include <feel/feelpoly/crouzeixraviart.hpp>

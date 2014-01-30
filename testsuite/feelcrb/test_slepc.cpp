@@ -104,10 +104,22 @@ testSlepc()
               _tolerance=option(_name="tol").template as<double>(),
               _maxit=option(_name="maxiter").template as<int>()
               );
-    double eigen_value = modes.begin()->second.template get<0>();
 
+    double eigen_value = modes.begin()->second.template get<0>();
     BOOST_CHECK_SMALL( (eigen_value-1), 1e-12 );
 
+    auto eigen_vector = modes.begin()->second.template get<2>();
+    auto Aw =  backend->newVector( Xh );
+    auto Bw =  backend->newVector( Xh );
+    A->multVector( eigen_vector, Aw );
+    B->multVector( eigen_vector, Bw );
+    //we should have Aw = eigen_value Bw
+    Bw->scale( eigen_value );
+    double energyAwAw = A->energy( Aw , Aw );
+    double energyAwBw = A->energy( Aw , Bw );
+    double energyBwBw = A->energy( Bw , Bw );
+    BOOST_CHECK_SMALL( math::abs(energyAwAw-energyAwBw) , 1e-12 );
+    BOOST_CHECK_SMALL( math::abs(energyAwAw-energyBwBw) , 1e-12 );
 }
 
 

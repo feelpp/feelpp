@@ -55,27 +55,15 @@ struct compute_graph3
     template <typename Space2>
     void operator()( boost::shared_ptr<Space2> const& space2 ) const
     {
+        static const uint16_type tag1 = Space1Type::basis_type::TAG;
+        static const uint16_type tag2 = Space2::basis_type::TAG;
+        typedef mpl::bool_<BFType::template rangeiteratorType<tag2,tag1>::hasnotfindrange_type::value> hasnotfindrange_type;
+        typedef mpl::bool_<BFType::template rangeExtendedIteratorType<tag2,tag1>::hasnotfindrange_type::value> hasnotfindrange_extended_type;
+
         if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
         {
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
-#if 0
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-                const size_type proc_id           = M_stencil->testSpace()->mesh()->comm().rank();
-                const size_type n1_dof_on_proc    = space2->nLocalDof();
-                const size_type first1_dof_on_proc = space2->dof()->firstDof( proc_id );
-                const size_type last1_dof_on_proc = space2->dof()->lastDof( proc_id );
-                const size_type first2_dof_on_proc = M_space1->dof()->firstDof( proc_id );
-                const size_type last2_dof_on_proc = M_space1->dof()->lastDof( proc_id );
-#else
-                const size_type proc_id           = M_stencil->testSpace()->worldsComm()[M_test_index].globalRank();
-                const size_type n1_dof_on_proc    = space2->nLocalDof();
-                const size_type first1_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
-                const size_type last1_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
-                const size_type first2_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
-                const size_type last2_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
-#endif
-#endif
                 typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type( space2->dof(), M_space1->dof() ) );
                 zerograph->zero();
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ), M_stencil->trialSpace()->nDofStart( M_trial_index ) , zerograph );
@@ -89,8 +77,9 @@ struct compute_graph3
                                            _diag_is_nonzero=false,
                                            _collect_garbage=false,
                                            _close=false,
-                                           _range=M_stencil->template subRangeIterator<Space2::basis_type::TAG,Space1Type::basis_type::TAG>
-                                           (mpl::bool_<BFType::template rangeiteratorType<Space2::basis_type::TAG,Space1Type::basis_type::TAG>::hasnotfindrange_type::value>() )
+                                           _range=M_stencil->template subRangeIterator<tag2,tag1>( hasnotfindrange_type() ),
+                                           _range_extended=M_stencil->template subRangeExtendedIterator<tag2,tag1>( hasnotfindrange_extended_type() ),
+                                           _quad=typename BFType::nonstandard_quadset_type()
                                            );
 
                 if ( M_stencil->testSpace()->worldComm().globalSize()>1 && M_stencil->testSpace()->hasEntriesForAllSpaces() )
@@ -131,27 +120,15 @@ struct compute_graph2
     template <typename Space2>
     void operator()( boost::shared_ptr<Space2> const& space2 ) const
     {
+        static const uint16_type tag1 = Space1Type::basis_type::TAG;
+        static const uint16_type tag2 = Space2::basis_type::TAG;
+        typedef mpl::bool_<BFType::template rangeiteratorType<tag1,tag2>::hasnotfindrange_type::value> hasnotfindrange_type;
+        typedef mpl::bool_<BFType::template rangeExtendedIteratorType<tag1,tag2>::hasnotfindrange_type::value> hasnotfindrange_extended_type;
+
         if ( M_stencil->testSpace()->worldsComm()[M_test_index].isActive() )
         {
             if ( M_stencil->isBlockPatternZero( M_test_index,M_trial_index ) )
             {
-#if 0
-#if !defined(FEELPP_ENABLE_MPI_MODE)
-                const size_type proc_id           = M_stencil->testSpace()->template mesh<0>()->comm().rank();
-                const size_type n1_dof_on_proc    = M_space1->nLocalDof();
-                const size_type first1_dof_on_proc = M_space1->dof()->firstDof( proc_id );
-                const size_type last1_dof_on_proc = M_space1->dof()->lastDof( proc_id );
-                const size_type first2_dof_on_proc = space2->dof()->firstDof( proc_id );
-                const size_type last2_dof_on_proc = space2->dof()->lastDof( proc_id );
-#else
-                const size_type proc_id           = M_stencil->testSpace()->worldsComm()[M_test_index].globalRank();
-                const size_type n1_dof_on_proc    = M_space1->nLocalDof();
-                const size_type first1_dof_on_proc = M_space1->dof()->firstDofGlobalCluster( proc_id );
-                const size_type last1_dof_on_proc = M_space1->dof()->lastDofGlobalCluster( proc_id );
-                const size_type first2_dof_on_proc = space2->dof()->firstDofGlobalCluster( proc_id );
-                const size_type last2_dof_on_proc = space2->dof()->lastDofGlobalCluster( proc_id );
-#endif
-#endif
                 typename BFType::graph_ptrtype zerograph( new typename BFType::graph_type(  M_space1->dof(), space2->dof() ) );
                 zerograph->zero();
                 M_stencil->mergeGraph( M_stencil->testSpace()->nDofStart( M_test_index ),
@@ -168,8 +145,9 @@ struct compute_graph2
                                            _diag_is_nonzero=false,
                                            _collect_garbage=false,
                                            _close=false,
-                                           _range=M_stencil->template subRangeIterator<Space1Type::basis_type::TAG,Space2::basis_type::TAG>
-                                           (mpl::bool_<BFType::template rangeiteratorType<Space1Type::basis_type::TAG,Space2::basis_type::TAG>::hasnotfindrange_type::value>() )
+                                           _range=M_stencil->template subRangeIterator<tag1,tag2>( hasnotfindrange_type() ),
+                                           _range_extended=M_stencil->template subRangeExtendedIterator<tag2,tag1>( hasnotfindrange_extended_type() ),
+                                           _quad=typename BFType::nonstandard_quadset_type()
                                            );
 
                 if ( M_stencil->testSpace()->worldComm().globalSize()>1 && M_stencil->testSpace()->hasEntriesForAllSpaces() )
@@ -300,9 +278,29 @@ stencilRangeMap( ThePair1Type const& p1, ThePair2Type const& p2)
     return stencilRangeMap2Type<ThePair1Type,ThePair2Type>( p1.second, p2.second );
 }
 
+/**
+ * define the quadrature order use with non standard stencil
+ */
+struct stencilQuadSetBase {};
+
+template <int QuadOrder1d=20, int QuadOrder2d=12, int QuadOrder3d=8 >
+struct stencilQuadSet :
+        public stencilQuadSetBase,
+        public fusion::vector< _Q<QuadOrder1d>,_Q<QuadOrder2d>,_Q<QuadOrder3d> >
+{
+    typedef fusion::vector< _Q<QuadOrder1d>,_Q<QuadOrder2d>,_Q<QuadOrder3d> > super_type;
+
+    stencilQuadSet()
+        :
+        super_type( _Q<QuadOrder1d>(), _Q<QuadOrder2d>(), _Q<QuadOrder3d>() )
+    {}
+};
 
 
-template<typename X1, typename X2,typename RangeIteratorTestType = stencilRangeMap0Type >
+template<typename X1, typename X2,
+         typename RangeIteratorTestType = stencilRangeMap0Type,
+         typename RangeExtendedIteratorType = stencilRangeMap0Type,
+         typename QuadSetType = stencilQuadSet<> >
 class Stencil
 {
 public:
@@ -312,16 +310,19 @@ public:
     typedef typename X2::element_type trial_space_type;
     typedef GraphCSR graph_type;
     typedef boost::shared_ptr<graph_type> graph_ptrtype;
-    typedef Stencil<X1,X2,RangeIteratorTestType> self_type;
+    typedef Stencil<X1,X2,RangeIteratorTestType,RangeExtendedIteratorType,QuadSetType> self_type;
 
     typedef RangeIteratorTestType rangeiterator_test_type;
+    typedef RangeExtendedIteratorType rangeiterator_extended_type;
+    typedef QuadSetType nonstandard_quadset_type;
 
     Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh,
              size_type graph_hints,
              BlocksStencilPattern block_pattern=BlocksStencilPattern(1,1,Pattern::HAS_NO_BLOCK_PATTERN),
              bool diag_is_nonzero=false,
              bool close=true,
-             rangeiterator_test_type r=rangeiterator_test_type())
+             rangeiterator_test_type r=rangeiterator_test_type(),
+             rangeiterator_extended_type rangeExtended=rangeiterator_extended_type() )
         :
         _M_X1( Xh ),
         _M_X2( Yh ),
@@ -333,7 +334,8 @@ public:
         M_graph( new graph_type( Xh->dof(),Yh->dof() ) ),
 #endif
         M_block_pattern( block_pattern ),
-        M_rangeIteratorTest( r )
+        M_rangeIteratorTest( r ),
+        M_rangeIteratorExtended( rangeExtended )
     {
         // init block_pattern if empty
         uint16_type nbSubSpace1 = _M_X1->nSubFunctionSpace();
@@ -351,13 +353,16 @@ public:
         if ( close ) M_graph->close();
     }
 
-    Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g, rangeiterator_test_type r=rangeiterator_test_type() )
+    Stencil( test_space_ptrtype Xh, trial_space_ptrtype Yh, size_type graph_hints, graph_ptrtype g,
+             rangeiterator_test_type r=rangeiterator_test_type(),
+             rangeiterator_extended_type rangeExtended=rangeiterator_extended_type() )
         :
         _M_X1( Xh ),
         _M_X2( Yh ),
         M_graph( g ),
         M_block_pattern(Xh->nSubFunctionSpace(),Yh->nSubFunctionSpace(),size_type( graph_hints/*Pattern::HAS_NO_BLOCK_PATTERN*/ )),
-        M_rangeIteratorTest( r )
+        M_rangeIteratorTest( r ),
+        M_rangeIteratorExtended( rangeExtended )
     {}
 
 
@@ -517,6 +522,27 @@ public :
                                    mpl::identity< resultfindrange_type >
                                   >::type::type type;
     };
+
+    template <int I,int J>
+    struct rangeExtendedIteratorType
+    {
+        typedef typename fusion::result_of::find<rangeiterator_extended_type,fusion::pair<mpl::int_<I>,mpl::int_<J> > >::type resultfindrange_it_type;
+        typedef typename fusion::result_of::value_of<resultfindrange_it_type>::type resultfindrange_type;
+
+        typedef typename boost::is_same<resultfindrange_it_type, typename fusion::result_of::end<rangeiterator_extended_type>::type> hasnotfindrange_type;
+        typedef typename boost::tuple<mpl::size_t<MESH_FACES>,
+                                      typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator,
+                                      typename MeshTraits<typename test_space_type::mesh_type>::location_face_const_iterator> defaultrange_type;
+
+        typedef typename mpl::if_< hasnotfindrange_type,
+                                   mpl::identity< defaultrange_type >,
+                                   mpl::identity< resultfindrange_type >
+                                  >::type::type type;
+    };
+
+    /**
+     * range/sub-range for standard stencil
+     */
 #if 0
     template <int I,int J>
     typename rangeiteratorType<I,J>::type
@@ -529,15 +555,14 @@ public :
     typename rangeiteratorType<I,J>::defaultrange_type
     rangeiterator(mpl::bool_<true> /**/) const
     {
-        return elements(_M_X1->mesh());
+        return elements( _M_X1->mesh() );
     }
     template <int I,int J>
     typename rangeiteratorType<I,J>::resultfindrange_type::second_type
     rangeiterator(mpl::bool_<false> /**/) const
     {
         typedef fusion::pair<mpl::int_<I>,mpl::int_<J> > key_type;
-        return fusion::at_key< key_type >(M_rangeIteratorTest);//.second;
-        //return *fusion::find< key_type >(M_rangeIteratorTest);//->second;
+        return fusion::at_key< key_type >( M_rangeIteratorTest );
     }
     template <int I,int J>
     stencilRangeMap0Type
@@ -552,6 +577,35 @@ public :
         return stencilRangeMap( stencilRange<0,0>( rangeiterator<I,J>(mpl::bool_<false>()) ) );
     }
 
+    /**
+     * range/sub-range for extended stencil
+     */
+    template <int I,int J>
+    typename rangeExtendedIteratorType<I,J>::defaultrange_type
+    rangeExtendedIterator(mpl::bool_<true> /**/) const
+    {
+        return internalfaces( _M_X1->mesh() );
+    }
+    template <int I,int J>
+    typename rangeExtendedIteratorType<I,J>::resultfindrange_type::second_type
+    rangeExtendedIterator(mpl::bool_<false> /**/) const
+    {
+        typedef fusion::pair<mpl::int_<I>,mpl::int_<J> > key_type;
+        return fusion::at_key< key_type >( M_rangeIteratorExtended );
+    }
+    template <int I,int J>
+    stencilRangeMap0Type
+    subRangeExtendedIterator( mpl::bool_<true> /**/ )
+    {
+        return stencilRangeMap0Type();
+    }
+    template <int I,int J>
+    stencilRangeMap1Type< fusion::pair< fusion::pair<mpl::int_<0>,mpl::int_<0> >, typename rangeExtendedIteratorType<I,J>::resultfindrange_type::second_type > >
+    subRangeExtendedIterator( mpl::bool_<false> /**/ )
+    {
+        return stencilRangeMap( stencilRange<0,0>( rangeExtendedIterator<I,J>( mpl::bool_<false>() ) ) );
+    }
+
 private:
 
     test_space_ptrtype _M_X1;
@@ -559,6 +613,7 @@ private:
     graph_ptrtype M_graph;
     BlocksStencilPattern M_block_pattern;
     rangeiterator_test_type M_rangeIteratorTest;
+    rangeiterator_extended_type M_rangeIteratorExtended;
 };
 namespace detail
 {
@@ -568,9 +623,10 @@ struct compute_stencil_type
     typedef typename remove_pointer_const_reference_type<Args,tag::test>::type _test_type;
     typedef typename remove_pointer_const_reference_type<Args,tag::trial>::type _trial_type;
     typedef typename remove_pointer_const_reference_default_type<Args,tag::range, stencilRangeMap0Type >::type _range_type;
-    typedef Stencil<_test_type, _trial_type, _range_type> type;
+    typedef typename remove_pointer_const_reference_default_type<Args,tag::range_extended, stencilRangeMap0Type >::type _range_extended_type;
+    typedef typename remove_pointer_const_reference_default_type<Args,tag::quad, stencilQuadSet<> >::type _quad_type;
+    typedef Stencil<_test_type, _trial_type, _range_type, _range_extended_type, _quad_type> type;
     typedef boost::shared_ptr<type> ptrtype;
-
 };
 
 }
@@ -608,7 +664,7 @@ void stencilManagerPrint();
 extern BlocksStencilPattern default_block_pattern;
 
 BOOST_PARAMETER_FUNCTION(
-    ( typename detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
+    ( typename Feel::detail::compute_stencil_type<Args>::ptrtype ), // 1. return type
     stencil,                                       // 2. name of the function template
     tag,                                        // 3. namespace of tag types
     ( required                                  // 4. one required parameter, and
@@ -619,9 +675,11 @@ BOOST_PARAMETER_FUNCTION(
       ( pattern,          *( boost::is_integral<mpl::_> ), Pattern::COUPLED )
       ( pattern_block,    *, default_block_pattern )
       ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), false )
-      ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
-      ( close,           *( boost::is_integral<mpl::_> ), true )
-      ( range,           *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
+      ( collect_garbage,  *( boost::is_integral<mpl::_> ), true )
+      ( close,            *( boost::is_integral<mpl::_> ), true )
+      ( range,            *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
+      ( range_extended,   *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
+      ( quad,             *( boost::is_convertible<mpl::_, stencilQuadSetBase>), stencilQuadSet<>() )
     )
 )
 {
@@ -632,16 +690,16 @@ BOOST_PARAMETER_FUNCTION(
     }
 
     Feel::detail::ignore_unused_variable_warning( args );
-    typedef typename detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
-    typedef typename detail::compute_stencil_type<Args>::type stencil_type;
+    typedef typename Feel::detail::compute_stencil_type<Args>::ptrtype stencil_ptrtype;
+    typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
 
     // we look into the spaces dictionary for existing graph
     auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) );
 
-    if ( git != StencilManager::instance().end() && range.isNullRange() )
+    if ( git != StencilManager::instance().end() && range.isNullRange() && range_extended.isNullRange() )
     {
         //std::cout << "Found a  stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
-        auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, git->second, range ) );
+        auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, git->second, range, range_extended ) );
         return s;
     }
 
@@ -650,13 +708,13 @@ BOOST_PARAMETER_FUNCTION(
         // look for transposed stencil if it exist and transpose it to get the stencil
         auto git_trans = StencilManager::instance().find( boost::make_tuple( trial, test, pattern, pattern_block.transpose().getSetOfBlocks(), diag_is_nonzero ) );
 
-        if ( git_trans != StencilManager::instance().end() && range.isNullRange() )
+        if ( git_trans != StencilManager::instance().end() && range.isNullRange() && range_extended.isNullRange() )
         {
             auto g = git_trans->second->transpose(close);
             //auto g = git_trans->second->transpose();
             stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), g );
 
-            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g, range ) );
+            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, g, range, range_extended ) );
             //std::cout << "Found a  transposed stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
             return s;
         }
@@ -664,8 +722,9 @@ BOOST_PARAMETER_FUNCTION(
         else
         {
             //std::cout << "Creating a new stencil in manager (" << test.get() << "," << trial.get() << "," << pattern << ")\n";
-            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, close, range ) );
-            if ( range.isNullRange() ) stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), s->graph() );
+            auto s = stencil_ptrtype( new stencil_type( test, trial, pattern, pattern_block, diag_is_nonzero, close, range, range_extended ) );
+            if ( range.isNullRange() && range_extended.isNullRange() )
+                stencilManagerAdd( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ), s->graph() );
             return s;
         }
     }
@@ -731,9 +790,9 @@ sortSparsityRow ( const BidirectionalIterator begin,
 } //
 
 }
-template<typename X1,  typename X2, typename RangeItTestType>
+template<typename X1,  typename X2, typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 void
-Stencil<X1,X2,RangeItTestType>::mergeGraph( int row, int col, graph_ptrtype g )
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraph( int row, int col, graph_ptrtype g )
 {
     boost::timer tim;
     DVLOG(2) << "[merge graph] for composite bilinear form\n";
@@ -825,9 +884,9 @@ Stencil<X1,X2,RangeItTestType>::mergeGraph( int row, int col, graph_ptrtype g )
     DVLOG(2) << "merge graph for composite bilinear form done\n";
 }
 
-template<typename X1,  typename X2, typename RangeItTestType>
+template<typename X1,  typename X2, typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 void
-Stencil<X1,X2,RangeItTestType>::mergeGraphMPI( size_type test_index, size_type trial_index,
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraphMPI( size_type test_index, size_type trial_index,
                                DataMap const& mapOnTest, DataMap const& mapOnTrial,
                                graph_ptrtype g )
 {
@@ -883,9 +942,9 @@ Stencil<X1,X2,RangeItTestType>::mergeGraphMPI( size_type test_index, size_type t
 
 }
 
-template<typename X1,  typename X2, typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints )
+template<typename X1,  typename X2, typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints )
 {
     VLOG(2) << "computeGraph: deciding whether the mesh are related to optimize the stencil\n";
     //if ( (is_shared_ptr<typename test_space_type::mesh_ptrtype>::value && is_shared_ptr<typename trial_space_type::mesh_ptrtype>::value ) &&
@@ -905,9 +964,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints )
 }
 
 
-template<typename X1,  typename X2, typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<false> )
+template<typename X1,  typename X2, typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<false> )
 {
     boost::timer t;
     DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
@@ -922,36 +981,36 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<false>
     return graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+ template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+ typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
-                      detail::compute_graph1<self_type>( this, hints ) );
+                      Feel::detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
-                      detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
+                      Feel::detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X2->functionSpaces(),
-                      detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
+                      Feel::detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false> )
 {
     boost::timer t;
     DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
@@ -963,30 +1022,30 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
     return graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
-                      detail::compute_graph1<self_type>( this, hints ) );
+                      Feel::detail::compute_graph1<self_type>( this, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true>, mpl::bool_<false> )
 {
     fusion::for_each( _M_X1->functionSpaces(),
-                      detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
+                      Feel::detail::compute_graph3<self_type,trial_space_type>( this, _M_X2, 0, hints ) );
     return M_graph;
 }
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<false>, mpl::bool_<true> )
 {
     fusion::for_each( _M_X2->functionSpaces(),
-                      detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
+                      Feel::detail::compute_graph2<self_type,test_space_type>( this, _M_X1, 0, hints ) );
     return M_graph;
 }
 
@@ -994,9 +1053,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
 
 
 #if 0
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true> )
 {
     boost::timer t;
     // Compute the sparsity structure of the global matrix.  This can be
@@ -1256,24 +1315,18 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     return sparsity_graph;
 }
 #else
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, mpl::bool_<true> )
 {
+    static const bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
+    static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0,0>::hasnotfindrange_type::value;
+
     boost::timer t;
     // Compute the sparsity structure of the global matrix.  This can be
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
     // in the (# of elements)*(# nodes per element)
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-    const size_type proc_id           = _M_X1->mesh()->comm().rank();
-    const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
-    //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
-    const size_type first1_dof_on_proc = _M_X1->dof()->firstDof( proc_id );
-    const size_type last1_dof_on_proc = _M_X1->dof()->lastDof( proc_id );
-    const size_type first2_dof_on_proc = _M_X2->dof()->firstDof( proc_id );
-    const size_type last2_dof_on_proc = _M_X2->dof()->lastDof( proc_id );
-#else // MPI
     const size_type proc_id           = _M_X1->worldsComm()[0].localRank();
     const size_type n1_dof_on_proc    = _M_X1->nLocalDof();
     //const size_type n2_dof_on_proc    = _M_X2->nLocalDof();
@@ -1281,7 +1334,6 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
     const size_type last1_dof_on_proc = _M_X1->dof()->lastDofGlobalCluster( proc_id );
     const size_type first2_dof_on_proc = _M_X2->dof()->firstDofGlobalCluster( proc_id );
     const size_type last2_dof_on_proc = _M_X2->dof()->lastDofGlobalCluster( proc_id );
-#endif
 
     graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
@@ -1292,7 +1344,7 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
 
     //auto elem_it  = _M_X1->mesh()->beginElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
     //auto elem_en  = _M_X1->mesh()->endElementWithProcessId( _M_X1->mesh()->worldComm().localRank() /*proc_id*/ );
-    auto rangeTest = this->rangeiterator<0,0>(mpl::bool_<rangeiteratorType<0,0>::hasnotfindrange_type::value>());
+    auto rangeTest = this->rangeiterator<0,0>( mpl::bool_<hasNotFindRangeStandard>() );
     auto elem_it = rangeTest.template get<1>();
     auto elem_en = rangeTest.template get<2>();
 
@@ -1321,6 +1373,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
         const auto & elem = *elem_it;
 
         auto const domains_eid_set = trialElementId( elem.id(), mpl::int_<nDimDiffBetweenTestTrial>() );
+        //const uint16_type  n1_dof_on_element = element_dof1.size();
+        const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize(elem.id());
 
         auto it_trial=domains_eid_set.begin();
         auto const en_trial=domains_eid_set.end();
@@ -1329,31 +1383,23 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
             const size_type domain_eid = *it_trial;
 
             // Get the global indices of the DOFs with support on this element
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-            _M_X2->dof()->getIndicesSet( domain_eid, element_dof2 );
-#else // MPI
             _M_X2->dof()->getIndicesSetOnGlobalCluster( domain_eid, element_dof2 );
-#endif
+
             // We can be more efficient if we sort the element DOFs
             // into increasing order
             //std::sort(element_dof1.begin(), element_dof1.end());
             std::sort( element_dof2.begin(), element_dof2.end() );
 
-            //const uint16_type  n1_dof_on_element = element_dof1.size();
-            const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
             const uint16_type  n2_dof_on_element = element_dof2.size();
 
             for ( size_type i=0; i<n1_dof_on_element; i++ )
                 //BOOST_FOREACH( auto ig1, _M_X1->dof()->getIndices( elem.id() ) )
             {
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                const size_type ig1 = _M_X1->dof()->localToGlobalId( elem.id(), i );
-#else // MPI
                 const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elem.id(), i )];
                 auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
                 // numLocal without ghosts ! very important for the graph with petsc
                 const size_type il1 = _M_X1->dof()->localToGlobalId( elem.id(), i );// ig1 - _M_X1->dof()->firstDofGlobalCluster( theproc );
-#endif
+
                 //const size_type ig1 = element_dof1[i];
                 const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
                 const int ncomp1 = i / ndofpercomponent1;
@@ -1370,14 +1416,9 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                         ( ig1 )( first1_dof_on_proc )( sparsity_graph->size() ).error( "invalid dof index" );
 #endif
                     graph_type::row_type& row = sparsity_graph->row( ig1 );
-#if !defined(FEELPP_ENABLE_MPI_MODE) // NOT MPI
-                    bool is_on_proc = ( ig1 >= first1_dof_on_proc ) && ( ig1 <= last1_dof_on_proc );
-                    row.get<0>() = is_on_proc?proc_id:invalid_size_type_value;
-                    row.get<1>() = is_on_proc?ig1 - first1_dof_on_proc:invalid_size_type_value;
-#else // MPI
                     row.get<0>() = theproc ;
                     row.get<1>() = il1;
-#endif
+
                     DVLOG(4) << "work with row " << ig1 << " local index " << ig1 - first1_dof_on_proc << "\n";
 
                     if ( do_less )
@@ -1397,25 +1438,27 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
                     }
 
                     // Now (possibly) add dof from neighboring elements
-                    if ( graph.test( Pattern::EXTENDED ) )
+                    if ( graph.test( Pattern::EXTENDED ) && hasNotFindRangeExtended )
                     {
                         for ( uint16_type ms=0; ms < elem.nNeighbors(); ms++ )
                         {
-                            const auto * neighbor = boost::addressof( elem );
+                            const auto * neighbor = boost::addressof( *_M_X1->mesh()->beginElementWithProcessId() /*elem*/ );
                             size_type neighbor_id = elem.neighbor( ms ).first;
                             size_type neighbor_process_id = elem.neighbor( ms ).second;
 
                             // warning ! the last condition is a temporary solution
-                            if ( neighbor_id != invalid_size_type_value
-                                 && neighbor_process_id == proc_id )
+                            if ( neighbor_id != invalid_size_type_value )
                             {
+                                if ( neighbor_process_id != proc_id )
+                                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() &&
+                                           _M_X2->dof()->buildDofTableMPIExtended() )
+                                        << "DofTableMPIExtended is not build!";
 
                                 neighbor = boost::addressof( _M_X1->mesh()->element( neighbor_id,
                                                                                      neighbor_process_id ) );
 
                                 if ( neighbor_id == neighbor->id()  )
                                 {
-                                    //neighbor_dof = _M_X2->dof()->getIndices( neighbor->id() );
                                     neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( neighbor->id() );
 
                                     if ( do_less )
@@ -1444,25 +1487,105 @@ Stencil<X1,X2,RangeItTestType>::computeGraph( size_type hints, mpl::bool_<true> 
         } // trial id loop
     } // element iterator loop
 
-    DVLOG(2)<< "[computeGraph<true>] before calling close in " << t.elapsed() << "s\n";
-    //sparsity_graph->close();
-    DVLOG(2) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
+    if ( graph.test( Pattern::EXTENDED ) && !hasNotFindRangeExtended )
+    {
+        auto rangeExtended = this->rangeExtendedIterator<0,0>( mpl::bool_<hasNotFindRangeExtended>() );
+        auto iDimRangeExtended = rangeExtended.template get<0>();
+        if ( iDimRangeExtended == ElementsType::MESH_ELEMENTS )
+        {
+            CHECK( false ) << "a range with MESH_ELEMENTS is not implemented";
+        }
+        else if ( iDimRangeExtended == ElementsType::MESH_FACES )
+        {
+            auto faceExtended_it = rangeExtended.template get<1>();
+            auto faceExtended_en = rangeExtended.template get<2>();
+            for ( ; faceExtended_it != faceExtended_en ;++faceExtended_it )
+            {
+                if ( !faceExtended_it->isConnectedTo0() || !faceExtended_it->isConnectedTo1() ) continue;
+
+                if ( faceExtended_it->isInterProcessDomain() )
+                    CHECK( _M_X1->dof()->buildDofTableMPIExtended() &&
+                           _M_X2->dof()->buildDofTableMPIExtended() )
+                        << "DofTableMPIExtended is not built!";
+
+                auto const& elt0 = faceExtended_it->element0();
+                auto const& elt1 = faceExtended_it->element1();
+
+                const uint16_type  n1_dof_on_element = _M_X1->dof()->getIndicesSize();
+                const uint16_type  n2_dof_on_element = _M_X2->dof()->getIndicesSize();
+
+                neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( elt1.id() );
+
+                for ( size_type i=0; i<n1_dof_on_element; i++ )
+                {
+                    const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elt0.id(), i )];
+                    auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
+                    const size_type il1 = _M_X1->dof()->localToGlobalId( elt0.id(), i );
+
+                    const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                    const int ncomp1 = i / ndofpercomponent1;
+                    const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+
+                    graph_type::row_type& row = sparsity_graph->row( ig1 );
+                    row.get<0>() = theproc ;
+                    row.get<1>() = il1;
+
+                    if ( do_less )
+                    {
+                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
+                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                 neighbor_dof.end() );
+                        else
+                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                 neighbor_dof.begin()+( ncomp1+1 )*ndofpercomponent2 );
+                    }
+                    else
+                    {
+                        row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
+                    }
+                }
+
+                neighbor_dof = _M_X2->dof()->getIndicesOnGlobalCluster( elt0.id() );
+                for ( size_type i=0; i<n1_dof_on_element; i++ )
+                {
+                    const size_type ig1 = _M_X1->dof()->mapGlobalProcessToGlobalCluster()[_M_X1->dof()->localToGlobalId( elt1.id(), i )];
+                    auto theproc = _M_X1->dof()->procOnGlobalCluster( ig1 );
+                    const size_type il1 = _M_X1->dof()->localToGlobalId( elt1.id(), i );
+
+                    const int ndofpercomponent1 = n1_dof_on_element / _M_X1->dof()->nComponents;
+                    const int ncomp1 = i / ndofpercomponent1;
+                    const int ndofpercomponent2 = n2_dof_on_element / _M_X2->dof()->nComponents;
+
+                    graph_type::row_type& row = sparsity_graph->row( ig1 );
+                    row.get<0>() = theproc ;
+                    row.get<1>() = il1;
+
+                    if ( do_less )
+                    {
+                        if ( ncomp1 == ( _M_X2->dof()->nComponents-1 ) )
+                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                 neighbor_dof.end() );
+                        else
+                            row.get<2>().insert( neighbor_dof.begin()+ncomp1*ndofpercomponent2,
+                                                 neighbor_dof.begin()+( ncomp1+1 )*ndofpercomponent2 );
+                    }
+                    else
+                    {
+                        row.get<2>().insert( neighbor_dof.begin(), neighbor_dof.end() );
+                    }
+
+                }
+
+            } // for ( ; faceExtended_it != faceExtended_en ;++faceExtended_it )
+        } // if ( iDimRangeExtended == ElementsType::MESH_FACES )
+    } // if ( graph.test( Pattern::EXTENDED ) && !hasNotFindRangeExtended )
+
     DVLOG(2) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
     return sparsity_graph;
 }
 #endif
 namespace detail
 {
-#if 0
-template<typename MeshType>
-struct gmcDefStencil
-{
-    typedef typename MeshType::element_type::gm_type::precompute_type pc_type;
-    typedef typename MeshType::element_type::gm_type::precompute_ptrtype pc_ptrtype;
-    typedef typename MeshType::element_type::gm_type::template Context<vm::POINT, typename MeshType::element_type> gmc_type;
-    typedef boost::shared_ptr<gmc_type> gmc_ptrtype;
-};
-#endif
 template<typename EltType>
 struct gmcDefStencil
 {
@@ -1560,15 +1683,14 @@ idEltStencil( mpl::size_t<MESH_FACES> /**/, FaceType const& theface )
 
 } // namespace detail
 
-template<typename X1,  typename X2,typename RangeItTestType>
-typename Stencil<X1,X2,RangeItTestType>::graph_ptrtype
-Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
+template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
+typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
+Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, mpl::bool_<true> )
 {
     //std::cout << "\n start graphInterp "<< std::endl;
-
-    typedef mpl::int_<20/*50*/> order_1d_type;
-    typedef mpl::int_<12/*20*/> order_2d_type;
-    typedef mpl::int_<8/*10*/> order_3d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,0>::type>::type::order > order_1d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,1>::type>::type::order > order_2d_type;
+    typedef mpl::int_< boost::remove_reference<typename fusion::result_of::at_c<QuadSetType,2>::type>::type::order > order_3d_type;
 
     typedef typename test_space_type::mesh_type test_mesh_type;
     typedef typename trial_space_type::mesh_type trial_mesh_type;
@@ -1578,8 +1700,8 @@ Stencil<X1,X2,RangeItTestType>::computeGraphInCaseOfInterpolate( size_type hints
             order_2d_type,
             order_3d_type >::type>::type order_used_type;
     typedef typename mpl::if_<mpl::bool_<test_mesh_type::element_type::is_simplex>,
-            mpl::identity<typename _Q<order_used_type::value>::template apply<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Simplex>::type >,
-                mpl::identity<typename _Q<order_used_type::value>::template apply<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Hypercube>::type >
+            mpl::identity<typename _Q<order_used_type::value>::template applyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Simplex>::type >,
+                mpl::identity<typename _Q<order_used_type::value>::template applyIMGeneral<test_mesh_type::element_type::nDim, typename test_mesh_type::value_type, Hypercube>::type >
     >::type::type theim_type;
 
     typedef typename test_mesh_type::Localization::matrix_node_type matrix_node_type;

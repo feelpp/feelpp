@@ -5,7 +5,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@ujf-grenoble.fr>
 #       Date: 2010-07-28
 #
-#  Copyright (C) 2010 Université de Grenoble 1 (Joseph Fourier)
+#  Copyright (C) 2010 Universitï¿½ de Grenoble 1 (Joseph Fourier)
 #
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
@@ -28,9 +28,11 @@ include (FindPackageHandleStandardArgs)
 # otherwise in the second instance it will pich the standard version installed on the system if
 # it is available
 
-find_program( GMSH_EXECUTABLE gmsh
-  PATH
+find_program( GMSH_EXECUTABLE 
+  NAMES gmsh
+  PATHS
   $ENV{GMSH_DIR}/bin
+  ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
   PATH_SUFFIXES bin
   DOC "GMSH mesh generator" )
 
@@ -42,7 +44,9 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     Gmsh.h Context.h GModel.h
     PATHS
     $ENV{GMSH_DIR}
-    PATH_SUFFIXES include include/gmsh
+    ${CMAKE_BINARY_DIR}/contrib/gmsh/include/gmsh
+    PATH_SUFFIXES
+    include include/gmsh
     DOC "Directory where GMSH header files are stored" )
 
   include_directories(${GMSH_INCLUDE_DIR})
@@ -70,8 +74,9 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   #message(STATUS "Gmsh headers : ${FEELPP_HAS_GMSH_H}, ${CMAKE_REQUIRED_INCLUDES}" )
 
   FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATH
+    PATHS
     $ENV{GMSH_DIR}
+    ${CMAKE_BINARY_DIR}/contrib/gmsh
     ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib )
@@ -85,15 +90,17 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
       PATHS
       $ENV{GMSH_DIR}/lib
-	  NO_DEFAULT_PATH)
+      ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
+      NO_DEFAULT_PATH)
 
     set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
   endif(NOT GMSH_LIBRARY)
 
   FIND_LIBRARY(GL2PS_LIBRARY NAMES gl2ps
     PATH
-      $ENV{GMSH_DIR}
-      ${CMAKE_SYSTEM_PREFIX_PATH}
+    $ENV{GMSH_DIR}
+    ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
+    ${CMAKE_SYSTEM_PREFIX_PATH}
     PATH_SUFFIXES
     lib  )
 
@@ -101,10 +108,11 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     FIND_LIBRARY(GL_LIBRARY NAMES GL
       PATH
       $ENV{GMSH_DIR}
+      ${CMAKE_BINARY_DIR}/contrib/gmsh/
       PATH_SUFFIXES
       lib  )
   ENDIF()
-
+  
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
     GMSH_INCLUDE_DIR GMSH_LIBRARY GMSH_EXECUTABLE
     )
@@ -122,7 +130,7 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   mark_as_advanced( GMSH_LIBRARY )
   mark_as_advanced( GL2PS_LIBRARY )
   IF ( FEELPP_ENABLE_OPENGL )
-     mark_as_advanced( GL_LIBRARY )
+    mark_as_advanced( GL_LIBRARY )
   ENDIF()
   mark_as_advanced( GMSH_EXECUTABLE )
 

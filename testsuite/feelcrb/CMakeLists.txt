@@ -23,6 +23,7 @@
 #
 set_directory_properties(PROPERTIES LABEL testcrb )
 feelpp_add_test( eim )
+feelpp_add_test( eim_grepl )
 feelpp_add_test( nlsolve_eigen )
 
 if ( FEELPP_HAS_SLEPC )

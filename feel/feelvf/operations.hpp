@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2014 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -23,12 +24,12 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 /**
-   \file ppoperators.hpp
+   \file operations.hpp
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-06-01
  */
-#if !defined( PP_OPERATORS_HPP )
-#define PP_OPERATORS_HPP 1
+#if !defined( FEELPP_OPERATIONS_HPP )
+#define FEELPP_OPERATIONS_HPP 1
 
 #include <feel/feelconfig.h>
 #if defined( FEELPP_HAS_QD_H )
@@ -727,4 +728,4 @@ BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP, 3, ( VF_APPLICATIVE_BINARY_O
 }
 
 /// \endcond detail
-#endif /* PP_OPERATORS_HPP */
+#endif /* FEELPP_OPERATIONS_HPP */

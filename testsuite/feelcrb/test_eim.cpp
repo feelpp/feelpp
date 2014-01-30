@@ -41,7 +41,7 @@
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelcrb/eim.hpp>
 
 #define FEELAPP( argc, argv, about, options )                           \
@@ -265,7 +265,14 @@ public:
                     if( cvg_study )
                     {
                         *solution = solve(p);
-                        fun->studyConvergence( p , *solution );
+                        std::vector< std::string > all_file_name;
+                        all_file_name.push_back( "EimConvergenceL2.dat");
+                        all_file_name.push_back( "EimConvergenceL2estimated.dat");
+                        all_file_name.push_back( "EimConvergenceL2ratio.dat");
+                        all_file_name.push_back( "EimConvergenceLINF.dat");
+                        all_file_name.push_back( "EimConvergenceLINFestimated.dat");
+                        all_file_name.push_back( "EimConvergenceLINFratio.dat");
+                        fun->studyConvergence( p , *solution , all_file_name );
                     }
                     boost::mpi::timer timer;
                     auto w = fun->interpolant( p );

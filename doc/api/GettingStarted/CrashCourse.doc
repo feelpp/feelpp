@@ -10,7 +10,7 @@ namespace Feel{
 This chapter is designed for impatient people who wants to test \feel as soon as possible.
 \section Requirements Requirements
 Before installing \feel, you need to get this required packages :
-\li g++ (4.6, 4.7 or higher) OR Clang (3.2 or higher)
+\li g++ (4.7 or higher) OR Clang (3.3 or higher)
 \li MPI : openmpi (preferred) or mpich
 \li Boost (1.39 or higher)
 \li Petsc (2.3.3 or higher)

@@ -539,15 +539,25 @@ VectorPetsc<T>::addVector ( const Vector<value_type>& V_in,
         const MatrixPetsc<T>* A = dynamic_cast<const MatrixPetsc<T>*>( &A_in );
 
         CHECK ( A != 0 ) << "Invalid PETSc matrix\n";
+        this->close();
         A->close();
         int ierr=0;
 
 
         if ( !V )
         {
-            VectorPetsc<T> tmp( V_in.mapPtr(), true );
-            dynamic_cast<Vector<T>&>( tmp ) = V_in;
-            ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
+            if ( this->comm().size()>1 )
+            {
+                VectorPetscMPI<T> tmp( V_in.mapPtr() );
+                dynamic_cast<Vector<T>&>( tmp ) = V_in;
+                ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
+            }
+            else
+            {
+                VectorPetsc<T> tmp( V_in.mapPtr() );
+                dynamic_cast<Vector<T>&>( tmp ) = V_in;
+                ierr = MatMultAdd( const_cast<MatrixPetsc<T>*>( A )->mat(), tmp.M_vec, M_vec, M_vec );
+            }
         }
         else
         {
@@ -766,6 +776,7 @@ void
 VectorPetscMPI<T>::set( size_type i, const value_type& value )
 {
     //FEELPP_ASSERT(i<size())( i )( size() ).error( "invalid index" );
+    //if ( this->map().dofGlobalProcessIsGhost(i) ) return;
 
     int ierr=0;
     int i_val = static_cast<int>( i );
@@ -980,11 +991,11 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
         }
 
     auto worldCommFusion = this->map().worldComm()+vecInput.map().worldComm();
-    std::vector<int> globalRankToFusionRank_this(this->map().worldComm().globalSize());
+    std::vector<rank_type> globalRankToFusionRank_this(this->map().worldComm().globalSize());
     mpi::all_gather( this->map().worldComm().globalComm(),
                      worldCommFusion.globalRank(),
                      globalRankToFusionRank_this );
-    std::vector<int> globalRankToFusionRank_input(vecInput.map().worldComm().globalSize());
+    std::vector<rank_type> globalRankToFusionRank_input(vecInput.map().worldComm().globalSize());
     mpi::all_gather( vecInput.map().worldComm().globalComm(),
                      worldCommFusion.globalRank(),
                      globalRankToFusionRank_input );

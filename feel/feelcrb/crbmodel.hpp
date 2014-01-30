@@ -35,7 +35,7 @@
 
 
 #include <feel/feelalg/solvereigen.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelts/bdf.hpp>
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feeldiscr/operatorlinearfree.hpp>
@@ -595,7 +595,12 @@ public:
         return boost::make_tuple( betaMqm, betaAqm, betaFqm );
     }
 
-
+    betaqm_type computeBetaQm( vector_ptrtype const& T, parameter_type const& mu , double time=0 )
+    {
+        auto solution = M_model->functionSpace()->element();
+        solution = *T;
+        return computeBetaQm( solution , mu , time );
+    }
     betaqm_type computeBetaQm( element_type const& T, parameter_type const& mu , double time=0 )
     {
         return computeBetaQm( T , mu , mpl::bool_<model_type::is_time_dependent>(), time );
@@ -658,6 +663,9 @@ public:
     }
     offline_merge_type update( parameter_type const& mu, element_type const& T, double time=0 )
     {
+#if !defined(NDEBUG)
+        mu.check();
+#endif
         auto all_beta = this->computeBetaQm(  T , mu , time );
 
         offline_merge_type offline_merge;
@@ -1460,6 +1468,21 @@ public:
     vectorN_type computeStatistics ( Eigen::VectorXd vector , std::string name )
     {
         return M_model->computeStatistics( vector , name );
+    }
+
+    void readConvergenceDataFromFile( std::vector< vectorN_type > & vector, std::string filename )
+    {
+        return M_model->readConvergenceDataFromFile( vector, filename );
+    }
+
+    void writeConvergenceStatistics( std::vector< vectorN_type > const& vector, std::string filename )
+    {
+        return M_model->writeConvergenceStatistics( vector, filename );
+    }
+
+    void writeVectorsExtremumsRatio(std::vector< vectorN_type > const& vector1, std::vector< vectorN_type > const& vector2, std::string filename )
+    {
+        return M_model->writeVectorsExtremumsRatio( vector1, vector2, filename );
     }
 
     double timeStep()
@@ -2274,6 +2297,7 @@ CRBModel<TruthModelType>::solveFemUsingAffineDecompositionFixedPoint( parameter_
 
     int max_fixedpoint_iterations  = this->vm()["crb.max-fixedpoint-iterations"].template as<int>();
     double increment_fixedpoint_tol  = this->vm()["crb.increment-fixedpoint-tol"].template as<double>();
+
     for( mybdf->start(*InitialGuess); !mybdf->isFinished(); mybdf->next() )
     {
         iter=0;

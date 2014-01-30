@@ -35,6 +35,8 @@
 #endif /* FEELPP_HAS_MPI_H */
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
+#include <feel/feelcore/feel.hpp>
+
 namespace Feel
 {
 
@@ -120,15 +122,15 @@ public:
         return this->godComm().size();
     }
 
-    int globalRank() const
+    rank_type globalRank() const
     {
         return this->globalComm().rank();
     }
-    int localRank() const
+    rank_type localRank() const
     {
         return this->localComm().rank();
     }
-    int godRank() const
+    rank_type godRank() const
     {
         return this->godComm().rank();
     }
@@ -143,11 +145,11 @@ public:
     {
         return M_mapColorWorld;
     }
-    std::vector<int> const& mapLocalRankToGlobalRank() const
+    std::vector<rank_type> const& mapLocalRankToGlobalRank() const
     {
         return M_mapLocalRankToGlobalRank;
     }
-    std::vector<int> const& mapGlobalRankToGodRank() const
+    std::vector<rank_type> const& mapGlobalRankToGodRank() const
     {
         return M_mapGlobalRankToGodRank;
     }
@@ -156,17 +158,17 @@ public:
     {
         return M_mapColorWorld[k];
     }
-    int mapLocalRankToGlobalRank(int k) const
+    rank_type mapLocalRankToGlobalRank(int k) const
     {
         return M_mapLocalRankToGlobalRank[k];
     }
-    int mapGlobalRankToGodRank(int k) const
+    rank_type mapGlobalRankToGodRank(int k) const
     {
         return M_mapGlobalRankToGodRank[k];
     }
 
 
-    int masterRank() const
+    rank_type masterRank() const
     {
         return M_masterRank;
     }
@@ -202,7 +204,7 @@ public:
         return M_isActive;
     }
 
-    int localColorToGlobalRank( int _color,int _localRank ) const;
+    rank_type localColorToGlobalRank( int _color,int _localRank ) const;
 
     void setColorMap( std::vector<int> const& colormap );
 
@@ -238,8 +240,8 @@ private :
     boost::shared_ptr<WorldComm> M_subWorldCommSeq;
 
     std::vector<int> M_mapColorWorld;
-    std::vector<int> M_mapLocalRankToGlobalRank;
-    std::vector<int> M_mapGlobalRankToGodRank;
+    std::vector<rank_type> M_mapLocalRankToGlobalRank;
+    std::vector<rank_type> M_mapGlobalRankToGodRank;
     std::map<int, std::pair<WorldComm,std::vector<WorldComm> > > M_subworlds;
 
     int M_masterRank;

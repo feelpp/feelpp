@@ -1,12 +1,16 @@
-// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+// -*- coding: utf-8; mode: c++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:set fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 #include <feel/feel.hpp>
 
 int main(int argc, char**argv )
 {
     //# marker1 #
     using namespace Feel;
+	po::options_description laplacianoptions( "Laplacian options" );
+	laplacianoptions.add_options()
+		( "mu", po::value<double>()->default_value( 1.0 ), "coeff" )
+		;
 	Environment env( _argc=argc, _argv=argv,
-                     _desc=feel_options(),
+                     _desc=laplacianoptions.add(feel_options()),
                      _about=about(_name="qs_laplacian",
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
@@ -28,7 +32,7 @@ int main(int argc, char**argv )
     a = integrate(_range=elements(mesh),
                   _expr=gradt(u)*trans(grad(v)) );
     a+=on(_range=boundaryfaces(mesh), _rhs=l, _element=u,
-          _expr=expr( option(_name="functions.g").as<std::string>(), {symbol("x"),symbol("y")} ) );
+          _expr=expr( option(_name="functions.g").as<std::string>() ) );
     a.solve(_rhs=l,_solution=u);
     //# endmarker3 #
 
