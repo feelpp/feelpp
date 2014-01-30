@@ -37,3 +37,4 @@ feelpp_add_test( wire_basket NO_MPI_TEST )
 feelpp_add_test( mortar NO_MPI_TEST)
 
 feelpp_add_test( hcurl )
+feelpp_add_test( functionals )
