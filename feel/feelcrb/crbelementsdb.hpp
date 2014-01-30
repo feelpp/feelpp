@@ -173,7 +173,10 @@ template<typename ModelType>
 bool
 CRBElementsDB<ModelType>::loadDB()
 {
-    if( option(_name="crb.rebuild-database").template as<bool>() )
+
+    bool rebuild_db = option(_name="crb.rebuild-database").template as<bool>();
+    int Nrestart = option(_name="crb.restart-from-N").template as<int>();
+    if ( rebuild_db && Nrestart < 1 )
         return false;
 
     if( this->isDBLoaded() )

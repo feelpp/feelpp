@@ -302,6 +302,7 @@ public:
 
             if( crb->isDBLoaded() )
             {
+                int Nrestart = option(_name="crb.restart-from-N").template as<int>();
                 bool do_offline = false;
                 int current_dimension = crb->dimension();
                 int dimension_max = option(_name="crb.dimension-max").template as<int>();
@@ -313,6 +314,9 @@ public:
                     do_offline = true;
 
                 if( current_dimension < dimension_max && !crb_use_predefined )
+                    do_offline=true;
+
+                if( Nrestart > 1 )
                     do_offline=true;
 
                 if( ! do_offline )

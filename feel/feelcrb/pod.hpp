@@ -491,7 +491,6 @@ int POD<TruthModelType>::pod( mode_set_type& ModeSet, bool is_primal, const wn_t
             {
                 M_bdf->loadCurrent();
                 double psi_k = real( eigen_solver.eigenvectors().col( position_of_largest_eigenvalue )[index] );
-                double nn = M_bdf->unknown( 0 ).l2Norm();
                 M_bdf->unknown( 0 ).scale( psi_k );
                 mode->add( 1 , M_bdf->unknown( 0 ) );
                 index++;

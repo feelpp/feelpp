@@ -123,6 +123,11 @@ public:
                                   mpl::identity<OrthonormalPolynomialSet<Dim, TheOrder, RealDim, PolySetType, T, TheTAG,Simplex> > >::type::type type;
 
     };
+    template<int OtherOrder>
+    struct ChangeOrder
+    {
+        typedef OrthonormalPolynomialSet<Dim, OtherOrder, RealDim, PolySetType, T, TheTAG,Simplex> type;
+    };
 
     OrthonormalPolynomialSet()
         :

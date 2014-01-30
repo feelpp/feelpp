@@ -268,6 +268,26 @@ public :
             return M_dual_rb_basis[index];
         }
 
+    void deleteLastPrimalBasisElements( int number )
+        {
+            int size = M_primal_rb_basis.size();
+            CHECK( number < size )<<" error you want to delete "<<number<<" elements in a basis that contains only "<<size<<" elements\n";
+            for(int i=0; i<number; i++)
+            {
+                M_primal_rb_basis.pop_back();
+            }
+        }
+
+    void deleteLastDualBasisElements( int number )
+        {
+            int size = M_dual_rb_basis.size();
+            CHECK( number < size )<<" error you want to delete "<<number<<" elements in a basis that contains only "<<size<<" elements\n";
+            for(int i=0; i<number; i++)
+            {
+                M_dual_rb_basis.pop_back();
+            }
+        }
+
     /*
      * Get basis of the reduced basis space
      */
