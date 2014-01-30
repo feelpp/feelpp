@@ -255,10 +255,20 @@ Environment::generateOLFiles( std::string const& appName)
           oss << defVal;
           //std::cout << defVal;
           const std::type_info & ti = S_vm[optName].value().type();
-          if(ti == typeid(int))
+          if(ti == typeid(bool))
+          {
+              oss.str("");
+              oss << (S_vm[optName].as<bool>() ? 1 : 0);
+          }
+          else if(ti == typeid(int))
           {
               oss.str("");
               oss << S_vm[optName].as<int>();
+          }
+          else if(ti == typeid(float))
+          {
+              oss.str("");
+              oss << S_vm[optName].as<float>();
           }
           else if(ti == typeid(double))
           {
@@ -319,9 +329,10 @@ Environment::generateOLFiles( std::string const& appName)
   /*
   ol << "Mesher.in(feel.geo);" << std::endl;
   ol << "Mesher.out(feel.msh);" << std::endl;
-  ol << "Mesher.run(feel.geo);" << std::endl;
-  ol << "Mesher.merge(feel.geo);" << std::endl;
   */
+  ol << "OL.if(OL.get(Parameters/gmsh/filename) == untitled.geo)" << std::endl;
+  ol << "OL.msg(No geo file specified. Using a default one);" << std::endl;
+  ol << "OL.endif" << std::endl;
   
   /* Application instructions */
   //ol << "FeelApp.register(interfaced, mpirun -np " << worldComm().size() << " " + appPath + ");" << std::endl;
