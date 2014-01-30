@@ -158,6 +158,8 @@ struct IM
 template<int IMORDER>
 struct _Q
 {
+    static const int order = IMORDER;
+
     template<int DIM,
              typename T,
              template<uint16_type, uint16_type, uint16_type> class Entity>

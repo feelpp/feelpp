@@ -70,6 +70,8 @@ public:
         M_backend( backend )
     {}
 
+    virtual ~FsFunctionalLinearComposite() {}
+
     int size()
     {
         int size1 = M_functionals1.size();

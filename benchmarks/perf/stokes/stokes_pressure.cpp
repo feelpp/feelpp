@@ -118,12 +118,12 @@ int main( int argc, char** argv )
     }
 #if defined(DIM2)
     benchmark.add( new Stokes<2, 2, 1>( "2D-P2P1G1" ) ) ;
-    benchmark.add( new Stokes<2, 3, 1>( "2D-P3P2G1" ) ) ;
+    //benchmark.add( new Stokes<2, 3, 1>( "2D-P3P2G1" ) ) ;
 #else
     benchmark.add( new Stokes<3, 2, 1>( "3D-P2P1G1" ) ) ;
-    benchmark.add( new Stokes<3, 2, 2>( "3D-P2P1G2" ) ) ;
-    benchmark.add( new Stokes<3, 3, 1>( "3D-P3P2G1" ) ) ;
-    benchmark.add( new Stokes<3, 3, 2>( "3D-P3P2G2" ) ) ;
+    //benchmark.add( new Stokes<3, 2, 2>( "3D-P2P1G2" ) ) ;
+    //benchmark.add( new Stokes<3, 3, 1>( "3D-P3P2G1" ) ) ;
+    //benchmark.add( new Stokes<3, 3, 2>( "3D-P3P2G2" ) ) ;
 #endif
 
     benchmark.setStats( boost::assign::list_of( "e.h1" )( "e.semih1" )( "e.l2" )( "e.output" )("n.space")("d.solver") );
