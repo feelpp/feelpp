@@ -14,6 +14,9 @@ feelpp_add_test( functionallinearfree )
 feelpp_add_test( fspace_context )
 feelpp_add_test( geomap )
 
+feelpp_add_test( hdiv)
+feelpp_add_test( hcurl)
+
 feelpp_add_test( lambda )
 feelpp_add_test( lift )
 feelpp_add_test( lm )
@@ -35,3 +38,5 @@ feelpp_add_test( vect_comp )
 
 feelpp_add_test( wire_basket NO_MPI_TEST )
 feelpp_add_test( mortar NO_MPI_TEST)
+
+

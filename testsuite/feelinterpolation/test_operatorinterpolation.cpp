@@ -252,8 +252,8 @@ buildMeshSMD( mpl::int_<3> /**/)
     GeoTool::Node Center(0,0,0);
     GeoTool::Node Radius( 0.5);
     GeoTool::Node Dir(1,0,0);
-    GeoTool::Node Lg(3,0,0);
-    double meshSize = option(_name="hsize").template as<double>();
+    GeoTool::Node Lg(2,0,0);
+    double meshSize = option(_name="hsize").template as<double>()*3;
     GeoTool::Cylindre C( meshSize,"Cyl",Center,Dir,Radius,Lg);
     C.setMarker(_type="surface",_name="Inlet",_marker1=true);
     C.setMarker(_type="surface",_name="Outlet",_marker2=true);
