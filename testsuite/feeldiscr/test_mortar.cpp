@@ -238,7 +238,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh, T, order_types )
 
 }
 #endif
-typedef boost::mpl::list<boost::mpl::int_<1>  > order_types;
+typedef boost::mpl::list<boost::mpl::int_<1>, boost::mpl::int_<2>  > order_types;
+
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 {
     using namespace Feel;
@@ -292,8 +293,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     }
 
     BOOST_TEST_MESSAGE( "build Xh element" );
-    auto u = Xh->element();
+    auto u = Xh->element(),u1=Xh->element(),u2=Xh->element();
     u = vf::project(_space=Vh,_range=elements(testmesh),_expr=cst(1.0));
+    u1 = vf::project(_space=Vh,_range=elements(testmesh),_expr=Px());
+    u2 = vf::project(_space=Vh,_range=elements(testmesh),_expr=Px()*Px());
+
     auto v = Vh->element(), w=Vh->element(),z=Vh->element();
     v = vf::project(_space=Vh,_range=elements(trialmesh),_expr=cst(1.0));
     w = vf::project(_space=Vh,_range=elements(trialmesh),_expr=Px());
@@ -317,6 +321,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
 
     BOOST_CHECK_CLOSE( c_s( l, u ), 1, 1e-13 );
     BOOST_CHECK_CLOSE( cs1( l, u ), 1, 1e-13 );
+    BOOST_CHECK_CLOSE( c_s( l, u1 ), 0.5, 1e-13 );
+    BOOST_CHECK_CLOSE( c_s( l, u2 ), 1./3., (T::value>=2)?1e-13:10 );
 
     BOOST_TEST_MESSAGE( "build bilinear form c_m(Mh,Vh)" );
     auto c_m = form2(_test=Mh, _trial=Vh);
@@ -325,7 +331,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_mortar_integrate_submesh2, T, order_types )
     c_m.matrixPtr()->printMatlab( "C_m.m" );
     BOOST_CHECK_CLOSE( c_m( l, v ), 1, 1e-13 );
     BOOST_CHECK_CLOSE( c_m( l, w ), 0.5, 1e-13 );
-    BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., 1e-2 );
+    BOOST_CHECK_CLOSE( c_m( l, z ), 1./3., (T::value>=2)?1e-13:10 );
 
 }
 
