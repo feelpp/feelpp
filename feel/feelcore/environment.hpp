@@ -40,6 +40,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
+#include <feel/feelcore/worldscomm.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/options.hpp>
 #if defined ( FEELPP_HAS_PETSC_H )
