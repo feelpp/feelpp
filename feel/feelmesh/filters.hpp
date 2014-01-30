@@ -1467,13 +1467,13 @@ boost::tuple<mpl::size_t<MESH_ELEMENTS>,
 
 template<typename MeshType>
 boost::tuple<mpl::size_t<MESH_ELEMENTS>,
-             typename std::list<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
-             typename std::list<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
-             boost::shared_ptr<std::list<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > >
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
+             typename std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> >::const_iterator,
+             boost::shared_ptr<std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > >
              >
 elements( MeshType const& mesh, bool addExtendedMPIElt )
 {
-    typedef std::list<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
+    typedef std::vector<boost::reference_wrapper<typename MeshTraits<MeshType>::element_type const> > cont_range_type;
     boost::shared_ptr<cont_range_type> myelts( new cont_range_type );
 
     for ( auto const& elt : elements(mesh) )
