@@ -80,7 +80,11 @@
 #include "hartsconfig.h"
 #include "HARTS.h"
 #if defined(HARTS_HAS_OPENCL)
+#ifdef __APPLE__
+#include "OpenCL/cl.hpp"
+#else
 #include "CL/cl.hpp"
+#endif
 
 #define OPENCL_CHECK_ERR( err, name ) do {                                                                          \
    if( err != CL_SUCCESS ) {                                                                                        \
