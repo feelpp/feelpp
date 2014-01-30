@@ -33,7 +33,7 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 
-#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelfilters/detail/mesh.hpp>
 #include <feel/feelvf/geometricdata.hpp>
@@ -176,17 +176,14 @@ BOOST_PARAMETER_FUNCTION(
     _mesh_ptrtype _mesh( mesh );
 
     using namespace vf;
-    typedef FunctionSpace<_mesh_type,bases<Lagrange<_mesh_type::nOrder,Vectorial> > > space_t;
-#if defined(FEELPP_ENABLE_MPI_MODE)
-    auto Xh = space_t::New( _mesh=_mesh, _worldscomm=std::vector<WorldComm>(1,worldcomm) );
-#else
-    auto Xh = space_t::New( _mesh=_mesh );
-#endif
-
-    auto xHo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
-    auto xLo = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
-    auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
-    auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
+    bool upExtendedElt = true;
+    //typedef FunctionSpace<_mesh_type,bases<Lagrange<_mesh_type::nOrder,Vectorial> > > space_t;
+    //auto Xh = space_t::New( _mesh=_mesh, _worldscomm=std::vector<WorldComm>(1,worldcomm),_extended_doftable=std::vector<bool>(1,upExtendedElt) );
+    auto Xh = Pchv<_mesh_type::nOrder>( _mesh,upExtendedElt );
+    auto xHo = vf::project( _space=Xh, _range=elements( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
+    auto xLo = vf::project( _space=Xh, _range=elements( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
+    auto xHoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_HO );
+    auto xLoBdy = vf::project( _space=Xh, _range=boundaryfaces( mesh,upExtendedElt ), _expr=vf::P(), _geomap=GeomapStrategyType::GEOMAP_O1 );
 
     auto straightener = Xh->element();
     straightener=( xLo-xHo )-( xLoBdy-xHoBdy );

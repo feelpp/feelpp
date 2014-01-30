@@ -1163,7 +1163,7 @@ public :
 
 
         void
-        idInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const;
+        idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
 
 
         /*
@@ -1524,7 +1524,7 @@ ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, Con
 template<typename ModelType, typename A0, typename A1, typename A2, typename A3, typename A4>
 template<typename Y,  typename Cont>
 void
-ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v ) const
+ReducedBasisSpace<ModelType,A0, A1, A2, A3, A4>::Element<Y,Cont>::idInterpolate( matrix_node_type __ptsReal, id_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const
 {
     LOG( INFO ) << "not yet implemented";
 }
