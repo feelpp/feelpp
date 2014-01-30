@@ -153,7 +153,10 @@ public :
                                        ( quad,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad_type() ) )
                                        ( quad1,   *, ( typename integrate_type<Args,decltype( elements( this->dualImageSpace()->mesh() ) )>::_quad1_type() ) )
                                        ( geomap, *, GeomapStrategyType::GEOMAP_OPT )
-                                     )
+                                       (grad_expr, *, ( zero<domain_space_type::nComponents,domain_space_type::nDim>() ))
+                                       (div_expr, *, cst(0.) )
+                                       (curl_expr, *,  ( zero<  mpl::if_<mpl::equal_to<mpl::int_<domain_space_type::nComponents>, mpl::int_<1> >, mpl::int_<1>, mpl::int_<domain_space_type::nDim> >::type::value, 1>() ) )
+                                       )
                                    )
     {
         using namespace vf;
@@ -167,8 +170,30 @@ public :
         if ( (M_proj_type != LIFT) )
         {
             form1( _test=this->dualImageSpace(), _vector=ie ) +=
-                integrate( _range=range, _expr=expr * id( this->dualImageSpace()->element() ),
+                integrate( _range=range, _expr=expr*id( this->dualImageSpace()->element() ),
                            _quad=quad, _quad1=quad1, _geomap=geomap );
+
+            switch( M_proj_type )
+                {
+                case H1:
+                    form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                        integrate( _range=range, _expr=trace(grad_expr*trans(grad( this->dualImageSpace()->element() )) ),
+                                   _quad=quad, _quad1=quad1, _geomap=geomap );
+                    break;
+                case HDIV:
+                            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                                integrate( _range=range, _expr=div_expr*div( this->dualImageSpace()->element() ),
+                                           _quad=quad, _quad1=quad1, _geomap=geomap );
+                            break;
+                case HCURL:
+                            form1( _test=this->dualImageSpace(), _vector=ie ) +=
+                                integrate( _range=range, _expr=trans(curl_expr)*curl( this->dualImageSpace()->element() ),
+                                           _quad=quad, _quad1=quad1, _geomap=geomap );
+                            break;
+                case L2:
+                default:
+                    break;
+                }
         }
         else if ( ( M_proj_type == LIFT ) && ( M_dir == WEAK ) )
         {
