@@ -29,9 +29,10 @@
 #include <feel/options.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelfilters/gmsh.hpp>
+#include <feel/feelfilters/creategmshmesh.hpp>
+#include <feel/feelfilters/domain.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/bdf2.hpp>
+#include <feel/feelts/bdf.hpp>
 #include <feel/feelvf/vf.hpp>
 
 namespace Feel

@@ -47,7 +47,7 @@ po::options_description exporter_options( std::string const& prefix )
         ( prefixvm( prefix,"exporter.export" ).c_str(), Feel::po::value<bool>()->default_value( true ), "true if export, false otherwise" )
 
         // exporter type
-        ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter (ensight or gmsh)" )
+        ( prefixvm( prefix,"exporter.format" ).c_str(), Feel::po::value<std::string>()->default_value( "ensight" ), "type of exporter (ensight, gmsh, ensightgold or exodus)" )
 
 
 

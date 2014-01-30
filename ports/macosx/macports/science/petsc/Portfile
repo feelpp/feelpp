@@ -99,6 +99,7 @@ variant atlas description {Use Atlas for LAPACK} conflicts accelerate {
     configure.args-append \
         --with-blas-lapack-lib=/usr/lib/libtatlas.dylib
 #        --with-blas-lapack-lib=${prefix}/lib/libtatlas.dylib
+    depends_lib-append port:atlas
 }
 
 variant ml description {Install with ML package} conflicts accelerate {

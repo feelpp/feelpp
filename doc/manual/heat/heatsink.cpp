@@ -6,6 +6,7 @@
        Date: 2007-06-11
 
   Copyright (C) 2007-2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2012-2013 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,9 +23,21 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include <feel/feel.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/bdf.hpp>
+#include <feel/feeldiscr/pch.hpp>
 
-Feel::gmsh_ptrtype makefin( double hsize, double width, double deep , double L );
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+
+#include <feel/feelvf/expr.hpp>
+#include <feel/feelvf/integrate.hpp>
+#include <feel/feelvf/form.hpp>
+#include <feel/feelvf/operators.hpp>
+#include <feel/feelvf/ppoperators.hpp>
+#include <feel/feelvf/measure.hpp>
+#include <feel/feelvf/mean.hpp>
+
 
 
 /// [marker1]
@@ -35,28 +48,26 @@ makeOptions()
     Feel::po::options_description heatsinkoptions( "heatsink options" );
     heatsinkoptions.add_options()
     // mesh parameters
-    ( "hsize", Feel::po::value<double>()->default_value( 0.0001 ),
-      "first h value to start convergence" )
-    ( "L", Feel::po::value<double>()->default_value( 0.02 ),
+    ( "L", Feel::po::value<double>()->default_value( 20 ),
       "dimensional length of the sink (in meters)" )
-    ( "width", Feel::po::value<double>()->default_value( 0.0005 ),
+    ( "width", Feel::po::value<double>()->default_value( 0.5 ),
       "dimensional width of the fin (in meters)" )
 
     // 3D parameter
-    ( "deep", Feel::po::value<double>()->default_value( 0 ),
+    ( "depth", Feel::po::value<double>()->default_value( 0 ),
       "depth of the mesh (in meters) only in 3D simulation" )
 
     // thermal conductivities parameters
-    ( "kappa_s", Feel::po::value<double>()->default_value( 386 ),
-      "thermal conductivity of the base spreader in SI unit W.m^{-1}.K^{-1}" )
-    ( "kappa_f", Feel::po::value<double>()->default_value( 386 ),
-      "thermal conductivity of the fin in SI unit W.m^{-1}.K^{-1}" )
+    ( "kappa_s", Feel::po::value<double>()->default_value( 386e-3 ),
+      "thermal conductivity of the base spreader in SI unit W.mm^{-1}.K^{-1}" )
+    ( "kappa_f", Feel::po::value<double>()->default_value( 386e-3 ),
+      "thermal conductivity of the fin in SI unit W.mm^{-1}.K^{-1}" )
 
     // density parameter
-    ( "rho_s", Feel::po::value<int>()->default_value( 8940 ),
-      "density of the spreader's material in SI unit kg.m^{-3}" )
-    ( "rho_f", Feel::po::value<int>()->default_value( 8940 ),
-      "density of the fin's material in SI unit kg.m^{-3}" )
+    ( "rho_s", Feel::po::value<double>()->default_value( 8940e-9 ),
+      "density of the spreader's material in SI unit kg.mm^{-3}" )
+    ( "rho_f", Feel::po::value<double>()->default_value( 8940e-9 ),
+      "density of the fin's material in SI unit kg.mm^{-3}" )
 
     // heat capacities parameter
     ( "c_s", Feel::po::value<double>()->default_value( 385 ),
@@ -107,7 +118,7 @@ namespace Feel
 template<int Dim, int Order>
 class HeatSink
     :
-public Application
+        public Application
 {
     typedef Application super;
 public:
@@ -146,17 +157,10 @@ public:
     /* run the simulation */
     void run();
 
-private:
-
-    /**
-     * export results to ensight format
-     */
-    void exportResults( double time, element_type& u );
 
 private:
 
     /* mesh parameters */
-    double meshSize;
     double depth;
     double L;
     double width;
@@ -166,8 +170,8 @@ private:
     double kappa_f;
 
     /* density of the materials */
-    int rho_s;
-    int rho_f;
+    double rho_s;
+    double rho_f;
 
     /* heat capacity of the materials*/
     double c_s;
@@ -203,33 +207,29 @@ template<int Dim, int Order>
 HeatSink<Dim,Order>::HeatSink()
     :
     super(),
-    meshSize( option(_name="hsize").template as<double>() ),
-    depth( option(_name="deep").template as<double>() ),
+    depth( option(_name="depth").template as<double>() ),
     L( option(_name="L").template as<double>() ),
     width( option(_name="width").template as <double>() ),
-    kappa_s( this-> vm()["kappa_s"].template as<double>() ),
-    kappa_f( this-> vm()["kappa_f"].template as<double>() ),
-    rho_s( this-> vm()["rho_s"].template as<int>() ),
-    rho_f( this-> vm()["rho_f"].template as<int>() ),
-    c_s( this-> vm()["c_s"].template as<double>() ),
-    c_f( this-> vm()["c_f"].template as<double>() ),
-    therm_coeff( this-> vm()["therm_coeff"].template as <double>() ),
-    Tamb( this-> vm()["Tamb"].template as <double>() ),
-    heat_flux( this-> vm()["heat_flux"].template as <double>() ),
+    kappa_s( option(_name="kappa_s").template as<double>() ),
+    kappa_f( option(_name="kappa_f").template as<double>() ),
+    rho_s( option(_name="rho_s").template as<double>() ),
+    rho_f( option(_name="rho_f").template as<double>() ),
+    c_s( option(_name="c_s").template as<double>() ),
+    c_f( option(_name="c_f").template as<double>() ),
+    therm_coeff( option(_name="therm_coeff").template as <double>() ),
+    Tamb( option(_name="Tamb").template as <double>() ),
+    heat_flux( option(_name="heat_flux").template as <double>() ),
     steady( option(_name="steady").template as<bool>() ),
     M_exporter()
 {
-    this->changeRepository( boost::format( "%1%/%2%/%3%/" )
+    this->changeRepository( boost::format( "%1%/%2%/" )
                             % this->about().appName()
-                            % entity_type::name()
-                            % meshSize
-                          );
+                            % option(_name="gmsh.hsize").template as<double>() );
 
-    /*
-     * First we create the mesh
-     */
-    mesh = createGMSHMesh ( _mesh = new mesh_type,
-                            _desc = makefin( meshSize, width, depth , L ) );
+    // Create mesh: it automatically changes the geometric parameters using the
+    // associated options
+    mesh = loadMesh( _mesh = new mesh_type );
+
     // build exporter
     M_exporter = exporter( _mesh=mesh, _geo=EXPORTER_GEOMETRY_STATIC );
 
@@ -237,8 +237,8 @@ HeatSink<Dim,Order>::HeatSink()
     /*
      * Calculate the two surfaces used for averages calculation
      */
-    surface_base = integrate( _range= markedfaces( mesh, "gamma4" ), _expr= cst( 1. ) ).evaluate()( 0,0 );
-    surface_fin = integrate( _range= markedfaces( mesh,"gamma1" ), _expr=cst( 1. ) ).evaluate()( 0,0 );
+    surface_base = measure( _range= markedfaces( mesh, "gamma4" ) );
+    surface_fin = measure( _range= markedfaces( mesh, "gamma1" ) );
     /// [marker2]
 
     /*
@@ -255,28 +255,20 @@ template<int Dim, int Order>
 void
 HeatSink<Dim, Order>::run()
 {
-    if ( this->vm().count( "help" ) )
-    {
-        std::cout << this->optionsDescription() << "\n";
-        return;
-    }
-
-    using namespace Feel::vf;
-
-    LOG(INFO) << "meshSize = " << meshSize << "\n"
-          << "L = "<< L <<"\n"
-          << "width = " << width << "\n"
-          << "depth = " << depth << "\n"
-          << "kappa_spreader = " << kappa_s << "\n"
-          << "kappa_fin = " << kappa_f << "\n"
-          << "rho_spreader = " << rho_s << "\n"
-          << "rho_fin = " << rho_f << "\n"
-          << "heat capacity of the base = " << c_s << "\n"
-          << "heat capacity of the fin = " << c_f << "\n"
-          << "ambient temperature = " << Tamb << "\n"
-          << "thermal coefficient = " << therm_coeff << "\n"
-          << "heat flux Q = " << heat_flux << "\n"
-          << "steady state = " << steady << "\n";
+    LOG(INFO) << "meshSize = " << option(_name="gmsh.hsize").template as<double>() << "\n"
+              << "L = "<< L <<"\n"
+              << "width = " << width << "\n"
+              << "depth = " << depth << "\n"
+              << "kappa_spreader = " << kappa_s << "\n"
+              << "kappa_fin = " << kappa_f << "\n"
+              << "rho_spreader = " << rho_s << "\n"
+              << "rho_fin = " << rho_f << "\n"
+              << "heat capacity of the base = " << c_s << "\n"
+              << "heat capacity of the fin = " << c_f << "\n"
+              << "ambient temperature = " << Tamb << "\n"
+              << "thermal coefficient = " << therm_coeff << "\n"
+              << "heat flux Q = " << heat_flux << "\n"
+              << "steady state = " << steady << "\n";
 
     /*
      * T is the unknown, v the test function
@@ -296,8 +288,8 @@ HeatSink<Dim, Order>::run()
      * Left hand side construction (steady state)
      */
     auto a = form2( Xh, Xh );
-    a = integrate( _range= markedelements( mesh,"spreader_mesh" ), _expr= kappa_s*gradt( T )*trans( grad( v ) ) );
-    a += integrate( _range= markedelements( mesh,"fin_mesh" ), _expr= kappa_f*gradt( T )*trans( grad( v ) ) );
+    a = integrate( _range= markedelements( mesh,"spreader" ), _expr= kappa_s*gradt( T )*trans( grad( v ) ) );
+    a += integrate( _range= markedelements( mesh,"fin" ), _expr= kappa_f*gradt( T )*trans( grad( v ) ) );
     a += integrate( _range= markedfaces( mesh, "gamma1" ), _expr= therm_coeff*idt( T )*id( v ) );
 
 
@@ -310,8 +302,8 @@ HeatSink<Dim, Order>::run()
     }
 
     a +=
-        integrate( _range=markedelements( mesh, "spreader_mesh" ), _expr=rho_s*c_s*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) )
-        + integrate( _range=markedelements( mesh, "fin_mesh" ), _expr=rho_f*c_f*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
+        integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) )
+        + integrate( _range=markedelements( mesh, "fin" ), _expr=rho_f*c_f*idt( T )*id( v )*M_bdf->polyDerivCoefficient( 0 ) );
     /// [marker3]
 
     /*
@@ -320,7 +312,14 @@ HeatSink<Dim, Order>::run()
     T = vf::project( _space=Xh, _expr=cst( Tamb ) );
 
     M_bdf->initialize( T );
-    this->exportResults( M_bdf->timeInitial(), T );
+
+    Tavg = mean( _range=markedfaces( mesh,"gamma4" ), _expr=idv( T ) )( 0,0 );
+    Tgamma1 = mean( _range=markedfaces( mesh,"gamma1" ), _expr=idv( T ) )( 0,0 );
+    M_exporter->step( M_bdf->timeInitial() )->addScalar( "Tavg", Tavg );
+    M_exporter->step( M_bdf->timeInitial() )->addScalar( "Tgamma1", Tgamma1 );
+    M_exporter->step( M_bdf->timeInitial() )->add( "Temperature", T );
+    M_exporter->save();
+
 
     std::cout << "The step is : " << M_bdf->timeStep() << "\n"
               << "The initial time is : " << M_bdf->timeInitial() << "\n"
@@ -337,8 +336,8 @@ HeatSink<Dim, Order>::run()
         // update right hand side with time dependent terms
         auto bdf_poly = M_bdf->polyDeriv();
         lt =
-            integrate( _range=markedelements( mesh, "spreader_mesh" ), _expr=rho_s*c_s*idv( bdf_poly )*id( v ) ) +
-            integrate( _range=markedelements( mesh, "fin_mesh" ), _expr=rho_f*c_f*idv( bdf_poly )*id( v ) );
+            integrate( _range=markedelements( mesh, "spreader" ), _expr=rho_s*c_s*idv( bdf_poly )*id( v ) ) +
+            integrate( _range=markedelements( mesh, "fin" ), _expr=rho_f*c_f*idv( bdf_poly )*id( v ) );
         lt +=
             integrate( _range= markedfaces( mesh,"gamma4" ), _expr= heat_flux*( 1-math::exp( -M_bdf->time() ) )*id( v ) );
         lt += l;
@@ -350,7 +349,11 @@ HeatSink<Dim, Order>::run()
 
         // export results
         out << M_bdf->time() << " " << Tavg << " " << Tgamma1 << "\n";
-        this->exportResults( M_bdf->time(), T );
+
+        M_exporter->step( M_bdf->time() )->addScalar( "Tavg", Tavg );
+        M_exporter->step( M_bdf->time() )->addScalar( "Tgamma1", Tgamma1 );
+        M_exporter->step( M_bdf->time() )->add( "Temperature", T );
+        M_exporter->save();
 
     }
     /// [marker4]
@@ -358,16 +361,6 @@ HeatSink<Dim, Order>::run()
     LOG(INFO) << "Resolution ended, export done \n";
 
 } // HeatSink::run
-
-
-template<int Dim, int Order>
-void
-HeatSink<Dim, Order>::exportResults( double time, element_type& U )
-{
-    //M_exporter->step( time )->addRegions();
-    M_exporter->step( time )->add( "Temperature", U );
-    M_exporter->save();
-} // HeatSink::exportResults
 
 } // Feel
 

@@ -57,6 +57,10 @@ endforeach()
 IF (HARTS_INCLUDE_DIR AND HARTS_LIBRARY)
     SET(HARTS_FOUND TRUE)
 ELSE()
+    # unset previously set variables
+    unset(HARTS_INCLUDE_DIR CACHE)
+    unset(HARTS_LIBRARY CACHE)
+
     # Try to find a harts git checkout in contrib
     FIND_PATH(HARTS_SOURCE_DIR CMakeLists.txt
         PATH_SUFFIXES harts HARTS

@@ -6,14 +6,17 @@ Credits
 
 # Copyright
 
-Feel++ is Copyright (C) 2005-2013 by
+Feel++ is Copyright (C) 2010-2014 by
+ - Feel++ Consortium
+
+Feel++ is Copyright (C) 2005-2014 by
  - Université Joseph Fourier (Grenoble, France)
  - University of Coimbra (Portugal)
 
-Feel++ is Copyright (C) 2011-2013 by
+Feel++ is Copyright (C) 2011-2014 by
  - Université de Strasbourg (France)
 
-Feel++ is Copyright (C) 2011-2013 by
+Feel++ is Copyright (C) 2011-2014 by
  - CNRS (France)
 
 Feel++ is Copyright (C) 2005-2006 by
@@ -40,6 +43,8 @@ Feel++ is Copyright (C) 2005-2006 by
  - Ranine Tarabay <ranine.tarbay@math.unistra.fr>
  - Vincent Doyeux <vincent.doyeux@ujf-grenoble.fr>
  - Vincent Huber <vincent.huber@cemosis.fr>
+ - Alexandre Ancel <alexandre.ancel@cemosis.fr>
+ - Pierre Jolivet <pierre.jolivet@ljll.math.upmc.fr>
 
 
 ## Past Developers and Contributors:
@@ -53,18 +58,22 @@ Feel++ is Copyright (C) 2005-2006 by
 ## Current funding
 
 Feel++ is supported by
- - two ANR[fn:1] projects:
+ - ANR projects:
    - HAMM - http://www.hamm-project.fr (Cosinus call - 2010-2014)
-   - VIVABRAIN (MN call - 2013-2017)
- - one FNRAE[fn:4] project
+   - VIVABRAIN - http://www.vivabrain.fr (MN call - 2013-2017)
+   - CHORUS (MN call - 2013-2017)
+ - one FNRAE project
    - RB4FASTSIM - 2010-2014
+ - PRACE projects
+   - HP-FEEL++
+   - HP-PDE{1,2}
  - IDEX CeMoSiS http://www.cemosis.fr
  - LABEX IRMIA http://labex-irmia.u-strasbg.fr/
 
 ## Past funding
  - OPUS - http://www.opus-project.fr (TLOG call - 2008-2011)
  - the region Rhônes-Alpes thanks the cluster ISLE[fn:2] and the project
-   CHPID[fn:3] since 2009
+   CHPID since 2009
 
 # Footnotes
 

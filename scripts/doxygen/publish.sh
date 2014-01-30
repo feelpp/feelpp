@@ -72,6 +72,7 @@ fi
 builddox develop $feelpp_source $gh_pages
 #builddox release/version-0.92 $feelpp_source $gh_pages
 #builddox release/v0.95.0 $feelpp_source $gh_pages
+#builddox release/v0.96.0 $feelpp_source $gh_pages
 
 cd $feelpp_source
 git checkout develop

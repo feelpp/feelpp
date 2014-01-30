@@ -808,6 +808,9 @@ public:
             init( M_ref_ele, __pts, mpl::int_<rank>() );
         }
 
+        //! \return the finite element
+        reference_element_ptrtype fePtr() { return M_ref_ele; }
+
         /**
            \return the dimension of the space where the nodes are defined
         */
@@ -895,6 +898,19 @@ public:
             return M_hessian[i][q]( c1,c2 );
         }
 
+        void print()
+            {
+                typedef typename grad_type::index index;
+                const index I = M_ref_ele->nbDof();
+                const index Q = M_nodes.size2();
+
+                LOG(INFO) << "Precompute nodes : " << M_nodes;
+                for ( index i = 0; i < I; ++i )
+                {
+                    for ( index q = 0; q < Q; ++q )
+                        LOG(INFO) << "Precompute phi[" << i << ", " << q << "]= " << M_phi[i][q](0,0);
+                }
+            }
     private:
 
         void
@@ -1894,7 +1910,7 @@ public:
                               uint32_type q,
                               mpl::int_<1> ) const
         {
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return M_phi[i][q]( c1,0 );
         }
 
@@ -1990,8 +2006,8 @@ public:
         }
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return M_grad[i][q]( 0,c2 );
         }
         value_type grad( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
@@ -2026,17 +2042,17 @@ public:
 
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return div( i, c1, c2, q, mpl::int_<rank>() );
         }
 
         value_type div( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            detail::ignore_unused_variable_warning( i );
-            detail::ignore_unused_variable_warning( q );
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( q );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             /**
              * divergence of a scalar function is undefined.
              */
@@ -2046,8 +2062,8 @@ public:
 
         value_type div( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return M_div[i][q]( 0,0 );
 #if 0
             value_type res = value_type( 0 );
@@ -2069,88 +2085,88 @@ public:
 
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return curl( i, c1, c2, q, mpl::int_<rank>() );
         }
 
         value_type curl( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            detail::ignore_unused_variable_warning( i );
-            detail::ignore_unused_variable_warning( q );
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( i );
+            Feel::detail::ignore_unused_variable_warning( q );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             throw std::logic_error( "invalid use of curl operator, field must be vectorial" );
             return 0;
         }
 
         value_type curl( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return M_curl[i][q]( c1 );
         }
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return curlx( i, c1, c2, q, mpl::int_<rank>() );
         }
         value_type curlx( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            detail::ignore_unused_variable_warning(i);
-            detail::ignore_unused_variable_warning(q);
-            detail::ignore_unused_variable_warning(c1);
-            detail::ignore_unused_variable_warning(c2);
+            Feel::detail::ignore_unused_variable_warning(i);
+            Feel::detail::ignore_unused_variable_warning(q);
+            Feel::detail::ignore_unused_variable_warning(c1);
+            Feel::detail::ignore_unused_variable_warning(c2);
             throw std::logic_error("invalid use of curl operator, field must be vectorial");
             return 0;
         }
         value_type curlx( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return M_curl[i][q]( 0 );
         }
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return curly( i, c1, c2, q, mpl::int_<rank>() );
         }
         value_type curly( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            detail::ignore_unused_variable_warning(i);
-            detail::ignore_unused_variable_warning(q);
-            detail::ignore_unused_variable_warning(c1);
-            detail::ignore_unused_variable_warning(c2);
+            Feel::detail::ignore_unused_variable_warning(i);
+            Feel::detail::ignore_unused_variable_warning(q);
+            Feel::detail::ignore_unused_variable_warning(c1);
+            Feel::detail::ignore_unused_variable_warning(c2);
             throw std::logic_error("invalid use of curl operator, field must be vectorial");
             return 0;
         }
         value_type curly( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return M_curl[i][q]( 1 );
         }
 
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return curlz( i, c1, c2, q, mpl::int_<rank>() );
         }
         value_type curlz( uint16_type i,  uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<0> ) const
         {
-            detail::ignore_unused_variable_warning(i);
-            detail::ignore_unused_variable_warning(q);
-            detail::ignore_unused_variable_warning(c1);
-            detail::ignore_unused_variable_warning(c2);
+            Feel::detail::ignore_unused_variable_warning(i);
+            Feel::detail::ignore_unused_variable_warning(q);
+            Feel::detail::ignore_unused_variable_warning(c1);
+            Feel::detail::ignore_unused_variable_warning(c2);
             throw std::logic_error("invalid use of curl operator, field must be vectorial");
             return 0;
         }
         value_type curlz( uint16_type i, uint16_type c1, uint16_type c2, uint32_type q, mpl::int_<1> ) const
         {
-            detail::ignore_unused_variable_warning( c1 );
-            detail::ignore_unused_variable_warning( c2 );
+            Feel::detail::ignore_unused_variable_warning( c1 );
+            Feel::detail::ignore_unused_variable_warning( c2 );
             return M_curl[i][q]( 2 );
         }
 
@@ -2166,6 +2182,19 @@ public:
         //    private:
         Context() {}
 
+        void print()
+            {
+                const uint16_type Q = M_npoints;
+                const uint16_type I = nDof;
+                for ( uint16_type i = 0; i < I; ++i )
+                {
+                    for ( uint16_type q = 0; q < Q; ++q )
+                    {
+                        LOG(INFO) << "M_phi[" << i << "," << q << "]=" << M_phi[i][q];
+                    }
+                }
+
+            }
     private:
 
         boost::optional<precompute_ptrtype> M_pc;

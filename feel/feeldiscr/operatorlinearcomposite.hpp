@@ -78,6 +78,8 @@ public :
         M_pattern( pattern )
     {}
 
+    virtual ~OperatorLinearComposite() {}
+
 
     //if we have a list of operators
     //i.e. \sum_{q=0}^Q Aq(.,.)
